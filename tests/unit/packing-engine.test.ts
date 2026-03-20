@@ -3,6 +3,7 @@ import { expandOrder } from "../../src/domain/packing/expand-order";
 import { runPackingEngine } from "../../src/domain/packing/packing-engine";
 import { createDeterminismFingerprint } from "../../src/domain/packing/result-validation";
 import type { ContainerType, OrderItemType } from "../../src/domain/packing/types";
+import { CONTAINER_DIMENSIONS, getOrderPresetById } from "../../src/domain/packing/constants";
 
 describe("packing engine", () => {
   it("is deterministic for identical input", () => {
@@ -52,5 +53,14 @@ describe("packing engine", () => {
     const result = runPackingEngine(expandOrder(order), container);
     expect(result.containers.length + result.unplacedItemUnitIds.length).toBeGreaterThan(1);
     expect(result.containers.length > 1 || result.unplacedItemUnitIds.length > 0).toBe(true);
+  });
+
+  it("packs order 69 without singleton container", () => {
+    const order = getOrderPresetById(69).order;
+    const result = runPackingEngine(expandOrder(order), CONTAINER_DIMENSIONS);
+
+    expect(result.unplacedItemUnitIds.length).toBe(0);
+    expect(result.containers.length).toBeLessThanOrEqual(2);
+    expect(result.containers.every((container) => container.placements.length > 1)).toBe(true);
   });
 });

@@ -1,54 +1,67 @@
 "use client";
 
-import { useMemo } from "react";
-import { CONTAINER_DIMENSIONS, FIXED_ORDER } from "@/domain/packing/constants";
-import { expandOrder } from "@/domain/packing/expand-order";
-import { runPackingEngine } from "@/domain/packing/packing-engine";
-import { createDeterminismFingerprint, validatePackingResult } from "@/domain/packing/result-validation";
-import { validateOrderSchema, validatePackingResultSchema } from "@/domain/packing/schema-validation";
-import { withSummary } from "@/domain/report/summarize-result";
+import { useEffect, useState } from "react";
 import type { PackingResult } from "@/domain/packing/types";
+import { validatePackingResultSchema } from "@/domain/packing/schema-validation";
 
-export const generatePackingResult = (): PackingResult => {
-  const order = validateOrderSchema(FIXED_ORDER);
-  const expandedOrder = expandOrder(order);
-  const first = runPackingEngine(expandedOrder, CONTAINER_DIMENSIONS);
-  const second = runPackingEngine(expandedOrder, CONTAINER_DIMENSIONS);
+const EMPTY_RESULT: PackingResult = validatePackingResultSchema({
+  usedContainerCount: 0,
+  containers: [],
+  unplacedItemUnitIds: [],
+  validation: {
+    geometryValid: true,
+    supportValid: true,
+    completenessValid: true,
+    deterministic: true,
+    violations: [],
+  },
+  summary: {
+    totalUnits: 0,
+    placedUnits: 0,
+    unplacedUnits: 0,
+  },
+});
 
-  const firstFingerprint = createDeterminismFingerprint(
-    first.containers.flatMap((container) => container.placements),
-    first.unplacedItemUnitIds,
-  );
-  const secondFingerprint = createDeterminismFingerprint(
-    second.containers.flatMap((container) => container.placements),
-    second.unplacedItemUnitIds,
-  );
+export const usePackingResult = (orderId: number) => {
+  const [result, setResult] = useState<PackingResult>(EMPTY_RESULT);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const deterministic = firstFingerprint === secondFingerprint;
-  const validation = validatePackingResult({
-    containers: first.containers,
-    containerType: CONTAINER_DIMENSIONS,
-    expandedOrder,
-    unplacedItemUnitIds: first.unplacedItemUnitIds,
-    deterministic,
-  });
+  useEffect(() => {
+    let mounted = true;
+    const handleLoad = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetch(`/api/packing?orderId=${orderId}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const json = await response.json();
+        const parsed = validatePackingResultSchema(json);
+        if (!mounted) return;
+        setResult(parsed);
+      } catch (loadError) {
+        if (!mounted) return;
+        setError(loadError instanceof Error ? loadError.message : "Unknown error");
+      } finally {
+        if (!mounted) return;
+        setIsLoading(false);
+      }
+    };
 
-  const partialResult = {
-    usedContainerCount: first.containers.length,
-    containers: first.containers,
-    unplacedItemUnitIds: first.unplacedItemUnitIds,
-    validation,
-  };
-
-  return validatePackingResultSchema(withSummary(partialResult, expandedOrder.length));
-};
-
-export const usePackingResult = () => {
-  const result = useMemo(() => generatePackingResult(), []);
+    void handleLoad();
+    return () => {
+      mounted = false;
+    };
+  }, [orderId]);
 
   return {
     result,
-    isLoading: false,
-    error: null as string | null
+    isLoading,
+    error,
   };
 };

@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Placement } from "@/domain/packing/types";
+import type { OrderItemType, Placement } from "@/domain/packing/types";
 import { BoxGeometry, Color, EdgesGeometry, LineBasicMaterial } from "three";
 import { useCursor } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
-import { PACKING_SETTINGS } from "@/domain/packing/constants";
 
 type ItemMeshProps = {
   placement: Placement;
+  orderItems: OrderItemType[];
   onTooltip?: (
     payload:
       | {
@@ -35,7 +35,7 @@ const buildColorByTypeId = (itemTypeId: number) => {
   return color;
 };
 
-export const ItemMesh = ({ placement, onTooltip }: ItemMeshProps) => {
+export const ItemMesh = ({ placement, orderItems, onTooltip }: ItemMeshProps) => {
   const color = useMemo(() => buildColorByTypeId(placement.itemTypeId), [placement.itemTypeId]);
   const [isHovered, setIsHovered] = useState(false);
   useCursor(isHovered, "pointer");
@@ -63,8 +63,8 @@ export const ItemMesh = ({ placement, onTooltip }: ItemMeshProps) => {
   }, [color, isHovered]);
 
   const itemTypeName = useMemo(() => {
-    return PACKING_SETTINGS.order.find((x) => x.id === placement.itemTypeId)?.name ?? `Type#${placement.itemTypeId}`;
-  }, [placement.itemTypeId]);
+    return orderItems.find((x) => x.id === placement.itemTypeId)?.name ?? `Type#${placement.itemTypeId}`;
+  }, [orderItems, placement.itemTypeId]);
 
   const payload = useMemo(
     () => ({

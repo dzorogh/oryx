@@ -2,11 +2,12 @@
 
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import type { ContainerInstance } from "@/domain/packing/types";
+import type { ContainerInstance, OrderItemType } from "@/domain/packing/types";
 import { ItemMesh } from "./item-mesh";
 
 type ContainerSceneProps = {
   container: ContainerInstance;
+  orderItems: OrderItemType[];
   containerSize: {
     width: number;
     length: number;
@@ -14,7 +15,7 @@ type ContainerSceneProps = {
   };
 };
 
-export const ContainerScene = ({ container, containerSize }: ContainerSceneProps) => {
+export const ContainerScene = ({ container, orderItems, containerSize }: ContainerSceneProps) => {
   const sceneScale = 0.001;
   const center = {
     x: (containerSize.width * sceneScale) / 2,
@@ -51,7 +52,7 @@ export const ContainerScene = ({ container, containerSize }: ContainerSceneProps
           </mesh>
 
           {container.placements.map((placement) => (
-            <ItemMesh key={placement.itemUnitId} placement={placement} />
+            <ItemMesh key={placement.itemUnitId} placement={placement} orderItems={orderItems} />
           ))}
 
           {/* Ground plane for orientation (y=0) */}

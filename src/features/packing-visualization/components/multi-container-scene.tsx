@@ -3,7 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useMemo, useRef, useState } from "react";
-import type { ContainerInstance } from "@/domain/packing/types";
+import type { ContainerInstance, OrderItemType } from "@/domain/packing/types";
 import { ItemMesh } from "./item-mesh";
 
 type ContainerSize = {
@@ -15,6 +15,7 @@ type ContainerSize = {
 type MultiContainerSceneProps = {
   containers: ContainerInstance[];
   containerSize: ContainerSize;
+  orderItems: OrderItemType[];
   /**
    * Gap between containers in millimeters (domain units).
    */
@@ -24,6 +25,7 @@ type MultiContainerSceneProps = {
 export const MultiContainerScene = ({
   containers,
   containerSize,
+  orderItems,
   spacingMm,
 }: MultiContainerSceneProps) => {
   type TooltipPayload = {
@@ -151,6 +153,7 @@ export const MultiContainerScene = ({
                   <ItemMesh
                     key={placement.itemUnitId}
                     placement={placement}
+                    orderItems={orderItems}
                     onTooltip={handleTooltip}
                   />
                 ))}

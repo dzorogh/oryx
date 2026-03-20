@@ -1,13 +1,45 @@
 "use client";
 
-import { useMemo } from "react";
-import { CONTAINER_DIMENSIONS } from "@/domain/packing/constants";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  CONTAINER_DIMENSIONS,
+  DEFAULT_ORDER_ID,
+  ORDER_PRESETS,
+  getOrderPresetById,
+} from "@/domain/packing/constants";
 import { MultiContainerScene } from "@/features/packing-visualization/components/multi-container-scene";
 import { ResultPanel } from "@/features/packing-visualization/components/result-panel";
 import { usePackingResult } from "@/features/packing-visualization/hooks/usePackingResult";
+import { expandOrder } from "@/domain/packing/expand-order";
 
 export default function HomePage() {
-  const { result, isLoading, error } = usePackingResult();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const allowedOrderIds = useMemo(() => new Set(ORDER_PRESETS.map((preset) => preset.orderId)), []);
+  const selectedOrderId = useMemo(() => {
+    const selectedOrderIdFromQuery = searchParams.get("orderId");
+    const parsedOrderId = Number(selectedOrderIdFromQuery);
+    if (Number.isNaN(parsedOrderId) || !allowedOrderIds.has(parsedOrderId)) {
+      return DEFAULT_ORDER_ID;
+    }
+    return parsedOrderId;
+  }, [allowedOrderIds, searchParams]);
+
+  const handleOrderChange = (nextOrderId: number) => {
+    if (!allowedOrderIds.has(nextOrderId)) {
+      return;
+    }
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.set("orderId", String(nextOrderId));
+    router.replace(`${pathname}?${nextSearchParams.toString()}`, { scroll: false });
+  };
+
+  const activeOrderPreset = useMemo(() => getOrderPresetById(selectedOrderId), [selectedOrderId]);
+  const totalUnits = useMemo(() => expandOrder(activeOrderPreset.order).length, [activeOrderPreset.order]);
+  const { result, isLoading, error } = usePackingResult(selectedOrderId);
   const hasContainers = useMemo(() => result.containers.length > 0, [result.containers]);
 
   if (isLoading) {
@@ -31,13 +63,39 @@ export default function HomePage() {
         </p>
       </header>
 
+      <section className="space-y-3 rounded-lg border border-slate-700 bg-slate-900/70 p-4" aria-label="Выбор заказа">
+        <label htmlFor="order-select" className="text-sm font-medium text-slate-100">
+          Выберите заказ
+        </label>
+        <select
+          id="order-select"
+          className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40"
+          value={selectedOrderId}
+          onChange={(event) => handleOrderChange(Number(event.target.value))}
+          aria-label="Переключение заказа для упаковки"
+        >
+          {ORDER_PRESETS.map((preset) => (
+            <option key={preset.orderId} value={preset.orderId}>
+              {preset.label}
+            </option>
+          ))}
+        </select>
+        <p className="text-sm text-slate-300">
+          Позиций: {activeOrderPreset.order.length} | Единиц: {totalUnits}
+        </p>
+      </section>
+
       {hasContainers ? (
-        <MultiContainerScene containers={result.containers} containerSize={CONTAINER_DIMENSIONS} />
+        <MultiContainerScene
+          containers={result.containers}
+          containerSize={CONTAINER_DIMENSIONS}
+          orderItems={activeOrderPreset.order}
+        />
       ) : (
         <p className="text-slate-300">Нет контейнеров для отображения.</p>
       )}
 
-      <ResultPanel result={result} />
+      <ResultPanel result={result} orderItems={activeOrderPreset.order} />
     </main>
   );
 }

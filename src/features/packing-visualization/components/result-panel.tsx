@@ -1,25 +1,25 @@
 "use client";
 
 import { useMemo } from "react";
-import type { PackingResult } from "@/domain/packing/types";
-import { PACKING_SETTINGS } from "@/domain/packing/constants";
+import type { OrderItemType, PackingResult } from "@/domain/packing/types";
 import { expandOrder } from "@/domain/packing/expand-order";
 
 type ResultPanelProps = {
   result: PackingResult;
+  orderItems: OrderItemType[];
 };
 
 const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Ошибка");
 
-export const ResultPanel = ({ result }: ResultPanelProps) => {
+export const ResultPanel = ({ result, orderItems }: ResultPanelProps) => {
   const onSideUnits = useMemo(() => {
-    const expectedUnits = expandOrder(PACKING_SETTINGS.order);
+    const expectedUnits = expandOrder(orderItems);
     const expectedUnitByUnitId = new Map<
       string,
       { itemTypeId: number; itemName: string; expectedHeight: number }
     >(
       expectedUnits.map((unit) => {
-        const itemType = PACKING_SETTINGS.order.find((x) => x.id === unit.itemTypeId);
+        const itemType = orderItems.find((x) => x.id === unit.itemTypeId);
         return [
           unit.unitId,
           {
@@ -59,7 +59,7 @@ export const ResultPanel = ({ result }: ResultPanelProps) => {
     }
 
     return found.sort((a, b) => a.unitId.localeCompare(b.unitId));
-  }, [result.containers]);
+  }, [orderItems, result.containers]);
 
 
   return (

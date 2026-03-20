@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generatePackingResult } from "../../src/features/packing-visualization/hooks/usePackingResult";
+import { generatePackingResult } from "../../src/domain/packing/generate-packing-result";
 
 describe("packing performance", () => {
   it("generates fixed-order result under 3 seconds", () => {
