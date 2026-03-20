@@ -36,12 +36,9 @@ export const runPackingEngine = (
 
   type DimKey = "width" | "length" | "height";
   const dimCandidates: ReadonlyArray<[DimKey, DimKey, DimKey]> = [
+    // Keep items upright: only swap width/length in the floor plane.
     ["width", "length", "height"],
-    ["width", "height", "length"],
     ["length", "width", "height"],
-    ["length", "height", "width"],
-    ["height", "width", "length"],
-    ["height", "length", "width"],
   ];
 
   const expectedHeightByUnitId = new Map(
@@ -145,13 +142,6 @@ export const runPackingEngine = (
 
     return { containers, sideViolationsCount, geometryViolationsCount, placedUnitIds };
   };
-
-  const globalBest: {
-    containers: ContainerInstance[];
-    sideViolationsCount: number;
-    geometryViolationsCount: number;
-    placedUnitIds: Set<string>;
-  } | null = null;
 
   let bestContainers: ContainerInstance[] | null = null;
   let bestSideViolationsCount = Number.POSITIVE_INFINITY;

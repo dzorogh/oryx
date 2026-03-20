@@ -94,10 +94,7 @@ export const ItemMesh = ({ placement, onTooltip }: ItemMeshProps) => {
 
     if (isTop) {
       onTooltip?.(payload, { x: e.clientX, y: e.clientY });
-      return;
     }
-
-    onTooltip?.(null, { x: e.clientX, y: e.clientY });
   };
 
   const handlePointerOut = (e: ThreeEvent<PointerEvent>) => {
