@@ -7,13 +7,16 @@ export type PackingEngineOutput = {
   unplacedItemUnitIds: string[];
 };
 
+// Свободный 2D-прямоугольник на плоскости слоя (ось X/ось Y).
 type FreeRect = { x: number; y: number; width: number; length: number };
+// Слой внутри контейнера: высота полки + доступные области + размещения в этом слое.
 type Layer = {
   z: number;
   height: number;
   freeRects: FreeRect[];
   placements: Placement[];
 };
+// Результат попытки поставить единицу товара в слой.
 type TryPlaceResult = {
   placement: Placement;
   nextFreeRects: FreeRect[];
@@ -21,16 +24,39 @@ type TryPlaceResult = {
   wasteWidth: number;
   wasteLength: number;
 };
+// Профиль скоринга: balanced -> аккуратная группировка, dense -> приоритет плотности.
 type PackingProfile = "balanced" | "dense";
+// Текущее состояние контейнера во время межконтейнерной упаковки.
 type ContainerState = {
   containerIndex: number;
   layers: Layer[];
   placements: Placement[];
 };
+// Лучший кандидат размещения в уже существующий слой.
+type ExistingLayerBest = {
+  kind: "existing";
+  containerIndex: number;
+  layerIndex: number;
+  placed: TryPlaceResult;
+  score: number[];
+};
+// Лучший кандидат размещения с открытием нового слоя.
+type NewLayerBest = {
+  kind: "new";
+  containerIndex: number;
+  newLayer: Layer;
+  placed: TryPlaceResult;
+  score: number[];
+};
+// Объединенный тип лучшего кандидата.
+type BestPlacement = ExistingLayerBest | NewLayerBest;
 
+// Допуск для объединения близких высот в один логический слой.
 const LAYER_HEIGHT_GROUPING_TOLERANCE_MM = 20;
+// Допуск по высоте опоры: верх может отличаться, но в пределах tolerance.
 const SUPPORT_HEIGHT_GAP_TOLERANCE_MM = LAYER_HEIGHT_GROUPING_TOLERANCE_MM;
 
+// Deterministic order of free rectangles keeps solver reproducible across runs.
 const sortFreeRects = (freeRects: readonly FreeRect[]) =>
   deterministicSort(
     [...freeRects],
@@ -39,6 +65,7 @@ const sortFreeRects = (freeRects: readonly FreeRect[]) =>
     (left, right) => right.width * right.length - left.width * left.length,
   );
 
+// Guillotine split: после размещения делим прямоугольник на "правый" и "передний" остаток.
 const splitFreeRect = (
   rect: FreeRect,
   placedSize: { width: number; length: number },
@@ -66,6 +93,7 @@ const splitFreeRect = (
   return result;
 };
 
+// Объединяет соседние прямоугольники опоры, чтобы слой видел непрерывные площадки.
 const mergeAdjacentRects = (rects: readonly FreeRect[]): FreeRect[] => {
   if (rects.length <= 1) return [...rects];
 
@@ -140,6 +168,8 @@ const mergeAdjacentRects = (rects: readonly FreeRect[]): FreeRect[] => {
   return current;
 };
 
+// Builds support surface for the next layer from all items whose top is close to target Z.
+// Small tolerance allows near-equal heights to act as a common support plane.
 const supportRectsAtZ = (layers: readonly Layer[], targetZ: number): FreeRect[] => {
   const supportRects = layers
     .flatMap((layer) => layer.placements)
@@ -156,6 +186,7 @@ const supportRectsAtZ = (layers: readonly Layer[], targetZ: number): FreeRect[] 
   return mergeAdjacentRects(supportRects);
 };
 
+// Chooses next layer height by maximizing footprint coverage, with normalization for close heights.
 const pickNextLayerHeight = (
   remaining: readonly OrderItemUnit[],
   availableHeight: number,
@@ -194,6 +225,7 @@ const pickNextLayerHeight = (
   return normalizedHeights[0] ?? null;
 };
 
+// Promotes item height to a nearby layer height to reduce tiny height fragmentation.
 const normalizeLayerHeight = (
   unitHeight: number,
   allUnits: readonly OrderItemUnit[],
@@ -211,6 +243,7 @@ const normalizeLayerHeight = (
   return candidate ?? unitHeight;
 };
 
+// Стабильная сортировка размещений для детерминированного вывода/сравнения.
 const sortPlacements = (placements: readonly Placement[]): Placement[] =>
   deterministicSort(
     [...placements],
@@ -219,12 +252,14 @@ const sortPlacements = (placements: readonly Placement[]): Placement[] =>
     (left, right) => left.position.x - right.position.x,
   );
 
+// Список уникальных высот верхних граней, где потенциально можно открыть новый слой.
 const getSupportZLevels = (placements: readonly Placement[]): number[] =>
   deterministicSort(
     [0, ...placements.map((placement) => placement.position.z + placement.size.height)],
     (left, right) => left - right,
   ).filter((value, index, source) => source.indexOf(value) === index);
 
+// Базовые прямоугольники для нового слоя: пол контейнера либо вычисленная опора.
 const getBaseRectsForLayer = (
   layerZ: number,
   layers: readonly Layer[],
@@ -236,14 +271,29 @@ const getBaseRectsForLayer = (
   return supportRectsAtZ(layers, layerZ);
 };
 
+// Количество размещенных единиц в результате.
 const countPlacements = (containers: readonly ContainerInstance[]): number =>
   containers.reduce((sum, containerInstance) => sum + containerInstance.placements.length, 0);
+
+// Лексикографическое сравнение score-векторов (меньше = лучше).
+const isScoreVectorBetter = (
+  candidate: readonly number[],
+  currentBest: readonly number[],
+): boolean => {
+  const length = Math.min(candidate.length, currentBest.length);
+  for (let index = 0; index < length; index += 1) {
+    if (candidate[index] < currentBest[index]) return true;
+    if (candidate[index] > currentBest[index]) return false;
+  }
+  return candidate.length < currentBest.length;
+};
 
 const tryPlaceInLayer = (
   layer: Layer,
   unit: OrderItemUnit,
   containerIndex: number,
 ): TryPlaceResult | null => {
+  // Item can be shorter than layer, but never taller.
   if (unit.dimensions.height > layer.height) return null;
 
   const orientations: ReadonlyArray<{ width: number; length: number; yaw: 0 | 90 }> = [
@@ -304,17 +354,21 @@ const tryPlaceInLayer = (
   };
 };
 
+// Вспомогательная метрика объема единицы.
 const volumeOf = (unit: OrderItemUnit): number =>
   unit.dimensions.width * unit.dimensions.length * unit.dimensions.height;
 
+// Вспомогательная метрика площади основания.
 const footprintOf = (unit: OrderItemUnit): number => unit.dimensions.width * unit.dimensions.length;
 
+// Геометрический центр размещения, нужен для кластеризации по типу.
 const placementCenter = (placement: Placement): { x: number; y: number; z: number } => ({
   x: placement.position.x + placement.size.width / 2,
   y: placement.position.y + placement.size.length / 2,
   z: placement.position.z + placement.size.height / 2,
 });
 
+// Штраф за удаление от уже размещенных товаров того же типа (группировка SKU).
 const clusteringPenalty = (
   placements: readonly Placement[],
   itemTypeId: number,
@@ -335,6 +389,7 @@ const clusteringPenalty = (
   }, 0);
 };
 
+// Штраф за открытие нового типа товара в контейнере (уменьшает перемешивание типов).
 const newTypeInContainerPenalty = (placements: readonly Placement[], itemTypeId: number): number => {
   if (placements.length === 0) return 0;
   return placements.some((entry) => entry.itemTypeId === itemTypeId) ? 0 : 1;
@@ -344,6 +399,7 @@ const containerEnvelopePenalty = (
   placements: readonly Placement[],
   candidatePlacement: Placement,
 ): number => {
+  // Penalize expansion of occupied bounding box (compact packing preference).
   const allPlacements = [...placements, candidatePlacement];
   const maxX = allPlacements.reduce(
     (maxValue, placement) => Math.max(maxValue, placement.position.x + placement.size.width),
@@ -361,6 +417,7 @@ const containerEnvelopePenalty = (
 };
 
 const yFrontGapPenalty = (placements: readonly Placement[], candidatePlacement: Placement): number => {
+  // Prefer advancing a continuous front along Y (fewer visual/physical "islands").
   if (placements.length === 0) return 0;
   const currentFrontY = placements.reduce(
     (maxValue, placement) => Math.max(maxValue, placement.position.y + placement.size.length),
@@ -371,6 +428,7 @@ const yFrontGapPenalty = (placements: readonly Placement[], candidatePlacement: 
   return candidateStartY - currentFrontY;
 };
 
+// Reorders result so container 0 is the most utilized one (UI and business expectation).
 const normalizeContainerOrder = (containers: readonly ContainerInstance[]): ContainerInstance[] => {
   const sorted = deterministicSort(
     [...containers],
@@ -396,10 +454,30 @@ const hasPlacementOverlap = (
   candidatePlacement: Placement,
   placedInContainer: readonly Placement[],
 ): boolean => {
+  // Extra collision guard for cross-layer/cross-heuristic candidates.
   return placedInContainer.some((placedEntry) => {
     if (placedEntry.itemUnitId === candidatePlacement.itemUnitId) return false;
     return placementsOverlap(placedEntry, candidatePlacement);
   });
+};
+
+const applyBestPlacementToState = (states: ContainerState[], best: BestPlacement): void => {
+  const targetState = states[best.containerIndex];
+  if (best.kind === "new") {
+    targetState.layers.push({
+      ...best.newLayer,
+      freeRects: best.placed.nextFreeRects,
+      placements: [best.placed.placement],
+    });
+  } else {
+    const layer = targetState.layers[best.layerIndex];
+    targetState.layers[best.layerIndex] = {
+      ...layer,
+      freeRects: best.placed.nextFreeRects,
+      placements: [...layer.placements, best.placed.placement],
+    };
+  }
+  targetState.placements.push(best.placed.placement);
 };
 
 const sortStrategies: ReadonlyArray<(unitsToSort: readonly OrderItemUnit[]) => OrderItemUnit[]> = [
@@ -475,6 +553,7 @@ const sortStrategies: ReadonlyArray<(unitsToSort: readonly OrderItemUnit[]) => O
     ),
 ];
 
+// Сравнение двух результатов: сначала полнота, затем меньше контейнеров, затем больше размещений.
 const compareResults = (left: PackingEngineOutput, right: PackingEngineOutput): number => {
   if (left.unplacedItemUnitIds.length !== right.unplacedItemUnitIds.length) {
     return left.unplacedItemUnitIds.length - right.unplacedItemUnitIds.length;
@@ -490,11 +569,14 @@ const compareResults = (left: PackingEngineOutput, right: PackingEngineOutput): 
   return 0;
 };
 
+// Базовый greedy-проход с лимитом контейнеров.
+// Заполняет текущий контейнер максимально, затем переходит к следующему.
 const packWithLimit = (
   baseUnits: readonly OrderItemUnit[],
   containerLimit: number,
   container: ContainerType,
 ): PackingEngineOutput => {
+  // Baseline greedy strategy: fill current container, then move to next.
   type ExistingPlacementCandidate = {
     unitIndex: number;
     layerIndex: number;
@@ -507,6 +589,7 @@ const packWithLimit = (
     area: number;
   };
 
+  // Ищет лучший candidate в уже открытых слоях.
   const pickBestForExistingLayers = (
     remaining: readonly OrderItemUnit[],
     layers: readonly Layer[],
@@ -527,6 +610,7 @@ const packWithLimit = (
     return bestExisting;
   };
 
+  // Ищет лучший candidate для только что открытого слоя.
   const pickBestForNewLayer = (
     remaining: readonly OrderItemUnit[],
     newLayer: Layer,
@@ -615,37 +699,17 @@ const packWithLimit = (
   };
 };
 
+// Расширенный режим: одновременно оценивает размещение по нескольким контейнерам
+// и выбирает глобально лучший ход по score-вектору.
 const packAcrossContainers = (
   baseUnits: readonly OrderItemUnit[],
   containerLimit: number,
   container: ContainerType,
   profile: PackingProfile = "balanced",
 ): PackingEngineOutput => {
-  const isScoreBetter = (candidate: readonly number[], currentBest: readonly number[]): boolean => {
-    const length = Math.min(candidate.length, currentBest.length);
-    for (let index = 0; index < length; index += 1) {
-      if (candidate[index] < currentBest[index]) return true;
-      if (candidate[index] > currentBest[index]) return false;
-    }
-    return candidate.length < currentBest.length;
-  };
-
-  type ExistingLayerBest = {
-    kind: "existing";
-    containerIndex: number;
-    layerIndex: number;
-    placed: TryPlaceResult;
-    score: number[];
-  };
-  type NewLayerBest = {
-    kind: "new";
-    containerIndex: number;
-    newLayer: Layer;
-    placed: TryPlaceResult;
-    score: number[];
-  };
-  type BestPlacement = ExistingLayerBest | NewLayerBest;
-
+  // Multi-container scorer: chooses best candidate across containers and layers.
+  // Единый score для "existing layer" и "new layer" кандидатов.
+  // Вектор упорядочен по приоритетам: физика/бизнес/компактность/эстетика.
   const buildScore = (
     state: ContainerState,
     placed: TryPlaceResult,
@@ -675,6 +739,7 @@ const packAcrossContainers = (
   };
 
   const canPlaceUnitInState = (state: ContainerState, unit: OrderItemUnit): boolean => {
+    // Fast feasibility probe: if unit fits container 0, keep pushing container 0 first.
     for (let layerIndex = 0; layerIndex < state.layers.length; layerIndex += 1) {
       const placed = tryPlaceInLayer(state.layers[layerIndex], unit, state.containerIndex);
       if (!placed) continue;
@@ -725,14 +790,15 @@ const packAcrossContainers = (
         if (hasPlacementOverlap(placed.placement, state.placements)) continue;
 
         const score = buildScore(state, placed, unit.itemTypeId, states, false);
-        if (!best || isScoreBetter(score, best.score)) {
-          best = {
-            kind: "existing",
-            containerIndex: stateIndex,
-            layerIndex,
-            placed,
-            score,
-          };
+        const candidate: BestPlacement = {
+          kind: "existing",
+          containerIndex: stateIndex,
+          layerIndex,
+          placed,
+          score,
+        };
+        if (!best || isScoreVectorBetter(candidate.score, best.score)) {
+          best = candidate;
         }
       }
 
@@ -755,14 +821,15 @@ const packAcrossContainers = (
         if (hasPlacementOverlap(placedInNewLayer.placement, state.placements)) continue;
 
         const newLayerScore = buildScore(state, placedInNewLayer, unit.itemTypeId, states, true);
-        if (!best || isScoreBetter(newLayerScore, best.score)) {
-          best = {
-            kind: "new",
-            containerIndex: stateIndex,
-            newLayer,
-            placed: placedInNewLayer,
-            score: newLayerScore,
-          };
+        const candidate: BestPlacement = {
+          kind: "new",
+          containerIndex: stateIndex,
+          newLayer,
+          placed: placedInNewLayer,
+          score: newLayerScore,
+        };
+        if (!best || isScoreVectorBetter(candidate.score, best.score)) {
+          best = candidate;
         }
       }
     }
@@ -772,22 +839,7 @@ const packAcrossContainers = (
       continue;
     }
 
-    const targetState = states[best.containerIndex];
-    if (best.kind === "new") {
-      targetState.layers.push({
-        ...best.newLayer,
-        freeRects: best.placed.nextFreeRects,
-        placements: [best.placed.placement],
-      });
-    } else {
-      const layer = targetState.layers[best.layerIndex];
-      targetState.layers[best.layerIndex] = {
-        ...layer,
-        freeRects: best.placed.nextFreeRects,
-        placements: [...layer.placements, best.placed.placement],
-      };
-    }
-    targetState.placements.push(best.placed.placement);
+    applyBestPlacementToState(states, best);
   }
 
   const containers = states
@@ -803,11 +855,13 @@ const packAcrossContainers = (
   };
 };
 
+// Пытается уменьшить число контейнеров от greedy-решения без потери полноты размещения.
 const pickBestResultByLimit = (
   baseUnits: readonly OrderItemUnit[],
   greedyResult: PackingEngineOutput,
   container: ContainerType,
 ): PackingEngineOutput => {
+  // Tries to reduce container count while preserving full placement.
   if (greedyResult.unplacedItemUnitIds.length !== 0 || greedyResult.containers.length <= 1) {
     return greedyResult;
   }
@@ -834,6 +888,8 @@ export const runPackingEngine = (
   units: readonly OrderItemUnit[],
   container: ContainerType,
 ): PackingEngineOutput => {
+  // Запускает несколько детерминированных стратегий сортировки входа
+  // и выбирает лучший итоговый результат.
   let bestResult: PackingEngineOutput | null = null;
 
   for (const sortStrategy of sortStrategies) {
