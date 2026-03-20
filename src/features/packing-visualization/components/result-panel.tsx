@@ -1,6 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import type { PackingResult } from "@/domain/packing/types";
+import { PACKING_SETTINGS } from "@/domain/packing/constants";
+import { expandOrder } from "@/domain/packing/expand-order";
 
 type ResultPanelProps = {
   result: PackingResult;
@@ -9,6 +12,56 @@ type ResultPanelProps = {
 const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Ошибка");
 
 export const ResultPanel = ({ result }: ResultPanelProps) => {
+  const onSideUnits = useMemo(() => {
+    const expectedUnits = expandOrder(PACKING_SETTINGS.order);
+    const expectedUnitByUnitId = new Map<
+      string,
+      { itemTypeId: number; itemName: string; expectedHeight: number }
+    >(
+      expectedUnits.map((unit) => {
+        const itemType = PACKING_SETTINGS.order.find((x) => x.id === unit.itemTypeId);
+        return [
+          unit.unitId,
+          {
+            itemTypeId: unit.itemTypeId,
+            itemName: itemType?.name ?? `Type#${unit.itemTypeId}`,
+            expectedHeight: unit.dimensions.height,
+          },
+        ] as const;
+      }),
+    );
+
+    const found: Array<{
+      unitId: string;
+      itemName: string;
+      expectedHeight: number;
+      actualHeight: number;
+    }> = [];
+
+    for (const container of result.containers) {
+      for (const placement of container.placements) {
+        const expected = expectedUnitByUnitId.get(placement.itemUnitId);
+        if (!expected) continue;
+
+          // Vertical axis in scene/packing model is placement.size.height.
+          // If it differs from the source unit height, the unit is on its side.
+          const canBeUpright = placement.size.height === expected.expectedHeight;
+
+          if (!canBeUpright) {
+          found.push({
+            unitId: placement.itemUnitId,
+            itemName: expected.itemName,
+            expectedHeight: expected.expectedHeight,
+            actualHeight: placement.size.height,
+          });
+        }
+      }
+    }
+
+    return found.sort((a, b) => a.unitId.localeCompare(b.unitId));
+  }, [result.containers]);
+
+
   return (
     <section className="space-y-4 rounded-lg border border-slate-600 bg-slate-900 p-4" aria-label="Панель аудита">
       <h2 className="text-lg font-semibold">Аудит результата</h2>
@@ -40,6 +93,25 @@ export const ResultPanel = ({ result }: ResultPanelProps) => {
           <ul className="list-disc space-y-1 pl-5 text-rose-300" aria-label="Список нарушений">
             {result.validation.violations.map((violation) => (
               <li key={violation}>{violation}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="space-y-2 text-sm">
+        <h3 className="font-medium text-slate-100" aria-label="Проверка боковой ориентации">
+          Ящики лежат на боку
+        </h3>
+        {onSideUnits.length === 0 ? (
+          <p className="text-emerald-300" aria-label="На боку: нет">
+            Нет.
+          </p>
+        ) : (
+          <ul className="list-disc space-y-1 pl-5 text-amber-300" aria-label="Список ящиков на боку">
+            {onSideUnits.map((u) => (
+              <li key={u.unitId} aria-label={`Ящик ${u.unitId} на боку`}>
+                {u.unitId} — {u.itemName} (height: expected {u.expectedHeight}, got {u.actualHeight})
+              </li>
             ))}
           </ul>
         )}
