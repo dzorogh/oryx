@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { generatePackingResult } from "@/domain/packing/generate-packing-result";
-import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
+import { generatePackingResult } from "../../../src/domain/packing/generate-packing-result";
+import { DEFAULT_ORDER_ID } from "../../../src/domain/packing/constants";
 
 export const dynamic = "force-dynamic";
 

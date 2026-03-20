@@ -9,7 +9,13 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run tests/integration --passWithNoTests",
     "test:watch": "vitest",
+    "test:property": "vitest run tests/property --passWithNoTests",
+    "test:golden": "vitest run tests/integration/golden-regression.test.ts --passWithNoTests",
+    "bench:packing": "node scripts/bench-packing.mjs",
+    "analyze:cpu": "node --cpu-prof scripts/bench-packing.mjs",
+    "test:mutation": "stryker run",
     "test:e2e": "playwright test --pass-with-no-tests",
     "check:deps": "node scripts/check-dependencies.mjs",
     "check:docs": "node scripts/check-doc-links.mjs"
@@ -25,6 +31,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@stryker-mutator/core": "^9.6.0",
+    "@stryker-mutator/vitest-runner": "^9.6.0",
     "@tailwindcss/postcss": "^4.2.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -35,9 +43,11 @@
     "@vitest/coverage-v8": "^4.1.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.0",
+    "fast-check": "^4.6.0",
     "jsdom": "^29.0.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
+    "tinybench": "^6.0.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   }

@@ -1,5 +1,7 @@
 import type { ContainerType, Placement } from "./types";
 
+const SUPPORT_HEIGHT_GAP_TOLERANCE_MM = 20;
+
 const boxesOverlap1D = (
   leftStart: number,
   leftSize: number,
@@ -72,7 +74,11 @@ export const hasSupport = (
       return false;
     }
 
-    return candidate.position.z + candidate.size.height === placement.position.z;
+    const candidateTopZ = candidate.position.z + candidate.size.height;
+    return (
+      candidateTopZ <= placement.position.z &&
+      placement.position.z - candidateTopZ <= SUPPORT_HEIGHT_GAP_TOLERANCE_MM
+    );
   });
 
   const supportedArea = supports.reduce((area, candidate) => {

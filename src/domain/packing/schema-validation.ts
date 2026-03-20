@@ -11,33 +11,29 @@ const orderItemSchema = z.object({
   quantity: z.number().int().positive(),
 });
 
-const position3DSchema = z.object({
-  x: z.number().nonnegative(),
-  y: z.number().nonnegative(),
-  z: z.number().nonnegative(),
-});
-
-const dimensionsSchema = z.object({
-  width: z.number().positive(),
-  length: z.number().positive(),
-  height: z.number().positive(),
-});
-
-const placementSchema = z.object({
-  containerIndex: z.number().int().nonnegative(),
-  itemUnitId: z.string().min(1),
-  itemTypeId: z.number().int().positive(),
-  position: position3DSchema,
-  rotationYaw: z.union([z.literal(0), z.literal(90)]),
-  size: dimensionsSchema,
-});
-
 const packingResultSchema = z.object({
   usedContainerCount: z.number().int().nonnegative(),
   containers: z.array(
     z.object({
       containerIndex: z.number().int().nonnegative(),
-      placements: z.array(placementSchema),
+      placements: z.array(
+        z.object({
+          containerIndex: z.number().int().nonnegative(),
+          itemUnitId: z.string().min(1),
+          itemTypeId: z.number().int(),
+          position: z.object({
+            x: z.number(),
+            y: z.number(),
+            z: z.number(),
+          }),
+          rotationYaw: z.union([z.literal(0), z.literal(90)]),
+          size: z.object({
+            width: z.number().positive(),
+            length: z.number().positive(),
+            height: z.number().positive(),
+          }),
+        }),
+      ),
     }),
   ),
   unplacedItemUnitIds: z.array(z.string().min(1)),
@@ -55,8 +51,8 @@ const packingResultSchema = z.object({
   }),
 });
 
-export const validateOrderSchema = (input: unknown): OrderItemType[] => {
-  return z.array(orderItemSchema).parse(input);
+export const validateOrderSchema = (order: unknown): OrderItemType[] => {
+  return z.array(orderItemSchema).parse(order);
 };
 
 export const validatePackingResultSchema = (input: unknown): PackingResult => {
