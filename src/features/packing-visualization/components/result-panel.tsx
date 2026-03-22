@@ -7,11 +7,12 @@ import { expandOrder } from "@/domain/packing/expand-order";
 type ResultPanelProps = {
   result: PackingResult;
   orderItems: OrderItemType[];
+  renderMs: number | null;
 };
 
 const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Ошибка");
 
-export const ResultPanel = ({ result, orderItems }: ResultPanelProps) => {
+export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) => {
   const onSideUnits = useMemo(() => {
     const expectedUnits = expandOrder(orderItems);
     const expectedUnitByUnitId = new Map<
@@ -69,6 +70,12 @@ export const ResultPanel = ({ result, orderItems }: ResultPanelProps) => {
       <div className="grid gap-2 text-sm text-slate-100">
         <p aria-label="Количество использованных контейнеров">
           Контейнеров: {result.usedContainerCount}
+        </p>
+        <p aria-label="Время раскладки по контейнерам">
+          Раскладка: {result.timing.packingMs.toFixed(2)} мс
+        </p>
+        <p aria-label="Время отрисовки страницы результата">
+          Отрисовка: {renderMs === null ? "измеряется..." : `${renderMs.toFixed(2)} мс`}
         </p>
         <p aria-label="Количество размещенных единиц">
           Placed: {result.summary.placedUnits} / {result.summary.totalUnits}

@@ -7,6 +7,7 @@ import { withSummary } from "@/domain/report/summarize-result";
 import type { PackingResult } from "@/domain/packing/types";
 
 export const generatePackingResult = (orderId: number = DEFAULT_ORDER_ID): PackingResult => {
+  const packingStartedAt = performance.now();
   const orderPreset = getOrderPresetById(orderId);
   const order = validateOrderSchema(orderPreset.order);
   const expandedOrder = expandOrder(order);
@@ -43,6 +44,9 @@ export const generatePackingResult = (orderId: number = DEFAULT_ORDER_ID): Packi
     containers: first.containers,
     unplacedItemUnitIds: first.unplacedItemUnitIds,
     validation,
+    timing: {
+      packingMs: performance.now() - packingStartedAt,
+    },
   };
 
   return validatePackingResultSchema(withSummary(partialResult, expandedOrder.length));

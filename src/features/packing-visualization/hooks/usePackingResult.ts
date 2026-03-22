@@ -20,6 +20,9 @@ const EMPTY_RESULT: PackingResult = validatePackingResultSchema({
     placedUnits: 0,
     unplacedUnits: 0,
   },
+  timing: {
+    packingMs: 0,
+  },
 });
 
 export const usePackingResult = (orderId: number) => {

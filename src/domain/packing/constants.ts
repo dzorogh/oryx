@@ -165,6 +165,21 @@ export const ORDER_PRESETS: OrderPreset[] = [
       },
     ],
   },
+  {
+    orderId: 1000,
+    label: "Заказ №1000",
+    order: [
+      {
+        id: 10001,
+        name: "Box 500x500",
+        width: 500,
+        length: 500,
+        height: 500,
+        weight: 1,
+        quantity: 1000,
+      },
+    ],
+  },
 ];
 
 export const DEFAULT_ORDER_ID = ORDER_PRESETS[0].orderId;

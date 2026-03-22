@@ -58,10 +58,15 @@ export type PackingSummary = {
   unplacedUnits: number;
 };
 
+export type PackingTiming = {
+  packingMs: number;
+};
+
 export type PackingResult = {
   usedContainerCount: number;
   containers: ContainerInstance[];
   unplacedItemUnitIds: string[];
   validation: PackingValidation;
   summary: PackingSummary;
+  timing: PackingTiming;
 };

@@ -49,6 +49,9 @@ const packingResultSchema = z.object({
     placedUnits: z.number().int().nonnegative(),
     unplacedUnits: z.number().int().nonnegative(),
   }),
+  timing: z.object({
+    packingMs: z.number().nonnegative(),
+  }),
 });
 
 export const validateOrderSchema = (order: unknown): OrderItemType[] => {

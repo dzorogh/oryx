@@ -354,10 +354,6 @@ const tryPlaceInLayer = (
   };
 };
 
-// Вспомогательная метрика объема единицы.
-const volumeOf = (unit: OrderItemUnit): number =>
-  unit.dimensions.width * unit.dimensions.length * unit.dimensions.height;
-
 // Вспомогательная метрика площади основания.
 const footprintOf = (unit: OrderItemUnit): number => unit.dimensions.width * unit.dimensions.length;
 
@@ -480,78 +476,14 @@ const applyBestPlacementToState = (states: ContainerState[], best: BestPlacement
   targetState.placements.push(best.placed.placement);
 };
 
-const sortStrategies: ReadonlyArray<(unitsToSort: readonly OrderItemUnit[]) => OrderItemUnit[]> = [
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => footprintOf(right) - footprintOf(left),
-      (left, right) => right.dimensions.height - left.dimensions.height,
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => right.dimensions.height - left.dimensions.height,
-      (left, right) => footprintOf(right) - footprintOf(left),
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => volumeOf(right) - volumeOf(left),
-      (left, right) => footprintOf(right) - footprintOf(left),
-      (left, right) => right.dimensions.length - left.dimensions.length,
-      (left, right) => right.dimensions.width - left.dimensions.width,
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => right.dimensions.length - left.dimensions.length,
-      (left, right) => right.dimensions.width - left.dimensions.width,
-      (left, right) => right.dimensions.height - left.dimensions.height,
-      (left, right) => footprintOf(right) - footprintOf(left),
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => right.dimensions.width - left.dimensions.width,
-      (left, right) => right.dimensions.length - left.dimensions.length,
-      (left, right) => right.dimensions.height - left.dimensions.height,
-      (left, right) => footprintOf(right) - footprintOf(left),
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => footprintOf(left) - footprintOf(right),
-      (left, right) => left.dimensions.height - right.dimensions.height,
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => left.dimensions.height - right.dimensions.height,
-      (left, right) => footprintOf(left) - footprintOf(right),
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-  (unitsToSort) =>
-    deterministicSort(
-      [...unitsToSort],
-      (left, right) => volumeOf(left) - volumeOf(right),
-      (left, right) => footprintOf(left) - footprintOf(right),
-      (left, right) => left.itemTypeId - right.itemTypeId,
-      (left, right) => left.unitId.localeCompare(right.unitId),
-    ),
-];
+const sortUnitsForPacking = (unitsToSort: readonly OrderItemUnit[]): OrderItemUnit[] =>
+  deterministicSort(
+    [...unitsToSort],
+    (left, right) => footprintOf(right) - footprintOf(left),
+    (left, right) => right.dimensions.height - left.dimensions.height,
+    (left, right) => left.itemTypeId - right.itemTypeId,
+    (left, right) => left.unitId.localeCompare(right.unitId),
+  );
 
 // Сравнение двух результатов: сначала полнота, затем меньше контейнеров, затем больше размещений.
 const compareResults = (left: PackingEngineOutput, right: PackingEngineOutput): number => {
@@ -888,18 +820,8 @@ export const runPackingEngine = (
   units: readonly OrderItemUnit[],
   container: ContainerType,
 ): PackingEngineOutput => {
-  // Запускает несколько детерминированных стратегий сортировки входа
-  // и выбирает лучший итоговый результат.
-  let bestResult: PackingEngineOutput | null = null;
-
-  for (const sortStrategy of sortStrategies) {
-    const baseUnits = sortStrategy(units);
-    const greedyResult = packWithLimit(baseUnits, units.length, container);
-    const strategyBest = pickBestResultByLimit(baseUnits, greedyResult, container);
-    if (!bestResult || compareResults(strategyBest, bestResult) < 0) {
-      bestResult = strategyBest;
-    }
-  }
-
-  return bestResult ?? { containers: [], unplacedItemUnitIds: [] };
+  const baseUnits = sortUnitsForPacking(units);
+  const greedyResult = packWithLimit(baseUnits, units.length, container);
+  const bestResult = pickBestResultByLimit(baseUnits, greedyResult, container);
+  return bestResult;
 };

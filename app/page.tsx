@@ -41,6 +41,29 @@ export default function HomePage() {
   const totalUnits = useMemo(() => expandOrder(activeOrderPreset.order).length, [activeOrderPreset.order]);
   const { result, isLoading, error } = usePackingResult(selectedOrderId);
   const hasContainers = useMemo(() => result.containers.length > 0, [result.containers]);
+  const [renderMs, setRenderMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isLoading || error) {
+      setRenderMs(null);
+      return;
+    }
+
+    const renderStartedAt = performance.now();
+    let firstFrameId = 0;
+    let secondFrameId = 0;
+
+    firstFrameId = window.requestAnimationFrame(() => {
+      secondFrameId = window.requestAnimationFrame(() => {
+        setRenderMs(performance.now() - renderStartedAt);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrameId);
+      window.cancelAnimationFrame(secondFrameId);
+    };
+  }, [isLoading, error, result]);
 
   if (isLoading) {
     return <main className="min-h-screen p-6 text-slate-100">Загрузка результата упаковки...</main>;
@@ -95,7 +118,7 @@ export default function HomePage() {
         <p className="text-slate-300">Нет контейнеров для отображения.</p>
       )}
 
-      <ResultPanel result={result} orderItems={activeOrderPreset.order} />
+      <ResultPanel result={result} orderItems={activeOrderPreset.order} renderMs={renderMs} />
     </main>
   );
 }
