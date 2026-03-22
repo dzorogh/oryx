@@ -69,7 +69,7 @@ npm run dev
 Проект разделен на два основных слоя:
 
 1. **UI (App + features)**  
-   Интерфейс, выбор заказа (`/orders/:id`), таблица заказа, 3D-сцена, панель аудита, оболочка с боковой навигацией.
+   Интерфейс, выбор заказа (`/pim/orders/:id`), таблица заказа, 3D-сцена, панель аудита, оболочка: рейл в корневом layout, боковая навигация в `app/pim/layout.tsx`.
 2. **Domain (packing/report)**  
    Упаковка, валидация результата, проверка габаритов относительно контейнера, summary.
 
@@ -79,15 +79,25 @@ npm run dev
 
 ```text
 app/
-  layout.tsx                       # Корневой layout, шрифт Manrope (как в макете Corportal)
-  page.tsx                         # Редирект: `?orderId=` (устар.) → /orders/<id>, иначе /orders/<default>
-  orders/[orderId]/layout.tsx      # Оболочка: IconRail + сайдбар + Header, notFound
-  orders/[orderId]/icon-rail.tsx   # Левый навигационный рейл (Lucide, по макету Figma Corportal)
-  orders/[orderId]/page.tsx        # Клиентский контент (OrderPackingDynamicContent), SSG params
-  orders/[orderId]/header.tsx       # Breadcrumb + h1 (сервер)
-  orders/[orderId]/sidebar.tsx      # Ссылки на /orders/:id (сервер)
+  layout.tsx                       # Корневой layout: шрифт Manrope, CorportalNavRail
+  page.tsx                         # Редирект: `?orderId=` (устар.) → /pim/orders/<id>, иначе /pim/orders/<default>
+  pim/
+    layout.tsx                     # Фон PIM, aside + навигация по заказам (client), основная колонка
+    page.tsx                       # Редирект на /pim/orders/<default>
+    orders/[orderId]/page.tsx      # Заголовок заказа + OrderPackingDynamicContent, notFound, SSG params
 
 src/
+  components/
+    layout/
+      corportal-nav-rail.tsx       # Левый навигационный рейл (Lucide, по макету Figma Corportal)
+    pim/
+      pim-aside.tsx                # Левый aside PIM
+      pim-order-nav.tsx            # Ссылки на /pim/orders/:id
+      pim-main-column.tsx          # Отступ под рейл + aside
+      order-header.tsx             # Breadcrumb + h1
+      order-packing-app-chrome.tsx # Композиция для unit-тестов (рейл + PIM + колонка)
+    ui/                            # shadcn-компоненты (button, card, alert, …)
+
   workers/
     packing-result.worker.ts       # Web Worker: вызов generatePackingResult
   domain/
@@ -113,8 +123,6 @@ src/
         multi-container-scene.tsx    # Единая 3D-сцена для всех контейнеров
         item-mesh.tsx
         result-panel.tsx             # Аудит (свёрнут по умолчанию)
-  components/
-    ui/                            # shadcn-компоненты (button, card, alert, …)
   lib/
     run-packing-async.ts           # Worker или отложенный main-thread fallback
     deterministic-sort.ts
@@ -139,7 +147,7 @@ specs/001-container-packing-visualization/  # спецификация, план
 
 ## Поток данных
 
-1. Пользователь выбирает заказ в URL (`/orders/<id>`) или меняет количества в таблице.
+1. Пользователь выбирает заказ в URL (`/pim/orders/<id>`) или меняет количества в таблице.
 2. Хук `usePackingResult(orderId, orderItems)` вызывает `runPackingAsync` → в браузере сообщение в **Web Worker**, который выполняет `generatePackingResult(orderId, orderItems)`; без Worker (тесты) — тот же расчёт через `setTimeout(0)`.
 3. `generatePackingResult`:
    - берёт состав заказа из пресета или переданного override;

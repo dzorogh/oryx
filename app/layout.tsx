@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { CorportalNavRail } from "@/components/layout/corportal-nav-rail";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -16,7 +17,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <body className={`${manrope.className} ${manrope.variable} antialiased`}>{children}</body>
+      <body className={`${manrope.className} ${manrope.variable} antialiased`}>
+        <CorportalNavRail />
+        {children}
+      </body>
     </html>
   );
 }

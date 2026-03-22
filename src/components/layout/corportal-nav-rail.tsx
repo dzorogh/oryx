@@ -78,9 +78,9 @@ const RailIconButton = ({ label, icon: Icon, active }: RailIconButtonProps) => (
 );
 
 /** Левый навигационный рейл по макету Corportal (Figma node 40023000:133768). Логотип — 40023000:133773. */
-export const IconRail = () => (
+export const CorportalNavRail = () => (
   <aside
-    className="corportal-icon-rail fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto py-0 text-white no-scrollbar"
+    className="corportal-nav-rail fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto py-0 text-white no-scrollbar"
     aria-label="Основная навигация"
   >
     <div className="flex w-full justify-center px-3 py-3">

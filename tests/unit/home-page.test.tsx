@@ -4,9 +4,8 @@ import { DEFAULT_ORDER_ID, ORDER_PRESETS, getOrderPresetById } from "@/domain/pa
 import { expandOrder } from "@/domain/packing/expand-order";
 import { generatePackingResult } from "@/domain/packing/generate-packing-result";
 import { isPackingPlacementValid } from "@/domain/packing/result-validation";
+import { OrderPackingAppChrome } from "@/components/pim/order-packing-app-chrome";
 import { OrderPackingDynamicContent } from "@/features/packing-visualization/components/order-packing-page";
-import { OrderPackingLayoutFrame } from "../../app/orders/[orderId]/layout";
-import { Sidebar } from "../../app/orders/[orderId]/sidebar";
 
 // MultiContainerScene требует WebGL; в jsdom — заглушка.
 vi.mock("@/features/packing-visualization/components/multi-container-scene", () => ({
@@ -17,9 +16,9 @@ vi.mock("@/features/packing-visualization/components/multi-container-scene", () 
 
 const renderOrderPacking = (selectedOrderId: number) =>
   render(
-    <OrderPackingLayoutFrame orderId={selectedOrderId} sidebarNav={<Sidebar orderId={selectedOrderId} />}>
+    <OrderPackingAppChrome orderId={selectedOrderId}>
       <OrderPackingDynamicContent selectedOrderId={selectedOrderId} />
-    </OrderPackingLayoutFrame>,
+    </OrderPackingAppChrome>,
   );
 
 describe("Order packing (страница заказа)", () => {
@@ -45,7 +44,7 @@ describe("Order packing (страница заказа)", () => {
     expect(screen.getByRole("navigation", { name: "Заказы" })).toBeInTheDocument();
   });
 
-  it("ссылки в боковом меню ведут на /orders/<id>", async () => {
+  it("ссылки в боковом меню ведут на /pim/orders/<id>", async () => {
     renderOrderPacking(DEFAULT_ORDER_ID);
 
     await waitFor(() => {
@@ -54,7 +53,7 @@ describe("Order packing (страница заказа)", () => {
 
     expect(screen.getByRole("link", { name: `Открыть ${ORDER_PRESETS[1].label}` })).toHaveAttribute(
       "href",
-      `/orders/${ORDER_PRESETS[1].orderId}`,
+      `/pim/orders/${ORDER_PRESETS[1].orderId}`,
     );
   });
 

@@ -6,11 +6,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-type HeaderProps = {
+type OrderPageHeaderProps = {
   orderId: number;
 };
 
-export const Header = ({ orderId }: HeaderProps) => (
+export const OrderPageHeader = ({ orderId }: OrderPageHeaderProps) => (
   <header className="border-b border-[#d7dae0] bg-white px-4 py-4 sm:px-6">
     <Breadcrumb>
       <BreadcrumbList className="sm:gap-2">

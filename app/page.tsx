@@ -7,7 +7,11 @@ import { DEFAULT_ORDER_ID, ORDER_PRESETS } from "@/domain/packing/constants";
 const allowedOrderIds = new Set(ORDER_PRESETS.map((preset) => preset.orderId));
 
 const HomeRedirectFallback = () => (
-  <div className="flex min-h-screen items-center justify-center p-6 text-muted-foreground" role="status" aria-live="polite">
+  <div
+    className="flex min-h-screen items-center justify-center p-6 pl-[calc(3rem+1.5rem)] text-muted-foreground"
+    role="status"
+    aria-live="polite"
+  >
     Переход к заказу…
   </div>
 );
@@ -20,10 +24,10 @@ const HomeRedirectInner = () => {
     const raw = searchParams.get("orderId");
     const parsed = Number(raw);
     if (raw !== null && Number.isFinite(parsed) && allowedOrderIds.has(parsed)) {
-      router.replace(`/orders/${parsed}`);
+      router.replace(`/pim/orders/${parsed}`);
       return;
     }
-    router.replace(`/orders/${DEFAULT_ORDER_ID}`);
+    router.replace(`/pim/orders/${DEFAULT_ORDER_ID}`);
   }, [router, searchParams]);
 
   return <HomeRedirectFallback />;
