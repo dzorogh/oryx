@@ -69,7 +69,7 @@ npm run dev
 Проект разделен на два основных слоя:
 
 1. **UI (App + features)**  
-   Интерфейс, выбор заказа (`?orderId=`), таблица заказа, 3D-сцена, панель аудита, оболочка с боковой навигацией.
+   Интерфейс, выбор заказа (`/orders/:id`), таблица заказа, 3D-сцена, панель аудита, оболочка с боковой навигацией.
 2. **Domain (packing/report)**  
    Упаковка, валидация результата, проверка габаритов относительно контейнера, summary.
 
@@ -79,8 +79,13 @@ npm run dev
 
 ```text
 app/
-  layout.tsx                       # Корневой layout
-  page.tsx                         # Главная: заказ, Breadcrumb, расчёт, OrderViewSection
+  layout.tsx                       # Корневой layout, шрифт Manrope (как в макете Corportal)
+  page.tsx                         # Редирект: `?orderId=` (устар.) → /orders/<id>, иначе /orders/<default>
+  orders/[orderId]/layout.tsx      # Оболочка: IconRail + сайдбар + Header, notFound
+  orders/[orderId]/icon-rail.tsx   # Левый навигационный рейл (Lucide, по макету Figma Corportal)
+  orders/[orderId]/page.tsx        # Клиентский контент (OrderPackingDynamicContent), SSG params
+  orders/[orderId]/header.tsx       # Breadcrumb + h1 (сервер)
+  orders/[orderId]/sidebar.tsx      # Ссылки на /orders/:id (сервер)
 
 src/
   workers/
@@ -103,7 +108,7 @@ src/
       hooks/
         usePackingResult.ts        # Расчёт через runPackingAsync, состояние loading/error
       components/
-        packing-app-shell.tsx       # Обёртка страницы
+        order-packing-page.tsx      # Клиент: OrderPackingDynamicContent
         order-view-section.tsx       # Таблица заказа, сцена или блок ошибки, ResultPanel
         multi-container-scene.tsx    # Единая 3D-сцена для всех контейнеров
         item-mesh.tsx
@@ -134,7 +139,7 @@ specs/001-container-packing-visualization/  # спецификация, план
 
 ## Поток данных
 
-1. Пользователь выбирает заказ в URL (`orderId`) или меняет количества в таблице.
+1. Пользователь выбирает заказ в URL (`/orders/<id>`) или меняет количества в таблице.
 2. Хук `usePackingResult(orderId, orderItems)` вызывает `runPackingAsync` → в браузере сообщение в **Web Worker**, который выполняет `generatePackingResult(orderId, orderItems)`; без Worker (тесты) — тот же расчёт через `setTimeout(0)`.
 3. `generatePackingResult`:
    - берёт состав заказа из пресета или переданного override;

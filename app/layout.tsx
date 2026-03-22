@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { DM_Sans, Geist } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
+const manrope = Manrope({
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
+  variable: "--font-manrope",
   display: "swap",
 });
 
@@ -17,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" className={cn("font-sans", geist.variable)}>
-      <body className={`${dmSans.className} antialiased`}>{children}</body>
+    <html lang="ru">
+      <body className={`${manrope.className} ${manrope.variable} antialiased`}>{children}</body>
     </html>
   );
 }

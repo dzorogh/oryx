@@ -4,7 +4,9 @@ import { DEFAULT_ORDER_ID, ORDER_PRESETS, getOrderPresetById } from "@/domain/pa
 import { expandOrder } from "@/domain/packing/expand-order";
 import { generatePackingResult } from "@/domain/packing/generate-packing-result";
 import { isPackingPlacementValid } from "@/domain/packing/result-validation";
-import HomePage from "../../app/page";
+import { OrderPackingDynamicContent } from "@/features/packing-visualization/components/order-packing-page";
+import { OrderPackingLayoutFrame } from "../../app/orders/[orderId]/layout";
+import { Sidebar } from "../../app/orders/[orderId]/sidebar";
 
 // MultiContainerScene требует WebGL; в jsdom — заглушка.
 vi.mock("@/features/packing-visualization/components/multi-container-scene", () => ({
@@ -13,22 +15,16 @@ vi.mock("@/features/packing-visualization/components/multi-container-scene", () 
   ),
 }));
 
-const mockReplace = vi.fn();
+const renderOrderPacking = (selectedOrderId: number) =>
+  render(
+    <OrderPackingLayoutFrame orderId={selectedOrderId} sidebarNav={<Sidebar orderId={selectedOrderId} />}>
+      <OrderPackingDynamicContent selectedOrderId={selectedOrderId} />
+    </OrderPackingLayoutFrame>,
+  );
 
-const navigationState = vi.hoisted(() => ({
-  searchParams: new URLSearchParams(""),
-}));
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: mockReplace }),
-  usePathname: () => "/",
-  useSearchParams: () => navigationState.searchParams,
-}));
-
-describe("HomePage", () => {
+describe("Order packing (страница заказа)", () => {
   beforeEach(() => {
-    navigationState.searchParams = new URLSearchParams("");
-    mockReplace.mockClear();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -36,7 +32,7 @@ describe("HomePage", () => {
   });
 
   it("после расчёта показывает заголовок, сцену-заглушку, навигацию по заказам и панель результата", async () => {
-    render(<HomePage />);
+    renderOrderPacking(DEFAULT_ORDER_ID);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: `Заказ №${DEFAULT_ORDER_ID}` })).toBeVisible();
@@ -49,29 +45,27 @@ describe("HomePage", () => {
     expect(screen.getByRole("navigation", { name: "Заказы" })).toBeInTheDocument();
   });
 
-  it("вызывает router.replace при выборе другого заказа в боковом меню", async () => {
-    render(<HomePage />);
+  it("ссылки в боковом меню ведут на /orders/<id>", async () => {
+    renderOrderPacking(DEFAULT_ORDER_ID);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: `Открыть ${ORDER_PRESETS[1].label}` })).toBeVisible();
+      expect(screen.getByRole("link", { name: `Открыть ${ORDER_PRESETS[1].label}` })).toBeVisible();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: `Открыть ${ORDER_PRESETS[1].label}` }));
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalled();
-    });
+    expect(screen.getByRole("link", { name: `Открыть ${ORDER_PRESETS[1].label}` })).toHaveAttribute(
+      "href",
+      `/orders/${ORDER_PRESETS[1].orderId}`,
+    );
   });
 
   it.each(ORDER_PRESETS)(
     "заказ №$orderId ($label): UI и результат расчёта согласованы",
     async (preset) => {
-      navigationState.searchParams = new URLSearchParams(`orderId=${String(preset.orderId)}`);
       const expectedPositions = preset.order.length;
       const expectedUnits = expandOrder(preset.order).length;
       const expectedResult = generatePackingResult(preset.orderId);
 
-      render(<HomePage />);
+      renderOrderPacking(preset.orderId);
 
       await waitFor(() => {
         expect(screen.getByRole("heading", { name: `Заказ №${preset.orderId}` })).toBeVisible();
@@ -81,7 +75,7 @@ describe("HomePage", () => {
         screen.getByText(`Позиций: ${expectedPositions} · Единиц: ${expectedUnits}`),
       ).toBeInTheDocument();
 
-      expect(screen.getByRole("button", { name: `Открыть ${preset.label}` })).toHaveAttribute(
+      expect(screen.getByRole("link", { name: `Открыть ${preset.label}` })).toHaveAttribute(
         "aria-current",
         "page",
       );

@@ -79,8 +79,8 @@ export const MultiContainerScene = ({
     };
     const cam: [number, number, number] = [
       Math.max(12, widthScene),
-      Math.max(7, heightScene * 2.6),
-      Math.max(10, lengthScene * 3.7),
+      Math.max(7, heightScene * 1),
+      Math.max(10, lengthScene * 3),
     ];
     const syncKey = `${cam[0]},${cam[1]},${cam[2]}|${c.x},${c.y},${c.z}|${containers.length}`;
     return {
