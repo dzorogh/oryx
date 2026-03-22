@@ -32,4 +32,15 @@ describe("generatePackingResult (клиентский расчёт)", () => {
     const expectedUnits = expandOrder(getOrderPresetById(DEFAULT_ORDER_ID).order).length;
     expect(parsed.summary.totalUnits).toBe(expectedUnits);
   });
+
+  it("orderOverride — пересчёт по переданному составу заказа", () => {
+    const preset = getOrderPresetById(DEFAULT_ORDER_ID);
+    const modified = preset.order.map((item, index) =>
+      index === 0 ? { ...item, quantity: item.quantity + 2 } : item,
+    );
+    const fromPreset = generatePackingResult(preset.orderId);
+    const fromOverride = generatePackingResult(preset.orderId, modified);
+    expect(fromOverride.summary.totalUnits).toBe(expandOrder(modified).length);
+    expect(fromOverride.summary.totalUnits).toBe(fromPreset.summary.totalUnits + 2);
+  });
 });

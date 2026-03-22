@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { OrderItemType, PackingResult } from "@/domain/packing/types";
 import { expandOrder } from "@/domain/packing/expand-order";
 
@@ -13,6 +13,14 @@ type ResultPanelProps = {
 const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Ошибка");
 
 export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) => {
+  const [packingMsDisplay, setPackingMsDisplay] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Время раскладки из performance.now() недетерминировано между SSR и клиентом — показываем после гидратации.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронизация UI с метрикой после монтирования
+    setPackingMsDisplay(result.timing.packingMs.toFixed(2));
+  }, [result.timing.packingMs]);
+
   const onSideUnits = useMemo(() => {
     const expectedUnits = expandOrder(orderItems);
     const expectedUnitByUnitId = new Map<
@@ -74,7 +82,7 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
           Контейнеров: {result.usedContainerCount}
         </p>
         <p aria-label="Время раскладки по контейнерам">
-          Раскладка: {result.timing.packingMs.toFixed(2)} мс
+          Раскладка: {packingMsDisplay === null ? "измеряется..." : `${packingMsDisplay} мс`}
         </p>
         <p aria-label="Время отрисовки страницы результата">
           Отрисовка: {renderMs === null ? "измеряется..." : `${renderMs.toFixed(2)} мс`}

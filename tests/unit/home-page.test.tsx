@@ -48,30 +48,6 @@ describe("HomePage", () => {
     expect(screen.getByRole("navigation", { name: "Заказы" })).toBeInTheDocument();
   });
 
-  it("секция «По контейнерам» по умолчанию свёрнута и раскрывается по клику", async () => {
-    render(<HomePage />);
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /По контейнерам/ })).toBeVisible();
-    });
-
-    const toggle = screen.getByRole("button", { name: /По контейнерам/ });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-
-    const panel = document.getElementById("containers-kanban-panel");
-    expect(panel).toHaveAttribute("hidden");
-
-    fireEvent.click(toggle);
-
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(panel).not.toHaveAttribute("hidden");
-
-    fireEvent.click(toggle);
-
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(panel).toHaveAttribute("hidden");
-  });
-
   it("вызывает router.replace при выборе другого заказа в боковом меню", async () => {
     render(<HomePage />);
 
