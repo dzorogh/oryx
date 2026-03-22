@@ -72,3 +72,7 @@ export const validatePackingResult = (input: ValidateResultInput): PackingValida
     violations: deterministicSort(violations, (left, right) => left.localeCompare(right)),
   };
 };
+
+/** Геометрия, опора и полнота размещения — без этого 3D-визуализация вводит в заблуждение. */
+export const isPackingPlacementValid = (validation: PackingValidation): boolean =>
+  validation.geometryValid && validation.supportValid && validation.completenessValid;

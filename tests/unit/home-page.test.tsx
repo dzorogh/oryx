@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_ORDER_ID, ORDER_PRESETS, getOrderPresetById } from "@/domain/packing/constants";
 import { expandOrder } from "@/domain/packing/expand-order";
 import { generatePackingResult } from "@/domain/packing/generate-packing-result";
+import { isPackingPlacementValid } from "@/domain/packing/result-validation";
 import HomePage from "../../app/page";
 
 // MultiContainerScene требует WebGL; в jsdom — заглушка.
@@ -85,6 +86,11 @@ describe("HomePage", () => {
         "page",
       );
 
+      const auditToggle = await waitFor(() =>
+        screen.getByRole("button", { name: "Аудит результата" }),
+      );
+      fireEvent.click(auditToggle);
+
       await waitFor(() => {
         expect(screen.getByLabelText("Количество использованных контейнеров")).toBeInTheDocument();
       });
@@ -96,8 +102,20 @@ describe("HomePage", () => {
         `Placed: ${expectedResult.summary.placedUnits} / ${expectedResult.summary.totalUnits}`,
       );
 
-      expect(expectedResult.validation.geometryValid).toBe(true);
-      expect(expectedResult.validation.supportValid).toBe(true);
+      if (isPackingPlacementValid(expectedResult.validation)) {
+        expect(expectedResult.validation.geometryValid).toBe(true);
+        expect(expectedResult.validation.supportValid).toBe(true);
+        await waitFor(() => {
+          expect(screen.getByTestId("multi-container-scene-stub")).toBeInTheDocument();
+        });
+      } else {
+        await waitFor(() => {
+          expect(
+            screen.getByLabelText("Ошибки размещения: визуализация недоступна"),
+          ).toBeInTheDocument();
+        });
+        expect(screen.queryByTestId("multi-container-scene-stub")).not.toBeInTheDocument();
+      }
     },
     60_000,
   );

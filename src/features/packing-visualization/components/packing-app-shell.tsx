@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 
 type PackingAppShellProps = {
   sidebar: ReactNode;
@@ -8,20 +9,22 @@ type PackingAppShellProps = {
 };
 
 const NavIcon = ({ children, label }: { children: ReactNode; label: string }) => (
-  <button
+  <Button
     type="button"
-    className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#647BEF]"
+    variant="ghost"
+    size="icon"
+    className="text-primary-foreground hover:bg-primary-foreground/10"
     aria-label={label}
   >
     {children}
-  </button>
+  </Button>
 );
 
 export const PackingAppShell = ({ sidebar, children }: PackingAppShellProps) => {
   return (
-    <div className="flex min-h-screen bg-[#f1f5f9] text-[#3D4C6A]">
+    <div className="flex min-h-screen bg-background">
       <aside
-        className="flex w-14 shrink-0 flex-col items-center border-r border-slate-800/20 bg-[#2B3244] py-4"
+        className="flex w-14 shrink-0 flex-col items-center border-r border-primary/15 bg-primary py-4 text-primary-foreground"
         aria-label="Основная навигация"
       >
         <NavIcon label="Главная">
@@ -47,7 +50,7 @@ export const PackingAppShell = ({ sidebar, children }: PackingAppShellProps) => 
       </aside>
 
       <aside
-        className="flex w-[min(260px,36vw)] shrink-0 flex-col border-r border-slate-200/90 bg-[#ECEEEF] sm:w-[260px]"
+        className="flex w-[min(260px,36vw)] shrink-0 flex-col border-r bg-muted/40 sm:w-[260px]"
         aria-label="Контекст и заказы"
       >
         {sidebar}

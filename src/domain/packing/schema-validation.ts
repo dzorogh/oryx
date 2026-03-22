@@ -8,7 +8,7 @@ const orderItemSchema = z.object({
   length: z.number().positive(),
   height: z.number().positive(),
   weight: z.number().nonnegative(),
-  quantity: z.number().int().positive(),
+  quantity: z.number().int().nonnegative(),
 });
 
 const packingResultSchema = z.object({

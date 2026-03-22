@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { generatePackingResult } from "@/domain/packing/generate-packing-result";
+import { startTransition, useEffect, useRef, useState } from "react";
+import { runPackingAsync } from "@/lib/run-packing-async";
 import type { OrderItemType, PackingResult } from "@/domain/packing/types";
 import { validatePackingResultSchema } from "@/domain/packing/schema-validation";
 
@@ -26,18 +26,46 @@ const EMPTY_RESULT: PackingResult = validatePackingResultSchema({
   },
 });
 
+export type PackingResultState = {
+  result: PackingResult | null;
+  error: string | null;
+  isLoading: boolean;
+};
+
 export const usePackingResult = (orderId: number, orderItems: OrderItemType[]) => {
-  return useMemo(() => {
-    try {
-      return {
-        result: generatePackingResult(orderId, orderItems),
-        error: null as string | null,
-      };
-    } catch (loadError) {
-      return {
-        result: EMPTY_RESULT,
-        error: loadError instanceof Error ? loadError.message : "Unknown error",
-      };
-    }
+  const [state, setState] = useState<PackingResultState>({
+    result: null,
+    error: null,
+    isLoading: true,
+  });
+
+  const requestGenerationRef = useRef(0);
+
+  useEffect(() => {
+    const generation = ++requestGenerationRef.current;
+    startTransition(() => {
+      setState({ result: null, error: null, isLoading: true });
+    });
+
+    void runPackingAsync(orderId, orderItems).then(
+      (result) => {
+        if (generation !== requestGenerationRef.current) {
+          return;
+        }
+        setState({ result, error: null, isLoading: false });
+      },
+      (loadError: unknown) => {
+        if (generation !== requestGenerationRef.current) {
+          return;
+        }
+        setState({
+          result: EMPTY_RESULT,
+          error: loadError instanceof Error ? loadError.message : "Unknown error",
+          isLoading: false,
+        });
+      },
+    );
   }, [orderId, orderItems]);
+
+  return state;
 };

@@ -1,10 +1,33 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { ContainerInstance, OrderItemType } from "@/domain/packing/types";
 import { ItemMesh } from "./item-mesh";
+import { SceneOrbitToolbar } from "./scene-orbit-toolbar";
+
+type OrbitControlsSyncProps = {
+  controlsRef: RefObject<OrbitControlsImpl | null>;
+  sceneSyncKey: string;
+};
+
+const OrbitControlsSync = ({ controlsRef, sceneSyncKey }: OrbitControlsSyncProps) => {
+  const lastSyncedKey = useRef<string | null>(null);
+  useFrame(() => {
+    const controls = controlsRef.current;
+    if (!controls) {
+      return;
+    }
+    if (lastSyncedKey.current === sceneSyncKey) {
+      return;
+    }
+    lastSyncedKey.current = sceneSyncKey;
+    controls.saveState();
+  });
+  return null;
+};
 
 type ContainerSize = {
   width: number;
@@ -36,31 +59,39 @@ export const MultiContainerScene = ({
     height: number;
   };
 
-  const sceneScale = 0.001;
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const orbitControlsRef = useRef<OrbitControlsImpl | null>(null);
+
   // Place containers side-by-side along the container "length" axis (z).
   // The gap is edge-to-edge between adjacent containers.
-  const safeSpacingMm = spacingMm ?? containerSize.length / 2;
+  const { safeSpacingMm, center, cameraPosition, sceneSyncKey, sceneScale } = useMemo(() => {
+    const scale = 0.001;
+    const safe = spacingMm ?? containerSize.length / 2;
+    const totalLengthMm =
+      containers.length * containerSize.length + Math.max(0, containers.length - 1) * safe;
+    const widthScene = containerSize.width * scale;
+    const heightScene = containerSize.height * scale;
+    const lengthScene = totalLengthMm * scale;
+    const c = {
+      x: widthScene / 2,
+      y: heightScene / 2,
+      z: lengthScene / 2,
+    };
+    const cam: [number, number, number] = [
+      Math.max(12, widthScene),
+      Math.max(7, heightScene * 2.6),
+      Math.max(10, lengthScene * 3.7),
+    ];
+    const syncKey = `${cam[0]},${cam[1]},${cam[2]}|${c.x},${c.y},${c.z}|${containers.length}`;
+    return {
+      safeSpacingMm: safe,
+      center: c,
+      cameraPosition: cam,
+      sceneSyncKey: syncKey,
+      sceneScale: scale,
+    };
+  }, [containers, containerSize, spacingMm]);
 
-  const totalLengthMm =
-    containers.length * containerSize.length + Math.max(0, containers.length - 1) * safeSpacingMm;
-
-  const widthScene = containerSize.width * sceneScale;
-  const heightScene = containerSize.height * sceneScale;
-  const lengthScene = totalLengthMm * sceneScale;
-
-  const center = {
-    x: widthScene / 2,
-    y: heightScene / 2,
-    z: lengthScene / 2,
-  };
-
-  const cameraPosition: [number, number, number] = [
-    Math.max(12, widthScene),
-    Math.max(7, heightScene * 2.6),
-    Math.max(10, lengthScene * 3.7),
-  ];
-
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [tooltip, setTooltip] = useState<{
     payload: TooltipPayload;
     x: number;
@@ -86,7 +117,7 @@ export const MultiContainerScene = ({
   return (
     <div
       ref={wrapperRef}
-      className="relative h-[min(680px,70vh)] w-full overflow-hidden rounded-xl border border-slate-200/90 bg-[#0f172a] shadow-inner"
+      className="relative h-[min(680px,70vh)] w-full overflow-hidden rounded-xl border"
       aria-label="3D сцена всех контейнеров"
       onPointerLeave={() => setTooltip(null)}
     >
@@ -107,6 +138,7 @@ export const MultiContainerScene = ({
       ) : null}
 
       <Canvas
+        className="h-full w-full"
         camera={{
           position: cameraPosition,
           fov: 45,
@@ -181,8 +213,15 @@ export const MultiContainerScene = ({
           })}
         </group>
 
-        <OrbitControls makeDefault target={[center.x, center.y, center.z]} enablePan={false} />
+        <OrbitControls
+          ref={orbitControlsRef}
+          makeDefault
+          target={[center.x, center.y, center.z]}
+          enablePan={false}
+        />
+        <OrbitControlsSync controlsRef={orbitControlsRef} sceneSyncKey={sceneSyncKey} />
       </Canvas>
+      <SceneOrbitToolbar controlsRef={orbitControlsRef} />
     </div>
   );
 };

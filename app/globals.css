@@ -4,14 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  background: #f1f5f9;
-  color: #3d4c6a;
-}
-
 * {
   box-sizing: border-box;
 }

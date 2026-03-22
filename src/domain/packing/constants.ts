@@ -180,6 +180,48 @@ export const ORDER_PRESETS: OrderPreset[] = [
       },
     ],
   },
+  {
+    orderId: 666,
+    label: "Заказ №666",
+    order: [
+      {
+        id: 6661,
+        name: "Box 20000x200",
+        width: 20000,
+        length: 200,
+        height: 100,
+        weight: 1,
+        quantity: 55,
+      },
+      {
+        id: 6662,
+        name: "Box 10000x100",
+        width: 10000,
+        length: 100,
+        height: 50,
+        weight: 1,
+        quantity: 55,
+      },
+      {
+        id: 6663,
+        name: "Box 5000x50",
+        width: 5000,
+        length: 50,
+        height: 25,
+        weight: 1,
+        quantity: 55,
+      },
+      {
+        id: 6663,
+        name: "Box 5000x50",
+        width: 500000,
+        length: 50,
+        height: 25,
+        weight: 1,
+        quantity: 55,
+      },
+    ],
+  },
 ];
 
 export const DEFAULT_ORDER_ID = ORDER_PRESETS[0].orderId;
