@@ -9,7 +9,6 @@
 - минимизирует число используемых контейнеров без потери полноты размещения (если это возможно);
 - валидирует результат (геометрия, опора, полнота, детерминированность);
 - отображает все контейнеры в одной 3D-сцене;
-- предоставляет API-эндпоинт для получения результата упаковки.
 
 ## Технологический стек
 
@@ -53,11 +52,8 @@ npm run dev
 ### Тестирование
 
 - `npm run test` — все тесты Vitest;
+- `npm run test:coverage` — те же тесты с отчётом покрытия (V8);
 - `npm run test:watch` — Vitest в watch-режиме;
-- `npm run test:integration` — интеграционные тесты;
-- `npm run test:property` — property-based тесты;
-- `npm run test:golden` — golden-regression тест;
-- `npm run test:e2e` — e2e-тесты Playwright;
 - `npm run test:mutation` — mutation-тестирование (Stryker).
 
 ### Производительность
@@ -67,14 +63,12 @@ npm run dev
 
 ## Архитектура
 
-Проект разделен на 3 основных слоя:
+Проект разделен на 2 основных слоя:
 
 1. **UI (App + features)**  
-   Отвечает за интерфейс, выбор заказа, загрузку результата и 3D-рендер.
+   Отвечает за интерфейс, выбор заказа, 3D-рендер и вызов расчёта на клиенте.
 2. **Domain (packing/report)**  
-   Содержит бизнес-логику упаковки, валидации и формирование summary.
-3. **Transport (API route)**  
-   Отдает результат упаковки клиенту через HTTP (`GET /api/packing`).
+   Содержит бизнес-логику упаковки, валидации и формирование summary (`generatePackingResult` вызывается в браузере из хука `usePackingResult`).
 
 ## Структура файлов
 
@@ -82,9 +76,6 @@ npm run dev
 
 ```text
 app/
-  api/
-    packing/
-      route.ts                     # GET /api/packing
   layout.tsx                       # Корневой layout
   page.tsx                         # Главная страница, выбор заказа, сцена, панель результата
 
@@ -98,17 +89,15 @@ src/
       placement-validation.ts      # Проверки пересечений/границ/опоры
       result-validation.ts         # Комплексная валидация результата + fingerprint
       packing-engine.ts            # Основной алгоритм упаковки
-      generate-packing-result.ts   # Оркестрация расчета + валидации + summary
+      generate-packing-result.ts   # Оркестрация расчёта + валидации + summary (вызывается на клиенте)
     report/
       summarize-result.ts          # Подсчет summary (placed/unplaced/total)
   features/
     packing-visualization/
       hooks/
-        usePackingResult.ts        # Загрузка результата с /api/packing
+        usePackingResult.ts        # Расчёт упаковки на клиенте (generatePackingResult)
       components/
         multi-container-scene.tsx  # Единая 3D-сцена для всех контейнеров
-        container-scene.tsx        # Рендер конкретного контейнера
-        container-list.tsx         # Список контейнеров
         item-mesh.tsx              # 3D-меш единицы товара
         result-panel.tsx           # Метрики, статусы валидации, статистика
   lib/
@@ -116,10 +105,7 @@ src/
     docs-links.ts                  # Ссылки/утилиты для проверки документации
 
 tests/
-  unit/                            # Юнит-тесты
-  integration/                     # Интеграционные + golden + perf tests
-  property/                        # Property-based тесты
-  e2e/                             # End-to-end сценарии Playwright
+  unit/                            # home-page (UI), generate-packing-result (все пресеты заказов)
 
 scripts/
   bench-packing.mjs                # Бенчмарк движка упаковки
@@ -130,16 +116,15 @@ scripts/
 ## Поток данных
 
 1. Пользователь выбирает заказ на `app/page.tsx`.
-2. Хук `usePackingResult` отправляет `GET /api/packing?orderId=...`.
-3. `app/api/packing/route.ts` вызывает `generatePackingResult(orderId)`.
-4. `generatePackingResult`:
+2. Хук `usePackingResult(orderId)` на клиенте вызывает `generatePackingResult(orderId)`.
+3. `generatePackingResult`:
    - берет пресет заказа из `constants.ts`;
    - валидирует вход через `zod`;
    - разворачивает позиции заказа в штучные `unit`;
    - запускает `runPackingEngine`;
-   - валидирует результат (в т.ч. детерминированность в test-режиме);
-   - добавляет summary и возвращает типизированный ответ.
-5. UI рендерит сцену и панель результата.
+   - валидирует результат;
+   - добавляет summary и возвращает типизированный результат.
+4. UI рендерит сцену и панель результата.
 
 ## Алгоритм упаковки (кратко)
 
@@ -156,26 +141,6 @@ scripts/
   - необходимость опоры;
   - детерминированный порядок действий/сортировок.
 
-## API
-
-### `GET /api/packing`
-
-Query-параметры:
-
-- `orderId` (number, optional) — идентификатор пресета заказа.
-
-Поведение:
-
-- при валидном `orderId` возвращает рассчитанный `PackingResult`;
-- при невалидном/отсутствующем `orderId` используется `DEFAULT_ORDER_ID`;
-- при ошибке возвращает JSON с `error` и статусом `500`.
-
-Пример:
-
-```bash
-curl "http://localhost:3000/api/packing?orderId=59"
-```
-
 ## Ограничения и допущения
 
 - поворот товара только в плоскости пола (`yaw: 0 | 90`);
@@ -191,7 +156,7 @@ curl "http://localhost:3000/api/packing?orderId=59"
 - входные и выходные структуры проходят проверку через `zod`;
 - результат дополнительно проверяется доменными валидаторами;
 - в тестовом/строгом режиме включена проверка детерминированности через повторный прогон и fingerprint;
-- клиент не исполняет произвольные команды от пользователя — только чтение данных из API.
+- расчёт выполняется в браузере из известных пресетов заказов; произвольный JSON с сервера не подмешивается.
 
 ## Документация и спецификации
 
@@ -206,7 +171,6 @@ curl "http://localhost:3000/api/packing?orderId=59"
 npm run lint
 npm run typecheck
 npm run test
-npm run test:e2e
 npm run build
 npm run check:deps
 npm run check:docs

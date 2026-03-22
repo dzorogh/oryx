@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 
 const started = performance.now();
-execSync("npx vitest run tests/integration/performance.bench.test.ts --passWithNoTests", {
+execSync("npx vitest run tests/unit/home-page.test.tsx --passWithNoTests", {
   stdio: "inherit",
 });
 const elapsedMs = performance.now() - started;

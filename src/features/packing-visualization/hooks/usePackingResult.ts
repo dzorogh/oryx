@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { generatePackingResult } from "@/domain/packing/generate-packing-result";
 import type { PackingResult } from "@/domain/packing/types";
 import { validatePackingResultSchema } from "@/domain/packing/schema-validation";
 
@@ -31,34 +32,27 @@ export const usePackingResult = (orderId: number) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    const handleLoad = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await fetch(`/api/packing?orderId=${orderId}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const json = await response.json();
-        const parsed = validatePackingResultSchema(json);
-        if (!mounted) return;
-        setResult(parsed);
-      } catch (loadError) {
-        if (!mounted) return;
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const next = generatePackingResult(orderId);
+      if (!cancelled) {
+        setResult(next);
+      }
+    } catch (loadError) {
+      if (!cancelled) {
         setError(loadError instanceof Error ? loadError.message : "Unknown error");
-      } finally {
-        if (!mounted) return;
+      }
+    } finally {
+      if (!cancelled) {
         setIsLoading(false);
       }
-    };
+    }
 
-    void handleLoad();
     return () => {
-      mounted = false;
+      cancelled = true;
     };
   }, [orderId]);
 

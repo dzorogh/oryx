@@ -187,13 +187,3 @@ export const DEFAULT_ORDER_ID = ORDER_PRESETS[0].orderId;
 export const getOrderPresetById = (orderId: number): OrderPreset => {
   return ORDER_PRESETS.find((preset) => preset.orderId === orderId) ?? ORDER_PRESETS[0];
 };
-
-export const PACKING_SETTINGS: {
-  container: ContainerType;
-  order: OrderItemType[];
-} = {
-  container: CONTAINER_DIMENSIONS,
-  order: getOrderPresetById(DEFAULT_ORDER_ID).order,
-};
-
-export const FIXED_ORDER: OrderItemType[] = PACKING_SETTINGS.order;

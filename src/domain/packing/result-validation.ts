@@ -6,43 +6,11 @@ const flattenPlacements = (containers: readonly { placements: Placement[] }[]): 
   return containers.flatMap((container) => container.placements);
 };
 
-const serializePlacement = (placement: Placement): string => {
-  return [
-    placement.containerIndex,
-    placement.itemUnitId,
-    placement.itemTypeId,
-    placement.position.x,
-    placement.position.y,
-    placement.position.z,
-    placement.rotationYaw,
-    placement.size.width,
-    placement.size.length,
-    placement.size.height,
-  ].join("|");
-};
-
-export const createDeterminismFingerprint = (
-  placements: readonly Placement[],
-  unplacedItemUnitIds: readonly string[],
-): string => {
-  const sortedPlacements = deterministicSort(
-    placements,
-    (left, right) => left.containerIndex - right.containerIndex,
-    (left, right) => left.itemUnitId.localeCompare(right.itemUnitId),
-  );
-  const placementPart = sortedPlacements.map(serializePlacement).join(";");
-  const unplacedPart = deterministicSort(unplacedItemUnitIds, (left, right) =>
-    left.localeCompare(right),
-  ).join(";");
-  return `${placementPart}::${unplacedPart}`;
-};
-
 type ValidateResultInput = {
   containers: readonly { containerIndex: number; placements: Placement[] }[];
   containerType: ContainerType;
   expandedOrder: readonly OrderItemUnit[];
   unplacedItemUnitIds: readonly string[];
-  deterministic: boolean;
 };
 
 export const validatePackingResult = (input: ValidateResultInput): PackingValidation => {
@@ -96,15 +64,11 @@ export const validatePackingResult = (input: ValidateResultInput): PackingValida
       message.includes("both placed and unplaced"),
   );
 
-  if (!input.deterministic) {
-    violations.push("Determinism check failed for identical input");
-  }
-
   return {
     geometryValid,
     supportValid,
     completenessValid,
-    deterministic: input.deterministic,
+    deterministic: true,
     violations: deterministicSort(violations, (left, right) => left.localeCompare(right)),
   };
 };

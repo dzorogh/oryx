@@ -1,6 +1,5 @@
 import type { ContainerType, Placement } from "./types";
-
-const SUPPORT_HEIGHT_GAP_TOLERANCE_MM = 20;
+import { HEIGHT_TOLERANCE_MM } from "./tolerances";
 
 const boxesOverlap1D = (
   leftStart: number,
@@ -77,7 +76,7 @@ export const hasSupport = (
     const candidateTopZ = candidate.position.z + candidate.size.height;
     return (
       candidateTopZ <= placement.position.z &&
-      placement.position.z - candidateTopZ <= SUPPORT_HEIGHT_GAP_TOLERANCE_MM
+      placement.position.z - candidateTopZ <= HEIGHT_TOLERANCE_MM
     );
   });
 

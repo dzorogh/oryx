@@ -86,7 +86,7 @@ export const MultiContainerScene = ({
   return (
     <div
       ref={wrapperRef}
-      className="relative h-[680px] w-full overflow-hidden rounded-lg border border-slate-600 bg-slate-900"
+      className="relative h-[min(680px,70vh)] w-full overflow-hidden rounded-xl border border-slate-200/90 bg-[#0f172a] shadow-inner"
       aria-label="3D сцена всех контейнеров"
       onPointerLeave={() => setTooltip(null)}
     >

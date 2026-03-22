@@ -1,0 +1,35 @@
+---
+description: Project Development Guidelines
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# containers Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2026-03-20
+
+## Active Technologies
+
+- TypeScript (latest stable), Node.js (active LTS) + Next.js (latest stable), React (latest stable), three (latest stable), `@react-three/fiber` (latest stable), `@react-three/drei` (latest stable), zod (latest stable) (001-container-packing-visualization)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+npm test && npm run lint
+
+## Code Style
+
+TypeScript (latest stable), Node.js (active LTS): Follow standard conventions
+
+## Recent Changes
+
+- 001-container-packing-visualization: Added TypeScript (latest stable), Node.js (active LTS) + Next.js (latest stable), React (latest stable), three (latest stable), `@react-three/fiber` (latest stable), `@react-three/drei` (latest stable), zod (latest stable)
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

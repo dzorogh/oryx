@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/packing-result.schema.json",
+  "title": "PackingResult",
+  "type": "object",
+  "required": [
+    "usedContainerCount",
+    "containers",
+    "unplacedItemUnitIds",
+    "validation",
+    "summary"
+  ],
+  "properties": {
+    "usedContainerCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "containers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["containerIndex", "placements"],
+        "properties": {
+          "containerIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "placements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "containerIndex",
+                "itemUnitId",
+                "itemTypeId",
+                "position",
+                "rotationYaw",
+                "size"
+              ],
+              "properties": {
+                "containerIndex": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "itemUnitId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "itemTypeId": {
+                  "type": "integer"
+                },
+                "position": {
+                  "type": "object",
+                  "required": ["x", "y", "z"],
+                  "properties": {
+                    "x": { "type": "number", "minimum": 0 },
+                    "y": { "type": "number", "minimum": 0 },
+                    "z": { "type": "number", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "rotationYaw": {
+                  "type": "integer",
+                  "enum": [0, 90]
+                },
+                "size": {
+                  "type": "object",
+                  "required": ["width", "length", "height"],
+                  "properties": {
+                    "width": { "type": "number", "exclusiveMinimum": 0 },
+                    "length": { "type": "number", "exclusiveMinimum": 0 },
+                    "height": { "type": "number", "exclusiveMinimum": 0 }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unplacedItemUnitIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": [
+        "geometryValid",
+        "supportValid",
+        "completenessValid",
+        "deterministic",
+        "violations"
+      ],
+      "properties": {
+        "geometryValid": { "type": "boolean" },
+        "supportValid": { "type": "boolean" },
+        "completenessValid": { "type": "boolean" },
+        "deterministic": { "type": "boolean" },
+        "violations": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": ["totalUnits", "placedUnits", "unplacedUnits"],
+      "properties": {
+        "totalUnits": { "type": "integer", "minimum": 0 },
+        "placedUnits": { "type": "integer", "minimum": 0 },
+        "unplacedUnits": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

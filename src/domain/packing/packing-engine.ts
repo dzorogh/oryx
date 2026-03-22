@@ -1,5 +1,6 @@
-import { deterministicSort } from "../../lib/deterministic-sort";
+import { deterministicSort, type Comparator } from "../../lib/deterministic-sort";
 import { placementsOverlap } from "./placement-validation";
+import { HEIGHT_TOLERANCE_MM } from "./tolerances";
 import type { ContainerType, ContainerInstance, OrderItemUnit, Placement } from "./types";
 
 export type PackingEngineOutput = {
@@ -51,10 +52,13 @@ type NewLayerBest = {
 // Объединенный тип лучшего кандидата.
 type BestPlacement = ExistingLayerBest | NewLayerBest;
 
-// Допуск для объединения близких высот в один логический слой.
-const LAYER_HEIGHT_GROUPING_TOLERANCE_MM = 20;
-// Допуск по высоте опоры: верх может отличаться, но в пределах tolerance.
-const SUPPORT_HEIGHT_GAP_TOLERANCE_MM = LAYER_HEIGHT_GROUPING_TOLERANCE_MM;
+/** Стабильный порядок прямоугольников при слиянии соседей в mergeAdjacentRects. */
+const mergeFreeRectComparators: Comparator<FreeRect>[] = [
+  (left, right) => left.y - right.y,
+  (left, right) => left.x - right.x,
+  (left, right) => left.width - right.width,
+  (left, right) => left.length - right.length,
+];
 
 // Deterministic order of free rectangles keeps solver reproducible across runs.
 const sortFreeRects = (freeRects: readonly FreeRect[]) =>
@@ -97,13 +101,7 @@ const splitFreeRect = (
 const mergeAdjacentRects = (rects: readonly FreeRect[]): FreeRect[] => {
   if (rects.length <= 1) return [...rects];
 
-  let current = deterministicSort(
-    [...rects],
-    (left, right) => left.y - right.y,
-    (left, right) => left.x - right.x,
-    (left, right) => left.width - right.width,
-    (left, right) => left.length - right.length,
-  );
+  let current = deterministicSort([...rects], ...mergeFreeRectComparators);
 
   let changed = true;
   while (changed) {
@@ -156,13 +154,7 @@ const mergeAdjacentRects = (rects: readonly FreeRect[]): FreeRect[] => {
       next.push(merged);
     }
 
-    current = deterministicSort(
-      next,
-      (left, right) => left.y - right.y,
-      (left, right) => left.x - right.x,
-      (left, right) => left.width - right.width,
-      (left, right) => left.length - right.length,
-    );
+    current = deterministicSort(next, ...mergeFreeRectComparators);
   }
 
   return current;
@@ -175,7 +167,7 @@ const supportRectsAtZ = (layers: readonly Layer[], targetZ: number): FreeRect[] 
     .flatMap((layer) => layer.placements)
     .filter((placement) => {
       const topZ = placement.position.z + placement.size.height;
-      return topZ <= targetZ && targetZ - topZ <= SUPPORT_HEIGHT_GAP_TOLERANCE_MM;
+      return topZ <= targetZ && targetZ - topZ <= HEIGHT_TOLERANCE_MM;
     })
     .map((placement) => ({
       x: placement.position.x,
@@ -205,7 +197,7 @@ const pickNextLayerHeight = (
       candidateHeights.find(
         (candidateHeight) =>
           candidateHeight >= unitHeight &&
-          candidateHeight - unitHeight <= LAYER_HEIGHT_GROUPING_TOLERANCE_MM,
+          candidateHeight - unitHeight <= HEIGHT_TOLERANCE_MM,
       ) ?? unitHeight;
     const area = unit.dimensions.width * unit.dimensions.length;
     scoreByNormalizedHeight.set(
@@ -238,7 +230,7 @@ const normalizeLayerHeight = (
     (height) =>
       height >= unitHeight &&
       height <= availableHeight &&
-      height - unitHeight <= LAYER_HEIGHT_GROUPING_TOLERANCE_MM,
+      height - unitHeight <= HEIGHT_TOLERANCE_MM,
   );
   return candidate ?? unitHeight;
 };
@@ -357,6 +349,25 @@ const tryPlaceInLayer = (
 // Вспомогательная метрика площади основания.
 const footprintOf = (unit: OrderItemUnit): number => unit.dimensions.width * unit.dimensions.length;
 
+const placementFootprint = (placement: Placement): number =>
+  placement.size.width * placement.size.length;
+
+type PlacementExtentAxis = "x" | "y" | "z";
+
+const maxPlacementExtent = (
+  placements: readonly Placement[],
+  axis: PlacementExtentAxis,
+): number =>
+  placements.reduce((maxValue, placement) => {
+    const extent =
+      axis === "x"
+        ? placement.position.x + placement.size.width
+        : axis === "y"
+          ? placement.position.y + placement.size.length
+          : placement.position.z + placement.size.height;
+    return Math.max(maxValue, extent);
+  }, 0);
+
 // Геометрический центр размещения, нужен для кластеризации по типу.
 const placementCenter = (placement: Placement): { x: number; y: number; z: number } => ({
   x: placement.position.x + placement.size.width / 2,
@@ -397,28 +408,16 @@ const containerEnvelopePenalty = (
 ): number => {
   // Penalize expansion of occupied bounding box (compact packing preference).
   const allPlacements = [...placements, candidatePlacement];
-  const maxX = allPlacements.reduce(
-    (maxValue, placement) => Math.max(maxValue, placement.position.x + placement.size.width),
-    0,
-  );
-  const maxY = allPlacements.reduce(
-    (maxValue, placement) => Math.max(maxValue, placement.position.y + placement.size.length),
-    0,
-  );
-  const maxZ = allPlacements.reduce(
-    (maxValue, placement) => Math.max(maxValue, placement.position.z + placement.size.height),
-    0,
-  );
+  const maxX = maxPlacementExtent(allPlacements, "x");
+  const maxY = maxPlacementExtent(allPlacements, "y");
+  const maxZ = maxPlacementExtent(allPlacements, "z");
   return maxX * maxY * maxZ;
 };
 
 const yFrontGapPenalty = (placements: readonly Placement[], candidatePlacement: Placement): number => {
   // Prefer advancing a continuous front along Y (fewer visual/physical "islands").
   if (placements.length === 0) return 0;
-  const currentFrontY = placements.reduce(
-    (maxValue, placement) => Math.max(maxValue, placement.position.y + placement.size.length),
-    0,
-  );
+  const currentFrontY = maxPlacementExtent(placements, "y");
   const candidateStartY = candidatePlacement.position.y;
   if (candidateStartY <= currentFrontY) return 0;
   return candidateStartY - currentFrontY;
@@ -533,7 +532,7 @@ const packWithLimit = (
       for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
         const placed = tryPlaceInLayer(layers[layerIndex], unit, containerIndex);
         if (!placed) continue;
-        const area = placed.placement.size.width * placed.placement.size.length;
+        const area = placementFootprint(placed.placement);
         if (!bestExisting || area > bestExisting.area) {
           bestExisting = { unitIndex, layerIndex, placed, area };
         }
@@ -554,7 +553,7 @@ const packWithLimit = (
       if (unit.dimensions.height > newLayer.height) continue;
       const placed = tryPlaceInLayer(newLayer, unit, containerIndex);
       if (!placed) continue;
-      const area = placed.placement.size.width * placed.placement.size.length;
+      const area = placementFootprint(placed.placement);
       if (!bestNewLayer || area > bestNewLayer.area) {
         bestNewLayer = { unitIndex, placed, area };
       }
