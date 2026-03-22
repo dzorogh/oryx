@@ -20,6 +20,43 @@ type RailIconButtonProps = {
   active?: boolean;
 };
 
+/** Фавикон рейла — Figma node 40023000:133773 (Corportal Favicon). */
+const RailFavicon = () => (
+  <div
+    className="relative size-6 shrink-0 overflow-hidden rounded-[4px] bg-[#b7f272]"
+    aria-hidden
+  >
+    <div className="absolute inset-[20.17%_44.64%_18.88%_21.46%]">
+      <svg
+        className="block size-full"
+        viewBox="0 0 40.6867 73.133"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden
+      >
+        <path
+          d="M35.7218 29.4766L33.2646 26.277L32.8186 25.7017L12.8918 0H0L30.7107 38.8822V73.1162L40.6867 73.133V35.5777L35.7218 29.4766Z"
+          fill="#1A1E29"
+        />
+      </svg>
+    </div>
+    <div className="absolute inset-[20.17%_21.03%_58.8%_52.79%]">
+      <svg
+        className="block size-full"
+        viewBox="0 0 31.4163 25.236"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden
+      >
+        <path
+          d="M31.4163 0C31.4163 0 9.74333 20.7779 9.24426 21.2637C11.2488 18.0617 13.7368 7.90369 19.2391 0.0168972L0 25.236H12.3769L31.4163 0Z"
+          fill="#1A1E29"
+        />
+      </svg>
+    </div>
+  </div>
+);
+
 const RailIconButton = ({ label, icon: Icon, active }: RailIconButtonProps) => (
   <button
     type="button"
@@ -40,19 +77,14 @@ const RailIconButton = ({ label, icon: Icon, active }: RailIconButtonProps) => (
   </button>
 );
 
-/** Левый навигационный рейл по макету Corportal (Figma node 40023000:133768). */
+/** Левый навигационный рейл по макету Corportal (Figma node 40023000:133768). Логотип — 40023000:133773. */
 export const IconRail = () => (
   <aside
-    className="corportal-icon-rail fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto py-0 text-white"
+    className="corportal-icon-rail fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto py-0 text-white no-scrollbar"
     aria-label="Основная навигация"
   >
     <div className="flex w-full justify-center px-3 py-3">
-      <div
-        className="flex size-6 items-center justify-center rounded bg-[#b7f272] text-[10px] font-bold leading-none text-[#0f172a]"
-        aria-hidden
-      >
-        Y
-      </div>
+      <RailFavicon />
     </div>
 
     <div className="flex w-full flex-col items-center gap-3 px-1 pb-2">

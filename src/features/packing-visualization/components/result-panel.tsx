@@ -87,7 +87,7 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
   return (
     <Card aria-label="Панель аудита">
       <Collapsible defaultOpen={false} className="group">
-        <CardHeader className="pb-2">
+        <CardHeader>
           <CollapsibleTrigger
             type="button"
             className={cn(
@@ -103,7 +103,7 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
           </CollapsibleTrigger>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent className="space-y-4 pt-0">
+          <CardContent className="space-y-4 pt-2">
             <div className="grid gap-2 text-sm">
               <p aria-label="Количество использованных контейнеров">
                 Контейнеров: {result.usedContainerCount}
