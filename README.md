@@ -1,21 +1,22 @@
 # Container Packing Visualization
 
-Веб-приложение на Next.js для расчета и 3D-визуализации укладки товаров в контейнеры.
+Веб-приложение на Next.js для расчёта и 3D-визуализации укладки товаров в контейнеры.
 Проект решает задачу упаковки фиксированных заказов с геометрическими ограничениями и показывает результат на интерактивной сцене.
 
 ## Что делает проект
 
-- рассчитывает раскладку единиц товара по контейнерам;
+- рассчитывает раскладку единиц товара по контейнерам (в фоне через Web Worker в браузере, без блокировки UI; в тестах и без Worker — отложенный вызов на следующий macrotask);
 - минимизирует число используемых контейнеров без потери полноты размещения (если это возможно);
-- валидирует результат (геометрия, опора, полнота, детерминированность);
-- отображает все контейнеры в одной 3D-сцене;
+- валидирует результат (геометрия, опора, полнота, детерминированность) и проверяет, что габариты каждой позиции заказа **помещаются в контейнер** (с учётом поворота по yaw на полу и фиксированной высоты по вертикали);
+- отображает все контейнеры в одной 3D-сцене **только если** размещение проходит проверку `isPackingPlacementValid` (геометрия + опора + полнота); иначе вместо сцены показывается сообщение об ошибках, детали — в блоке «Аудит результата» (по умолчанию свёрнут);
 
 ## Технологический стек
 
 - `Next.js` (App Router), `React`, `TypeScript`;
 - `three`, `@react-three/fiber`, `@react-three/drei` для 3D-визуализации;
+- UI: [shadcn/ui](https://ui.shadcn.com/) (пресет Base UI, компоненты в `src/components/ui/`);
 - `zod` для runtime-валидации входа/выхода;
-- `Vitest` + `Testing Library` + `Playwright` для тестирования;
+- `Vitest` + `@testing-library/react` (jsdom);
 - `ESLint` + `TypeScript` проверки.
 
 ## Быстрый старт
@@ -56,6 +57,8 @@ npm run dev
 - `npm run test:watch` — Vitest в watch-режиме;
 - `npm run test:mutation` — mutation-тестирование (Stryker).
 
+Подробнее о том, что покрыто тестами — в разделе [Тесты](#тесты) ниже.
+
 ### Производительность
 
 - `npm run bench:packing` — бенчмарк упаковочного движка;
@@ -63,12 +66,12 @@ npm run dev
 
 ## Архитектура
 
-Проект разделен на 2 основных слоя:
+Проект разделен на два основных слоя:
 
 1. **UI (App + features)**  
-   Отвечает за интерфейс, выбор заказа, 3D-рендер и вызов расчёта на клиенте.
+   Интерфейс, выбор заказа (`?orderId=`), таблица заказа, 3D-сцена, панель аудита, оболочка с боковой навигацией.
 2. **Domain (packing/report)**  
-   Содержит бизнес-логику упаковки, валидации и формирование summary (`generatePackingResult` вызывается в браузере из хука `usePackingResult`).
+   Упаковка, валидация результата, проверка габаритов относительно контейнера, summary.
 
 ## Структура файлов
 
@@ -77,54 +80,71 @@ npm run dev
 ```text
 app/
   layout.tsx                       # Корневой layout
-  page.tsx                         # Главная страница, выбор заказа, сцена, панель результата
+  page.tsx                         # Главная: заказ, Breadcrumb, расчёт, OrderViewSection
 
 src/
+  workers/
+    packing-result.worker.ts       # Web Worker: вызов generatePackingResult
   domain/
     packing/
       constants.ts                 # Габариты контейнера, пресеты заказов, default order
       types.ts                     # Доменные типы упаковки
       expand-order.ts              # Разворачивание quantity -> отдельные unit
+      order-container-fit.ts       # Проверка «товар помещается в контейнер» по правилам yaw
       schema-validation.ts         # Zod-схемы входа/выхода
       placement-validation.ts      # Проверки пересечений/границ/опоры
-      result-validation.ts         # Комплексная валидация результата + fingerprint
+      result-validation.ts         # Комплексная валидация + isPackingPlacementValid
       packing-engine.ts            # Основной алгоритм упаковки
-      generate-packing-result.ts   # Оркестрация расчёта + валидации + summary (вызывается на клиенте)
+      generate-packing-result.ts   # Оркестрация: движок + oversized + валидация + summary
     report/
-      summarize-result.ts          # Подсчет summary (placed/unplaced/total)
+      summarize-result.ts          # Подсчёт summary (placed/unplaced/total)
   features/
     packing-visualization/
       hooks/
-        usePackingResult.ts        # Расчёт упаковки на клиенте (generatePackingResult)
+        usePackingResult.ts        # Расчёт через runPackingAsync, состояние loading/error
       components/
-        multi-container-scene.tsx  # Единая 3D-сцена для всех контейнеров
-        item-mesh.tsx              # 3D-меш единицы товара
-        result-panel.tsx           # Метрики, статусы валидации, статистика
+        packing-app-shell.tsx       # Обёртка страницы
+        order-view-section.tsx       # Таблица заказа, сцена или блок ошибки, ResultPanel
+        multi-container-scene.tsx    # Единая 3D-сцена для всех контейнеров
+        item-mesh.tsx
+        result-panel.tsx             # Аудит (свёрнут по умолчанию)
+  components/
+    ui/                            # shadcn-компоненты (button, card, alert, …)
   lib/
-    deterministic-sort.ts          # Дет. сортировка для воспроизводимости
-    docs-links.ts                  # Ссылки/утилиты для проверки документации
+    run-packing-async.ts           # Worker или отложенный main-thread fallback
+    deterministic-sort.ts
+    utils.ts
 
 tests/
-  unit/                            # home-page (UI), generate-packing-result (все пресеты заказов)
+  unit/
+    home-page.test.tsx             # Интеграция главной страницы (mock 3D)
+    order-view-section.test.tsx    # Сцена vs ошибка vs спиннер
+    generate-packing-result.test.ts
+    order-container-fit.test.ts
+    result-validation.test.ts
+    run-packing-async.test.ts
 
 scripts/
-  bench-packing.mjs                # Бенчмарк движка упаковки
-  check-dependencies.mjs           # Проверка dependency-политик
-  check-doc-links.mjs              # Проверка ссылок в документации
+  bench-packing.mjs
+  check-dependencies.mjs
+  check-doc-links.mjs
+
+specs/001-container-packing-visualization/  # спецификация, план, quickstart
 ```
 
 ## Поток данных
 
-1. Пользователь выбирает заказ на `app/page.tsx`.
-2. Хук `usePackingResult(orderId)` на клиенте вызывает `generatePackingResult(orderId)`.
+1. Пользователь выбирает заказ в URL (`orderId`) или меняет количества в таблице.
+2. Хук `usePackingResult(orderId, orderItems)` вызывает `runPackingAsync` → в браузере сообщение в **Web Worker**, который выполняет `generatePackingResult(orderId, orderItems)`; без Worker (тесты) — тот же расчёт через `setTimeout(0)`.
 3. `generatePackingResult`:
-   - берет пресет заказа из `constants.ts`;
+   - берёт состав заказа из пресета или переданного override;
    - валидирует вход через `zod`;
-   - разворачивает позиции заказа в штучные `unit`;
+   - проверяет габариты строк заказа относительно контейнера (`getOversizedOrderViolations`);
+   - разворачивает позиции в штучные `unit`;
    - запускает `runPackingEngine`;
-   - валидирует результат;
+   - валидирует результат и объединяет нарушения;
    - добавляет summary и возвращает типизированный результат.
-4. UI рендерит сцену и панель результата.
+4. UI: при успешной валидации размещения — 3D-сцена и метрика «Отрисовка»; при ошибках — предупреждение вместо сцены; панель аудита доступна с полным списком нарушений.
 
 ## Алгоритм упаковки (кратко)
 
@@ -143,27 +163,49 @@ scripts/
 
 ## Ограничения и допущения
 
-- поворот товара только в плоскости пола (`yaw: 0 | 90`);
+- поворот товара только в плоскости пола (`yaw: 0 | 90`), высота груза по вертикали совпадает с полем `height` позиции;
 - вес не участвует в оптимизационной целевой функции;
 - размещения должны быть без:
   - выхода за границы контейнера;
   - пересечений;
-  - "висящих" (неподдерживаемых) элементов;
-- приложение ориентировано на преднастроенные пресеты заказов в `constants.ts`.
+  - «висящих» (неподдерживаемых) элементов;
+- приложение ориентировано на преднастроенные пресеты заказов в `constants.ts` и редактирование количеств в UI.
 
-## Надежность и безопасность данных
+## Надёжность и безопасность данных
 
 - входные и выходные структуры проходят проверку через `zod`;
 - результат дополнительно проверяется доменными валидаторами;
-- в тестовом/строгом режиме включена проверка детерминированности через повторный прогон и fingerprint;
-- расчёт выполняется в браузере из известных пресетов заказов; произвольный JSON с сервера не подмешивается.
+- расчёт выполняется в браузере из известного состава заказа; произвольный JSON с сервера не подмешивается.
+
+## Тесты
+
+Автотесты лежат в `tests/unit/`:
+
+| Файл | Назначение |
+|------|------------|
+| `home-page.test.tsx` | Главная страница: заказы, аудит, сцена vs блок ошибки для невалидных пресетов |
+| `order-view-section.test.tsx` | Спиннер, 3D-заглушка при успехе, блок «Ошибки размещения» при невалидном результате |
+| `generate-packing-result.test.ts` | Все пресеты заказов, override, габариты больше контейнера |
+| `order-container-fit.test.ts` | `itemTypeFitsInContainer`, `getOversizedOrderViolations` |
+| `result-validation.test.ts` | `isPackingPlacementValid` |
+| `run-packing-async.test.ts` | Эквивалентность результату `generatePackingResult` (без сравнения `packingMs`) |
+
+Рекомендуемый прогон перед PR:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
 ## Документация и спецификации
 
 - `specs/001-container-packing-visualization/spec.md` — исходная спецификация;
 - `specs/001-container-packing-visualization/plan.md` — план реализации;
 - `specs/001-container-packing-visualization/tasks.md` — декомпозиция задач;
-- `specs/001-container-packing-visualization/contracts/packing-result.schema.json` — контракт ответа.
+- `specs/001-container-packing-visualization/quickstart.md` — быстрый старт и проверки;
+- `specs/001-container-packing-visualization/contracts/packing-result.schema.json` — контракт ответа (если используется).
 
 ## Рекомендуемый baseline-check перед PR
 

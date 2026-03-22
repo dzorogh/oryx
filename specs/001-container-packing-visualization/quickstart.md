@@ -1,6 +1,7 @@
 # Quickstart: 3D Container Packing Visualization
 
 ## 1. Prerequisites
+
 - Node.js active LTS
 - npm (latest stable)
 
@@ -18,19 +19,21 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## 4. Expected MVP behavior
-- Страница показывает результат упаковки для фиксированного заказа.
-- UI показывает список контейнеров в порядке заполнения.
-- Каждый контейнер можно вращать мышью/тачпадом.
-- Ни один элемент не выходит за границы, не пересекается и не "висит".
-- Все единицы товара отображаются; если не все размещены, видна явная ошибка и список
-  неразмещенных единиц.
+## 4. Expected behavior (MVP+)
 
-## 5. Validation checks
-- Проверить `usedContainerCount` и наличие всех `OrderItemUnit`.
-- Проверить, что `unplacedItemUnitIds` пуст при успешном сценарии.
-- Проверить флаги `validation` в результате (`geometryValid`, `supportValid`,
-  `completenessValid`, `deterministic`).
+- Страница показывает результат упаковки для выбранного пресета заказа (`?orderId=`).
+- Расчёт упаковки выполняется асинхронно (Web Worker в браузере), интерфейс не блокируется на время расчёта.
+- При **валидном** размещении (геометрия, опора, полнота) отображается 3D-сцена: контейнеры можно вращать (OrbitControls), есть инструменты зума/сброса камеры.
+- При **невалидном** размещении (включая габариты товара больше контейнера) 3D-сцена **не** показывается; в области визуализации выводится предупреждение; подробности — в блоке «Аудит результата» (по умолчанию свёрнут).
+- Ни один элемент валидного результата не должен выходить за границы, пересекаться или «висеть» без опоры (проверяется доменной валидацией).
+- Если не все единицы размещены, в аудите видны неразмещённые и причины нарушений.
+
+## 5. Validation checks (ручная проверка)
+
+- Проверить `usedContainerCount` и `summary` (placed / total / unplaced).
+- При проблемах с габаритами строк заказа — сообщения вида «Габариты товара превышают контейнер» в `validation.violations`.
+- Проверить флаги `validation` (`geometryValid`, `supportValid`, `completenessValid`, `deterministic`).
+- Для отображения 3D необходимо `isPackingPlacementValid(validation)` (все три: геометрия, опора, полнота).
 
 ## 6. Test run
 
@@ -38,9 +41,7 @@ Open `http://localhost:3000`.
 npm test
 ```
 
-```bash
-npm run test:e2e
-```
+Покрытие: см. раздел «Тесты» в корневом `README.md`.
 
 ## 7. Compliance checks
 
@@ -51,12 +52,19 @@ npm run check:docs
 
 ## 8. Latest verification snapshot
 
-- `npm run lint` — PASS
-- `npm run typecheck` — PASS
-- `npm run test` — PASS
-- `npm run test:e2e` — PASS
-- `npm run build` — PASS
+Перед коммитом рекомендуется:
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+(Сценарий `npm run test:e2e` в проекте не используется — e2e не настроены.)
 
 ## 9. Documentation policy
-- Для каждой внешней библиотеки фиксировать ссылку на официальную документацию.
+
+- Для каждой внешней библиотеки фиксировать ссылку на официальную документацию (см. `src/lib/docs-links.ts` и `npm run check:docs`).
 - Использовать только latest stable версии без prerelease-веток.
+- Корневой `README.md` — актуальный обзор архитектуры и потока данных.
