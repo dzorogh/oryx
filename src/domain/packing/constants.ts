@@ -181,6 +181,21 @@ export const ORDER_PRESETS: OrderPreset[] = [
     ],
   },
   {
+    orderId: 1001,
+    label: "Заказ №1001",
+    order: [
+      {
+        id: 31006,
+        name: "Ace 1000",
+        width: 1130,
+        length: 3150,
+        height: 1260,
+        weight: 417,
+        quantity: 500,
+      },
+    ],
+  },
+  {
     orderId: 666,
     label: "Заказ №666",
     order: [
