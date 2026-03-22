@@ -79,7 +79,7 @@ npm run dev
 
 ```text
 app/
-  layout.tsx                       # Корневой layout: шрифт Manrope, CorportalNavRail
+  layout.tsx                       # Корневой layout: шрифт Manrope, NavRail
   page.tsx                         # Редирект: `?orderId=` (устар.) → /pim/orders/<id>, иначе /pim/orders/<default>
   pim/
     layout.tsx                     # Фон PIM, aside + навигация по заказам (client), основная колонка
@@ -89,7 +89,7 @@ app/
 src/
   components/
     layout/
-      corportal-nav-rail.tsx       # Левый навигационный рейл (Lucide, по макету Figma Corportal)
+      nav-rail.tsx                 # Левый навигационный рейл (Lucide, по макету Figma Corportal)
     pim/
       pim-aside.tsx                # Левый aside PIM
       pim-order-nav.tsx            # Ссылки на /pim/orders/:id

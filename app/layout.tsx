@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { CorportalNavRail } from "@/components/layout/corportal-nav-rail";
+import { NavRail } from "@/components/layout/nav-rail";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -18,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ru">
       <body className={`${manrope.className} ${manrope.variable} antialiased`}>
-        <CorportalNavRail />
+        <NavRail />
         {children}
       </body>
     </html>

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CorportalNavRail } from "@/components/layout/corportal-nav-rail";
+import { NavRail } from "@/components/layout/nav-rail";
 import { OrderPageHeader } from "./order-header";
 import { PimAside } from "./pim-aside";
 import { PimMainColumn } from "./pim-main-column";
@@ -15,7 +15,7 @@ type OrderPackingAppChromeProps = {
  */
 export const OrderPackingAppChrome = ({ orderId, children }: OrderPackingAppChromeProps) => (
   <div className="corportal-shell-bg relative min-h-screen">
-    <CorportalNavRail />
+    <NavRail />
     <PimAside activeOrderId={orderId} />
     <PimMainColumn>
       <OrderPageHeader orderId={orderId} />

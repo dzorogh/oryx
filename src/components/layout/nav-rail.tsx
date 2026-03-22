@@ -61,7 +61,7 @@ const RailIconButton = ({ label, icon: Icon, active }: RailIconButtonProps) => (
   <button
     type="button"
     className={cn(
-      "relative inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-white/90 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40",
+      "relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/90 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40",
       active && "bg-white/15 text-white",
     )}
     aria-label={label}
@@ -78,9 +78,9 @@ const RailIconButton = ({ label, icon: Icon, active }: RailIconButtonProps) => (
 );
 
 /** Левый навигационный рейл по макету Corportal (Figma node 40023000:133768). Логотип — 40023000:133773. */
-export const CorportalNavRail = () => (
+export const NavRail = () => (
   <aside
-    className="corportal-nav-rail fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto py-0 text-white no-scrollbar"
+    className="fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto border-r border-solid border-[var(--Border-Grey)] bg-[linear-gradient(355deg,#1a2445_32.34%,var(--Brand-Common-BrandColor_Pressed)_36.11%,#0f172a_71.81%)] py-0 text-white no-scrollbar"
     aria-label="Основная навигация"
   >
     <div className="flex w-full justify-center px-3 py-3">

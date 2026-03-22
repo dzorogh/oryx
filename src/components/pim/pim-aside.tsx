@@ -12,17 +12,14 @@ export const PimAside = ({ activeOrderId }: PimAsideProps) => (
     aria-label="Контекст и заказы"
   >
     <div className="flex min-h-0 flex-1 flex-col p-2">
-      <div className="flex shrink-0 items-center gap-1 px-1 py-1">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded p-0.5">
-          <Star aria-hidden className="size-4 text-[#3d4c6a]" strokeWidth={2} />
-        </div>
-        <span className="min-w-0 truncate text-[12px] font-bold leading-[1.66] text-[#3d4c6a]">
+      <div className="flex shrink-0 items-center gap-1">
+        <span className="min-w-0 truncate text-sm font-bold leading-[1.66] text-foreground">
           Магазин и каталог
         </span>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 pt-2">
-        <p className="shrink-0 px-3 text-[10px] font-medium leading-[1.6] text-[#3d4c6a]/50">Заказы</p>
-        <nav className="min-h-0 flex-1 overflow-y-auto px-1" aria-label="Заказы">
+        <p className="shrink-0 font-medium text-xs text-muted-foreground">Заказы</p>
+        <nav className="min-h-0 flex-1 overflow-y-auto" aria-label="Заказы">
           <PimOrderNav activeOrderId={activeOrderId} />
         </nav>
       </div>

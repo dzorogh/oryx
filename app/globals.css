@@ -51,24 +51,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Corportal (Figma 40023000:133768): фон оболочки PIM */
-.corportal-shell-bg {
-  background-color: #d0d6e5;
-  background-image:
-    radial-gradient(ellipse 130% 90% at 50% -25%, rgba(255, 255, 255, 0.72) 0%, transparent 55%),
-    linear-gradient(168deg, #e9ecf5 0%, #dfe4f0 38%, #cfd7e6 72%, #c3cce0 100%);
-}
 
-/* Левый навигационный рейл — градиент и бордер из дизайн-токенов */
-.corportal-nav-rail {
-  border-right: 1px solid var(--Border-Grey, #d7dae0);
-  background: linear-gradient(
-    355deg,
-    #1a2445 32.34%,
-    var(--Brand-Common-BrandColor_Pressed, #4453c4) 36.11%,
-    #0f172a 71.81%
-  );
-}
 
 :root {
   --Border-Grey: #d7dae0;
