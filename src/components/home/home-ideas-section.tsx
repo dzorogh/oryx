@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Lightbulb, MessageCircle, ThumbsUp } from "lucide-react";
+import { MessageCircle, ThumbsUp } from "lucide-react";
 import { IDEAS_ITEMS, type IdeaItem, type IdeaStatus } from "./ideas-demo-data";
 
 const STATUS_LABELS: Record<IdeaStatus, string> = {
@@ -44,30 +43,10 @@ export const HomeIdeasSection = () => {
   }
 
   return (
-    <section id="ideas" aria-labelledby="ideas-heading" className="flex flex-col gap-3 rounded-xl bg-card p-5">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="rounded-full bg-primary p-1 text-primary-foreground">
-            <Lightbulb aria-hidden className="size-5" />
-          </div>
-          <h2 id="ideas-heading" className="text-lg font-bold leading-tight tracking-tight text-foreground">
-            Идеи и предложения
-          </h2>
-        </div>
-        <Link
-          href="/ideas"
-          className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          aria-label="Перейти ко всем идеям"
-        >
-          Все идеи
-        </Link>
-      </header>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {latestIdeas.map((idea) => (
-          <IdeaCard key={idea.id} idea={idea} />
-        ))}
-      </div>
-    </section>
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {latestIdeas.map((idea) => (
+        <IdeaCard key={idea.id} idea={idea} />
+      ))}
+    </div>
   );
 };

@@ -40,7 +40,7 @@ const OVERVIEW_CARDS: OverviewCard[] = [
 ];
 
 export const HomeOverviewGrid = () => (
-  <section aria-label="Обзор рабочих блоков" className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
     {OVERVIEW_CARDS.map(({ id, title, description, value, Icon }) => (
       <article
         key={id}
@@ -58,5 +58,5 @@ export const HomeOverviewGrid = () => (
         </div>
       </article>
     ))}
-  </section>
+  </div>
 );

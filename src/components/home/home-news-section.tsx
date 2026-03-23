@@ -1,10 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ChevronDown, Clock3, EllipsisVertical, Newspaper, ThumbsUp } from "lucide-react";
+import { Clock3, ThumbsUp } from "lucide-react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NEWS_ITEMS, type NewsItem, type NewsRubric } from "./news-demo-data";
 
@@ -21,7 +19,7 @@ const RUBRIC_TABS: RubricTab[] = [
   { id: "logistics", label: "Логистика" },
 ];
 
-const NewsCard = ({ item }: { item: NewsItem }) => (
+const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
   <article className="flex w-full min-w-0 flex-col gap-3 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 pb-5">
     <div className="relative aspect-video overflow-hidden rounded-md">
       <Image
@@ -30,6 +28,8 @@ const NewsCard = ({ item }: { item: NewsItem }) => (
         fill
         sizes="(max-width: 768px) 80vw, 320px"
         className="object-cover"
+        loading={eager ? "eager" : "lazy"}
+        priority={Boolean(eager)}
       />
     </div>
     <div className="flex flex-1 flex-col gap-2 px-2">
@@ -76,38 +76,7 @@ export const HomeNewsSection = () => {
   const newsMicroItems = filteredNewsItems.slice(6, 18);
 
   return (
-    <section
-      id="news"
-      aria-labelledby="news-heading"
-      className="flex flex-col gap-3 rounded-xl bg-card p-5"
-      data-node-id="40007711:21918"
-    >
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="rounded-full bg-primary p-1 text-primary-foreground">
-            <Newspaper aria-hidden className="size-5" />
-          </div>
-          <h2 id="news-heading" className="text-lg font-bold leading-tight tracking-tight text-foreground">
-            Новости
-          </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/news"
-            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            aria-label="Перейти ко всем новостям"
-          >
-            Все новости
-          </Link>
-          <Button type="button" variant="ghost" size="icon" aria-label="Изменить порядок карточек">
-            <EllipsisVertical aria-hidden className="size-5" />
-          </Button>
-          <Button type="button" variant="ghost" size="icon" aria-label="Свернуть блок новостей">
-            <ChevronDown aria-hidden className="size-5" />
-          </Button>
-        </div>
-      </header>
-
+    <div className="flex flex-col gap-3" data-node-id="40007711:21918">
       <div className="flex flex-wrap items-center gap-1">
         {RUBRIC_TABS.map((tab) => {
           const active = activeRubric === tab.id;
@@ -132,8 +101,8 @@ export const HomeNewsSection = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-        {newsCardItems.map((item) => (
-          <NewsCard key={item.id} item={item} />
+        {newsCardItems.map((item, index) => (
+          <NewsCard key={item.id} item={item} eager={index === 0} />
         ))}
       </div>
 
@@ -146,6 +115,6 @@ export const HomeNewsSection = () => {
       {filteredNewsItems.length === 0 ? (
         <p className="text-sm text-muted-foreground">Для выбранной рубрики пока нет новостей.</p>
       ) : null}
-    </section>
+    </div>
   );
 };
