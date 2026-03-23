@@ -2,14 +2,14 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Boxes, HandHeart, Lightbulb, Newspaper } from "lucide-react";
+import { HandHeart, Lightbulb, ListTodo, Newspaper } from "lucide-react";
 import { HomeBlockShell } from "@/components/home/home-block-shell";
 import { HomeIdeasSection } from "@/components/home/home-ideas-section";
 import { HomeNewsSection } from "@/components/home/home-news-section";
-import { HomeOverviewGrid } from "@/components/home/home-overview-grid";
 import { HomeThanksSection } from "@/components/home/home-thanks-section";
+import { HomeTodayTasksSection } from "@/components/home/home-today-tasks-section";
 
-type HomeBlockId = "news" | "ideas" | "overview" | "thanks";
+type HomeBlockId = "news" | "ideas" | "thanks" | "tasks";
 
 type HomeBlocksLayout = {
   order: HomeBlockId[];
@@ -28,18 +28,18 @@ type HomeBlockDefinition = {
 const HOME_BLOCKS_LAYOUT_KEY = "home-blocks-layout-v1";
 
 const DEFAULT_LAYOUT: HomeBlocksLayout = {
-  order: ["news", "thanks", "ideas", "overview"],
+  order: ["news", "thanks", "tasks", "ideas"],
   hidden: [],
   collapsed: {
     news: false,
     thanks: false,
+    tasks: false,
     ideas: false,
-    overview: false,
   },
 };
 
 const isValidBlockId = (value: string): value is HomeBlockId =>
-  value === "news" || value === "thanks" || value === "ideas" || value === "overview";
+  value === "news" || value === "thanks" || value === "tasks" || value === "ideas";
 
 const normalizeLayout = (input: Partial<HomeBlocksLayout> | null): HomeBlocksLayout => {
   if (!input) {
@@ -57,8 +57,8 @@ const normalizeLayout = (input: Partial<HomeBlocksLayout> | null): HomeBlocksLay
     collapsed: {
       news: collapsed.news ?? false,
       thanks: collapsed.thanks ?? false,
+      tasks: collapsed.tasks ?? false,
       ideas: collapsed.ideas ?? false,
-      overview: collapsed.overview ?? false,
     },
   };
 };
@@ -117,6 +117,12 @@ const HomePage = () => {
         render: () => <HomeThanksSection />,
       },
       {
+        id: "tasks",
+        title: "Задачи на сегодня",
+        icon: ListTodo,
+        render: () => <HomeTodayTasksSection />,
+      },
+      {
         id: "ideas",
         title: "Идеи и предложения",
         icon: Lightbulb,
@@ -130,12 +136,6 @@ const HomePage = () => {
           </Link>
         ),
         render: () => <HomeIdeasSection />,
-      },
-      {
-        id: "overview",
-        title: "Обзор рабочих блоков",
-        icon: Boxes,
-        render: () => <HomeOverviewGrid />,
       },
     ],
     [],
@@ -218,57 +218,57 @@ const HomePage = () => {
           </>
         ) : (
           <>
-        {visibleOrder.map((blockId, visibleIndex) => {
-          const block = blockById[blockId];
-          return (
-            <HomeBlockShell
-              key={block.id}
-              title={block.title}
-              icon={block.icon}
-              actions={block.actions}
-              collapsed={layout.collapsed[block.id]}
-              canMoveUp={visibleIndex > 0}
-              canMoveDown={visibleIndex < visibleOrder.length - 1}
-              onHide={() => handleHide(block.id)}
-              onMoveUp={() => handleMove(block.id, "up")}
-              onMoveDown={() => handleMove(block.id, "down")}
-              onToggleCollapsed={() => handleToggleCollapsed(block.id)}
-            >
-              {block.render()}
-            </HomeBlockShell>
-          );
-        })}
+            {visibleOrder.map((blockId, visibleIndex) => {
+              const block = blockById[blockId];
+              return (
+                <HomeBlockShell
+                  key={block.id}
+                  title={block.title}
+                  icon={block.icon}
+                  actions={block.actions}
+                  collapsed={layout.collapsed[block.id]}
+                  canMoveUp={visibleIndex > 0}
+                  canMoveDown={visibleIndex < visibleOrder.length - 1}
+                  onHide={() => handleHide(block.id)}
+                  onMoveUp={() => handleMove(block.id, "up")}
+                  onMoveDown={() => handleMove(block.id, "down")}
+                  onToggleCollapsed={() => handleToggleCollapsed(block.id)}
+                >
+                  {block.render()}
+                </HomeBlockShell>
+              );
+            })}
 
-        {layout.hidden.length > 0 ? (
-          <div className="self-end">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setHiddenMenuOpen((prev) => !prev)}
-                className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted"
-                aria-expanded={hiddenMenuOpen}
-                aria-label="Показать скрытые блоки"
-              >
-                Скрытые блоки ({layout.hidden.length})
-              </button>
-              {hiddenMenuOpen ? (
-                <div className="absolute bottom-12 right-0 z-20 min-w-52 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 shadow-sm">
-                  {layout.hidden.map((blockId) => (
-                    <button
-                      key={blockId}
-                      type="button"
-                      onClick={() => handleShow(blockId)}
-                      className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted"
-                    >
-                      <span>{blockById[blockId].title}</span>
-                      <span className="text-xs text-muted-foreground">Показать</span>
-                    </button>
-                  ))}
+            {layout.hidden.length > 0 ? (
+              <div className="self-end">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setHiddenMenuOpen((prev) => !prev)}
+                    className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted"
+                    aria-expanded={hiddenMenuOpen}
+                    aria-label="Показать скрытые блоки"
+                  >
+                    Скрытые блоки ({layout.hidden.length})
+                  </button>
+                  {hiddenMenuOpen ? (
+                    <div className="absolute bottom-12 right-0 z-20 min-w-52 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 shadow-sm">
+                      {layout.hidden.map((blockId) => (
+                        <button
+                          key={blockId}
+                          type="button"
+                          onClick={() => handleShow(blockId)}
+                          className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                        >
+                          <span>{blockById[blockId].title}</span>
+                          <span className="text-xs text-muted-foreground">Показать</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
+              </div>
+            ) : null}
           </>
         )}
       </div>

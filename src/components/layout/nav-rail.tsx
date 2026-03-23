@@ -1,16 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Activity, GraduationCap, HelpCircle, Hexagon, Home, Search, ShoppingCart, ShieldCheck, Store, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { GlobalSearchModal } from "@/components/layout/global-search-modal";
 import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
 import { cn } from "@/lib/utils";
 
 type RailIconButtonProps = {
   label: string;
   icon: LucideIcon;
-  href: string;
+  href?: string;
+  onClick?: () => void;
   active?: boolean;
 };
 
@@ -51,30 +54,45 @@ const RailFavicon = () => (
   </div>
 );
 
-const RailIconButton = ({ label, icon: Icon, href, active }: RailIconButtonProps) => (
-  <Link
-    href={href}
-    className={cn(
-      "relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/90 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40",
-      active && "bg-white/15 text-white",
-    )}
-    aria-label={label}
-    aria-current={active ? "page" : undefined}
-  >
-    {active ? (
-      <span
-        className="absolute -left-0.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-white"
-        aria-hidden
-      />
-    ) : null}
-    <Icon aria-hidden className="size-5" strokeWidth={2} />
-  </Link>
-);
+const RailIconButton = ({ label, icon: Icon, href, onClick, active }: RailIconButtonProps) => {
+  const className = cn(
+    "relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/90 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40",
+    active && "bg-white/15 text-white",
+  );
+
+  const indicator = active ? (
+    <span
+      className="absolute -left-0.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-white"
+      aria-hidden
+    />
+  ) : null;
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className} aria-label={label} aria-current={active ? "page" : undefined}>
+        {indicator}
+        <Icon aria-hidden className="size-5" strokeWidth={2} />
+      </button>
+    );
+  }
+
+  if (!href) {
+    return null;
+  }
+
+  return (
+    <Link href={href} className={className} aria-label={label} aria-current={active ? "page" : undefined}>
+      {indicator}
+      <Icon aria-hidden className="size-5" strokeWidth={2} />
+    </Link>
+  );
+};
 
 /** Левый навигационный рейл по макету Corportal (Figma node 40023000:133768). Логотип — 40023000:133773. */
 export const NavRail = () => {
   const pathname = usePathname();
   const currentPathname = pathname ?? "/";
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const navItems = [
     { label: "Поиск", icon: Search, href: "/search", match: "/search" },
@@ -98,58 +116,61 @@ export const NavRail = () => {
   ] as const;
 
   return (
-    <aside
-      className="fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto border-r border-solid border-[var(--corportal-border-grey)] bg-[linear-gradient(355deg,#1a2445_32.34%,var(--Brand-Common-BrandColor_Pressed)_36.11%,var(--corportal-rail)_71.81%)] py-0 text-white no-scrollbar"
-      aria-label="Основная навигация"
-    >
-      <div className="flex w-full justify-center px-3 py-3">
-        <RailFavicon />
-      </div>
+    <>
+      <aside
+        className="fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto border-r border-solid border-[var(--corportal-border-grey)] bg-[linear-gradient(355deg,#1a2445_32.34%,var(--Brand-Common-BrandColor_Pressed)_36.11%,var(--corportal-rail)_71.81%)] py-0 text-white no-scrollbar"
+        aria-label="Основная навигация"
+      >
+        <div className="flex w-full justify-center px-3 py-3">
+          <RailFavicon />
+        </div>
 
-      <div className="flex w-full flex-col items-center gap-3 px-1 pb-2">
-        <RailIconButton
-          label={navItems[0].label}
-          icon={navItems[0].icon}
-          href={navItems[0].href}
-          active={currentPathname.startsWith(navItems[0].match)}
-        />
-      </div>
-
-      <div className="flex w-full flex-1 flex-col items-center gap-2 px-1 pt-1">
-        {navItems.slice(1).map((item) => (
+        <div className="flex w-full flex-col items-center gap-3 px-1 pb-2">
           <RailIconButton
-            key={item.label}
-            label={item.label}
-            icon={item.icon}
-            href={item.href}
-            active={
-              item.match === "/" ? currentPathname === "/" : currentPathname.startsWith(item.match)
-            }
+            label={navItems[0].label}
+            icon={navItems[0].icon}
+            onClick={() => setIsSearchOpen(true)}
+            active={isSearchOpen}
           />
-        ))}
-      </div>
+        </div>
 
-      <div className="flex w-full flex-col items-center gap-2 border-t border-white/10 px-1 py-2">
-        {footerItems.map((item) => (
-          <RailIconButton
-            key={item.label}
-            label={item.label}
-            icon={item.icon}
-            href={item.href}
-            active={currentPathname.startsWith(item.match)}
-          />
-        ))}
-      </div>
+        <div className="flex w-full flex-1 flex-col items-center gap-2 px-1 pt-1">
+          {navItems.slice(1).map((item) => (
+            <RailIconButton
+              key={item.label}
+              label={item.label}
+              icon={item.icon}
+              href={item.href}
+              active={
+                item.match === "/" ? currentPathname === "/" : currentPathname.startsWith(item.match)
+              }
+            />
+          ))}
+        </div>
 
-      <div className="flex w-full justify-center border-t border-white/10 px-2 py-2">
-        <Link
-          href="/profile"
-          className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-foreground transition-colors hover:bg-muted/80 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40"
-          aria-label="Профиль"
-        >
-          <User aria-hidden className="size-4" strokeWidth={2} />
-        </Link>
-      </div>
-    </aside>
+        <div className="flex w-full flex-col items-center gap-2 border-t border-white/10 px-1 py-2">
+          {footerItems.map((item) => (
+            <RailIconButton
+              key={item.label}
+              label={item.label}
+              icon={item.icon}
+              href={item.href}
+              active={currentPathname.startsWith(item.match)}
+            />
+          ))}
+        </div>
+
+        <div className="flex w-full justify-center border-t border-white/10 px-2 py-2">
+          <Link
+            href="/profile"
+            className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-foreground transition-colors hover:bg-muted/80 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40"
+            aria-label="Профиль"
+          >
+            <User aria-hidden className="size-4" strokeWidth={2} />
+          </Link>
+        </div>
+      </aside>
+      <GlobalSearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    </>
   );
 };

@@ -37,7 +37,7 @@ const IdeaCard = ({ idea }: { idea: IdeaItem }) => (
 );
 
 export const HomeIdeasSection = () => {
-  const latestIdeas = IDEAS_ITEMS.slice(0, 8);
+  const latestIdeas = IDEAS_ITEMS.slice(0, 4);
   if (latestIdeas.length === 0) {
     return null;
   }
