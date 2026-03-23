@@ -10,7 +10,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Container Packing Visualization",
+  title: "Oryx BMS",
   description: "3D container packing visualization"
 };
 
