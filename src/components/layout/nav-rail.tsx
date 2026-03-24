@@ -6,6 +6,8 @@ import { Activity, GraduationCap, HelpCircle, Hexagon, Home, Search, ShoppingCar
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GlobalSearchModal } from "@/components/layout/global-search-modal";
+import { LeftDockShell } from "@/components/layout/left-dock-shell";
+import { ScrollableRegion } from "@/components/layout/scrollable-region";
 import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
 import { cn } from "@/lib/utils";
 
@@ -120,9 +122,9 @@ export const NavRail = () => {
 
   return (
     <>
-      <aside
-        className="bg-corportal-rail fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto border-r border-solid border-[var(--corportal-border-grey)] py-0 text-[color:var(--corportal-rail-foreground)] no-scrollbar"
-        aria-label="Основная навигация"
+      <LeftDockShell
+        className="bg-corportal-rail left-0 z-40 w-12 items-center overflow-y-auto border-solid border-[var(--corportal-border-grey)] py-0 text-[color:var(--corportal-rail-foreground)] no-scrollbar"
+        ariaLabel="Основная навигация"
       >
         <div className="flex w-full justify-center px-3 py-3">
           <RailFavicon />
@@ -137,7 +139,7 @@ export const NavRail = () => {
           />
         </div>
 
-        <div className="flex w-full flex-1 flex-col items-center gap-2 px-1 pt-1">
+        <ScrollableRegion className="flex w-full flex-1 flex-col items-center gap-2 px-1 pt-1">
           {navItems.slice(1).map((item) => (
             <RailIconButton
               key={item.label}
@@ -149,7 +151,7 @@ export const NavRail = () => {
               }
             />
           ))}
-        </div>
+        </ScrollableRegion>
 
         <div className="flex w-full flex-col items-center gap-2 border-t border-[color:var(--corportal-rail-divider)] px-1 py-2">
           {footerItems.map((item) => (
@@ -172,7 +174,7 @@ export const NavRail = () => {
             <User aria-hidden className="size-4" strokeWidth={2} />
           </Link>
         </div>
-      </aside>
+      </LeftDockShell>
       <GlobalSearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );

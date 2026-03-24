@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { Clock3, ThumbsUp } from "lucide-react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 import { NEWS_ITEMS, type NewsItem, type NewsRubric } from "./news-demo-data";
+import { HomeFilterChip } from "./home-filter-chip";
 
 type RubricTab = {
   id: NewsRubric;
@@ -70,21 +70,14 @@ export const HomeNewsSection = () => {
         {RUBRIC_TABS.map((tab) => {
           const active = activeRubric === tab.id;
           return (
-            <button
+            <HomeFilterChip
               key={tab.id}
-              type="button"
               onClick={() => setActiveRubric(tab.id)}
-              className={cn(
-                "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-[var(--corportal-border-grey)] bg-card text-foreground hover:bg-muted",
-              )}
-              aria-label={`Показать рубрику ${tab.label}`}
-              aria-pressed={active}
+              active={active}
+              ariaLabel={`Показать рубрику ${tab.label}`}
             >
               {tab.label}
-            </button>
+            </HomeFilterChip>
           );
         })}
       </div>

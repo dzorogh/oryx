@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EMPLOYEE_OPTIONS } from "./thanks-demo-data";
+import { HomeFieldSurface } from "./home-field-surface";
+import { HomeFormPanel } from "./home-form-panel";
 
 export const HomeThanksSection = () => {
   const [query, setQuery] = useState("");
@@ -33,18 +35,18 @@ export const HomeThanksSection = () => {
 
   return (
     <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-      <div className="rounded-lg border border-[var(--corportal-border-grey)] bg-card p-4">
+      <HomeFormPanel>
         <label htmlFor="thanks-search" className="text-sm font-semibold text-foreground">
           Найти сотрудника
         </label>
         <div className="relative pt-2">
           <Search aria-hidden className="pointer-events-none absolute left-3 top-4 size-4 text-muted-foreground" />
-          <input
+          <HomeFieldSurface
             id="thanks-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Введите имя, отдел или роль"
-            className="w-full rounded-lg border border-[var(--corportal-border-grey)] bg-card py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="py-2 pl-9 pr-3"
             aria-label="Поиск сотрудника для благодарности"
           />
         </div>
@@ -77,10 +79,9 @@ export const HomeThanksSection = () => {
             })
           )}
         </div>
-      </div>
+      </HomeFormPanel>
 
-      <div className="rounded-lg border border-[var(--corportal-border-grey)] bg-card p-4">
-        <p className="text-sm font-semibold text-foreground">Благодарность</p>
+      <HomeFormPanel title="Благодарность">
         <div className="pt-2 text-sm text-muted-foreground">
           {selectedEmployee ? (
             <p>
@@ -94,7 +95,8 @@ export const HomeThanksSection = () => {
         <label htmlFor="thanks-message" className="mt-3 block text-xs font-medium text-muted-foreground">
           Текст благодарности
         </label>
-        <textarea
+        <HomeFieldSurface
+          as="textarea"
           id="thanks-message"
           value={message}
           onChange={(event) => {
@@ -102,7 +104,7 @@ export const HomeThanksSection = () => {
             setSent(false);
           }}
           placeholder="Например: Спасибо за помощь с релизом, очень выручил(а) команду!"
-          className="mt-1 min-h-28 w-full rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="mt-1 min-h-28 px-3 py-2"
           aria-label="Текст благодарности сотруднику"
         />
 
@@ -117,7 +119,7 @@ export const HomeThanksSection = () => {
           </Button>
           {sent ? <p className="text-xs text-primary">Спасибо отправлено (mock).</p> : null}
         </div>
-      </div>
+      </HomeFormPanel>
     </div>
   );
 };

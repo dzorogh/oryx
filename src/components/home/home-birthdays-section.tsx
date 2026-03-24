@@ -5,6 +5,7 @@ import Image from "next/image";
 import { PartyPopper } from "lucide-react";
 import { BIRTHDAY_PEOPLE, type BirthdayPerson } from "./birthdays-demo-data";
 import { cn } from "@/lib/utils";
+import { HomeDateMetaText } from "./home-date-meta-text";
 
 const HOME_BIRTHDAYS_LIMIT = 7;
 
@@ -95,9 +96,7 @@ const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => {
             getRelativeLabel(daysUntil)
           )}
         </span>
-        <span className="shrink-0 text-right text-xs text-muted-foreground">
-          {dateLabelFormatter.format(occurrence)}
-        </span>
+        <HomeDateMetaText>{dateLabelFormatter.format(occurrence)}</HomeDateMetaText>
       </div>
       <div className="flex items-center gap-2">
         <Image

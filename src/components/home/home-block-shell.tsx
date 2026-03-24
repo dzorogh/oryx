@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { ChevronDown, EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { HomeActionMenuItem } from "./home-action-menu-item";
 
 /** Акцент цветного круга иконки (палитра Corportal / канбан). */
 export type HomeBlockAccent = "violet" | "teal" | "rose" | "amber";
@@ -102,35 +103,21 @@ export const HomeBlockShell = ({
             </Button>
             {menuOpen ? (
               <div className="absolute right-0 top-10 z-20 min-w-44 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 shadow-sm">
-                <button
-                  type="button"
-                  className="flex w-full rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted"
-                  onClick={() => handleMenuAction(onHide)}
-                >
+                <HomeActionMenuItem onClick={() => handleMenuAction(onHide)}>
                   Скрыть блок
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted",
-                    !canMoveUp && "cursor-not-allowed opacity-50 hover:bg-transparent",
-                  )}
+                </HomeActionMenuItem>
+                <HomeActionMenuItem
                   disabled={!canMoveUp}
                   onClick={() => handleMenuAction(onMoveUp)}
                 >
                   Переместить выше
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted",
-                    !canMoveDown && "cursor-not-allowed opacity-50 hover:bg-transparent",
-                  )}
+                </HomeActionMenuItem>
+                <HomeActionMenuItem
                   disabled={!canMoveDown}
                   onClick={() => handleMenuAction(onMoveDown)}
                 >
                   Переместить ниже
-                </button>
+                </HomeActionMenuItem>
               </div>
             ) : null}
           </div>

@@ -1,4 +1,5 @@
-import { Star } from "lucide-react";
+import { LeftDockShell } from "@/components/layout/left-dock-shell";
+import { ScrollableRegion } from "@/components/layout/scrollable-region";
 import { PimOrderNav } from "./pim-order-nav";
 
 type PimAsideProps = {
@@ -7,9 +8,9 @@ type PimAsideProps = {
 };
 
 export const PimAside = ({ activeOrderId }: PimAsideProps) => (
-  <aside
-    className="fixed left-12 top-0 z-30 flex h-svh w-[min(200px,40vw)] flex-col overflow-hidden border-r border-[var(--corportal-border-grey)] bg-[var(--corportal-surface-muted)] sm:w-[200px]"
-    aria-label="Контекст и заказы"
+  <LeftDockShell
+    className="left-12 z-30 w-[min(200px,40vw)] overflow-hidden border-[var(--corportal-border-grey)] bg-[var(--corportal-surface-muted)] sm:w-[200px]"
+    ariaLabel="Контекст и заказы"
   >
     <div className="flex min-h-0 flex-1 flex-col p-2">
       <div className="flex shrink-0 items-center gap-1">
@@ -19,10 +20,10 @@ export const PimAside = ({ activeOrderId }: PimAsideProps) => (
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 pt-2">
         <p className="shrink-0 font-medium text-xs text-muted-foreground">Заказы</p>
-        <nav className="min-h-0 flex-1 overflow-y-auto" aria-label="Заказы">
+        <ScrollableRegion className="min-h-0 flex-1" ariaLabel="Заказы">
           <PimOrderNav activeOrderId={activeOrderId} />
-        </nav>
+        </ScrollableRegion>
       </div>
     </div>
-  </aside>
+  </LeftDockShell>
 );

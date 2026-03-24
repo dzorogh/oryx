@@ -6,6 +6,7 @@ import { Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ORDER_PRESETS } from "@/domain/packing/constants";
 import { cn } from "@/lib/utils";
+import { PimSecondaryText } from "./pim-secondary-text";
 
 const orderHref = (orderId: number) => `/pim/orders/${orderId}`;
 
@@ -50,7 +51,7 @@ export const PimOrderNav = ({ activeOrderId: activeOrderIdProp }: PimOrderNavPro
               className={cn("size-3 shrink-0 text-[#778297]", active && "fill-[#3d4c6a] text-[#3d4c6a]")}
               strokeWidth={2}
             />
-            <span className="min-w-0 truncate">{preset.label}</span>
+            <PimSecondaryText className="min-w-0 truncate">{preset.label}</PimSecondaryText>
           </Button>
         );
       })}

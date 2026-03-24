@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { Medal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HomeAvatarRing } from "./home-avatar-ring";
+import { HomeFilterChip } from "./home-filter-chip";
 import {
   FEBRUARY_SALES_LEADERS,
   STATS_DIRECTION_TABS,
@@ -98,25 +99,19 @@ export const HomeSalesLeadersSection = () => {
         {STATS_DIRECTION_TABS.map((tab, index) => {
           const selected = direction === tab.id;
           return (
-            <button
+            <HomeFilterChip
               key={tab.id}
               id={tabIds[index]}
-              type="button"
               role="tab"
               aria-selected={selected}
               tabIndex={selected ? 0 : -1}
               aria-controls="sales-leaderboard-panel"
               onClick={() => setDirection(tab.id)}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
-              className={cn(
-                "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
-                selected
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-[var(--corportal-border-grey)] bg-card text-foreground hover:bg-muted",
-              )}
+              active={selected}
             >
               {tab.label}
-            </button>
+            </HomeFilterChip>
           );
         })}
       </div>
@@ -142,9 +137,7 @@ export const HomeSalesLeadersSection = () => {
                 >
                   <div className="flex min-h-0 items-center gap-2">
                     <RankMedal rank={row.rank} />
-                    <div className="relative size-7 shrink-0 overflow-hidden rounded-full ring-1 ring-border">
-                      <Image src={row.avatarUrl} alt="" fill className="object-cover" sizes="28px" />
-                    </div>
+                    <HomeAvatarRing src={row.avatarUrl} alt="" />
                     <div className="min-w-0 flex-1">
                       <button
                         type="button"

@@ -5,6 +5,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { PimSecondaryText } from "./pim-secondary-text";
 
 type OrderPageHeaderProps = {
   orderId: number;
@@ -15,11 +16,11 @@ export const OrderPageHeader = ({ orderId }: OrderPageHeaderProps) => (
     <Breadcrumb>
       <BreadcrumbList className="sm:gap-2">
         <BreadcrumbItem>
-          <span className="text-[12px] text-[#778297]">Магазин и каталог</span>
+          <PimSecondaryText>Магазин и каталог</PimSecondaryText>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <span className="text-[12px] text-[#778297]">Заказы</span>
+          <PimSecondaryText>Заказы</PimSecondaryText>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
