@@ -2,7 +2,9 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
+import { PartyPopper } from "lucide-react";
 import { BIRTHDAY_PEOPLE, type BirthdayPerson } from "./birthdays-demo-data";
+import { cn } from "@/lib/utils";
 
 const HOME_BIRTHDAYS_LIMIT = 7;
 
@@ -64,34 +66,60 @@ type BirthdayCardProps = {
   daysUntil: number;
 };
 
-const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => (
-  <article
-    className="flex h-full min-h-0 min-w-0 flex-col gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-3"
-    aria-label={`День рождения: ${person.fullName}`}
-  >
-    <div className="flex shrink-0 items-start justify-between gap-2">
-      <span className="text-xs font-medium text-primary">{getRelativeLabel(daysUntil)}</span>
-      <span className="shrink-0 text-right text-xs text-muted-foreground">
-        {dateLabelFormatter.format(occurrence)}
-      </span>
-    </div>
-    <div className="flex items-center gap-2">
-      <Image
-        src={person.avatarUrl}
-        alt={`Аватар сотрудника ${person.fullName}`}
-        width={32}
-        height={32}
-        className="size-8 shrink-0 rounded-full border border-[var(--corportal-border-grey)] object-cover"
-        loading="lazy"
-        unoptimized
-      />
-      <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">{person.fullName}</h3>
-    </div>
-    <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
-      {person.department} · {person.role}
-    </p>
-  </article>
-);
+const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => {
+  const isToday = daysUntil === 0;
+
+  return (
+    <article
+      className={cn(
+        "flex h-full min-h-0 min-w-0 flex-col gap-2 rounded-lg border p-3",
+        isToday
+          ? "border-corportal-accent-amber bg-corportal-accent-amber-soft/35 shadow-[0_6px_16px_rgba(245,158,11,0.16)]"
+          : "border-[var(--corportal-border-grey)] bg-card",
+      )}
+      aria-label={`День рождения: ${person.fullName}`}
+    >
+      <div className="flex shrink-0 items-start justify-between gap-2">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 text-xs font-medium",
+            isToday ? "text-corportal-accent-amber-on-soft" : "text-primary",
+          )}
+        >
+          {isToday ? (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-corportal-accent-amber/20 px-2 py-0.5"
+              aria-label="Сегодня день рождения"
+            >
+              <PartyPopper aria-hidden className="size-3.5" />
+              {getRelativeLabel(daysUntil)}
+            </span>
+          ) : (
+            getRelativeLabel(daysUntil)
+          )}
+        </span>
+        <span className="shrink-0 text-right text-xs text-muted-foreground">
+          {dateLabelFormatter.format(occurrence)}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Image
+          src={person.avatarUrl}
+          alt={`Аватар сотрудника ${person.fullName}`}
+          width={32}
+          height={32}
+          className="size-8 shrink-0 rounded-full border border-[var(--corportal-border-grey)] object-cover"
+          loading="lazy"
+          unoptimized
+        />
+        <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">{person.fullName}</h3>
+      </div>
+      <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
+        {person.department} · {person.role}
+      </p>
+    </article>
+  );
+};
 
 export const HomeBirthdaysSection = () => {
   const now = useMemo(() => new Date(), []);

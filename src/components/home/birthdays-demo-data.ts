@@ -18,7 +18,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     role: "Frontend Developer",
     avatarUrl: "https://i.pravatar.cc/96?img=32",
     month: 3,
-    day: 28,
+    day: 24,
   },
   {
     id: "bd-2",
@@ -36,7 +36,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     role: "HR Partner",
     avatarUrl: "https://i.pravatar.cc/96?img=47",
     month: 3,
-    day: 26,
+    day: 24,
   },
   {
     id: "bd-4",

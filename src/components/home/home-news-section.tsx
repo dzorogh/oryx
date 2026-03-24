@@ -37,7 +37,6 @@ const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
     <div className="flex flex-1 flex-col gap-2 px-2">
       <div className="flex items-center justify-between text-xs leading-tight text-muted-foreground">
         <div className="flex items-center gap-1">
-          <Clock3 aria-hidden className="size-4" />
           <span>{item.publishedAt}</span>
         </div>
         <div className="flex items-center gap-1">
