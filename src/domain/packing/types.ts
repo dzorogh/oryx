@@ -62,11 +62,24 @@ export type PackingTiming = {
   packingMs: number;
 };
 
+export type NonLastContainerEmptyVolumePostCheck = {
+  thresholdPercent: number;
+  checkedContainerCount: number;
+  maxEmptyVolumePercent: number;
+  failingContainerIndex: number | null;
+  pass: boolean;
+};
+
+export type PackingPostCheck = {
+  nonLastContainerEmptyVolume: NonLastContainerEmptyVolumePostCheck;
+};
+
 export type PackingResult = {
   usedContainerCount: number;
   containers: ContainerInstance[];
   unplacedItemUnitIds: string[];
   validation: PackingValidation;
+  postCheck: PackingPostCheck;
   summary: PackingSummary;
   timing: PackingTiming;
 };

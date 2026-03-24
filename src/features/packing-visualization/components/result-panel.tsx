@@ -24,6 +24,7 @@ const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Ошибка");
 
 export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) => {
   const [packingMsDisplay, setPackingMsDisplay] = useState<string | null>(null);
+  const emptyVolumePostCheck = result.postCheck.nonLastContainerEmptyVolume;
 
   useEffect(() => {
     // Время раскладки из performance.now() недетерминировано между SSR и клиентом — показываем после гидратации.
@@ -169,6 +170,27 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
                   ))}
                 </ul>
               )}
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2 text-sm">
+              <h3 className="font-medium">Пост-проверка</h3>
+              <p aria-label="Статус пост-проверки непоследних контейнеров">
+                Непоследние контейнеры (пустой объём): {statusBadge(emptyVolumePostCheck.pass)}
+              </p>
+              <p aria-label="Максимальный пустой объём непоследних контейнеров">
+                Макс. пустой объём: {emptyVolumePostCheck.maxEmptyVolumePercent.toFixed(2)}% (порог{" "}
+                {emptyVolumePostCheck.thresholdPercent}%)
+              </p>
+              <p aria-label="Количество проверенных непоследних контейнеров">
+                Проверено контейнеров: {emptyVolumePostCheck.checkedContainerCount}
+              </p>
+              {!emptyVolumePostCheck.pass && emptyVolumePostCheck.failingContainerIndex !== null ? (
+                <p aria-label="Контейнер с превышением пустого объёма" className="text-destructive">
+                  Превышение порога в контейнере #{emptyVolumePostCheck.failingContainerIndex}
+                </p>
+              ) : null}
             </div>
 
             <Separator />

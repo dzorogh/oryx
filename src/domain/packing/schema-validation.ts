@@ -44,6 +44,15 @@ const packingResultSchema = z.object({
     deterministic: z.boolean(),
     violations: z.array(z.string()),
   }),
+  postCheck: z.object({
+    nonLastContainerEmptyVolume: z.object({
+      thresholdPercent: z.number().nonnegative(),
+      checkedContainerCount: z.number().int().nonnegative(),
+      maxEmptyVolumePercent: z.number().nonnegative(),
+      failingContainerIndex: z.number().int().nonnegative().nullable(),
+      pass: z.boolean(),
+    }),
+  }),
   summary: z.object({
     totalUnits: z.number().int().nonnegative(),
     placedUnits: z.number().int().nonnegative(),

@@ -17,7 +17,7 @@ export const CONTAINER_DIMENSIONS: ContainerType = {
 export const ORDER_PRESETS: OrderPreset[] = [
   {
     orderId: 59,
-    label: "Заказ №59",
+    label: "Заказ №59 - 1 C",
     order: [
       {
         id: 50,
@@ -41,7 +41,7 @@ export const ORDER_PRESETS: OrderPreset[] = [
   },
   {
     orderId: 69,
-    label: "Заказ №69",
+    label: "Заказ №69 - 2 C",
     order: [
       {
         id: 3,
@@ -65,7 +65,7 @@ export const ORDER_PRESETS: OrderPreset[] = [
   },
   {
     orderId: 77,
-    label: "Заказ №77",
+    label: "Заказ №77 - 1.5 C",
     order: [
       {
         id: 1,
@@ -98,7 +98,7 @@ export const ORDER_PRESETS: OrderPreset[] = [
   },
   {
     orderId: 91,
-    label: "Заказ №91",
+    label: "Заказ №91 - 2 C",
     order: [
       {
         id: 6360,
@@ -167,7 +167,7 @@ export const ORDER_PRESETS: OrderPreset[] = [
   },
   {
     orderId: 192,
-    label: "Заказ №192",
+    label: "Заказ №192 - 2 C",
     order: [
       {
         id: 1,

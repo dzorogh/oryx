@@ -16,6 +16,15 @@ const EMPTY_RESULT: PackingResult = validatePackingResultSchema({
     deterministic: true,
     violations: [],
   },
+  postCheck: {
+    nonLastContainerEmptyVolume: {
+      thresholdPercent: 30,
+      checkedContainerCount: 0,
+      maxEmptyVolumePercent: 0,
+      failingContainerIndex: null,
+      pass: true,
+    },
+  },
   summary: {
     totalUnits: 0,
     placedUnits: 0,

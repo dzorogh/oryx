@@ -9,6 +9,7 @@ import { expandOrder } from "@/domain/packing/expand-order";
 import { generatePackingResult } from "@/domain/packing/generate-packing-result";
 import { validatePackingResultSchema } from "@/domain/packing/schema-validation";
 import { isPackingPlacementValid } from "@/domain/packing/result-validation";
+import { NON_LAST_CONTAINER_EMPTY_VOLUME_THRESHOLD_PERCENT } from "@/domain/report/summarize-result";
 
 describe("generatePackingResult (клиентский расчёт)", () => {
   it.each(ORDER_PRESETS)(
@@ -27,9 +28,17 @@ describe("generatePackingResult (клиентский расчёт)", () => {
       const expectedUnits = expandOrder(preset.order).length;
       expect(parsed.summary.totalUnits).toBe(expectedUnits);
       expect(parsed.summary.placedUnits + parsed.summary.unplacedUnits).toBe(expectedUnits);
+      expect(parsed.postCheck.nonLastContainerEmptyVolume.thresholdPercent).toBe(
+        NON_LAST_CONTAINER_EMPTY_VOLUME_THRESHOLD_PERCENT,
+      );
     },
     120_000,
   );
+
+  it("orderId 192: использует не больше двух контейнеров", () => {
+    const parsed = generatePackingResult(192);
+    expect(parsed.usedContainerCount).toBeLessThanOrEqual(2);
+  });
 
   it("без явного orderId — заказ по умолчанию", () => {
     const parsed = generatePackingResult();

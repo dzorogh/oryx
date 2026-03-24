@@ -4,7 +4,7 @@ import { getOversizedOrderViolations } from "@/domain/packing/order-container-fi
 import { runPackingEngine } from "@/domain/packing/packing-engine";
 import { validatePackingResult } from "@/domain/packing/result-validation";
 import { validateOrderSchema, validatePackingResultSchema } from "@/domain/packing/schema-validation";
-import { withSummary } from "@/domain/report/summarize-result";
+import { buildPostCheck, withSummary } from "@/domain/report/summarize-result";
 import type { OrderItemType, PackingResult } from "@/domain/packing/types";
 import { deterministicSort } from "@/lib/deterministic-sort";
 
@@ -38,6 +38,7 @@ export const generatePackingResult = (
     containers: first.containers,
     unplacedItemUnitIds: first.unplacedItemUnitIds,
     validation,
+    postCheck: buildPostCheck(first.containers, CONTAINER_DIMENSIONS),
     timing: {
       packingMs: performance.now() - packingStartedAt,
     },

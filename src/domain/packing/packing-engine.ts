@@ -484,6 +484,43 @@ const sortUnitsForPacking = (unitsToSort: readonly OrderItemUnit[]): OrderItemUn
     (left, right) => left.unitId.localeCompare(right.unitId),
   );
 
+const sortUnitsByLengthThenWidth = (unitsToSort: readonly OrderItemUnit[]): OrderItemUnit[] =>
+  deterministicSort(
+    [...unitsToSort],
+    (left, right) => right.dimensions.length - left.dimensions.length,
+    (left, right) => right.dimensions.width - left.dimensions.width,
+    (left, right) => right.dimensions.height - left.dimensions.height,
+    (left, right) => left.itemTypeId - right.itemTypeId,
+    (left, right) => left.unitId.localeCompare(right.unitId),
+  );
+
+const sortUnitsByHeightThenFootprint = (unitsToSort: readonly OrderItemUnit[]): OrderItemUnit[] =>
+  deterministicSort(
+    [...unitsToSort],
+    (left, right) => right.dimensions.height - left.dimensions.height,
+    (left, right) => footprintOf(right) - footprintOf(left),
+    (left, right) => right.dimensions.length - left.dimensions.length,
+    (left, right) => left.itemTypeId - right.itemTypeId,
+    (left, right) => left.unitId.localeCompare(right.unitId),
+  );
+
+const buildPackingOrders = (baseUnits: readonly OrderItemUnit[]): OrderItemUnit[][] => {
+  const candidates = [
+    sortUnitsForPacking(baseUnits),
+    sortUnitsByLengthThenWidth(baseUnits),
+    sortUnitsByHeightThenFootprint(baseUnits),
+  ];
+  const seen = new Set<string>();
+  const unique: OrderItemUnit[][] = [];
+  for (const candidate of candidates) {
+    const signature = candidate.map((unit) => unit.unitId).join("|");
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    unique.push(candidate);
+  }
+  return unique;
+};
+
 // Сравнение двух результатов: сначала полнота, затем меньше контейнеров, затем больше размещений.
 const compareResults = (left: PackingEngineOutput, right: PackingEngineOutput): number => {
   if (left.unplacedItemUnitIds.length !== right.unplacedItemUnitIds.length) {
@@ -651,8 +688,11 @@ const packAcrossContainers = (
     const firstContainerPlacements = states[0]?.placements.length ?? 0;
     const firstContainerSpillPenalty =
       state.containerIndex === 0 ? 0 : Math.max(0, firstContainerPlacements - state.placements.length);
+    const opensNewContainerPenalty = state.placements.length === 0 ? 1 : 0;
     const farWallGap = container.length - (placed.placement.position.y + placed.placement.size.length);
     return [
+      opensNewContainerPenalty,
+      state.containerIndex,
       isNewLayer ? 1 : 0,
       firstContainerSpillPenalty,
       profile === "balanced" ? newTypeInContainerPenalty(state.placements, itemTypeId) : 0,
@@ -797,12 +837,13 @@ const pickBestResultByLimit = (
     return greedyResult;
   }
 
+  const packingOrders = buildPackingOrders(baseUnits);
   for (let limit = 1; limit < greedyResult.containers.length; limit += 1) {
-    const candidatesForLimit = [
-      packAcrossContainers(baseUnits, limit, container, "balanced"),
-      packAcrossContainers(baseUnits, limit, container, "dense"),
-      packWithLimit(baseUnits, limit, container),
-    ];
+    const candidatesForLimit = packingOrders.flatMap((orderedUnits) => [
+      packAcrossContainers(orderedUnits, limit, container, "balanced"),
+      packAcrossContainers(orderedUnits, limit, container, "dense"),
+      packWithLimit(orderedUnits, limit, container),
+    ]);
     const fullyPlacedCandidates = candidatesForLimit.filter(
       (candidate) => candidate.unplacedItemUnitIds.length === 0,
     );
