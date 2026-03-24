@@ -8,7 +8,7 @@ import {
 import { CorportalSoftBadge } from "@/components/ui/corportal-soft-badge";
 
 const IdeasPage = () => (
-  <main className="min-h-screen bg-[var(--corportal-surface-muted)] pl-12">
+  <main className="min-h-screen pl-12">
     <section className="p-5">
       <div className="rounded-xl bg-card p-5">
         <header className="flex items-center justify-between gap-3">

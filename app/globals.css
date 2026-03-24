@@ -76,12 +76,10 @@
   --corportal-rail-gradient-from: #1a2445;
   --corportal-rail-gradient-via: var(--corportal-rail-brand);
   --corportal-rail-gradient-to: var(--corportal-rail);
-  --corportal-rail-gradient: linear-gradient(
-    355deg,
-    var(--corportal-rail-gradient-from) 32.34%,
-    var(--corportal-rail-gradient-via) 36.11%,
-    var(--corportal-rail-gradient-to) 71.81%
-  );
+  --corportal-rail-gradient: linear-gradient(355deg,
+      var(--corportal-rail-gradient-from) 32.34%,
+      var(--corportal-rail-gradient-via) 36.11%,
+      var(--corportal-rail-gradient-to) 71.81%);
   --corportal-rail-foreground: rgb(255 255 255 / 0.9);
   --corportal-rail-hover: rgb(255 255 255 / 0.1);
   --corportal-rail-active: rgb(255 255 255 / 0.15);
@@ -139,6 +137,8 @@
 }
 
 .dark {
+  --corportal-surface-muted: oklch(0.145 0 0);
+  --corportal-surface-white: oklch(0.205 0 0);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -178,7 +178,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[var(--corportal-surface-muted)] text-foreground;
   }
 
   html {

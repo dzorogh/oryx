@@ -14,7 +14,7 @@ type OrderPackingAppChromeProps = {
  * Экспорт для unit-тестов без полного дерева Next.js.
  */
 export const OrderPackingAppChrome = ({ orderId, children }: OrderPackingAppChromeProps) => (
-  <div className="corportal-shell-bg relative min-h-screen">
+  <div className="relative min-h-screen">
     <NavRail />
     <PimAside activeOrderId={orderId} />
     <PimMainColumn>

@@ -7,7 +7,7 @@ type PimLayoutProps = {
 };
 
 const PimLayout = ({ children }: PimLayoutProps) => (
-  <div className="corportal-shell-bg relative min-h-screen">
+  <div className="relative min-h-screen">
     <PimAside />
     <PimMainColumn>{children}</PimMainColumn>
   </div>

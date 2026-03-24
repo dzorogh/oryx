@@ -2,7 +2,7 @@ import { Clock3, ThumbsUp } from "lucide-react";
 import { NEWS_ITEMS } from "@/components/home/news-demo-data";
 
 const NewsPage = () => (
-  <main className="min-h-screen bg-[var(--corportal-surface-muted)] pl-12">
+  <main className="min-h-screen pl-12">
     <section className="p-5">
       <div className="rounded-xl bg-card p-5">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Все новости</h1>

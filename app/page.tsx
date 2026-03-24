@@ -259,7 +259,7 @@ const HomePage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--corportal-surface-muted)] pl-12">
+    <main className="min-h-screen pl-12">
       <div className="flex min-h-screen flex-col gap-5 p-5">
         {isLayoutLoading ? (
           <>
