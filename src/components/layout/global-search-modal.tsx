@@ -15,7 +15,7 @@ type SearchTarget = {
 const SEARCH_TARGETS: SearchTarget[] = [
   { id: "home", title: "Главная", description: "Основной дашборд", href: "/" },
   { id: "orders", title: "Упаковка и заказы", description: "Раздел заказов PIM", href: "/pim/orders/59" },
-  { id: "ideas", title: "Идеи и предложения", description: "Лента идей сотрудников", href: "/ideas" },
+  { id: "ideas", title: "Идеи и предложения", description: "Лента идей сотрудников", href: "/pulse/ideas" },
   { id: "team", title: "Команда", description: "Сотрудники и роли", href: "/team" },
   { id: "activity", title: "Активность", description: "События и уведомления", href: "/activity" },
   { id: "approvals", title: "Согласования", description: "Задачи на согласование", href: "/approvals" },

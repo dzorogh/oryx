@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { PIM_MAIN_OFFSET_CLASS } from "./pim-layout-tokens";
+import { PIM_MAIN_OFFSET_CLASS } from "@/components/layout/module-layout-tokens";
 
 type PimMainColumnProps = {
   children: ReactNode;

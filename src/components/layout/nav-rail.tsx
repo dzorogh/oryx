@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Activity, GraduationCap, HelpCircle, Hexagon, Home, Search, ShoppingCart, ShieldCheck, Store, User, Users } from "lucide-react";
+import {
+  Activity,
+  GraduationCap,
+  HeartPulse,
+  HelpCircle,
+  Hexagon,
+  Home,
+  Search,
+  ShoppingCart,
+  ShieldCheck,
+  Store,
+  User,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GlobalSearchModal } from "@/components/layout/global-search-modal";
@@ -102,6 +115,7 @@ export const NavRail = () => {
   const navItems = [
     { label: "Поиск", icon: Search, href: "/search", match: "/search" },
     { label: "Главная", icon: Home, href: "/", match: "/" },
+    { label: "Пульс компании", icon: HeartPulse, href: "/pulse/news", match: "/pulse" },
     { label: "Согласования", icon: ShieldCheck, href: "/approvals", match: "/approvals" },
     {
       label: "Упаковка и заказы",

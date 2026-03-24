@@ -139,7 +139,7 @@ const HomePage = () => {
         icon: Newspaper,
         actions: [
           (props) => (
-            <Link {...props} href="/news" aria-label="Перейти ко всем новостям">
+            <Link {...props} href="/pulse/news" aria-label="Перейти ко всем новостям">
               Все новости
             </Link>
           ),
@@ -191,7 +191,7 @@ const HomePage = () => {
         icon: Lightbulb,
         actions: [
           (props) => (
-            <Link {...props} href="/ideas" aria-label="Перейти ко всем идеям">
+            <Link {...props} href="/pulse/ideas" aria-label="Перейти ко всем идеям">
               Все идеи
             </Link>
           ),
