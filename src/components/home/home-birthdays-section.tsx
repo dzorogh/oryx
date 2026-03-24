@@ -76,7 +76,7 @@ const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => {
       )}
       aria-label={`День рождения: ${person.fullName}`}
     >
-      <div className="flex shrink-0 items-start justify-between gap-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 h-4">
         <span
           className={cn(
             "inline-flex items-center gap-1.5 text-xs font-medium",
