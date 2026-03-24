@@ -77,24 +77,26 @@ const CompactKpiCard = ({
 }) => (
   <article
     className={cn(
-      "flex h-full min-h-0 flex-col justify-between gap-3 rounded-xl border border-[var(--corportal-border-grey)] bg-card px-4 py-4",
+      "flex min-h-0 flex-col gap-2.5 rounded-xl border border-[var(--corportal-border-grey)] bg-card px-4 py-3.5 lg:px-3.5 lg:py-3",
     )}
   >
-    <div className="space-y-3">
-      <h3 className="text-lg font-bold leading-snug tracking-tight text-foreground">{title}</h3>
-      <p className="text-xl font-bold tabular-nums leading-none tracking-tight text-foreground">{valueDisplay}</p>
+    <div className="space-y-2">
+      <h3 className="text-md font-bold leading-snug tracking-tight text-foreground">{title}</h3>
     </div>
-    <div className="flex items-center gap-3 pt-1">
-      <div className="relative size-7 shrink-0 overflow-hidden rounded-full ring-1 ring-border">
-        <Image src={avatarUrl} alt="" fill className="object-cover" sizes="28px" />
+    <div className="flex items-center gap-6">
+      <p className="text-xl font-bold tabular-nums leading-none tracking-tight text-foreground">{valueDisplay}</p>
+      <div className="mt-auto flex items-center gap-2.5">
+        <div className="relative size-7 shrink-0 overflow-hidden rounded-full ring-1 ring-border">
+          <Image src={avatarUrl} alt="" fill className="object-cover" sizes="28px" />
+        </div>
+        <button
+          type="button"
+          className="min-w-0 truncate text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
+          aria-label={`Профиль: ${leaderName}`}
+        >
+          {leaderName}
+        </button>
       </div>
-      <button
-        type="button"
-        className="min-w-0 truncate text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
-        aria-label={`Профиль: ${leaderName}`}
-      >
-        {leaderName}
-      </button>
     </div>
   </article>
 );
@@ -130,13 +132,13 @@ export const HomeStatsSection = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:items-stretch lg:gap-3">
+    <div className="grid grid-cols-1 gap-3 lg:items-start lg:gap-3">
       <div
-        className="flex min-h-0 flex-col gap-3 lg:h-full lg:min-h-0"
+        className="flex min-h-0 flex-wrap gap-3"
         aria-label="Топы по показателям"
       >
         {STATS_KPI_METRICS.map((metric) => (
-          <div key={metric.id} className="flex min-h-0 flex-1 flex-col">
+          <div key={metric.id} className="flex min-h-0">
             <CompactKpiCard
               title={metric.title}
               valueDisplay={
@@ -150,13 +152,13 @@ export const HomeStatsSection = () => {
       </div>
 
       <section
-        className="flex min-h-0 min-w-0 flex-col rounded-xl border border-[var(--corportal-border-grey)] bg-card p-4 lg:h-full"
+        className="flex min-h-0 min-w-0 flex-col rounded-xl border border-[var(--corportal-border-grey)] bg-card p-3"
         aria-labelledby="stats-leaderboard-heading"
       >
-        <header className="mb-4 shrink-0">
+        <header className="mb-3 shrink-0">
           <h3
             id="stats-leaderboard-heading"
-            className="text-lg font-bold leading-snug tracking-tight text-foreground"
+            className="text-md font-bold leading-snug tracking-tight text-foreground"
           >
             Лучшие специалисты по продажам за февраль
           </h3>
@@ -165,7 +167,7 @@ export const HomeStatsSection = () => {
         <div
           role="tablist"
           aria-label="Направления для рейтинга продаж"
-          className="mb-3 flex shrink-0 flex-wrap items-center gap-1"
+          className="mb-2 flex shrink-0 flex-wrap items-center gap-1"
         >
           {STATS_DIRECTION_TABS.map((tab, index) => {
             const selected = direction === tab.id;
@@ -197,24 +199,21 @@ export const HomeStatsSection = () => {
           id="stats-leaderboard-panel"
           role="tabpanel"
           aria-labelledby={activeTabId}
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-0 flex-col"
         >
-          <ul className="flex min-h-0 flex-1 flex-col gap-2">
+          <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
             {leaders.map((row) => {
               const sharePct = (row.turnoverRub / maxLeaderTurnover) * 100;
               const barWidthPct = Math.min(100, Math.round(sharePct * 10) / 10);
               const barClass = LEADER_ROW_BAR_CLASS[row.rank] ?? LEADER_ROW_BAR_CLASS[5];
               const turnoverLabel = `${formatRubPlain(row.turnoverRub)} ₽`;
               return (
-                <li key={row.rank} className="flex min-h-0 flex-1 flex-col">
+                <li key={row.rank} className="flex min-h-0 flex-col">
                   <div
-                    className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-card"
+                    className="relative flex min-h-0 flex-1 flex-col rounded-lg border border-[var(--corportal-border-grey)] bg-card px-2.5 py-2 gap-1"
                     aria-label={`${row.name}, оборот ${turnoverLabel}, ${barWidthPct.toFixed(1)} процента от оборота лидера`}
                   >
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1" aria-hidden>
-                      <div className={cn("h-full", barClass)} style={{ width: `${barWidthPct}%` }} />
-                    </div>
-                    <div className="relative z-10 flex min-h-0 flex-1 items-center gap-3 px-3 py-2">
+                    <div className="flex min-h-0 items-center gap-2">
                       <RankMedal rank={row.rank} />
                       <div className="relative size-7 shrink-0 overflow-hidden rounded-full ring-1 ring-border">
                         <Image src={row.avatarUrl} alt="" fill className="object-cover" sizes="28px" />
@@ -228,14 +227,15 @@ export const HomeStatsSection = () => {
                           {row.name}
                         </button>
                       </div>
-                      <div className="shrink-0 text-right">
-                        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                          Оборот продаж
-                        </div>
-                        <div className="text-sm font-bold tabular-nums text-foreground">
-                          {turnoverLabel}
-                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 justify-between">
+                      <div className="text-xs leading-snug text-muted-foreground line-clamp-2">
+                        Оборот продаж
                       </div>
+                      <div className="text-sm font-bold tabular-nums leading-none text-foreground">{turnoverLabel}</div>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                      <div className={cn("h-full rounded-full", barClass)} style={{ width: `${barWidthPct}%` }} />
                     </div>
                   </div>
                 </li>

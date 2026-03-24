@@ -10,7 +10,7 @@ export const STATS_DIRECTION_TABS: { id: StatsDirection; label: string }[] = [
   { id: "hr", label: "HR" },
 ];
 
-export type KpiMetricId = "sales_today" | "sales_week" | "calls_today";
+export type KpiMetricId = "sales_today" | "sales_week" | "calls_today" | "calls_week";
 
 export type KpiMetric = {
   id: KpiMetricId;
@@ -46,6 +46,14 @@ export const STATS_KPI_METRICS: KpiMetric[] = [
     format: "count",
     leaderName: "Авдеева Евгения",
     avatarUrl: "https://i.pravatar.cc/128?u=avdeeva-evgenia",
+  },
+  {
+    id: "calls_week",
+    title: "Топ звонков за неделю",
+    value: 3210,
+    format: "count",
+    leaderName: "Авдеева Евгения",
+    avatarUrl: "https://i.pravatar.cc/128?u=avdeeva-evgenia-week",
   },
 ];
 
