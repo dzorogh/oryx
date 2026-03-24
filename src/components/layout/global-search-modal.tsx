@@ -35,8 +35,8 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
     if (!open) {
       return;
     }
-    setQuery("");
     const timer = window.setTimeout(() => {
+      setQuery("");
       inputRef.current?.focus();
     }, 0);
     return () => window.clearTimeout(timer);

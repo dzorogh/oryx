@@ -2,14 +2,16 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { HandHeart, Lightbulb, ListTodo, Newspaper } from "lucide-react";
-import { HomeBlockShell } from "@/components/home/home-block-shell";
+import { Cake, Crown, HandHeart, Lightbulb, ListTodo, Newspaper, type LucideIcon } from "lucide-react";
+import { HomeBlockShell, type HomeBlockAccent } from "@/components/home/home-block-shell";
 import { HomeIdeasSection } from "@/components/home/home-ideas-section";
 import { HomeNewsSection } from "@/components/home/home-news-section";
+import { HomeStatsSection } from "@/components/home/home-stats-section";
 import { HomeThanksSection } from "@/components/home/home-thanks-section";
+import { HomeBirthdaysSection } from "@/components/home/home-birthdays-section";
 import { HomeTodayTasksSection } from "@/components/home/home-today-tasks-section";
 
-type HomeBlockId = "news" | "ideas" | "thanks" | "tasks";
+type HomeBlockId = "stats" | "news" | "ideas" | "thanks" | "birthdays" | "tasks";
 
 type HomeBlocksLayout = {
   order: HomeBlockId[];
@@ -20,26 +22,42 @@ type HomeBlocksLayout = {
 type HomeBlockDefinition = {
   id: HomeBlockId;
   title: string;
-  icon: typeof Newspaper;
+  icon: LucideIcon;
   actions?: ReactNode;
   render: () => ReactNode;
 };
 
-const HOME_BLOCKS_LAYOUT_KEY = "home-blocks-layout-v1";
+const HOME_BLOCKS_LAYOUT_KEY = "home-blocks-layout-v2";
+
+const ACCENT_BY_BLOCK: Record<HomeBlockId, HomeBlockAccent> = {
+  stats: "amber",
+  news: "violet",
+  thanks: "teal",
+  birthdays: "violet",
+  tasks: "rose",
+  ideas: "amber",
+};
 
 const DEFAULT_LAYOUT: HomeBlocksLayout = {
-  order: ["news", "thanks", "tasks", "ideas"],
+  order: ["stats", "news", "thanks", "birthdays", "tasks", "ideas"],
   hidden: [],
   collapsed: {
+    stats: false,
     news: false,
     thanks: false,
+    birthdays: false,
     tasks: false,
     ideas: false,
   },
 };
 
 const isValidBlockId = (value: string): value is HomeBlockId =>
-  value === "news" || value === "thanks" || value === "tasks" || value === "ideas";
+  value === "stats" ||
+  value === "news" ||
+  value === "thanks" ||
+  value === "birthdays" ||
+  value === "tasks" ||
+  value === "ideas";
 
 const normalizeLayout = (input: Partial<HomeBlocksLayout> | null): HomeBlocksLayout => {
   if (!input) {
@@ -55,8 +73,10 @@ const normalizeLayout = (input: Partial<HomeBlocksLayout> | null): HomeBlocksLay
     order: [...order, ...missingIds],
     hidden,
     collapsed: {
+      stats: collapsed.stats ?? false,
       news: collapsed.news ?? false,
       thanks: collapsed.thanks ?? false,
+      birthdays: collapsed.birthdays ?? false,
       tasks: collapsed.tasks ?? false,
       ideas: collapsed.ideas ?? false,
     },
@@ -96,6 +116,12 @@ const HomePage = () => {
   const blockDefinitions = useMemo<HomeBlockDefinition[]>(
     () => [
       {
+        id: "stats",
+        title: "Статистика",
+        icon: Crown,
+        render: () => <HomeStatsSection />,
+      },
+      {
         id: "news",
         title: "Новости",
         icon: Newspaper,
@@ -114,12 +140,45 @@ const HomePage = () => {
         id: "thanks",
         title: "Хочу сказать спасибо",
         icon: HandHeart,
+        actions: (
+          <Link
+            href="/thanks"
+            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            aria-label="Перейти к моим благодарностям"
+          >
+            Мои благодарности
+          </Link>
+        ),
         render: () => <HomeThanksSection />,
+      },
+      {
+        id: "birthdays",
+        title: "Ближайшие дни рождения",
+        icon: Cake,
+        actions: (
+          <Link
+            href="/team"
+            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            aria-label="Перейти к разделу команда"
+          >
+            Команда
+          </Link>
+        ),
+        render: () => <HomeBirthdaysSection />,
       },
       {
         id: "tasks",
         title: "Задачи на сегодня",
         icon: ListTodo,
+        actions: (
+          <Link
+            href="/tasks"
+            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            aria-label="Перейти ко всем задачам"
+          >
+            Все задачи
+          </Link>
+        ),
         render: () => <HomeTodayTasksSection />,
       },
       {
@@ -225,6 +284,7 @@ const HomePage = () => {
                   key={block.id}
                   title={block.title}
                   icon={block.icon}
+                  accent={ACCENT_BY_BLOCK[block.id]}
                   actions={block.actions}
                   collapsed={layout.collapsed[block.id]}
                   canMoveUp={visibleIndex > 0}

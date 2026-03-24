@@ -49,17 +49,61 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-corportal-rail-brand: var(--corportal-rail-brand);
+  --color-corportal-rail-favicon-surface: var(--corportal-rail-favicon-surface);
+  --color-corportal-rail-favicon-ink: var(--corportal-rail-favicon-ink);
+  --color-corportal-accent-violet-soft: var(--corportal-accent-violet-soft);
+  --color-corportal-accent-violet-on-soft: var(--corportal-accent-violet-on-soft);
+  --color-corportal-accent-teal-soft: var(--corportal-accent-teal-soft);
+  --color-corportal-accent-teal-on-soft: var(--corportal-accent-teal-on-soft);
+  --color-corportal-accent-rose-soft: var(--corportal-accent-rose-soft);
+  --color-corportal-accent-rose-on-soft: var(--corportal-accent-rose-on-soft);
+  --color-corportal-accent-amber-soft: var(--corportal-accent-amber-soft);
+  --color-corportal-accent-amber-on-soft: var(--corportal-accent-amber-on-soft);
+  --color-corportal-idea-status-new-bg: var(--corportal-idea-status-new-bg);
+  --color-corportal-idea-status-new-fg: var(--corportal-idea-status-new-fg);
+  --color-corportal-idea-status-review-bg: var(--corportal-idea-status-review-bg);
+  --color-corportal-idea-status-review-fg: var(--corportal-idea-status-review-fg);
 }
 
 
 
 :root {
   --Border-Grey: #d7dae0;
-  --Brand-Common-BrandColor_Pressed: #4453c4;
   --corportal-border-grey: var(--Border-Grey);
   --corportal-rail: #0f172a;
+  --corportal-rail-brand: #4453c4;
+  --corportal-rail-gradient-from: #1a2445;
+  --corportal-rail-gradient-via: var(--corportal-rail-brand);
+  --corportal-rail-gradient-to: var(--corportal-rail);
+  --corportal-rail-gradient: linear-gradient(
+    355deg,
+    var(--corportal-rail-gradient-from) 32.34%,
+    var(--corportal-rail-gradient-via) 36.11%,
+    var(--corportal-rail-gradient-to) 71.81%
+  );
+  --corportal-rail-foreground: rgb(255 255 255 / 0.9);
+  --corportal-rail-hover: rgb(255 255 255 / 0.1);
+  --corportal-rail-active: rgb(255 255 255 / 0.15);
+  --corportal-rail-indicator: #ffffff;
+  --corportal-rail-divider: rgb(255 255 255 / 0.1);
+  --corportal-rail-focus-ring: rgb(255 255 255 / 0.4);
+  --corportal-rail-favicon-surface: #b7f272;
+  --corportal-rail-favicon-ink: #1a1e29;
   --corportal-surface-muted: #f3f3f6;
   --corportal-surface-white: #ffffff;
+  --corportal-accent-violet-soft: #f2efff;
+  --corportal-accent-violet-on-soft: #6d28d9;
+  --corportal-accent-teal-soft: #e6f9f5;
+  --corportal-accent-teal-on-soft: #0f766e;
+  --corportal-accent-rose-soft: #ffebeb;
+  --corportal-accent-rose-on-soft: #dc2626;
+  --corportal-accent-amber-soft: #fff9e6;
+  --corportal-accent-amber-on-soft: #d97706;
+  --corportal-idea-status-new-bg: #dcfce7;
+  --corportal-idea-status-new-fg: #166534;
+  --corportal-idea-status-review-bg: #ffedd5;
+  --corportal-idea-status-review-fg: #9a3412;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -139,5 +183,11 @@
 
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .bg-corportal-rail {
+    background-image: var(--corportal-rail-gradient);
   }
 }

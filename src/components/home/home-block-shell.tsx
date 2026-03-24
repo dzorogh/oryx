@@ -6,9 +6,21 @@ import { ChevronDown, EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** Акцент цветного круга иконки (палитра Corportal / канбан). */
+export type HomeBlockAccent = "violet" | "teal" | "rose" | "amber";
+
+const ACCENT_ICON_CLASS: Record<HomeBlockAccent, string> = {
+  violet: "bg-corportal-accent-violet-soft text-corportal-accent-violet-on-soft",
+  teal: "bg-corportal-accent-teal-soft text-corportal-accent-teal-on-soft",
+  rose: "bg-corportal-accent-rose-soft text-corportal-accent-rose-on-soft",
+  amber: "bg-corportal-accent-amber-soft text-corportal-accent-amber-on-soft",
+};
+
 type HomeBlockShellProps = {
   title: string;
   icon: LucideIcon;
+  /** Цвет круга иконки в шапке; фон секции не меняет. */
+  accent?: HomeBlockAccent;
   collapsed: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -23,6 +35,7 @@ type HomeBlockShellProps = {
 export const HomeBlockShell = ({
   title,
   icon: Icon,
+  accent = "violet",
   collapsed,
   canMoveUp,
   canMoveDown,
@@ -69,7 +82,7 @@ export const HomeBlockShell = ({
     <section className="flex flex-col gap-3 rounded-xl bg-card p-5">
       <header className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="rounded-full bg-primary p-2 text-primary-foreground">
+          <div className={cn("rounded-full p-2", ACCENT_ICON_CLASS[accent])}>
             <Icon aria-hidden className="size-4" />
           </div>
           <h2 className="text-lg font-bold leading-tight tracking-tight text-foreground">{title}</h2>

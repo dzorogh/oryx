@@ -1,16 +1,11 @@
 import Link from "next/link";
 import { MessageCircle, ThumbsUp } from "lucide-react";
-import { IDEAS_ITEMS } from "@/components/home/ideas-demo-data";
-
-const statusLabel = {
-  new: "Новая",
-  review: "На рассмотрении",
-} as const;
-
-const statusStyle = {
-  new: "border-primary/30 bg-primary/10 text-primary",
-  review: "border-border bg-muted text-muted-foreground",
-} as const;
+import {
+  IDEA_STATUS_BADGE_CLASS,
+  IDEA_STATUS_LABELS,
+  IDEAS_ITEMS,
+} from "@/components/home/ideas-demo-data";
+import { CorportalSoftBadge } from "@/components/ui/corportal-soft-badge";
 
 const IdeasPage = () => (
   <main className="min-h-screen bg-[var(--corportal-surface-muted)] pl-12">
@@ -34,11 +29,9 @@ const IdeasPage = () => (
               className="flex flex-col gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <span
-                  className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-medium ${statusStyle[idea.status]}`}
-                >
-                  {statusLabel[idea.status]}
-                </span>
+                <CorportalSoftBadge className={IDEA_STATUS_BADGE_CLASS[idea.status]}>
+                  {IDEA_STATUS_LABELS[idea.status]}
+                </CorportalSoftBadge>
                 <span className="text-xs text-muted-foreground">{idea.createdAt}</span>
               </div>
               <h2 className="text-sm font-semibold leading-tight text-foreground">{idea.title}</h2>

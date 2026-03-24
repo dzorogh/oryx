@@ -19,6 +19,8 @@ const RUBRIC_TABS: RubricTab[] = [
   { id: "logistics", label: "Логистика" },
 ];
 
+const HOME_NEWS_LIMIT = 6;
+
 const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
   <article className="flex w-full min-w-0 flex-col gap-3 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 pb-5">
     <div className="relative aspect-video overflow-hidden rounded-md">
@@ -50,17 +52,6 @@ const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
   </article>
 );
 
-const MicroNewsItem = ({ item }: { item: NewsItem }) => (
-  <article className="rounded-sm border border-[var(--corportal-border-grey)] bg-card px-1.5 py-1">
-    <div className="flex items-center justify-between gap-2">
-      <h3 className="min-w-0 flex-1 truncate text-xs font-bold leading-none text-foreground">
-        {item.title}
-      </h3>
-      <p className="shrink-0 text-xs leading-none text-muted-foreground">{item.publishedAt}</p>
-    </div>
-  </article>
-);
-
 export const HomeNewsSection = () => {
   const [activeRubric, setActiveRubric] = useState<NewsRubric>("all");
 
@@ -72,8 +63,7 @@ export const HomeNewsSection = () => {
     return NEWS_ITEMS.filter((item) => item.rubric === activeRubric);
   }, [activeRubric]);
 
-  const newsCardItems = filteredNewsItems.slice(0, 6);
-  const newsMicroItems = filteredNewsItems.slice(6, 18);
+  const displayNewsItems = filteredNewsItems.slice(0, HOME_NEWS_LIMIT);
 
   return (
     <div className="flex flex-col gap-3" data-node-id="40007711:21918">
@@ -101,14 +91,8 @@ export const HomeNewsSection = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-        {newsCardItems.map((item, index) => (
+        {displayNewsItems.map((item, index) => (
           <NewsCard key={item.id} item={item} eager={index === 0} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
-        {newsMicroItems.map((item) => (
-          <MicroNewsItem key={item.id} item={item} />
         ))}
       </div>
 

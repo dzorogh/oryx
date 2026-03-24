@@ -20,12 +20,12 @@ type RailIconButtonProps = {
 /** Фавикон рейла — Figma node 40023000:133773 (Corportal Favicon). */
 const RailFavicon = () => (
   <div
-    className="relative size-6 shrink-0 overflow-hidden rounded-sm bg-[#b7f272]"
+    className="relative size-6 shrink-0 overflow-hidden rounded-sm bg-corportal-rail-favicon-surface"
     aria-hidden
   >
     <div className="absolute inset-[20.17%_44.64%_18.88%_21.46%]">
       <svg
-        className="block size-full"
+        className="block size-full text-corportal-rail-favicon-ink"
         viewBox="0 0 40.6867 73.133"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -33,13 +33,13 @@ const RailFavicon = () => (
       >
         <path
           d="M35.7218 29.4766L33.2646 26.277L32.8186 25.7017L12.8918 0H0L30.7107 38.8822V73.1162L40.6867 73.133V35.5777L35.7218 29.4766Z"
-          fill="#1A1E29"
+          fill="currentColor"
         />
       </svg>
     </div>
     <div className="absolute inset-[20.17%_21.03%_58.8%_52.79%]">
       <svg
-        className="block size-full"
+        className="block size-full text-corportal-rail-favicon-ink"
         viewBox="0 0 31.4163 25.236"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -47,22 +47,25 @@ const RailFavicon = () => (
       >
         <path
           d="M31.4163 0C31.4163 0 9.74333 20.7779 9.24426 21.2637C11.2488 18.0617 13.7368 7.90369 19.2391 0.0168972L0 25.236H12.3769L31.4163 0Z"
-          fill="#1A1E29"
+          fill="currentColor"
         />
       </svg>
     </div>
   </div>
 );
 
+const railButtonBaseClass =
+  "relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-[color:var(--corportal-rail-foreground)] transition-colors hover:bg-[color:var(--corportal-rail-hover)] focus-visible:outline focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]";
+
 const RailIconButton = ({ label, icon: Icon, href, onClick, active }: RailIconButtonProps) => {
   const className = cn(
-    "relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white/90 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40",
-    active && "bg-white/15 text-white",
+    railButtonBaseClass,
+    active && "bg-[color:var(--corportal-rail-active)] text-[color:var(--corportal-rail-indicator)]",
   );
 
   const indicator = active ? (
     <span
-      className="absolute -left-0.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-white"
+      className="absolute -left-0.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[color:var(--corportal-rail-indicator)]"
       aria-hidden
     />
   ) : null;
@@ -118,7 +121,7 @@ export const NavRail = () => {
   return (
     <>
       <aside
-        className="fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto border-r border-solid border-[var(--corportal-border-grey)] bg-[linear-gradient(355deg,#1a2445_32.34%,var(--Brand-Common-BrandColor_Pressed)_36.11%,var(--corportal-rail)_71.81%)] py-0 text-white no-scrollbar"
+        className="bg-corportal-rail fixed left-0 top-0 z-40 flex h-svh w-12 flex-col items-center overflow-y-auto border-r border-solid border-[var(--corportal-border-grey)] py-0 text-[color:var(--corportal-rail-foreground)] no-scrollbar"
         aria-label="Основная навигация"
       >
         <div className="flex w-full justify-center px-3 py-3">
@@ -148,7 +151,7 @@ export const NavRail = () => {
           ))}
         </div>
 
-        <div className="flex w-full flex-col items-center gap-2 border-t border-white/10 px-1 py-2">
+        <div className="flex w-full flex-col items-center gap-2 border-t border-[color:var(--corportal-rail-divider)] px-1 py-2">
           {footerItems.map((item) => (
             <RailIconButton
               key={item.label}
@@ -160,10 +163,10 @@ export const NavRail = () => {
           ))}
         </div>
 
-        <div className="flex w-full justify-center border-t border-white/10 px-2 py-2">
+        <div className="flex w-full justify-center border-t border-[color:var(--corportal-rail-divider)] px-2 py-2">
           <Link
             href="/profile"
-            className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-foreground transition-colors hover:bg-muted/80 focus-visible:outline focus-visible:ring-2 focus-visible:ring-white/40"
+            className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-[color:var(--corportal-rail-hover)] text-[color:var(--corportal-rail-foreground)] transition-colors hover:bg-[color:var(--corportal-rail-active)] focus-visible:outline focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]"
             aria-label="Профиль"
           >
             <User aria-hidden className="size-4" strokeWidth={2} />

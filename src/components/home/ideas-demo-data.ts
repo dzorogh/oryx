@@ -1,5 +1,16 @@
 export type IdeaStatus = "new" | "review";
 
+/** Подписи и классы бейджей статуса (без бордера, цветные фоны из палитры Corportal). */
+export const IDEA_STATUS_LABELS: Record<IdeaStatus, string> = {
+  new: "Новая",
+  review: "На рассмотрении",
+};
+
+export const IDEA_STATUS_BADGE_CLASS: Record<IdeaStatus, string> = {
+  new: "bg-corportal-idea-status-new-bg text-corportal-idea-status-new-fg",
+  review: "bg-corportal-idea-status-review-bg text-corportal-idea-status-review-fg",
+};
+
 export type IdeaItem = {
   id: string;
   title: string;

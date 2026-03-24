@@ -45,6 +45,8 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
   },
 };
 
+export const generateStaticParams = () => Object.keys(SECTION_CONFIGS).map((section) => ({ section }));
+
 type SectionPageProps = {
   params: Promise<{ section: string }>;
 };

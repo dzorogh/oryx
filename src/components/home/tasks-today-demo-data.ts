@@ -44,3 +44,40 @@ export const TODAY_TASKS: TodayTask[] = [
     comments: 0,
   },
 ];
+
+/** Полный демо-список для страницы «Все задачи» (включает задачи на сегодня). */
+export const ALL_TASKS: TodayTask[] = [
+  ...TODAY_TASKS,
+  {
+    id: "task-5",
+    deadlineLabel: "Сегодня, 19:30",
+    priority: "medium",
+    title: "Согласовать макет упаковки с клиентом",
+    projectName: "PIM · Заказ №62",
+    comments: 2,
+  },
+  {
+    id: "task-6",
+    deadlineLabel: "Завтра, 09:00",
+    priority: "low",
+    title: "Обновить инструкцию по приёмке на складе",
+    projectName: "Логистика · Процессы",
+    comments: 7,
+  },
+  {
+    id: "task-7",
+    deadlineLabel: "Завтра, 11:00",
+    priority: "high",
+    title: "Провести ревью рисков по поставке",
+    projectName: "Закупки · Контракты",
+    comments: 1,
+  },
+  {
+    id: "task-8",
+    deadlineLabel: "Завтра, 14:00",
+    priority: "medium",
+    title: "Заполнить чек-лист перед релизом",
+    projectName: "IT · Релизы",
+    comments: 4,
+  },
+];
