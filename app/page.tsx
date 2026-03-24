@@ -3,7 +3,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Cake, Crown, HandHeart, Lightbulb, ListTodo, Medal, Newspaper, type LucideIcon } from "lucide-react";
-import { HomeBlockShell, type HomeBlockAccent } from "@/components/home/home-block-shell";
+import { HomeBlockShell, type HomeBlockAccent, type HomeBlockHeaderAction } from "@/components/home/home-block-shell";
 import { HomeIdeasSection } from "@/components/home/home-ideas-section";
 import { HomeNewsSection } from "@/components/home/home-news-section";
 import { HomeSalesLeadersSection } from "@/components/home/home-sales-leaders-section";
@@ -24,7 +24,7 @@ type HomeBlockDefinition = {
   id: HomeBlockId;
   title: string;
   icon: LucideIcon;
-  actions?: ReactNode;
+  actions?: HomeBlockHeaderAction[];
   render: () => ReactNode;
 };
 
@@ -136,75 +136,65 @@ const HomePage = () => {
         id: "news",
         title: "Новости",
         icon: Newspaper,
-        actions: (
-          <Link
-            href="/news"
-            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            aria-label="Перейти ко всем новостям"
-          >
-            Все новости
-          </Link>
-        ),
+        actions: [
+          (props) => (
+            <Link {...props} href="/news" aria-label="Перейти ко всем новостям">
+              Все новости
+            </Link>
+          ),
+        ],
         render: () => <HomeNewsSection />,
       },
       {
         id: "thanks",
         title: "Хочу сказать спасибо",
         icon: HandHeart,
-        actions: (
-          <Link
-            href="/thanks"
-            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            aria-label="Перейти к моим благодарностям"
-          >
-            Мои благодарности
-          </Link>
-        ),
+        actions: [
+          (props) => (
+            <Link {...props} href="/thanks" aria-label="Перейти к моим благодарностям">
+              Мои благодарности
+            </Link>
+          ),
+        ],
         render: () => <HomeThanksSection />,
       },
       {
         id: "birthdays",
         title: "Ближайшие дни рождения",
         icon: Cake,
-        actions: (
-          <Link
-            href="/team"
-            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            aria-label="Перейти к разделу команда"
-          >
-            Команда
-          </Link>
-        ),
+        actions: [
+          (props) => (
+            <Link {...props} href="/team" aria-label="Перейти к разделу команда">
+              Команда
+            </Link>
+          ),
+        ],
         render: () => <HomeBirthdaysSection />,
       },
       {
         id: "tasks",
         title: "Задачи на сегодня",
         icon: ListTodo,
-        actions: (
-          <Link
-            href="/tasks"
-            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            aria-label="Перейти ко всем задачам"
-          >
-            Все задачи
-          </Link>
-        ),
+        actions: [
+          (props) => (
+            <Link {...props} href="/tasks" aria-label="Перейти ко всем задачам">
+              Все задачи
+            </Link>
+          ),
+        ],
         render: () => <HomeTodayTasksSection />,
       },
       {
         id: "ideas",
         title: "Идеи и предложения",
         icon: Lightbulb,
-        actions: (
-          <Link
-            href="/ideas"
-            className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            aria-label="Перейти ко всем идеям"
-          >
-            Все идеи
-          </Link>
-        ),
+        actions: [
+          (props) => (
+            <Link {...props} href="/ideas" aria-label="Перейти ко всем идеям">
+              Все идеи
+            </Link>
+          ),
+        ],
         render: () => <HomeIdeasSection />,
       },
     ],

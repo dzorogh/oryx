@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ const ACCENT_ICON_CLASS: Record<HomeBlockAccent, string> = {
   amber: "bg-corportal-accent-amber-soft text-corportal-accent-amber-on-soft",
 };
 
+type ButtonProps = ComponentProps<typeof Button>;
+
+/** Один элемент `actions`: функция для пропа `render` у `Button` (напр. `Link` как корень). */
+export type HomeBlockHeaderAction = NonNullable<ButtonProps["render"]>;
+
 type HomeBlockShellProps = {
   title: string;
   icon: LucideIcon;
@@ -29,7 +34,8 @@ type HomeBlockShellProps = {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onToggleCollapsed: () => void;
-  actions?: ReactNode;
+  /** Плоский массив функций `render` для кнопок в шапке. */
+  actions?: HomeBlockHeaderAction[];
   children: ReactNode;
 };
 
@@ -89,7 +95,16 @@ export const HomeBlockShell = ({
           <h2 className="text-lg font-bold leading-tight tracking-tight text-foreground">{title}</h2>
         </div>
         <div className="flex items-center gap-2">
-          {actions}
+          {actions?.map((render, index) => (
+            <Button
+              key={`home-block-action-${index}`}
+              type="button"
+              variant="outline"
+              size="default"
+              nativeButton={false}
+              render={render}
+            />
+          ))}
           <div ref={menuRef} className="relative">
             <Button
               type="button"

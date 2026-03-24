@@ -131,8 +131,8 @@ export const HomeBirthdaysSection = () => {
   }, [now]);
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-[repeat(7,minmax(0,1fr))]">
-      {rows.map(({ person, occurrence, daysUntil }) => (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {rows.slice(0, 6).map(({ person, occurrence, daysUntil }) => (
         <BirthdayCard key={person.id} person={person} occurrence={occurrence} daysUntil={daysUntil} />
       ))}
     </div>
