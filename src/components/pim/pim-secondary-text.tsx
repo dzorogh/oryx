@@ -1,9 +1,14 @@
 import type { ElementType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+type PimSecondaryTextComponent = ElementType<{
+  className?: string;
+  children?: ReactNode;
+}>;
+
 type PimSecondaryTextProps = {
   children: ReactNode;
-  as?: ElementType;
+  as?: PimSecondaryTextComponent;
   className?: string;
 };
 

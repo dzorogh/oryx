@@ -1,9 +1,14 @@
 import type { ElementType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+type HomeDateMetaTextComponent = ElementType<{
+  className?: string;
+  children?: ReactNode;
+}>;
+
 type HomeDateMetaTextProps = {
   children: ReactNode;
-  as?: ElementType;
+  as?: HomeDateMetaTextComponent;
   className?: string;
 };
 
