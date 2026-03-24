@@ -73,9 +73,6 @@ const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => {
     <article
       className={cn(
         "flex h-full min-h-0 min-w-0 flex-col gap-2 rounded-lg border p-3",
-        isToday
-          ? "border-corportal-accent-amber bg-corportal-accent-amber-soft/35 shadow-[0_6px_16px_rgba(245,158,11,0.16)]"
-          : "border-[var(--corportal-border-grey)] bg-card",
       )}
       aria-label={`День рождения: ${person.fullName}`}
     >
