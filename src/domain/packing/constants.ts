@@ -166,6 +166,48 @@ export const ORDER_PRESETS: OrderPreset[] = [
     ],
   },
   {
+    orderId: 192,
+    label: "Заказ №192",
+    order: [
+      {
+        id: 1,
+        name: "Force 1100 EFI",
+        width: 1300,
+        length: 2300,
+        height: 1260,
+        weight: 1,
+        quantity: 10,
+      },
+      {
+        id: 6288,
+        name: "Force 420 Cyber EFI",
+        width: 1140,
+        length: 1960,
+        height: 860,
+        weight: 1,
+        quantity: 16,
+      },
+      {
+        id: 192280,
+        name: "Activator 280 RX",
+        width: 800,
+        length: 1490,
+        height: 850,
+        weight: 1,
+        quantity: 10,
+      },
+      {
+        id: 192320,
+        name: "Power Max 320",
+        width: 440,
+        length: 1490,
+        height: 870,
+        weight: 1,
+        quantity: 10,
+      },
+    ],
+  },
+  {
     orderId: 1000,
     label: "Заказ №1000",
     order: [
