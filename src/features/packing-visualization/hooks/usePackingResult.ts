@@ -4,6 +4,7 @@ import { startTransition, useEffect, useRef, useState } from "react";
 import { runPackingAsync } from "@/lib/run-packing-async";
 import type { OrderItemType, PackingResult } from "@/domain/packing/types";
 import { validatePackingResultSchema } from "@/domain/packing/schema-validation";
+import { NON_LAST_CONTAINER_EMPTY_VOLUME_THRESHOLD_PERCENT } from "@/domain/report/summarize-result";
 
 const EMPTY_RESULT: PackingResult = validatePackingResultSchema({
   usedContainerCount: 0,
@@ -18,7 +19,7 @@ const EMPTY_RESULT: PackingResult = validatePackingResultSchema({
   },
   postCheck: {
     nonLastContainerEmptyVolume: {
-      thresholdPercent: 30,
+      thresholdPercent: NON_LAST_CONTAINER_EMPTY_VOLUME_THRESHOLD_PERCENT,
       checkedContainerCount: 0,
       maxEmptyVolumePercent: 0,
       failingContainerIndex: null,

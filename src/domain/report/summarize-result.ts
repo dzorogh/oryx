@@ -6,7 +6,7 @@ import type {
   PackingSummary,
 } from "../packing/types";
 
-export const NON_LAST_CONTAINER_EMPTY_VOLUME_THRESHOLD_PERCENT = 30;
+export const NON_LAST_CONTAINER_EMPTY_VOLUME_THRESHOLD_PERCENT = 50;
 
 const getContainerVolume = (containerType: ContainerType): number =>
   containerType.width * containerType.length * containerType.height;

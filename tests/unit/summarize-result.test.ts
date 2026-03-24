@@ -39,19 +39,19 @@ describe("buildPostCheck", () => {
     );
   });
 
-  it("порог равен 30%: на границе pass, выше порога fail", () => {
+  it("порог равен 50%: на границе pass, выше порога fail", () => {
     const atThreshold = buildPostCheck(
-      [makeContainer(0, 700), makeContainer(1, 200)],
+      [makeContainer(0, 500), makeContainer(1, 200)],
       testContainerType,
     );
-    expect(atThreshold.nonLastContainerEmptyVolume.maxEmptyVolumePercent).toBeCloseTo(30, 6);
+    expect(atThreshold.nonLastContainerEmptyVolume.maxEmptyVolumePercent).toBeCloseTo(50, 6);
     expect(atThreshold.nonLastContainerEmptyVolume.pass).toBe(true);
 
     const overThreshold = buildPostCheck(
-      [makeContainer(0, 690), makeContainer(1, 200)],
+      [makeContainer(0, 490), makeContainer(1, 200)],
       testContainerType,
     );
-    expect(overThreshold.nonLastContainerEmptyVolume.maxEmptyVolumePercent).toBeCloseTo(31, 6);
+    expect(overThreshold.nonLastContainerEmptyVolume.maxEmptyVolumePercent).toBeCloseTo(51, 6);
     expect(overThreshold.nonLastContainerEmptyVolume.pass).toBe(false);
     expect(overThreshold.nonLastContainerEmptyVolume.failingContainerIndex).toBe(0);
   });
