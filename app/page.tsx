@@ -2,16 +2,17 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Cake, Crown, HandHeart, Lightbulb, ListTodo, Newspaper, type LucideIcon } from "lucide-react";
+import { Cake, Crown, HandHeart, Lightbulb, ListTodo, Medal, Newspaper, type LucideIcon } from "lucide-react";
 import { HomeBlockShell, type HomeBlockAccent } from "@/components/home/home-block-shell";
 import { HomeIdeasSection } from "@/components/home/home-ideas-section";
 import { HomeNewsSection } from "@/components/home/home-news-section";
+import { HomeSalesLeadersSection } from "@/components/home/home-sales-leaders-section";
 import { HomeStatsSection } from "@/components/home/home-stats-section";
 import { HomeThanksSection } from "@/components/home/home-thanks-section";
 import { HomeBirthdaysSection } from "@/components/home/home-birthdays-section";
 import { HomeTodayTasksSection } from "@/components/home/home-today-tasks-section";
 
-type HomeBlockId = "stats" | "news" | "ideas" | "thanks" | "birthdays" | "tasks";
+type HomeBlockId = "stats" | "salesLeaders" | "news" | "ideas" | "thanks" | "birthdays" | "tasks";
 
 type HomeBlocksLayout = {
   order: HomeBlockId[];
@@ -31,6 +32,7 @@ const HOME_BLOCKS_LAYOUT_KEY = "home-blocks-layout-v2";
 
 const ACCENT_BY_BLOCK: Record<HomeBlockId, HomeBlockAccent> = {
   stats: "amber",
+  salesLeaders: "amber",
   news: "violet",
   thanks: "teal",
   birthdays: "violet",
@@ -39,10 +41,11 @@ const ACCENT_BY_BLOCK: Record<HomeBlockId, HomeBlockAccent> = {
 };
 
 const DEFAULT_LAYOUT: HomeBlocksLayout = {
-  order: ["stats", "news", "thanks", "birthdays", "tasks", "ideas"],
+  order: ["stats", "salesLeaders", "news", "thanks", "birthdays", "tasks", "ideas"],
   hidden: [],
   collapsed: {
     stats: false,
+    salesLeaders: false,
     news: false,
     thanks: false,
     birthdays: false,
@@ -53,6 +56,7 @@ const DEFAULT_LAYOUT: HomeBlocksLayout = {
 
 const isValidBlockId = (value: string): value is HomeBlockId =>
   value === "stats" ||
+  value === "salesLeaders" ||
   value === "news" ||
   value === "thanks" ||
   value === "birthdays" ||
@@ -74,6 +78,7 @@ const normalizeLayout = (input: Partial<HomeBlocksLayout> | null): HomeBlocksLay
     hidden,
     collapsed: {
       stats: collapsed.stats ?? false,
+      salesLeaders: collapsed.salesLeaders ?? false,
       news: collapsed.news ?? false,
       thanks: collapsed.thanks ?? false,
       birthdays: collapsed.birthdays ?? false,
@@ -120,6 +125,12 @@ const HomePage = () => {
         title: "Статистика",
         icon: Crown,
         render: () => <HomeStatsSection />,
+      },
+      {
+        id: "salesLeaders",
+        title: "Рейтинг",
+        icon: Medal,
+        render: () => <HomeSalesLeadersSection />,
       },
       {
         id: "news",
