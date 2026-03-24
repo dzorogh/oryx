@@ -41,7 +41,7 @@ const ACCENT_BY_BLOCK: Record<HomeBlockId, HomeBlockAccent> = {
 };
 
 const DEFAULT_LAYOUT: HomeBlocksLayout = {
-  order: ["stats", "salesLeaders", "news", "thanks", "birthdays", "tasks", "ideas"],
+  order: ["news", "birthdays", "stats", "salesLeaders", "tasks", "ideas", "thanks"],
   hidden: [],
   collapsed: {
     stats: false,

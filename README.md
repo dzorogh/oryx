@@ -1,30 +1,30 @@
-# Container Packing Visualization
+# Oryx BMS
 
-Веб-приложение на Next.js для расчёта и 3D-визуализации укладки товаров в контейнеры.
-Проект решает задачу упаковки фиксированных заказов с геометрическими ограничениями и показывает результат на интерактивной сцене.
+**Oryx BMS** (Business Management System) — веб-приложение на Next.js для внутренних бизнес-процессов: главная рабочая панель, контентные разделы и PIM-модуль с 3D-визуализацией упаковки заказов.
 
-## Что делает проект
+## Что есть в проекте сейчас
 
-- рассчитывает раскладку единиц товара по контейнерам (в фоне через Web Worker в браузере, без блокировки UI; в тестах и без Worker — отложенный вызов на следующий macrotask);
-- минимизирует число используемых контейнеров без потери полноты размещения (если это возможно);
-- валидирует результат (геометрия, опора, полнота, детерминированность) и проверяет, что габариты каждой позиции заказа **помещаются в контейнер** (с учётом поворота по yaw на полу и фиксированной высоты по вертикали);
-- отображает все контейнеры в одной 3D-сцене **только если** размещение проходит проверку `isPackingPlacementValid` (геометрия + опора + полнота); иначе вместо сцены показывается сообщение об ошибках, детали — в блоке «Аудит результата» (по умолчанию свёрнут);
+- **Главная панель (`/`)**: набор бизнес-блоков (статистика, рейтинг, новости, благодарности, дни рождения, задачи, идеи) с сохранением пользовательского layout в `localStorage`.
+- **Контентные страницы**: `/news`, `/tasks`, `/ideas`, `/thanks`.
+- **PIM-модуль**: `/pim/orders/[orderId]` с таблицей позиций заказа, 3D-сценой контейнеров, аудитом результата упаковки и валидацией.
+- **Секции-заглушки**: `/[section]` для внутренних разделов (`activity`, `approvals`, `catalog`, `help`, `learning`, `profile`, `search`, `services`, `team`).
 
 ## Технологический стек
 
-- `Next.js` (App Router), `React`, `TypeScript`;
-- `three`, `@react-three/fiber`, `@react-three/drei` для 3D-визуализации;
-- UI: [shadcn/ui](https://ui.shadcn.com/) (пресет Base UI, компоненты в `src/components/ui/`);
-- `zod` для runtime-валидации входа/выхода;
-- `Vitest` + `@testing-library/react` (jsdom);
-- `ESLint` + `TypeScript` проверки.
+- `Next.js` (App Router), `React`, `TypeScript`
+- UI-компоненты: `@base-ui/react`, `shadcn/ui`-подход, `lucide-react`
+- Стили: `Tailwind CSS v4`
+- 3D: `three`, `@react-three/fiber`, `@react-three/drei`
+- Валидация данных: `zod`
+- Тесты: `Vitest`, `@testing-library/react`, `jsdom`
+- Качество кода: `ESLint`, `TypeScript` (`tsc --noEmit`)
 
 ## Быстрый старт
 
 ### Требования
 
-- Node.js (актуальный LTS);
-- npm.
+- Node.js (актуальный LTS)
+- npm
 
 ### Установка и запуск
 
@@ -35,190 +35,103 @@ npm run dev
 
 После запуска откройте [http://localhost:3000](http://localhost:3000).
 
-## Скрипты проекта
+## Основные маршруты
 
-### Разработка
+- `/` — главная панель Oryx BMS
+- `/news` — все новости
+- `/tasks` — все задачи
+- `/ideas` — идеи и предложения
+- `/thanks` — мои благодарности
+- `/pim` — редирект на дефолтный заказ
+- `/pim/orders/[orderId]` — страница заказа и упаковки
+- `/[section]` — служебные/будущие разделы (placeholder-страницы)
 
-- `npm run dev` — запуск dev-сервера Next.js;
-- `npm run build` — production-сборка;
-- `npm run start` — запуск production-сервера.
+## Архитектура (кратко)
 
-### Качество и проверки
+Проект разделен на UI-слой и доменный слой.
 
-- `npm run lint` — проверка ESLint;
-- `npm run typecheck` — проверка TypeScript (`tsc --noEmit`);
-- `npm run check:deps` — проверка зависимостей;
-- `npm run check:docs` — проверка ссылок в документации.
+1. **UI (App + components + features)**  
+   Роутинг, layout, навигационный рейл, контентные страницы, PIM-экраны и 3D-визуализация.
+2. **Domain (packing + report)**  
+   Расчет упаковки, проверка ограничений размещения, валидация результата и сводка по размещению.
 
-### Тестирование
-
-- `npm run test` — все тесты Vitest;
-- `npm run test:coverage` — те же тесты с отчётом покрытия (V8);
-- `npm run test:watch` — Vitest в watch-режиме;
-- `npm run test:mutation` — mutation-тестирование (Stryker).
-
-Подробнее о том, что покрыто тестами — в разделе [Тесты](#тесты) ниже.
-
-### Производительность
-
-- `npm run bench:packing` — бенчмарк упаковочного движка;
-- `npm run analyze:cpu` — CPU profiling для скрипта бенчмарка.
-
-## Архитектура
-
-Проект разделен на два основных слоя:
-
-1. **UI (App + features)**  
-   Интерфейс, выбор заказа (`/pim/orders/:id`), таблица заказа, 3D-сцена, панель аудита, оболочка: рейл в корневом layout, боковая навигация в `app/pim/layout.tsx`.
-2. **Domain (packing/report)**  
-   Упаковка, валидация результата, проверка габаритов относительно контейнера, summary.
-
-## Структура файлов
-
-Ниже — ключевые директории и файлы (без служебных артефактов вроде `.next` и `node_modules`):
+## Структура проекта
 
 ```text
 app/
-  layout.tsx                       # Корневой layout: шрифт Manrope, NavRail
-  page.tsx                         # Редирект: `?orderId=` (устар.) → /pim/orders/<id>, иначе /pim/orders/<default>
+  layout.tsx                      # Корневой layout и NavRail
+  page.tsx                        # Главная панель BMS
+  news/page.tsx                   # Список новостей
+  tasks/page.tsx                  # Список задач
+  ideas/page.tsx                  # Идеи и предложения
+  thanks/page.tsx                 # Мои благодарности
+  [section]/page.tsx              # Заглушки для внутренних разделов
   pim/
-    layout.tsx                     # Фон PIM, aside + навигация по заказам (client), основная колонка
-    page.tsx                       # Редирект на /pim/orders/<default>
-    orders/[orderId]/page.tsx      # Заголовок заказа + OrderPackingDynamicContent, notFound, SSG params
+    layout.tsx                    # Layout PIM-модуля
+    page.tsx                      # Редирект на /pim/orders/<default>
+    orders/[orderId]/page.tsx     # Детальная страница заказа
 
 src/
   components/
-    layout/
-      nav-rail.tsx                 # Левый навигационный рейл (Lucide, по макету Figma Corportal)
-    pim/
-      pim-aside.tsx                # Левый aside PIM
-      pim-order-nav.tsx            # Ссылки на /pim/orders/:id
-      pim-main-column.tsx          # Отступ под рейл + aside
-      order-header.tsx             # Breadcrumb + h1
-      order-packing-app-chrome.tsx # Композиция для unit-тестов (рейл + PIM + колонка)
-    ui/                            # shadcn-компоненты (button, card, alert, …)
-
-  workers/
-    packing-result.worker.ts       # Web Worker: вызов generatePackingResult
-  domain/
-    packing/
-      constants.ts                 # Габариты контейнера, пресеты заказов, default order
-      types.ts                     # Доменные типы упаковки
-      expand-order.ts              # Разворачивание quantity -> отдельные unit
-      order-container-fit.ts       # Проверка «товар помещается в контейнер» по правилам yaw
-      schema-validation.ts         # Zod-схемы входа/выхода
-      placement-validation.ts      # Проверки пересечений/границ/опоры
-      result-validation.ts         # Комплексная валидация + isPackingPlacementValid
-      packing-engine.ts            # Основной алгоритм упаковки
-      generate-packing-result.ts   # Оркестрация: движок + oversized + валидация + summary
-    report/
-      summarize-result.ts          # Подсчёт summary (placed/unplaced/total)
+    layout/                       # NavRail, поиск, shell-компоненты
+    home/                         # Блоки главной страницы
+    pim/                          # Компоненты PIM-экрана
+    ui/                           # Базовые UI-компоненты
   features/
-    packing-visualization/
-      hooks/
-        usePackingResult.ts        # Расчёт через runPackingAsync, состояние loading/error
-      components/
-        order-packing-page.tsx      # Клиент: OrderPackingDynamicContent
-        order-view-section.tsx       # Таблица заказа, сцена или блок ошибки, ResultPanel
-        multi-container-scene.tsx    # Единая 3D-сцена для всех контейнеров
-        item-mesh.tsx
-        result-panel.tsx             # Аудит (свёрнут по умолчанию)
-  lib/
-    run-packing-async.ts           # Worker или отложенный main-thread fallback
-    deterministic-sort.ts
-    utils.ts
+    packing-visualization/        # UI/хуки 3D-визуализации упаковки
+  domain/
+    packing/                      # Алгоритм упаковки и проверки
+    report/                       # Summary-логика
+  workers/
+    packing-result.worker.ts      # Вычисление упаковки в Web Worker
+  lib/                            # Вспомогательные утилиты
 
 tests/
-  unit/
-    home-page.test.tsx             # Интеграция главной страницы (mock 3D)
-    order-view-section.test.tsx    # Сцена vs ошибка vs спиннер
-    generate-packing-result.test.ts
-    order-container-fit.test.ts
-    result-validation.test.ts
-    run-packing-async.test.ts
+  unit/                           # Unit/integration тесты
 
 scripts/
   bench-packing.mjs
   check-dependencies.mjs
   check-doc-links.mjs
-
-specs/001-container-packing-visualization/  # спецификация, план, quickstart
 ```
 
-## Поток данных
+## PIM / Packing подсистема
 
-1. Пользователь выбирает заказ в URL (`/pim/orders/<id>`) или меняет количества в таблице.
-2. Хук `usePackingResult(orderId, orderItems)` вызывает `runPackingAsync` → в браузере сообщение в **Web Worker**, который выполняет `generatePackingResult(orderId, orderItems)`; без Worker (тесты) — тот же расчёт через `setTimeout(0)`.
-3. `generatePackingResult`:
-   - берёт состав заказа из пресета или переданного override;
-   - валидирует вход через `zod`;
-   - проверяет габариты строк заказа относительно контейнера (`getOversizedOrderViolations`);
-   - разворачивает позиции в штучные `unit`;
-   - запускает `runPackingEngine`;
-   - валидирует результат и объединяет нарушения;
-   - добавляет summary и возвращает типизированный результат.
-4. UI: при успешной валидации размещения — 3D-сцена и метрика «Отрисовка»; при ошибках — предупреждение вместо сцены; панель аудита доступна с полным списком нарушений.
+PIM-модуль использует доменную логику из `src/domain/packing` и визуальный слой из `src/features/packing-visualization`.
 
-## Алгоритм упаковки (кратко)
+Базовый поток:
 
-`src/domain/packing/packing-engine.ts` реализует эвристический детерминированный packer:
+1. Пользователь открывает заказ (`/pim/orders/[orderId]`).
+2. `usePackingResult` запускает расчет через `runPackingAsync`.
+3. В браузере расчет выполняется в `Web Worker` (`packing-result.worker.ts`), где вызывается `generatePackingResult`.
+4. Результат проходит валидацию; при валидном размещении рендерится 3D-сцена, при невалидном — показываются ошибки аудита.
 
-- сортирует unit по площади основания/высоте для стабильного порядка;
-- пробует базовый greedy-проход (`packWithLimit`);
-- затем пытается уменьшить число контейнеров (`pickBestResultByLimit`);
-- использует межконтейнерный режим (`packAcrossContainers`) с score-вектором;
-- поддерживает поворот только по `yaw` (`0 | 90`);
-- учитывает:
-  - габариты контейнера;
-  - отсутствие пересечений;
-  - необходимость опоры;
-  - детерминированный порядок действий/сортировок.
+## Скрипты
 
-## Ограничения и допущения
+### Разработка
 
-- поворот товара только в плоскости пола (`yaw: 0 | 90`), высота груза по вертикали совпадает с полем `height` позиции;
-- вес не участвует в оптимизационной целевой функции;
-- размещения должны быть без:
-  - выхода за границы контейнера;
-  - пересечений;
-  - «висящих» (неподдерживаемых) элементов;
-- приложение ориентировано на преднастроенные пресеты заказов в `constants.ts` и редактирование количеств в UI.
+- `npm run dev` — dev-сервер Next.js
+- `npm run build` — production-сборка
+- `npm run start` — запуск production-сборки
 
-## Надёжность и безопасность данных
+### Качество
 
-- входные и выходные структуры проходят проверку через `zod`;
-- результат дополнительно проверяется доменными валидаторами;
-- расчёт выполняется в браузере из известного состава заказа; произвольный JSON с сервера не подмешивается.
+- `npm run lint` — ESLint
+- `npm run typecheck` — проверка типов TypeScript
+- `npm run check:deps` — проверка зависимостей
+- `npm run check:docs` — проверка ссылок в документации
 
-## Тесты
+### Тестирование
 
-Автотесты лежат в `tests/unit/`:
+- `npm run test` — запуск тестов
+- `npm run test:coverage` — тесты с покрытием
+- `npm run test:watch` — watch-режим
+- `npm run test:mutation` — mutation-тестирование (Stryker)
 
-| Файл | Назначение |
-|------|------------|
-| `home-page.test.tsx` | Главная страница: заказы, аудит, сцена vs блок ошибки для невалидных пресетов |
-| `order-view-section.test.tsx` | Спиннер, 3D-заглушка при успехе, блок «Ошибки размещения» при невалидном результате |
-| `generate-packing-result.test.ts` | Все пресеты заказов, override, габариты больше контейнера |
-| `order-container-fit.test.ts` | `itemTypeFitsInContainer`, `getOversizedOrderViolations` |
-| `result-validation.test.ts` | `isPackingPlacementValid` |
-| `run-packing-async.test.ts` | Эквивалентность результату `generatePackingResult` (без сравнения `packingMs`) |
+### Производительность
 
-Рекомендуемый прогон перед PR:
-
-```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-```
-
-## Документация и спецификации
-
-- `specs/001-container-packing-visualization/spec.md` — исходная спецификация;
-- `specs/001-container-packing-visualization/plan.md` — план реализации;
-- `specs/001-container-packing-visualization/tasks.md` — декомпозиция задач;
-- `specs/001-container-packing-visualization/quickstart.md` — быстрый старт и проверки;
-- `specs/001-container-packing-visualization/contracts/packing-result.schema.json` — контракт ответа (если используется).
+- `npm run bench:packing` — бенчмарк упаковочного движка
+- `npm run analyze:cpu` — CPU-профилирование бенчмарка
 
 ## Рекомендуемый baseline-check перед PR
 
@@ -230,3 +143,16 @@ npm run build
 npm run check:deps
 npm run check:docs
 ```
+
+## Текущий статус и ограничения
+
+- Часть разделов пока реализована как placeholder-страницы (`app/[section]/page.tsx`).
+- Контент на главной странице и на отдельных экранах сейчас построен на демо-данных из `src/components/home/*-demo-data.ts`.
+- PIM-модуль работает на преднастроенных пресетах заказов из `src/domain/packing/constants.ts`.
+
+## Документация по спецификации упаковки
+
+- `specs/001-container-packing-visualization/spec.md`
+- `specs/001-container-packing-visualization/plan.md`
+- `specs/001-container-packing-visualization/tasks.md`
+- `specs/001-container-packing-visualization/quickstart.md`
