@@ -1,5 +1,4 @@
 import { LeftDockShell } from "@/components/layout/left-dock-shell";
-import { ScrollableRegion } from "@/components/layout/scrollable-region";
 import { PimOrderNav } from "./pim-order-nav";
 
 type PimAsideProps = {
@@ -9,7 +8,7 @@ type PimAsideProps = {
 
 export const PimAside = ({ activeOrderId }: PimAsideProps) => (
   <LeftDockShell
-    className="left-12 z-30 w-[min(200px,40vw)] overflow-hidden border-[var(--corportal-border-grey)] bg-[var(--corportal-surface-muted)] sm:w-[200px]"
+    className="left-12 z-30 w-[min(200px,40vw)] overflow-hidden border-[var(--corportal-border-grey)] bg-[var(--corportal-surface-white)] sm:w-[200px]"
     ariaLabel="Контекст и заказы"
   >
     <div className="flex min-h-0 flex-1 flex-col p-2">
@@ -20,9 +19,9 @@ export const PimAside = ({ activeOrderId }: PimAsideProps) => (
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 pt-2">
         <p className="shrink-0 font-medium text-xs text-muted-foreground">Заказы</p>
-        <ScrollableRegion className="min-h-0 flex-1" ariaLabel="Заказы">
+        <nav aria-label="Заказы" className="min-h-0 flex-1 overflow-y-auto">
           <PimOrderNav activeOrderId={activeOrderId} />
-        </ScrollableRegion>
+        </nav>
       </div>
     </div>
   </LeftDockShell>

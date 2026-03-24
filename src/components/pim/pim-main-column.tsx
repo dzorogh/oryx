@@ -7,7 +7,7 @@ type PimMainColumnProps = {
 
 export const PimMainColumn = ({ children }: PimMainColumnProps) => (
   <div
-    className={`flex min-h-screen min-w-0 flex-col bg-[var(--corportal-surface-white)] ${PIM_MAIN_OFFSET_CLASS}`}
+    className={`flex min-h-screen min-w-0 flex-col bg-[var(--corportal-surface-muted)] ${PIM_MAIN_OFFSET_CLASS}`}
   >
     {children}
   </div>

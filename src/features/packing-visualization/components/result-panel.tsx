@@ -86,7 +86,10 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
   );
 
   return (
-    <Card aria-label="Панель аудита">
+    <Card
+      aria-label="Панель аудита"
+      className="border border-[var(--corportal-border-grey)] bg-[var(--corportal-surface-white)] ring-0"
+    >
       <Collapsible defaultOpen={false} className="group">
         <CardHeader>
           <CollapsibleTrigger

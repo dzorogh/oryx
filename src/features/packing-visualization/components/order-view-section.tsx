@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { Search } from "lucide-react";
 import type { OrderItemType, PackingResult } from "@/domain/packing/types";
-import { CONTAINER_DIMENSIONS } from "@/domain/packing/constants";
+import { CONTAINER_DIMENSIONS, getOrderPresetById } from "@/domain/packing/constants";
 import { isPackingPlacementValid } from "@/domain/packing/result-validation";
 import { MultiContainerScene } from "@/features/packing-visualization/components/multi-container-scene";
 import { ResultPanel } from "@/features/packing-visualization/components/result-panel";
+import { usePackingResult } from "@/features/packing-visualization/hooks/usePackingResult";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -77,8 +78,10 @@ export const OrderViewSection = ({
   };
 
   return (
-    <div className="space-y-6">
-      <Card aria-label="Состав заказа">
+    <div className="space-y-4">
+      <Card
+        aria-label="Состав заказа"
+      >
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle role="heading" aria-level={2}>
             Ordered Products
@@ -145,7 +148,9 @@ export const OrderViewSection = ({
         </CardContent>
       </Card>
 
-      <Card aria-label="Load calculator">
+      <Card
+        aria-label="Load calculator"
+      >
         <CardHeader className="flex flex-row flex-wrap items-center gap-2 space-y-0">
           <CardTitle role="heading" aria-level={2}>
             Load calculator
@@ -199,6 +204,68 @@ export const OrderViewSection = ({
           ) : null}
         </CardContent>
       </Card>
+    </div>
+  );
+};
+
+type OrderPackingDynamicContentProps = {
+  selectedOrderId: number;
+};
+
+export const OrderPackingDynamicContent = ({ selectedOrderId }: OrderPackingDynamicContentProps) => {
+  const activeOrderPreset = useMemo(() => getOrderPresetById(selectedOrderId), [selectedOrderId]);
+  const [orderItems, setOrderItems] = useState(() => structuredClone(activeOrderPreset.order));
+  const { result, error, isLoading } = usePackingResult(selectedOrderId, orderItems);
+  const [renderMs, setRenderMs] = useState<number | null>(null);
+
+  const handleQuantityChange = (lineIndex: number, quantity: number) => {
+    const safe = Math.max(0, Math.min(9_999_999, Math.floor(Number.isFinite(quantity) ? quantity : 0)));
+    setOrderItems((prev) => prev.map((item, i) => (i === lineIndex ? { ...item, quantity: safe } : item)));
+  };
+
+  useEffect(() => {
+    if (error || !result || !isPackingPlacementValid(result.validation)) {
+      queueMicrotask(() => {
+        setRenderMs(null);
+      });
+      return;
+    }
+
+    const renderStartedAt = performance.now();
+    let firstFrameId = 0;
+    let secondFrameId = 0;
+
+    firstFrameId = window.requestAnimationFrame(() => {
+      secondFrameId = window.requestAnimationFrame(() => {
+        setRenderMs(performance.now() - renderStartedAt);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrameId);
+      window.cancelAnimationFrame(secondFrameId);
+    };
+  }, [error, result]);
+
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-6" aria-label="Ошибка расчета упаковки">
+        <Alert variant="destructive" className="max-w-xl">
+          <AlertDescription>Ошибка: {error}</AlertDescription>
+        </Alert>
+      </main>
+    );
+  }
+
+  return (
+    <div className="flex-1 px-4 pb-6 sm:px-6">
+      <OrderViewSection
+        orderItems={orderItems}
+        result={result}
+        isPackingLoading={isLoading}
+        onQuantityChange={handleQuantityChange}
+        renderMs={renderMs}
+      />
     </div>
   );
 };

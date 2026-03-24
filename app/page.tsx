@@ -11,6 +11,7 @@ import { HomeStatsSection } from "@/components/home/home-stats-section";
 import { HomeThanksSection } from "@/components/home/home-thanks-section";
 import { HomeBirthdaysSection } from "@/components/home/home-birthdays-section";
 import { HomeTodayTasksSection } from "@/components/home/home-today-tasks-section";
+import { Card, CardContent } from "@/components/ui/card";
 
 type HomeBlockId = "stats" | "salesLeaders" | "news" | "ideas" | "thanks" | "birthdays" | "tasks";
 
@@ -263,17 +264,15 @@ const HomePage = () => {
         {isLayoutLoading ? (
           <>
             {DEFAULT_LAYOUT.order.map((blockId) => (
-              <div
-                key={`loader-${blockId}`}
-                className="rounded-xl border border-[var(--corportal-border-grey)] bg-card p-5"
-                aria-label="Загрузка блока главной"
-              >
-                <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
-                <div className="space-y-2">
-                  <div className="h-16 animate-pulse rounded-lg bg-muted" />
-                  <div className="h-16 animate-pulse rounded-lg bg-muted" />
-                </div>
-              </div>
+              <Card key={`loader-${blockId}`} aria-label="Загрузка блока главной">
+                <CardContent>
+                  <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
+                  <div className="space-y-2">
+                    <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                    <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </>
         ) : (

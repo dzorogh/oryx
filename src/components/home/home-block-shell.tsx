@@ -4,6 +4,7 @@ import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { HomeActionMenuItem } from "./home-action-menu-item";
 
@@ -86,8 +87,8 @@ export const HomeBlockShell = ({
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl bg-card p-5">
-      <header className="flex items-center justify-between gap-2">
+    <Card className="overflow-visible">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <div className="flex items-center gap-2">
           <div className={cn("rounded-full p-2", ACCENT_ICON_CLASS[accent])}>
             <Icon aria-hidden className="size-4" />
@@ -146,8 +147,8 @@ export const HomeBlockShell = ({
             <ChevronDown aria-hidden className={cn("size-5 transition-transform", collapsed && "-rotate-90")} />
           </Button>
         </div>
-      </header>
-      {collapsed ? null : children}
-    </section>
+      </CardHeader>
+      {collapsed ? null : <CardContent className="pt-0">{children}</CardContent>}
+    </Card>
   );
 };

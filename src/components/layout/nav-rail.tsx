@@ -123,7 +123,7 @@ export const NavRail = () => {
   return (
     <>
       <LeftDockShell
-        className="bg-corportal-rail left-0 z-40 w-12 items-center overflow-y-auto border-solid border-[var(--corportal-border-grey)] py-0 text-[color:var(--corportal-rail-foreground)] no-scrollbar"
+        className="bg-corportal-rail left-0 z-40 w-12 items-center overflow-y-auto py-0 no-scrollbar"
         ariaLabel="Основная навигация"
       >
         <div className="flex w-full justify-center px-3 py-3">
@@ -139,7 +139,7 @@ export const NavRail = () => {
           />
         </div>
 
-        <ScrollableRegion className="flex w-full flex-1 flex-col items-center gap-2 px-1 pt-1">
+        <ScrollableRegion className="no-scrollbar flex w-full flex-1 flex-col items-center gap-2 px-1 pt-1">
           {navItems.slice(1).map((item) => (
             <RailIconButton
               key={item.label}

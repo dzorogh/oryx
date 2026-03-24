@@ -1,11 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_ORDER_ID, ORDER_PRESETS, getOrderPresetById } from "@/domain/packing/constants";
-import { expandOrder } from "@/domain/packing/expand-order";
 import { generatePackingResult } from "@/domain/packing/generate-packing-result";
 import { isPackingPlacementValid } from "@/domain/packing/result-validation";
 import { OrderPackingAppChrome } from "@/components/pim/order-packing-app-chrome";
-import { OrderPackingDynamicContent } from "@/features/packing-visualization/components/order-packing-page";
+import { OrderPackingDynamicContent } from "@/features/packing-visualization/components/order-view-section";
 
 // MultiContainerScene требует WebGL; в jsdom — заглушка.
 vi.mock("@/features/packing-visualization/components/multi-container-scene", () => ({
@@ -61,7 +60,6 @@ describe("Order packing (страница заказа)", () => {
     "заказ №$orderId ($label): UI и результат расчёта согласованы",
     async (preset) => {
       const expectedPositions = preset.order.length;
-      const expectedUnits = expandOrder(preset.order).length;
       const expectedResult = generatePackingResult(preset.orderId);
 
       renderOrderPacking(preset.orderId);
@@ -70,9 +68,9 @@ describe("Order packing (страница заказа)", () => {
         expect(screen.getByRole("heading", { name: `Заказ №${preset.orderId}` })).toBeVisible();
       });
 
-      expect(
-        screen.getByText(`Позиций: ${expectedPositions} · Единиц: ${expectedUnits}`),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Ordered Products" })).toBeVisible();
+      const orderCard = screen.getByLabelText("Состав заказа");
+      expect(within(orderCard).getAllByRole("row").length).toBe(expectedPositions + 1);
 
       expect(screen.getByRole("link", { name: `Открыть ${preset.label}` })).toHaveAttribute(
         "aria-current",

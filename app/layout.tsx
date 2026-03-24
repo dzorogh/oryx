@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Inter } from "next/font/google";
 import { NavRail } from "@/components/layout/nav-rail";
 import "./globals.css";
 
-const manrope = Manrope({
+const inter = Inter({
   subsets: ["latin", "cyrillic", "cyrillic-ext"],
-  variable: "--font-manrope",
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <body className={`${manrope.className} ${manrope.variable} antialiased`}>
+      <body className={`${inter.className} ${inter.variable} antialiased`}>
         <NavRail />
         {children}
       </body>

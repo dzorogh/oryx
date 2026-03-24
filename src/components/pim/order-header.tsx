@@ -12,9 +12,9 @@ type OrderPageHeaderProps = {
 };
 
 export const OrderPageHeader = ({ orderId }: OrderPageHeaderProps) => (
-  <header className="border-b border-[#d7dae0] bg-white px-4 py-4 sm:px-6">
+  <header className="px-4 py-4 sm:px-6 flex flex-col gap-4">
     <Breadcrumb>
-      <BreadcrumbList className="sm:gap-2">
+      <BreadcrumbList>
         <BreadcrumbItem>
           <PimSecondaryText>Магазин и каталог</PimSecondaryText>
         </BreadcrumbItem>
@@ -28,7 +28,8 @@ export const OrderPageHeader = ({ orderId }: OrderPageHeaderProps) => (
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
-    <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0 space-y-1">
         <h1 className="text-2xl font-bold leading-tight tracking-tight text-[#3d4c6a]">Заказ №{orderId}</h1>
       </div>
