@@ -1,6 +1,5 @@
 /** Отступ основной колонки: фиксированный рейл (3rem) + ширина aside */
-export const MODULE_MAIN_OFFSET_CLASS =
-  "pl-[calc(3rem+min(200px,40vw))] sm:pl-[calc(3rem+200px)]";
+export const MODULE_MAIN_OFFSET_CLASS = "pl-0 sm:pl-[calc(3rem+200px)]";
 
 /** @deprecated Используйте MODULE_MAIN_OFFSET_CLASS; алиас для существующих импортов PIM */
 export const PIM_MAIN_OFFSET_CLASS = MODULE_MAIN_OFFSET_CLASS;

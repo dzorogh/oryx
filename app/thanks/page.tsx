@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MY_THANK_YOU_ENTRIES } from "@/components/home/thanks-mine-demo-data";
 
 const ThanksMinePage = () => (
-  <main className="min-h-screen pl-12">
+  <main className="min-h-screen pl-0 sm:pl-12">
     <section className="p-5">
       <div className="rounded-xl bg-card p-5">
         <header className="flex items-center justify-between gap-3">

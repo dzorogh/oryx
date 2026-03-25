@@ -1,12 +1,18 @@
 "use client";
 
-import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ComponentProps, type ReactNode, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { HomeActionMenuItem } from "./home-action-menu-item";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 /** Акцент цветного круга иконки (палитра Corportal / канбан). */
 export type HomeBlockAccent = "violet" | "teal" | "rose" | "amber";
@@ -55,31 +61,6 @@ export const HomeBlockShell = ({
   children,
 }: HomeBlockShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) {
-        return;
-      }
-      if (!menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-
-    window.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      window.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
 
   const handleMenuAction = (action: () => void) => {
     action();
@@ -89,13 +70,15 @@ export const HomeBlockShell = ({
   return (
     <Card className="overflow-visible">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className={cn("rounded-full p-2", ACCENT_ICON_CLASS[accent])}>
             <Icon aria-hidden className="size-4" />
           </div>
-          <h2 className="text-lg font-bold leading-tight tracking-tight text-foreground">{title}</h2>
+          <h2 className="min-w-0 truncate whitespace-nowrap text-lg font-bold leading-tight tracking-tight text-foreground">
+            {title}
+          </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {actions?.map((render, index) => (
             <Button
               key={`home-block-action-${index}`}
@@ -104,39 +87,48 @@ export const HomeBlockShell = ({
               size="default"
               nativeButton={false}
               render={render}
+              className="hidden sm:inline-flex"
             />
           ))}
-          <div ref={menuRef} className="relative">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={`Открыть меню блока ${title}`}
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((prev) => !prev)}
-            >
-              <EllipsisVertical aria-hidden className="size-5" />
-            </Button>
-            {menuOpen ? (
-              <div className="absolute right-0 top-10 z-20 min-w-44 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 shadow-sm">
-                <HomeActionMenuItem onClick={() => handleMenuAction(onHide)}>
-                  Скрыть блок
-                </HomeActionMenuItem>
-                <HomeActionMenuItem
-                  disabled={!canMoveUp}
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Открыть меню блока ${title}`}
+                >
+                  <EllipsisVertical aria-hidden className="size-5" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="min-w-44">
+              {actions?.map((render, index) => (
+                <DropdownMenuItem
+                  key={`home-block-action-menu-${index}`}
+                  render={render}
+                  onClick={() => setMenuOpen(false)}
+                />
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleMenuAction(onHide)}>
+                Скрыть блок
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!canMoveUp}
                   onClick={() => handleMenuAction(onMoveUp)}
-                >
-                  Переместить выше
-                </HomeActionMenuItem>
-                <HomeActionMenuItem
-                  disabled={!canMoveDown}
+              >
+                Переместить выше
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!canMoveDown}
                   onClick={() => handleMenuAction(onMoveDown)}
-                >
-                  Переместить ниже
-                </HomeActionMenuItem>
-              </div>
-            ) : null}
-          </div>
+              >
+                Переместить ниже
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             type="button"
             variant="ghost"

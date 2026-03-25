@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   GraduationCap,
   HeartPulse,
+  Menu,
   HelpCircle,
   Hexagon,
   Home,
@@ -23,6 +24,8 @@ import { LeftDockShell } from "@/components/layout/left-dock-shell";
 import { ScrollableRegion } from "@/components/layout/scrollable-region";
 import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { openMobileAside } from "@/lib/mobile-aside-events";
 
 type RailIconButtonProps = {
   label: string;
@@ -112,6 +115,19 @@ export const NavRail = () => {
   const currentPathname = pathname ?? "/";
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  const isMobileAsidePage = useMemo(
+    () =>
+      currentPathname === "/pim" ||
+      currentPathname.startsWith("/pim/") ||
+      currentPathname === "/pulse" ||
+      currentPathname.startsWith("/pulse/"),
+    [currentPathname],
+  );
+
+  const handleOpenSearch = () => setIsSearchOpen(true);
+  const handleCloseSearch = () => setIsSearchOpen(false);
+  const handleBurgerClick = () => openMobileAside();
+
   const navItems = [
     { label: "Поиск", icon: Search, href: "/search", match: "/search" },
     { label: "Главная", icon: Home, href: "/", match: "/" },
@@ -137,7 +153,7 @@ export const NavRail = () => {
   return (
     <>
       <LeftDockShell
-        className="bg-corportal-rail left-0 z-40 w-12 items-center overflow-y-auto py-0 no-scrollbar"
+        className="hidden bg-corportal-rail left-0 z-40 w-12 items-center overflow-y-auto py-0 no-scrollbar sm:flex"
         ariaLabel="Основная навигация"
       >
         <div className="flex w-full justify-center px-3 py-3">
@@ -148,7 +164,7 @@ export const NavRail = () => {
           <RailIconButton
             label={navItems[0].label}
             icon={navItems[0].icon}
-            onClick={() => setIsSearchOpen(true)}
+            onClick={handleOpenSearch}
             active={isSearchOpen}
           />
         </div>
@@ -189,7 +205,82 @@ export const NavRail = () => {
           </Link>
         </div>
       </LeftDockShell>
-      <GlobalSearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-corportal-rail sm:hidden" aria-label="Нижняя навигация">
+        <div className="border-t border-[color:var(--corportal-rail-divider)] px-2 py-2 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]">
+          <div className={cn("grid gap-2", isMobileAsidePage ? "grid-cols-4" : "grid-cols-3")}>
+            {isMobileAsidePage ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="default"
+              className="h-11 w-full gap-0 rounded-lg px-0 py-0 text-[color:var(--corportal-rail-foreground)] hover:bg-[color:var(--corportal-rail-hover)] hover:text-[color:var(--corportal-rail-foreground)]"
+                aria-label="Открыть контекст"
+                onClick={handleBurgerClick}
+              >
+                <Menu aria-hidden className="size-5" />
+              </Button>
+            ) : null}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="default"
+              className={cn(
+                "h-11 w-full gap-0 rounded-lg px-0 py-0 text-[color:var(--corportal-rail-foreground)] hover:bg-[color:var(--corportal-rail-hover)] hover:text-[color:var(--corportal-rail-foreground)]",
+                isSearchOpen && "bg-[color:var(--corportal-rail-active)]",
+              )}
+              aria-label="Открыть поиск"
+              aria-expanded={isSearchOpen}
+              onClick={handleOpenSearch}
+            >
+              <Search aria-hidden className="size-5" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="default"
+              nativeButton={false}
+              className={cn(
+                "h-11 w-full gap-0 rounded-lg px-0 py-0 text-[color:var(--corportal-rail-foreground)] hover:bg-[color:var(--corportal-rail-hover)] hover:text-[color:var(--corportal-rail-foreground)]",
+                currentPathname === "/" && "bg-[color:var(--corportal-rail-active)]",
+              )}
+              render={
+                <Link
+                  href="/"
+                  aria-label="Главная"
+                  aria-current={currentPathname === "/" ? "page" : undefined}
+                  className="inline-flex w-full items-center justify-center"
+                />
+              }
+            >
+              <Home aria-hidden className="size-5" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="default"
+              nativeButton={false}
+              className={cn(
+                "h-11 w-full gap-0 rounded-lg px-0 py-0 text-[color:var(--corportal-rail-foreground)] hover:bg-[color:var(--corportal-rail-hover)] hover:text-[color:var(--corportal-rail-foreground)]",
+                currentPathname.startsWith("/profile") && "bg-[color:var(--corportal-rail-active)]",
+              )}
+              render={
+                <Link
+                  href="/profile"
+                  aria-label="Профиль"
+                  aria-current={currentPathname.startsWith("/profile") ? "page" : undefined}
+                  className="inline-flex w-full items-center justify-center"
+                />
+              }
+            >
+              <User aria-hidden className="size-5" />
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      <GlobalSearchModal open={isSearchOpen} onClose={handleCloseSearch} />
     </>
   );
 };

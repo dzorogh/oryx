@@ -4,7 +4,7 @@ import { PriorityBadge } from "@/components/home/priority-badge";
 import { ALL_TASKS } from "@/components/home/tasks-today-demo-data";
 
 const TasksPage = () => (
-  <main className="min-h-screen pl-12">
+  <main className="min-h-screen pl-0 sm:pl-12">
     <section className="p-5">
       <div className="rounded-xl bg-card p-5">
         <header className="flex items-center justify-between gap-3">

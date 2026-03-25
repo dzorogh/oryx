@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Cake, Crown, HandHeart, Lightbulb, ListTodo, Medal, Newspaper, type LucideIcon } from "lucide-react";
+import { Cake, Crown, FileBarChart2, HandHeart, Lightbulb, ListTodo, Medal, Newspaper, type LucideIcon } from "lucide-react";
 import { HomeBlockShell, type HomeBlockAccent, type HomeBlockHeaderAction } from "@/components/home/home-block-shell";
 import { HomeIdeasSection } from "@/components/home/home-ideas-section";
 import { HomeNewsSection } from "@/components/home/home-news-section";
@@ -11,9 +11,10 @@ import { HomeStatsSection } from "@/components/home/home-stats-section";
 import { HomeThanksSection } from "@/components/home/home-thanks-section";
 import { HomeBirthdaysSection } from "@/components/home/home-birthdays-section";
 import { HomeTodayTasksSection } from "@/components/home/home-today-tasks-section";
+import { HomeFavoriteReportsSection } from "@/components/home/home-favorite-reports-section";
 import { Card, CardContent } from "@/components/ui/card";
 
-type HomeBlockId = "stats" | "salesLeaders" | "news" | "ideas" | "thanks" | "birthdays" | "tasks";
+type HomeBlockId = "stats" | "salesLeaders" | "news" | "ideas" | "thanks" | "birthdays" | "tasks" | "favoriteReports";
 
 type HomeBlocksLayout = {
   order: HomeBlockId[];
@@ -39,10 +40,11 @@ const ACCENT_BY_BLOCK: Record<HomeBlockId, HomeBlockAccent> = {
   birthdays: "violet",
   tasks: "rose",
   ideas: "amber",
+  favoriteReports: "amber",
 };
 
 const DEFAULT_LAYOUT: HomeBlocksLayout = {
-  order: ["news", "birthdays", "stats", "salesLeaders", "tasks", "ideas", "thanks"],
+  order: ["news", "birthdays", "stats", "favoriteReports", "salesLeaders", "tasks", "ideas", "thanks"],
   hidden: [],
   collapsed: {
     stats: false,
@@ -52,6 +54,7 @@ const DEFAULT_LAYOUT: HomeBlocksLayout = {
     birthdays: false,
     tasks: false,
     ideas: false,
+    favoriteReports: false,
   },
 };
 
@@ -62,7 +65,8 @@ const isValidBlockId = (value: string): value is HomeBlockId =>
   value === "thanks" ||
   value === "birthdays" ||
   value === "tasks" ||
-  value === "ideas";
+  value === "ideas" ||
+  value === "favoriteReports";
 
 const normalizeLayout = (input: Partial<HomeBlocksLayout> | null): HomeBlocksLayout => {
   if (!input) {
@@ -85,6 +89,7 @@ const normalizeLayout = (input: Partial<HomeBlocksLayout> | null): HomeBlocksLay
       birthdays: collapsed.birthdays ?? false,
       tasks: collapsed.tasks ?? false,
       ideas: collapsed.ideas ?? false,
+      favoriteReports: collapsed.favoriteReports ?? false,
     },
   };
 };
@@ -126,6 +131,12 @@ const HomePage = () => {
         title: "Статистика",
         icon: Crown,
         render: () => <HomeStatsSection />,
+      },
+      {
+        id: "favoriteReports",
+        title: "Избранные отчёты",
+        icon: FileBarChart2,
+        render: () => <HomeFavoriteReportsSection />,
       },
       {
         id: "salesLeaders",
@@ -259,7 +270,7 @@ const HomePage = () => {
   };
 
   return (
-    <main className="min-h-screen pl-12">
+    <main className="min-h-screen pl-0 sm:pl-12">
       <div className="flex min-h-screen flex-col gap-5 p-5">
         {isLayoutLoading ? (
           <>
