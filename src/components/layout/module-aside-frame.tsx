@@ -3,9 +3,12 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LeftDockShell } from "@/components/layout/left-dock-shell";
+import { RAIL_FOOTER_ITEMS, RAIL_PRIMARY_ITEMS, TenantSwitcher } from "@/components/layout/nav-rail";
 import { MODULE_ASIDE_DOCK_CLASS } from "@/components/layout/module-layout-tokens";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MOBILE_ASIDE_OPEN_EVENT } from "@/lib/mobile-aside-events";
 
@@ -83,7 +86,7 @@ export const ModuleAsideFrame = ({ title, ariaLabel, className, children }: Modu
 
       {isOpen ? (
         <div
-          className="fixed inset-0 z-60 sm:hidden"
+          className="fixed inset-0 z-[60] sm:hidden"
           role="dialog"
           aria-modal="true"
           aria-label={ariaLabel}
@@ -93,11 +96,75 @@ export const ModuleAsideFrame = ({ title, ariaLabel, className, children }: Modu
             className={cn(
               MODULE_ASIDE_DOCK_CLASS,
               className,
-              "left-0 w-full border-r-0 z-60 overflow-hidden",
+              "left-0 w-full border-r-0 z-[60] overflow-hidden",
             )}
             ariaLabel={ariaLabel}
           >
-            {asideInner}
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="shrink-0 border-b border-border p-2">
+                <div className="flex items-center justify-start gap-2 pb-2">
+                  <TenantSwitcher />
+                </div>
+                <div className="space-y-1">
+                  {RAIL_PRIMARY_ITEMS.map((item) => {
+                    const active = item.match === "/" ? pathname === "/" : pathname?.startsWith(item.match);
+                    const Icon = item.icon;
+                    return (
+                      <Button
+                        key={item.label}
+                        variant={active ? "secondary" : "ghost"}
+                        size="default"
+                        nativeButton={false}
+                        className="h-10 w-full justify-start gap-3"
+                        render={
+                          <Link
+                            href={item.href}
+                            onClick={handleClose}
+                            aria-label={item.label}
+                            aria-current={active ? "page" : undefined}
+                            className="inline-flex w-full items-center gap-3"
+                          />
+                        }
+                      >
+                        <Icon aria-hidden className="size-4" />
+                        <span className="text-sm">{item.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+                <div className="my-2 h-px bg-border" />
+                <div className="space-y-1">
+                  {RAIL_FOOTER_ITEMS.map((item) => {
+                    const active = pathname?.startsWith(item.match);
+                    const Icon = item.icon;
+                    return (
+                      <Button
+                        key={item.label}
+                        variant={active ? "secondary" : "ghost"}
+                        size="default"
+                        nativeButton={false}
+                        className="h-10 w-full justify-start gap-3"
+                        render={
+                          <Link
+                            href={item.href}
+                            onClick={handleClose}
+                            aria-label={item.label}
+                            aria-current={active ? "page" : undefined}
+                            className="inline-flex w-full items-center gap-3"
+                          />
+                        }
+                      >
+                        <Icon aria-hidden className="size-4" />
+                        <span className="text-sm">{item.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {asideInner}
+              </div>
+            </div>
           </LeftDockShell>
           <button
             type="button"

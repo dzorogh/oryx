@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   basePath: process.env.PAGES_BASE_PATH,
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "picsum.photos",
+      },
+    ],
   },
 };
 

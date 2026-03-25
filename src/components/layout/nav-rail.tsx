@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   GraduationCap,
   HeartPulse,
   Menu,
+  Check,
   HelpCircle,
   Hexagon,
   Home,
@@ -16,6 +17,7 @@ import {
   Store,
   User,
   Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,6 +28,14 @@ import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { openMobileAside } from "@/lib/mobile-aside-events";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type RailIconButtonProps = {
   label: string;
@@ -34,6 +44,34 @@ type RailIconButtonProps = {
   onClick?: () => void;
   active?: boolean;
 };
+
+export type RailSectionItem = {
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  match: string;
+};
+
+export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
+  { label: "Главная", icon: Home, href: "/", match: "/" },
+  { label: "Пульс компании", icon: HeartPulse, href: "/pulse/news", match: "/pulse" },
+  { label: "Согласования", icon: ShieldCheck, href: "/approvals", match: "/approvals" },
+  {
+    label: "Упаковка и заказы",
+    icon: ShoppingCart,
+    href: `/pim/orders/${DEFAULT_ORDER_ID}`,
+    match: "/pim",
+  },
+  { label: "Активность", icon: Activity, href: "/activity", match: "/activity" },
+  { label: "Команда", icon: Users, href: "/team", match: "/team" },
+  { label: "Обучение", icon: GraduationCap, href: "/learning", match: "/learning" },
+  { label: "Каталог", icon: Store, href: "/catalog", match: "/catalog" },
+];
+
+export const RAIL_FOOTER_ITEMS: RailSectionItem[] = [
+  { label: "Сервисы", icon: Hexagon, href: "/services", match: "/services" },
+  { label: "Справка", icon: HelpCircle, href: "/help", match: "/help" },
+];
 
 /** Фавикон рейла — Figma node 40023000:133773 (Corportal Favicon). */
 const RailFavicon = () => (
@@ -109,11 +147,89 @@ const RailIconButton = ({ label, icon: Icon, href, onClick, active }: RailIconBu
   );
 };
 
+type DemoTenant = {
+  id: string;
+  label: string;
+};
+
+const TENANT_STORAGE_KEY = "tenant-id";
+
+const DEMO_TENANTS: DemoTenant[] = [
+  { id: "tenant-oryx", label: "Oryx" },
+  { id: "tenant-north", label: "North" },
+  { id: "tenant-global", label: "GlobalDrive" },
+];
+
+export const TenantSwitcher = () => {
+  const [tenantId, setTenantId] = useState(DEMO_TENANTS[0]?.id ?? "tenant-oryx");
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem(TENANT_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+    const exists = DEMO_TENANTS.some((t) => t.id === raw);
+    if (!exists) {
+      return;
+    }
+    // Чтобы избежать React/ESLint предупреждений о синхронных setState в эффектах,
+    // обновляем выбранный тенант в следующем тике.
+    const timer = window.setTimeout(() => setTenantId(raw), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const handleSelectTenant = (nextId: string) => {
+    setTenantId(nextId);
+    window.localStorage.setItem(TENANT_STORAGE_KEY, nextId);
+  };
+
+  const currentTenant = DEMO_TENANTS.find((t) => t.id === tenantId) ?? DEMO_TENANTS[0];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Переключить тенант"
+            className="h-8 w-8"
+          >
+            <RailFavicon />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="start">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Тенант</DropdownMenuLabel>
+          {DEMO_TENANTS.map((tenant) => {
+            const active = tenant.id === currentTenant.id;
+            return (
+              <DropdownMenuItem
+                key={tenant.id}
+                onClick={() => handleSelectTenant(tenant.id)}
+                aria-label={`Выбрать тенант ${tenant.label}`}
+              >
+                <span className="flex w-full items-center justify-between gap-3">
+                  <span>{tenant.label}</span>
+                  {active ? <Check aria-hidden className="size-4" /> : null}
+                </span>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 /** Левый навигационный рейл по макету Corportal (Figma node 40023000:133768). Логотип — 40023000:133773. */
 export const NavRail = () => {
   const pathname = usePathname();
   const currentPathname = pathname ?? "/";
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const isMobileAsidePage = useMemo(
     () =>
@@ -126,29 +242,13 @@ export const NavRail = () => {
 
   const handleOpenSearch = () => setIsSearchOpen(true);
   const handleCloseSearch = () => setIsSearchOpen(false);
-  const handleBurgerClick = () => openMobileAside();
-
-  const navItems = [
-    { label: "Поиск", icon: Search, href: "/search", match: "/search" },
-    { label: "Главная", icon: Home, href: "/", match: "/" },
-    { label: "Пульс компании", icon: HeartPulse, href: "/pulse/news", match: "/pulse" },
-    { label: "Согласования", icon: ShieldCheck, href: "/approvals", match: "/approvals" },
-    {
-      label: "Упаковка и заказы",
-      icon: ShoppingCart,
-      href: `/pim/orders/${DEFAULT_ORDER_ID}`,
-      match: "/pim",
-    },
-    { label: "Активность", icon: Activity, href: "/activity", match: "/activity" },
-    { label: "Команда", icon: Users, href: "/team", match: "/team" },
-    { label: "Обучение", icon: GraduationCap, href: "/learning", match: "/learning" },
-    { label: "Каталог", icon: Store, href: "/catalog", match: "/catalog" },
-  ] as const;
-
-  const footerItems = [
-    { label: "Сервисы", icon: Hexagon, href: "/services", match: "/services" },
-    { label: "Справка", icon: HelpCircle, href: "/help", match: "/help" },
-  ] as const;
+  const handleBurgerClick = () => {
+    if (isMobileAsidePage) {
+      openMobileAside();
+      return;
+    }
+    setIsMobileNavOpen(true);
+  };
 
   return (
     <>
@@ -157,20 +257,20 @@ export const NavRail = () => {
         ariaLabel="Основная навигация"
       >
         <div className="flex w-full justify-center px-3 py-3">
-          <RailFavicon />
+          <TenantSwitcher />
         </div>
 
         <div className="flex w-full flex-col items-center gap-3 px-1 pb-2">
           <RailIconButton
-            label={navItems[0].label}
-            icon={navItems[0].icon}
+            label="Поиск"
+            icon={Search}
             onClick={handleOpenSearch}
             active={isSearchOpen}
           />
         </div>
 
         <ScrollableRegion className="no-scrollbar flex w-full flex-1 flex-col items-center gap-2 px-1 pt-1">
-          {navItems.slice(1).map((item) => (
+          {RAIL_PRIMARY_ITEMS.map((item) => (
             <RailIconButton
               key={item.label}
               label={item.label}
@@ -184,7 +284,7 @@ export const NavRail = () => {
         </ScrollableRegion>
 
         <div className="flex w-full flex-col items-center gap-2 border-t border-[color:var(--corportal-rail-divider)] px-1 py-2">
-          {footerItems.map((item) => (
+          {RAIL_FOOTER_ITEMS.map((item) => (
             <RailIconButton
               key={item.label}
               label={item.label}
@@ -208,19 +308,21 @@ export const NavRail = () => {
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-corportal-rail sm:hidden" aria-label="Нижняя навигация">
         <div className="border-t border-[color:var(--corportal-rail-divider)] px-2 py-2 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]">
-          <div className={cn("grid gap-2", isMobileAsidePage ? "grid-cols-4" : "grid-cols-3")}>
-            {isMobileAsidePage ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="default"
+          <div className="grid grid-cols-5 gap-2">
+            <div className="flex h-11 items-center justify-center rounded-lg">
+              <TenantSwitcher />
+            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="default"
               className="h-11 w-full gap-0 rounded-lg px-0 py-0 text-[color:var(--corportal-rail-foreground)] hover:bg-[color:var(--corportal-rail-hover)] hover:text-[color:var(--corportal-rail-foreground)]"
-                aria-label="Открыть контекст"
-                onClick={handleBurgerClick}
-              >
-                <Menu aria-hidden className="size-5" />
-              </Button>
-            ) : null}
+              aria-label="Открыть меню"
+              onClick={handleBurgerClick}
+            >
+              <Menu aria-hidden className="size-5" />
+            </Button>
 
             <Button
               type="button"
@@ -279,6 +381,84 @@ export const NavRail = () => {
           </div>
         </div>
       </nav>
+
+      {isMobileNavOpen ? (
+        <div className="fixed inset-0 z-[60] sm:hidden" role="dialog" aria-modal="true" aria-label="Разделы">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setIsMobileNavOpen(false)} />
+          <div className="absolute inset-0 overflow-y-auto bg-card p-4 pt-14">
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen(false)}
+              className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-md border border-border bg-card text-foreground"
+              aria-label="Закрыть меню"
+            >
+              <X aria-hidden className="size-4" />
+            </button>
+
+            <div className="pb-2">
+              <TenantSwitcher />
+            </div>
+
+            <div className="space-y-1">
+              {RAIL_PRIMARY_ITEMS.map((item) => {
+                const active = item.match === "/" ? currentPathname === "/" : currentPathname.startsWith(item.match);
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.label}
+                    variant={active ? "secondary" : "ghost"}
+                    size="default"
+                    nativeButton={false}
+                    className="h-11 w-full justify-start gap-3"
+                    render={
+                      <Link
+                        href={item.href}
+                        onClick={() => setIsMobileNavOpen(false)}
+                        aria-label={item.label}
+                        aria-current={active ? "page" : undefined}
+                        className="inline-flex w-full items-center gap-3"
+                      />
+                    }
+                  >
+                    <Icon aria-hidden className="size-5" />
+                    <span>{item.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+
+            <div className="my-3 h-px bg-border" />
+
+            <div className="space-y-1">
+              {RAIL_FOOTER_ITEMS.map((item) => {
+                const active = currentPathname.startsWith(item.match);
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.label}
+                    variant={active ? "secondary" : "ghost"}
+                    size="default"
+                    nativeButton={false}
+                    className="h-11 w-full justify-start gap-3"
+                    render={
+                      <Link
+                        href={item.href}
+                        onClick={() => setIsMobileNavOpen(false)}
+                        aria-label={item.label}
+                        aria-current={active ? "page" : undefined}
+                        className="inline-flex w-full items-center gap-3"
+                      />
+                    }
+                  >
+                    <Icon aria-hidden className="size-5" />
+                    <span>{item.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <GlobalSearchModal open={isSearchOpen} onClose={handleCloseSearch} />
     </>

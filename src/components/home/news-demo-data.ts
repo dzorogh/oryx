@@ -20,13 +20,6 @@ export const NEWS_RUBRIC_LABELS: Record<Exclude<NewsRubric, "all">, string> = {
   logistics: "Логистика",
 };
 
-const IMAGES = [
-  "https://www.figma.com/api/mcp/asset/683dae38-1d8e-4ed8-854d-379618612bc1",
-  "https://www.figma.com/api/mcp/asset/ed2983f8-95e3-4e0f-8fed-52251e95df19",
-  "https://www.figma.com/api/mcp/asset/3ae7c6a4-e52d-462a-9248-fd66a54fdb92",
-  "https://www.figma.com/api/mcp/asset/878c5e74-0ae2-4d11-9ef4-9b8e814f8b16",
-];
-
 const TITLES = [
   "IT Department will accept all requests exclusively through the Service Desk system",
   "Новости IT: сентябрь 2025",
@@ -77,7 +70,7 @@ export const NEWS_ITEMS: NewsItem[] = TITLES.map((title, index) => ({
   id: `news-${index + 1}`,
   title,
   excerpt: EXCERPTS[index] ?? "",
-  imageUrl: IMAGES[index % IMAGES.length],
+  imageUrl: `https://picsum.photos/seed/${encodeURIComponent(`news-${index + 1}`)}/1600/900`,
   publishedAt: `${(index % 6) + 1} ч назад`,
   likes: 120 + index * 7,
   rubric: (["it", "company", "hr", "logistics"] as const)[index % 4],
