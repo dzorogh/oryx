@@ -104,26 +104,32 @@ export const HomeBlockShell = ({
               }
             />
             <DropdownMenuContent align="end" className="min-w-44">
-              {actions?.map((render, index) => (
-                <DropdownMenuItem
-                  key={`home-block-action-menu-${index}`}
-                  render={render}
-                  onClick={() => setMenuOpen(false)}
-                />
-              ))}
-              <DropdownMenuSeparator />
+              {actions ?
+                <>
+                  {actions.map((render, index) => (
+                    <DropdownMenuItem
+                      key={`home-block-action-menu-${index}`}
+                      render={render}
+                      onClick={() => setMenuOpen(false)}
+                    />
+                  ))}
+                  <DropdownMenuSeparator />
+                </>
+                : null
+              }
+
               <DropdownMenuItem onClick={() => handleMenuAction(onHide)}>
                 Скрыть блок
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canMoveUp}
-                  onClick={() => handleMenuAction(onMoveUp)}
+                onClick={() => handleMenuAction(onMoveUp)}
               >
                 Переместить выше
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canMoveDown}
-                  onClick={() => handleMenuAction(onMoveDown)}
+                onClick={() => handleMenuAction(onMoveDown)}
               >
                 Переместить ниже
               </DropdownMenuItem>
