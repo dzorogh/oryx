@@ -208,7 +208,7 @@ const InterestGroupCard = ({ group }: { group: TeamProfileInterestGroup }) => (
 );
 
 export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => (
-  <main className="min-h-screen pl-0 sm:pl-12">
+  <main className="min-h-screen">
     <div className="flex min-h-screen flex-col gap-5 p-5">
       <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

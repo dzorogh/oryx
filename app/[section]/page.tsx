@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { SectionPlaceholderPage } from "@/components/home/section-placeholder-page";
-import { TeamDirectoryPage } from "@/components/team/team-directory-page";
 
 type SectionConfig = {
   title: string;
@@ -40,10 +39,6 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
     title: "Сервисы",
     description: "Раздел сервисов готов для размещения внутренних инструментов.",
   },
-  team: {
-    title: "Команда",
-    description: "Раздел команды готов для карточек сотрудников и ролей.",
-  },
 };
 
 export const generateStaticParams = () => Object.keys(SECTION_CONFIGS).map((section) => ({ section }));
@@ -57,10 +52,6 @@ const SectionPage = async ({ params }: SectionPageProps) => {
   const config = SECTION_CONFIGS[section];
   if (!config) {
     notFound();
-  }
-
-  if (section === "team") {
-    return <TeamDirectoryPage />;
   }
 
   return <SectionPlaceholderPage title={config.title} description={config.description} />;

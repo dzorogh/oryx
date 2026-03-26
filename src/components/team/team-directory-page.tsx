@@ -15,7 +15,7 @@ export const TeamDirectoryPage = () => {
   }
 
   return (
-    <main className="min-h-screen pl-0 sm:pl-12">
+    <main className="min-h-screen">
       <section className="flex min-h-screen items-start p-5">
         <div className="flex w-full max-w-6xl flex-col gap-4">
           <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)]">

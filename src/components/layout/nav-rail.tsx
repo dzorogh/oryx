@@ -29,6 +29,7 @@ import { RailFaviconIcon } from "@/components/layout/rail-favicon-icon";
 import { PimAsideContent } from "@/components/pim/pim-aside";
 import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
 import { PULSE_SUBNAV_ITEMS } from "@/features/pulse/pulse-nav";
+import { TEAM_SUBNAV_ITEMS } from "@/features/team/team-nav";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -443,6 +444,18 @@ export const NavRail = () => {
       return (
         <MobileAsideSection title="Магазин и каталог">
           <PimAsideContent onItemClick={handleCloseMobileNav} />
+        </MobileAsideSection>
+      );
+    }
+
+    if (currentPathname === "/team" || currentPathname.startsWith("/team/")) {
+      return (
+        <MobileAsideSection title="Команда">
+          <ModuleSubnav
+            items={TEAM_SUBNAV_ITEMS}
+            navAriaLabel="Подразделы модуля Команда"
+            onItemClick={handleCloseMobileNav}
+          />
         </MobileAsideSection>
       );
     }
