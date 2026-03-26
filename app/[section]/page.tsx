@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { SectionPlaceholderPage } from "@/components/home/section-placeholder-page";
+import { TeamDirectoryPage } from "@/components/team/team-directory-page";
 
 type SectionConfig = {
   title: string;
@@ -56,6 +57,10 @@ const SectionPage = async ({ params }: SectionPageProps) => {
   const config = SECTION_CONFIGS[section];
   if (!config) {
     notFound();
+  }
+
+  if (section === "team") {
+    return <TeamDirectoryPage />;
   }
 
   return <SectionPlaceholderPage title={config.title} description={config.description} />;

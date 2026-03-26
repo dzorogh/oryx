@@ -13,9 +13,10 @@ const orderHref = (orderId: number) => `/pim/orders/${orderId}`;
 type PimOrderNavProps = {
   /** Для тестов без полного роутера Next.js */
   activeOrderId?: number;
+  onItemClick?: () => void;
 };
 
-export const PimOrderNav = ({ activeOrderId: activeOrderIdProp }: PimOrderNavProps) => {
+export const PimOrderNav = ({ activeOrderId: activeOrderIdProp, onItemClick }: PimOrderNavProps) => {
   const params = useParams<{ orderId?: string }>();
   const raw = params?.orderId;
   const fromParams = raw != null && raw !== "" ? Number(raw) : NaN;
@@ -38,6 +39,7 @@ export const PimOrderNav = ({ activeOrderId: activeOrderIdProp }: PimOrderNavPro
             render={
               <Link
                 href={orderHref(preset.orderId)}
+                onClick={onItemClick}
                 scroll={false}
                 role="link"
                 aria-label={`Открыть ${preset.label}`}

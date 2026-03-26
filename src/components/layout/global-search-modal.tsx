@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
-import { ScrollableRegion } from "@/components/layout/scrollable-region";
 
 type SearchTarget = {
   id: string;
@@ -96,7 +95,7 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
           </button>
         </div>
 
-        <ScrollableRegion className="mt-3 max-h-80">
+        <div className="mt-3 max-h-80 overflow-y-auto">
           {results.length === 0 ? (
             <p className="rounded-lg px-3 py-2 text-sm text-muted-foreground">Ничего не найдено.</p>
           ) : (
@@ -113,7 +112,7 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
               </Link>
             ))
           )}
-        </ScrollableRegion>
+        </div>
       </div>
     </div>
   );

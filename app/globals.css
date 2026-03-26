@@ -50,6 +50,7 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   --color-corportal-rail-brand: var(--corportal-rail-brand);
+  --color-corportal-rail-gradient-from: var(--corportal-rail-gradient-from);
   --color-corportal-rail-favicon-surface: var(--corportal-rail-favicon-surface);
   --color-corportal-rail-favicon-ink: var(--corportal-rail-favicon-ink);
   --color-corportal-accent-violet-soft: var(--corportal-accent-violet-soft);

@@ -13,9 +13,10 @@ export type ModuleSubnavItem = {
 type ModuleSubnavProps = {
   items: ModuleSubnavItem[];
   navAriaLabel: string;
+  onItemClick?: () => void;
 };
 
-export const ModuleSubnav = ({ items, navAriaLabel }: ModuleSubnavProps) => {
+export const ModuleSubnav = ({ items, navAriaLabel, onItemClick }: ModuleSubnavProps) => {
   const pathname = usePathname();
   const current = pathname ?? "";
 
@@ -36,6 +37,7 @@ export const ModuleSubnav = ({ items, navAriaLabel }: ModuleSubnavProps) => {
                 render={
                   <Link
                     href={item.href}
+                    onClick={onItemClick}
                     aria-current={active ? "page" : undefined}
                     aria-label={item.label}
                     className="inline-flex w-full items-center"
