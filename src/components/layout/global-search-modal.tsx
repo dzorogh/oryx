@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type SearchTarget = {
   id: string;
@@ -16,7 +17,8 @@ const SEARCH_TARGETS: SearchTarget[] = [
   { id: "orders", title: "Упаковка и заказы", description: "Раздел заказов PIM", href: "/pim/orders/59" },
   { id: "pulse", title: "Пульс компании", description: "Новости и обновления команды", href: "/pulse/news" },
   { id: "ideas", title: "Идеи и предложения", description: "Лента идей сотрудников", href: "/pulse/ideas" },
-  { id: "team", title: "Команда", description: "Сотрудники и роли", href: "/team" },
+  { id: "team", title: "Команда", description: "Модуль команды и оргструктуры", href: "/team" },
+  { id: "team-users", title: "Сотрудники", description: "Список пользователей команды", href: "/team/users" },
   { id: "activity", title: "Активность", description: "События и уведомления", href: "/activity" },
   { id: "approvals", title: "Согласования", description: "Задачи на согласование", href: "/approvals" },
   { id: "catalog", title: "Каталог", description: "Справочник и каталог", href: "/catalog" },
@@ -45,19 +47,6 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
     return () => window.clearTimeout(timer);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
-
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) {
@@ -68,13 +57,20 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
     );
   }, [query]);
 
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-16" role="dialog" aria-modal="true" aria-label="Глобальный поиск">
-      <div className="w-full max-w-3xl rounded-xl border border-[var(--corportal-border-grey)] bg-card p-3 shadow-lg">
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onClose();
+        }
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className="sm:max-w-3xl"
+      >
+        <DialogTitle className="sr-only">Глобальный поиск</DialogTitle>
         <div className="flex items-center gap-2 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2">
           <Search aria-hidden className="size-4 text-muted-foreground" />
           <input
@@ -113,7 +109,7 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
             ))
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

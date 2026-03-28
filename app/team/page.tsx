@@ -1,5 +1,7 @@
-import { TeamDirectoryPage } from "@/components/team/team-directory-page";
+import { redirect } from "next/navigation";
 
-const TeamPage = () => <TeamDirectoryPage />;
+const TeamPage = () => {
+  redirect("/team/users");
+};
 
 export default TeamPage;

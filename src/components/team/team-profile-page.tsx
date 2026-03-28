@@ -215,7 +215,11 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => (
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink render={<Link href="/team" />}>Сотрудники</BreadcrumbLink>
+                <BreadcrumbLink render={<Link href="/team" />}>Команда</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink render={<Link href="/team/users" />}>Сотрудники</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>

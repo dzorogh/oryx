@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { TEAM_DIRECTORY_EMPLOYEES, type TeamDirectoryEmployee } from "./team-directory-demo-data";
 
 const ALL_VALUE = "all";
@@ -95,6 +103,7 @@ const StackedInfo = ({ title, subtitle }: { title: string; subtitle: string }) =
 );
 
 export const TeamDirectoryPage = () => {
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [districtFilter, setDistrictFilter] = useState(ALL_VALUE);
   const [departmentFilter, setDepartmentFilter] = useState(ALL_VALUE);
@@ -164,25 +173,40 @@ export const TeamDirectoryPage = () => {
       <section className="flex items-start p-5">
         <div className="flex w-full max-w-7xl flex-col gap-4">
           <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
-            <CardHeader className="gap-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <h1 className="text-lg font-semibold text-foreground">Сотрудники</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Компактный справочник для поиска сотрудника и быстрого перехода в карточку.
-                  </p>
-                </div>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+              <h1 className="text-lg font-semibold text-foreground">Сотрудники</h1>
 
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span>Всего записей: {TEAM_DIRECTORY_EMPLOYEES.length}</span>
                   <span className="hidden text-[var(--corportal-border-grey)] sm:inline">•</span>
                   <span>Показано: {filteredEmployees.length}</span>
                 </div>
+
+                <Button
+                  type="button"
+                  variant={hasActiveFilters ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsFilterSheetOpen(true)}
+                  aria-label="Открыть фильтры сотрудников"
+                >
+                  <SlidersHorizontal aria-hidden className="size-3.5" />
+                  Фильтры
+                </Button>
               </div>
             </CardHeader>
+          </Card>
 
-            <CardContent className="space-y-3">
-              <div className="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.85fr))]">
+          <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+            <SheetContent side="right" className="w-full sm:max-w-md">
+              <SheetHeader>
+                <SheetTitle>Фильтры</SheetTitle>
+                <SheetDescription>
+                  Поиск и отбор сотрудников без перезагрузки страницы.
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="grid gap-4 px-4 pb-4">
                 <label className="space-y-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Поиск</span>
                   <div className="relative">
@@ -253,35 +277,36 @@ export const TeamDirectoryPage = () => {
                     </SelectContent>
                   </Select>
                 </label>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => setShowLeadsOnly((currentValue) => !currentValue)}
+                    variant={showLeadsOnly ? "default" : "outline"}
+                    size="sm"
+                    aria-pressed={showLeadsOnly}
+                  >
+                    Руководители
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  onClick={() => setShowLeadsOnly((currentValue) => !currentValue)}
-                  variant={showLeadsOnly ? "default" : "outline"}
-                  size="sm"
-                  aria-pressed={showLeadsOnly}
-                >
-                  Руководители
-                </Button>
-
+              <SheetFooter className="border-t bg-muted/30">
                 {hasActiveFilters ? (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={handleResetFilters}
-                    className="ml-auto"
                     aria-label="Сбросить все фильтры"
                   >
                     <X aria-hidden className="size-3.5" />
                     Сбросить
                   </Button>
                 ) : null}
-              </div>
-            </CardContent>
-          </Card>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
 
           <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)]">
             <CardContent className="hidden px-0 md:block">

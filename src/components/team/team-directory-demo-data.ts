@@ -1,3 +1,5 @@
+import { TEAM_PROFILE_DEMO_DATA, type TeamProfileData } from "./team-profile-demo-data";
+
 export type TeamDirectoryEmployee = {
   id: string;
   fullName: string;
@@ -12,135 +14,32 @@ export type TeamDirectoryEmployee = {
   profileHref?: string;
 };
 
-export const TEAM_DIRECTORY_EMPLOYEES: TeamDirectoryEmployee[] = [
-  {
-    id: "1",
-    fullName: "Sergey Indenbom",
-    employeeRole: "Project manager",
-    district: "Moscow Federal District",
-    branch: "Moscow (Head Office, City)",
-    department: "Отдел разработки",
-    divisions: "Business system development, Frontend Squad, Backend Squad",
-    position: "Project manager",
-    avatarUrl: "https://loremflickr.com/96/96/man,portrait?lock=team-sergey-indenbom",
-    isLead: true,
-    profileHref: "/team/1",
-  },
-  {
-    id: "6081",
-    fullName: "Абакумова Анастасия",
-    employeeRole: "Content manager",
-    district: "Volga Federal District 2",
-    branch: "Нижний Новгород Литвинова",
-    department: "Content Sites",
-    divisions: "Corp portal and 1C",
-    position: "Trainee",
-    avatarUrl: "https://loremflickr.com/96/96/woman,portrait?lock=team-abakumova",
-    isLead: false,
-    profileHref: "/team/6081",
-  },
-  {
-    id: "2973",
-    fullName: "Абгарян Артур",
-    employeeRole: "Store director",
-    district: "DVFO",
-    branch: "Находка",
-    department: "Отдел продаж",
-    divisions: "Находка",
-    position: "Head of the branch",
-    avatarUrl: "https://loremflickr.com/96/96/man,portrait?lock=team-abgaryan",
-    isLead: true,
-    profileHref: "/team/2973",
-  },
-  {
-    id: "2496",
-    fullName: "Абрахманов Ильнар",
-    employeeRole: "Store director",
-    district: "Povolzhye",
-    branch: "Набережные Челны",
-    department: "Отдел продаж",
-    divisions: "Набережные Челны",
-    position: "Head of the branch",
-    avatarUrl: "https://loremflickr.com/96/96/man,portrait?lock=team-abrahmanov",
-    isLead: true,
-    profileHref: "/team/2496",
-  },
-  {
-    id: "5558",
-    fullName: "Абдуллаева Евгения",
-    employeeRole: "Accountant-operator",
-    district: "SFO 2",
-    branch: "Новосибирск",
-    department: "Финансовый отдел",
-    divisions: "Novosibirsk",
-    position: "Accountant",
-    avatarUrl: "https://loremflickr.com/96/96/woman,portrait?lock=team-abdullaeva",
-    isLead: false,
-    profileHref: "/team/5558",
-  },
-  {
-    id: "4022",
-    fullName: "Петрова Анна",
-    employeeRole: "Frontend Developer",
-    district: "Moscow Federal District",
-    branch: "Moscow (Head Office, City)",
-    department: "IT",
-    divisions: "Frontend Squad",
-    position: "Senior specialist",
-    avatarUrl: "https://loremflickr.com/96/96/woman,portrait?lock=team-petrova",
-    isLead: false,
-    profileHref: "/team/4022",
-  },
-  {
-    id: "4023",
-    fullName: "Смирнов Илья",
-    employeeRole: "Logistics Manager",
-    district: "North-West Federal District",
-    branch: "Санкт-Петербург",
-    department: "Логистика",
-    divisions: "Warehouse and transport",
-    position: "Manager",
-    avatarUrl: "https://loremflickr.com/96/96/man,portrait?lock=team-smirnov",
-    isLead: false,
-    profileHref: "/team/4023",
-  },
-  {
-    id: "4024",
-    fullName: "Соколова Мария",
-    employeeRole: "HR Partner",
-    district: "Central Federal District",
-    branch: "Ярославль",
-    department: "HR",
-    divisions: "Recruitment and adaptation",
-    position: "Partner",
-    avatarUrl: "https://loremflickr.com/96/96/woman,portrait?lock=team-sokolova",
-    isLead: true,
-    profileHref: "/team/4024",
-  },
-  {
-    id: "4025",
-    fullName: "Волков Дмитрий",
-    employeeRole: "Account Manager",
-    district: "Ural Federal District",
-    branch: "Екатеринбург",
-    department: "Sales",
-    divisions: "B2B accounts",
-    position: "Lead manager",
-    avatarUrl: "https://loremflickr.com/96/96/man,portrait?lock=team-volkov",
-    isLead: true,
-    profileHref: "/team/4025",
-  },
-  {
-    id: "4026",
-    fullName: "Егорова Светлана",
-    employeeRole: "Support Lead",
-    district: "SFO 1",
-    branch: "Красноярск",
-    department: "Support",
-    divisions: "Customer care",
-    position: "Team lead",
-    avatarUrl: "https://loremflickr.com/96/96/woman,portrait?lock=team-egorova",
-    isLead: true,
-    profileHref: "/team/4026",
-  },
-];
+const getEmployeeDivisions = (profile: TeamProfileData) => {
+  const divisions = profile.orgAssignments
+    .map((assignment) => assignment.name)
+    .filter((name) => name !== profile.department);
+
+  if (divisions.length === 0) {
+    return profile.department;
+  }
+
+  return divisions.join(", ");
+};
+
+const mapProfileToDirectoryEmployee = (profile: TeamProfileData): TeamDirectoryEmployee => ({
+  id: profile.id,
+  fullName: profile.fullName,
+  employeeRole: profile.role,
+  district: profile.federalDistrict,
+  branch: profile.branch,
+  department: profile.department,
+  divisions: getEmployeeDivisions(profile),
+  position: profile.position,
+  avatarUrl: profile.avatarUrl,
+  isLead: profile.orgAssignments.some((assignment) => assignment.isLead),
+  profileHref: `/team/users/${profile.id}`,
+});
+
+export const TEAM_DIRECTORY_EMPLOYEES: TeamDirectoryEmployee[] = TEAM_PROFILE_DEMO_DATA.map(
+  mapProfileToDirectoryEmployee
+);

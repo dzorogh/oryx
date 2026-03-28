@@ -27,9 +27,9 @@ import { LeftDockShell } from "@/components/layout/left-dock-shell";
 import { ModuleSubnav } from "@/components/layout/module-subnav";
 import { RailFaviconIcon } from "@/components/layout/rail-favicon-icon";
 import { PimAsideContent } from "@/components/pim/pim-aside";
+import { TeamAsideContent } from "@/components/team/team-aside-content";
 import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
 import { PULSE_SUBNAV_ITEMS } from "@/features/pulse/pulse-nav";
-import { TEAM_SUBNAV_ITEMS } from "@/features/team/team-nav";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -451,11 +451,7 @@ export const NavRail = () => {
     if (currentPathname === "/team" || currentPathname.startsWith("/team/")) {
       return (
         <MobileAsideSection title="Команда">
-          <ModuleSubnav
-            items={TEAM_SUBNAV_ITEMS}
-            navAriaLabel="Подразделы модуля Команда"
-            onItemClick={handleCloseMobileNav}
-          />
+          <TeamAsideContent onItemClick={handleCloseMobileNav} />
         </MobileAsideSection>
       );
     }
@@ -467,7 +463,7 @@ export const NavRail = () => {
     { key: "tenant", icon: RailFaviconIcon, ariaLabel: "Переключить тенант", onClick: () => setIsTenantOpen(true) },
     { key: "tasks", icon: SquareCheckBig, ariaLabel: "Задачи", onClick: () => router.push("/tasks") },
     { key: "search", icon: Search, ariaLabel: "Открыть поиск", onClick: handleOpenSearch },
-    { key: "profile", icon: User, ariaLabel: "Профиль", onClick: () => router.push("/team/1") },
+    { key: "profile", icon: User, ariaLabel: "Профиль", onClick: () => router.push("/team/users/1") },
     { key: "menu", icon: Menu, ariaLabel: "Открыть меню", onClick: handleBurgerClick },
   ];
 
@@ -516,7 +512,7 @@ export const NavRail = () => {
 
         <div className="flex w-full justify-center px-2 py-2">
           <Link
-            href="/team/1"
+            href="/team/users/1"
             className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-[color:var(--corportal-rail-hover)] text-[color:var(--corportal-rail-foreground)] transition-colors hover:bg-[color:var(--corportal-rail-active)] focus-visible:outline focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]"
             aria-label="Профиль"
           >

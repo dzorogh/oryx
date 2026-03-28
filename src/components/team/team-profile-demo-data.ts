@@ -50,6 +50,7 @@ export type TeamProfileData = {
   fullName: string;
   avatarUrl: string;
   role: string;
+  position: string;
   email: string;
   phone: string;
   city: string;
@@ -121,8 +122,9 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
   {
     id: "1",
     fullName: "Sergey Indenbom",
-    avatarUrl: "https://loremflickr.com/320/320/man,portrait?lock=team-sergey-indenbom",
+    avatarUrl: "https://loremflickr.com/320/320/man,avatar?lock=team-sergey-indenbom",
     role: "Project manager",
+    position: "Project manager",
     email: "s.indenbom@globaldrive.ru",
     phone: "8 (903) 734-97-57",
     city: "Moscow",
@@ -138,7 +140,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "s.indenbom@globaldrive.ru", href: "mailto:s.indenbom@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team1", href: "https://t.me/team1" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79037349757", href: "https://wa.me/79037349757" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/1", href: "/team/1" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/1", href: "/team/users/1" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -164,6 +166,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Абакумова Анастасия",
     avatarUrl: "https://loremflickr.com/320/320/woman,portrait?lock=team-abakumova",
     role: "Content manager",
+    position: "Trainee",
     email: "employee6081@globaldrive.ru",
     phone: "8 (905) 110-60-81",
     city: "Нижний Новгород",
@@ -179,7 +182,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee6081@globaldrive.ru", href: "mailto:employee6081@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team6081", href: "https://t.me/team6081" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79051106081", href: "https://wa.me/79051106081" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/6081", href: "/team/6081" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/6081", href: "/team/users/6081" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -203,6 +206,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Абгарян Артур",
     avatarUrl: "https://loremflickr.com/320/320/man,portrait?lock=team-abgaryan",
     role: "Store director",
+    position: "Head of the branch",
     email: "employee2973@globaldrive.ru",
     phone: "8 (914) 220-29-73",
     city: "Находка",
@@ -218,7 +222,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee2973@globaldrive.ru", href: "mailto:employee2973@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team2973", href: "https://t.me/team2973" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79142202973", href: "https://wa.me/79142202973" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/2973", href: "/team/2973" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/2973", href: "/team/users/2973" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -242,6 +246,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Абрахманов Ильнар",
     avatarUrl: "https://loremflickr.com/320/320/man,portrait?lock=team-abrahmanov",
     role: "Store director",
+    position: "Head of the branch",
     email: "employee2496@globaldrive.ru",
     phone: "8 (927) 140-24-96",
     city: "Набережные Челны",
@@ -257,7 +262,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee2496@globaldrive.ru", href: "mailto:employee2496@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team2496", href: "https://t.me/team2496" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79271402496", href: "https://wa.me/79271402496" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/2496", href: "/team/2496" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/2496", href: "/team/users/2496" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -281,6 +286,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Абдуллаева Евгения",
     avatarUrl: "https://loremflickr.com/320/320/woman,portrait?lock=team-abdullaeva",
     role: "Accountant-operator",
+    position: "Accountant",
     email: "employee5558@globaldrive.ru",
     phone: "8 (913) 330-55-58",
     city: "Новосибирск",
@@ -296,7 +302,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee5558@globaldrive.ru", href: "mailto:employee5558@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team5558", href: "https://t.me/team5558" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79133305558", href: "https://wa.me/79133305558" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/5558", href: "/team/5558" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/5558", href: "/team/users/5558" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -320,6 +326,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Петрова Анна",
     avatarUrl: "https://loremflickr.com/320/320/woman,portrait?lock=team-petrova",
     role: "Frontend Developer",
+    position: "Senior specialist",
     email: "employee4022@globaldrive.ru",
     phone: "8 (926) 180-40-22",
     city: "Moscow",
@@ -335,7 +342,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee4022@globaldrive.ru", href: "mailto:employee4022@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team4022", href: "https://t.me/team4022" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79261804022", href: "https://wa.me/79261804022" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/4022", href: "/team/4022" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/4022", href: "/team/users/4022" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -359,6 +366,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Смирнов Илья",
     avatarUrl: "https://loremflickr.com/320/320/man,portrait?lock=team-smirnov",
     role: "Logistics Manager",
+    position: "Manager",
     email: "employee4023@globaldrive.ru",
     phone: "8 (921) 550-40-23",
     city: "Санкт-Петербург",
@@ -374,7 +382,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee4023@globaldrive.ru", href: "mailto:employee4023@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team4023", href: "https://t.me/team4023" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79215504023", href: "https://wa.me/79215504023" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/4023", href: "/team/4023" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/4023", href: "/team/users/4023" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -398,6 +406,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Соколова Мария",
     avatarUrl: "https://loremflickr.com/320/320/woman,portrait?lock=team-sokolova",
     role: "HR Partner",
+    position: "Partner",
     email: "employee4024@globaldrive.ru",
     phone: "8 (915) 470-40-24",
     city: "Ярославль",
@@ -413,7 +422,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee4024@globaldrive.ru", href: "mailto:employee4024@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team4024", href: "https://t.me/team4024" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79154704024", href: "https://wa.me/79154704024" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/4024", href: "/team/4024" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/4024", href: "/team/users/4024" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -437,6 +446,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Волков Дмитрий",
     avatarUrl: "https://loremflickr.com/320/320/man,portrait?lock=team-volkov",
     role: "Account Manager",
+    position: "Lead manager",
     email: "employee4025@globaldrive.ru",
     phone: "8 (912) 610-40-25",
     city: "Екатеринбург",
@@ -452,7 +462,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee4025@globaldrive.ru", href: "mailto:employee4025@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team4025", href: "https://t.me/team4025" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79126104025", href: "https://wa.me/79126104025" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/4025", href: "/team/4025" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/4025", href: "/team/users/4025" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [
@@ -476,6 +486,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
     fullName: "Егорова Светлана",
     avatarUrl: "https://loremflickr.com/320/320/woman,portrait?lock=team-egorova",
     role: "Support Lead",
+    position: "Team lead",
     email: "employee4026@globaldrive.ru",
     phone: "8 (913) 620-40-26",
     city: "Красноярск",
@@ -491,7 +502,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { channel: "email", label: "Почта", value: "employee4026@globaldrive.ru", href: "mailto:employee4026@globaldrive.ru" },
       { channel: "telegram", label: "Telegram", value: "@team4026", href: "https://t.me/team4026" },
       { channel: "whatsapp", label: "WhatsApp", value: "+79136204026", href: "https://wa.me/79136204026" },
-      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/4026", href: "/team/4026" },
+      { channel: "internal", label: "Внутренний профиль", value: "Employee card / team/users/4026", href: "/team/users/4026" },
     ],
     workCalendar: MARCH_2026_WORK_CALENDAR,
     assets: [

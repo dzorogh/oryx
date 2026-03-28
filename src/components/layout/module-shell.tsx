@@ -13,6 +13,7 @@ type ModuleShellProps = {
   subnavAriaLabel: string;
   children: ReactNode;
   mainClassName?: string;
+  asideContent?: ReactNode;
 };
 
 export const ModuleShell = ({
@@ -22,10 +23,11 @@ export const ModuleShell = ({
   subnavAriaLabel,
   children,
   mainClassName,
+  asideContent,
 }: ModuleShellProps) => (
   <div className="relative min-h-screen">
     <ModuleAsideFrame title={moduleTitle} ariaLabel={asideLabel}>
-      <ModuleSubnav items={subnavItems} navAriaLabel={subnavAriaLabel} />
+      {asideContent ?? <ModuleSubnav items={subnavItems} navAriaLabel={subnavAriaLabel} />}
     </ModuleAsideFrame>
     <div className={cn("flex min-h-screen min-w-0 flex-col", MODULE_MAIN_OFFSET_CLASS, mainClassName)}>
       <main className="min-h-0 min-w-0 flex-1">{children}</main>

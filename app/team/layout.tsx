@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ModuleShell } from "@/components/layout/module-shell";
+import { TeamAsideContent } from "@/components/team/team-aside-content";
 import { TEAM_SUBNAV_ITEMS } from "@/features/team/team-nav";
 
 type TeamLayoutProps = {
@@ -12,6 +13,7 @@ const TeamLayout = ({ children }: TeamLayoutProps) => (
     asideLabel="Команда"
     subnavItems={TEAM_SUBNAV_ITEMS}
     subnavAriaLabel="Разделы модуля Команда"
+    asideContent={<TeamAsideContent />}
   >
     {children}
   </ModuleShell>
