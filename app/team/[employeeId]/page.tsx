@@ -1,7 +1,9 @@
 import { permanentRedirect } from "next/navigation";
+import { TEAM_PROFILE_DEMO_IDS } from "@/components/team/team-profile-demo-data";
 
-export const generateStaticParams = () =>
-  [];
+export function generateStaticParams() {
+  return TEAM_PROFILE_DEMO_IDS.map((employeeId) => ({ employeeId }));
+}
 
 type TeamProfileRouteProps = {
   params: Promise<{ employeeId: string }>;
