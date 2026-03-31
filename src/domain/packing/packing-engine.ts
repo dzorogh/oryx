@@ -424,14 +424,15 @@ const yFrontGapPenalty = (placements: readonly Placement[], candidatePlacement: 
   return candidateStartY - currentFrontY;
 };
 
-// Reorders result so container 0 is the most utilized one (UI and business expectation).
+// Reorders result so container 0 is the most utilized one (by volume).
 const normalizeContainerOrder = (containers: readonly ContainerInstance[]): ContainerInstance[] => {
+  const getVolume = (placements: readonly Placement[]) =>
+    placements.reduce((sum, p) => sum + p.size.width * p.size.length * p.size.height, 0);
+
   const sorted = deterministicSort(
     [...containers],
+    (left, right) => getVolume(right.placements) - getVolume(left.placements),
     (left, right) => right.placements.length - left.placements.length,
-    (left, right) =>
-      right.placements.reduce((sum, placement) => sum + placement.position.y + placement.size.length, 0) -
-      left.placements.reduce((sum, placement) => sum + placement.position.y + placement.size.length, 0),
     (left, right) => left.containerIndex - right.containerIndex,
   );
 
@@ -535,7 +536,13 @@ const compareResults = (left: PackingEngineOutput, right: PackingEngineOutput): 
   if (leftPlacementCount !== rightPlacementCount) {
     return rightPlacementCount - leftPlacementCount;
   }
-  return 0;
+  
+  // Tie-breaker: prefer the solution where the most utilized container is packed as densely as possible.
+  const getContainerVolume = (container: ContainerInstance) =>
+    container.placements.reduce((sum, p) => sum + p.size.width * p.size.length * p.size.height, 0);
+  const leftMaxVol = Math.max(0, ...left.containers.map(getContainerVolume));
+  const rightMaxVol = Math.max(0, ...right.containers.map(getContainerVolume));
+  return rightMaxVol - leftMaxVol;
 };
 
 // Базовый greedy-проход с лимитом контейнеров.
