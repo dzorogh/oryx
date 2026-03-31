@@ -13,6 +13,12 @@ vi.mock("@/features/packing-visualization/components/multi-container-scene", () 
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/pim/orders/59",
+  useParams: () => ({ employeeId: "123" }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+}));
+
 const renderOrderPacking = (selectedOrderId: number) =>
   render(
     <OrderPackingAppChrome orderId={selectedOrderId}>

@@ -284,9 +284,10 @@ const tryPlaceInLayer = (
   layer: Layer,
   unit: OrderItemUnit,
   containerIndex: number,
+  ignoreHeightLimit: boolean = false,
 ): TryPlaceResult | null => {
-  // Item can be shorter than layer, but never taller.
-  if (unit.dimensions.height > layer.height) return null;
+  // Item can be shorter than layer, and if explicitly allowed, taller (cross-container packing).
+  if (!ignoreHeightLimit && unit.dimensions.height > layer.height) return null;
 
   const orientations: ReadonlyArray<{ width: number; length: number; yaw: 0 | 90 }> = [
     { width: unit.dimensions.width, length: unit.dimensions.length, yaw: 0 },
@@ -756,7 +757,9 @@ const packAcrossContainers = (
 
       for (let layerIndex = 0; layerIndex < state.layers.length; layerIndex += 1) {
         const layer = state.layers[layerIndex];
-        const placed = tryPlaceInLayer(layer, unit, state.containerIndex);
+        if (layer.z + unit.dimensions.height > container.height) continue;
+
+        const placed = tryPlaceInLayer(layer, unit, state.containerIndex, true);
         if (!placed) continue;
         if (hasPlacementOverlap(placed.placement, state.placements)) continue;
 
@@ -787,7 +790,7 @@ const packAcrossContainers = (
           freeRects: sortFreeRects(baseRects),
           placements: [],
         };
-        const placedInNewLayer = tryPlaceInLayer(newLayer, unit, state.containerIndex);
+        const placedInNewLayer = tryPlaceInLayer(newLayer, unit, state.containerIndex, true);
         if (!placedInNewLayer) continue;
         if (hasPlacementOverlap(placedInNewLayer.placement, state.placements)) continue;
 
