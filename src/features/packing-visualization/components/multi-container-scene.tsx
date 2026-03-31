@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, Text } from "@react-three/drei";
 import { useMemo, useRef, useState, type RefObject } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { ContainerInstance, OrderItemType } from "@/domain/packing/types";
@@ -154,6 +154,11 @@ export const MultiContainerScene = ({
         <group scale={[sceneScale, sceneScale, sceneScale]}>
           {containers.map((container, index) => {
             const offsetZ = index * (containerSize.length + safeSpacingMm);
+            const containerVolume = containerSize.width * containerSize.height * containerSize.length;
+            const filledVolume = container.placements.reduce((sum, p) => sum + (p.size.width * p.size.height * p.size.length), 0);
+            const percentFilled = (filledVolume / containerVolume) * 100;
+            const dimStr = `${Math.round(containerSize.width)} × ${Math.round(containerSize.length)} × ${Math.round(containerSize.height)} мм`;
+            const textContent = `Контейнер ${container.containerIndex + 1}\nРазмеры: ${dimStr}\nЗаполненность: ${percentFilled.toFixed(1)}%`;
 
             return (
               <group
@@ -208,6 +213,24 @@ export const MultiContainerScene = ({
                     opacity={0.18}
                   />
                 </mesh>
+
+                {/* Container info text on the floor, on the right (narrow) side */}
+                <Text
+                  position={[
+                    containerSize.width + 400, // right side, outside the container
+                    2, // slightly above the floor
+                    containerSize.length / 2 // centered along the narrow edge
+                  ]}
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  fontSize={200}
+                  color="#94a3b8"
+                  anchorX="left"
+                  anchorY="middle"
+                  textAlign="left"
+                  lineHeight={1.2}
+                >
+                  {textContent}
+                </Text>
               </group>
             );
           })}
