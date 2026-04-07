@@ -66,6 +66,7 @@ export type TeamProfileData = {
   assets: TeamProfileAsset[];
   interests: TeamProfileInterestGroup[];
   orgAssignments: TeamProfileOrgAssignment[];
+  about?: string;
 };
 
 const MARCH_2026_WORK_CALENDAR_DAYS: TeamProfileCalendarDay[] = [
@@ -160,6 +161,7 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { name: "Frontend Squad", roleLabel: "Руководитель подразделения", isLead: true },
       { name: "Backend Squad", roleLabel: "Участник подразделения", isLead: false },
     ],
+    about: "Продакт, менеджер и немного инженер. Верю, что лучшие продукты делаются на стыке эмпатии, данных и здравого смысла. В свободное время катаю на велосипеде и читаю сай-фай.",
   },
   {
     id: "6081",
