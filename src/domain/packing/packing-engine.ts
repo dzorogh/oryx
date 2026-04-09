@@ -10,7 +10,7 @@ export type PackingEngineOutput = {
 
 // Свободный 2D-прямоугольник на плоскости слоя (ось X/ось Y).
 type FreeRect = { x: number; y: number; width: number; length: number };
-// Слой внутри контейнера: высота полки + доступные области + размещения в этом слое.
+// Слой внутри контейнера: координата Z + высота слоя + доступные области + размещения в этом слое.
 type Layer = {
   z: number;
   height: number;
@@ -120,13 +120,14 @@ const mergeAdjacentRects = (rects: readonly FreeRect[]): FreeRect[] => {
         const canMergeHorizontally =
           merged.y === candidate.y &&
           merged.length === candidate.length &&
-          merged.x + merged.width === candidate.x;
+          candidate.x >= merged.x + merged.width &&
+          candidate.x - (merged.x + merged.width) <= 50;
 
         if (canMergeHorizontally) {
           merged = {
             x: merged.x,
             y: merged.y,
-            width: merged.width + candidate.width,
+            width: candidate.x + candidate.width - merged.x,
             length: merged.length,
           };
           consumed.add(candidateIndex);
@@ -137,7 +138,8 @@ const mergeAdjacentRects = (rects: readonly FreeRect[]): FreeRect[] => {
         const canMergeVertically =
           merged.x === candidate.x &&
           merged.width === candidate.width &&
-          merged.y + merged.length === candidate.y;
+          candidate.y >= merged.y + merged.length &&
+          candidate.y - (merged.y + merged.length) <= 50;
 
         if (canMergeVertically) {
           merged = {
@@ -280,10 +282,21 @@ const isScoreVectorBetter = (
   return candidate.length < currentBest.length;
 };
 
-const tryPlaceInLayer = (
+const hasPlacementOverlap = (
+  candidatePlacement: Placement,
+  placedInContainer: readonly Placement[],
+): boolean => {
+  return placedInContainer.some((placedEntry) => {
+    if (placedEntry.itemUnitId === candidatePlacement.itemUnitId) return false;
+    return placementsOverlap(placedEntry, candidatePlacement);
+  });
+};
+
+export const tryPlaceInLayer = (
   layer: Layer,
   unit: OrderItemUnit,
   containerIndex: number,
+  placements: readonly Placement[],
   ignoreHeightLimit: boolean = false,
 ): TryPlaceResult | null => {
   // Item can be shorter than layer, and if explicitly allowed, taller (cross-container packing).
@@ -312,6 +325,8 @@ const tryPlaceInLayer = (
           height: unit.dimensions.height,
         },
       };
+
+      if (hasPlacementOverlap(placement, placements)) continue;
 
       const nextFreeRects = sortFreeRects([
         ...layer.freeRects.filter((entry) => entry !== freeRect),
@@ -447,17 +462,6 @@ const normalizeContainerOrder = (containers: readonly ContainerInstance[]): Cont
   }));
 };
 
-const hasPlacementOverlap = (
-  candidatePlacement: Placement,
-  placedInContainer: readonly Placement[],
-): boolean => {
-  // Extra collision guard for cross-layer/cross-heuristic candidates.
-  return placedInContainer.some((placedEntry) => {
-    if (placedEntry.itemUnitId === candidatePlacement.itemUnitId) return false;
-    return placementsOverlap(placedEntry, candidatePlacement);
-  });
-};
-
 const applyBestPlacementToState = (states: ContainerState[], best: BestPlacement): void => {
   const targetState = states[best.containerIndex];
   if (best.kind === "new") {
@@ -536,7 +540,7 @@ const compareResults = (left: PackingEngineOutput, right: PackingEngineOutput): 
   if (leftPlacementCount !== rightPlacementCount) {
     return rightPlacementCount - leftPlacementCount;
   }
-  
+
   // Tie-breaker: prefer the solution where the most utilized container is packed as densely as possible.
   const getContainerVolume = (container: ContainerInstance) =>
     container.placements.reduce((sum, p) => sum + p.size.width * p.size.length * p.size.height, 0);
@@ -570,12 +574,13 @@ const packWithLimit = (
     remaining: readonly OrderItemUnit[],
     layers: readonly Layer[],
     containerIndex: number,
+    placements: readonly Placement[],
   ): ExistingPlacementCandidate | null => {
     let bestExisting: ExistingPlacementCandidate | null = null;
     for (let unitIndex = 0; unitIndex < remaining.length; unitIndex += 1) {
       const unit = remaining[unitIndex];
       for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
-        const placed = tryPlaceInLayer(layers[layerIndex], unit, containerIndex);
+        const placed = tryPlaceInLayer(layers[layerIndex], unit, containerIndex, placements);
         if (!placed) continue;
         const area = placementFootprint(placed.placement);
         if (!bestExisting || area > bestExisting.area) {
@@ -591,12 +596,13 @@ const packWithLimit = (
     remaining: readonly OrderItemUnit[],
     newLayer: Layer,
     containerIndex: number,
+    placements: readonly Placement[],
   ): NewLayerPlacementCandidate | null => {
     let bestNewLayer: NewLayerPlacementCandidate | null = null;
     for (let unitIndex = 0; unitIndex < remaining.length; unitIndex += 1) {
       const unit = remaining[unitIndex];
       if (unit.dimensions.height > newLayer.height) continue;
-      const placed = tryPlaceInLayer(newLayer, unit, containerIndex);
+      const placed = tryPlaceInLayer(newLayer, unit, containerIndex, placements);
       if (!placed) continue;
       const area = placementFootprint(placed.placement);
       if (!bestNewLayer || area > bestNewLayer.area) {
@@ -617,7 +623,7 @@ const packWithLimit = (
 
     while (placedInPass) {
       placedInPass = false;
-      const bestExisting = pickBestForExistingLayers(remaining, layers, containerIndex);
+      const bestExisting = pickBestForExistingLayers(remaining, layers, containerIndex, placements);
       if (bestExisting) {
         const layer = layers[bestExisting.layerIndex];
         layers[bestExisting.layerIndex] = {
@@ -645,7 +651,7 @@ const packWithLimit = (
         freeRects: sortFreeRects(baseRects),
         placements: [],
       };
-      const bestNewLayer = pickBestForNewLayer(remaining, newLayer, containerIndex);
+      const bestNewLayer = pickBestForNewLayer(remaining, newLayer, containerIndex, placements);
       if (!bestNewLayer) break;
 
       layers.push({
@@ -677,7 +683,7 @@ const packWithLimit = (
 
 // Расширенный режим: одновременно оценивает размещение по нескольким контейнерам
 // и выбирает глобально лучший ход по score-вектору.
-const packAcrossContainers = (
+export const packAcrossContainers = (
   baseUnits: readonly OrderItemUnit[],
   containerLimit: number,
   container: ContainerType,
@@ -718,11 +724,11 @@ const packAcrossContainers = (
   };
 
   const canPlaceUnitInState = (state: ContainerState, unit: OrderItemUnit): boolean => {
-    // Fast feasibility probe: if unit fits container 0, keep pushing container 0 first.
+    // Быстрая проверка на возможность размещения: если предмет влезает в контейнер 0, 
+    // стараемся сначала максимально заполнить его.
     for (let layerIndex = 0; layerIndex < state.layers.length; layerIndex += 1) {
-      const placed = tryPlaceInLayer(state.layers[layerIndex], unit, state.containerIndex);
-      if (!placed) continue;
-      if (!hasPlacementOverlap(placed.placement, state.placements)) return true;
+      const placed = tryPlaceInLayer(state.layers[layerIndex], unit, state.containerIndex, state.placements, true);
+      if (placed) return true;
     }
 
     const supportZLevels = getSupportZLevels(state.placements);
@@ -739,9 +745,8 @@ const packAcrossContainers = (
         freeRects: sortFreeRects(baseRects),
         placements: [],
       };
-      const placedInNewLayer = tryPlaceInLayer(newLayer, unit, state.containerIndex);
-      if (!placedInNewLayer) continue;
-      if (!hasPlacementOverlap(placedInNewLayer.placement, state.placements)) return true;
+      const placedInNewLayer = tryPlaceInLayer(newLayer, unit, state.containerIndex, state.placements, true);
+      if (placedInNewLayer) return true;
     }
     return false;
   };
@@ -766,9 +771,8 @@ const packAcrossContainers = (
         const layer = state.layers[layerIndex];
         if (layer.z + unit.dimensions.height > container.height) continue;
 
-        const placed = tryPlaceInLayer(layer, unit, state.containerIndex, true);
+        const placed = tryPlaceInLayer(layer, unit, state.containerIndex, state.placements, true);
         if (!placed) continue;
-        if (hasPlacementOverlap(placed.placement, state.placements)) continue;
 
         const score = buildScore(state, placed, unit.itemTypeId, states, false);
         const candidate: BestPlacement = {
@@ -797,7 +801,7 @@ const packAcrossContainers = (
           freeRects: sortFreeRects(baseRects),
           placements: [],
         };
-        const placedInNewLayer = tryPlaceInLayer(newLayer, unit, state.containerIndex, true);
+        const placedInNewLayer = tryPlaceInLayer(newLayer, unit, state.containerIndex, state.placements, true);
         if (!placedInNewLayer) continue;
         if (hasPlacementOverlap(placedInNewLayer.placement, state.placements)) continue;
 
@@ -842,13 +846,15 @@ const pickBestResultByLimit = (
   greedyResult: PackingEngineOutput,
   container: ContainerType,
 ): PackingEngineOutput => {
-  // Tries to reduce container count while preserving full placement.
+  // Проверяем, можно ли сократить количество используемых контейнеров, не оставляя предметы неупакованными.
+  // Если все предметы уже упакованы в один контейнер или есть неразмещенные, возвращаем исходный результат.
   if (greedyResult.unplacedItemUnitIds.length !== 0 || greedyResult.containers.length <= 1) {
     return greedyResult;
   }
 
   const packingOrders = buildPackingOrders(baseUnits);
   for (let limit = 1; limit < greedyResult.containers.length; limit += 1) {
+    // Пробуем различные стратегии упаковки для текущего лимита контейнеров, чтобы найти оптимальный вариант.
     const candidatesForLimit = packingOrders.flatMap((orderedUnits) => [
       packAcrossContainers(orderedUnits, limit, container, "balanced"),
       packAcrossContainers(orderedUnits, limit, container, "dense"),
