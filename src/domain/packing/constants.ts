@@ -292,6 +292,39 @@ export const ORDER_PRESETS: OrderPreset[] = [
       { id: 8, name: "Force 720", width: 1192, length: 2300, height: 887, weight: 443, quantity: 9 },
     ],
   },
+  {
+    orderId: 272,
+    label: "Заказ №272 - 1 C",
+    order: [
+      { id: 2721, name: "Country Club 6 seater", width: 1160, length: 4050, height: 840, weight: 1, quantity: 4 },
+      { id: 31006, name: "Ace 1000", width: 1130, length: 3150, height: 1260, weight: 1, quantity: 6 },
+      { id: 3, name: "Cross 180 RX", width: 770, length: 1360, height: 650, weight: 1, quantity: 15 },
+    ],
+  },
+  {
+    orderId: 273,
+    label: "Заказ №273 - 1 C",
+    order: [
+      { id: 2731, name: "5000 2+2 seater", width: 1320, length: 2310, height: 1250, weight: 1, quantity: 5 },
+      { id: 2732, name: "Cruiser 350", width: 1140, length: 1690, height: 850, weight: 1, quantity: 8 },
+      { id: 2733, name: "Cross 150", width: 740, length: 1300, height: 620, weight: 1, quantity: 10 },
+      { id: 9, name: "Cross E-200", width: 700, length: 1150, height: 610, weight: 1, quantity: 12 },
+    ],
+  },
+  {
+    orderId: 276,
+    label: "Заказ №276 - 2 C",
+    order: [
+      { id: 2761, name: "5000 6 seater", width: 1160, length: 3730, height: 980, weight: 1, quantity: 3 },
+      { id: 31006, name: "Ace 1000", width: 1130, length: 3150, height: 1260, weight: 1, quantity: 5 },
+      { id: 2762, name: "Country Club 2+2", width: 1160, length: 3000, height: 840, weight: 1, quantity: 6 },
+      { id: 2763, name: "Cruiser 300", width: 810, length: 1490, height: 800, weight: 1, quantity: 9 },
+      { id: 2764, name: "Cruiser 550", width: 1150, length: 1700, height: 860, weight: 1, quantity: 15 },
+      { id: 2765, name: "Cross 130", width: 690, length: 1140, height: 620, weight: 1, quantity: 3 },
+      { id: 2733, name: "Cross 150", width: 740, length: 1300, height: 620, weight: 1, quantity: 5 },
+      { id: 9, name: "Cross E-200", width: 700, length: 1150, height: 610, weight: 1, quantity: 47 },
+    ],
+  },
 ];
 
 export const DEFAULT_ORDER_ID = ORDER_PRESETS[0].orderId;
