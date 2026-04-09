@@ -45,6 +45,33 @@ export type TeamProfileOrgAssignment = {
   isLead: boolean;
 };
 
+export type TeamProfileTrainingResult = {
+  id: string;
+  section: string;
+  testName: string;
+  startDate: string;
+  endDate: string;
+  duration: string;
+  score: number;
+  status: "passed" | "failed";
+};
+
+export type TeamProfileTrainingMonthGroup = {
+  monthLabel: string;
+  results: TeamProfileTrainingResult[];
+};
+
+export type TeamProfileLearning = {
+  summary: {
+    materialsStudied: number;
+    materialsTotal: number;
+    testsPassed: number;
+    testsTotal: number;
+    averageScore: number;
+  };
+  history: TeamProfileTrainingMonthGroup[];
+};
+
 export type TeamProfileData = {
   id: string;
   fullName: string;
@@ -66,6 +93,7 @@ export type TeamProfileData = {
   assets: TeamProfileAsset[];
   interests: TeamProfileInterestGroup[];
   orgAssignments: TeamProfileOrgAssignment[];
+  learning?: TeamProfileLearning;
   about?: string;
 };
 
@@ -161,6 +189,30 @@ export const TEAM_PROFILE_DEMO_DATA: TeamProfileData[] = [
       { name: "Frontend Squad", roleLabel: "Руководитель подразделения", isLead: true },
       { name: "Backend Squad", roleLabel: "Участник подразделения", isLead: false },
     ],
+    learning: {
+      summary: {
+        materialsStudied: 115,
+        materialsTotal: 460,
+        testsPassed: 27,
+        testsTotal: 92,
+        averageScore: 87,
+      },
+      history: [
+        {
+          monthLabel: "Февраль 2023",
+          results: [
+            { id: "1", section: "Высокомощные моторы", testName: "Обучение по ПЛМ 40-50 л.с.", startDate: "06.02.2023, 14:46", endDate: "06.02.2023, 14:50", duration: "4 мин. 39 сек.", score: 87, status: "passed" },
+            { id: "2", section: "Высокомощные моторы", testName: "Обучение по ПЛМ 40-50 л.с.", startDate: "06.02.2023, 14:38", endDate: "06.02.2023, 14:45", duration: "7 мин. 14 сек.", score: 73, status: "failed" },
+          ]
+        },
+        {
+          monthLabel: "Март 2023",
+          results: [
+             { id: "3", section: "Основы продаж", testName: "Техники холодных звонков", startDate: "15.03.2023, 10:00", endDate: "15.03.2023, 10:20", duration: "20 мин. 00 сек.", score: 95, status: "passed" },
+          ]
+        }
+      ]
+    },
     about: "Продакт, менеджер и немного инженер. Верю, что лучшие продукты делаются на стыке эмпатии, данных и здравого смысла. В свободное время катаю на велосипеде и читаю сай-фай.",
   },
   {

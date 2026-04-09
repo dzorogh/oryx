@@ -15,6 +15,13 @@ import {
   Clock,
   Briefcase,
   type LucideIcon,
+  BookOpen,
+  CheckCircle,
+  Star,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Filter,
   Tent,
 } from "lucide-react";
 import {
@@ -308,6 +315,108 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
           </div>
 
         </div>
+
+        {/* --- LEARNING & TEST RESULTS WIDGET --- */}
+        {profile.learning && (
+          <div className="mt-4 flex flex-col overflow-hidden rounded-[20px] bg-card border border-border/60 shadow-sm transition-all hover:border-border/80">
+            {/* Header Area */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-5 py-4 border-b border-border/40 bg-muted/5">
+              {/* Left: Tabs */}
+              <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit border border-border/40 shadow-inner">
+                <button className="px-4 py-1.5 text-[12px] font-bold rounded-lg bg-background shadow-xs text-foreground transition-all">
+                  Результаты
+                </button>
+                <button className="px-4 py-1.5 text-[12px] font-bold rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/40 transition-all">
+                  Уроки
+                </button>
+              </div>
+
+              {/* Center: Stats */}
+              <div className="flex items-center gap-5 lg:gap-8 text-[12px] font-medium overflow-x-auto no-scrollbar py-1">
+                <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                  <FileText className="size-4 text-indigo-500/80" />
+                  <span>Изучено:</span>
+                  <span className="font-bold text-foreground/90">{profile.learning.summary.materialsStudied}/{profile.learning.summary.materialsTotal}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                  <CheckCircle className="size-4 text-emerald-500/80" />
+                  <span>Тестов:</span>
+                  <span className="font-bold text-foreground/90">{profile.learning.summary.testsPassed}/{profile.learning.summary.testsTotal}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                  <Star className="size-4 text-rose-500/80" />
+                  <span>Ср. балл:</span>
+                  <span className="font-bold text-rose-500">{profile.learning.summary.averageScore}%</span>
+                </div>
+              </div>
+
+              {/* Right: Controls */}
+              <div className="flex items-center gap-4 shrink-0">
+                <button className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground tracking-wider hover:text-foreground transition-colors group">
+                  <Filter className="size-3.5 group-hover:text-foreground transition-colors" /> ФИЛЬТРЫ <ChevronDown className="size-3.5 opacity-60 ml-0.5 group-hover:opacity-100 transition-opacity" />
+                </button>
+                <div className="w-[1px] h-4 bg-border/80" />
+                <label className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground tracking-wider uppercase cursor-pointer hover:text-foreground transition-colors group">
+                  ПО МЕСЯЦАМ
+                  <div className="relative flex h-[18px] w-8 items-center rounded-full bg-border/80 transition-colors group-hover:bg-primary/20">
+                    <div className="absolute right-[2px] size-3.5 rounded-full bg-muted-foreground group-hover:bg-primary shadow-sm transition-all" />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex flex-col w-full text-[13px]">
+              {/* Table Header */}
+              <div className="grid grid-cols-12 gap-3 px-6 py-3 border-b border-border/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-muted/5">
+                <div className="col-span-1">#</div>
+                <div className="col-span-3">РАЗДЕЛ</div>
+                <div className="col-span-3">ТЕСТ</div>
+                <div className="col-span-2">НАЧАТ / ЗАКОНЧЕН</div>
+                <div className="col-span-1">ВРЕМЯ</div>
+                <div className="col-span-1 text-center">БАЛЛ</div>
+                <div className="col-span-1 text-right">СТАТУС</div>
+              </div>
+
+              {/* Data Rows */}
+              <div className="flex flex-col pb-2 bg-gradient-to-b from-transparent to-muted/10">
+                {profile.learning.history.map((group, groupIdx) => (
+                  <div key={groupIdx} className="flex flex-col py-1">
+                    {/* Collapsible Header */}
+                    <button className="flex items-center gap-2 px-6 py-2.5 text-[12px] font-bold text-foreground/80 hover:text-foreground group transition-colors text-left w-full">
+                      {groupIdx === 0 ? <ChevronUp className="size-3.5 text-muted-foreground group-hover:text-foreground transition-colors" /> : <ChevronDown className="size-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />}
+                      {group.monthLabel}
+                    </button>
+                    
+                    {/* Rows */}
+                    <div className={groupIdx === 0 ? "flex flex-col gap-1 px-3" : "hidden"}>
+                      {group.results.map((r, i) => (
+                        <div key={r.id} className="grid grid-cols-12 gap-3 px-4 py-2.5 rounded-xl border border-transparent hover:border-border/60 hover:bg-muted/40 hover:shadow-xs items-center transition-all group/row">
+                          <div className="col-span-1 text-[11px] font-bold text-muted-foreground/40 group-hover/row:text-muted-foreground transition-colors">{i + 1}</div>
+                          <div className="col-span-3 font-semibold text-foreground/85 truncate" title={r.section}>{r.section}</div>
+                          <div className="col-span-3 text-muted-foreground font-medium truncate" title={r.testName}>{r.testName}</div>
+                          <div className="col-span-2 flex flex-col gap-0.5 text-[10px] text-muted-foreground/70 font-medium">
+                            <span>{r.startDate}</span>
+                            <span>{r.endDate}</span>
+                          </div>
+                          <div className="col-span-1 text-muted-foreground/80 text-[11px] font-medium">{r.duration}</div>
+                          <div className={`col-span-1 text-center font-bold text-[13px] ${r.score >= 80 ? 'text-emerald-500/90' : 'text-rose-500/90'}`}>
+                            {r.score}
+                          </div>
+                          <div className="col-span-1 flex justify-end">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-[5px] text-[9px] font-black tracking-widest uppercase shadow-sm ${r.status === 'passed' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 dark:bg-rose-500/20'}`}>
+                              {r.status === 'passed' ? 'ПРОЙДЕН' : 'ЗАВАЛЕН'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
