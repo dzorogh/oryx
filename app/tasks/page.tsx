@@ -6,9 +6,11 @@ import { MessageCircle, Settings } from "lucide-react";
 import { PriorityBadge } from "@/components/home/priority-badge";
 import { ALL_TASKS } from "@/components/home/tasks-today-demo-data";
 import { ProjectSettingsModal } from "@/components/tasks/project-settings-modal";
+import { SpaceSettingsModal } from "@/components/tasks/space-settings-modal";
 
 const TasksPage = () => {
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+  const [isSpaceSettingsOpen, setIsSpaceSettingsOpen] = useState(false);
 
   return (
     <>
@@ -20,12 +22,21 @@ const TasksPage = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsProjectSettingsOpen(true)}
+                  onClick={() => setIsSpaceSettingsOpen(true)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--corportal-border-grey)] bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  aria-label="Открыть настройки проекта"
+                  aria-label="Open space settings"
                 >
                   <Settings aria-hidden className="size-4" />
-                  Настройки Project
+                  Space Settings
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsProjectSettingsOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--corportal-border-grey)] bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  aria-label="Open project settings"
+                >
+                  <Settings aria-hidden className="size-4" />
+                  Project Settings
                 </button>
                 <Link
                   href="/"
@@ -66,6 +77,7 @@ const TasksPage = () => {
         </section>
       </main>
       <ProjectSettingsModal open={isProjectSettingsOpen} onOpenChange={setIsProjectSettingsOpen} />
+      <SpaceSettingsModal open={isSpaceSettingsOpen} onOpenChange={setIsSpaceSettingsOpen} />
     </>
   );
 };

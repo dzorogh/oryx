@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Archive, ChevronLeft, ChevronRight, Lock, Plus, Search, Trash2 } from "lucide-react";
+import { Archive, ArrowLeft, ChevronLeft, ChevronRight, Lock, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   PROJECT_SETTINGS_SEED,
@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -39,6 +40,8 @@ type ProjectSettingsModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+type ModalView = "main" | "members";
+
 const PAGE_SIZE = 5;
 
 type UnifiedRow =
@@ -48,6 +51,7 @@ type UnifiedRow =
 const sortByRole = (a: ProjectMember, b: ProjectMember) => ROLE_WEIGHT[a.businessRole] - ROLE_WEIGHT[b.businessRole];
 
 export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModalProps) => {
+  const [currentView, setCurrentView] = useState<ModalView>("main");
   const [projectDraft, setProjectDraft] = useState<ProjectDraft>(PROJECT_SETTINGS_SEED.project);
   const [members, setMembers] = useState<ProjectMember[]>(() => [...PROJECT_SETTINGS_SEED.members].sort(sortByRole));
   const [availableUsers, setAvailableUsers] = useState(PROJECT_SETTINGS_SEED.availableUsers);
@@ -162,7 +166,7 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
     const selectedUser = availableUsers.find((u) => u.userId === userId);
     if (!selectedUser) return;
 
-    const newId = `member-${Date.now()}`;
+    const newId = `member-${crypto.randomUUID()}`;
     setMembers((prev) => [
       ...prev,
       {
@@ -180,6 +184,12 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
     toast.success("Member added");
   };
 
+  const handleGoBack = () => {
+    setCurrentView("main");
+    setIsAddDropdownOpen(false);
+    setAddSearchQuery("");
+  };
+
   const handleArchiveConfirm = () => {
     setProjectDraft((prev) => ({ ...prev, isArchived: true }));
     setIsArchiveConfirmOpen(false);
@@ -188,12 +198,240 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
 
   const handleSaveChanges = () => {
     if (hasProjectNameError) {
-      window.alert("Please enter a project name.");
+      toast.error("Please enter a project name.");
       return;
     }
     toast.success("Project settings saved");
     onOpenChange(false);
   };
+
+  // ===================== VIEW: MAIN =====================
+
+  const renderMainView = () => (
+    <>
+      <DialogHeader className="shrink-0 gap-1 px-4 py-3">
+        <DialogTitle className="text-lg font-semibold">Edit project: {projectDraft.name}</DialogTitle>
+        <DialogDescription className="text-xs text-muted-foreground">Manage project details and team members.</DialogDescription>
+      </DialogHeader>
+
+      <div className="max-h-[calc(90svh-8rem)] overflow-y-auto">
+        <div className="grid gap-3 px-4 pb-4">
+          {/* General settings */}
+          <section className="grid gap-2 rounded-xl border border-[var(--corportal-border-grey)] bg-card p-3">
+            <div className="grid gap-2 md:grid-cols-2">
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Name</span>
+                <Input
+                  value={projectDraft.name}
+                  onChange={(e) => handleProjectFieldChange("name", e.target.value)}
+                  aria-label="Project name"
+                  aria-invalid={hasProjectNameError}
+                  placeholder="Project name"
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Space</span>
+                <Select value={projectDraft.spaceId} onValueChange={(v) => handleProjectFieldChange("spaceId", v ?? "")}>
+                  <SelectTrigger className="w-full" aria-label="Space">
+                    <SelectValue placeholder="Space" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROJECT_SETTINGS_SEED.spaces.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Description</span>
+              <Input
+                value={projectDraft.description}
+                onChange={(e) => handleProjectFieldChange("description", e.target.value)}
+                aria-label="Project description"
+                placeholder="Short description"
+              />
+            </label>
+          </section>
+
+          {/* Navigation to Members */}
+          <nav className="grid gap-1 rounded-xl border border-[var(--corportal-border-grey)] bg-card p-1">
+            <button
+              type="button"
+              onClick={() => setCurrentView("members")}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent"
+              aria-label="Edit members"
+            >
+              <Users aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+              <div className="flex-1">
+                <span className="text-sm font-medium">Members</span>
+                <span className="ml-2 text-xs text-muted-foreground">{totalRows}</span>
+              </div>
+              <ChevronRight aria-hidden className="size-4 text-muted-foreground" />
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <DialogFooter className="mx-0 mb-0 shrink-0 !justify-between border-t border-[var(--corportal-border-grey)] bg-card px-6 py-4">
+        <Button type="button" variant="destructive" size="lg" onClick={() => setIsArchiveConfirmOpen(true)} aria-label="Archive project">
+          <Archive aria-hidden className="size-4" />
+          Archive
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="lg" onClick={() => onOpenChange(false)} aria-label="Close">
+            Close
+          </Button>
+          <Button type="button" size="lg" onClick={handleSaveChanges} aria-label="Save changes">
+            Save changes
+          </Button>
+        </div>
+      </DialogFooter>
+    </>
+  );
+
+  // ===================== VIEW: MEMBERS =====================
+
+  const renderMembersView = () => (
+    <>
+      <DialogHeader className="shrink-0 gap-1 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-accent"
+            aria-label="Back to settings"
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+          </button>
+          <DialogTitle className="flex-1 text-lg font-semibold">Members</DialogTitle>
+        </div>
+        <div className="flex items-center justify-between pl-11">
+          <DialogDescription className="text-xs text-muted-foreground">Add or remove project members and assign business roles.</DialogDescription>
+          <Button
+            ref={addButtonRef}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAddDropdownOpen((prev) => !prev)}
+            disabled={availableUsers.length === 0}
+            aria-label="Add user to project"
+            aria-expanded={isAddDropdownOpen}
+            className="shrink-0"
+          >
+            <Plus aria-hidden className="size-3.5" />
+            Add
+          </Button>
+        </div>
+      </DialogHeader>
+
+      <div className="max-h-[calc(90svh-8rem)] overflow-y-auto px-4 pb-4">
+
+        <div className="rounded-lg border border-[var(--corportal-border-grey)]">
+          <Table className="table-fixed">
+            <colgroup>
+              <col className="w-[50%]" />
+              <col className="w-[38%]" />
+              <col className="w-[12%]" />
+            </colgroup>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="h-9 px-3 text-sm">Member</TableHead>
+                <TableHead className="h-9 px-3 text-sm">Role</TableHead>
+                <TableHead className="h-9 px-3" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedRows.map((row) =>
+                row.kind === "system" ? (
+                  <TableRow key={`sys-${row.data.id}`} className="bg-muted/30">
+                    <TableCell className="px-3 py-1"><span className="inline-flex h-8 items-center text-sm text-muted-foreground">{row.data.fullName}</span></TableCell>
+                    <TableCell className="px-3 py-1">
+                      <span
+                        className="inline-flex h-8 items-center gap-1.5 text-sm text-muted-foreground"
+                        title={`Inherited from ${currentSpace?.name}`}
+                      >
+                        {row.data.systemRole}
+                        <Lock aria-hidden className="size-3 text-muted-foreground/60" />
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-3 py-1" />
+                  </TableRow>
+                ) : (
+                  <TableRow key={row.data.id} data-member-id={row.data.id}>
+                    <TableCell className="px-3 py-1 text-sm whitespace-normal">{row.data.fullName}</TableCell>
+                    <TableCell className="px-3 py-1">
+                      <Select
+                        value={row.data.businessRole}
+                        onValueChange={(v) => handleBusinessRoleChange(row.data.id, v)}
+                      >
+                        <SelectTrigger className="w-32" aria-label={`Role of ${row.data.fullName}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PROJECT_SETTINGS_SEED.businessRoles.map((role) => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="px-3 py-1 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveMember(row.data.id)}
+                        aria-label={`Remove ${row.data.fullName}`}
+                      >
+                        <Trash2 aria-hidden className="size-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ),
+              )}
+              {Array.from({ length: PAGE_SIZE - paginatedRows.length }, (_, i) => (
+                <TableRow key={`empty-${i}`} className="pointer-events-none hover:bg-transparent border-b-transparent">
+                  <TableCell className="px-3 py-1"><span className="invisible inline-flex h-8 items-center">—</span></TableCell>
+                  <TableCell className="px-3 py-1"><span className="invisible inline-flex h-8 w-32 items-center">—</span></TableCell>
+                  <TableCell className="px-3 py-1"><span className="invisible inline-flex h-8 items-center">—</span></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {totalPages > 1 ? (
+          <div className="flex items-center justify-center gap-2 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              aria-label="Previous page"
+            >
+              <ChevronLeft aria-hidden className="size-3.5" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {safePage} / {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              aria-label="Next page"
+            >
+              <ChevronRight aria-hidden className="size-3.5" />
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
+
+  // ===================== RENDER =====================
 
   return (
     <>
@@ -202,189 +440,8 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
         className="flex w-[min(576px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-x-hidden bg-background p-0 text-foreground sm:max-w-none"
         showCloseButton
       >
-        <DialogHeader className="shrink-0 border-b border-[var(--corportal-border-grey)] px-6 py-4">
-          <DialogTitle className="text-lg font-semibold">Edit project: {projectDraft.name}</DialogTitle>
-        </DialogHeader>
-
-        <div className="max-h-[calc(90svh-8rem)] overflow-y-auto">
-          <div className="grid gap-3 p-4">
-            {/* General settings */}
-            <section className="grid gap-2 rounded-xl border border-[var(--corportal-border-grey)] bg-card p-3">
-              <div className="grid gap-2 md:grid-cols-2">
-                <label className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Name</span>
-                  <Input
-                    value={projectDraft.name}
-                    onChange={(e) => handleProjectFieldChange("name", e.target.value)}
-                    aria-label="Project name"
-                    aria-invalid={hasProjectNameError}
-                    placeholder="Project name"
-                  />
-                </label>
-                <label className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Space</span>
-                  <Select value={projectDraft.spaceId} onValueChange={(v) => handleProjectFieldChange("spaceId", v ?? "")}>
-                    <SelectTrigger className="w-full" aria-label="Space">
-                      <SelectValue placeholder="Space" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROJECT_SETTINGS_SEED.spaces.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
-              </div>
-              <label className="grid gap-1">
-                <span className="text-xs font-medium text-muted-foreground">Description</span>
-                <Input
-                  value={projectDraft.description}
-                  onChange={(e) => handleProjectFieldChange("description", e.target.value)}
-                  aria-label="Project description"
-                  placeholder="Short description"
-                />
-              </label>
-            </section>
-
-            {/* Members */}
-            <section className="rounded-xl border border-[var(--corportal-border-grey)] bg-card p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Members ({totalRows})
-                </h3>
-                <Button
-                  ref={addButtonRef}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsAddDropdownOpen((prev) => !prev)}
-                  disabled={availableUsers.length === 0}
-                  aria-label="Add user to project"
-                  aria-expanded={isAddDropdownOpen}
-                >
-                  <Plus aria-hidden className="size-3.5" />
-                  Add
-                </Button>
-              </div>
-
-              <div className="rounded-lg border border-[var(--corportal-border-grey)]">
-                <Table className="table-fixed">
-                  <colgroup>
-                    <col className="w-[55%]" />
-                    <col className="w-[35%]" />
-                    <col className="w-[10%]" />
-                  </colgroup>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="h-7 px-2 text-xs">Member</TableHead>
-                      <TableHead className="h-7 px-2 text-xs">Role</TableHead>
-                      <TableHead className="h-7 px-2" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedRows.map((row) =>
-                      row.kind === "system" ? (
-                        <TableRow key={`sys-${row.data.id}`} className="bg-muted/30">
-                          <TableCell className="px-2 py-1.5 text-xs text-muted-foreground">{row.data.fullName}</TableCell>
-                          <TableCell className="px-2 py-1.5">
-                            <span
-                              className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                              title={`Inherited from ${currentSpace?.name}`}
-                            >
-                              {row.data.systemRole}
-                              <Lock aria-hidden className="size-2.5 text-muted-foreground/60" />
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-2 py-1.5" />
-                        </TableRow>
-                      ) : (
-                        <TableRow key={row.data.id} data-member-id={row.data.id}>
-                          <TableCell className="px-2 py-0.5 text-xs whitespace-normal">{row.data.fullName}</TableCell>
-                          <TableCell className="px-2 py-0.5">
-                            <Select
-                              value={row.data.businessRole}
-                              onValueChange={(v) => handleBusinessRoleChange(row.data.id, v)}
-                            >
-                              <SelectTrigger className="h-6 w-28 text-xs" size="sm" aria-label={`Role of ${row.data.fullName}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {PROJECT_SETTINGS_SEED.businessRoles.map((role) => (
-                                  <SelectItem key={role} value={role}>{role}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="px-2 py-0.5 text-right">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-xs"
-                              onClick={() => handleRemoveMember(row.data.id)}
-                              aria-label={`Remove ${row.data.fullName}`}
-                            >
-                              <Trash2 aria-hidden className="size-3" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ),
-                    )}
-                    {Array.from({ length: PAGE_SIZE - paginatedRows.length }, (_, i) => (
-                      <TableRow key={`empty-${i}`} className="pointer-events-none hover:bg-transparent border-b-transparent">
-                        <TableCell className="px-2 py-0.5"><span className="invisible inline-flex h-7 items-center text-xs">—</span></TableCell>
-                        <TableCell className="px-2 py-0.5"><span className="invisible inline-flex h-7 w-28 items-center text-xs">—</span></TableCell>
-                        <TableCell className="px-2 py-0.5"><span className="invisible inline-flex h-7 items-center">—</span></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {totalPages > 1 ? (
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={safePage <= 1}
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft aria-hidden className="size-3.5" />
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    {safePage} / {totalPages}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={safePage >= totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight aria-hidden className="size-3.5" />
-                  </Button>
-                </div>
-              ) : null}
-            </section>
-          </div>
-        </div>
-
-        <DialogFooter className="mx-0 mb-0 shrink-0 !justify-between border-t border-[var(--corportal-border-grey)] bg-card px-6 py-4">
-          <Button type="button" variant="destructive" size="lg" onClick={() => setIsArchiveConfirmOpen(true)} aria-label="Archive project">
-            <Archive aria-hidden className="size-4" />
-            Archive
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="lg" onClick={() => onOpenChange(false)} aria-label="Cancel">
-              Cancel
-            </Button>
-            <Button type="button" size="lg" onClick={handleSaveChanges} aria-label="Save changes">
-              Save changes
-            </Button>
-          </div>
-        </DialogFooter>
+        {currentView === "main" && renderMainView()}
+        {currentView === "members" && renderMembersView()}
       </DialogContent>
       {isAddDropdownOpen && dropdownPos
         ? createPortal(
