@@ -135,6 +135,14 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
     match: "/catalog",
     bgColor: "bg-indigo-300",
   },
+  {
+    label: "Tasks",
+    shortLabel: "Tasks",
+    icon: SquareCheckBig,
+    href: "/tasks",
+    match: "/tasks",
+    bgColor: "bg-lime-300",
+  },
 ];
 
 export const RAIL_FOOTER_ITEMS: RailSectionItem[] = [

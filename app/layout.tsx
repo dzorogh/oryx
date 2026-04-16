@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { NavRail } from "@/components/layout/nav-rail";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={`${inter.className} ${inter.variable} antialiased pb-16 sm:pb-0`}>
         <NavRail />
         {children}
+        <Toaster position="top-center" duration={1000} />
       </body>
     </html>
   );

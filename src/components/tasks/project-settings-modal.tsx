@@ -1,0 +1,445 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Archive, ChevronLeft, ChevronRight, Lock, Plus, Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  PROJECT_SETTINGS_SEED,
+  ROLE_WEIGHT,
+  type ProjectBusinessRole,
+  type ProjectDraft,
+  type ProjectMember,
+  type SystemMember,
+} from "@/components/tasks/project-settings-demo-data";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+type ProjectSettingsModalProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+const PAGE_SIZE = 5;
+
+type UnifiedRow =
+  | { kind: "system"; data: SystemMember }
+  | { kind: "member"; data: ProjectMember };
+
+const sortByRole = (a: ProjectMember, b: ProjectMember) => ROLE_WEIGHT[a.businessRole] - ROLE_WEIGHT[b.businessRole];
+
+export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModalProps) => {
+  const [projectDraft, setProjectDraft] = useState<ProjectDraft>(PROJECT_SETTINGS_SEED.project);
+  const [members, setMembers] = useState<ProjectMember[]>(() => [...PROJECT_SETTINGS_SEED.members].sort(sortByRole));
+  const [availableUsers, setAvailableUsers] = useState(PROJECT_SETTINGS_SEED.availableUsers);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
+  const [addSearchQuery, setAddSearchQuery] = useState("");
+  const [lastAddedMemberId, setLastAddedMemberId] = useState<string | null>(null);
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
+  const addDropdownRef = useRef<HTMLDivElement>(null);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const addSearchInputRef = useRef<HTMLInputElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+
+  const updateDropdownPos = useCallback(() => {
+    if (!addButtonRef.current) return;
+    const rect = addButtonRef.current.getBoundingClientRect();
+    setDropdownPos({ top: rect.bottom + 4, left: rect.right - 256 });
+  }, []);
+
+  const currentSpace = useMemo(
+    () => PROJECT_SETTINGS_SEED.spaces.find((space) => space.id === projectDraft.spaceId) ?? PROJECT_SETTINGS_SEED.spaces[0],
+    [projectDraft.spaceId],
+  );
+  const systemMembers = PROJECT_SETTINGS_SEED.systemMembersBySpaceId[projectDraft.spaceId] ?? [];
+  const hasProjectNameError = projectDraft.name.trim().length === 0;
+
+  const unifiedRows = useMemo<UnifiedRow[]>(() => {
+    const sysRows: UnifiedRow[] = systemMembers.map((sm) => ({ kind: "system", data: sm }));
+    const memberRows: UnifiedRow[] = members.map((m) => ({ kind: "member", data: m }));
+    return [...sysRows, ...memberRows];
+  }, [systemMembers, members]);
+
+  const filteredAvailableUsers = useMemo(() => {
+    const query = addSearchQuery.toLowerCase().trim();
+    if (!query) return availableUsers;
+    return availableUsers.filter((u) => u.fullName.toLowerCase().includes(query));
+  }, [availableUsers, addSearchQuery]);
+
+  useEffect(() => {
+    if (!isAddDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        addDropdownRef.current?.contains(target) ||
+        addButtonRef.current?.contains(target)
+      ) return;
+      setIsAddDropdownOpen(false);
+      setAddSearchQuery("");
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isAddDropdownOpen]);
+
+  useEffect(() => {
+    if (isAddDropdownOpen) {
+      updateDropdownPos();
+      requestAnimationFrame(() => addSearchInputRef.current?.focus());
+    }
+  }, [isAddDropdownOpen, updateDropdownPos]);
+
+  useEffect(() => {
+    if (!lastAddedMemberId) return;
+    const newTotalRows = systemMembers.length + members.length;
+    const lastPage = Math.max(1, Math.ceil(newTotalRows / PAGE_SIZE));
+    setCurrentPage(lastPage);
+  }, [lastAddedMemberId, members.length, systemMembers.length]);
+
+  useEffect(() => {
+    if (!lastAddedMemberId) return;
+    const timer = setTimeout(() => {
+      const el = document.querySelector<HTMLButtonElement>(`[data-member-id="${lastAddedMemberId}"] [data-slot="select-trigger"]`);
+      if (el) {
+        el.setAttribute("data-focus-visible", "");
+        el.focus();
+        const handleBlur = () => {
+          el.removeAttribute("data-focus-visible");
+          el.removeEventListener("blur", handleBlur);
+        };
+        el.addEventListener("blur", handleBlur);
+      }
+      setLastAddedMemberId(null);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [lastAddedMemberId, currentPage]);
+
+  const totalRows = unifiedRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedRows = unifiedRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const handleProjectFieldChange = (field: keyof ProjectDraft, value: string | boolean) => {
+    setProjectDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleBusinessRoleChange = (memberId: string, nextRole: string | null) => {
+    if (!nextRole) return;
+    setMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? { ...m, businessRole: nextRole as ProjectBusinessRole } : m)),
+    );
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+    const removed = members.find((m) => m.id === memberId);
+    if (!removed) return;
+
+    setMembers((prev) => prev.filter((m) => m.id !== memberId));
+    setAvailableUsers((prev) => [...prev, { userId: removed.userId, fullName: removed.fullName }]);
+    setCurrentPage(1);
+  };
+
+  const handleAddMember = (userId: string) => {
+    const selectedUser = availableUsers.find((u) => u.userId === userId);
+    if (!selectedUser) return;
+
+    const newId = `member-${Date.now()}`;
+    setMembers((prev) => [
+      ...prev,
+      {
+        id: newId,
+        userId: selectedUser.userId,
+        fullName: selectedUser.fullName,
+        businessRole: "Viewer" as ProjectBusinessRole,
+      },
+    ]);
+
+    setAvailableUsers((prev) => prev.filter((u) => u.userId !== userId));
+    setLastAddedMemberId(newId);
+    setIsAddDropdownOpen(false);
+    setAddSearchQuery("");
+    toast.success("Member added");
+  };
+
+  const handleArchiveConfirm = () => {
+    setProjectDraft((prev) => ({ ...prev, isArchived: true }));
+    setIsArchiveConfirmOpen(false);
+    toast.success("Project archived");
+  };
+
+  const handleSaveChanges = () => {
+    if (hasProjectNameError) {
+      window.alert("Please enter a project name.");
+      return;
+    }
+    toast.success("Project settings saved");
+    onOpenChange(false);
+  };
+
+  return (
+    <>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="flex w-[min(576px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-x-hidden bg-background p-0 text-foreground sm:max-w-none"
+        showCloseButton
+      >
+        <DialogHeader className="shrink-0 border-b border-[var(--corportal-border-grey)] px-6 py-4">
+          <DialogTitle className="text-lg font-semibold">Edit project: {projectDraft.name}</DialogTitle>
+        </DialogHeader>
+
+        <div className="max-h-[calc(90svh-8rem)] overflow-y-auto">
+          <div className="grid gap-3 p-4">
+            {/* General settings */}
+            <section className="grid gap-2 rounded-xl border border-[var(--corportal-border-grey)] bg-card p-3">
+              <div className="grid gap-2 md:grid-cols-2">
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Name</span>
+                  <Input
+                    value={projectDraft.name}
+                    onChange={(e) => handleProjectFieldChange("name", e.target.value)}
+                    aria-label="Project name"
+                    aria-invalid={hasProjectNameError}
+                    placeholder="Project name"
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Space</span>
+                  <Select value={projectDraft.spaceId} onValueChange={(v) => handleProjectFieldChange("spaceId", v ?? "")}>
+                    <SelectTrigger className="w-full" aria-label="Space">
+                      <SelectValue placeholder="Space" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROJECT_SETTINGS_SEED.spaces.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+              </div>
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Description</span>
+                <Input
+                  value={projectDraft.description}
+                  onChange={(e) => handleProjectFieldChange("description", e.target.value)}
+                  aria-label="Project description"
+                  placeholder="Short description"
+                />
+              </label>
+            </section>
+
+            {/* Members */}
+            <section className="rounded-xl border border-[var(--corportal-border-grey)] bg-card p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Members ({totalRows})
+                </h3>
+                <Button
+                  ref={addButtonRef}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddDropdownOpen((prev) => !prev)}
+                  disabled={availableUsers.length === 0}
+                  aria-label="Add user to project"
+                  aria-expanded={isAddDropdownOpen}
+                >
+                  <Plus aria-hidden className="size-3.5" />
+                  Add
+                </Button>
+              </div>
+
+              <div className="rounded-lg border border-[var(--corportal-border-grey)]">
+                <Table className="table-fixed">
+                  <colgroup>
+                    <col className="w-[55%]" />
+                    <col className="w-[35%]" />
+                    <col className="w-[10%]" />
+                  </colgroup>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="h-7 px-2 text-xs">Member</TableHead>
+                      <TableHead className="h-7 px-2 text-xs">Role</TableHead>
+                      <TableHead className="h-7 px-2" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedRows.map((row) =>
+                      row.kind === "system" ? (
+                        <TableRow key={`sys-${row.data.id}`} className="bg-muted/30">
+                          <TableCell className="px-2 py-1.5 text-xs text-muted-foreground">{row.data.fullName}</TableCell>
+                          <TableCell className="px-2 py-1.5">
+                            <span
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                              title={`Inherited from ${currentSpace?.name}`}
+                            >
+                              {row.data.systemRole}
+                              <Lock aria-hidden className="size-2.5 text-muted-foreground/60" />
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-2 py-1.5" />
+                        </TableRow>
+                      ) : (
+                        <TableRow key={row.data.id} data-member-id={row.data.id}>
+                          <TableCell className="px-2 py-0.5 text-xs whitespace-normal">{row.data.fullName}</TableCell>
+                          <TableCell className="px-2 py-0.5">
+                            <Select
+                              value={row.data.businessRole}
+                              onValueChange={(v) => handleBusinessRoleChange(row.data.id, v)}
+                            >
+                              <SelectTrigger className="h-6 w-28 text-xs" size="sm" aria-label={`Role of ${row.data.fullName}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {PROJECT_SETTINGS_SEED.businessRoles.map((role) => (
+                                  <SelectItem key={role} value={role}>{role}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="px-2 py-0.5 text-right">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => handleRemoveMember(row.data.id)}
+                              aria-label={`Remove ${row.data.fullName}`}
+                            >
+                              <Trash2 aria-hidden className="size-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                    {Array.from({ length: PAGE_SIZE - paginatedRows.length }, (_, i) => (
+                      <TableRow key={`empty-${i}`} className="pointer-events-none hover:bg-transparent border-b-transparent">
+                        <TableCell className="px-2 py-0.5"><span className="invisible inline-flex h-7 items-center text-xs">—</span></TableCell>
+                        <TableCell className="px-2 py-0.5"><span className="invisible inline-flex h-7 w-28 items-center text-xs">—</span></TableCell>
+                        <TableCell className="px-2 py-0.5"><span className="invisible inline-flex h-7 items-center">—</span></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPages > 1 ? (
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={safePage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft aria-hidden className="size-3.5" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {safePage} / {totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={safePage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight aria-hidden className="size-3.5" />
+                  </Button>
+                </div>
+              ) : null}
+            </section>
+          </div>
+        </div>
+
+        <DialogFooter className="mx-0 mb-0 shrink-0 !justify-between border-t border-[var(--corportal-border-grey)] bg-card px-6 py-4">
+          <Button type="button" variant="destructive" size="lg" onClick={() => setIsArchiveConfirmOpen(true)} aria-label="Archive project">
+            <Archive aria-hidden className="size-4" />
+            Archive
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="lg" onClick={() => onOpenChange(false)} aria-label="Cancel">
+              Cancel
+            </Button>
+            <Button type="button" size="lg" onClick={handleSaveChanges} aria-label="Save changes">
+              Save changes
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+      {isAddDropdownOpen && dropdownPos
+        ? createPortal(
+            <div
+              ref={addDropdownRef}
+              className="fixed z-[100] w-64 rounded-lg border border-[var(--corportal-border-grey)] bg-popover p-1 shadow-md"
+              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            >
+              <div className="relative px-1 pb-1">
+                <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  ref={addSearchInputRef}
+                  type="text"
+                  value={addSearchQuery}
+                  onChange={(e) => setAddSearchQuery(e.target.value)}
+                  placeholder="Search by name..."
+                  className="w-full rounded-md border border-input bg-transparent py-1.5 pl-7 pr-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                  aria-label="Search user by name"
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {filteredAvailableUsers.length === 0 ? (
+                  <p className="px-2 py-3 text-center text-xs text-muted-foreground">No users found</p>
+                ) : (
+                  filteredAvailableUsers.map((u) => (
+                    <button
+                      key={u.userId}
+                      type="button"
+                      onClick={() => handleAddMember(u.userId)}
+                      className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    >
+                      {u.fullName}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </Dialog>
+    <AlertDialog open={isArchiveConfirmOpen} onOpenChange={setIsArchiveConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Archive project</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to archive &quot;{projectDraft.name}&quot;? This action can be undone later.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleArchiveConfirm}>Archive</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
+  );
+};
