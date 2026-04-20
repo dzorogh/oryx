@@ -122,7 +122,7 @@ export const HomeSalesLeadersSection = () => {
         aria-labelledby={activeTabId}
         className="flex min-h-0 flex-col"
       >
-        <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {leaders.map((row) => {
             const sharePct = (row.turnoverRub / maxLeaderTurnover) * 100;
             const barWidthPct = Math.min(100, Math.round(sharePct * 10) / 10);

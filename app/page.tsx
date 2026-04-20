@@ -31,6 +31,7 @@ type HomeBlockDefinition = {
 };
 
 const HOME_BLOCKS_LAYOUT_KEY = "home-blocks-layout-v2";
+const LEFT_COLUMN_PRIORITY_BLOCKS: HomeBlockId[] = ["news", "salesLeaders", "stats", "tasks", "favoriteReports"];
 
 const ACCENT_BY_BLOCK: Record<HomeBlockId, HomeBlockAccent> = {
   stats: "amber",
@@ -219,25 +220,20 @@ const HomePage = () => {
   );
 
   const visibleOrder = layout.order.filter((id) => !layout.hidden.includes(id));
-
-  const handleMove = (blockId: HomeBlockId, direction: "up" | "down") => {
-    setLayout((prev) => {
-      const currentIndex = prev.order.indexOf(blockId);
-      if (currentIndex === -1) {
-        return prev;
+  const leftColumnIds = useMemo(
+    () => LEFT_COLUMN_PRIORITY_BLOCKS.filter((id) => visibleOrder.includes(id)),
+    [visibleOrder],
+  );
+  const rightColumnIds = useMemo(
+    () => {
+      const ids = visibleOrder.filter((id) => !LEFT_COLUMN_PRIORITY_BLOCKS.includes(id));
+      if (!ids.includes("thanks")) {
+        return ids;
       }
-      const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-      if (targetIndex < 0 || targetIndex >= prev.order.length) {
-        return prev;
-      }
-      const nextOrder = [...prev.order];
-      [nextOrder[currentIndex], nextOrder[targetIndex]] = [nextOrder[targetIndex], nextOrder[currentIndex]];
-      return {
-        ...prev,
-        order: nextOrder,
-      };
-    });
-  };
+      return [...ids.filter((id) => id !== "thanks"), "thanks"];
+    },
+    [visibleOrder],
+  );
 
   const handleHide = (blockId: HomeBlockId) => {
     setLayout((prev) => {
@@ -269,46 +265,68 @@ const HomePage = () => {
     }));
   };
 
+  const renderBlockCard = (blockId: HomeBlockId) => {
+    const block = blockById[blockId];
+    return (
+      <HomeBlockShell
+        key={block.id}
+        title={block.title}
+        icon={block.icon}
+        accent={ACCENT_BY_BLOCK[block.id]}
+        actions={block.actions}
+        collapsed={layout.collapsed[block.id]}
+        onHide={() => handleHide(block.id)}
+        onToggleCollapsed={() => handleToggleCollapsed(block.id)}
+      >
+        {block.render()}
+      </HomeBlockShell>
+    );
+  };
+
   return (
     <main className="min-h-screen pl-0 sm:pl-12">
       <div className="flex min-h-screen flex-col gap-5 p-5">
         {isLayoutLoading ? (
-          <>
-            {DEFAULT_LAYOUT.order.map((blockId) => (
-              <Card key={`loader-${blockId}`} aria-label="Загрузка блока главной">
-                <CardContent>
-                  <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
-                  <div className="space-y-2">
-                    <div className="h-16 animate-pulse rounded-lg bg-muted" />
-                    <div className="h-16 animate-pulse rounded-lg bg-muted" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </>
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
+            <div className="space-y-5 xl:col-span-3">
+              {LEFT_COLUMN_PRIORITY_BLOCKS.map((blockId) => (
+                <Card key={`loader-left-${blockId}`} aria-label="Загрузка блока главной">
+                  <CardContent>
+                    <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
+                    <div className="space-y-2">
+                      <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                      <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="space-y-5 xl:col-span-1">
+              {DEFAULT_LAYOUT.order
+                .filter((id) => !LEFT_COLUMN_PRIORITY_BLOCKS.includes(id))
+                .map((blockId) => (
+                  <Card key={`loader-right-${blockId}`} aria-label="Загрузка блока главной">
+                    <CardContent>
+                      <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
+                      <div className="space-y-2">
+                        <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                        <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </div>
         ) : (
           <>
-            {visibleOrder.map((blockId, visibleIndex) => {
-              const block = blockById[blockId];
-              return (
-                <HomeBlockShell
-                  key={block.id}
-                  title={block.title}
-                  icon={block.icon}
-                  accent={ACCENT_BY_BLOCK[block.id]}
-                  actions={block.actions}
-                  collapsed={layout.collapsed[block.id]}
-                  canMoveUp={visibleIndex > 0}
-                  canMoveDown={visibleIndex < visibleOrder.length - 1}
-                  onHide={() => handleHide(block.id)}
-                  onMoveUp={() => handleMove(block.id, "up")}
-                  onMoveDown={() => handleMove(block.id, "down")}
-                  onToggleCollapsed={() => handleToggleCollapsed(block.id)}
-                >
-                  {block.render()}
-                </HomeBlockShell>
-              );
-            })}
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
+              <div className="space-y-5 xl:col-span-3">
+                {leftColumnIds.map((blockId) => renderBlockCard(blockId))}
+              </div>
+              <div className="space-y-5 xl:col-span-1">
+                {rightColumnIds.map((blockId) => renderBlockCard(blockId))}
+              </div>
+            </div>
 
             {layout.hidden.length > 0 ? (
               <div className="self-end">

@@ -35,11 +35,7 @@ type HomeBlockShellProps = {
   /** Цвет круга иконки в шапке; фон секции не меняет. */
   accent?: HomeBlockAccent;
   collapsed: boolean;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
   onHide: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
   onToggleCollapsed: () => void;
   /** Плоский массив функций `render` для кнопок в шапке. */
   actions?: HomeBlockHeaderAction[];
@@ -51,11 +47,7 @@ export const HomeBlockShell = ({
   icon: Icon,
   accent = "violet",
   collapsed,
-  canMoveUp,
-  canMoveDown,
   onHide,
-  onMoveUp,
-  onMoveDown,
   onToggleCollapsed,
   actions,
   children,
@@ -120,18 +112,6 @@ export const HomeBlockShell = ({
 
               <DropdownMenuItem onClick={() => handleMenuAction(onHide)}>
                 Скрыть блок
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!canMoveUp}
-                onClick={() => handleMenuAction(onMoveUp)}
-              >
-                Переместить выше
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!canMoveDown}
-                onClick={() => handleMenuAction(onMoveDown)}
-              >
-                Переместить ниже
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

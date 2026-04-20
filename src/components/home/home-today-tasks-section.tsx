@@ -23,8 +23,8 @@ const TaskCard = ({ task }: { task: TodayTask }) => (
 );
 
 export const HomeTodayTasksSection = () => (
-  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-    {TODAY_TASKS.map((task) => (
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    {TODAY_TASKS.slice(0, 6).map((task) => (
       <TaskCard key={task.id} task={task} />
     ))}
   </div>

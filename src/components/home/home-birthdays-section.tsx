@@ -7,7 +7,7 @@ import { BIRTHDAY_PEOPLE, type BirthdayPerson } from "./birthdays-demo-data";
 import { cn } from "@/lib/utils";
 import { HomeDateMetaText } from "./home-date-meta-text";
 
-const HOME_BIRTHDAYS_LIMIT = 7;
+const HOME_BIRTHDAYS_LIMIT = 8;
 
 const startOfDay = (d: Date) => {
   const x = new Date(d);
@@ -73,23 +73,23 @@ const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => {
   return (
     <article
       className={cn(
-        "flex h-full min-h-0 min-w-0 flex-col gap-2 rounded-lg border p-3",
+        "flex h-full min-h-0 min-w-0 flex-col gap-1.5 rounded-lg border p-2.5",
       )}
       aria-label={`День рождения: ${person.fullName}`}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 h-4">
+      <div className="flex h-4 shrink-0 items-center justify-between gap-2">
         <span
           className={cn(
-            "inline-flex items-center gap-1.5 text-xs font-medium",
+            "inline-flex items-center gap-1 text-[11px] font-medium",
             isToday ? "text-corportal-accent-amber-on-soft" : "text-primary",
           )}
         >
           {isToday ? (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-corportal-accent-amber/20 px-2 py-0.5"
+              className="inline-flex items-center gap-1 rounded-full bg-corportal-accent-amber/20 px-1.5 py-0.5"
               aria-label="Сегодня день рождения"
             >
-              <PartyPopper aria-hidden className="size-3.5" />
+              <PartyPopper aria-hidden className="size-3" />
               {getRelativeLabel(daysUntil)}
             </span>
           ) : (
@@ -102,17 +102,15 @@ const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => {
         <Image
           src={person.avatarUrl}
           alt={`Аватар сотрудника ${person.fullName}`}
-          width={32}
-          height={32}
-          className="size-8 shrink-0 rounded-full border border-[var(--corportal-border-grey)] object-cover"
+          width={28}
+          height={28}
+          className="size-7 shrink-0 rounded-full border border-[var(--corportal-border-grey)] object-cover"
           loading="lazy"
           unoptimized
         />
-        <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">{person.fullName}</h3>
+        <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground">{person.fullName}</h3>
       </div>
-      <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
-        {person.department} · {person.role}
-      </p>
+      <p className="line-clamp-1 text-xs leading-snug text-muted-foreground">{person.department}</p>
     </article>
   );
 };
@@ -131,8 +129,8 @@ export const HomeBirthdaysSection = () => {
   }, [now]);
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {rows.slice(0, 6).map(({ person, occurrence, daysUntil }) => (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-2">
+      {rows.map(({ person, occurrence, daysUntil }) => (
         <BirthdayCard key={person.id} person={person} occurrence={occurrence} daysUntil={daysUntil} />
       ))}
     </div>

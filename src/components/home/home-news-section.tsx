@@ -19,7 +19,7 @@ const RUBRIC_TABS: RubricTab[] = [
   { id: "logistics", label: "Логистика" },
 ];
 
-const HOME_NEWS_LIMIT = 6;
+const HOME_NEWS_LIMIT = 5;
 
 const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
   <article className="flex w-full min-w-0 flex-col gap-3 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 pb-5">
@@ -82,7 +82,7 @@ export const HomeNewsSection = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         {displayNewsItems.map((item, index) => (
           <NewsCard key={item.id} item={item} eager={index === 0} />
         ))}
