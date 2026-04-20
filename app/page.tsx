@@ -224,13 +224,13 @@ const HomePage = () => {
     () => LEFT_COLUMN_PRIORITY_BLOCKS.filter((id) => visibleOrder.includes(id)),
     [visibleOrder],
   );
-  const rightColumnIds = useMemo(
+  const rightColumnIds = useMemo<HomeBlockId[]>(
     () => {
       const ids = visibleOrder.filter((id) => !LEFT_COLUMN_PRIORITY_BLOCKS.includes(id));
       if (!ids.includes("thanks")) {
         return ids;
       }
-      return [...ids.filter((id) => id !== "thanks"), "thanks"];
+      return [...ids.filter((id) => id !== "thanks"), "thanks" as HomeBlockId];
     },
     [visibleOrder],
   );
