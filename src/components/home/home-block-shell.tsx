@@ -2,10 +2,9 @@
 
 import { type ComponentProps, type ReactNode, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ChevronDown, EllipsisVertical } from "lucide-react";
+import { EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,15 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/** Акцент цветного круга иконки (палитра Corportal / канбан). */
+/** Акцент блока, оставлен для совместимости API. */
 export type HomeBlockAccent = "violet" | "teal" | "rose" | "amber";
-
-const ACCENT_ICON_CLASS: Record<HomeBlockAccent, string> = {
-  violet: "bg-corportal-accent-violet-soft text-corportal-accent-violet-on-soft",
-  teal: "bg-corportal-accent-teal-soft text-corportal-accent-teal-on-soft",
-  rose: "bg-corportal-accent-rose-soft text-corportal-accent-rose-on-soft",
-  amber: "bg-corportal-accent-amber-soft text-corportal-accent-amber-on-soft",
-};
 
 type ButtonProps = ComponentProps<typeof Button>;
 
@@ -44,7 +36,7 @@ type HomeBlockShellProps = {
 
 export const HomeBlockShell = ({
   title,
-  icon: Icon,
+  icon: _icon,
   accent = "violet",
   collapsed,
   onHide,
@@ -53,6 +45,8 @@ export const HomeBlockShell = ({
   children,
 }: HomeBlockShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  void _icon;
+  void accent;
 
   const handleMenuAction = (action: () => void) => {
     action();
@@ -61,34 +55,20 @@ export const HomeBlockShell = ({
 
   return (
     <Card className="overflow-visible">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-0 group-data-[size=sm]/card:px-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <div className={cn("rounded-full p-2", ACCENT_ICON_CLASS[accent])}>
-            <Icon aria-hidden className="size-4" />
-          </div>
-          <h2 className="min-w-0 truncate whitespace-nowrap text-lg font-bold leading-tight tracking-tight text-foreground">
+          <h2 className="min-w-0 truncate whitespace-nowrap text-sm font-bold leading-tight tracking-tight text-foreground sm:text-base">
             {title}
           </h2>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {actions?.map((render, index) => (
-            <Button
-              key={`home-block-action-${index}`}
-              type="button"
-              variant="outline"
-              size="default"
-              nativeButton={false}
-              render={render}
-              className="hidden sm:inline-flex"
-            />
-          ))}
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger
               render={
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon"
+                  size="icon-sm"
                   aria-label={`Открыть меню блока ${title}`}
                 >
                   <EllipsisVertical aria-hidden className="size-5" />
@@ -110,20 +90,14 @@ export const HomeBlockShell = ({
                 : null
               }
 
+              <DropdownMenuItem onClick={() => handleMenuAction(onToggleCollapsed)}>
+                {collapsed ? "Развернуть блок" : "Свернуть блок"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleMenuAction(onHide)}>
                 Скрыть блок
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={collapsed ? `Развернуть блок ${title}` : `Свернуть блок ${title}`}
-            onClick={onToggleCollapsed}
-          >
-            <ChevronDown aria-hidden className={cn("size-5 transition-transform", collapsed && "-rotate-90")} />
-          </Button>
         </div>
       </CardHeader>
       {collapsed ? null : <CardContent className="pt-0">{children}</CardContent>}

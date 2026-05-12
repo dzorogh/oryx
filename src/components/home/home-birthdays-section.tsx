@@ -2,10 +2,8 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
-import { PartyPopper } from "lucide-react";
 import { BIRTHDAY_PEOPLE, type BirthdayPerson } from "./birthdays-demo-data";
 import { cn } from "@/lib/utils";
-import { HomeDateMetaText } from "./home-date-meta-text";
 
 const HOME_BIRTHDAYS_LIMIT = 8;
 
@@ -25,92 +23,56 @@ const getNextBirthdayOccurrence = (person: BirthdayPerson, ref: Date): Date => {
   return candidate;
 };
 
-const getDaysUntil = (occurrence: Date, ref: Date) => {
-  const today = startOfDay(ref);
-  const o = startOfDay(occurrence);
-  return Math.round((o.getTime() - today.getTime()) / 86_400_000);
-};
-
 const dateLabelFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
   month: "long",
 });
 
-const daysWordRu = (n: number): string => {
-  const abs = Math.abs(n) % 100;
-  const d = abs % 10;
-  if (abs > 10 && abs < 20) {
-    return "дней";
-  }
-  if (d === 1) {
-    return "день";
-  }
-  if (d >= 2 && d <= 4) {
-    return "дня";
-  }
-  return "дней";
-};
+const dateDayFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "2-digit",
+});
 
-const getRelativeLabel = (daysUntil: number): string => {
-  if (daysUntil === 0) {
-    return "Сегодня";
-  }
-  if (daysUntil === 1) {
-    return "Завтра";
-  }
-  return `Через ${daysUntil} ${daysWordRu(daysUntil)}`;
-};
+const dateMonthFormatter = new Intl.DateTimeFormat("ru-RU", {
+  month: "short",
+});
 
 type BirthdayCardProps = {
   person: BirthdayPerson;
   occurrence: Date;
-  daysUntil: number;
 };
 
-const BirthdayCard = ({ person, occurrence, daysUntil }: BirthdayCardProps) => {
-  const isToday = daysUntil === 0;
-
+const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
   return (
     <article
       className={cn(
-        "flex h-full min-h-0 min-w-0 flex-col gap-1.5 rounded-lg border p-2.5",
+        "flex min-h-0 min-w-0 items-center gap-2 rounded-lg border p-2",
       )}
       aria-label={`День рождения: ${person.fullName}`}
     >
-      <div className="flex h-4 shrink-0 items-center justify-between gap-2">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 text-[11px] font-medium",
-            isToday ? "text-corportal-accent-amber-on-soft" : "text-primary",
-          )}
-        >
-          {isToday ? (
-            <span
-              className="inline-flex items-center gap-1 rounded-full bg-corportal-accent-amber/20 px-1.5 py-0.5"
-              aria-label="Сегодня день рождения"
-            >
-              <PartyPopper aria-hidden className="size-3" />
-              {getRelativeLabel(daysUntil)}
-            </span>
-          ) : (
-            getRelativeLabel(daysUntil)
-          )}
+      <div
+        className="flex w-14 shrink-0 flex-col items-center rounded-md bg-muted/30 px-1 py-1 text-center"
+        aria-label={`Дата дня рождения: ${dateLabelFormatter.format(occurrence)}`}
+      >
+        <span className="text-xl font-bold leading-none text-foreground">{dateDayFormatter.format(occurrence)}</span>
+        <span className="text-[10px] uppercase leading-4 text-muted-foreground">
+          {dateMonthFormatter.format(occurrence).replace(".", "")}
         </span>
-        <HomeDateMetaText>{dateLabelFormatter.format(occurrence)}</HomeDateMetaText>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <Image
           src={person.avatarUrl}
           alt={`Аватар сотрудника ${person.fullName}`}
-          width={28}
-          height={28}
-          className="size-7 shrink-0 rounded-full border border-[var(--corportal-border-grey)] object-cover"
+          width={26}
+          height={26}
+          className="size-6.5 shrink-0 rounded-full object-cover"
           loading="lazy"
           unoptimized
         />
-        <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground">{person.fullName}</h3>
+        <div className="min-w-0">
+          <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground">{person.fullName}</h3>
+          <p className="line-clamp-1 text-xs leading-tight text-muted-foreground">{person.department}</p>
+        </div>
       </div>
-      <p className="line-clamp-1 text-xs leading-snug text-muted-foreground">{person.department}</p>
     </article>
   );
 };
@@ -121,17 +83,16 @@ export const HomeBirthdaysSection = () => {
   const rows = useMemo(() => {
     const withDates = BIRTHDAY_PEOPLE.map((person) => {
       const occurrence = getNextBirthdayOccurrence(person, now);
-      const daysUntil = getDaysUntil(occurrence, now);
-      return { person, occurrence, daysUntil };
+      return { person, occurrence };
     });
     withDates.sort((a, b) => a.occurrence.getTime() - b.occurrence.getTime());
     return withDates.slice(0, HOME_BIRTHDAYS_LIMIT);
   }, [now]);
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-2">
-      {rows.map(({ person, occurrence, daysUntil }) => (
-        <BirthdayCard key={person.id} person={person} occurrence={occurrence} daysUntil={daysUntil} />
+    <div className="grid grid-cols-1 gap-2">
+      {rows.map(({ person, occurrence }) => (
+        <BirthdayCard key={person.id} person={person} occurrence={occurrence} />
       ))}
     </div>
   );
