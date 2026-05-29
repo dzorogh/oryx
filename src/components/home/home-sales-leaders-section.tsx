@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Medal } from "lucide-react";
+import Link from "next/link";
+import { Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HomeAvatarRing } from "./home-avatar-ring";
 import { HomeFilterChip } from "./home-filter-chip";
@@ -14,27 +15,42 @@ import {
 const formatRubPlain = (value: number) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 
-/** Цвет нижней полоски по месту в рейтинге. */
-const LEADER_ROW_BAR_CLASS: Record<number, string> = {
-  1: "bg-violet-500",
-  2: "bg-sky-500",
-  3: "bg-teal-500",
-  4: "bg-amber-500",
-  5: "bg-rose-500",
+const LEADER_ROW_CARD_CLASS: Record<number, string> = {
+  1: "bg-card",
+  2: "bg-card",
+  3: "bg-card",
 };
+
+const TOP_RANK_RIBBON_CLASS: Record<number, string> = {
+  1: "bg-gradient-to-r from-amber-600 to-yellow-500 text-white",
+  2: "bg-gradient-to-r from-slate-600 to-slate-500 text-white",
+  3: "bg-gradient-to-r from-orange-800 to-amber-700 text-white",
+};
+
+const TOP_RANK_ICON = {
+  1: Crown,
+  2: Crown,
+  3: Crown,
+} as const;
 
 const RankMedal = ({ rank }: { rank: number }) => {
   if (rank <= 3) {
-    const tone =
+    const topRankClass =
       rank === 1
-        ? "text-amber-500"
+        ? "bg-amber-500 text-white ring-1 ring-amber-300/90"
         : rank === 2
-          ? "text-slate-400"
-          : "text-amber-800";
+          ? "bg-slate-500 text-white ring-1 ring-slate-300/90"
+          : "bg-amber-700 text-white ring-1 ring-amber-400/80";
+
     return (
-      <span className="flex w-7 shrink-0 justify-center">
-        <Medal className={cn("size-5", tone)} strokeWidth={1.75} aria-hidden />
-        <span className="sr-only">{rank} место</span>
+      <span
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold tabular-nums",
+          topRankClass,
+        )}
+        aria-label={`${rank} место`}
+      >
+        {rank}
       </span>
     );
   }
@@ -47,7 +63,7 @@ const RankMedal = ({ rank }: { rank: number }) => {
   return (
     <span
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+        "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
         circleClass,
       )}
       aria-label={`${rank} место`}
@@ -59,12 +75,7 @@ const RankMedal = ({ rank }: { rank: number }) => {
 
 export const HomeSalesLeadersSection = () => {
   const [direction, setDirection] = useState<StatsDirection>("all");
-  const leaders = FEBRUARY_SALES_LEADERS;
-
-  const maxLeaderTurnover = useMemo(
-    () => Math.max(...leaders.map((leader) => leader.turnoverRub), 1),
-    [leaders],
-  );
+  const leaders = FEBRUARY_SALES_LEADERS.slice(0, 4);
 
   const tabIds = useMemo(
     () => STATS_DIRECTION_TABS.map((tab) => `sales-leaders-dir-${tab.id}`),
@@ -122,40 +133,59 @@ export const HomeSalesLeadersSection = () => {
         aria-labelledby={activeTabId}
         className="flex min-h-0 flex-col"
       >
-        <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {leaders.map((row) => {
-            const sharePct = (row.turnoverRub / maxLeaderTurnover) * 100;
-            const barWidthPct = Math.min(100, Math.round(sharePct * 10) / 10);
-            const barClass = LEADER_ROW_BAR_CLASS[row.rank] ?? LEADER_ROW_BAR_CLASS[5];
+            const cardClass = LEADER_ROW_CARD_CLASS[row.rank] ?? "";
             const turnoverLabel = `${formatRubPlain(row.turnoverRub)} ₽`;
 
             return (
               <li key={row.rank} className="flex min-h-0 flex-col">
-                <div
-                  className="relative flex min-h-0 flex-1 flex-col gap-1 rounded-lg border border-[var(--corportal-border-grey)] bg-card px-2.5 py-2"
-                  aria-label={`${row.name}, оборот ${turnoverLabel}, ${barWidthPct.toFixed(1)} процента от оборота лидера`}
+                <Link
+                  href={row.profileHref}
+                  className={cn(
+                    "relative flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-card px-2.5 py-2 transition-colors hover:border-primary/35 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    cardClass,
+                  )}
+                  aria-label={`Открыть профиль: ${row.name}, оборот ${turnoverLabel}`}
                 >
+                  {row.rank <= 3 ? (
+                    <>
+                      <div
+                        className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/75 to-transparent"
+                        aria-hidden
+                      />
+                      <div
+                        className={cn(
+                          "absolute -right-7 top-2 z-10 flex w-24 rotate-45 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]",
+                          TOP_RANK_RIBBON_CLASS[row.rank as keyof typeof TOP_RANK_RIBBON_CLASS],
+                        )}
+                      >
+                        {(() => {
+                          const TopRankIcon = TOP_RANK_ICON[row.rank as keyof typeof TOP_RANK_ICON];
+                          return <TopRankIcon className="size-3" aria-hidden />;
+                        })()}
+                        <span>{`TOP ${row.rank}`}</span>
+                      </div>
+                    </>
+                  ) : null}
                   <div className="flex min-h-0 items-center gap-2">
                     <RankMedal rank={row.rank} />
                     <HomeAvatarRing src={row.avatarUrl} alt="" />
                     <div className="min-w-0 flex-1">
-                      <button
-                        type="button"
-                        className="block w-full truncate text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
-                        aria-label={`Карточка сотрудника: ${row.name}`}
-                      >
+                      <div className="block w-full truncate text-left text-sm font-medium text-primary">
                         {row.name}
-                      </button>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="line-clamp-2 text-xs leading-snug text-muted-foreground">Оборот продаж</div>
-                    <div className="text-sm font-bold tabular-nums leading-none text-foreground">{turnoverLabel}</div>
+                    <div className="truncate whitespace-nowrap text-xs leading-snug text-muted-foreground">
+                      Оборот продаж
+                    </div>
+                    <div className="whitespace-nowrap text-xs font-bold tabular-nums leading-none text-foreground sm:text-sm">
+                      {turnoverLabel}
+                    </div>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-                    <div className={cn("h-full rounded-full", barClass)} style={{ width: `${barWidthPct}%` }} />
-                  </div>
-                </div>
+                </Link>
               </li>
             );
           })}

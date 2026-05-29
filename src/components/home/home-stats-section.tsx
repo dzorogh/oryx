@@ -25,18 +25,16 @@ const CompactKpiCard = ({
     <div className="space-y-2">
       <h3 className="text-md font-bold leading-snug tracking-tight text-foreground">{title}</h3>
     </div>
-    <div className="flex min-w-0 items-center gap-6">
-      <p className="text-xl font-bold tabular-nums leading-none tracking-tight text-foreground">{valueDisplay}</p>
-      <div className="mt-auto flex min-w-0 items-center gap-2.5">
-        <HomeAvatarRing src={avatarUrl} alt="" />
-        <button
-          type="button"
-          className="min-w-0 truncate text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
-          aria-label={`Профиль: ${leaderName}`}
-        >
-          {leaderName}
-        </button>
-      </div>
+    <p className="text-xl font-bold tabular-nums leading-none tracking-tight text-foreground">{valueDisplay}</p>
+    <div className="mt-auto flex min-w-0 items-center gap-2.5">
+      <HomeAvatarRing src={avatarUrl} alt="" />
+      <button
+        type="button"
+        className="min-w-0 text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
+        aria-label={`Профиль: ${leaderName}`}
+      >
+        {leaderName}
+      </button>
     </div>
   </article>
 );

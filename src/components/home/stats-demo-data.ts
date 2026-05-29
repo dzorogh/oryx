@@ -64,9 +64,10 @@ export type FebruarySalesLeader = {
   shortLabel: string;
   turnoverRub: number;
   avatarUrl: string;
+  profileHref: string;
 };
 
-/** Топ-5 за февраль (контент со скриншота). */
+/** Топ-6 за февраль (контент со скриншота). */
 export const FEBRUARY_SALES_LEADERS: FebruarySalesLeader[] = [
   {
     rank: 1,
@@ -74,6 +75,7 @@ export const FEBRUARY_SALES_LEADERS: FebruarySalesLeader[] = [
     shortLabel: "Константинов Р.",
     turnoverRub: 11_277_365,
     avatarUrl: "https://i.pravatar.cc/128?u=konstantinov-rafis",
+    profileHref: "/team/users/1",
   },
   {
     rank: 2,
@@ -81,6 +83,7 @@ export const FEBRUARY_SALES_LEADERS: FebruarySalesLeader[] = [
     shortLabel: "Эшанкулов А.",
     turnoverRub: 11_054_910,
     avatarUrl: "https://i.pravatar.cc/128?u=eshankulov-alex",
+    profileHref: "/team/users/6081",
   },
   {
     rank: 3,
@@ -88,6 +91,7 @@ export const FEBRUARY_SALES_LEADERS: FebruarySalesLeader[] = [
     shortLabel: "Дехтяренко М.",
     turnoverRub: 10_263_243,
     avatarUrl: "https://i.pravatar.cc/128?u=dekhtyarenko-max",
+    profileHref: "/team/users/2973",
   },
   {
     rank: 4,
@@ -95,6 +99,7 @@ export const FEBRUARY_SALES_LEADERS: FebruarySalesLeader[] = [
     shortLabel: "Миронов А.",
     turnoverRub: 9_766_289,
     avatarUrl: "https://i.pravatar.cc/128?u=mironov-alex",
+    profileHref: "/team/users/2496",
   },
   {
     rank: 5,
@@ -102,5 +107,14 @@ export const FEBRUARY_SALES_LEADERS: FebruarySalesLeader[] = [
     shortLabel: "Жиганов Д.",
     turnoverRub: 9_353_416,
     avatarUrl: "https://i.pravatar.cc/128?u=zhiganov-danila",
+    profileHref: "/team/users/5558",
+  },
+  {
+    rank: 6,
+    name: "Громов Никита",
+    shortLabel: "Громов Н.",
+    turnoverRub: 8_917_240,
+    avatarUrl: "https://i.pravatar.cc/128?u=gromov-nikita",
+    profileHref: "/team/users/4022",
   },
 ];
