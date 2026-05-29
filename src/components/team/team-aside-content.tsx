@@ -14,22 +14,22 @@ type TeamAsideContentProps = {
 
 const TEAM_SUMMARY_ITEMS = [
   {
-    label: "Сотрудники",
+    label: "Users",
     value: TEAM_DIRECTORY_EMPLOYEES.length.toString(),
     icon: Users,
   },
   {
-    label: "Руководители",
+    label: "Managers",
     value: TEAM_DIRECTORY_EMPLOYEES.filter((employee) => employee.isLead).length.toString(),
     icon: SquareUserRound,
   },
   {
-    label: "Отделы",
+    label: "Departments",
     value: new Set(TEAM_DIRECTORY_EMPLOYEES.map((employee) => employee.department)).size.toString(),
     icon: Building2,
   },
   {
-    label: "Должности",
+    label: "Positions",
     value: new Set(TEAM_DIRECTORY_EMPLOYEES.map((employee) => employee.position)).size.toString(),
     icon: BriefcaseBusiness,
   },
@@ -52,7 +52,7 @@ export const TeamAsideContent = ({ onItemClick }: TeamAsideContentProps) => (
       <div className="relative size-10 shrink-0 overflow-hidden rounded-full border border-[var(--corportal-border-grey)] bg-card">
         <Image
           src={TEAM_PROFILE_PREVIEW.avatarUrl}
-          alt={`Аватар сотрудника ${TEAM_PROFILE_PREVIEW.fullName}`}
+          alt={`Avatar of ${TEAM_PROFILE_PREVIEW.fullName}`}
           fill
           sizes="40px"
           className="object-cover"
@@ -66,14 +66,14 @@ export const TeamAsideContent = ({ onItemClick }: TeamAsideContentProps) => (
     <Separator />
 
     <div className="flex flex-col gap-2">
-      <TeamAsideSectionTitle>Разделы</TeamAsideSectionTitle>
-      <ModuleSubnav items={TEAM_SECTION_NAV_ITEMS} navAriaLabel="Разделы модуля Команда" onItemClick={onItemClick} />
+      <TeamAsideSectionTitle>Sections</TeamAsideSectionTitle>
+      <ModuleSubnav items={TEAM_SECTION_NAV_ITEMS} navAriaLabel="Team sections" onItemClick={onItemClick} />
     </div>
 
     <Separator />
 
     <div className="flex flex-col gap-2">
-      <TeamAsideSectionTitle>Сводка</TeamAsideSectionTitle>
+      <TeamAsideSectionTitle>Summary</TeamAsideSectionTitle>
       <div className="grid gap-2">
         {TEAM_SUMMARY_ITEMS.map((item) => {
           const Icon = item.icon;

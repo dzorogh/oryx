@@ -1,0 +1,225 @@
+import { useEffect, useMemo, useState } from "react";
+import { itemMatchesCategoryFilter } from "@/features/store/category-tree";
+import { STORE_CATALOG_ITEMS, type StoreCatalogItem } from "../store-catalog-demo-data";
+import {
+  ALL_VALUE,
+  PAGE_SIZE,
+  CATALOG_VIEW_MODE_STORAGE_KEY,
+  buildPaginationItems,
+  extractSortedOptions,
+  getSelectValue,
+  matchesSearchQuery,
+  type CatalogViewMode,
+  type QuickFilterOption,
+} from "./catalog-helpers";
+
+type FilterControl = {
+  value: string;
+  onChange: (value: string | null) => void;
+  options: QuickFilterOption[];
+};
+
+type CategoryFilterControl = {
+  value: string;
+  onChange: (value: string | null) => void;
+};
+
+export type CatalogFilters = {
+  search: { value: string; onChange: (value: string) => void };
+  category: CategoryFilterControl;
+  dealerStatus: FilterControl;
+  retailStatus: FilterControl;
+  site: FilterControl;
+  family: FilterControl;
+  hasActive: boolean;
+  onReset: () => void;
+};
+
+export type CatalogController = {
+  viewMode: CatalogViewMode;
+  onViewModeChange: (mode: CatalogViewMode) => void;
+  isFilterSheetOpen: boolean;
+  setFilterSheetOpen: (open: boolean) => void;
+  filters: CatalogFilters;
+  filteredItems: StoreCatalogItem[];
+  paginatedItems: StoreCatalogItem[];
+  isLoading: boolean;
+  visiblePage: number;
+  totalPages: number;
+  paginationItems: Array<number | "ellipsis">;
+  onPageChange: (page: number) => void;
+};
+
+// Имитация задержки ответа сервера при загрузке данных каталога.
+const SERVER_RESPONSE_DELAY_MS = 200;
+
+const toFilterOptions = (values: string[]): QuickFilterOption[] =>
+  values.map((value) => ({ value, label: value }));
+
+export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STORAGE_KEY): CatalogController => {
+  const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<CatalogViewMode>("table");
+  const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState(ALL_VALUE);
+  const [dealerStatusFilter, setDealerStatusFilter] = useState(ALL_VALUE);
+  const [retailStatusFilter, setRetailStatusFilter] = useState(ALL_VALUE);
+  const [siteFilter, setSiteFilter] = useState(ALL_VALUE);
+  const [familyFilter, setFamilyFilter] = useState(ALL_VALUE);
+
+  const dealerStatusOptions = useMemo(
+    () => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "dealerStatus")),
+    [],
+  );
+  const retailStatusOptions = useMemo(
+    () => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "retailStatus")),
+    [],
+  );
+  const siteOptions = useMemo(() => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "productionSite")), []);
+  const familyOptions = useMemo(() => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "family")), []);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredItems = useMemo(
+    () =>
+      STORE_CATALOG_ITEMS.filter((item) => {
+        if (!matchesSearchQuery(item, normalizedQuery)) {
+          return false;
+        }
+        if (!itemMatchesCategoryFilter(item.categoryId, categoryFilter)) {
+          return false;
+        }
+        if (dealerStatusFilter !== ALL_VALUE && item.dealerStatus !== dealerStatusFilter) {
+          return false;
+        }
+        if (retailStatusFilter !== ALL_VALUE && item.retailStatus !== retailStatusFilter) {
+          return false;
+        }
+        if (siteFilter !== ALL_VALUE && item.productionSite !== siteFilter) {
+          return false;
+        }
+        if (familyFilter !== ALL_VALUE && item.family !== familyFilter) {
+          return false;
+        }
+        return true;
+      }),
+    [categoryFilter, dealerStatusFilter, familyFilter, normalizedQuery, retailStatusFilter, siteFilter],
+  );
+
+  const hasActiveFilters =
+    searchQuery.length > 0 ||
+    categoryFilter !== ALL_VALUE ||
+    dealerStatusFilter !== ALL_VALUE ||
+    retailStatusFilter !== ALL_VALUE ||
+    siteFilter !== ALL_VALUE ||
+    familyFilter !== ALL_VALUE;
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const visiblePage = Math.min(currentPage, totalPages);
+  const paginatedItems = filteredItems.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE);
+  const paginationItems = useMemo(() => buildPaginationItems(visiblePage, totalPages), [totalPages, visiblePage]);
+
+  // Ключ «запроса»: меняется при смене фильтров, поиска или страницы — как обращение к серверу.
+  const requestKey = [
+    normalizedQuery,
+    categoryFilter,
+    dealerStatusFilter,
+    retailStatusFilter,
+    siteFilter,
+    familyFilter,
+    visiblePage,
+  ].join("|");
+
+  // Пока загруженный ключ не совпал с текущим запросом — показываем состояние загрузки.
+  const isLoading = loadedRequestKey !== requestKey;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoadedRequestKey(requestKey), SERVER_RESPONSE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [requestKey]);
+
+  const resetToFirstPage = () => setCurrentPage(1);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    resetToFirstPage();
+  };
+
+  const makeFilterHandler = (setter: (value: string) => void) => (value: string | null) => {
+    setter(getSelectValue(value));
+    resetToFirstPage();
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter(ALL_VALUE);
+    setDealerStatusFilter(ALL_VALUE);
+    setRetailStatusFilter(ALL_VALUE);
+    setSiteFilter(ALL_VALUE);
+    setFamilyFilter(ALL_VALUE);
+    resetToFirstPage();
+  };
+
+  const handleViewModeChange = (nextValue: CatalogViewMode) => {
+    setViewMode(nextValue);
+    const storage = window.localStorage;
+    if (!storage || typeof storage.setItem !== "function") {
+      return;
+    }
+    storage.setItem(viewModeStorageKey, nextValue);
+  };
+
+  useEffect(() => {
+    const storage = window.localStorage;
+    if (!storage || typeof storage.getItem !== "function") {
+      return;
+    }
+
+    const storedViewMode = storage.getItem(viewModeStorageKey);
+    if (storedViewMode !== "table" && storedViewMode !== "cards") {
+      return;
+    }
+
+    // Избегаем синхронного setState внутри эффекта для соответствия правилам React Hooks.
+    const timer = window.setTimeout(() => {
+      setViewMode(storedViewMode);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [viewModeStorageKey]);
+
+  const filters: CatalogFilters = {
+    search: { value: searchQuery, onChange: handleSearchChange },
+    category: { value: categoryFilter, onChange: makeFilterHandler(setCategoryFilter) },
+    dealerStatus: {
+      value: dealerStatusFilter,
+      onChange: makeFilterHandler(setDealerStatusFilter),
+      options: dealerStatusOptions,
+    },
+    retailStatus: {
+      value: retailStatusFilter,
+      onChange: makeFilterHandler(setRetailStatusFilter),
+      options: retailStatusOptions,
+    },
+    site: { value: siteFilter, onChange: makeFilterHandler(setSiteFilter), options: siteOptions },
+    family: { value: familyFilter, onChange: makeFilterHandler(setFamilyFilter), options: familyOptions },
+    hasActive: hasActiveFilters,
+    onReset: handleResetFilters,
+  };
+
+  return {
+    viewMode,
+    onViewModeChange: handleViewModeChange,
+    isFilterSheetOpen,
+    setFilterSheetOpen,
+    filters,
+    filteredItems,
+    paginatedItems,
+    isLoading,
+    visiblePage,
+    totalPages,
+    paginationItems,
+    onPageChange: setCurrentPage,
+  };
+};

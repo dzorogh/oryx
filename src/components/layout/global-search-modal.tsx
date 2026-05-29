@@ -13,18 +13,19 @@ type SearchTarget = {
 };
 
 const SEARCH_TARGETS: SearchTarget[] = [
-  { id: "home", title: "Главная", description: "Основной дашборд", href: "/" },
-  { id: "orders", title: "Упаковка и заказы", description: "Раздел заказов PIM", href: "/pim/orders/59" },
-  { id: "pulse", title: "Пульс компании", description: "Новости и обновления команды", href: "/pulse/news" },
-  { id: "ideas", title: "Идеи и предложения", description: "Лента идей сотрудников", href: "/pulse/ideas" },
-  { id: "team", title: "Команда", description: "Модуль команды и оргструктуры", href: "/team" },
-  { id: "team-users", title: "Сотрудники", description: "Список пользователей команды", href: "/team/users" },
-  { id: "activity", title: "Активность", description: "События и уведомления", href: "/activity" },
-  { id: "approvals", title: "Согласования", description: "Задачи на согласование", href: "/approvals" },
-  { id: "catalog", title: "Каталог", description: "Справочник и каталог", href: "/catalog" },
-  { id: "learning", title: "Обучение", description: "Материалы и курсы", href: "/learning" },
-  { id: "help", title: "Справка", description: "Документация и помощь", href: "/help" },
-  { id: "services", title: "Сервисы", description: "Внутренние инструменты", href: "/services" },
+  { id: "home", title: "Home", description: "Main dashboard", href: "/" },
+  { id: "pulse", title: "Pulse", description: "Company news, ideas and polls", href: "/feed/ideas" },
+  { id: "tracker", title: "Tracker", description: "Tasks, projects and notes", href: "/tracker/tasks" },
+  { id: "crm", title: "CRM", description: "Deals, leads and contacts", href: "/crm/deals" },
+  { id: "store", title: "Store", description: "Catalog and orders", href: "/store/pim/products" },
+  { id: "store-orders", title: "Orders", description: "Store orders", href: "/store/orders" },
+  { id: "learning", title: "Learning", description: "Lessons and knowledge base", href: "/learning/lessons" },
+  { id: "library", title: "Library", description: "Documents and files", href: "/library/documents" },
+  { id: "approvals", title: "Approvals", description: "Invoice and payment approvals", href: "/approvals/invoices" },
+  { id: "analytics", title: "Analytics", description: "Stocks, reports and dashboards", href: "/analytics/stocks" },
+  { id: "team", title: "Team", description: "Org structure and people", href: "/team/structure" },
+  { id: "team-users", title: "Users", description: "Team members", href: "/team/users" },
+  { id: "settings", title: "Settings", description: "Auth, tenants and apps", href: "/settings/auth" },
 ];
 
 type GlobalSearchModalProps = {

@@ -9,10 +9,10 @@ type TeamLayoutProps = {
 
 const TeamLayout = ({ children }: TeamLayoutProps) => (
   <ModuleShell
-    moduleTitle="Команда"
-    asideLabel="Команда"
+    moduleTitle="Team"
+    asideLabel="Team"
     subnavItems={TEAM_SUBNAV_ITEMS}
-    subnavAriaLabel="Разделы модуля Команда"
+    subnavAriaLabel="Team sections"
     asideContent={<TeamAsideContent />}
   >
     {children}

@@ -33,56 +33,21 @@ const TOP_RANK_ICON = {
   3: Crown,
 } as const;
 
-const RankMedal = ({ rank }: { rank: number }) => {
-  if (rank <= 3) {
-    const topRankClass =
-      rank === 1
-        ? "bg-amber-500 text-white ring-1 ring-amber-300/90"
-        : rank === 2
-          ? "bg-slate-500 text-white ring-1 ring-slate-300/90"
-          : "bg-amber-700 text-white ring-1 ring-amber-400/80";
-
-    return (
-      <span
-        className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold tabular-nums",
-          topRankClass,
-        )}
-        aria-label={`${rank} место`}
-      >
-        {rank}
-      </span>
-    );
-  }
-
-  const circleClass =
-    rank === 4
-      ? "bg-amber-100 text-amber-900 ring-1 ring-amber-200/80"
-      : "bg-rose-100 text-rose-900 ring-1 ring-rose-200/80";
-
-  return (
-    <span
-      className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
-        circleClass,
-      )}
-      aria-label={`${rank} место`}
-    >
-      {rank}
-    </span>
-  );
+type HomeSalesLeadersFiltersProps = {
+  direction: StatsDirection;
+  onDirectionChange: (direction: StatsDirection) => void;
+  className?: string;
 };
 
-export const HomeSalesLeadersSection = () => {
-  const [direction, setDirection] = useState<StatsDirection>("all");
-  const leaders = FEBRUARY_SALES_LEADERS.slice(0, 4);
-
+export const HomeSalesLeadersFilters = ({
+  direction,
+  onDirectionChange,
+  className,
+}: HomeSalesLeadersFiltersProps) => {
   const tabIds = useMemo(
     () => STATS_DIRECTION_TABS.map((tab) => `sales-leaders-dir-${tab.id}`),
     [],
   );
-
-  const activeTabId = tabIds[STATS_DIRECTION_TABS.findIndex((tab) => tab.id === direction)] ?? tabIds[0];
 
   const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
@@ -100,32 +65,71 @@ export const HomeSalesLeadersSection = () => {
   };
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-col" aria-labelledby="sales-leaderboard-heading">
+    <div
+      role="tablist"
+      aria-label="Направления для рейтинга продаж"
+      className={cn("flex flex-wrap items-center gap-1", className)}
+    >
+      {STATS_DIRECTION_TABS.map((tab, index) => {
+        const selected = direction === tab.id;
+        return (
+          <HomeFilterChip
+            key={tab.id}
+            id={tabIds[index]}
+            role="tab"
+            aria-selected={selected}
+            tabIndex={selected ? 0 : -1}
+            aria-controls="sales-leaderboard-panel"
+            onClick={() => onDirectionChange(tab.id)}
+            onKeyDown={(event) => handleTabKeyDown(event, index)}
+            active={selected}
+          >
+            {tab.label}
+          </HomeFilterChip>
+        );
+      })}
+    </div>
+  );
+};
 
-      <div
-        role="tablist"
-        aria-label="Направления для рейтинга продаж"
-        className="mb-2 flex shrink-0 flex-wrap items-center gap-1"
-      >
-        {STATS_DIRECTION_TABS.map((tab, index) => {
-          const selected = direction === tab.id;
-          return (
-            <HomeFilterChip
-              key={tab.id}
-              id={tabIds[index]}
-              role="tab"
-              aria-selected={selected}
-              tabIndex={selected ? 0 : -1}
-              aria-controls="sales-leaderboard-panel"
-              onClick={() => setDirection(tab.id)}
-              onKeyDown={(event) => handleTabKeyDown(event, index)}
-              active={selected}
-            >
-              {tab.label}
-            </HomeFilterChip>
-          );
-        })}
-      </div>
+type HomeSalesLeadersSectionProps = {
+  direction?: StatsDirection;
+  onDirectionChange?: (direction: StatsDirection) => void;
+  hideFilters?: boolean;
+};
+
+export const HomeSalesLeadersSection = ({
+  direction: directionProp,
+  onDirectionChange,
+  hideFilters = false,
+}: HomeSalesLeadersSectionProps = {}) => {
+  const [internalDirection, setInternalDirection] = useState<StatsDirection>("all");
+  const direction = directionProp ?? internalDirection;
+  const leaders = FEBRUARY_SALES_LEADERS.slice(0, 4);
+
+  const tabIds = useMemo(
+    () => STATS_DIRECTION_TABS.map((tab) => `sales-leaders-dir-${tab.id}`),
+    [],
+  );
+
+  const activeTabId = tabIds[STATS_DIRECTION_TABS.findIndex((tab) => tab.id === direction)] ?? tabIds[0];
+
+  const handleDirectionChange = (nextDirection: StatsDirection) => {
+    onDirectionChange?.(nextDirection);
+    if (directionProp === undefined) {
+      setInternalDirection(nextDirection);
+    }
+  };
+
+  return (
+    <section className="flex min-h-0 min-w-0 flex-col" aria-labelledby="sales-leaderboard-heading">
+      {hideFilters ? null : (
+        <HomeSalesLeadersFilters
+          direction={direction}
+          onDirectionChange={handleDirectionChange}
+          className="mb-2 shrink-0"
+        />
+      )}
 
       <div
         id="sales-leaderboard-panel"
@@ -169,7 +173,6 @@ export const HomeSalesLeadersSection = () => {
                     </>
                   ) : null}
                   <div className="flex min-h-0 items-center gap-2">
-                    <RankMedal rank={row.rank} />
                     <HomeAvatarRing src={row.avatarUrl} alt="" />
                     <div className="min-w-0 flex-1">
                       <div className="block w-full truncate text-left text-sm font-medium text-primary">

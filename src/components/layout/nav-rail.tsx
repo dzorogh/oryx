@@ -1,35 +1,49 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { ComponentType, ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentType, CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  Activity,
+  BarChart3,
+  Bell,
+  ChevronsRight,
   GraduationCap,
+  Handshake,
   HeartPulse,
+  Languages,
+  Library,
+  LogOut,
   Menu,
   Check,
-  HelpCircle,
-  Hexagon,
   Home,
+  NotebookPen,
   Search,
-  ShoppingCart,
+  Settings,
   ShieldCheck,
+  Smartphone,
+  SquareKanban,
   Store,
   User,
   Users,
+  Workflow,
   SquareCheckBig,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { GlobalSearchModal } from "@/components/layout/global-search-modal";
 import { LeftDockShell } from "@/components/layout/left-dock-shell";
-import { ModuleSubnav } from "@/components/layout/module-subnav";
+import { useSidebarAside } from "@/components/layout/sidebar-aside-context";
+import { ModuleSubnav, type ModuleSubnavItem } from "@/components/layout/module-subnav";
 import { RailFaviconIcon } from "@/components/layout/rail-favicon-icon";
-import { PimAsideContent } from "@/components/pim/pim-aside";
+import { StoreAsideContent } from "@/components/store/store-aside-content";
 import { TeamAsideContent } from "@/components/team/team-aside-content";
-import { DEFAULT_ORDER_ID } from "@/domain/packing/constants";
-import { PULSE_SUBNAV_ITEMS } from "@/features/pulse/pulse-nav";
+import { FEED_SUBNAV_ITEMS } from "@/features/feed/feed-nav";
+import { TRACKER_SUBNAV_ITEMS } from "@/features/tracker/tracker-nav";
+import { CRM_SUBNAV_ITEMS } from "@/features/crm/crm-nav";
+import { LEARNING_SUBNAV_ITEMS } from "@/features/learning/learning-nav";
+import { LIBRARY_SUBNAV_ITEMS } from "@/features/library/library-nav";
+import { ANALYTICS_SUBNAV_ITEMS } from "@/features/analytics/analytics-nav";
+import { SETTINGS_SUBNAV_ITEMS } from "@/features/settings/settings-nav";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -72,97 +86,282 @@ const getFooterItemActive = (item: RailSectionItem, pathname: string): boolean =
 
 export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
-    label: "Главная",
-    shortLabel: "Главная",
+    label: "Home",
+    shortLabel: "Home",
     icon: Home,
     href: "/",
     match: "/",
     bgColor: "bg-sky-300",
   },
   {
-    label: "Пульс компании",
-    shortLabel: "Пульс",
+    label: "Pulse",
+    shortLabel: "Pulse",
     icon: HeartPulse,
-    href: "/pulse/news",
-    match: "/pulse",
+    href: "/feed/ideas",
+    match: "/feed",
     bgColor: "bg-pink-300",
   },
   {
-    label: "Согласования",
-    shortLabel: "Соглас.",
-    icon: ShieldCheck,
-    href: "/approvals",
-    match: "/approvals",
-    bgColor: "bg-emerald-300",
+    label: "Tracker",
+    shortLabel: "Tracker",
+    icon: SquareKanban,
+    href: "/tracker/tasks",
+    match: "/tracker",
+    bgColor: "bg-lime-300",
   },
   {
-    label: "Упаковка и заказы",
-    shortLabel: "Заказы",
-    icon: ShoppingCart,
-    href: `/pim/orders/${DEFAULT_ORDER_ID}`,
-    match: "/pim",
+    label: "CRM",
+    shortLabel: "CRM",
+    icon: Handshake,
+    href: "/crm/deals",
+    match: "/crm",
     bgColor: "bg-amber-300",
   },
   {
-    label: "Активность",
-    shortLabel: "Активн.",
-    icon: Activity,
-    href: "/activity",
-    match: "/activity",
-    bgColor: "bg-orange-300",
+    label: "Store",
+    shortLabel: "Store",
+    icon: Store,
+    href: "/store/pim/products",
+    match: "/store",
+    bgColor: "bg-indigo-300",
   },
   {
-    label: "Команда",
-    shortLabel: "Команда",
-    icon: Users,
-    href: "/team",
-    match: "/team",
-    bgColor: "bg-violet-300",
-  },
-  {
-    label: "Обучение",
-    shortLabel: "Учёба",
+    label: "Learning",
+    shortLabel: "Learning",
     icon: GraduationCap,
-    href: "/learning",
+    href: "/learning/lessons",
     match: "/learning",
     bgColor: "bg-teal-300",
   },
   {
-    label: "Каталог",
-    shortLabel: "Каталог",
-    icon: Store,
-    href: "/catalog",
-    match: "/catalog",
-    bgColor: "bg-indigo-300",
+    label: "Library",
+    shortLabel: "Library",
+    icon: Library,
+    href: "/library/documents",
+    match: "/library",
+    bgColor: "bg-cyan-300",
   },
   {
-    label: "Tasks",
-    shortLabel: "Tasks",
-    icon: SquareCheckBig,
-    href: "/tasks",
-    match: "/tasks",
-    bgColor: "bg-lime-300",
+    label: "Approvals",
+    shortLabel: "Approvals",
+    icon: ShieldCheck,
+    href: "/approvals/invoices",
+    match: "/approvals",
+    bgColor: "bg-emerald-300",
+  },
+  {
+    label: "Analytics",
+    shortLabel: "Analytics",
+    icon: BarChart3,
+    href: "/analytics/stocks",
+    match: "/analytics",
+    bgColor: "bg-orange-300",
+  },
+  {
+    label: "Team",
+    shortLabel: "Team",
+    icon: Users,
+    href: "/team/structure",
+    match: "/team",
+    bgColor: "bg-violet-300",
   },
 ];
 
 export const RAIL_FOOTER_ITEMS: RailSectionItem[] = [
   {
-    label: "Сервисы",
-    shortLabel: "Сервисы",
-    icon: Hexagon,
-    href: "/services",
-    match: "/services",
+    label: "Settings",
+    shortLabel: "Settings",
+    icon: Settings,
+    href: "/settings/auth",
+    match: "/settings",
     bgColor: "bg-slate-300",
   },
-  {
-    label: "Справка",
-    shortLabel: "Справка",
-    icon: HelpCircle,
-    href: "/help",
-    match: "/help",
-    bgColor: "bg-rose-300",
-  },
 ];
+
+type MobileAsideEntry = {
+  match: string;
+  title: string;
+  items: ModuleSubnavItem[];
+  ariaLabel: string;
+};
+
+/** Реестр подменю для мобильного overlay. Store/Team обрабатываются отдельно (богатый aside). */
+const MOBILE_ASIDE_ENTRIES: MobileAsideEntry[] = [
+  { match: "/feed", title: "Pulse", items: FEED_SUBNAV_ITEMS, ariaLabel: "Pulse sections" },
+  { match: "/tracker", title: "Tracker", items: TRACKER_SUBNAV_ITEMS, ariaLabel: "Tracker sections" },
+  { match: "/crm", title: "CRM", items: CRM_SUBNAV_ITEMS, ariaLabel: "CRM sections" },
+  { match: "/learning", title: "Learning", items: LEARNING_SUBNAV_ITEMS, ariaLabel: "Learning sections" },
+  { match: "/library", title: "Library", items: LIBRARY_SUBNAV_ITEMS, ariaLabel: "Library sections" },
+  { match: "/analytics", title: "Analytics", items: ANALYTICS_SUBNAV_ITEMS, ariaLabel: "Analytics sections" },
+  { match: "/settings", title: "Settings", items: SETTINGS_SUBNAV_ITEMS, ariaLabel: "Settings sections" },
+];
+
+/** Пункты рейла, у которых есть подменю (Home и Approvals — без aside, всплывашка не нужна). */
+const RAIL_FLYOUT_MATCHES = new Set<string>([
+  "/store",
+  "/team",
+  ...MOBILE_ASIDE_ENTRIES.map((entry) => entry.match),
+]);
+
+const hasRailFlyout = (match: string): boolean => RAIL_FLYOUT_MATCHES.has(match);
+
+type RailFlyoutContentProps = {
+  match: string;
+  onNavigate: () => void;
+};
+
+/** Содержимое подменю модуля внутри всплывающей панели рейла. Переиспользует тот же aside-контент. */
+const RailFlyoutContent = ({ match, onNavigate }: RailFlyoutContentProps) => {
+  if (match === "/store") {
+    return <StoreAsideContent onItemClick={onNavigate} />;
+  }
+
+  if (match === "/team") {
+    return <TeamAsideContent onItemClick={onNavigate} />;
+  }
+
+  const entry = MOBILE_ASIDE_ENTRIES.find((item) => item.match === match);
+  if (!entry) {
+    return null;
+  }
+
+  return <ModuleSubnav items={entry.items} navAriaLabel={entry.ariaLabel} onItemClick={onNavigate} />;
+};
+
+type RailFlyoutProps = {
+  item: RailSectionItem;
+  style: CSSProperties;
+  onCancelClose: () => void;
+  onScheduleClose: () => void;
+  onNavigate: () => void;
+  onClose: () => void;
+};
+
+/**
+ * Всплывающая панель меню модуля. Показывается при наведении на пункт рейла,
+ * когда боковая панель свёрнута. Дизайн — Figma node 40024965:63583
+ * (белая карточка, радиус 8px, тень Shadow-LG: 2px 2px 10px rgba(36,40,43,0.2)).
+ */
+const RailFlyout = ({ item, style, onCancelClose, onScheduleClose, onNavigate, onClose }: RailFlyoutProps) => {
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      role="menu"
+      aria-label={`${item.label} menu`}
+      style={style}
+      onMouseEnter={onCancelClose}
+      onMouseLeave={onScheduleClose}
+      onFocusCapture={onCancelClose}
+      onBlurCapture={onScheduleClose}
+      onKeyDown={handleKeyDown}
+      className="fixed left-12 z-50 hidden w-[224px] flex-col overflow-hidden rounded-lg bg-[var(--corportal-surface-white)] shadow-[2px_2px_10px_0px_rgba(36,40,43,0.2)] sm:flex"
+    >
+      <div className="flex min-h-0 flex-1 flex-col p-2">
+        <div className="shrink-0 px-1">
+          <span className="text-sm font-bold leading-[1.66] text-foreground">{item.label}</span>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pt-2">
+          <RailFlyoutContent match={item.match} onNavigate={onNavigate} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+type RailNavItemProps = {
+  item: RailSectionItem;
+  active: boolean;
+  flyoutEnabled: boolean;
+  onOpen: (item: RailSectionItem, anchor: HTMLElement) => void;
+  onScheduleClose: () => void;
+};
+
+/** Пункт рейла с обёрткой, отслеживающей наведение/фокус для открытия всплывающего подменю. */
+const RailNavItem = ({ item, active, flyoutEnabled, onOpen, onScheduleClose }: RailNavItemProps) => {
+  const handleOpen = (event: { currentTarget: HTMLElement }) => {
+    if (flyoutEnabled) {
+      onOpen(item, event.currentTarget);
+    }
+  };
+
+  return (
+    <div
+      className="flex w-full justify-center"
+      onMouseEnter={handleOpen}
+      onMouseLeave={flyoutEnabled ? onScheduleClose : undefined}
+      onFocusCapture={handleOpen}
+      onBlurCapture={flyoutEnabled ? onScheduleClose : undefined}
+    >
+      <RailIconButton label={item.label} icon={item.icon} href={item.href} active={active} />
+    </div>
+  );
+};
+
+type UserMenuItem = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  href?: string;
+};
+
+const USER_MENU_ITEMS: UserMenuItem[] = [
+  { id: "profile", label: "Profile", icon: User, href: "/team/users/1" },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "language", label: "Language", icon: Languages },
+  { id: "checklists", label: "Checklists", icon: SquareCheckBig, href: "/tracker/checklists" },
+  { id: "notes", label: "Notes", icon: NotebookPen, href: "/tracker/notes" },
+  { id: "mindmaps", label: "Mind Maps", icon: Workflow, href: "/tracker/mindmaps" },
+  { id: "open-on-phone", label: "Open on phone", icon: Smartphone },
+  { id: "logout", label: "Log out", icon: LogOut, href: "/logout" },
+];
+
+const railProfileButtonClass =
+  "flex size-7 items-center justify-center overflow-hidden rounded-full bg-[color:var(--corportal-rail-hover)] text-[color:var(--corportal-rail-foreground)] transition-colors hover:bg-[color:var(--corportal-rail-active)] focus-visible:outline focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]";
+
+const UserMenu = () => {
+  const router = useRouter();
+
+  const handleSelect = (item: UserMenuItem) => {
+    if (item.href) {
+      router.push(item.href);
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button type="button" className={railProfileButtonClass} aria-label="User menu">
+            <User aria-hidden className="size-4" strokeWidth={2} />
+          </button>
+        }
+      />
+      <DropdownMenuContent align="end" side="right">
+        <DropdownMenuGroup>
+          {USER_MENU_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <DropdownMenuItem
+                key={item.id}
+                onClick={() => handleSelect(item)}
+                aria-label={item.label}
+                variant={item.id === "logout" ? "destructive" : "default"}
+              >
+                <Icon aria-hidden className="size-4" />
+                <span>{item.label}</span>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 /** Фавикон рейла — Figma node 40023000:133773 (Corportal Favicon). */
 const railButtonBaseClass =
@@ -267,7 +466,7 @@ export const TenantSwitcher = ({ open, onOpenChange }: TenantSwitcherProps = {})
               type="button"
               variant="ghost"
               size="icon"
-              aria-label="Переключить тенант"
+              aria-label="Switch tenant"
             >
               <RailFaviconIcon />
             </Button>
@@ -276,14 +475,14 @@ export const TenantSwitcher = ({ open, onOpenChange }: TenantSwitcherProps = {})
       )}
       <DropdownMenuContent align="start">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Тенант</DropdownMenuLabel>
+          <DropdownMenuLabel>Tenant</DropdownMenuLabel>
           {DEMO_TENANTS.map((tenant) => {
             const active = tenant.id === currentTenant.id;
             return (
               <DropdownMenuItem
                 key={tenant.id}
                 onClick={() => handleSelectTenant(tenant.id)}
-                aria-label={`Выбрать тенант ${tenant.label}`}
+                aria-label={`Select tenant ${tenant.label}`}
               >
                 <span className="flex w-full items-center justify-between gap-3">
                   <span>{tenant.label}</span>
@@ -357,7 +556,7 @@ const MobileNavOverlay = ({ pathname, asideContent, onClose }: MobileNavOverlayP
           onClose();
         }
       }}
-      aria-label="Разделы"
+      aria-label="Sections"
     >
       <SheetContent
         className="h-dvh w-full overflow-auto"
@@ -429,6 +628,50 @@ export const NavRail = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isTenantOpen, setIsTenantOpen] = useState(false);
+  const { collapsed, setCollapsed } = useSidebarAside();
+  const [flyout, setFlyout] = useState<{ item: RailSectionItem; style: CSSProperties } | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const closeFlyout = useCallback(() => {
+    clearCloseTimer();
+    setFlyout(null);
+  }, [clearCloseTimer]);
+
+  // Закрываем не сразу, чтобы успеть перевести курсор с пункта рейла на панель.
+  const scheduleCloseFlyout = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = window.setTimeout(() => setFlyout(null), 140);
+  }, [clearCloseTimer]);
+
+  const openFlyout = useCallback(
+    (item: RailSectionItem, anchor: HTMLElement) => {
+      clearCloseTimer();
+      const rect = anchor.getBoundingClientRect();
+      // Для пунктов в нижней части экрана раскрываем панель вверх, чтобы не выходить за вьюпорт.
+      const placeAbove = rect.top > window.innerHeight * 0.55;
+      const style: CSSProperties = placeAbove
+        ? { bottom: Math.max(8, window.innerHeight - rect.bottom), maxHeight: rect.bottom - 8 }
+        : { top: Math.max(8, rect.top), maxHeight: window.innerHeight - rect.top - 8 };
+      setFlyout({ item, style });
+    },
+    [clearCloseTimer],
+  );
+
+  useEffect(() => clearCloseTimer, [clearCloseTimer]);
+
+  // Когда aside развёрнут, всплывающее подменю не нужно.
+  useEffect(() => {
+    if (!collapsed) {
+      closeFlyout();
+    }
+  }, [collapsed, closeFlyout]);
 
   const handleOpenSearch = () => setIsSearchOpen(true);
   const handleCloseSearch = () => setIsSearchOpen(false);
@@ -436,30 +679,29 @@ export const NavRail = () => {
   const handleBurgerClick = () => setIsMobileNavOpen(true);
 
   const currentAsideContent = useMemo(() => {
-    if (currentPathname === "/pulse" || currentPathname.startsWith("/pulse/")) {
+    const matches = (prefix: string) => currentPathname === prefix || currentPathname.startsWith(`${prefix}/`);
+
+    if (matches("/store") || matches("/pim")) {
       return (
-        <MobileAsideSection title="Пульс компании">
-          <ModuleSubnav
-            items={PULSE_SUBNAV_ITEMS}
-            navAriaLabel="Подразделы Пульса компании"
-            onItemClick={handleCloseMobileNav}
-          />
+        <MobileAsideSection title="Store">
+          <StoreAsideContent onItemClick={handleCloseMobileNav} />
         </MobileAsideSection>
       );
     }
 
-    if (currentPathname === "/pim" || currentPathname.startsWith("/pim/")) {
+    if (matches("/team")) {
       return (
-        <MobileAsideSection title="Магазин и каталог">
-          <PimAsideContent onItemClick={handleCloseMobileNav} />
-        </MobileAsideSection>
-      );
-    }
-
-    if (currentPathname === "/team" || currentPathname.startsWith("/team/")) {
-      return (
-        <MobileAsideSection title="Команда">
+        <MobileAsideSection title="Team">
           <TeamAsideContent onItemClick={handleCloseMobileNav} />
+        </MobileAsideSection>
+      );
+    }
+
+    const entry = MOBILE_ASIDE_ENTRIES.find((item) => matches(item.match));
+    if (entry) {
+      return (
+        <MobileAsideSection title={entry.title}>
+          <ModuleSubnav items={entry.items} navAriaLabel={entry.ariaLabel} onItemClick={handleCloseMobileNav} />
         </MobileAsideSection>
       );
     }
@@ -468,26 +710,34 @@ export const NavRail = () => {
   }, [currentPathname]);
 
   const mobileBottomNavItems: MobileNavItem[] = [
-    { key: "tenant", icon: RailFaviconIcon, ariaLabel: "Переключить тенант", onClick: () => setIsTenantOpen(true) },
-    { key: "tasks", icon: SquareCheckBig, ariaLabel: "Задачи", onClick: () => router.push("/tasks") },
-    { key: "search", icon: Search, ariaLabel: "Открыть поиск", onClick: handleOpenSearch },
-    { key: "profile", icon: User, ariaLabel: "Профиль", onClick: () => router.push("/team/users/1") },
-    { key: "menu", icon: Menu, ariaLabel: "Открыть меню", onClick: handleBurgerClick },
+    { key: "tenant", icon: RailFaviconIcon, ariaLabel: "Switch tenant", onClick: () => setIsTenantOpen(true) },
+    { key: "tasks", icon: SquareCheckBig, ariaLabel: "Tasks", onClick: () => router.push("/tracker/tasks") },
+    { key: "search", icon: Search, ariaLabel: "Open search", onClick: handleOpenSearch },
+    { key: "profile", icon: User, ariaLabel: "Profile", onClick: () => router.push("/team/users/1") },
+    { key: "menu", icon: Menu, ariaLabel: "Open menu", onClick: handleBurgerClick },
   ];
 
   return (
     <>
       <LeftDockShell
         className="hidden bg-corportal-rail left-0 z-40 w-12 items-center overflow-y-auto py-0 no-scrollbar sm:flex"
-        ariaLabel="Основная навигация"
+        ariaLabel="Main navigation"
       >
+        <div data-rail-expand className="w-full justify-center px-1 pt-3">
+          <RailIconButton
+            label="Expand menu"
+            icon={ChevronsRight}
+            onClick={() => setCollapsed(false)}
+          />
+        </div>
+
         <div className="flex w-full justify-center px-3 py-3">
           <TenantSwitcher />
         </div>
 
         <div className="flex w-full flex-col items-center gap-3 px-1 pb-2">
           <RailIconButton
-            label="Поиск"
+            label="Search"
             icon={Search}
             onClick={handleOpenSearch}
             active={isSearchOpen}
@@ -496,40 +746,47 @@ export const NavRail = () => {
 
         <div className="no-scrollbar flex w-full flex-1 flex-col items-center gap-2 overflow-y-auto px-1 pt-1">
           {RAIL_PRIMARY_ITEMS.map((item) => (
-            <RailIconButton
+            <RailNavItem
               key={item.label}
-              label={item.label}
-              icon={item.icon}
-              href={item.href}
+              item={item}
               active={getPrimaryItemActive(item, currentPathname)}
+              flyoutEnabled={collapsed && hasRailFlyout(item.match)}
+              onOpen={openFlyout}
+              onScheduleClose={scheduleCloseFlyout}
             />
           ))}
         </div>
 
         <div className="flex w-full flex-col items-center gap-2 px-1 py-2">
           {RAIL_FOOTER_ITEMS.map((item) => (
-            <RailIconButton
+            <RailNavItem
               key={item.label}
-              label={item.label}
-              icon={item.icon}
-              href={item.href}
+              item={item}
               active={getFooterItemActive(item, currentPathname)}
+              flyoutEnabled={collapsed && hasRailFlyout(item.match)}
+              onOpen={openFlyout}
+              onScheduleClose={scheduleCloseFlyout}
             />
           ))}
         </div>
 
         <div className="flex w-full justify-center px-2 py-2">
-          <Link
-            href="/team/users/1"
-            className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-[color:var(--corportal-rail-hover)] text-[color:var(--corportal-rail-foreground)] transition-colors hover:bg-[color:var(--corportal-rail-active)] focus-visible:outline focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]"
-            aria-label="Профиль"
-          >
-            <User aria-hidden className="size-4" strokeWidth={2} />
-          </Link>
+          <UserMenu />
         </div>
       </LeftDockShell>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-corportal-rail-gradient-from m-2 p-1 rounded-xl sm:hidden" aria-label="Нижняя навигация">
+      {flyout ? (
+        <RailFlyout
+          item={flyout.item}
+          style={flyout.style}
+          onCancelClose={clearCloseTimer}
+          onScheduleClose={scheduleCloseFlyout}
+          onNavigate={closeFlyout}
+          onClose={closeFlyout}
+        />
+      ) : null}
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-corportal-rail-gradient-from m-2 p-1 rounded-xl sm:hidden" aria-label="Bottom navigation">
         <TenantSwitcher open={isTenantOpen} onOpenChange={setIsTenantOpen} />
         <div className="grid grid-cols-5 gap-0">
           {mobileBottomNavItems.map((item) => (

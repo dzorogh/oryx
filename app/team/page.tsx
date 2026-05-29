@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 const TeamPage = () => {
-  redirect("/team/users");
+  redirect("/team/structure");
 };
 
 export default TeamPage;

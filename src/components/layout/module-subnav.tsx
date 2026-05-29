@@ -14,14 +14,15 @@ type ModuleSubnavProps = {
   items: ModuleSubnavItem[];
   navAriaLabel: string;
   onItemClick?: () => void;
+  className?: string;
 };
 
-export const ModuleSubnav = ({ items, navAriaLabel, onItemClick }: ModuleSubnavProps) => {
+export const ModuleSubnav = ({ items, navAriaLabel, onItemClick, className }: ModuleSubnavProps) => {
   const pathname = usePathname();
   const current = pathname ?? "";
 
   return (
-    <nav aria-label={navAriaLabel} className="min-h-0 flex-1 overflow-y-auto">
+    <nav aria-label={navAriaLabel} className={cn("min-h-0 flex-1 overflow-y-auto", className)}>
       <ul className="flex flex-col gap-0.5">
         {items.map((item) => {
           const active = current === item.href || current.startsWith(`${item.href}/`);

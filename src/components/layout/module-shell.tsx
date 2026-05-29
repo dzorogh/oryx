@@ -29,7 +29,10 @@ export const ModuleShell = ({
     <ModuleAsideFrame title={moduleTitle} ariaLabel={asideLabel}>
       {asideContent ?? <ModuleSubnav items={subnavItems} navAriaLabel={subnavAriaLabel} />}
     </ModuleAsideFrame>
-    <div className={cn("flex min-h-screen min-w-0 flex-col", MODULE_MAIN_OFFSET_CLASS, mainClassName)}>
+    <div
+      data-module-main
+      className={cn("flex min-h-screen min-w-0 flex-col transition-[padding] duration-200", MODULE_MAIN_OFFSET_CLASS, mainClassName)}
+    >
       <main className="min-h-0 min-w-0 flex-1">{children}</main>
     </div>
   </div>

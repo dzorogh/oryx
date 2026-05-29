@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { PimAside } from "@/components/pim/pim-aside";
-import { PimMainColumn } from "@/components/pim/pim-main-column";
+import { PimAside } from "@/components/store/pim/pim-aside";
+import { PimMainColumn } from "@/components/store/pim/pim-main-column";
 
 type PimLayoutProps = {
   children: ReactNode;

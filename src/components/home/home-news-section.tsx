@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock3, ThumbsUp } from "lucide-react";
+import { ThumbsUp } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 import { NEWS_ITEMS, type NewsItem, type NewsRubric } from "./news-demo-data";
 import { HomeFilterChip } from "./home-filter-chip";
 
@@ -18,6 +19,37 @@ const RUBRIC_TABS: RubricTab[] = [
   { id: "hr", label: "HR" },
   { id: "logistics", label: "Логистика" },
 ];
+
+type HomeNewsFiltersProps = {
+  activeRubric: NewsRubric;
+  onRubricChange: (rubric: NewsRubric) => void;
+  className?: string;
+};
+
+export const HomeNewsFilters = ({ activeRubric, onRubricChange, className }: HomeNewsFiltersProps) => (
+  <div className={cn("flex flex-wrap items-center gap-1", className)}>
+    {RUBRIC_TABS.map((tab) => {
+      const active = activeRubric === tab.id;
+      return (
+        <HomeFilterChip
+          key={tab.id}
+          onClick={() => onRubricChange(tab.id)}
+          active={active}
+          ariaLabel={`Показать рубрику ${tab.label}`}
+        >
+          {tab.label}
+        </HomeFilterChip>
+      );
+    })}
+  </div>
+);
+
+type HomeNewsSectionProps = {
+  activeRubric?: NewsRubric;
+  onRubricChange?: (rubric: NewsRubric) => void;
+  /** Скрыть фильтры внутри секции (если они вынесены в шапку блока). */
+  hideFilters?: boolean;
+};
 
 const HOME_NEWS_LIMIT = 5;
 
@@ -51,8 +83,20 @@ const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
   </article>
 );
 
-export const HomeNewsSection = () => {
-  const [activeRubric, setActiveRubric] = useState<NewsRubric>("all");
+export const HomeNewsSection = ({
+  activeRubric: activeRubricProp,
+  onRubricChange,
+  hideFilters = false,
+}: HomeNewsSectionProps = {}) => {
+  const [internalRubric, setInternalRubric] = useState<NewsRubric>("all");
+  const activeRubric = activeRubricProp ?? internalRubric;
+
+  const handleRubricChange = (rubric: NewsRubric) => {
+    onRubricChange?.(rubric);
+    if (activeRubricProp === undefined) {
+      setInternalRubric(rubric);
+    }
+  };
 
   const filteredNewsItems = useMemo(() => {
     if (activeRubric === "all") {
@@ -66,21 +110,9 @@ export const HomeNewsSection = () => {
 
   return (
     <div className="flex flex-col gap-3" data-node-id="40007711:21918">
-      <div className="flex flex-wrap items-center gap-1">
-        {RUBRIC_TABS.map((tab) => {
-          const active = activeRubric === tab.id;
-          return (
-            <HomeFilterChip
-              key={tab.id}
-              onClick={() => setActiveRubric(tab.id)}
-              active={active}
-              ariaLabel={`Показать рубрику ${tab.label}`}
-            >
-              {tab.label}
-            </HomeFilterChip>
-          );
-        })}
-      </div>
+      {hideFilters ? null : (
+        <HomeNewsFilters activeRubric={activeRubric} onRubricChange={handleRubricChange} />
+      )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         {displayNewsItems.map((item, index) => (

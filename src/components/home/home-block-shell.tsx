@@ -31,6 +31,8 @@ type HomeBlockShellProps = {
   onToggleCollapsed: () => void;
   /** Плоский массив функций `render` для кнопок в шапке. */
   actions?: HomeBlockHeaderAction[];
+  /** Контент справа от заголовка (например, фильтры на десктопе). */
+  headerExtra?: ReactNode;
   children: ReactNode;
 };
 
@@ -42,6 +44,7 @@ export const HomeBlockShell = ({
   onHide,
   onToggleCollapsed,
   actions,
+  headerExtra,
   children,
 }: HomeBlockShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -57,9 +60,12 @@ export const HomeBlockShell = ({
     <Card className="overflow-visible">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-0 group-data-[size=sm]/card:px-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <h2 className="min-w-0 truncate whitespace-nowrap text-sm font-bold leading-tight tracking-tight text-foreground sm:text-base">
+          <h2 className="shrink-0 whitespace-nowrap text-sm font-bold leading-tight tracking-tight text-foreground sm:text-base">
             {title}
           </h2>
+          {headerExtra ? (
+            <div className="hidden min-w-0 flex-1 items-center gap-1 md:flex">{headerExtra}</div>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>

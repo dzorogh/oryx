@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Cake, Crown, FileBarChart2, HandHeart, Lightbulb, ListTodo, Medal, Newspaper, type LucideIcon } from "lucide-react";
 import { HomeBlockShell, type HomeBlockAccent, type HomeBlockHeaderAction } from "@/components/home/home-block-shell";
 import { HomeIdeasSection } from "@/components/home/home-ideas-section";
-import { HomeNewsSection } from "@/components/home/home-news-section";
-import { HomeSalesLeadersSection } from "@/components/home/home-sales-leaders-section";
+import { HomeNewsBlock } from "@/components/home/home-news-block";
+import { HomeSalesLeadersBlock } from "@/components/home/home-sales-leaders-block";
 import { HomeStatsSection } from "@/components/home/home-stats-section";
 import { HomeThanksSection } from "@/components/home/home-thanks-section";
 import { HomeBirthdaysSection } from "@/components/home/home-birthdays-section";
@@ -143,7 +143,7 @@ const HomePage = () => {
         id: "salesLeaders",
         title: "Рейтинг",
         icon: Medal,
-        render: () => <HomeSalesLeadersSection />,
+        render: () => null,
       },
       {
         id: "news",
@@ -151,12 +151,12 @@ const HomePage = () => {
         icon: Newspaper,
         actions: [
           (props) => (
-            <Link {...props} href="/pulse/news" aria-label="Перейти ко всем новостям">
+            <Link {...props} href="/feed/news" aria-label="Перейти ко всем новостям">
               Все новости
             </Link>
           ),
         ],
-        render: () => <HomeNewsSection />,
+        render: () => null,
       },
       {
         id: "thanks",
@@ -190,7 +190,7 @@ const HomePage = () => {
         icon: ListTodo,
         actions: [
           (props) => (
-            <Link {...props} href="/tasks" aria-label="Перейти ко всем задачам">
+            <Link {...props} href="/tracker/tasks" aria-label="Перейти ко всем задачам">
               Все задачи
             </Link>
           ),
@@ -203,7 +203,7 @@ const HomePage = () => {
         icon: Lightbulb,
         actions: [
           (props) => (
-            <Link {...props} href="/pulse/ideas" aria-label="Перейти ко всем идеям">
+            <Link {...props} href="/feed/ideas" aria-label="Перейти ко всем идеям">
               Все идеи
             </Link>
           ),
@@ -267,17 +267,26 @@ const HomePage = () => {
 
   const renderBlockCard = (blockId: HomeBlockId) => {
     const block = blockById[blockId];
+    const shellProps = {
+      title: block.title,
+      icon: block.icon,
+      accent: ACCENT_BY_BLOCK[block.id],
+      actions: block.actions,
+      collapsed: layout.collapsed[block.id],
+      onHide: () => handleHide(block.id),
+      onToggleCollapsed: () => handleToggleCollapsed(block.id),
+    };
+
+    if (blockId === "news") {
+      return <HomeNewsBlock key={block.id} {...shellProps} />;
+    }
+
+    if (blockId === "salesLeaders") {
+      return <HomeSalesLeadersBlock key={block.id} {...shellProps} />;
+    }
+
     return (
-      <HomeBlockShell
-        key={block.id}
-        title={block.title}
-        icon={block.icon}
-        accent={ACCENT_BY_BLOCK[block.id]}
-        actions={block.actions}
-        collapsed={layout.collapsed[block.id]}
-        onHide={() => handleHide(block.id)}
-        onToggleCollapsed={() => handleToggleCollapsed(block.id)}
-      >
+      <HomeBlockShell key={block.id} {...shellProps}>
         {block.render()}
       </HomeBlockShell>
     );

@@ -203,3 +203,26 @@
     display: none;
   }
 }
+
+/*
+ * Сворачиваемая боковая панель модуля.
+ * Состояние выставляется на <html data-sidebar-collapsed> инлайн-скриптом до первой
+ * отрисовки (app/layout.tsx), поэтому панель сразу рендерится в сохранённом виде — без мигания.
+ */
+[data-rail-expand] {
+  display: none;
+}
+
+[data-sidebar-collapsed="true"] [data-module-aside] {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  html[data-sidebar-collapsed="true"]:has([data-module-aside]) [data-rail-expand] {
+    display: flex;
+  }
+
+  html[data-sidebar-collapsed="true"] [data-module-main] {
+    padding-left: 3rem;
+  }
+}

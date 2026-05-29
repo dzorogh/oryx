@@ -5,7 +5,7 @@ import Image from "next/image";
 import { BIRTHDAY_PEOPLE, type BirthdayPerson } from "./birthdays-demo-data";
 import { cn } from "@/lib/utils";
 
-const HOME_BIRTHDAYS_LIMIT = 8;
+const HOME_BIRTHDAYS_LIMIT = 6;
 
 const startOfDay = (d: Date) => {
   const x = new Date(d);
@@ -45,12 +45,12 @@ const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
   return (
     <article
       className={cn(
-        "flex min-h-0 min-w-0 items-center gap-2 rounded-lg border p-2",
+        "flex min-h-0 min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5",
       )}
       aria-label={`День рождения: ${person.fullName}`}
     >
       <div
-        className="flex w-14 shrink-0 flex-col items-center rounded-md bg-muted/30 px-1 py-1 text-center"
+        className="flex w-14 shrink-0 flex-col items-center rounded-md bg-muted/30 px-1 py-0.5 text-center"
         aria-label={`Дата дня рождения: ${dateLabelFormatter.format(occurrence)}`}
       >
         <span className="text-xl font-bold leading-none text-foreground">{dateDayFormatter.format(occurrence)}</span>
@@ -90,7 +90,7 @@ export const HomeBirthdaysSection = () => {
   }, [now]);
 
   return (
-    <div className="grid grid-cols-1 gap-2">
+    <div className="grid grid-cols-1 gap-1.5">
       {rows.map(({ person, occurrence }) => (
         <BirthdayCard key={person.id} person={person} occurrence={occurrence} />
       ))}

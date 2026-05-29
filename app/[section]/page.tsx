@@ -11,10 +11,6 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
     title: "Активность",
     description: "Раздел активностей готов к подключению данных и виджетов.",
   },
-  approvals: {
-    title: "Согласования",
-    description: "Здесь будут отображаться карточки согласований и их статусы.",
-  },
   catalog: {
     title: "Каталог",
     description: "Раздел каталога подготовлен для интеграции с контентом.",
@@ -22,10 +18,6 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
   help: {
     title: "Справка",
     description: "Здесь будет база знаний, инструкции и контакты поддержки.",
-  },
-  learning: {
-    title: "Обучение",
-    description: "Раздел обучения подготовлен для курсов и учебных материалов.",
   },
   profile: {
     title: "Профиль",

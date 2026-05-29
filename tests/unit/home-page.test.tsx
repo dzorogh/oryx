@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_ORDER_ID, ORDER_PRESETS, getOrderPresetById } from "@/domain/packing/constants";
 import { generatePackingResult } from "@/domain/packing/generate-packing-result";
 import { isPackingPlacementValid } from "@/domain/packing/result-validation";
-import { OrderPackingAppChrome } from "@/components/pim/order-packing-app-chrome";
+import { OrderPackingAppChrome } from "@/components/store/pim/order-packing-app-chrome";
 import { OrderPackingDynamicContent } from "@/features/packing-visualization/components/order-view-section";
 
 // MultiContainerScene требует WebGL; в jsdom — заглушка.
