@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { ProductAttributeGroup, ProductAttributeRow } from "./product-detail-demo-data";
 
@@ -11,7 +17,7 @@ type VariantAttributesProps = {
   logistics: ProductAttributeRow[];
 };
 
-type DetailTab = "attributes" | "logistics";
+type DetailSection = "attributes" | "logistics";
 
 const AttributeCell = ({ row }: { row: ProductAttributeRow }) => (
   <div className="space-y-0.5 rounded-lg border border-[var(--corportal-border-grey)] bg-muted/10 px-3 py-2">
@@ -22,8 +28,33 @@ const AttributeCell = ({ row }: { row: ProductAttributeRow }) => (
 
 const ATTRIBUTE_LIST_CLASS = "grid gap-2 grid-cols-[repeat(auto-fill,minmax(150px,1fr))]";
 
+const SectionTab = ({
+  label,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    role="tab"
+    aria-selected={isActive}
+    onClick={onClick}
+    className={cn(
+      "border-b-2 pb-2 text-sm font-medium capitalize transition-colors",
+      isActive
+        ? "border-primary text-foreground"
+        : "border-transparent text-muted-foreground hover:text-foreground",
+    )}
+  >
+    {label}
+  </button>
+);
+
 export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttributesProps) => {
-  const [activeTab, setActiveTab] = useState<DetailTab>("attributes");
+  const [activeSection, setActiveSection] = useState<DetailSection>("attributes");
   const [activeGroupId, setActiveGroupId] = useState(attributeGroups[0]?.id ?? "");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -41,74 +72,73 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
   }, [activeGroup, normalizedQuery]);
 
   const filteredLogistics = useMemo(() => {
-    if (!normalizedQuery || activeTab !== "logistics") {
+    if (!normalizedQuery) {
       return logistics;
     }
     return logistics.filter((row) => row.label.toLowerCase().includes(normalizedQuery));
-  }, [activeTab, logistics, normalizedQuery]);
+  }, [logistics, normalizedQuery]);
 
-  const handleTabChange = (tab: DetailTab) => {
-    setActiveTab(tab);
+  const handleSectionChange = (section: DetailSection) => {
+    setActiveSection(section);
     setSearchQuery("");
   };
 
+  const handleGroupChange = (value: string | null) => {
+    if (!value) {
+      return;
+    }
+    setActiveGroupId(value);
+    setSearchQuery("");
+  };
+
+  const activeGroupLabel = activeGroup?.label ?? "Category";
+
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--corportal-border-grey)] pb-2">
-        {(["attributes", "logistics"] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => handleTabChange(tab)}
-            className={cn(
-              "rounded-md border px-3 py-1.5 text-sm font-medium capitalize transition-colors",
-              activeTab === tab
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-            )}
-            aria-pressed={activeTab === tab}
-          >
-            {tab}
-          </button>
-        ))}
+    <div className="space-y-4">
+      <div
+        role="tablist"
+        aria-label="Specification sections"
+        className="flex gap-6 border-b border-[var(--corportal-border-grey)]"
+      >
+        <SectionTab
+          label="Attributes"
+          isActive={activeSection === "attributes"}
+          onClick={() => handleSectionChange("attributes")}
+        />
+        <SectionTab
+          label="Logistics"
+          isActive={activeSection === "logistics"}
+          onClick={() => handleSectionChange("logistics")}
+        />
       </div>
 
-      {activeTab === "attributes" ? (
-        <div className="flex flex-wrap gap-2">
-          {attributeGroups.map((group) => (
-            <button
-              key={group.id}
-              type="button"
-              onClick={() => {
-                setActiveGroupId(group.id);
-                setSearchQuery("");
-              }}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                activeGroupId === group.id
-                  ? "border-primary bg-primary/5 text-primary"
-                  : "border-[var(--corportal-border-grey)] text-muted-foreground hover:border-primary/40 hover:text-foreground",
-              )}
-              aria-pressed={activeGroupId === group.id}
-            >
-              {group.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-3">
+        {activeSection === "attributes" ? (
+          <Select value={activeGroupId} onValueChange={handleGroupChange}>
+            <SelectTrigger size="sm" className="w-[200px] bg-background" aria-label="Attribute category">
+              <SelectValue>{activeGroupLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {attributeGroups.map((group) => (
+                <SelectItem key={group.id} value={group.id}>
+                  {group.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
 
-      <Input
-        value={searchQuery}
-        onChange={(event) => setSearchQuery(event.target.value)}
-        placeholder="Search"
-        aria-label="Search attributes"
-        className="h-9 max-w-sm"
-      />
-
-      <Separator className="bg-[var(--corportal-border-grey)]" />
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search"
+          aria-label="Search specifications"
+          className="h-8 max-w-xs flex-1"
+        />
+      </div>
 
       <div>
-        {activeTab === "attributes" ? (
+        {activeSection === "attributes" ? (
           filteredRows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No attributes match your search.</p>
           ) : (
