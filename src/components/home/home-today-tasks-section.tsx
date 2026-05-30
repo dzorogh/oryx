@@ -1,11 +1,11 @@
 import { MessageCircle } from "lucide-react";
 import { TODAY_TASKS, type TodayTask } from "./tasks-today-demo-data";
 import { HomeDateMetaText } from "./home-date-meta-text";
-import { HomeFeedCard } from "./home-feed-card";
+import { HomePulseCard } from "./home-pulse-card";
 import { PriorityBadge } from "./priority-badge";
 
 const TaskCard = ({ task }: { task: TodayTask }) => (
-  <HomeFeedCard
+  <HomePulseCard
     ariaLabel={`Задача: ${task.title}`}
     title={task.title}
     meta={<PriorityBadge priority={task.priority} />}

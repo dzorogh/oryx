@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 export type ModuleSubnavItem = {
   href: string;
   label: string;
+  exact?: boolean;
 };
 
 type ModuleSubnavProps = {
@@ -25,7 +26,9 @@ export const ModuleSubnav = ({ items, navAriaLabel, onItemClick, className }: Mo
     <nav aria-label={navAriaLabel} className={cn("min-h-0 flex-1 overflow-y-auto", className)}>
       <ul className="flex flex-col gap-0.5">
         {items.map((item) => {
-          const active = current === item.href || current.startsWith(`${item.href}/`);
+          const active = item.exact
+            ? current === item.href
+            : current === item.href || current.startsWith(`${item.href}/`);
           return (
             <li key={item.href}>
               <Button

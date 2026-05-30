@@ -15,9 +15,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import { NewsArticleCard } from "@/features/feed/news/news-article-card";
-import { NewsFeaturedHero } from "@/features/feed/news/news-featured-hero";
-import { NewsSidebar } from "@/features/feed/news/news-sidebar";
+import { NewsArticleCard } from "@/features/pulse/news/news-article-card";
+import { NewsFeaturedHero } from "@/features/pulse/news/news-featured-hero";
+import { NewsSidebar } from "@/features/pulse/news/news-sidebar";
 
 type RubricTab = {
   id: NewsRubric;

@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description: "Корпоративные опросы и голосования",
 };
 
-const FeedPollsPage = () => (
+const PulsePollsPage = () => (
   <section className="p-5">
     <div className="w-full max-w-4xl rounded-xl border border-[var(--corportal-border-grey)] bg-card p-6">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">Polls</h1>
@@ -16,4 +16,4 @@ const FeedPollsPage = () => (
   </section>
 );
 
-export default FeedPollsPage;
+export default PulsePollsPage;

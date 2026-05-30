@@ -15,11 +15,9 @@ import {
   LogOut,
   Menu,
   Check,
-  Home,
   NotebookPen,
   Search,
   Settings,
-  ShieldCheck,
   Smartphone,
   SquareKanban,
   Store,
@@ -37,7 +35,8 @@ import { ModuleSubnav, type ModuleSubnavItem } from "@/components/layout/module-
 import { RailFaviconIcon } from "@/components/layout/rail-favicon-icon";
 import { StoreAsideContent } from "@/components/store/store-aside-content";
 import { TeamAsideContent } from "@/components/team/team-aside-content";
-import { FEED_SUBNAV_ITEMS } from "@/features/feed/feed-nav";
+import { PULSE_SUBNAV_ITEMS } from "@/features/pulse/pulse-nav";
+import { PulseHomeAsideContent } from "@/features/pulse/pulse-home-aside-content";
 import { TRACKER_SUBNAV_ITEMS } from "@/features/tracker/tracker-nav";
 import { CRM_SUBNAV_ITEMS } from "@/features/crm/crm-nav";
 import { LEARNING_SUBNAV_ITEMS } from "@/features/learning/learning-nav";
@@ -75,9 +74,12 @@ export type RailSectionItem = {
   bgColor: string;
 };
 
+const isPulseRoute = (pathname: string): boolean =>
+  pathname === "/" || pathname.startsWith("/pulse");
+
 const getPrimaryItemActive = (item: RailSectionItem, pathname: string): boolean => {
-  if (item.match === "/") {
-    return pathname === "/";
+  if (item.match === "/pulse") {
+    return isPulseRoute(pathname);
   }
   return pathname.startsWith(item.match);
 };
@@ -86,19 +88,11 @@ const getFooterItemActive = (item: RailSectionItem, pathname: string): boolean =
 
 export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
-    label: "Home",
-    shortLabel: "Home",
-    icon: Home,
-    href: "/",
-    match: "/",
-    bgColor: "bg-sky-300",
-  },
-  {
     label: "Pulse",
     shortLabel: "Pulse",
     icon: HeartPulse,
-    href: "/feed/ideas",
-    match: "/feed",
+    href: "/",
+    match: "/pulse",
     bgColor: "bg-pink-300",
   },
   {
@@ -142,14 +136,6 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
     bgColor: "bg-cyan-300",
   },
   {
-    label: "Approvals",
-    shortLabel: "Approvals",
-    icon: ShieldCheck,
-    href: "/approvals/invoices",
-    match: "/approvals",
-    bgColor: "bg-emerald-300",
-  },
-  {
     label: "Analytics",
     shortLabel: "Analytics",
     icon: BarChart3,
@@ -187,7 +173,7 @@ type MobileAsideEntry = {
 
 /** Реестр подменю для мобильного overlay. Store/Team обрабатываются отдельно (богатый aside). */
 const MOBILE_ASIDE_ENTRIES: MobileAsideEntry[] = [
-  { match: "/feed", title: "Pulse", items: FEED_SUBNAV_ITEMS, ariaLabel: "Pulse sections" },
+  { match: "/pulse", title: "Pulse", items: PULSE_SUBNAV_ITEMS, ariaLabel: "Pulse sections" },
   { match: "/tracker", title: "Tracker", items: TRACKER_SUBNAV_ITEMS, ariaLabel: "Tracker sections" },
   { match: "/crm", title: "CRM", items: CRM_SUBNAV_ITEMS, ariaLabel: "CRM sections" },
   { match: "/learning", title: "Learning", items: LEARNING_SUBNAV_ITEMS, ariaLabel: "Learning sections" },
@@ -196,7 +182,7 @@ const MOBILE_ASIDE_ENTRIES: MobileAsideEntry[] = [
   { match: "/settings", title: "Settings", items: SETTINGS_SUBNAV_ITEMS, ariaLabel: "Settings sections" },
 ];
 
-/** Пункты рейла, у которых есть подменю (Home и Approvals — без aside, всплывашка не нужна). */
+/** Пункты рейла, у которых есть подменю. */
 const RAIL_FLYOUT_MATCHES = new Set<string>([
   "/store",
   "/team",
@@ -218,6 +204,10 @@ const RailFlyoutContent = ({ match, onNavigate }: RailFlyoutContentProps) => {
 
   if (match === "/team") {
     return <TeamAsideContent onItemClick={onNavigate} />;
+  }
+
+  if (match === "/pulse") {
+    return <PulseHomeAsideContent onItemClick={onNavigate} />;
   }
 
   const entry = MOBILE_ASIDE_ENTRIES.find((item) => item.match === match);
@@ -568,7 +558,7 @@ const MobileNavOverlay = ({ pathname, asideContent, onClose }: MobileNavOverlayP
                 <MobileMenuTile
                   key={item.label}
                   item={item}
-                  active={item.match === "/" ? pathname === "/" : pathname.startsWith(item.match)}
+                  active={item.match === "/pulse" ? isPulseRoute(pathname) : pathname.startsWith(item.match)}
                   onNavigate={onClose}
                 />
               ))}
@@ -693,6 +683,14 @@ export const NavRail = () => {
       return (
         <MobileAsideSection title="Team">
           <TeamAsideContent onItemClick={handleCloseMobileNav} />
+        </MobileAsideSection>
+      );
+    }
+
+    if (currentPathname === "/" || matches("/pulse")) {
+      return (
+        <MobileAsideSection title="Pulse">
+          <PulseHomeAsideContent onItemClick={handleCloseMobileNav} />
         </MobileAsideSection>
       );
     }

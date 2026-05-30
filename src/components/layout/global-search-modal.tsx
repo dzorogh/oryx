@@ -13,15 +13,15 @@ type SearchTarget = {
 };
 
 const SEARCH_TARGETS: SearchTarget[] = [
-  { id: "home", title: "Home", description: "Main dashboard", href: "/" },
-  { id: "pulse", title: "Pulse", description: "Company news, ideas and polls", href: "/feed/ideas" },
+  { id: "pulse-home", title: "Pulse Home", description: "Main dashboard", href: "/" },
+  { id: "pulse", title: "Pulse", description: "Company news, ideas and polls", href: "/pulse/ideas" },
   { id: "tracker", title: "Tracker", description: "Tasks, projects and notes", href: "/tracker/tasks" },
   { id: "crm", title: "CRM", description: "Deals, leads and contacts", href: "/crm/deals" },
   { id: "store", title: "Store", description: "Catalog and orders", href: "/store/pim/products" },
   { id: "store-orders", title: "Orders", description: "Store orders", href: "/store/orders" },
   { id: "learning", title: "Learning", description: "Lessons and knowledge base", href: "/learning/lessons" },
   { id: "library", title: "Library", description: "Documents and files", href: "/library/documents" },
-  { id: "approvals", title: "Approvals", description: "Invoice and payment approvals", href: "/approvals/invoices" },
+  { id: "approvals", title: "Approvals", description: "Invoice and payment approvals", href: "/pulse/approvals/invoices" },
   { id: "analytics", title: "Analytics", description: "Stocks, reports and dashboards", href: "/analytics/stocks" },
   { id: "team", title: "Team", description: "Org structure and people", href: "/team/structure" },
   { id: "team-users", title: "Users", description: "Team members", href: "/team/users" },

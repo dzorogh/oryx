@@ -1,15 +1,13 @@
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { PULSE_SUBNAV_ITEMS } from "@/features/pulse/pulse-nav";
-import { PulseHomePage } from "@/features/pulse/pulse-home-page";
 import { PulseHomeAsideContent } from "@/features/pulse/pulse-home-aside-content";
 
-export const metadata: Metadata = {
-  title: "Home | Pulse | Oryx BMS",
-  description: "Главная лента Pulse: новости, рейтинг, задачи и виджеты",
+type PulseLayoutProps = {
+  children: ReactNode;
 };
 
-const HomePage = () => (
+const PulseLayout = ({ children }: PulseLayoutProps) => (
   <ModuleShell
     moduleTitle="Pulse"
     asideLabel="Pulse"
@@ -17,8 +15,8 @@ const HomePage = () => (
     subnavAriaLabel="Pulse sections"
     asideContent={<PulseHomeAsideContent />}
   >
-    <PulseHomePage />
+    {children}
   </ModuleShell>
 );
 
-export default HomePage;
+export default PulseLayout;

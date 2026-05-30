@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: "Лента идей и предложений сотрудников",
 };
 
-const FeedIdeasPage = () => (
+const PulseIdeasPage = () => (
   <section className="p-5">
     <div className="rounded-xl bg-card p-5">
       <header className="flex items-center justify-between gap-3">
@@ -58,4 +58,4 @@ const FeedIdeasPage = () => (
   </section>
 );
 
-export default FeedIdeasPage;
+export default PulseIdeasPage;

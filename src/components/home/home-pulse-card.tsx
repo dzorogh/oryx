@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { HomeInfoCardBase } from "./home-info-card-base";
 
-type HomeFeedCardProps = {
+type HomePulseCardProps = {
   title: ReactNode;
   meta?: ReactNode;
   footer?: ReactNode;
@@ -12,7 +12,7 @@ type HomeFeedCardProps = {
   className?: string;
 };
 
-export const HomeFeedCard = ({
+export const HomePulseCard = ({
   title,
   meta,
   footer,
@@ -20,7 +20,7 @@ export const HomeFeedCard = ({
   children,
   ariaLabel,
   className,
-}: HomeFeedCardProps) => (
+}: HomePulseCardProps) => (
   <HomeInfoCardBase
     className={cn("border-[var(--corportal-border-grey)] bg-card", className)}
     ariaLabel={ariaLabel}

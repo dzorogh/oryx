@@ -37,7 +37,7 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
   const [activeImage, setActiveImage] = useState(galleryImages[0]);
 
   return (
-    <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
+    <Card size="sm" className="!py-0 overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--corportal-border-grey)] px-4 py-3">
         <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold text-foreground">{product.displayName}</h1>

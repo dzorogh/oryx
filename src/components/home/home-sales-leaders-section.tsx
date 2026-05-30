@@ -12,6 +12,9 @@ import {
   type StatsDirection,
 } from "./stats-demo-data";
 
+const SALES_LEADERS_COMPACT_COUNT = 3;
+const SALES_LEADERS_EXPANDED_COUNT = 5;
+
 const formatRubPlain = (value: number) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 
@@ -105,7 +108,7 @@ export const HomeSalesLeadersSection = ({
 }: HomeSalesLeadersSectionProps = {}) => {
   const [internalDirection, setInternalDirection] = useState<StatsDirection>("all");
   const direction = directionProp ?? internalDirection;
-  const leaders = FEBRUARY_SALES_LEADERS.slice(0, 4);
+  const leaders = FEBRUARY_SALES_LEADERS.slice(0, SALES_LEADERS_EXPANDED_COUNT);
 
   const tabIds = useMemo(
     () => STATS_DIRECTION_TABS.map((tab) => `sales-leaders-dir-${tab.id}`),
@@ -137,13 +140,17 @@ export const HomeSalesLeadersSection = ({
         aria-labelledby={activeTabId}
         className="flex min-h-0 flex-col"
       >
-        <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-5">
           {leaders.map((row) => {
             const cardClass = LEADER_ROW_CARD_CLASS[row.rank] ?? "";
             const turnoverLabel = `${formatRubPlain(row.turnoverRub)} ₽`;
+            const isExpandedOnly = row.rank > SALES_LEADERS_COMPACT_COUNT;
 
             return (
-              <li key={row.rank} className="flex min-h-0 flex-col">
+              <li
+                key={row.rank}
+                className={cn("flex min-h-0 flex-col", isExpandedOnly && "hidden 2xl:flex")}
+              >
                 <Link
                   href={row.profileHref}
                   className={cn(
