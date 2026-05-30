@@ -16,10 +16,10 @@ type NewsSidebarProps = {
 const RUBRIC_ORDER: Exclude<NewsRubric, "all">[] = ["it", "company", "hr", "logistics"];
 
 export const NewsSidebar = ({ popularItems, activeRubric, onSelectRubric }: NewsSidebarProps) => (
-  <aside className="flex flex-col gap-6" aria-label="Боковая панель новостей">
+  <aside className="flex flex-col gap-6" aria-label="News sidebar">
     <Card size="sm">
       <CardHeader className="border-b border-border pb-3">
-        <CardTitle className="text-sm font-semibold">Популярное</CardTitle>
+        <CardTitle className="text-sm font-semibold">Popular</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-0 px-0 pt-2 pb-3">
         <ol className="flex flex-col">
@@ -49,7 +49,7 @@ export const NewsSidebar = ({ popularItems, activeRubric, onSelectRubric }: News
 
     <Card size="sm">
       <CardHeader className="border-b border-border pb-3">
-        <CardTitle className="text-sm font-semibold">Рубрики</CardTitle>
+        <CardTitle className="text-sm font-semibold">Categories</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-1.5 pt-3">
         {RUBRIC_ORDER.map((id) => {
@@ -63,7 +63,7 @@ export const NewsSidebar = ({ popularItems, activeRubric, onSelectRubric }: News
               className="h-8 w-full justify-start font-normal"
               onClick={() => onSelectRubric(id)}
               aria-pressed={active}
-              aria-label={`Показать рубрику ${NEWS_RUBRIC_LABELS[id]}`}
+              aria-label={`Show category ${NEWS_RUBRIC_LABELS[id]}`}
             >
               {NEWS_RUBRIC_LABELS[id]}
             </Button>

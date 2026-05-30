@@ -4,7 +4,7 @@ import {
   type RetailStatus,
   type StoreCatalogItem,
 } from "../store-catalog-demo-data";
-import { getDisplayProductName } from "../catalog/catalog-helpers";
+import { getDisplayProductName } from "../catalog/catalog-display";
 import { buildProductDescriptions } from "./product-detail-descriptions";
 
 export type ProductAttributeRow = {
@@ -267,3 +267,42 @@ export const getProductDetail = (productId: string): ProductDetail | null =>
   PRODUCT_DETAIL_MAP.get(productId) ?? null;
 
 export const getProductDetailHref = (productId: string): string => `/store/pim/products/${productId}`;
+
+const VARIANT_CATALOG_ITEM_ID_PATTERN = /-v\d+$/;
+
+export const getParentProductIdFromVariantCatalogId = (variantCatalogItemId: string): string =>
+  variantCatalogItemId.replace(VARIANT_CATALOG_ITEM_ID_PATTERN, "");
+
+let variantCatalogItemsCache: StoreCatalogItem[] | null = null;
+
+/** Flattened variant rows for the variants catalog listing (demo). */
+export const getVariantCatalogItems = (): StoreCatalogItem[] => {
+  if (variantCatalogItemsCache) {
+    return variantCatalogItemsCache;
+  }
+
+  variantCatalogItemsCache = STORE_CATALOG_ITEMS.flatMap((product, productIndex) =>
+    buildVariants(product).map((variant, variantIndex) => ({
+      id: variant.id,
+      name: variant.isDefault ? product.name : `Oryx ${variant.name}`,
+      sku: variant.sku ?? "",
+      imageSrc: variant.imageSrc,
+      imageAlt: variant.imageAlt,
+      categoryId: product.categoryId,
+      category: product.category,
+      family: product.family,
+      dealerPrice: variant.dealerPrice,
+      retailPrice: variant.retailPrice,
+      dealerStatus: variant.dealerStatus,
+      retailStatus: variant.retailStatus,
+      productionSite: variant.productionSite,
+      brand: product.brand,
+      stock: Math.max(0, Math.round(variant.stock)),
+      updatedAt: new Date(
+        Date.UTC(2026, 0, 12 - ((productIndex + variantIndex) % 40), 10 + (variantIndex % 8), 0, 0),
+      ).toISOString(),
+    })),
+  );
+
+  return variantCatalogItemsCache;
+};

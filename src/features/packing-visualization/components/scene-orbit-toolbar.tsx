@@ -42,7 +42,7 @@ export const SceneOrbitToolbar = ({ controlsRef }: SceneOrbitToolbarProps) => {
           variant="secondary"
           size="icon"
           className="size-9"
-          aria-label="Приблизить"
+          aria-label="Zoom in"
           onClick={handleZoomIn}
         >
           <ZoomIn className="size-4" aria-hidden />
@@ -52,7 +52,7 @@ export const SceneOrbitToolbar = ({ controlsRef }: SceneOrbitToolbarProps) => {
           variant="secondary"
           size="icon"
           className="size-9"
-          aria-label="Отдалить"
+          aria-label="Zoom out"
           onClick={handleZoomOut}
         >
           <ZoomOut className="size-4" aria-hidden />
@@ -62,7 +62,7 @@ export const SceneOrbitToolbar = ({ controlsRef }: SceneOrbitToolbarProps) => {
           variant="secondary"
           size="icon"
           className="size-9"
-          aria-label="Сбросить вид и масштаб"
+          aria-label="Reset view and zoom"
           onClick={handleReset}
         >
           <RotateCcw className="size-4" aria-hidden />

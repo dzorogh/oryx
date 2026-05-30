@@ -20,7 +20,7 @@ type NewsArticleCardProps = {
 
 export const NewsArticleCard = ({ item, imagePriority }: NewsArticleCardProps) => {
   const rubricLabel = NEWS_RUBRIC_LABELS[item.rubric];
-  const imageAlt = `Иллюстрация к новости: ${item.title}`;
+  const imageAlt = `News illustration: ${item.title}`;
 
   return (
     <Card
@@ -65,9 +65,9 @@ export const NewsArticleCard = ({ item, imagePriority }: NewsArticleCardProps) =
           className="h-7 text-xs"
           disabled
           aria-disabled="true"
-          aria-label={`Открыть новость «${item.title}» — скоро`}
+          aria-label={`Open article “${item.title}” — coming soon`}
         >
-          Подробнее
+          Read more
         </Button>
       </CardFooter>
     </Card>

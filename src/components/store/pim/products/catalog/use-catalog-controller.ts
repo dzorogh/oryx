@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { itemMatchesCategoryFilter } from "@/features/store/category-tree";
-import { STORE_CATALOG_ITEMS, type StoreCatalogItem } from "../store-catalog-demo-data";
+import type { StoreCatalogItem } from "../store-catalog-demo-data";
+import {
+  DEFAULT_VISIBLE_COLUMNS,
+  type CatalogColumnId,
+  getCatalogColumnDefinition,
+  getOrderedVisibleColumns,
+  isDefaultColumnSet,
+  parseStoredColumns,
+  serializeVisibleColumns,
+} from "./catalog-columns";
 import {
   ALL_VALUE,
   PAGE_SIZE,
@@ -8,7 +17,9 @@ import {
   buildPaginationItems,
   extractSortedOptions,
   getSelectValue,
+  getCatalogSourceItems,
   matchesSearchQuery,
+  type CatalogListingMode,
   type CatalogViewMode,
   type QuickFilterOption,
 } from "./catalog-helpers";
@@ -35,12 +46,23 @@ export type CatalogFilters = {
   onReset: () => void;
 };
 
+export type CatalogColumns = {
+  visibleIds: CatalogColumnId[];
+  isVisible: (columnId: CatalogColumnId) => boolean;
+  toggle: (columnId: CatalogColumnId) => void;
+  hasCustom: boolean;
+  onReset: () => void;
+};
+
 export type CatalogController = {
   viewMode: CatalogViewMode;
   onViewModeChange: (mode: CatalogViewMode) => void;
   isFilterSheetOpen: boolean;
   setFilterSheetOpen: (open: boolean) => void;
+  isColumnSheetOpen: boolean;
+  setColumnSheetOpen: (open: boolean) => void;
   filters: CatalogFilters;
+  columns: CatalogColumns;
   filteredItems: StoreCatalogItem[];
   paginatedItems: StoreCatalogItem[];
   isLoading: boolean;
@@ -56,9 +78,17 @@ const SERVER_RESPONSE_DELAY_MS = 200;
 const toFilterOptions = (values: string[]): QuickFilterOption[] =>
   values.map((value) => ({ value, label: value }));
 
-export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STORAGE_KEY): CatalogController => {
+export const useCatalogController = (
+  listingMode: CatalogListingMode,
+  viewModeStorageKey = CATALOG_VIEW_MODE_STORAGE_KEY,
+  columnsStorageKey?: string,
+): CatalogController => {
+  const sourceItems = useMemo(() => getCatalogSourceItems(listingMode), [listingMode]);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
   const [viewMode, setViewMode] = useState<CatalogViewMode>("table");
+  const [visibleColumnIds, setVisibleColumnIds] = useState<CatalogColumnId[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [columnsHydratedKey, setColumnsHydratedKey] = useState<string | null>(null);
   const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,21 +99,24 @@ export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STOR
   const [familyFilter, setFamilyFilter] = useState(ALL_VALUE);
 
   const dealerStatusOptions = useMemo(
-    () => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "dealerStatus")),
-    [],
+    () => toFilterOptions(extractSortedOptions(sourceItems, "dealerStatus")),
+    [sourceItems],
   );
   const retailStatusOptions = useMemo(
-    () => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "retailStatus")),
-    [],
+    () => toFilterOptions(extractSortedOptions(sourceItems, "retailStatus")),
+    [sourceItems],
   );
-  const siteOptions = useMemo(() => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "productionSite")), []);
-  const familyOptions = useMemo(() => toFilterOptions(extractSortedOptions(STORE_CATALOG_ITEMS, "family")), []);
+  const siteOptions = useMemo(
+    () => toFilterOptions(extractSortedOptions(sourceItems, "productionSite")),
+    [sourceItems],
+  );
+  const familyOptions = useMemo(() => toFilterOptions(extractSortedOptions(sourceItems, "family")), [sourceItems]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
   const filteredItems = useMemo(
     () =>
-      STORE_CATALOG_ITEMS.filter((item) => {
+      sourceItems.filter((item) => {
         if (!matchesSearchQuery(item, normalizedQuery)) {
           return false;
         }
@@ -104,7 +137,7 @@ export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STOR
         }
         return true;
       }),
-    [categoryFilter, dealerStatusFilter, familyFilter, normalizedQuery, retailStatusFilter, siteFilter],
+    [categoryFilter, dealerStatusFilter, familyFilter, normalizedQuery, retailStatusFilter, siteFilter, sourceItems],
   );
 
   const hasActiveFilters =
@@ -122,6 +155,7 @@ export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STOR
 
   // Ключ «запроса»: меняется при смене фильтров, поиска или страницы — как обращение к серверу.
   const requestKey = [
+    listingMode,
     normalizedQuery,
     categoryFilter,
     dealerStatusFilter,
@@ -161,8 +195,30 @@ export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STOR
     resetToFirstPage();
   };
 
+  const handleResetColumns = () => {
+    setVisibleColumnIds(DEFAULT_VISIBLE_COLUMNS);
+  };
+
+  const handleToggleColumn = (columnId: CatalogColumnId) => {
+    const columnDefinition = getCatalogColumnDefinition(columnId);
+    if (!columnDefinition || columnDefinition.locked) {
+      return;
+    }
+
+    setVisibleColumnIds((currentIds) => {
+      if (currentIds.includes(columnId)) {
+        return getOrderedVisibleColumns(currentIds.filter((id) => id !== columnId));
+      }
+
+      return getOrderedVisibleColumns([...currentIds, columnId]);
+    });
+  };
+
   const handleViewModeChange = (nextValue: CatalogViewMode) => {
     setViewMode(nextValue);
+    if (nextValue === "cards") {
+      setColumnSheetOpen(false);
+    }
     const storage = window.localStorage;
     if (!storage || typeof storage.setItem !== "function") {
       return;
@@ -189,6 +245,38 @@ export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STOR
     return () => window.clearTimeout(timer);
   }, [viewModeStorageKey]);
 
+  useEffect(() => {
+    if (!columnsStorageKey) {
+      return;
+    }
+
+    const storage = window.localStorage;
+    if (!storage || typeof storage.getItem !== "function") {
+      return;
+    }
+
+    const storedColumns = parseStoredColumns(storage.getItem(columnsStorageKey));
+    const timer = window.setTimeout(() => {
+      setVisibleColumnIds(storedColumns ?? DEFAULT_VISIBLE_COLUMNS);
+      setColumnsHydratedKey(columnsStorageKey);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [columnsStorageKey]);
+
+  useEffect(() => {
+    if (!columnsStorageKey || columnsHydratedKey !== columnsStorageKey) {
+      return;
+    }
+
+    const storage = window.localStorage;
+    if (!storage || typeof storage.setItem !== "function") {
+      return;
+    }
+
+    storage.setItem(columnsStorageKey, serializeVisibleColumns(visibleColumnIds));
+  }, [columnsHydratedKey, columnsStorageKey, visibleColumnIds]);
+
   const filters: CatalogFilters = {
     search: { value: searchQuery, onChange: handleSearchChange },
     category: { value: categoryFilter, onChange: makeFilterHandler(setCategoryFilter) },
@@ -208,12 +296,25 @@ export const useCatalogController = (viewModeStorageKey = CATALOG_VIEW_MODE_STOR
     onReset: handleResetFilters,
   };
 
+  const orderedVisibleColumnIds = useMemo(() => getOrderedVisibleColumns(visibleColumnIds), [visibleColumnIds]);
+
+  const columns: CatalogColumns = {
+    visibleIds: orderedVisibleColumnIds,
+    isVisible: (columnId) => orderedVisibleColumnIds.includes(columnId),
+    toggle: handleToggleColumn,
+    hasCustom: !isDefaultColumnSet(orderedVisibleColumnIds),
+    onReset: handleResetColumns,
+  };
+
   return {
     viewMode,
     onViewModeChange: handleViewModeChange,
     isFilterSheetOpen,
     setFilterSheetOpen,
+    isColumnSheetOpen,
+    setColumnSheetOpen,
     filters,
+    columns,
     filteredItems,
     paginatedItems,
     isLoading,

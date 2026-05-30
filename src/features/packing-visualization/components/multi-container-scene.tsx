@@ -118,7 +118,7 @@ export const MultiContainerScene = ({
     <div
       ref={wrapperRef}
       className="relative h-[min(680px,70vh)] w-full overflow-hidden rounded-xl border"
-      aria-label="3D сцена всех контейнеров"
+      aria-label="3D scene of all containers"
       onPointerLeave={() => setTooltip(null)}
     >
       {tooltip ? (
@@ -126,13 +126,13 @@ export const MultiContainerScene = ({
           className="pointer-events-none absolute z-50 rounded-md border border-slate-400 bg-slate-950/90 px-2 py-1 text-xs text-slate-100 shadow-lg"
           style={{ left: tooltip.x + 10, top: tooltip.y + 10 }}
           role="tooltip"
-          aria-label="Подсказка о товаре"
+          aria-label="Product tooltip"
         >
           <div className="font-medium">{tooltip.payload.itemTypeName}</div>
           <div className="text-slate-300">
-            <div>Ширина (width): {Math.round(tooltip.payload.width)} мм</div>
-            <div>Высота (height): {Math.round(tooltip.payload.height)} мм</div>
-            <div>Длина (length): {Math.round(tooltip.payload.length)} мм</div>
+            <div>Width: {Math.round(tooltip.payload.width)} mm</div>
+            <div>Height: {Math.round(tooltip.payload.height)} mm</div>
+            <div>Length: {Math.round(tooltip.payload.length)} mm</div>
           </div>
         </div>
       ) : null}
@@ -157,14 +157,14 @@ export const MultiContainerScene = ({
             const containerVolume = containerSize.width * containerSize.height * containerSize.length;
             const filledVolume = container.placements.reduce((sum, p) => sum + (p.size.width * p.size.height * p.size.length), 0);
             const percentFilled = (filledVolume / containerVolume) * 100;
-            const dimStr = `${Math.round(containerSize.width)} × ${Math.round(containerSize.length)} × ${Math.round(containerSize.height)} мм`;
-            const textContent = `Контейнер ${container.containerIndex + 1}\nРазмеры: ${dimStr}\nЗаполненность: ${percentFilled.toFixed(1)}%`;
+            const dimStr = `${Math.round(containerSize.width)} × ${Math.round(containerSize.length)} × ${Math.round(containerSize.height)} mm`;
+            const textContent = `Container ${container.containerIndex + 1}\nDimensions: ${dimStr}\nFill: ${percentFilled.toFixed(1)}%`;
 
             return (
               <group
                 key={container.containerIndex}
                 position={[0, 0, offsetZ]}
-                aria-label={`Контейнер ${container.containerIndex + 1}`}
+                aria-label={`Container ${container.containerIndex + 1}`}
               >
                 {/* Container wireframe */}
                 <mesh

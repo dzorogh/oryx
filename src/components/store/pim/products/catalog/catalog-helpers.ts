@@ -1,41 +1,62 @@
-import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
+import {
+  getParentProductIdFromVariantCatalogId,
+  getProductDetailHref,
+  getVariantCatalogItems,
+} from "../detail/product-detail-demo-data";
+import { STORE_CATALOG_ITEMS, type DealerStatus, RetailStatus, type StoreCatalogItem } from "../store-catalog-demo-data";
+import { getDisplayProductName } from "./catalog-display";
+import {
+  CATALOG_COLUMNS_STORAGE_KEY,
+  VARIANTS_CATALOG_COLUMNS_STORAGE_KEY,
+} from "./catalog-columns";
 
 export const ALL_VALUE = "all";
 export const PAGE_SIZE = 48;
 export const CATALOG_VIEW_MODE_STORAGE_KEY = "store-catalog-view-mode";
 export const VARIANTS_CATALOG_VIEW_MODE_STORAGE_KEY = "store-variants-catalog-view-mode";
+export const CATALOG_LISTING_MODE_STORAGE_KEY = "store-catalog-listing-mode";
+export const CATALOG_LISTING_QUERY_PARAM = "listing";
+export { CATALOG_COLUMNS_STORAGE_KEY, VARIANTS_CATALOG_COLUMNS_STORAGE_KEY };
 
 export type CatalogListingMode = "products" | "variants";
 
-export type StoreCatalogPageConfig = {
-  breadcrumbLabel: string;
-  pageTitle: string;
-  pageDescription: string;
-  addButtonAriaLabel: string;
-  viewModeStorageKey: string;
-  storeLinkHref: string;
-  listingMode: CatalogListingMode;
+export const CATALOG_LISTING_MODES: CatalogListingMode[] = ["products", "variants"];
+
+export const CATALOG_LISTING_MODE_LABELS: Record<CatalogListingMode, string> = {
+  products: "Base products",
+  variants: "Product variants",
 };
 
-export const STORE_PRODUCTS_CATALOG_CONFIG: StoreCatalogPageConfig = {
+export const STORE_CATALOG_PAGE = {
   breadcrumbLabel: "Products",
   pageTitle: "Products",
   pageDescription: "Manage assortment, pricing, and dealer and retail channel statuses.",
-  addButtonAriaLabel: "Add a new product to the catalog",
-  viewModeStorageKey: CATALOG_VIEW_MODE_STORAGE_KEY,
   storeLinkHref: "/store/pim/products",
-  listingMode: "products",
+} as const;
+
+export const parseCatalogListingMode = (value: string | null | undefined): CatalogListingMode =>
+  value === "variants" ? "variants" : "products";
+
+export const getCatalogSourceItems = (listingMode: CatalogListingMode): StoreCatalogItem[] =>
+  listingMode === "variants" ? getVariantCatalogItems() : STORE_CATALOG_ITEMS;
+
+export const getCatalogItemDetailHref = (itemId: string, listingMode: CatalogListingMode): string => {
+  const productId =
+    listingMode === "variants" ? getParentProductIdFromVariantCatalogId(itemId) : itemId;
+  return getProductDetailHref(productId);
 };
 
-export const STORE_VARIANTS_CATALOG_CONFIG: StoreCatalogPageConfig = {
-  breadcrumbLabel: "Product Variants",
-  pageTitle: "Product Variants",
-  pageDescription: "Manage product variants: modifications, configurations, and options.",
-  addButtonAriaLabel: "Add a new variant to the catalog",
-  viewModeStorageKey: VARIANTS_CATALOG_VIEW_MODE_STORAGE_KEY,
-  storeLinkHref: "/store/pim/product-variants",
-  listingMode: "variants",
-};
+export const getCatalogStorageKeys = (listingMode: CatalogListingMode) => ({
+  viewModeStorageKey:
+    listingMode === "products" ? CATALOG_VIEW_MODE_STORAGE_KEY : VARIANTS_CATALOG_VIEW_MODE_STORAGE_KEY,
+  columnsStorageKey:
+    listingMode === "products" ? CATALOG_COLUMNS_STORAGE_KEY : VARIANTS_CATALOG_COLUMNS_STORAGE_KEY,
+});
+
+export const getCatalogAddButtonAriaLabel = (listingMode: CatalogListingMode) =>
+  listingMode === "products"
+    ? "Add a new product to the catalog"
+    : "Add a new variant to the catalog";
 
 export const SKELETON_ROW_COUNT = 10;
 export const SKELETON_CARD_COUNT = 12;
@@ -63,7 +84,7 @@ export const getSelectValue = (value: string | null) => value ?? ALL_VALUE;
 export const extractSortedOptions = (items: StoreCatalogItem[], key: keyof StoreCatalogItem): string[] =>
   Array.from(new Set(items.map((item) => String(item[key])))).sort((left, right) => left.localeCompare(right));
 
-export const getDisplayProductName = (name: string) => name.replace(/^Oryx\s+/u, "").trim();
+export { getDisplayProductName } from "./catalog-display";
 
 export const isPurchasable = (dealerStatus: DealerStatus) => dealerStatus === "Available for purchase";
 
@@ -102,6 +123,9 @@ export const statusBadgeClassMap: Record<DealerStatus | RetailStatus, string> = 
   "Awaiting delivery": "bg-indigo-100 text-indigo-700",
   Archived: "bg-zinc-100 text-zinc-700",
 };
+
+export const formatCatalogUpdatedAt = (updatedAt: string) =>
+  new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(updatedAt));
 
 export const buildPaginationItems = (currentPage: number, totalPages: number): Array<number | "ellipsis"> => {
   if (totalPages <= 7) {

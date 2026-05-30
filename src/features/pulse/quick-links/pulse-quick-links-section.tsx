@@ -205,7 +205,7 @@ export const PulseQuickLinksSection = ({
           onDragStart={() => handleDragStart(link.id)}
           onDragEnd={handleDragEnd}
           onKeyDown={(event) => handleRowKeyDown(event, link.id)}
-          aria-label={`Переместить ссылку ${link.label}`}
+          aria-label={`Move link ${link.label}`}
           aria-grabbed={isDragging}
           className="mt-1 inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
         >
@@ -216,13 +216,13 @@ export const PulseQuickLinksSection = ({
           <Input
             value={link.label}
             onChange={(event) => onUpdateLink(link.id, { label: event.target.value })}
-            aria-label={`Название ссылки ${link.label}`}
+            aria-label={`Link label ${link.label}`}
             className="h-8 text-xs"
           />
           <Input
             value={link.href}
             onChange={(event) => onUpdateLink(link.id, { href: event.target.value })}
-            aria-label={`URL ссылки ${link.label}`}
+            aria-label={`Link URL ${link.label}`}
             className="h-8 text-xs"
           />
         </div>
@@ -233,7 +233,7 @@ export const PulseQuickLinksSection = ({
           size="icon-sm"
           disabled={links.length <= 1}
           onClick={() => onRemoveLink(link.id)}
-          aria-label={`Удалить ссылку ${link.label}`}
+          aria-label={`Remove link ${link.label}`}
           className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"
         >
           <Trash2 aria-hidden className="size-4" />
@@ -245,7 +245,7 @@ export const PulseQuickLinksSection = ({
   if (isLoading) {
     return (
       <div className="flex flex-col gap-2">
-        <QuickLinksSectionTitle>Быстрые ссылки</QuickLinksSectionTitle>
+        <QuickLinksSectionTitle>Quick links</QuickLinksSectionTitle>
         <div className="space-y-1 px-1">
           <div className="h-8 animate-pulse rounded-lg bg-muted" />
           <div className="h-8 animate-pulse rounded-lg bg-muted" />
@@ -259,20 +259,20 @@ export const PulseQuickLinksSection = ({
     <>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2 px-1">
-          <QuickLinksSectionTitle>Быстрые ссылки</QuickLinksSectionTitle>
+          <QuickLinksSectionTitle>Quick links</QuickLinksSectionTitle>
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             onClick={() => setIsEditOpen(true)}
-            aria-label="Редактировать быстрые ссылки"
+            aria-label="Edit quick links"
             className="size-7 shrink-0 text-muted-foreground"
           >
             <Pencil aria-hidden className="size-4" />
           </Button>
         </div>
 
-        <nav aria-label="Быстрые ссылки">
+        <nav aria-label="Quick links">
           <ul className="flex flex-col gap-0.5">{links.map(renderViewLink)}</ul>
         </nav>
       </div>
@@ -280,14 +280,14 @@ export const PulseQuickLinksSection = ({
       <Dialog open={isEditOpen} onOpenChange={handleEditOpenChange}>
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md" showCloseButton>
           <DialogHeader className="border-b px-4 py-3">
-            <DialogTitle>Быстрые ссылки</DialogTitle>
+            <DialogTitle>Quick links</DialogTitle>
             <DialogDescription>
-              Добавляйте, переименовывайте и перетаскивайте ссылки для aside главной страницы.
+              Add, rename, and drag links for the home page sidebar.
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex max-h-[min(60vh,28rem)] flex-col gap-3 overflow-y-auto px-4 py-3">
-            <ul role="list" aria-label="Редактирование быстрых ссылок" className="flex flex-col gap-1">
+            <ul role="list" aria-label="Edit quick links" className="flex flex-col gap-1">
               {links.map(renderEditRow)}
             </ul>
 
@@ -296,8 +296,8 @@ export const PulseQuickLinksSection = ({
                 <Input
                   value={newLabel}
                   onChange={(event) => setNewLabel(event.target.value)}
-                  placeholder="Название"
-                  aria-label="Название новой ссылки"
+                  placeholder="Label"
+                  aria-label="New link label"
                   className="h-8 text-xs"
                   autoFocus
                   onKeyDown={(event) => {
@@ -314,8 +314,8 @@ export const PulseQuickLinksSection = ({
                 <Input
                   value={newHref}
                   onChange={(event) => setNewHref(event.target.value)}
-                  placeholder="https://... или /path"
-                  aria-label="URL новой ссылки"
+                  placeholder="https://... or /path"
+                  aria-label="New link URL"
                   className="h-8 text-xs"
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
@@ -330,9 +330,9 @@ export const PulseQuickLinksSection = ({
                 />
                 <div className="flex items-center gap-1">
                   <Button type="button" size="sm" onClick={handleAddSubmit} className="h-7 text-xs">
-                    Добавить
+                    Add
                   </Button>
-                  <Button type="button" variant="ghost" size="icon-sm" onClick={handleAddCancel} aria-label="Отменить добавление">
+                  <Button type="button" variant="ghost" size="icon-sm" onClick={handleAddCancel} aria-label="Cancel adding">
                     <X aria-hidden className="size-4" />
                   </Button>
                 </div>
@@ -346,14 +346,14 @@ export const PulseQuickLinksSection = ({
                 className="h-8 justify-start px-2 text-xs text-muted-foreground"
               >
                 <Plus aria-hidden className="size-3.5" />
-                Добавить ссылку
+                Add link
               </Button>
             )}
           </div>
 
           <div className="flex justify-end border-t bg-muted/50 px-4 py-3">
             <Button type="button" onClick={() => handleEditOpenChange(false)}>
-              Готово
+              Done
             </Button>
           </div>
         </DialogContent>

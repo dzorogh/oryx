@@ -1,6 +1,7 @@
-import { StoreCatalogPage } from "@/components/store/pim/products/store-catalog-page";
-import { STORE_VARIANTS_CATALOG_CONFIG } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { redirect } from "next/navigation";
 
-const StoreProductVariantsRoute = () => <StoreCatalogPage config={STORE_VARIANTS_CATALOG_CONFIG} />;
+const StoreProductVariantsRedirectPage = () => {
+  redirect("/store/pim/products?listing=variants");
+};
 
-export default StoreProductVariantsRoute;
+export default StoreProductVariantsRedirectPage;

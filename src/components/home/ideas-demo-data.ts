@@ -2,8 +2,8 @@ export type IdeaStatus = "new" | "review";
 
 /** Подписи и классы бейджей статуса (без бордера, цветные фоны из палитры Corportal). */
 export const IDEA_STATUS_LABELS: Record<IdeaStatus, string> = {
-  new: "Новая",
-  review: "На рассмотрении",
+  new: "New",
+  review: "Under review",
 };
 
 export const IDEA_STATUS_BADGE_CLASS: Record<IdeaStatus, string> = {
@@ -22,33 +22,33 @@ export type IdeaItem = {
 };
 
 const IDEA_TITLES = [
-  "Добавить единый дашборд статусов по всем заказам",
-  "Сократить время согласования через шаблоны решений",
-  "Внедрить быстрый поиск по клиентским карточкам",
-  "Добавить автоархивацию устаревших заявок",
-  "Показывать SLA-риск до просрочки в списке задач",
-  "Сделать экспорт отчета по упаковке в один клик",
-  "Добавить массовое редактирование карточек заказов",
-  "Подсветить конфликтующие изменения в согласованиях",
-  "Собрать ленту изменений по заказу в одном блоке",
-  "Сделать шаблоны комментариев для частых кейсов",
-  "Добавить быстрые фильтры по регионам и складам",
-  "Показывать загрузку команды в реальном времени",
-  "Упростить форму создания заявки до 4 шагов",
-  "Добавить уведомления в Telegram для критичных статусов",
-  "Визуализировать просадки по SLA за неделю",
-  "Внедрить автоназначение ответственного по правилам",
-  "Добавить рейтинг полезности внутренних статей",
-  "Собрать библиотеку типовых бизнес-процессов",
+  "Add a unified order status dashboard",
+  "Reduce approval time with decision templates",
+  "Introduce quick search for customer records",
+  "Add auto-archiving for outdated requests",
+  "Show SLA risk before overdue in task list",
+  "Enable one-click packing report export",
+  "Add bulk editing for order records",
+  "Highlight conflicting changes in approvals",
+  "Consolidate order change feed in one block",
+  "Create comment templates for common cases",
+  "Add quick filters by region and warehouse",
+  "Show team workload in real time",
+  "Simplify request form to 4 steps",
+  "Add Telegram notifications for critical statuses",
+  "Visualize weekly SLA dips",
+  "Introduce auto-assignment by rules",
+  "Add usefulness rating for internal articles",
+  "Build a library of standard business processes",
 ];
 
 const AUTHORS = [
-  "Анна Петрова",
-  "Илья Смирнов",
-  "Мария Соколова",
-  "Дмитрий Волков",
-  "Ольга Власова",
-  "Кирилл Орлов",
+  "Anna Petrova",
+  "Ilya Smirnov",
+  "Maria Sokolova",
+  "Dmitry Volkov",
+  "Olga Vlasova",
+  "Kirill Orlov",
 ];
 
 export const IDEAS_ITEMS: IdeaItem[] = IDEA_TITLES.map((title, index) => ({
@@ -58,5 +58,5 @@ export const IDEAS_ITEMS: IdeaItem[] = IDEA_TITLES.map((title, index) => ({
   status: index % 3 === 0 ? "new" : "review",
   likes: 18 + index * 5,
   comments: 2 + (index % 7),
-  createdAt: `${(index % 5) + 1} ч назад`,
+  createdAt: `${(index % 5) + 1} hr ago`,
 }));

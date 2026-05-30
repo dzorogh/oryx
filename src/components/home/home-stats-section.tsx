@@ -31,7 +31,7 @@ const CompactKpiCard = ({
       <button
         type="button"
         className="min-w-0 text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
-        aria-label={`Профиль: ${leaderName}`}
+        aria-label={`Profile: ${leaderName}`}
       >
         {leaderName}
       </button>
@@ -44,7 +44,7 @@ export const HomeStatsSection = () => {
     <div className="grid grid-cols-1 gap-3 lg:items-start lg:gap-3">
       <div
         className="grid min-h-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-        aria-label="Топы по показателям"
+        aria-label="Top metrics"
       >
         {STATS_KPI_METRICS.map((metric) => (
           <div key={metric.id} className="flex min-h-0 min-w-0">

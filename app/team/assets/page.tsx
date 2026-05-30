@@ -2,8 +2,8 @@ import { TeamModulePlaceholderPage } from "@/components/team/team-module-placeho
 
 const TeamAssetsPage = () => (
   <TeamModulePlaceholderPage
-    title="Активы"
-    description="Раздел подготовлен для инвентаря сотрудников, оборудования и закреплённых корпоративных активов."
+    title="Assets"
+    description="This section is prepared for employee inventory, equipment, and assigned corporate assets."
   />
 );
 

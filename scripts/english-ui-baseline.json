@@ -1,0 +1,4 @@
+{
+  "description": "Known Cyrillic UI copy allowed until migrated to English. Regenerate with: npm run check:ui-english -- --update-baseline",
+  "entries": []
+}

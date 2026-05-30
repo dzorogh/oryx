@@ -1,0 +1,10 @@
+---
+description: Full-width page content — see docs/conventions (canonical)
+alwaysApply: true
+---
+
+# Full-Width Page Content
+
+**Canonical doc:** [docs/conventions/ui/full-width-page-content.md](../../docs/conventions/ui/full-width-page-content.md)
+
+Page shells use full main width (no root `max-w-*`). Lists use responsive grids or tables. List pages with toolbar: [list-page-toolbar.md](../../docs/conventions/ui/list-page-toolbar.md).

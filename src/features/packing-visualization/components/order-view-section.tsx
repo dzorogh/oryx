@@ -40,7 +40,7 @@ type OrderViewSectionProps = {
 const CONTAINER_LABEL = "40HC";
 
 const formatDimensions = (item: OrderItemType) =>
-  `${item.width.toLocaleString("ru-RU")} × ${item.length.toLocaleString("ru-RU")} × ${item.height.toLocaleString("ru-RU")} мм`;
+  `${item.width.toLocaleString("en-US")} × ${item.length.toLocaleString("en-US")} × ${item.height.toLocaleString("en-US")} mm`;
 
 export const OrderViewSection = ({
   orderItems,
@@ -80,7 +80,7 @@ export const OrderViewSection = ({
   return (
     <div className="space-y-4">
       <Card
-        aria-label="Состав заказа"
+        aria-label="Order composition"
       >
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle role="heading" aria-level={2}>
@@ -94,8 +94,8 @@ export const OrderViewSection = ({
               type="search"
               value={searchQuery}
               onChange={handleSearchChange}
-              placeholder="Поиск по названию или ID"
-              aria-label="Поиск по позициям заказа"
+              placeholder="Search by name or ID"
+              aria-label="Search order line items"
               className="pl-9"
             />
           </div>
@@ -105,10 +105,10 @@ export const OrderViewSection = ({
             <Table className="min-w-[520px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead scope="col">Наименование</TableHead>
+                  <TableHead scope="col">Name</TableHead>
                   <TableHead scope="col">ID</TableHead>
-                  <TableHead scope="col">Габариты, мм</TableHead>
-                  <TableHead scope="col">Количество</TableHead>
+                  <TableHead scope="col">Dimensions, mm</TableHead>
+                  <TableHead scope="col">Quantity</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,7 +119,7 @@ export const OrderViewSection = ({
                     <TableCell className="whitespace-nowrap">{formatDimensions(item)}</TableCell>
                     <TableCell>
                       <label className="sr-only" htmlFor={`qty-${lineIndex}`}>
-                        Количество для {item.name}
+                        Quantity for {item.name}
                       </label>
                       <Input
                         id={`qty-${lineIndex}`}
@@ -131,7 +131,7 @@ export const OrderViewSection = ({
                         value={item.quantity}
                         onChange={(e) => handleQuantityInputChange(lineIndex, e)}
                         className="w-24 text-right"
-                        aria-label={`Количество, ${item.name}`}
+                        aria-label={`Quantity, ${item.name}`}
                       />
                     </TableCell>
                   </TableRow>
@@ -142,7 +142,7 @@ export const OrderViewSection = ({
 
           {rows.length === 0 ? (
             <p className="text-sm text-muted-foreground" role="status">
-              Нет позиций, подходящих под поиск.
+              No line items match your search.
             </p>
           ) : null}
         </CardContent>
@@ -156,9 +156,9 @@ export const OrderViewSection = ({
             Load calculator
           </CardTitle>
           <label className="inline-flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Контейнер</span>
+            <span className="text-muted-foreground">Container</span>
             <Select name="container-type" defaultValue={CONTAINER_LABEL}>
-              <SelectTrigger size="sm" aria-label="Тип контейнера">
+              <SelectTrigger size="sm" aria-label="Container type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -176,17 +176,17 @@ export const OrderViewSection = ({
               )}
               role="status"
               aria-live="polite"
-              aria-label="Выполняется расчёт упаковки"
+              aria-label="Packing calculation in progress"
             >
               <Spinner className="size-8 text-muted-foreground" aria-hidden focusable={false} />
             </div>
           ) : placementHasErrors && result ? (
             <div
               className="relative flex h-[min(680px,70vh)] w-full flex-col justify-center items-center overflow-auto rounded-xl border border-destructive/25 bg-destructive/5 p-4 sm:p-6"
-              aria-label="Ошибки размещения: визуализация недоступна"
+              aria-label="Placement errors: visualization unavailable"
             >
               <Alert variant="destructive" className="max-w-md text-center">
-                <AlertTitle>Ошибки размещения</AlertTitle>
+                <AlertTitle>Placement errors</AlertTitle>
               </Alert>
             </div>
           ) : hasContainers && result ? (
@@ -196,7 +196,7 @@ export const OrderViewSection = ({
               orderItems={orderItems}
             />
           ) : (
-            <p className="py-16 text-center text-sm text-muted-foreground">Нет контейнеров для отображения.</p>
+            <p className="py-16 text-center text-sm text-muted-foreground">No containers to display.</p>
           )}
 
           {result ? (
@@ -249,9 +249,9 @@ export const OrderPackingDynamicContent = ({ selectedOrderId }: OrderPackingDyna
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-6" aria-label="Ошибка расчета упаковки">
+      <main className="flex min-h-screen items-center justify-center p-6" aria-label="Packing calculation error">
         <Alert variant="destructive" className="max-w-xl">
-          <AlertDescription>Ошибка: {error}</AlertDescription>
+          <AlertDescription>Error: {error}</AlertDescription>
         </Alert>
       </main>
     );

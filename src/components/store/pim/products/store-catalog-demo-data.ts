@@ -11,6 +11,9 @@ export type StoreCatalogItem = {
   categoryId: string;
   category: string;
   family: string;
+  brand: string;
+  stock: number;
+  updatedAt: string;
   dealerPrice: number | null;
   retailPrice: number | null;
   dealerStatus: DealerStatus;
@@ -18,7 +21,9 @@ export type StoreCatalogItem = {
   productionSite: string;
 };
 
-const STORE_CATALOG_BASE_ITEMS: StoreCatalogItem[] = [
+type StoreCatalogSeedItem = Omit<StoreCatalogItem, "brand" | "stock" | "updatedAt">;
+
+const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-001",
     name: "Oryx Force 1000 EFI",
@@ -394,7 +399,7 @@ const GENERATED_RETAIL_STATUSES: RetailStatus[] = [
   "Awaiting delivery",
 ];
 
-const GENERATED_CATALOG_ITEMS: StoreCatalogItem[] = Array.from({ length: GENERATED_ITEMS_COUNT }, (_, index) => {
+const GENERATED_CATALOG_ITEMS: StoreCatalogSeedItem[] = Array.from({ length: GENERATED_ITEMS_COUNT }, (_, index) => {
   const baseItem = STORE_CATALOG_BASE_ITEMS[index % STORE_CATALOG_BASE_ITEMS.length] ?? STORE_CATALOG_BASE_ITEMS[0];
   const serial = index + 1;
   const sku = String(700000 + serial);
@@ -434,7 +439,7 @@ const getPriceGapMode = (index: number): PriceGapMode => {
   }
 };
 
-const applyPriceGaps = (items: StoreCatalogItem[]): StoreCatalogItem[] =>
+const applyPriceGaps = (items: StoreCatalogSeedItem[]): StoreCatalogSeedItem[] =>
   items.map((item, index) => {
     const mode = getPriceGapMode(index);
 
@@ -449,7 +454,14 @@ const applyPriceGaps = (items: StoreCatalogItem[]): StoreCatalogItem[] =>
     };
   });
 
-export const STORE_CATALOG_ITEMS: StoreCatalogItem[] = applyPriceGaps([
-  ...STORE_CATALOG_BASE_ITEMS,
-  ...GENERATED_CATALOG_ITEMS,
-]);
+const applyCatalogEnrichment = (items: StoreCatalogSeedItem[]): StoreCatalogItem[] =>
+  items.map((item, index) => ({
+    ...item,
+    brand: "Sharmax",
+    stock: 5 + ((index * 7) % 116),
+    updatedAt: new Date(Date.UTC(2026, 0, 15 - (index % 45), 12, 0, 0)).toISOString(),
+  }));
+
+export const STORE_CATALOG_ITEMS: StoreCatalogItem[] = applyCatalogEnrichment(
+  applyPriceGaps([...STORE_CATALOG_BASE_ITEMS, ...GENERATED_CATALOG_ITEMS]),
+);

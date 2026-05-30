@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import {
   NEWS_ITEMS,
   type NewsRubric,
@@ -18,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { NewsArticleCard } from "@/features/pulse/news/news-article-card";
 import { NewsFeaturedHero } from "@/features/pulse/news/news-featured-hero";
 import { NewsSidebar } from "@/features/pulse/news/news-sidebar";
+import { NewsToolbar } from "@/features/pulse/news/news-toolbar";
 
 type RubricTab = {
   id: NewsRubric;
@@ -25,11 +25,11 @@ type RubricTab = {
 };
 
 const RUBRIC_TABS: RubricTab[] = [
-  { id: "all", label: "Все" },
+  { id: "all", label: "All" },
   { id: "it", label: "IT" },
-  { id: "company", label: "Компания" },
+  { id: "company", label: "Company" },
   { id: "hr", label: "HR" },
-  { id: "logistics", label: "Логистика" },
+  { id: "logistics", label: "Logistics" },
 ];
 
 export const NewsPage = () => {
@@ -51,8 +51,8 @@ export const NewsPage = () => {
   const gridItems = filteredItems.slice(1);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:gap-10 lg:px-8">
-      <header className="flex flex-col gap-4">
+    <div className="min-h-screen bg-muted/30">
+      <div className="flex w-full flex-col gap-4 p-4">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -60,97 +60,83 @@ export const NewsPage = () => {
                 href="/"
                 className="text-muted-foreground transition-colors hover:text-foreground"
               >
-                Главная
+                Home
               </Link>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Новости</BreadcrumbPage>
+              <BreadcrumbPage>News</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="space-y-2">
-          <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Новости компании
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
-            Актуальные объявления, IT, HR и логистика — в одной ленте. Фильтруйте по рубрике или
-            смотрите популярные материалы справа.
-          </p>
-        </div>
-      </header>
 
-      <div
-        className="-mx-1 flex snap-x snap-mandatory gap-1 overflow-x-auto pb-1 no-scrollbar md:mx-0 md:flex-wrap md:overflow-visible md:pb-0"
-        role="toolbar"
-        aria-label="Фильтр по рубрикам"
-      >
-        {RUBRIC_TABS.map((tab) => {
-          const active = activeRubric === tab.id;
-          return (
-            <div key={tab.id} className="snap-start shrink-0 first:pl-1 last:pr-1 md:first:pl-0 md:last:pr-0">
-              <HomeFilterChip
-                onClick={() => setActiveRubric(tab.id)}
-                active={active}
-                ariaLabel={`Показать рубрику ${tab.label}`}
-              >
-                {tab.label}
-              </HomeFilterChip>
-            </div>
-          );
-        })}
-      </div>
+        <NewsToolbar
+          tabs={RUBRIC_TABS}
+          activeRubric={activeRubric}
+          onRubricChange={setActiveRubric}
+        />
 
-      {filteredItems.length === 0 ? (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_280px] lg:items-start lg:gap-10 xl:grid-cols-[1fr_300px]">
-          <p className="text-sm text-muted-foreground" role="status">
-            Для выбранной рубрики пока нет новостей. Выберите другую рубрику или откройте «Все».
-          </p>
-          <NewsSidebar
-            popularItems={popularItems}
-            activeRubric={activeRubric}
-            onSelectRubric={setActiveRubric}
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_280px] lg:items-start lg:gap-10 xl:grid-cols-[1fr_300px]">
-          <div className="flex min-w-0 flex-col gap-8">
-            {featured ? (
-              <>
-                <NewsFeaturedHero item={featured} />
-                <Separator className="lg:hidden" />
-              </>
-            ) : null}
-
-            {gridItems.length > 0 ? (
-              <section aria-labelledby="news-grid-heading">
-                <h2 id="news-grid-heading" className="sr-only">
-                  Остальные материалы
-                </h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {gridItems.map((item, index) => (
-                    <NewsArticleCard
-                      key={item.id}
-                      item={item}
-                      imagePriority={index < 3}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : featured ? (
-              <p className="text-sm text-muted-foreground">
-                Других материалов в этой рубрике пока нет — откройте главную новость выше.
-              </p>
-            ) : null}
+        {filteredItems.length === 0 ? (
+          <div
+            id="news-panel"
+            role="tabpanel"
+            aria-label="News feed"
+            className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_280px] lg:items-start lg:gap-10 xl:grid-cols-[1fr_300px]"
+          >
+            <p className="text-sm text-muted-foreground" role="status">
+              No news for this category yet. Choose another category or open All.
+            </p>
+            <NewsSidebar
+              popularItems={popularItems}
+              activeRubric={activeRubric}
+              onSelectRubric={setActiveRubric}
+            />
           </div>
+        ) : (
+          <div
+            id="news-panel"
+            role="tabpanel"
+            aria-label="News feed"
+            className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_280px] lg:items-start lg:gap-10 xl:grid-cols-[1fr_300px]"
+          >
+            <div className="flex min-w-0 flex-col gap-8">
+              {featured ? (
+                <>
+                  <NewsFeaturedHero item={featured} />
+                  <Separator className="lg:hidden" />
+                </>
+              ) : null}
 
-          <NewsSidebar
-            popularItems={popularItems}
-            activeRubric={activeRubric}
-            onSelectRubric={setActiveRubric}
-          />
-        </div>
-      )}
+              {gridItems.length > 0 ? (
+                <section aria-labelledby="news-grid-heading">
+                  <h2 id="news-grid-heading" className="sr-only">
+                    More articles
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {gridItems.map((item, index) => (
+                      <NewsArticleCard
+                        key={item.id}
+                        item={item}
+                        imagePriority={index < 3}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : featured ? (
+                <p className="text-sm text-muted-foreground">
+                  No other articles in this category yet — see the featured story above.
+                </p>
+              ) : null}
+            </div>
+
+            <NewsSidebar
+              popularItems={popularItems}
+              activeRubric={activeRubric}
+              onSelectRubric={setActiveRubric}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

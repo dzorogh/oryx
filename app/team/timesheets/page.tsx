@@ -2,8 +2,8 @@ import { TeamModulePlaceholderPage } from "@/components/team/team-module-placeho
 
 const TeamTimesheetsPage = () => (
   <TeamModulePlaceholderPage
-    title="Табели"
-    description="Раздел подготовлен для учёта рабочего времени, отсутствий и согласования табелей сотрудников."
+    title="Timesheets"
+    description="This section is prepared for time tracking, absences, and employee timesheet approvals."
   />
 );
 

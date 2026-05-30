@@ -33,22 +33,22 @@ import { CalendarTaskItem } from "./calendar-task-item";
 const MAX_VISIBLE_TASKS = 4;
 
 const DATE_PROPERTY_OPTIONS: { value: CalendarDateProperty; label: string }[] = [
-  { value: "deadline", label: "Дедлайн" },
-  { value: "createdAt", label: "Дата создания" },
-  { value: "customDateField", label: "Кастомное поле Дата" },
+  { value: "deadline", label: "Deadline" },
+  { value: "createdAt", label: "Created at" },
+  { value: "customDateField", label: "Custom date field" },
 ];
 
 const CUSTOM_DATE_FIELD_OPTIONS = [
-  { id: "planningDate", label: "Плановая дата (demo)" },
+  { id: "planningDate", label: "Planning date (demo)" },
 ];
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = {
-  high: "Высокий",
-  medium: "Средний",
-  low: "Низкий",
+  high: "High",
+  medium: "Medium",
+  low: "Low",
 };
 
-const monthFormatter = new Intl.DateTimeFormat("ru-RU", {
+const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
   year: "numeric",
 });
@@ -213,7 +213,7 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
     const parsedTime = parseTimeInput(editingTimeValue);
 
     if (!parsedTime) {
-      toast.error("Некорректное время. Используйте формат 18, 930 или 18:30.");
+      toast.error("Invalid time. Use formats like 18, 930, or 18:30.");
       setEditingTaskId(null);
       setEditingTimeValue("");
       return;
@@ -262,13 +262,13 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
 
     const trimmedTitle = quickCreateTitle.trim();
     if (!trimmedTitle) {
-      toast.error("Введите название задачи.");
+      toast.error("Enter a task title.");
       return;
     }
 
     const parsedTime = parseTimeInput(quickCreateTime);
     if (!parsedTime) {
-      toast.error("Время не распознано. Примеры: 18, 930, 18:30.");
+      toast.error("Time not recognized. Examples: 18, 930, 18:30.");
       return;
     }
 
@@ -279,7 +279,7 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
     const nextTask: CalendarTask = {
       id: `task-${Date.now()}`,
       title: trimmedTitle,
-      projectName: quickCreateProject.trim() || "Без проекта",
+      projectName: quickCreateProject.trim() || "No project",
       priority: "medium",
       comments: 0,
       color: "blue",
@@ -302,12 +302,12 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1">
               <Button type="button" variant="default" size="xs" onClick={handleGoToday}>
-                Сегодня
+                Today
               </Button>
-              <Button type="button" variant="outline" size="icon-xs" onClick={handlePrevMonth} aria-label="Предыдущий месяц">
+              <Button type="button" variant="outline" size="icon-xs" onClick={handlePrevMonth} aria-label="Previous month">
                 <ChevronLeft className="size-3.5" />
               </Button>
-              <Button type="button" variant="outline" size="icon-xs" onClick={handleNextMonth} aria-label="Следующий месяц">
+              <Button type="button" variant="outline" size="icon-xs" onClick={handleNextMonth} aria-label="Next month">
                 <ChevronRight className="size-3.5" />
               </Button>
             </div>
@@ -323,7 +323,7 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
               variant="outline"
               size="icon-xs"
               onClick={() => setIsViewSettingsOpen(true)}
-              aria-label="Открыть настройки представления календаря"
+              aria-label="Open calendar view settings"
             >
               <SlidersHorizontal className="size-3.5" />
             </Button>
@@ -331,7 +331,7 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
         </div>
 
         <div className="rounded-lg border border-dashed border-[var(--corportal-border-grey)] bg-muted/20 p-6 text-sm text-muted-foreground lg:hidden">
-          Календарная Month View сейчас доступна только на desktop-экранах.
+          Month view is available on desktop screens only.
         </div>
 
         <div className="hidden lg:block">
@@ -369,7 +369,7 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
                     event.preventDefault();
                     handleDropToDay(day.date);
                   }}
-                  aria-label={`День ${day.date.getDate()}`}
+                  aria-label={`Day ${day.date.getDate()}`}
                 >
                   <div className="mb-1.5 flex items-center justify-between gap-1.5">
                     <span
@@ -384,7 +384,7 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
                     <button
                       type="button"
                       className="inline-flex size-5 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                      aria-label={`Быстро добавить задачу на ${day.date.getDate()}`}
+                      aria-label={`Quick add task on day ${day.date.getDate()}`}
                       onClick={() => openQuickCreate(day.date)}
                     >
                       <Plus className="size-3" />
@@ -421,9 +421,9 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
                         type="button"
                         onClick={() => setOverflowDateKey(day.dateKey)}
                         className="w-full rounded-md border border-dashed border-border px-1.5 py-0.5 text-left text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                        aria-label={`Показать ещё ${hiddenTasksCount} задач`}
+                        aria-label={`Show ${hiddenTasksCount} more tasks`}
                       >
-                        +{hiddenTasksCount} задач
+                        +{hiddenTasksCount} tasks
                       </button>
                     )}
                   </div>
@@ -437,11 +437,11 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
       <Dialog open={Boolean(quickCreateDate)} onOpenChange={(isOpen) => (!isOpen ? closeQuickCreate() : null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Создать задачу</DialogTitle>
+            <DialogTitle>Create task</DialogTitle>
             <DialogDescription>
-              Быстрое добавление задачи на{" "}
+              Quick add a task on{" "}
               {quickCreateDate
-                ? new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "long", year: "numeric" }).format(quickCreateDate)
+                ? new Intl.DateTimeFormat("en-US", { day: "2-digit", month: "long", year: "numeric" }).format(quickCreateDate)
                 : ""}
               .
             </DialogDescription>
@@ -449,48 +449,48 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
           <form className="space-y-3" onSubmit={handleQuickCreate}>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground" htmlFor="quick-create-title">
-                Название
+                Title
               </label>
               <Input
                 id="quick-create-title"
                 value={quickCreateTitle}
                 onChange={(event) => setQuickCreateTitle(event.target.value)}
-                placeholder="Например, Подготовить отчёт"
-                aria-label="Название новой задачи"
+                placeholder="e.g. Prepare weekly report"
+                aria-label="New task title"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground" htmlFor="quick-create-time">
-                  Время
+                  Time
                 </label>
                 <Input
                   id="quick-create-time"
                   value={quickCreateTime}
                   onChange={(event) => setQuickCreateTime(event.target.value)}
-                  placeholder="18 или 18:30"
-                  aria-label="Время новой задачи"
+                  placeholder="18 or 18:30"
+                  aria-label="New task time"
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground" htmlFor="quick-create-project">
-                  Проект
+                  Project
                 </label>
                 <Input
                   id="quick-create-project"
                   value={quickCreateProject}
                   onChange={(event) => setQuickCreateProject(event.target.value)}
-                  placeholder="Без проекта"
-                  aria-label="Проект новой задачи"
+                  placeholder="No project"
+                  aria-label="New task project"
                 />
               </div>
             </div>
 
             <DialogFooter className="-mx-4 -mb-4 mt-4 border-t bg-muted/30 p-4">
               <Button type="button" variant="outline" onClick={closeQuickCreate}>
-                Отмена
+                Cancel
               </Button>
-              <Button type="submit">Создать</Button>
+              <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -499,9 +499,9 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
       <Dialog open={isViewSettingsOpen} onOpenChange={setIsViewSettingsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Настройки представления</DialogTitle>
+            <DialogTitle>View settings</DialogTitle>
             <DialogDescription>
-              Выберите источник даты и первый день недели для Month View.
+              Choose the date source and the first day of the week for month view.
             </DialogDescription>
           </DialogHeader>
 
@@ -515,7 +515,7 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
                 value={dateProperty}
                 onChange={(event) => setDateProperty(event.target.value as CalendarDateProperty)}
                 className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-                aria-label="Выбор свойства даты для календаря"
+                aria-label="Calendar date property"
               >
                 {DATE_PROPERTY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -528,14 +528,14 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
             {dateProperty === "customDateField" && (
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground" htmlFor="calendar-custom-field-select">
-                  Поле
+                  Field
                 </label>
                 <select
                   id="calendar-custom-field-select"
                   value={customDateFieldId}
                   onChange={(event) => setCustomDateFieldId(event.target.value)}
                   className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-                  aria-label="Выбор кастомного поля даты"
+                  aria-label="Custom date field"
                 >
                   {CUSTOM_DATE_FIELD_OPTIONS.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -548,24 +548,24 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
 
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground" htmlFor="calendar-week-start-select">
-                Первый день недели
+                First day of week
               </label>
               <select
                 id="calendar-week-start-select"
                 value={firstDayOfWeek}
                 onChange={(event) => setFirstDayOfWeek(event.target.value as CalendarFirstDayOfWeek)}
                 className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-                aria-label="Выбор первого дня недели"
+                aria-label="First day of week"
               >
-                <option value="monday">Понедельник</option>
-                <option value="sunday">Воскресенье</option>
+                <option value="monday">Monday</option>
+                <option value="sunday">Sunday</option>
               </select>
             </div>
           </div>
 
           <DialogFooter>
             <Button type="button" onClick={() => setIsViewSettingsOpen(false)}>
-              Готово
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -574,9 +574,9 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
       <Dialog open={Boolean(overflowDateKey)} onOpenChange={(isOpen) => (!isOpen ? setOverflowDateKey(null) : null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Задачи дня</DialogTitle>
+            <DialogTitle>Tasks for the day</DialogTitle>
             <DialogDescription>
-              {overflowDateKey ? `Всего задач: ${overflowDateTasks.length}.` : ""}
+              {overflowDateKey ? `Total tasks: ${overflowDateTasks.length}.` : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
@@ -601,20 +601,20 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOverflowDateKey(null)}>
-              Закрыть
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>Всего задач: {tasks.length}</span>
+        <span>Total tasks: {tasks.length}</span>
         <span>·</span>
-        <span>Текущий date property: {DATE_PROPERTY_OPTIONS.find((item) => item.value === dateProperty)?.label}</span>
-        {dateProperty === "customDateField" && <span>· Поле: {CUSTOM_DATE_FIELD_OPTIONS.find((item) => item.id === customDateFieldId)?.label}</span>}
+        <span>Date property: {DATE_PROPERTY_OPTIONS.find((item) => item.value === dateProperty)?.label}</span>
+        {dateProperty === "customDateField" && <span>· Field: {CUSTOM_DATE_FIELD_OPTIONS.find((item) => item.id === customDateFieldId)?.label}</span>}
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
-        Приоритеты: high — {PRIORITY_LABELS.high}, medium — {PRIORITY_LABELS.medium}, low — {PRIORITY_LABELS.low}.
+        Priorities: high — {PRIORITY_LABELS.high}, medium — {PRIORITY_LABELS.medium}, low — {PRIORITY_LABELS.low}.
       </div>
     </>
   );

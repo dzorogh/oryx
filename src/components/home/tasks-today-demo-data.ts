@@ -45,11 +45,11 @@ const formatDeadlineLabel = (isoDate: string, now: Date) => {
   const time = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 
   if (diffDays === 0) {
-    return `Сегодня, ${time}`;
+    return `Today, ${time}`;
   }
 
   if (diffDays === 1) {
-    return `Завтра, ${time}`;
+    return `Tomorrow, ${time}`;
   }
 
   return `${pad2(date.getDate())}.${pad2(date.getMonth() + 1)}, ${time}`;
@@ -114,8 +114,8 @@ const createTask = (config: {
 export const TODAY_TASKS: TodayTask[] = [
   createTask({
     id: "task-1",
-    title: "Согласовать спецификацию по контейнеру",
-    projectName: "PIM · Заказ №59",
+    title: "Approve container specification",
+    projectName: "PIM · Order #59",
     priority: "high",
     comments: 5,
     color: "red",
@@ -129,8 +129,8 @@ export const TODAY_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-2",
-    title: "Проверить расчёт упаковки перед отгрузкой",
-    projectName: "Логистика · Склад Восток",
+    title: "Verify packing calculation before shipment",
+    projectName: "Logistics · East Warehouse",
     priority: "medium",
     comments: 12,
     color: "orange",
@@ -144,7 +144,7 @@ export const TODAY_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-3",
-    title: "Обновить статус заявки в Service Desk",
+    title: "Update ticket status in Service Desk",
     projectName: "IT · Service Desk",
     priority: "high",
     comments: 3,
@@ -159,8 +159,8 @@ export const TODAY_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-4",
-    title: "Подготовить краткий отчёт по SLA за неделю",
-    projectName: "HR · Онбординг",
+    title: "Prepare weekly SLA summary report",
+    projectName: "HR · Onboarding",
     priority: "low",
     comments: 0,
     color: "blue",
@@ -174,7 +174,7 @@ export const TODAY_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-101",
-    title: "Подтвердить окно доставки с курьерской службой",
+    title: "Confirm delivery window with courier service",
     projectName: "Operations · Last Mile",
     priority: "medium",
     comments: 4,
@@ -189,8 +189,8 @@ export const TODAY_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-102",
-    title: "Сверить остатки по SKU перед инвентаризацией",
-    projectName: "Склад · Инвентаризация",
+    title: "Reconcile SKU stock before inventory count",
+    projectName: "Warehouse · Inventory",
     priority: "high",
     comments: 6,
     color: "red",
@@ -209,8 +209,8 @@ export const ALL_TASKS: TodayTask[] = [
   ...TODAY_TASKS,
   createTask({
     id: "task-5",
-    title: "Согласовать макет упаковки с клиентом",
-    projectName: "PIM · Заказ №62",
+    title: "Approve packaging mockup with client",
+    projectName: "PIM · Order #62",
     priority: "medium",
     comments: 2,
     color: "pink",
@@ -224,8 +224,8 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-6",
-    title: "Обновить инструкцию по приёмке на складе",
-    projectName: "Логистика · Процессы",
+    title: "Update warehouse receiving instructions",
+    projectName: "Logistics · Processes",
     priority: "low",
     comments: 7,
     color: "emerald",
@@ -239,8 +239,8 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-7",
-    title: "Провести ревью рисков по поставке",
-    projectName: "Закупки · Контракты",
+    title: "Review delivery risk assessment",
+    projectName: "Procurement · Contracts",
     priority: "high",
     comments: 1,
     color: "red",
@@ -254,8 +254,8 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-8",
-    title: "Заполнить чек-лист перед релизом",
-    projectName: "IT · Релизы",
+    title: "Complete pre-release checklist",
+    projectName: "IT · Releases",
     priority: "medium",
     comments: 4,
     color: "orange",
@@ -269,8 +269,8 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-9",
-    title: "Обновить калькуляцию затрат на упаковку",
-    projectName: "Finance · Контроль затрат",
+    title: "Update packaging cost calculation",
+    projectName: "Finance · Cost Control",
     priority: "medium",
     comments: 6,
     color: "blue",
@@ -284,8 +284,8 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-10",
-    title: "Синхронизировать план отгрузок с 3PL",
-    projectName: "Operations · Поставки",
+    title: "Sync shipment plan with 3PL",
+    projectName: "Operations · Deliveries",
     priority: "high",
     comments: 9,
     color: "violet",
@@ -299,7 +299,7 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-11",
-    title: "Подготовить QA чек-лист для клиентского демо",
+    title: "Prepare QA checklist for client demo",
     projectName: "Product · QA",
     priority: "low",
     comments: 1,
@@ -314,7 +314,7 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-12",
-    title: "Собрать обратную связь по новой форме заявки",
+    title: "Collect feedback on the new request form",
     projectName: "CX · Support",
     priority: "medium",
     comments: 8,
@@ -329,7 +329,7 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-13",
-    title: "Проверить соответствие SLA по ночным инцидентам",
+    title: "Verify SLA compliance for overnight incidents",
     projectName: "IT · Monitoring",
     priority: "high",
     comments: 2,
@@ -344,7 +344,7 @@ export const ALL_TASKS: TodayTask[] = [
   }),
   createTask({
     id: "task-14",
-    title: "Подготовить материалы к ретро команды",
+    title: "Prepare materials for team retro",
     projectName: "Agile · Team Ops",
     priority: "low",
     comments: 0,

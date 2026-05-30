@@ -13,11 +13,11 @@ type RubricTab = {
 };
 
 const RUBRIC_TABS: RubricTab[] = [
-  { id: "all", label: "Все" },
+  { id: "all", label: "All" },
   { id: "it", label: "IT" },
-  { id: "company", label: "Компания" },
+  { id: "company", label: "Company" },
   { id: "hr", label: "HR" },
-  { id: "logistics", label: "Логистика" },
+  { id: "logistics", label: "Logistics" },
 ];
 
 type HomeNewsFiltersProps = {
@@ -35,7 +35,7 @@ export const HomeNewsFilters = ({ activeRubric, onRubricChange, className }: Hom
           key={tab.id}
           onClick={() => onRubricChange(tab.id)}
           active={active}
-          ariaLabel={`Показать рубрику ${tab.label}`}
+          ariaLabel={`Show ${tab.label} category`}
         >
           {tab.label}
         </HomeFilterChip>
@@ -115,13 +115,13 @@ export const HomeNewsSection = ({
       )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {displayNewsItems.map((item, index) => (
-          <NewsCard key={item.id} item={item} eager={index === 0} />
+        {displayNewsItems.map((item) => (
+          <NewsCard key={item.id} item={item} eager />
         ))}
       </div>
 
       {filteredNewsItems.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Для выбранной рубрики пока нет новостей.</p>
+        <p className="text-sm text-muted-foreground">No news for the selected category yet.</p>
       ) : null}
     </div>
   );

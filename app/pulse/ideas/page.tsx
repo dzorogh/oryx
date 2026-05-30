@@ -10,7 +10,7 @@ import { CorportalSoftBadge } from "@/components/ui/corportal-soft-badge";
 
 export const metadata: Metadata = {
   title: "Ideas | Oryx BMS",
-  description: "Лента идей и предложений сотрудников",
+  description: "Employee ideas and suggestions feed",
 };
 
 const PulseIdeasPage = () => (

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { getProductDetailHref } from "../detail/product-detail-demo-data";
+import { getCatalogItemDetailHref } from "./catalog-helpers";
 import type { StoreCatalogItem } from "../store-catalog-demo-data";
 import { CatalogBuyTooltip } from "./catalog-buy-tooltip";
 import {
@@ -33,9 +33,9 @@ const CatalogProductCardSkeleton = ({ showBuyButton }: { showBuyButton: boolean 
         <Skeleton className="h-4 w-4/5" />
       </div>
       {showBuyButton ? (
-        <Skeleton className="mt-auto h-8 w-full rounded-md" />
+        <Skeleton className="mt-auto h-7 w-full rounded-md" />
       ) : (
-        <Skeleton className="mt-auto h-5 w-24" />
+        <Skeleton className="mt-auto h-7 w-full rounded-md" />
       )}
     </div>
   </article>
@@ -45,10 +45,12 @@ const CatalogProductCard = ({
   item,
   showBuyButton,
   priceFromPrefix,
+  listingMode,
 }: {
   item: StoreCatalogItem;
   showBuyButton: boolean;
   priceFromPrefix: boolean;
+  listingMode: CatalogListingMode;
 }) => {
   const displayName = getDisplayProductName(item.name);
   const hasDealerPrice = item.dealerPrice !== null;
@@ -57,7 +59,7 @@ const CatalogProductCard = ({
   const buyLabel = canBuy
     ? `Add "${displayName}" to cart for ${formatPrice(item.dealerPrice as number)}`
     : `"${displayName}" is unavailable for purchase: ${blockReason}`;
-  const productHref = getProductDetailHref(item.id);
+  const productHref = getCatalogItemDetailHref(item.id, listingMode);
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-xl border border-[var(--corportal-border-grey)] bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
@@ -111,16 +113,17 @@ const CatalogProductCard = ({
             </Button>
           </CatalogBuyTooltip>
         ) : (
-          <Link href={productHref} className="mt-auto block">
-            <p
-              className={cn(
-                "text-sm font-semibold",
-                item.dealerPrice === null ? "text-muted-foreground" : "text-foreground",
-              )}
-            >
-              {formatCatalogPrice(item.dealerPrice, { from: priceFromPrefix })}
-            </p>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "mt-auto w-full font-semibold",
+              item.dealerPrice === null && "text-muted-foreground",
+            )}
+            render={<Link href={productHref} aria-label={`View pricing for ${displayName}`} />}
+          >
+            {formatCatalogPrice(item.dealerPrice, { from: priceFromPrefix })}
+          </Button>
         )}
       </div>
     </article>
@@ -162,6 +165,7 @@ export const CatalogCardGrid = ({
                 item={item}
                 showBuyButton={showBuyButton}
                 priceFromPrefix={priceFromPrefix}
+                listingMode={listingMode}
               />
             ))}
           </div>

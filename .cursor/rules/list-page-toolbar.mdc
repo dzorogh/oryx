@@ -1,0 +1,10 @@
+---
+description: List page toolbar header — see docs/conventions (canonical)
+alwaysApply: true
+---
+
+# List Pages and Toolbar Headers
+
+**Canonical doc:** [docs/conventions/ui/list-page-toolbar.md](../../docs/conventions/ui/list-page-toolbar.md)
+
+Compact white `Card` toolbar on `bg-muted/30`, breadcrumb outside, tabs/filters inside toolbar, list below. Reference: `catalog-toolbar.tsx`, `thanks-toolbar.tsx`.

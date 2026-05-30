@@ -20,7 +20,7 @@ type ResultPanelProps = {
   renderMs: number | null;
 };
 
-const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Ошибка");
+const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Error");
 
 export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) => {
   const [packingMsDisplay, setPackingMsDisplay] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
 
   return (
     <Card
-      aria-label="Панель аудита"
+      aria-label="Audit panel"
       className="border border-[var(--corportal-border-grey)] bg-[var(--corportal-surface-white)] ring-0"
     >
       <Collapsible defaultOpen={false} className="group">
@@ -99,7 +99,7 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             )}
           >
-            <CardTitle className="text-base">Аудит результата</CardTitle>
+            <CardTitle className="text-base">Result audit</CardTitle>
             <ChevronDown
               className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[open]:rotate-180"
               aria-hidden
@@ -109,19 +109,19 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-2">
             <div className="grid gap-2 text-sm">
-              <p aria-label="Количество использованных контейнеров">
-                Контейнеров: {result.usedContainerCount}
+              <p aria-label="Used container count">
+                Containers: {result.usedContainerCount}
               </p>
-              <p aria-label="Время раскладки по контейнерам">
-                Раскладка: {packingMsDisplay === null ? "измеряется..." : `${packingMsDisplay} мс`}
+              <p aria-label="Packing time across containers">
+                Packing: {packingMsDisplay === null ? "measuring..." : `${packingMsDisplay} ms`}
               </p>
-              <p aria-label="Время отрисовки страницы результата">
-                Отрисовка: {renderMs === null ? "измеряется..." : `${renderMs.toFixed(2)} мс`}
+              <p aria-label="Result page render time">
+                Render: {renderMs === null ? "measuring..." : `${renderMs.toFixed(2)} ms`}
               </p>
-              <p aria-label="Количество размещенных единиц">
+              <p aria-label="Placed unit count">
                 Placed: {result.summary.placedUnits} / {result.summary.totalUnits}
               </p>
-              <p aria-label="Количество неразмещенных единиц">Unplaced: {result.summary.unplacedUnits}</p>
+              <p aria-label="Unplaced unit count">Unplaced: {result.summary.unplacedUnits}</p>
             </div>
 
             <Separator />
@@ -144,11 +144,11 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
             <Separator />
 
             <div className="space-y-2 text-sm">
-              <h3 className="font-medium">Ошибки/замечания</h3>
+              <h3 className="font-medium">Issues</h3>
               {result.validation.violations.length === 0 ? (
-                <p aria-label="Нарушений нет">Нарушений нет.</p>
+                <p aria-label="No violations">No violations.</p>
               ) : (
-                <ul className="list-disc space-y-1 pl-5 text-destructive" aria-label="Список нарушений">
+                <ul className="list-disc space-y-1 pl-5 text-destructive" aria-label="Violation list">
                   {result.validation.violations.map((violation) => (
                     <li key={violation}>{violation}</li>
                   ))}
@@ -159,15 +159,15 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
             <Separator />
 
             <div className="space-y-2 text-sm">
-              <h3 className="font-medium" aria-label="Проверка боковой ориентации">
-                Ящики лежат на боку
+              <h3 className="font-medium" aria-label="Side orientation check">
+                Units placed on side
               </h3>
               {onSideUnits.length === 0 ? (
-                <p aria-label="На боку: нет">Нет.</p>
+                <p aria-label="On side: none">None.</p>
               ) : (
-                <ul className="list-disc space-y-1 pl-5" aria-label="Список ящиков на боку">
+                <ul className="list-disc space-y-1 pl-5" aria-label="Units on side list">
                   {onSideUnits.map((u) => (
-                    <li key={u.unitId} aria-label={`Ящик ${u.unitId} на боку`}>
+                    <li key={u.unitId} aria-label={`Unit ${u.unitId} on side`}>
                       {u.unitId} — {u.itemName} (height: expected {u.expectedHeight}, got {u.actualHeight})
                     </li>
                   ))}
@@ -178,20 +178,20 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
             <Separator />
 
             <div className="space-y-2 text-sm">
-              <h3 className="font-medium">Пост-проверка</h3>
-              <p aria-label="Статус пост-проверки непоследних контейнеров">
-                Непоследние контейнеры (пустой объём): {statusBadge(emptyVolumePostCheck.pass)}
+              <h3 className="font-medium">Post-check</h3>
+              <p aria-label="Non-last container empty volume post-check status">
+                Non-last containers (empty volume): {statusBadge(emptyVolumePostCheck.pass)}
               </p>
-              <p aria-label="Максимальный пустой объём непоследних контейнеров">
-                Макс. пустой объём: {emptyVolumePostCheck.maxEmptyVolumePercent.toFixed(2)}% (порог{" "}
+              <p aria-label="Max empty volume in non-last containers">
+                Max empty volume: {emptyVolumePostCheck.maxEmptyVolumePercent.toFixed(2)}% (threshold{" "}
                 {emptyVolumePostCheck.thresholdPercent}%)
               </p>
-              <p aria-label="Количество проверенных непоследних контейнеров">
-                Проверено контейнеров: {emptyVolumePostCheck.checkedContainerCount}
+              <p aria-label="Checked non-last container count">
+                Containers checked: {emptyVolumePostCheck.checkedContainerCount}
               </p>
               {!emptyVolumePostCheck.pass && emptyVolumePostCheck.failingContainerIndex !== null ? (
-                <p aria-label="Контейнер с превышением пустого объёма" className="text-destructive">
-                  Превышение порога в контейнере #{emptyVolumePostCheck.failingContainerIndex}
+                <p aria-label="Container exceeding empty volume threshold" className="text-destructive">
+                  Threshold exceeded in container #{emptyVolumePostCheck.failingContainerIndex}
                 </p>
               ) : null}
             </div>
@@ -201,9 +201,9 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
             <div className="space-y-2 text-sm">
               <h3 className="font-medium">Unplaced units</h3>
               {result.unplacedItemUnitIds.length === 0 ? (
-                <p aria-label="Все единицы размещены">Все единицы размещены.</p>
+                <p aria-label="All units placed">All units placed.</p>
               ) : (
-                <ul className="list-disc space-y-1 pl-5" aria-label="Список неразмещенных единиц">
+                <ul className="list-disc space-y-1 pl-5" aria-label="Unplaced units list">
                   {result.unplacedItemUnitIds.map((unitId) => (
                     <li key={unitId}>{unitId}</li>
                   ))}

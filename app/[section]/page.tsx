@@ -8,28 +8,28 @@ type SectionConfig = {
 
 const SECTION_CONFIGS: Record<string, SectionConfig> = {
   activity: {
-    title: "Активность",
-    description: "Раздел активностей готов к подключению данных и виджетов.",
+    title: "Activity",
+    description: "The activity section is ready for data and widget integration.",
   },
   catalog: {
-    title: "Каталог",
-    description: "Раздел каталога подготовлен для интеграции с контентом.",
+    title: "Catalog",
+    description: "The catalog section is prepared for content integration.",
   },
   help: {
-    title: "Справка",
-    description: "Здесь будет база знаний, инструкции и контакты поддержки.",
+    title: "Help",
+    description: "Knowledge base, guides, and support contacts will appear here.",
   },
   profile: {
-    title: "Профиль",
-    description: "Страница профиля пользователя готова к подключению данных аккаунта.",
+    title: "Profile",
+    description: "The user profile page is ready for account data integration.",
   },
   search: {
-    title: "Поиск",
-    description: "Раздел поиска готов к подключению глобального поиска по системе.",
+    title: "Search",
+    description: "The search section is ready for system-wide global search integration.",
   },
   services: {
-    title: "Сервисы",
-    description: "Раздел сервисов готов для размещения внутренних инструментов.",
+    title: "Services",
+    description: "The services section is ready for internal tools.",
   },
 };
 

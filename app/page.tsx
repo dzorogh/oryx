@@ -6,7 +6,7 @@ import { PulseHomeAsideContent } from "@/features/pulse/pulse-home-aside-content
 
 export const metadata: Metadata = {
   title: "Home | Pulse | Oryx BMS",
-  description: "Главная лента Pulse: новости, рейтинг, задачи и виджеты",
+  description: "Pulse home feed: news, rankings, tasks, and widgets",
 };
 
 const HomePage = () => (

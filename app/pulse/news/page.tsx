@@ -3,7 +3,7 @@ import { NewsPage } from "@/features/pulse/news/news-page";
 
 export const metadata: Metadata = {
   title: "News | Oryx BMS",
-  description: "Корпоративные новости, объявления и рубрики",
+  description: "Company news, announcements, and categories",
 };
 
 const PulseNewsPage = () => <NewsPage />;

@@ -6,14 +6,14 @@ import { PriorityBadge } from "./priority-badge";
 
 const TaskCard = ({ task }: { task: TodayTask }) => (
   <HomePulseCard
-    ariaLabel={`Задача: ${task.title}`}
+    ariaLabel={`Task: ${task.title}`}
     title={task.title}
     meta={<PriorityBadge priority={task.priority} />}
     actions={<HomeDateMetaText>{task.deadlineLabel}</HomeDateMetaText>}
     footer={
       <>
       <p className="min-w-0 flex-1 text-xs leading-snug text-muted-foreground line-clamp-2">{task.projectName}</p>
-      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground" aria-label={`Комментариев: ${task.comments}`}>
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground" aria-label={`Comments: ${task.comments}`}>
         <MessageCircle aria-hidden className="size-3.5" />
         {task.comments}
       </span>

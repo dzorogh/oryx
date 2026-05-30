@@ -129,30 +129,30 @@ export const PulseHomePage = () => {
     () => [
       {
         id: "stats",
-        title: "Статистика",
+        title: "Statistics",
         icon: Crown,
         render: () => <HomeStatsSection />,
       },
       {
         id: "favoriteReports",
-        title: "Избранные отчёты",
+        title: "Favorite reports",
         icon: FileBarChart2,
         render: () => <HomeFavoriteReportsSection />,
       },
       {
         id: "salesLeaders",
-        title: "Рейтинг",
+        title: "Ranking",
         icon: Medal,
         render: () => null,
       },
       {
         id: "news",
-        title: "Новости",
+        title: "News",
         icon: Newspaper,
         actions: [
           (props) => (
-            <Link {...props} href="/pulse/news" aria-label="Перейти ко всем новостям">
-              Все новости
+            <Link {...props} href="/pulse/news" aria-label="Go to all news">
+              All news
             </Link>
           ),
         ],
@@ -160,7 +160,7 @@ export const PulseHomePage = () => {
       },
       {
         id: "thanks",
-        title: "Хочу сказать спасибо",
+        title: "Say thanks",
         icon: HandHeart,
         actions: [
           (props) => (
@@ -173,12 +173,12 @@ export const PulseHomePage = () => {
       },
       {
         id: "birthdays",
-        title: "Ближайшие дни рождения",
+        title: "Upcoming birthdays",
         icon: Cake,
         actions: [
           (props) => (
-            <Link {...props} href="/team" aria-label="Перейти к разделу команда">
-              Команда
+            <Link {...props} href="/team" aria-label="Go to team section">
+              Team
             </Link>
           ),
         ],
@@ -186,12 +186,12 @@ export const PulseHomePage = () => {
       },
       {
         id: "tasks",
-        title: "Задачи на сегодня",
+        title: "Today's tasks",
         icon: ListTodo,
         actions: [
           (props) => (
-            <Link {...props} href="/tracker/tasks" aria-label="Перейти ко всем задачам">
-              Все задачи
+            <Link {...props} href="/tracker/tasks" aria-label="Go to all tasks">
+              All tasks
             </Link>
           ),
         ],
@@ -199,12 +199,12 @@ export const PulseHomePage = () => {
       },
       {
         id: "ideas",
-        title: "Идеи и предложения",
+        title: "Ideas and suggestions",
         icon: Lightbulb,
         actions: [
           (props) => (
-            <Link {...props} href="/pulse/ideas" aria-label="Перейти ко всем идеям">
-              Все идеи
+            <Link {...props} href="/pulse/ideas" aria-label="Go to all ideas">
+              All ideas
             </Link>
           ),
         ],
@@ -298,7 +298,7 @@ export const PulseHomePage = () => {
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
           <div className="space-y-5 xl:col-span-3">
             {LEFT_COLUMN_PRIORITY_BLOCKS.map((blockId) => (
-              <Card key={`loader-left-${blockId}`} aria-label="Загрузка блока главной">
+              <Card key={`loader-left-${blockId}`} aria-label="Loading home block">
                 <CardContent>
                   <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
                   <div className="space-y-2">
@@ -313,7 +313,7 @@ export const PulseHomePage = () => {
             {DEFAULT_LAYOUT.order
               .filter((id) => !LEFT_COLUMN_PRIORITY_BLOCKS.includes(id))
               .map((blockId) => (
-                <Card key={`loader-right-${blockId}`} aria-label="Загрузка блока главной">
+                <Card key={`loader-right-${blockId}`} aria-label="Loading home block">
                   <CardContent>
                     <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
                     <div className="space-y-2">
@@ -344,9 +344,9 @@ export const PulseHomePage = () => {
                   onClick={() => setHiddenMenuOpen((prev) => !prev)}
                   className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted"
                   aria-expanded={hiddenMenuOpen}
-                  aria-label="Показать скрытые блоки"
+                  aria-label="Show hidden blocks"
                 >
-                  Скрытые блоки ({layout.hidden.length})
+                  Hidden blocks ({layout.hidden.length})
                 </button>
                 {hiddenMenuOpen ? (
                   <div className="absolute bottom-12 right-0 z-20 min-w-52 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 shadow-sm">
@@ -358,7 +358,7 @@ export const PulseHomePage = () => {
                         className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted"
                       >
                         <span>{blockById[blockId].title}</span>
-                        <span className="text-xs text-muted-foreground">Показать</span>
+                        <span className="text-xs text-muted-foreground">Show</span>
                       </button>
                     ))}
                   </div>

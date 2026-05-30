@@ -3,9 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -30,6 +38,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { TeamDirectoryToolbar } from "@/components/team/team-directory-toolbar";
 import { TEAM_DIRECTORY_EMPLOYEES, type TeamDirectoryEmployee } from "./team-directory-demo-data";
 
 const ALL_VALUE = "all";
@@ -88,7 +97,7 @@ const EmployeeCell = ({ employee }: { employee: TeamDirectoryEmployee }) => {
     <Link
       href={employee.profileHref}
       className="block rounded-lg outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={`Открыть профиль сотрудника ${employee.fullName}`}
+      aria-label={`Open profile for ${employee.fullName}`}
     >
       {content}
     </Link>
@@ -168,47 +177,47 @@ export const TeamDirectoryPage = () => {
     setShowLeadsOnly(false);
   };
 
+  const handleOpenFilters = () => {
+    setIsFilterSheetOpen(true);
+  };
+
   return (
-    <main className="min-h-screen">
-      <section className="flex items-start p-5">
-        <div className="flex w-full max-w-7xl flex-col gap-4">
-          <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
-            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
-              <h1 className="text-lg font-semibold text-foreground">Сотрудники</h1>
+    <main className="min-h-screen bg-muted/30">
+      <section className="p-4">
+        <div className="flex w-full flex-col gap-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink render={<Link href="/team/structure" aria-label="Open Team section" />}>
+                  Team
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Users</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span>Всего записей: {TEAM_DIRECTORY_EMPLOYEES.length}</span>
-                  <span className="hidden text-[var(--corportal-border-grey)] sm:inline">•</span>
-                  <span>Показано: {filteredEmployees.length}</span>
-                </div>
-
-                <Button
-                  type="button"
-                  variant={hasActiveFilters ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setIsFilterSheetOpen(true)}
-                  aria-label="Открыть фильтры сотрудников"
-                >
-                  <SlidersHorizontal aria-hidden className="size-3.5" />
-                  Фильтры
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
+          <TeamDirectoryToolbar
+            totalCount={TEAM_DIRECTORY_EMPLOYEES.length}
+            filteredCount={filteredEmployees.length}
+            hasActiveFilters={hasActiveFilters}
+            onOpenFilters={handleOpenFilters}
+          />
 
           <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
             <SheetContent side="right" className="w-full sm:max-w-md">
               <SheetHeader>
-                <SheetTitle>Фильтры</SheetTitle>
+                <SheetTitle>Filters</SheetTitle>
                 <SheetDescription>
-                  Поиск и отбор сотрудников без перезагрузки страницы.
+                  Search and filter employees without reloading the page.
                 </SheetDescription>
               </SheetHeader>
 
               <div className="grid gap-4 px-4 pb-4">
                 <label className="space-y-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Поиск</span>
+                  <span className="text-xs font-medium text-muted-foreground">Search</span>
                   <div className="relative">
                     <Search
                       aria-hidden
@@ -217,21 +226,21 @@ export const TeamDirectoryPage = () => {
                     <Input
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
-                      placeholder="ФИО, ID, подразделение, должность"
+                      placeholder="Name, ID, department, position"
                       className="pl-8"
-                      aria-label="Поиск сотрудника по имени, ID или подразделению"
+                      aria-label="Search employee by name, ID, or department"
                     />
                   </div>
                 </label>
 
                 <label className="space-y-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Округ</span>
+                  <span className="text-xs font-medium text-muted-foreground">District</span>
                   <Select value={districtFilter} onValueChange={(value) => setDistrictFilter(getSelectValue(value))}>
-                    <SelectTrigger className="w-full" aria-label="Фильтр по округу">
-                      <SelectValue placeholder="Все округа" />
+                    <SelectTrigger className="w-full" aria-label="Filter by district">
+                      <SelectValue placeholder="All districts" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={ALL_VALUE}>Все округа</SelectItem>
+                      <SelectItem value={ALL_VALUE}>All districts</SelectItem>
                       {districtOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
@@ -242,16 +251,16 @@ export const TeamDirectoryPage = () => {
                 </label>
 
                 <label className="space-y-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Отдел</span>
+                  <span className="text-xs font-medium text-muted-foreground">Department</span>
                   <Select
                     value={departmentFilter}
                     onValueChange={(value) => setDepartmentFilter(getSelectValue(value))}
                   >
-                    <SelectTrigger className="w-full" aria-label="Фильтр по отделу">
-                      <SelectValue placeholder="Все отделы" />
+                    <SelectTrigger className="w-full" aria-label="Filter by department">
+                      <SelectValue placeholder="All departments" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={ALL_VALUE}>Все отделы</SelectItem>
+                      <SelectItem value={ALL_VALUE}>All departments</SelectItem>
                       {departmentOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
@@ -262,13 +271,13 @@ export const TeamDirectoryPage = () => {
                 </label>
 
                 <label className="space-y-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Должность</span>
+                  <span className="text-xs font-medium text-muted-foreground">Position</span>
                   <Select value={positionFilter} onValueChange={(value) => setPositionFilter(getSelectValue(value))}>
-                    <SelectTrigger className="w-full" aria-label="Фильтр по должности">
-                      <SelectValue placeholder="Все должности" />
+                    <SelectTrigger className="w-full" aria-label="Filter by position">
+                      <SelectValue placeholder="All positions" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={ALL_VALUE}>Все должности</SelectItem>
+                      <SelectItem value={ALL_VALUE}>All positions</SelectItem>
                       {positionOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
@@ -286,7 +295,7 @@ export const TeamDirectoryPage = () => {
                     size="sm"
                     aria-pressed={showLeadsOnly}
                   >
-                    Руководители
+                    Leads
                   </Button>
                 </div>
               </div>
@@ -298,10 +307,10 @@ export const TeamDirectoryPage = () => {
                     variant="ghost"
                     size="sm"
                     onClick={handleResetFilters}
-                    aria-label="Сбросить все фильтры"
+                    aria-label="Reset all filters"
                   >
                     <X aria-hidden className="size-3.5" />
-                    Сбросить
+                    Reset
                   </Button>
                 ) : null}
               </SheetFooter>
@@ -314,17 +323,17 @@ export const TeamDirectoryPage = () => {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="px-3">ID</TableHead>
-                    <TableHead className="px-3">Сотрудник</TableHead>
-                    <TableHead className="px-3">Округ и филиал</TableHead>
-                    <TableHead className="px-3">Отдел и подразделения</TableHead>
-                    <TableHead className="px-3">Должность</TableHead>
+                    <TableHead className="px-3">Employee</TableHead>
+                    <TableHead className="px-3">District and branch</TableHead>
+                    <TableHead className="px-3">Department and divisions</TableHead>
+                    <TableHead className="px-3">Position</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEmployees.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                        По текущим фильтрам сотрудники не найдены.
+                        No employees match the current filters.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -358,14 +367,14 @@ export const TeamDirectoryPage = () => {
             <CardContent className="space-y-3 md:hidden">
               {filteredEmployees.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-[var(--corportal-border-grey)] px-3 py-6 text-center text-sm text-muted-foreground">
-                  По текущим фильтрам сотрудники не найдены.
+                  No employees match the current filters.
                 </div>
               ) : (
                 filteredEmployees.map((employee) => (
                   <article
                     key={employee.id}
                     className="rounded-xl border border-[var(--corportal-border-grey)] bg-card px-3 py-3"
-                    aria-label={`Карточка сотрудника ${employee.fullName}`}
+                    aria-label={`Employee card for ${employee.fullName}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <EmployeeCell employee={employee} />
@@ -375,7 +384,7 @@ export const TeamDirectoryPage = () => {
                     <div className="mt-3 grid gap-3">
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                          Округ и филиал
+                          District and branch
                         </p>
                         <p className="pt-1 text-sm font-medium text-foreground">{employee.district}</p>
                         <p className="pt-0.5 text-xs text-muted-foreground">{employee.branch}</p>
@@ -383,7 +392,7 @@ export const TeamDirectoryPage = () => {
 
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                          Отдел и подразделения
+                          Department and divisions
                         </p>
                         <p className="pt-1 text-sm font-medium text-foreground">{employee.department}</p>
                         <p className="pt-0.5 text-xs text-muted-foreground">{employee.divisions}</p>
@@ -392,7 +401,7 @@ export const TeamDirectoryPage = () => {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
                           <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                            Должность
+                            Position
                           </p>
                           <p className="pt-1 text-sm font-medium text-foreground">{employee.position}</p>
                         </div>
@@ -401,9 +410,9 @@ export const TeamDirectoryPage = () => {
                           <Link
                             href={employee.profileHref}
                             className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
-                            aria-label={`Открыть профиль сотрудника ${employee.fullName}`}
+                            aria-label={`Open profile for ${employee.fullName}`}
                           >
-                            Открыть профиль
+                            Open profile
                           </Link>
                         ) : null}
                       </div>
@@ -416,8 +425,8 @@ export const TeamDirectoryPage = () => {
             <CardFooter className="justify-between gap-3">
               <div className="text-xs text-muted-foreground">
                 {filteredEmployees.length === 0
-                  ? "По текущим условиям сотрудники не найдены."
-                  : `Найдено сотрудников: ${filteredEmployees.length}`}
+                  ? "No employees found for the current criteria."
+                  : `Employees found: ${filteredEmployees.length}`}
               </div>
             </CardFooter>
           </Card>

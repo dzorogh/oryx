@@ -61,19 +61,19 @@ export const STAGE_COLORS = [
 ] as const;
 
 const REALISTIC_NAMES = [
-  "Инденбом Сергей", "Абакумова Анастасия", "Абгарян Артур", "Абрахманов Ильнар",
-  "Абдуллаева Евгения", "Петрова Анна", "Смирнов Илья", "Соколова Мария",
-  "Волков Дмитрий", "Егорова Светлана", "Козлов Алексей", "Миронова Елена",
-  "Фролов Максим", "Субботина Дарья", "Васильев Кирилл", "Кузнецова Ирина",
-  "Тарасенко Евгений", "Семёнова Ольга", "Ковалёв Андрей", "Лебедев Павел",
-  "Новикова Виктория", "Морозов Роман", "Федорова Алина", "Попов Никита",
-  "Андреева Юлия", "Белов Антон", "Захарова Полина", "Орлов Тимур",
-  "Шестакова Екатерина", "Громов Станислав", "Власова Наталья", "Титов Игорь",
-  "Сафонова Диана", "Жуков Олег", "Борисова Татьяна", "Калинин Виталий",
-  "Крылова Елизавета", "Панов Григорий", "Рябова Ксения", "Денисов Артём",
-  "Гусева Оксана", "Логинов Вадим", "Щербакова Марина", "Баранов Денис",
-  "Комарова Ирина", "Филиппов Константин", "Давыдова Алёна", "Степанов Михаил",
-  "Костина Вероника", "Белоусов Данил",
+  "Indenbom Sergey", "Abakumova Anastasia", "Abgaryan Artur", "Abrahmanov Ilnar",
+  "Abdullaeva Evgenia", "Petrova Anna", "Smirnov Ilya", "Sokolova Maria",
+  "Volkov Dmitry", "Egorova Svetlana", "Kozlov Alexey", "Mironova Elena",
+  "Frolov Maxim", "Subbotina Darya", "Vasiliev Kirill", "Kuznetsova Irina",
+  "Tarasenko Evgeniy", "Semenova Olga", "Kovalev Andrey", "Lebedev Pavel",
+  "Novikova Victoria", "Morozov Roman", "Fedorova Alina", "Popov Nikita",
+  "Andreeva Yulia", "Belov Anton", "Zakharova Polina", "Orlov Timur",
+  "Shestakova Ekaterina", "Gromov Stanislav", "Vlasova Natalia", "Titov Igor",
+  "Safonova Diana", "Zhukov Oleg", "Borisova Tatiana", "Kalinin Vitaliy",
+  "Krylova Elizaveta", "Panov Grigoriy", "Ryabova Ksenia", "Denisov Artyom",
+  "Guseva Oksana", "Loginov Vadim", "Shcherbakova Marina", "Baranov Denis",
+  "Komarova Irina", "Filippov Konstantin", "Davydova Alyona", "Stepanov Mikhail",
+  "Kostina Veronika", "Belousov Danil",
 ];
 
 const ROLE_DISTRIBUTION: SpaceBusinessRole[] = [
@@ -90,9 +90,9 @@ const generateMembers = (count: number): SpaceMember[] =>
   }));
 
 const AVAILABLE_NAMES = [
-  "Чернов Александр", "Быкова Ангелина", "Зимин Георгий", "Ефимова Надежда",
-  "Романов Владислав", "Макарова Валерия", "Сорокин Евгений", "Жданова Лариса",
-  "Третьяков Руслан", "Мельникова Карина",
+  "Chernov Alexander", "Bykova Angelina", "Zimin Georgiy", "Efimova Nadezhda",
+  "Romanov Vladislav", "Makarova Valeriya", "Sorokin Evgeniy", "Zhdanova Larisa",
+  "Tretyakov Ruslan", "Melnikova Karina",
 ];
 
 const generateAvailableUsers = (startId: number, count: number) =>

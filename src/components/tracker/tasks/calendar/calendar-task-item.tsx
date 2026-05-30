@@ -37,7 +37,7 @@ export const CalendarTaskItem = ({
       "group relative rounded-md border bg-background px-1 py-0.5 text-xs shadow-xs transition",
       isDragging ? "opacity-50" : "hover:border-muted-foreground/40",
     ].join(" ")}
-    aria-label={`Задача ${task.title}`}
+    aria-label={`Task ${task.title}`}
   >
     <div className="flex h-4 w-full items-center gap-1.5">
       <span className={["h-3 w-1 shrink-0 rounded-full", COLOR_CLASS_BY_TASK[task.color]].join(" ")} aria-hidden />
@@ -53,7 +53,7 @@ export const CalendarTaskItem = ({
               "h-5 rounded px-1 text-[10px] font-medium tabular-nums text-muted-foreground transition hover:bg-muted hover:text-foreground",
               isTimeEditing ? "pointer-events-none opacity-0" : "",
             ].join(" ")}
-            aria-label={`Изменить время задачи ${task.title}`}
+            aria-label={`Change time for task ${task.title}`}
           >
             {timeLabel}
           </button>
@@ -75,7 +75,7 @@ export const CalendarTaskItem = ({
                 }}
                 autoFocus
                 className="h-5 w-10 border-border tabular-nums rounded-sm text-center bg-background px-1 !text-[10px]"
-                aria-label="Редактирование времени задачи"
+                aria-label="Edit task time"
               />
             </div>
           )}

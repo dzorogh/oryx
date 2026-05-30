@@ -10,21 +10,21 @@ const PRIORITY_CONFIG: Record<
   { label: string; Icon: LucideIcon; containerClass: string; iconClass: string; textClass: string }
 > = {
   high: {
-    label: "Высокий",
+    label: "High",
     Icon: ChevronsUp,
     containerClass: "bg-rose-600/10",
     iconClass: "text-rose-700",
     textClass: "text-foreground",
   },
   medium: {
-    label: "Средний",
+    label: "Medium",
     Icon: ChevronUp,
     containerClass: "bg-amber-500/10",
     iconClass: "text-amber-700",
     textClass: "text-foreground",
   },
   low: {
-    label: "Низкий",
+    label: "Low",
     Icon: ChevronsDown,
     containerClass: "bg-muted",
     iconClass: "text-muted-foreground",

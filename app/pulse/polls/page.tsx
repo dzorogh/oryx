@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Polls | Oryx BMS",
-  description: "Корпоративные опросы и голосования",
+  description: "Company polls and voting",
 };
 
 const PulsePollsPage = () => (
@@ -10,7 +10,7 @@ const PulsePollsPage = () => (
     <div className="w-full max-w-4xl rounded-xl border border-[var(--corportal-border-grey)] bg-card p-6">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">Polls</h1>
       <p className="pt-2 text-sm text-muted-foreground">
-        Раздел опросов подготовлен: здесь будут активные голосования и архив результатов.
+        The polls section is ready: active votes and archived results will appear here.
       </p>
     </div>
   </section>

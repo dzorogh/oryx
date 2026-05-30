@@ -2,8 +2,8 @@ import { TeamModulePlaceholderPage } from "@/components/team/team-module-placeho
 
 const TeamDivisionsPage = () => (
   <TeamModulePlaceholderPage
-    title="Подразделения"
-    description="Раздел подготовлен для иерархии подразделений, руководителей и структуры команды."
+    title="Divisions"
+    description="This section is prepared for division hierarchy, managers, and team structure."
   />
 );
 

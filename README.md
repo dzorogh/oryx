@@ -5,7 +5,7 @@
 ## Что есть в проекте сейчас
 
 - **Главная панель (`/`)**: набор бизнес-блоков (статистика, рейтинг, новости, благодарности, дни рождения, задачи, идеи) с сохранением пользовательского layout в `localStorage`.
-- **Контентные страницы**: `/pulse/news`, `/tasks`, `/pulse/ideas`, `/thanks`.
+- **Контентные страницы**: `/pulse/news`, `/tasks`, `/pulse/ideas`, `/pulse/thanks`.
 - **PIM-модуль**: `/pim/orders/[orderId]` с таблицей позиций заказа, 3D-сценой контейнеров, аудитом результата упаковки и валидацией.
 - **Секции-заглушки**: `/[section]` для внутренних разделов (`activity`, `approvals`, `catalog`, `help`, `learning`, `profile`, `search`, `services`, `team`).
 
@@ -41,10 +41,16 @@ npm run dev
 - `/pulse/news` — все новости
 - `/tasks` — все задачи
 - `/pulse/ideas` — идеи и предложения
-- `/thanks` — мои благодарности
+- `/pulse/thanks` — благодарности коллегам
 - `/pim` — редирект на дефолтный заказ
 - `/pim/orders/[orderId]` — страница заказа и упаковки
 - `/[section]` — служебные/будущие разделы (placeholder-страницы)
+
+## Conventions (agents and contributors)
+
+Tool-neutral guidelines for UI and layout live in **[docs/conventions/](docs/conventions/)**. Start from **[AGENTS.md](AGENTS.md)** for AI assistants (Cursor, Codex, Claude, etc.).
+
+Описание разделов приложения (как работают экраны): **[docs/features/](docs/features/)** — например [Pulse Thanks](docs/features/pulse-thanks.md).
 
 ## Архитектура (кратко)
 
@@ -64,7 +70,7 @@ app/
   news/page.tsx                   # Список новостей
   tasks/page.tsx                  # Список задач
   ideas/page.tsx                  # Идеи и предложения
-  thanks/page.tsx                 # Мои благодарности
+  pulse/thanks/page.tsx           # Благодарности (Pulse)
   [section]/page.tsx              # Заглушки для внутренних разделов
   pim/
     layout.tsx                    # Layout PIM-модуля
@@ -120,6 +126,8 @@ PIM-модуль использует доменную логику из `src/do
 - `npm run typecheck` — проверка типов TypeScript
 - `npm run check:deps` — проверка зависимостей
 - `npm run check:docs` — проверка ссылок в документации
+- `npm run check:ui-english` — проверка, что UI-текст в TSX без кириллицы (см. `scripts/english-ui-baseline.json`)
+- `npm run lint:ui-english` — то же через ESLint (`oryx-ui/no-cyrillic-ui`)
 
 ### Тестирование
 
@@ -142,6 +150,7 @@ npm run test
 npm run build
 npm run check:deps
 npm run check:docs
+npm run check:ui-english
 ```
 
 ## Текущий статус и ограничения

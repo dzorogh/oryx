@@ -42,11 +42,11 @@ export const formatDeadlineLabel = (isoDate: string, now = new Date()) => {
   const time = formatTime(date);
 
   if (diffDays === 0) {
-    return `Сегодня, ${time}`;
+    return `Today, ${time}`;
   }
 
   if (diffDays === 1) {
-    return `Завтра, ${time}`;
+    return `Tomorrow, ${time}`;
   }
 
   return `${pad2(date.getDate())}.${pad2(date.getMonth() + 1)}, ${time}`;
@@ -84,8 +84,8 @@ export const buildMonthGrid = (monthDate: Date, firstDayOfWeek: CalendarFirstDay
 
 export const getWeekdayLabels = (firstDayOfWeek: CalendarFirstDayOfWeek) => {
   const base = firstDayOfWeek === "monday"
-    ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
-    : ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+    ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return base;
 };

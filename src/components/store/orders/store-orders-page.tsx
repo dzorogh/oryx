@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StoreOrdersToolbar } from "@/components/store/orders/store-orders-toolbar";
 import { ORDER_PRESETS } from "@/domain/packing/constants";
 
 export const StoreOrdersPage = () => (
@@ -30,12 +31,7 @@ export const StoreOrdersPage = () => (
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold text-foreground">Orders</h1>
-          <p className="text-sm text-muted-foreground">
-            Store order list. Open packing view for detailed order fulfillment.
-          </p>
-        </div>
+        <StoreOrdersToolbar />
 
         <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)]">
           <CardContent className="px-0">

@@ -13,7 +13,7 @@ export type BirthdayPerson = {
 export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   {
     id: "bd-1",
-    fullName: "Анна Петрова",
+    fullName: "Anna Petrova",
     department: "IT",
     role: "Frontend Developer",
     avatarUrl: "https://i.pravatar.cc/96?img=32",
@@ -22,8 +22,8 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   },
   {
     id: "bd-2",
-    fullName: "Илья Смирнов",
-    department: "Логистика",
+    fullName: "Ilya Smirnov",
+    department: "Logistics",
     role: "Logistics Manager",
     avatarUrl: "https://i.pravatar.cc/96?img=12",
     month: 4,
@@ -31,7 +31,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   },
   {
     id: "bd-3",
-    fullName: "Мария Соколова",
+    fullName: "Maria Sokolova",
     department: "HR",
     role: "HR Partner",
     avatarUrl: "https://i.pravatar.cc/96?img=47",
@@ -40,7 +40,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   },
   {
     id: "bd-4",
-    fullName: "Дмитрий Волков",
+    fullName: "Dmitry Volkov",
     department: "Sales",
     role: "Account Manager",
     avatarUrl: "https://i.pravatar.cc/96?img=53",
@@ -49,7 +49,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   },
   {
     id: "bd-5",
-    fullName: "Ольга Власова",
+    fullName: "Olga Vlasova",
     department: "Finance",
     role: "Financial Analyst",
     avatarUrl: "https://i.pravatar.cc/96?img=5",
@@ -58,7 +58,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   },
   {
     id: "bd-6",
-    fullName: "Кирилл Орлов",
+    fullName: "Kirill Orlov",
     department: "IT",
     role: "DevOps Engineer",
     avatarUrl: "https://i.pravatar.cc/96?img=15",
@@ -67,7 +67,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   },
   {
     id: "bd-7",
-    fullName: "Светлана Егорова",
+    fullName: "Svetlana Egorova",
     department: "Support",
     role: "Support Lead",
     avatarUrl: "https://i.pravatar.cc/96?img=28",
@@ -76,7 +76,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
   },
   {
     id: "bd-8",
-    fullName: "Павел Громов",
+    fullName: "Pavel Gromov",
     department: "Operations",
     role: "Operations Specialist",
     avatarUrl: "https://i.pravatar.cc/96?img=67",

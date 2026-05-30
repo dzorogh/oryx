@@ -3,7 +3,6 @@ import type { ModuleSubnavItem } from "@/components/layout/module-subnav";
 // Каталожная часть навигации — зависит от выбранного каталога (переключатель сверху).
 export const STORE_CATALOG_NAV_ITEMS: ModuleSubnavItem[] = [
   { href: "/store/pim/products", label: "Products" },
-  { href: "/store/pim/product-variants", label: "Product Variants" },
   { href: "/store/pim/pricelists", label: "Pricelists" },
   { href: "/store/pim/import-export", label: "Import/Export" },
 ];

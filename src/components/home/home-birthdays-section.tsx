@@ -23,16 +23,16 @@ const getNextBirthdayOccurrence = (person: BirthdayPerson, ref: Date): Date => {
   return candidate;
 };
 
-const dateLabelFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateLabelFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   month: "long",
 });
 
-const dateDayFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateDayFormatter = new Intl.DateTimeFormat("en-US", {
   day: "2-digit",
 });
 
-const dateMonthFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateMonthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
 });
 
@@ -47,11 +47,11 @@ const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
       className={cn(
         "flex min-h-0 min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5",
       )}
-      aria-label={`День рождения: ${person.fullName}`}
+      aria-label={`Birthday: ${person.fullName}`}
     >
       <div
         className="flex w-14 shrink-0 flex-col items-center rounded-md bg-muted/30 px-1 py-0.5 text-center"
-        aria-label={`Дата дня рождения: ${dateLabelFormatter.format(occurrence)}`}
+        aria-label={`Birthday date: ${dateLabelFormatter.format(occurrence)}`}
       >
         <span className="text-xl font-bold leading-none text-foreground">{dateDayFormatter.format(occurrence)}</span>
         <span className="text-[10px] uppercase leading-4 text-muted-foreground">
@@ -61,7 +61,7 @@ const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <Image
           src={person.avatarUrl}
-          alt={`Аватар сотрудника ${person.fullName}`}
+          alt={`Employee avatar ${person.fullName}`}
           width={26}
           height={26}
           className="size-6.5 shrink-0 rounded-full object-cover"

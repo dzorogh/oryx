@@ -70,7 +70,7 @@ export const HomeSalesLeadersFilters = ({
   return (
     <div
       role="tablist"
-      aria-label="Направления для рейтинга продаж"
+      aria-label="Sales ranking directions"
       className={cn("flex flex-wrap items-center gap-1", className)}
     >
       {STATS_DIRECTION_TABS.map((tab, index) => {
@@ -157,7 +157,7 @@ export const HomeSalesLeadersSection = ({
                     "relative flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-card px-2.5 py-2 transition-colors hover:border-primary/35 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     cardClass,
                   )}
-                  aria-label={`Открыть профиль: ${row.name}, оборот ${turnoverLabel}`}
+                  aria-label={`Open profile: ${row.name}, turnover ${turnoverLabel}`}
                 >
                   {row.rank <= 3 ? (
                     <>
@@ -189,7 +189,7 @@ export const HomeSalesLeadersSection = ({
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <div className="truncate whitespace-nowrap text-xs leading-snug text-muted-foreground">
-                      Оборот продаж
+                      Sales turnover
                     </div>
                     <div className="whitespace-nowrap text-xs font-bold tabular-nums leading-none text-foreground sm:text-sm">
                       {turnoverLabel}

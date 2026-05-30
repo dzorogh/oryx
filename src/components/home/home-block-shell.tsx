@@ -75,7 +75,7 @@ export const HomeBlockShell = ({
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`Открыть меню блока ${title}`}
+                  aria-label={`Open block menu: ${title}`}
                 >
                   <EllipsisVertical aria-hidden className="size-5" />
                 </Button>
@@ -97,10 +97,10 @@ export const HomeBlockShell = ({
               }
 
               <DropdownMenuItem onClick={() => handleMenuAction(onToggleCollapsed)}>
-                {collapsed ? "Развернуть блок" : "Свернуть блок"}
+                {collapsed ? "Expand block" : "Collapse block"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleMenuAction(onHide)}>
-                Скрыть блок
+                Hide block
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

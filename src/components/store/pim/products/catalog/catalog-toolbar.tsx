@@ -1,39 +1,74 @@
 import { LayoutGrid, List, Plus } from "lucide-react";
+import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { CatalogColumnsButton } from "./catalog-columns-button";
 import { CatalogFiltersButton, CatalogQuickSearchControl, CatalogQuickSelectControl } from "./catalog-filters";
 import { CatalogCategoryTreeFilter } from "./catalog-category-tree-filter";
-import type { CatalogViewMode, StoreCatalogPageConfig } from "./catalog-helpers";
-import type { CatalogFilters } from "./use-catalog-controller";
+import {
+  CATALOG_LISTING_MODE_LABELS,
+  CATALOG_LISTING_MODES,
+  STORE_CATALOG_PAGE,
+  type CatalogListingMode,
+  type CatalogViewMode,
+} from "./catalog-helpers";
+import type { CatalogFilters, CatalogColumns } from "./use-catalog-controller";
 
 type CatalogToolbarProps = {
-  config: Pick<StoreCatalogPageConfig, "pageTitle" | "pageDescription" | "addButtonAriaLabel">;
+  listingMode: CatalogListingMode;
+  onListingModeChange: (mode: CatalogListingMode) => void;
+  addButtonAriaLabel: string;
   filters: CatalogFilters;
+  columns: CatalogColumns;
   viewMode: CatalogViewMode;
   onViewModeChange: (mode: CatalogViewMode) => void;
   onOpenFilters: () => void;
+  onOpenColumns: () => void;
 };
 
 export const CatalogToolbar = ({
-  config,
+  listingMode,
+  onListingModeChange,
+  addButtonAriaLabel,
   filters,
+  columns,
   viewMode,
   onViewModeChange,
   onOpenFilters,
+  onOpenColumns,
 }: CatalogToolbarProps) => (
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
-    <CardHeader className="space-y-3 pb-0 gap-0">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-lg font-semibold text-foreground">{config.pageTitle}</h1>
-          <p className="text-xs text-muted-foreground">{config.pageDescription}</p>
+    <CardHeader className="gap-0 space-y-2 pb-0">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-lg font-semibold text-foreground">{STORE_CATALOG_PAGE.pageTitle}</h1>
+          <p className="text-xs text-muted-foreground">{STORE_CATALOG_PAGE.pageDescription}</p>
         </div>
 
-        <Button type="button" size="sm" aria-label={config.addButtonAriaLabel}>
-          <Plus aria-hidden className="size-3.5" />
-          Add
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Catalog listing type">
+            {CATALOG_LISTING_MODES.map((mode) => {
+              const isActive = listingMode === mode;
+              return (
+                <HomeFilterChip
+                  key={mode}
+                  active={isActive}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => onListingModeChange(mode)}
+                >
+                  {CATALOG_LISTING_MODE_LABELS[mode]}
+                </HomeFilterChip>
+              );
+            })}
+          </div>
+
+          <Button type="button" size="sm" className="shrink-0" aria-label={addButtonAriaLabel}>
+            <Plus aria-hidden className="size-3.5" />
+            Add
+          </Button>
+        </div>
       </div>
 
       <div className="-mx-3 border-t border-[var(--corportal-border-grey)]" aria-hidden />
@@ -71,6 +106,11 @@ export const CatalogToolbar = ({
         />
 
         <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
+        <CatalogColumnsButton
+          hasCustomColumns={columns.hasCustom}
+          disabled={viewMode === "cards"}
+          onClick={onOpenColumns}
+        />
 
         <ToggleGroup
           value={[viewMode]}

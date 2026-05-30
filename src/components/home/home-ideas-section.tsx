@@ -10,7 +10,7 @@ import {
 const IdeaCard = ({ idea }: { idea: IdeaItem }) => (
   <article
     className="flex min-h-0 min-w-0 items-start gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-2"
-    aria-label={`Идея: ${idea.title}`}
+    aria-label={`Idea: ${idea.title}`}
   >
     <div className="min-w-0 flex-1">
       <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">{idea.title}</h3>

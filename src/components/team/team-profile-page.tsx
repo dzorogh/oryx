@@ -66,10 +66,10 @@ const BentoCard = ({ children, className = "" }: { children: ReactNode; classNam
 
 const getAssetIcon = (category: string) => {
   const c = category.toLowerCase();
-  if (c.includes("ноутбук")) return Laptop;
-  if (c.includes("телефон")) return Smartphone;
-  if (c.includes("токен")) return KeyRound;
-  if (c.includes("монитор") || c.includes("аксессуар")) return Monitor;
+  if (c.includes("laptop") || c.includes("notebook")) return Laptop;
+  if (c.includes("phone") || c.includes("mobile")) return Smartphone;
+  if (c.includes("token") || c.includes("key")) return KeyRound;
+  if (c.includes("monitor") || c.includes("accessory")) return Monitor;
   return Box;
 };
 
@@ -217,7 +217,7 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
                   <div className="size-2 rounded-full bg-muted-foreground/50" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Департамент</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Department</p>
                   <p className="text-[13px] font-semibold text-foreground">{profile.department}</p>
                 </div>
               </div>
@@ -226,7 +226,7 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
                   <div className="size-2 rounded-full bg-primary/80" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-primary font-bold">Руководитель</p>
+                  <p className="text-[10px] uppercase tracking-wider text-primary font-bold">Supervisor</p>
                   <p className="text-[13px] font-bold text-foreground">{profile.supervisor}</p>
                 </div>
               </div>
@@ -235,7 +235,7 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
             {/* Roles */}
             {profile.orgAssignments.length > 0 && (
               <div className="mt-4 flex flex-col gap-2 rounded-[1.25rem] bg-muted/40 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Роли</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Roles</p>
                 {profile.orgAssignments.slice(0, 2).map((a, i) => (
                   <div key={i} className="flex justify-between items-center text-xs">
                     <span className="truncate font-medium text-foreground/80">{a.name}</span>
@@ -324,10 +324,10 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
               {/* Left: Tabs */}
               <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit border border-border/40 shadow-inner">
                 <button className="px-4 py-1.5 text-[12px] font-bold rounded-lg bg-background shadow-xs text-foreground transition-all">
-                  Результаты
+                  Results
                 </button>
                 <button className="px-4 py-1.5 text-[12px] font-bold rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/40 transition-all">
-                  Уроки
+                  Lessons
                 </button>
               </div>
 
@@ -335,17 +335,17 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
               <div className="flex items-center gap-5 lg:gap-8 text-[12px] font-medium overflow-x-auto no-scrollbar py-1">
                 <div className="flex items-center gap-2 text-muted-foreground shrink-0">
                   <FileText className="size-4 text-indigo-500/80" />
-                  <span>Изучено:</span>
+                  <span>Studied:</span>
                   <span className="font-bold text-foreground/90">{profile.learning.summary.materialsStudied}/{profile.learning.summary.materialsTotal}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground shrink-0">
                   <CheckCircle className="size-4 text-emerald-500/80" />
-                  <span>Тестов:</span>
+                  <span>Tests:</span>
                   <span className="font-bold text-foreground/90">{profile.learning.summary.testsPassed}/{profile.learning.summary.testsTotal}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground shrink-0">
                   <Star className="size-4 text-rose-500/80" />
-                  <span>Ср. балл:</span>
+                  <span>Avg. score:</span>
                   <span className="font-bold text-rose-500">{profile.learning.summary.averageScore}%</span>
                 </div>
               </div>
@@ -353,11 +353,11 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
               {/* Right: Controls */}
               <div className="flex items-center gap-4 shrink-0">
                 <button className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground tracking-wider hover:text-foreground transition-colors group">
-                  <Filter className="size-3.5 group-hover:text-foreground transition-colors" /> ФИЛЬТРЫ <ChevronDown className="size-3.5 opacity-60 ml-0.5 group-hover:opacity-100 transition-opacity" />
+                  <Filter className="size-3.5 group-hover:text-foreground transition-colors" /> FILTERS <ChevronDown className="size-3.5 opacity-60 ml-0.5 group-hover:opacity-100 transition-opacity" />
                 </button>
                 <div className="w-[1px] h-4 bg-border/80" />
                 <label className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground tracking-wider uppercase cursor-pointer hover:text-foreground transition-colors group">
-                  ПО МЕСЯЦАМ
+                  BY MONTH
                   <div className="relative flex h-[18px] w-8 items-center rounded-full bg-border/80 transition-colors group-hover:bg-primary/20">
                     <div className="absolute right-[2px] size-3.5 rounded-full bg-muted-foreground group-hover:bg-primary shadow-sm transition-all" />
                   </div>
@@ -370,12 +370,12 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
               {/* Table Header */}
               <div className="grid grid-cols-12 gap-3 px-6 py-3 border-b border-border/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-muted/5">
                 <div className="col-span-1">#</div>
-                <div className="col-span-3">РАЗДЕЛ</div>
-                <div className="col-span-3">ТЕСТ</div>
-                <div className="col-span-2">НАЧАТ / ЗАКОНЧЕН</div>
-                <div className="col-span-1">ВРЕМЯ</div>
-                <div className="col-span-1 text-center">БАЛЛ</div>
-                <div className="col-span-1 text-right">СТАТУС</div>
+                <div className="col-span-3">SECTION</div>
+                <div className="col-span-3">TEST</div>
+                <div className="col-span-2">STARTED / COMPLETED</div>
+                <div className="col-span-1">TIME</div>
+                <div className="col-span-1 text-center">SCORE</div>
+                <div className="col-span-1 text-right">STATUS</div>
               </div>
 
               {/* Data Rows */}
@@ -405,7 +405,7 @@ export const TeamProfilePage = ({ profile }: TeamProfilePageProps) => {
                           </div>
                           <div className="col-span-1 flex justify-end">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-[5px] text-[9px] font-black tracking-widest uppercase shadow-sm ${r.status === 'passed' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 dark:bg-rose-500/20'}`}>
-                              {r.status === 'passed' ? 'ПРОЙДЕН' : 'ЗАВАЛЕН'}
+                              {r.status === 'passed' ? 'PASSED' : 'FAILED'}
                             </span>
                           </div>
                         </div>

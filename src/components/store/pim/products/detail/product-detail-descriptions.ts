@@ -1,5 +1,5 @@
 import type { StoreCatalogItem } from "../store-catalog-demo-data";
-import { getDisplayProductName } from "../catalog/catalog-helpers";
+import { getDisplayProductName } from "../catalog/catalog-display";
 
 export type ProductDescriptions = {
   shortDescription: string;

@@ -12,7 +12,7 @@ type NewsFeaturedHeroProps = {
 
 export const NewsFeaturedHero = ({ item }: NewsFeaturedHeroProps) => {
   const rubricLabel = NEWS_RUBRIC_LABELS[item.rubric];
-  const imageAlt = `Иллюстрация к новости: ${item.title}`;
+  const imageAlt = `News illustration: ${item.title}`;
 
   return (
     <article
@@ -26,6 +26,7 @@ export const NewsFeaturedHero = ({ item }: NewsFeaturedHeroProps) => {
             alt={imageAlt}
             fill
             priority
+            loading="eager"
             sizes="(max-width: 1024px) 100vw, min(1200px, 100vw)"
             className="object-contain object-top"
           />
@@ -60,9 +61,9 @@ export const NewsFeaturedHero = ({ item }: NewsFeaturedHeroProps) => {
               size="lg"
               disabled
               aria-disabled="true"
-              aria-label="Полная версия материала скоро будет доступна"
+              aria-label="Full article coming soon"
             >
-              Читать
+              Read
             </Button>
           </div>
         </div>
