@@ -14,6 +14,12 @@ type SearchTarget = {
 
 const SEARCH_TARGETS: SearchTarget[] = [
   { id: "pulse-home", title: "Pulse Home", description: "Main dashboard", href: "/" },
+  {
+    id: "pulse-company",
+    title: "Company workspace",
+    description: "Company profile, documents, and BI reports",
+    href: "/pulse/company",
+  },
   { id: "pulse", title: "Pulse", description: "Company news, ideas and polls", href: "/pulse/ideas" },
   { id: "tracker", title: "Tracker", description: "Tasks, projects and notes", href: "/tracker/tasks" },
   { id: "crm", title: "CRM", description: "Deals, leads and contacts", href: "/crm/deals" },

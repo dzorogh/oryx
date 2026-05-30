@@ -10,22 +10,21 @@ import {
   GraduationCap,
   Handshake,
   HeartPulse,
-  Languages,
   Library,
   LogOut,
   Menu,
-  Check,
   NotebookPen,
   Search,
   Settings,
   Smartphone,
   SquareKanban,
   Store,
-  User,
   Users,
   Workflow,
   SquareCheckBig,
+  Building2,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { GlobalSearchModal } from "@/components/layout/global-search-modal";
@@ -35,6 +34,11 @@ import { ModuleSubnav, type ModuleSubnavItem } from "@/components/layout/module-
 import { RailFaviconIcon } from "@/components/layout/rail-favicon-icon";
 import { StoreAsideContent } from "@/components/store/store-aside-content";
 import { TeamAsideContent } from "@/components/team/team-aside-content";
+import { LanguageFlag } from "@/components/layout/language-flag";
+import { TenantLogo } from "@/components/layout/tenant-logo";
+import { TEAM_DIRECTORY_EMPLOYEES } from "@/components/team/team-directory-demo-data";
+import { DEFAULT_LANGUAGE_ID, DEMO_LANGUAGES, type DemoLanguage } from "@/lib/demo-languages";
+import { DEFAULT_TENANT_ID, DEMO_TENANTS, type DemoTenant } from "@/lib/demo-tenants";
 import { PULSE_SUBNAV_ITEMS } from "@/features/pulse/pulse-nav";
 import { PulseHomeAsideContent } from "@/features/pulse/pulse-home-aside-content";
 import { TRACKER_SUBNAV_ITEMS } from "@/features/tracker/tracker-nav";
@@ -51,7 +55,12 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -299,22 +308,244 @@ type UserMenuItem = {
   href?: string;
 };
 
+const userMenuContentClassName =
+  "min-w-64 w-auto max-w-[min(100vw-2rem,20rem)]";
+
+const userMenuItemClassName = "gap-2 py-1.5";
+
+/** Fixed-width leading column so labels align across icon, logo, and flag rows. */
+const userMenuLeadingSlotClassName =
+  "flex size-5 shrink-0 items-center justify-center";
+
+const CURRENT_USER =
+  TEAM_DIRECTORY_EMPLOYEES.find((employee) => employee.id === "1") ?? TEAM_DIRECTORY_EMPLOYEES[0];
+
+const CURRENT_USER_PROFILE_HREF = CURRENT_USER.profileHref ?? "/team/users/1";
+
 const USER_MENU_ITEMS: UserMenuItem[] = [
-  { id: "profile", label: "Profile", icon: User, href: "/team/users/1" },
+  { id: "company", label: "Company workspace", icon: Building2, href: "/pulse/company" },
   { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "language", label: "Language", icon: Languages },
   { id: "checklists", label: "Checklists", icon: SquareCheckBig, href: "/tracker/checklists" },
   { id: "notes", label: "Notes", icon: NotebookPen, href: "/tracker/notes" },
   { id: "mindmaps", label: "Mind Maps", icon: Workflow, href: "/tracker/mindmaps" },
   { id: "open-on-phone", label: "Open on phone", icon: Smartphone },
-  { id: "logout", label: "Log out", icon: LogOut, href: "/logout" },
 ];
 
 const railProfileButtonClass =
-  "flex size-7 items-center justify-center overflow-hidden rounded-full bg-[color:var(--corportal-rail-hover)] text-[color:var(--corportal-rail-foreground)] transition-colors hover:bg-[color:var(--corportal-rail-active)] focus-visible:outline focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]";
+  "flex items-center justify-center rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]";
 
-const UserMenu = () => {
+type ProfileAvatarProps = {
+  className?: string;
+  sizes?: string;
+};
+
+const ProfileAvatar = ({ className, sizes = "40px" }: ProfileAvatarProps) => (
+  <span
+    className={cn(
+      "relative block shrink-0 overflow-hidden rounded-full border border-white/20 bg-card",
+      className,
+    )}
+  >
+    <Image
+      src={CURRENT_USER.avatarUrl}
+      alt={`Avatar of ${CURRENT_USER.fullName}`}
+      fill
+      sizes={sizes}
+      className="object-cover"
+    />
+  </span>
+);
+
+type SelectableOption = {
+  id: string;
+  label: string;
+};
+
+const TENANT_STORAGE_KEY = "tenant-id";
+
+const LANGUAGE_STORAGE_KEY = "language";
+
+const useStoredSelection = (
+  storageKey: string,
+  options: SelectableOption[],
+  defaultId?: string,
+) => {
+  const [selectedId, setSelectedId] = useState(defaultId ?? options[0]?.id ?? "");
+
+  useEffect(() => {
+    const localStorage = window.localStorage;
+    if (!localStorage || typeof localStorage.getItem !== "function") {
+      return;
+    }
+
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+      return;
+    }
+    const exists = options.some((option) => option.id === raw);
+    if (!exists) {
+      return;
+    }
+    const timer = window.setTimeout(() => setSelectedId(raw), 0);
+    return () => window.clearTimeout(timer);
+  }, [storageKey, options]);
+
+  const select = (nextId: string) => {
+    setSelectedId(nextId);
+
+    const localStorage = window.localStorage;
+    if (!localStorage || typeof localStorage.setItem !== "function") {
+      return;
+    }
+
+    localStorage.setItem(storageKey, nextId);
+    window.dispatchEvent(new CustomEvent("oryx:tenant-id-change", { detail: nextId }));
+  };
+
+  const selected = options.find((option) => option.id === selectedId) ?? options[0];
+
+  return { selectedId, select, selected };
+};
+
+type UserMenuProps = {
+  triggerClassName: string;
+  triggerAriaLabel?: string;
+  triggerAvatarClassName?: string;
+  contentSide?: "top" | "right" | "bottom";
+  contentAlign?: "start" | "center" | "end";
+};
+
+const UserMenuActionItem = ({
+  item,
+  onSelect,
+}: {
+  item: UserMenuItem;
+  onSelect: (item: UserMenuItem) => void;
+}) => {
+  const Icon = item.icon;
+
+  return (
+    <DropdownMenuItem
+      className={userMenuItemClassName}
+      onClick={() => onSelect(item)}
+      aria-label={item.label}
+    >
+      <span className={userMenuLeadingSlotClassName}>
+        <Icon aria-hidden className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1 whitespace-nowrap">{item.label}</span>
+    </DropdownMenuItem>
+  );
+};
+
+type TenantSelectionSubmenuProps = {
+  tenants: DemoTenant[];
+  selectedId: string;
+  selectedTenant: DemoTenant;
+  onSelect: (id: string) => void;
+};
+
+const TenantSelectionSubmenu = ({
+  tenants,
+  selectedId,
+  selectedTenant,
+  onSelect,
+}: TenantSelectionSubmenuProps) => (
+  <DropdownMenuSub>
+    <DropdownMenuSubTrigger
+      className={cn(userMenuItemClassName, "w-full")}
+      aria-label={`Tenant, current: ${selectedTenant.label}`}
+    >
+      <span className={userMenuLeadingSlotClassName}>
+        <TenantLogo src={selectedTenant.logoUrl} alt={selectedTenant.label} className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1 truncate whitespace-nowrap">{selectedTenant.label}</span>
+    </DropdownMenuSubTrigger>
+    <DropdownMenuSubContent className="min-w-56 max-h-80 overflow-y-auto">
+      <DropdownMenuRadioGroup
+        value={selectedId}
+        onValueChange={(value) => {
+          if (value) {
+            onSelect(value);
+          }
+        }}
+      >
+        {tenants.map((tenant) => (
+          <DropdownMenuRadioItem
+            key={tenant.id}
+            value={tenant.id}
+            className="gap-2 py-2 pl-1.5 pr-8"
+          >
+            <TenantLogo src={tenant.logoUrl} alt={tenant.label} />
+            <span className="min-w-0 flex-1 truncate">{tenant.label}</span>
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuSubContent>
+  </DropdownMenuSub>
+);
+
+type LanguageSelectionSubmenuProps = {
+  languages: DemoLanguage[];
+  selectedId: string;
+  selectedLanguage: DemoLanguage;
+  onSelect: (id: string) => void;
+};
+
+const LanguageSelectionSubmenu = ({
+  languages,
+  selectedId,
+  selectedLanguage,
+  onSelect,
+}: LanguageSelectionSubmenuProps) => (
+  <DropdownMenuSub>
+    <DropdownMenuSubTrigger
+      className={cn(userMenuItemClassName, "w-full")}
+      aria-label={`Language, current: ${selectedLanguage.label}`}
+    >
+      <span className={userMenuLeadingSlotClassName}>
+        <LanguageFlag src={selectedLanguage.flagUrl} alt={selectedLanguage.label} className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1 truncate whitespace-nowrap">{selectedLanguage.label}</span>
+    </DropdownMenuSubTrigger>
+    <DropdownMenuSubContent className="min-w-52">
+      <DropdownMenuRadioGroup
+        value={selectedId}
+        onValueChange={(value) => {
+          if (value) {
+            onSelect(value);
+          }
+        }}
+      >
+        {languages.map((language) => (
+          <DropdownMenuRadioItem
+            key={language.id}
+            value={language.id}
+            className="gap-2 py-2 pl-1.5 pr-8"
+          >
+            <LanguageFlag src={language.flagUrl} alt={language.label} />
+            <span className="min-w-0 flex-1 truncate">{language.label}</span>
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuSubContent>
+  </DropdownMenuSub>
+);
+
+const UserMenu = ({
+  triggerClassName,
+  triggerAriaLabel = "User menu",
+  triggerAvatarClassName = "size-8",
+  contentSide = "right",
+  contentAlign = "end",
+}: UserMenuProps) => {
   const router = useRouter();
+  const tenant = useStoredSelection(TENANT_STORAGE_KEY, DEMO_TENANTS, DEFAULT_TENANT_ID);
+  const selectedTenant =
+    DEMO_TENANTS.find((item) => item.id === tenant.selectedId) ?? DEMO_TENANTS[0];
+  const language = useStoredSelection(LANGUAGE_STORAGE_KEY, DEMO_LANGUAGES, DEFAULT_LANGUAGE_ID);
+  const selectedLanguage =
+    DEMO_LANGUAGES.find((item) => item.id === language.selectedId) ?? DEMO_LANGUAGES[0];
 
   const handleSelect = (item: UserMenuItem) => {
     if (item.href) {
@@ -326,27 +557,70 @@ const UserMenu = () => {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button type="button" className={railProfileButtonClass} aria-label="User menu">
-            <User aria-hidden className="size-4" strokeWidth={2} />
+          <button type="button" className={triggerClassName} aria-label={triggerAriaLabel}>
+            <ProfileAvatar className={triggerAvatarClassName} sizes="36px" />
           </button>
         }
       />
-      <DropdownMenuContent align="end" side="right">
+      <DropdownMenuContent
+        align={contentAlign}
+        side={contentSide}
+        className={userMenuContentClassName}
+      >
         <DropdownMenuGroup>
-          {USER_MENU_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <DropdownMenuItem
-                key={item.id}
-                onClick={() => handleSelect(item)}
-                aria-label={item.label}
-                variant={item.id === "logout" ? "destructive" : "default"}
-              >
-                <Icon aria-hidden className="size-4" />
-                <span>{item.label}</span>
-              </DropdownMenuItem>
-            );
-          })}
+          <DropdownMenuItem
+            className="h-auto gap-3 px-2 py-2"
+            onClick={() => router.push(CURRENT_USER_PROFILE_HREF)}
+            aria-label={`Profile: ${CURRENT_USER.fullName}`}
+          >
+            <ProfileAvatar className="size-10" sizes="40px" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm font-semibold text-foreground">
+                {CURRENT_USER.fullName}
+              </span>
+              <span className="truncate text-xs text-muted-foreground">
+                {CURRENT_USER.position}
+              </span>
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup className="flex flex-col gap-0.5">
+          {USER_MENU_ITEMS.slice(0, 1).map((item) => (
+            <UserMenuActionItem key={item.id} item={item} onSelect={handleSelect} />
+          ))}
+
+          <TenantSelectionSubmenu
+            tenants={DEMO_TENANTS}
+            selectedId={tenant.selectedId}
+            selectedTenant={selectedTenant}
+            onSelect={tenant.select}
+          />
+
+          <LanguageSelectionSubmenu
+            languages={DEMO_LANGUAGES}
+            selectedId={language.selectedId}
+            selectedLanguage={selectedLanguage}
+            onSelect={language.select}
+          />
+
+          {USER_MENU_ITEMS.slice(1).map((item) => (
+            <UserMenuActionItem key={item.id} item={item} onSelect={handleSelect} />
+          ))}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            className={userMenuItemClassName}
+            onClick={() => router.push("/logout")}
+            aria-label="Log out"
+            variant="destructive"
+          >
+            <span className={userMenuLeadingSlotClassName}>
+              <LogOut aria-hidden className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1 whitespace-nowrap">Log out</span>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -356,6 +630,12 @@ const UserMenu = () => {
 /** Фавикон рейла — Figma node 40023000:133773 (Corportal Favicon). */
 const railButtonBaseClass =
   "relative inline-flex size-8 shrink-0 items-center justify-center rounded-md text-[color:var(--corportal-rail-foreground)] transition-colors hover:bg-[color:var(--corportal-rail-hover)] focus-visible:outline focus-visible:ring-2 focus-visible:ring-[color:var(--corportal-rail-focus-ring)]";
+
+const RailHomeButton = () => (
+  <Link href="/" className={railButtonBaseClass} aria-label="Home">
+    <RailFaviconIcon />
+  </Link>
+);
 
 const RailIconButton = ({ label, icon: Icon, href, onClick, active }: RailIconButtonProps) => {
   const className = cn(
@@ -387,103 +667,6 @@ const RailIconButton = ({ label, icon: Icon, href, onClick, active }: RailIconBu
       {indicator}
       <Icon aria-hidden className="size-5" strokeWidth={2} />
     </Link>
-  );
-};
-
-type DemoTenant = {
-  id: string;
-  label: string;
-};
-
-const TENANT_STORAGE_KEY = "tenant-id";
-
-const DEMO_TENANTS: DemoTenant[] = [
-  { id: "tenant-oryx", label: "Oryx" },
-  { id: "tenant-north", label: "North" },
-  { id: "tenant-global", label: "GlobalDrive" },
-];
-
-type TenantSwitcherProps = {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-};
-
-export const TenantSwitcher = ({ open, onOpenChange }: TenantSwitcherProps = {}) => {
-  const [tenantId, setTenantId] = useState(DEMO_TENANTS[0]?.id ?? "tenant-oryx");
-
-  useEffect(() => {
-    const localStorage = window.localStorage;
-    if (!localStorage || typeof localStorage.getItem !== "function") {
-      return;
-    }
-
-    const raw = localStorage.getItem(TENANT_STORAGE_KEY);
-    if (!raw) {
-      return;
-    }
-    const exists = DEMO_TENANTS.some((t) => t.id === raw);
-    if (!exists) {
-      return;
-    }
-    // Чтобы избежать React/ESLint предупреждений о синхронных setState в эффектах,
-    // обновляем выбранный тенант в следующем тике.
-    const timer = window.setTimeout(() => setTenantId(raw), 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  const handleSelectTenant = (nextId: string) => {
-    setTenantId(nextId);
-
-    const localStorage = window.localStorage;
-    if (!localStorage || typeof localStorage.setItem !== "function") {
-      return;
-    }
-
-    localStorage.setItem(TENANT_STORAGE_KEY, nextId);
-  };
-
-  const currentTenant = DEMO_TENANTS.find((t) => t.id === tenantId) ?? DEMO_TENANTS[0];
-  const isControlled = open !== undefined;
-
-  return (
-    <DropdownMenu open={open} onOpenChange={onOpenChange}>
-      {isControlled ? (
-        <DropdownMenuTrigger className="sr-only" aria-hidden tabIndex={-1} />
-      ) : (
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Switch tenant"
-            >
-              <RailFaviconIcon />
-            </Button>
-          }
-        />
-      )}
-      <DropdownMenuContent align="start">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Tenant</DropdownMenuLabel>
-          {DEMO_TENANTS.map((tenant) => {
-            const active = tenant.id === currentTenant.id;
-            return (
-              <DropdownMenuItem
-                key={tenant.id}
-                onClick={() => handleSelectTenant(tenant.id)}
-                aria-label={`Select tenant ${tenant.label}`}
-              >
-                <span className="flex w-full items-center justify-between gap-3">
-                  <span>{tenant.label}</span>
-                  {active ? <Check aria-hidden className="size-4" /> : null}
-                </span>
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 };
 
@@ -617,7 +800,6 @@ export const NavRail = () => {
   const currentPathname = pathname ?? "/";
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [isTenantOpen, setIsTenantOpen] = useState(false);
   const { collapsed, setCollapsed } = useSidebarAside();
   const [flyout, setFlyout] = useState<{ item: RailSectionItem; style: CSSProperties } | null>(null);
   const closeTimerRef = useRef<number | null>(null);
@@ -708,10 +890,9 @@ export const NavRail = () => {
   }, [currentPathname]);
 
   const mobileBottomNavItems: MobileNavItem[] = [
-    { key: "tenant", icon: RailFaviconIcon, ariaLabel: "Switch tenant", onClick: () => setIsTenantOpen(true) },
+    { key: "home", icon: RailFaviconIcon, ariaLabel: "Home", onClick: () => router.push("/") },
     { key: "tasks", icon: SquareCheckBig, ariaLabel: "Tasks", onClick: () => router.push("/tracker/tasks") },
     { key: "search", icon: Search, ariaLabel: "Open search", onClick: handleOpenSearch },
-    { key: "profile", icon: User, ariaLabel: "Profile", onClick: () => router.push("/team/users/1") },
     { key: "menu", icon: Menu, ariaLabel: "Open menu", onClick: handleBurgerClick },
   ];
 
@@ -730,7 +911,7 @@ export const NavRail = () => {
         </div>
 
         <div className="flex w-full justify-center px-3 py-3">
-          <TenantSwitcher />
+          <RailHomeButton />
         </div>
 
         <div className="flex w-full flex-col items-center gap-3 px-1 pb-2">
@@ -769,7 +950,7 @@ export const NavRail = () => {
         </div>
 
         <div className="flex w-full justify-center px-2 py-2">
-          <UserMenu />
+          <UserMenu triggerClassName={railProfileButtonClass} />
         </div>
       </LeftDockShell>
 
@@ -785,7 +966,6 @@ export const NavRail = () => {
       ) : null}
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-corportal-rail-gradient-from m-2 p-1 rounded-xl sm:hidden" aria-label="Bottom navigation">
-        <TenantSwitcher open={isTenantOpen} onOpenChange={setIsTenantOpen} />
         <div className="grid grid-cols-5 gap-0">
           {mobileBottomNavItems.map((item) => (
             <MobileBottomNavActionButton
@@ -795,6 +975,15 @@ export const NavRail = () => {
               onClick={item.onClick}
             />
           ))}
+          <div className="flex items-center justify-center">
+            <UserMenu
+              triggerClassName={cn(mobileBottomNavButtonBaseClass, "inline-flex items-center justify-center")}
+              triggerAriaLabel="User menu"
+              triggerAvatarClassName="size-6"
+              contentSide="top"
+              contentAlign="center"
+            />
+          </div>
         </div>
       </nav>
 

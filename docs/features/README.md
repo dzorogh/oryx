@@ -6,3 +6,4 @@ Product and module behavior (how screens work, data flow, file map).
 |---------|----------|
 | Store PIM — Products / Variants catalog | [store-pim-catalog.md](store-pim-catalog.md) |
 | Pulse — Thanks | [pulse-thanks.md](pulse-thanks.md) |
+| Pulse — Company workspace | [pulse-company-cabinet.md](pulse-company-cabinet.md) |
