@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -91,7 +92,10 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
     setSearchQuery("");
   };
 
-  const activeGroupLabel = activeGroup?.label ?? "Category";
+  const attributeGroupItems = useMemo(
+    () => attributeGroups.map((group) => ({ value: group.id, label: group.label })),
+    [attributeGroups],
+  );
 
   return (
     <div className="space-y-4">
@@ -114,16 +118,22 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
 
       <div className="flex flex-wrap items-center gap-3">
         {activeSection === "attributes" ? (
-          <Select value={activeGroupId} onValueChange={handleGroupChange}>
+          <Select
+            items={attributeGroupItems}
+            value={activeGroupId}
+            onValueChange={handleGroupChange}
+          >
             <SelectTrigger size="sm" className="w-[200px] bg-background" aria-label="Attribute category">
-              <SelectValue>{activeGroupLabel}</SelectValue>
+              <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              {attributeGroups.map((group) => (
-                <SelectItem key={group.id} value={group.id}>
-                  {group.label}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                {attributeGroups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
         ) : null}

@@ -24,6 +24,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -157,12 +158,18 @@ export const OrderViewSection = ({
           </CardTitle>
           <label className="inline-flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Container</span>
-            <Select name="container-type" defaultValue={CONTAINER_LABEL}>
+            <Select
+              items={[{ value: CONTAINER_LABEL, label: CONTAINER_LABEL }]}
+              name="container-type"
+              defaultValue={CONTAINER_LABEL}
+            >
               <SelectTrigger size="sm" aria-label="Container type">
-                <SelectValue />
+                <SelectValue placeholder="Container type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={CONTAINER_LABEL}>{CONTAINER_LABEL}</SelectItem>
+                <SelectGroup>
+                  <SelectItem value={CONTAINER_LABEL}>{CONTAINER_LABEL}</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </label>

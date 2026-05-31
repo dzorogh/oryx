@@ -35,7 +35,6 @@ export const getCompanyByTenantId = (tenantId: string): CompanyProfile => {
         { id: "tax-id", label: "Tax ID", value: "—" },
         { id: "legal-address", label: "Legal address", value: "—" },
       ],
-      bankParameters: [],
     },
     files: [],
   };

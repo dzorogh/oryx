@@ -32,7 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type ProjectSettingsModalProps = {
@@ -231,14 +231,23 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
               </label>
               <label className="grid gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Space</span>
-                <Select value={projectDraft.spaceId} onValueChange={(v) => handleProjectFieldChange("spaceId", v ?? "")}>
+                <Select
+                  items={PROJECT_SETTINGS_SEED.spaces.map((space) => ({
+                    value: space.id,
+                    label: space.name,
+                  }))}
+                  value={projectDraft.spaceId}
+                  onValueChange={(v) => handleProjectFieldChange("spaceId", v ?? "")}
+                >
                   <SelectTrigger className="w-full" aria-label="Space">
                     <SelectValue placeholder="Space" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PROJECT_SETTINGS_SEED.spaces.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {PROJECT_SETTINGS_SEED.spaces.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </label>
@@ -362,16 +371,22 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
                     <TableCell className="px-3 py-1 text-sm whitespace-normal">{row.data.fullName}</TableCell>
                     <TableCell className="px-3 py-1">
                       <Select
+                        items={PROJECT_SETTINGS_SEED.businessRoles.map((role) => ({
+                          value: role,
+                          label: role,
+                        }))}
                         value={row.data.businessRole}
                         onValueChange={(v) => handleBusinessRoleChange(row.data.id, v)}
                       >
                         <SelectTrigger className="w-32" aria-label={`Role of ${row.data.fullName}`}>
-                          <SelectValue />
+                          <SelectValue placeholder="Role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {PROJECT_SETTINGS_SEED.businessRoles.map((role) => (
-                            <SelectItem key={role} value={role}>{role}</SelectItem>
-                          ))}
+                          <SelectGroup>
+                            {PROJECT_SETTINGS_SEED.businessRoles.map((role) => (
+                              <SelectItem key={role} value={role}>{role}</SelectItem>
+                            ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </TableCell>

@@ -39,22 +39,14 @@ const getColumnHeadClassName = (columnId: CatalogColumnId) =>
 const ProductNameCell = ({
   item,
   showSkuSubline,
-  listingMode,
 }: {
   item: StoreCatalogItem;
   showSkuSubline: boolean;
-  listingMode: CatalogListingMode;
 }) => {
   const displayName = getDisplayProductName(item.name);
-  const productHref = getCatalogItemDetailHref(item.id, listingMode);
 
   return (
-    <Link
-      href={productHref}
-      className="flex w-full max-w-full min-w-0 items-center gap-2.5 rounded-md outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring/50"
-      aria-label={`Open product ${displayName}`}
-      title={displayName}
-    >
+    <div className="flex w-full max-w-full min-w-0 items-center gap-2.5" title={displayName}>
       <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-white">
         <Image src={item.imageSrc} alt={item.imageAlt} fill sizes="36px" className="object-cover" />
       </div>
@@ -66,14 +58,13 @@ const ProductNameCell = ({
           </p>
         ) : null}
       </div>
-    </Link>
+    </div>
   );
 };
 
 const StatusBadge = ({ status, className }: { status: DealerStatus | RetailStatus; className?: string }) => (
   <Badge
     className={cn(
-      "block max-w-full truncate rounded-full px-2 py-0 text-[10px] font-medium",
       statusBadgeClassMap[status],
       className,
     )}
@@ -141,19 +132,20 @@ const DealerCell = ({ item, showBuyButton, priceFromPrefix }: DealerCellProps) =
       <div className="flex shrink-0 items-center justify-end gap-2">
         <PriceLabel price={item.dealerPrice} from={priceFromPrefix} className="text-right" />
         {showBuyButton ? (
-          <CatalogBuyTooltip reason={blockReason} className="inline-flex shrink-0">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              className={cn("shrink-0", !canBuy && "pointer-events-none")}
-              disabled={!canBuy}
-              aria-label={buyLabel}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <ShoppingCart aria-hidden className="size-4" />
-            </Button>
-          </CatalogBuyTooltip>
+          <span className="relative z-20 inline-flex shrink-0 pointer-events-auto">
+            <CatalogBuyTooltip reason={blockReason} className="inline-flex shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                className={cn("shrink-0", !canBuy && "pointer-events-none")}
+                disabled={!canBuy}
+                aria-label={buyLabel}
+              >
+                <ShoppingCart aria-hidden className="size-4" />
+              </Button>
+            </CatalogBuyTooltip>
+          </span>
         ) : null}
       </div>
     </div>
@@ -173,7 +165,7 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
 
   switch (columnId) {
     case "name":
-      return <ProductNameCell item={item} showSkuSubline={context.showSkuSubline} listingMode={listingMode} />;
+      return <ProductNameCell item={item} showSkuSubline={context.showSkuSubline} />;
     case "sku":
       return <span className="text-sm font-medium">{item.sku}</span>;
     case "brand":
@@ -249,6 +241,52 @@ const renderColumnSkeleton = (columnId: CatalogColumnId, showBuyButton: boolean,
   }
 };
 
+type CatalogTableRowProps = {
+  item: StoreCatalogItem;
+  listingMode: CatalogListingMode;
+  visibleColumnIds: CatalogColumnId[];
+  showBuyButton: boolean;
+  priceFromPrefix: boolean;
+  showSkuSubline: boolean;
+};
+
+const CatalogTableRow = ({
+  item,
+  listingMode,
+  visibleColumnIds,
+  showBuyButton,
+  priceFromPrefix,
+  showSkuSubline,
+}: CatalogTableRowProps) => {
+  const displayName = getDisplayProductName(item.name);
+  const productHref = getCatalogItemDetailHref(item.id, listingMode);
+
+  return (
+    <TableRow className="relative hover:bg-muted/50">
+      {visibleColumnIds.map((columnId, columnIndex) => (
+        <TableCell key={columnId} className={cn(getColumnCellClassName(columnId), "relative")}>
+          <Link
+            href={productHref}
+            className="absolute inset-0 z-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+            aria-label={columnIndex === 0 ? `Open product ${displayName}` : undefined}
+            aria-hidden={columnIndex === 0 ? undefined : true}
+            tabIndex={columnIndex === 0 ? undefined : -1}
+          />
+          <div className="relative z-10 pointer-events-none">
+            {renderColumnCell(columnId, {
+              item,
+              showBuyButton,
+              priceFromPrefix,
+              showSkuSubline,
+              listingMode,
+            })}
+          </div>
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+};
+
 export const CatalogTable = ({
   items,
   isLoading,
@@ -308,19 +346,15 @@ export const CatalogTable = ({
               </TableRow>
             ) : (
               items.map((item) => (
-                <TableRow key={item.id}>
-                  {visibleColumnIds.map((columnId) => (
-                    <TableCell key={columnId} className={getColumnCellClassName(columnId)}>
-                      {renderColumnCell(columnId, {
-                        item,
-                        showBuyButton,
-                        priceFromPrefix,
-                        showSkuSubline,
-                        listingMode,
-                      })}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                <CatalogTableRow
+                  key={item.id}
+                  item={item}
+                  listingMode={listingMode}
+                  visibleColumnIds={visibleColumnIds}
+                  showBuyButton={showBuyButton}
+                  priceFromPrefix={priceFromPrefix}
+                  showSkuSubline={showSkuSubline}
+                />
               ))
             )}
           </TableBody>

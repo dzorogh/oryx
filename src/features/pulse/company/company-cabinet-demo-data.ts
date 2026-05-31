@@ -6,7 +6,6 @@ export type CompanyParameter = {
 
 export type CompanyRequisites = {
   legalParameters: CompanyParameter[];
-  bankParameters: CompanyParameter[];
 };
 
 export type CompanyFile = {
@@ -15,6 +14,7 @@ export type CompanyFile = {
   sizeLabel: string;
   uploadedAt: string;
   href: string;
+  downloadHref?: string;
 };
 
 export type CompanyBiReport = {
@@ -144,20 +144,33 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
     requisites: {
       legalParameters: [
         { id: "legal-name", label: "Legal name", value: 'LLC "Globaldrive"' },
+        { id: "short-name", label: "Short name", value: "Globaldrive" },
         { id: "tax-id", label: "Tax ID (INN)", value: "7701234567" },
         { id: "tax-reason-code", label: "Tax reason code (KPP)", value: "770101001" },
         { id: "registration-number", label: "Registration (OGRN)", value: "1027700123456" },
+        { id: "registration-date", label: "Registration date", value: "15 March 2010" },
+        { id: "legal-form", label: "Legal form", value: "Limited liability company" },
         {
           id: "legal-address",
           label: "Legal address",
-          value: "123112, Moscow, Presnenskaya embankment, 12, office 401",
+          value:
+            "123112, Moscow, Presnenskaya embankment, 12, Federation Tower East, floor 40, office 401",
         },
-      ],
-      bankParameters: [
-        { id: "bank-name", label: "Bank", value: "Sberbank" },
-        { id: "bank-code", label: "Bank code (BIK)", value: "044525225" },
-        { id: "checking-account", label: "Checking account", value: "40702810938000123456" },
-        { id: "correspondent-account", label: "Corr. account", value: "30101810400000000225" },
+        {
+          id: "actual-address",
+          label: "Actual address",
+          value:
+            "141402, Moscow region, Khimki urban district, Leningradskaya street, 39, logistics center Globaldrive, warehouse 7, gate 3",
+        },
+        {
+          id: "okved",
+          label: "Primary OKVED",
+          value:
+            "45.31 — Wholesale of motor vehicle parts and accessories, including powersports, marine, and outdoor equipment components",
+        },
+        { id: "okpo", label: "OKPO", value: "87654321" },
+        { id: "general-director", label: "General director", value: "Ivan Petrov" },
+        { id: "vat-status", label: "VAT status", value: "VAT payer (20%)" },
       ],
     },
     files: GLOBALDRIVE_FILES,
@@ -178,12 +191,6 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
         { id: "tax-reason-code", label: "Tax reason code (KPP)", value: "780201001" },
         { id: "registration-number", label: "Registration (OGRN)", value: "1027800234567" },
         { id: "legal-address", label: "Legal address", value: "191186, Saint Petersburg, Nevsky prospect, 28" },
-      ],
-      bankParameters: [
-        { id: "bank-name", label: "Bank", value: "VTB" },
-        { id: "bank-code", label: "Bank code (BIK)", value: "044030707" },
-        { id: "checking-account", label: "Checking account", value: "40702810500001234567" },
-        { id: "correspondent-account", label: "Corr. account", value: "30101810700000000707" },
       ],
     },
     files: [],
@@ -207,11 +214,6 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
           value: "Dubai, Business Bay, Bay Square, Building 7, office 1204",
         },
         { id: "trade-license", label: "Trade license", value: "CN-1234567" },
-      ],
-      bankParameters: [
-        { id: "bank-name", label: "Bank", value: "Emirates NBD" },
-        { id: "swift-code", label: "SWIFT", value: "EBILAEAD" },
-        { id: "iban", label: "IBAN", value: "AE070331234567890123456" },
       ],
     },
     files: [
@@ -239,11 +241,6 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
         { id: "tax-id", label: "UNP", value: "190876543" },
         { id: "registration-number", label: "Registration number", value: "1908765430123" },
         { id: "legal-address", label: "Legal address", value: "220020, Minsk, Pobediteley avenue, 9" },
-      ],
-      bankParameters: [
-        { id: "bank-name", label: "Bank", value: "Belarusbank" },
-        { id: "swift-code", label: "SWIFT", value: "AKBBBY2X" },
-        { id: "iban", label: "IBAN", value: "BY12AKBB30120000000000000000" },
       ],
     },
     files: SHARMAX_FILES,

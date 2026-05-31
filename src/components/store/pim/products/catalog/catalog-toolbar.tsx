@@ -1,12 +1,13 @@
 import { LayoutGrid, List, Plus } from "lucide-react";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CatalogColumnsButton } from "./catalog-columns-button";
-import { CatalogFiltersButton, CatalogQuickSearchControl, CatalogQuickSelectControl } from "./catalog-filters";
+import { CatalogFiltersButton, CatalogQuickSearchControl } from "./catalog-filters";
 import { CatalogCategoryTreeFilter } from "./catalog-category-tree-filter";
 import {
+  CATALOG_LISTING_MODE_DESCRIPTIONS,
   CATALOG_LISTING_MODE_LABELS,
   CATALOG_LISTING_MODES,
   STORE_CATALOG_PAGE,
@@ -46,34 +47,46 @@ export const CatalogToolbar = ({
           <p className="text-xs text-muted-foreground">{STORE_CATALOG_PAGE.pageDescription}</p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Catalog listing type">
-            {CATALOG_LISTING_MODES.map((mode) => {
-              const isActive = listingMode === mode;
-              return (
-                <HomeFilterChip
-                  key={mode}
-                  active={isActive}
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => onListingModeChange(mode)}
-                >
-                  {CATALOG_LISTING_MODE_LABELS[mode]}
-                </HomeFilterChip>
-              );
-            })}
-          </div>
-
-          <Button type="button" size="sm" className="shrink-0" aria-label={addButtonAriaLabel}>
-            <Plus aria-hidden className="size-3.5" />
-            Add
-          </Button>
-        </div>
+        <Button type="button" size="default" className="shrink-0" aria-label={addButtonAriaLabel}>
+          <Plus aria-hidden className="size-3.5" />
+          Add
+        </Button>
       </div>
 
       <div className="-mx-3 border-t border-[var(--corportal-border-grey)]" aria-hidden />
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+        <TooltipProvider delay={300}>
+          <ToggleGroup
+            value={[listingMode]}
+            variant="outline"
+            size="default"
+            spacing={0}
+            onValueChange={(value) => {
+              const [nextValue] = value;
+              if (nextValue === "products" || nextValue === "variants") {
+                onListingModeChange(nextValue);
+              }
+            }}
+            aria-label="Catalog listing type"
+          >
+            {CATALOG_LISTING_MODES.map((mode) => (
+              <Tooltip key={mode}>
+                <TooltipTrigger
+                  render={
+                    <ToggleGroupItem value={mode} aria-label={CATALOG_LISTING_MODE_LABELS[mode]} />
+                  }
+                >
+                  {CATALOG_LISTING_MODE_LABELS[mode]}
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start" className="max-w-xs text-left">
+                  {CATALOG_LISTING_MODE_DESCRIPTIONS[mode]}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </ToggleGroup>
+        </TooltipProvider>
+
         <CatalogQuickSearchControl value={filters.search.value} onChange={filters.search.onChange} />
 
         <CatalogCategoryTreeFilter
@@ -82,26 +95,6 @@ export const CatalogToolbar = ({
           ariaLabel="Quick filter by category"
           placeholder="Category"
           allLabel="All categories"
-          widthClassName="w-[220px]"
-        />
-
-        <CatalogQuickSelectControl
-          value={filters.dealerStatus.value}
-          onValueChange={filters.dealerStatus.onChange}
-          ariaLabel="Quick filter by dealer status"
-          placeholder="Dealer status"
-          allLabel="Any dealer status"
-          options={filters.dealerStatus.options}
-          widthClassName="w-[220px]"
-        />
-
-        <CatalogQuickSelectControl
-          value={filters.retailStatus.value}
-          onValueChange={filters.retailStatus.onChange}
-          ariaLabel="Quick filter by retail status"
-          placeholder="Retail status"
-          allLabel="Any retail status"
-          options={filters.retailStatus.options}
           widthClassName="w-[220px]"
         />
 

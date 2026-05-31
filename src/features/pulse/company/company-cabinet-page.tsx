@@ -52,7 +52,7 @@ export const CompanyCabinetPage = () => {
 
           <CompanyReportsSection reports={visibleReports} />
 
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-5">
             <div className="lg:col-span-2">
               <CompanyFilesSection files={company.files} />
             </div>

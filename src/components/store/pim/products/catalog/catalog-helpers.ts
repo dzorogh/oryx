@@ -23,8 +23,15 @@ export type CatalogListingMode = "products" | "variants";
 export const CATALOG_LISTING_MODES: CatalogListingMode[] = ["products", "variants"];
 
 export const CATALOG_LISTING_MODE_LABELS: Record<CatalogListingMode, string> = {
-  products: "Base products",
-  variants: "Product variants",
+  products: "Products",
+  variants: "Variants",
+};
+
+export const CATALOG_LISTING_MODE_DESCRIPTIONS: Record<CatalogListingMode, string> = {
+  products:
+    "Base items linked to category, brand, and family. Not purchasable — for info catalogs and presentations.",
+  variants:
+    "Purchasable items with prices and stock. Site, specs, and channel status may differ between variants.",
 };
 
 export const STORE_CATALOG_PAGE = {

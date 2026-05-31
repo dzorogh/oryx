@@ -1,7 +1,14 @@
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ALL_VALUE, type QuickFilterOption } from "./catalog-helpers";
 
@@ -48,21 +55,25 @@ export const CatalogQuickSelectControl = ({
   options,
   widthClassName,
 }: CatalogQuickSelectControlProps) => {
-  const selectedLabel =
-    value === ALL_VALUE ? allLabel : (options.find((option) => option.value === value)?.label ?? placeholder);
+  const selectItems = [
+    { value: ALL_VALUE, label: allLabel },
+    ...options.map((option) => ({ value: option.value, label: option.label })),
+  ];
 
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select items={selectItems} value={value} onValueChange={onValueChange}>
       <SelectTrigger size="default" className={cn("bg-background", widthClassName)} aria-label={ariaLabel}>
-        <SelectValue placeholder={placeholder}>{selectedLabel}</SelectValue>
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL_VALUE}>{allLabel}</SelectItem>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          <SelectItem value={ALL_VALUE}>{allLabel}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );

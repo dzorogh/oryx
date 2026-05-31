@@ -116,6 +116,7 @@ const CatalogProductCard = ({
           <Button
             variant="outline"
             size="sm"
+            nativeButton={false}
             className={cn(
               "mt-auto w-full font-semibold",
               item.dealerPrice === null && "text-muted-foreground",

@@ -49,7 +49,7 @@ export const CompanyReportsSection = ({ reports }: CompanyReportsSectionProps) =
     <div className="flex items-center justify-between gap-2 border-b border-[var(--corportal-border-grey)] px-3 py-2 sm:px-3.5">
       <div className="flex min-w-0 items-center gap-2">
         <FileBarChart2 className={COMPANY_SECTION_ICON_CLASS} aria-hidden />
-        <h2 className="text-sm font-semibold text-foreground">BI reports</h2>
+        <h2 className="text-sm font-semibold text-foreground">Reports</h2>
         <span className={COMPANY_COUNT_BADGE_CLASS}>{reports.length}</span>
       </div>
       <p className="hidden text-[11px] text-muted-foreground sm:block">Quick access to your dashboards</p>
@@ -67,7 +67,7 @@ export const CompanyReportsSection = ({ reports }: CompanyReportsSectionProps) =
           </div>
         </div>
       ) : (
-        <nav aria-label="Company BI reports">
+        <nav aria-label="Reports">
           <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {reports.map((report) => (
               <li key={report.id} className="min-w-0">

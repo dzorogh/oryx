@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -40,6 +41,15 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent }: ThanksFormProps) => 
   const recipientOptions = useMemo(
     () => EMPLOYEE_OPTIONS.filter((employee) => employee.id !== THANKS_CURRENT_USER_ID),
     [],
+  );
+
+  const recipientSelectItems = useMemo(
+    () =>
+      recipientOptions.map((employee) => ({
+        value: employee.id,
+        label: employee.fullName,
+      })),
+    [recipientOptions],
   );
 
   const handleSubmit = () => {
@@ -82,6 +92,7 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent }: ThanksFormProps) => 
           Colleague
         </label>
         <Select
+          items={recipientSelectItems}
           value={selectedEmployeeId ?? ""}
           onValueChange={(value) => {
             setSelectedEmployeeId(value ?? null);
@@ -91,14 +102,16 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent }: ThanksFormProps) => 
             <SelectValue placeholder="Select a colleague" />
           </SelectTrigger>
           <SelectContent align="start">
-            {recipientOptions.map((employee) => (
-              <SelectItem key={employee.id} value={employee.id}>
-                <span className="flex flex-col gap-0.5">
-                  <span>{employee.fullName}</span>
-                  <span className="text-xs text-muted-foreground">{employee.department}</span>
-                </span>
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {recipientOptions.map((employee) => (
+                <SelectItem key={employee.id} value={employee.id}>
+                  <span className="flex flex-col gap-0.5">
+                    <span>{employee.fullName}</span>
+                    <span className="text-xs text-muted-foreground">{employee.department}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>

@@ -1,6 +1,13 @@
 "use client";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   CATALOG_SCOPE_OPTIONS,
   type CatalogScope,
@@ -17,19 +24,19 @@ export const CatalogScopeSwitcher = () => {
     setScope(value as CatalogScope);
   };
 
-  const selectedLabel = CATALOG_SCOPE_OPTIONS.find((option) => option.value === scope)?.label;
-
   return (
-    <Select value={scope} onValueChange={handleValueChange}>
+    <Select items={CATALOG_SCOPE_OPTIONS} value={scope} onValueChange={handleValueChange}>
       <SelectTrigger size="default" className="w-full bg-background" aria-label="Select catalog">
-        <SelectValue>{selectedLabel}</SelectValue>
+        <SelectValue placeholder="Select catalog" />
       </SelectTrigger>
       <SelectContent>
-        {CATALOG_SCOPE_OPTIONS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {CATALOG_SCOPE_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -47,6 +48,11 @@ const buildFilterOptions = (items: TeamDirectoryEmployee[], key: "district" | "d
   Array.from(new Set(items.map((item) => item[key]))).sort((left, right) => left.localeCompare(right));
 
 const normalizeSearchValue = (value: string) => value.trim().toLocaleLowerCase();
+
+const buildFilterItems = (allLabel: string, options: string[]) => [
+  { value: ALL_VALUE, label: allLabel },
+  ...options.map((option) => ({ value: option, label: option })),
+];
 
 const getSelectValue = (value: string | null) => value ?? ALL_VALUE;
 
@@ -235,17 +241,23 @@ export const TeamDirectoryPage = () => {
 
                 <label className="space-y-1.5">
                   <span className="text-xs font-medium text-muted-foreground">District</span>
-                  <Select value={districtFilter} onValueChange={(value) => setDistrictFilter(getSelectValue(value))}>
+                  <Select
+                    items={buildFilterItems("All districts", districtOptions)}
+                    value={districtFilter}
+                    onValueChange={(value) => setDistrictFilter(getSelectValue(value))}
+                  >
                     <SelectTrigger className="w-full" aria-label="Filter by district">
                       <SelectValue placeholder="All districts" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={ALL_VALUE}>All districts</SelectItem>
-                      {districtOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        <SelectItem value={ALL_VALUE}>All districts</SelectItem>
+                        {districtOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </label>
@@ -253,6 +265,7 @@ export const TeamDirectoryPage = () => {
                 <label className="space-y-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Department</span>
                   <Select
+                    items={buildFilterItems("All departments", departmentOptions)}
                     value={departmentFilter}
                     onValueChange={(value) => setDepartmentFilter(getSelectValue(value))}
                   >
@@ -260,29 +273,37 @@ export const TeamDirectoryPage = () => {
                       <SelectValue placeholder="All departments" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={ALL_VALUE}>All departments</SelectItem>
-                      {departmentOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        <SelectItem value={ALL_VALUE}>All departments</SelectItem>
+                        {departmentOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </label>
 
                 <label className="space-y-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Position</span>
-                  <Select value={positionFilter} onValueChange={(value) => setPositionFilter(getSelectValue(value))}>
+                  <Select
+                    items={buildFilterItems("All positions", positionOptions)}
+                    value={positionFilter}
+                    onValueChange={(value) => setPositionFilter(getSelectValue(value))}
+                  >
                     <SelectTrigger className="w-full" aria-label="Filter by position">
                       <SelectValue placeholder="All positions" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={ALL_VALUE}>All positions</SelectItem>
-                      {positionOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        <SelectItem value={ALL_VALUE}>All positions</SelectItem>
+                        {positionOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </label>

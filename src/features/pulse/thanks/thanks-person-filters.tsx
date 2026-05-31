@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -18,22 +19,13 @@ const SORTED_EMPLOYEES = [...EMPLOYEE_OPTIONS].sort((left, right) =>
   left.fullName.localeCompare(right.fullName),
 );
 
-const getEmployeeName = (employeeId: string) =>
-  SORTED_EMPLOYEES.find((employee) => employee.id === employeeId)?.fullName;
-
-const getSenderFilterLabel = (senderId: string) => {
-  if (senderId === THANKS_FILTER_ALL) {
-    return "Anyone";
-  }
-  return getEmployeeName(senderId) ?? "Anyone";
-};
-
-const getRecipientFilterLabel = (recipientId: string) => {
-  if (recipientId === THANKS_FILTER_ALL) {
-    return "Anyone";
-  }
-  return getEmployeeName(recipientId) ?? "Anyone";
-};
+const EMPLOYEE_FILTER_ITEMS = [
+  { value: THANKS_FILTER_ALL, label: "Anyone" },
+  ...SORTED_EMPLOYEES.map((employee) => ({
+    value: employee.id,
+    label: employee.fullName,
+  })),
+];
 
 type ThanksPersonFiltersProps = {
   variant?: "standalone" | "embedded";
@@ -69,22 +61,28 @@ export const ThanksPersonFilters = ({
     >
       <div className="flex items-center gap-2">
         <span className="shrink-0 text-xs font-medium text-muted-foreground">From</span>
-        <Select value={senderId} onValueChange={(value) => onSenderChange(value ?? THANKS_FILTER_ALL)}>
+        <Select
+          items={EMPLOYEE_FILTER_ITEMS}
+          value={senderId}
+          onValueChange={(value) => onSenderChange(value ?? THANKS_FILTER_ALL)}
+        >
           <SelectTrigger
             id="thanks-filter-sender"
             size="sm"
             className="w-[10.5rem] bg-background"
             aria-label="Filter by sender"
           >
-            <SelectValue placeholder="Anyone">{getSenderFilterLabel(senderId)}</SelectValue>
+            <SelectValue placeholder="Anyone" />
           </SelectTrigger>
           <SelectContent align="start">
-            <SelectItem value={THANKS_FILTER_ALL}>Anyone</SelectItem>
-            {SORTED_EMPLOYEES.map((employee) => (
-              <SelectItem key={`sender-${employee.id}`} value={employee.id}>
-                {employee.fullName}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              <SelectItem value={THANKS_FILTER_ALL}>Anyone</SelectItem>
+              {SORTED_EMPLOYEES.map((employee) => (
+                <SelectItem key={`sender-${employee.id}`} value={employee.id}>
+                  {employee.fullName}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>
@@ -92,6 +90,7 @@ export const ThanksPersonFilters = ({
       <div className="flex items-center gap-2">
         <span className="shrink-0 text-xs font-medium text-muted-foreground">To</span>
         <Select
+          items={EMPLOYEE_FILTER_ITEMS}
           value={recipientId}
           onValueChange={(value) => onRecipientChange(value ?? THANKS_FILTER_ALL)}
         >
@@ -101,15 +100,17 @@ export const ThanksPersonFilters = ({
             className="w-[10.5rem] bg-background"
             aria-label="Filter by recipient"
           >
-            <SelectValue placeholder="Anyone">{getRecipientFilterLabel(recipientId)}</SelectValue>
+            <SelectValue placeholder="Anyone" />
           </SelectTrigger>
           <SelectContent align="start">
-            <SelectItem value={THANKS_FILTER_ALL}>Anyone</SelectItem>
-            {SORTED_EMPLOYEES.map((employee) => (
-              <SelectItem key={`recipient-${employee.id}`} value={employee.id}>
-                {employee.fullName}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              <SelectItem value={THANKS_FILTER_ALL}>Anyone</SelectItem>
+              {SORTED_EMPLOYEES.map((employee) => (
+                <SelectItem key={`recipient-${employee.id}`} value={employee.id}>
+                  {employee.fullName}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>

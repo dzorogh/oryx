@@ -49,7 +49,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type SpaceSettingsModalProps = {
@@ -413,14 +413,23 @@ export const SpaceSettingsModal = ({ open, onOpenChange }: SpaceSettingsModalPro
               </label>
               <label className="grid gap-1">
                 <span className="text-xs font-medium text-muted-foreground">Tenant</span>
-                <Select value={spaceDraft.tenantId} onValueChange={(v) => handleSpaceFieldChange("tenantId", v ?? "")}>
+                <Select
+                  items={SPACE_SETTINGS_SEED.tenants.map((tenant) => ({
+                    value: tenant.id,
+                    label: tenant.name,
+                  }))}
+                  value={spaceDraft.tenantId}
+                  onValueChange={(v) => handleSpaceFieldChange("tenantId", v ?? "")}
+                >
                   <SelectTrigger className="w-full" aria-label="Tenant">
                     <SelectValue placeholder="Tenant" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SPACE_SETTINGS_SEED.tenants.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {SPACE_SETTINGS_SEED.tenants.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </label>
@@ -658,14 +667,23 @@ export const SpaceSettingsModal = ({ open, onOpenChange }: SpaceSettingsModalPro
                 <TableRow key={member.id} data-member-id={member.id}>
                   <TableCell className="px-3 py-1 text-sm whitespace-normal">{member.fullName}</TableCell>
                   <TableCell className="px-3 py-1">
-                    <Select value={member.businessRole} onValueChange={(v) => handleMemberRoleChange(member.id, v)}>
+                    <Select
+                      items={SPACE_SETTINGS_SEED.businessRoles.map((role) => ({
+                        value: role,
+                        label: role,
+                      }))}
+                      value={member.businessRole}
+                      onValueChange={(v) => handleMemberRoleChange(member.id, v)}
+                    >
                       <SelectTrigger className="w-32" aria-label={`Role of ${member.fullName}`}>
-                        <SelectValue />
+                        <SelectValue placeholder="Role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {SPACE_SETTINGS_SEED.businessRoles.map((role) => (
-                          <SelectItem key={role} value={role}>{role}</SelectItem>
-                        ))}
+                        <SelectGroup>
+                          {SPACE_SETTINGS_SEED.businessRoles.map((role) => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -739,14 +757,24 @@ export const SpaceSettingsModal = ({ open, onOpenChange }: SpaceSettingsModalPro
                     />
                   </TableCell>
                   <TableCell className="px-3 py-1">
-                    <Select value={field.fieldType} onValueChange={(v) => handleFieldTypeChange(field.id, v)} disabled={field.isArchived}>
+                    <Select
+                      items={SPACE_SETTINGS_SEED.fieldTypes.map((fieldType) => ({
+                        value: fieldType,
+                        label: fieldType,
+                      }))}
+                      value={field.fieldType}
+                      onValueChange={(v) => handleFieldTypeChange(field.id, v)}
+                      disabled={field.isArchived}
+                    >
                       <SelectTrigger className="w-28" aria-label={`Type of ${field.name}`}>
-                        <SelectValue />
+                        <SelectValue placeholder="Type" />
                       </SelectTrigger>
                       <SelectContent>
-                        {SPACE_SETTINGS_SEED.fieldTypes.map((ft) => (
-                          <SelectItem key={ft} value={ft}>{ft}</SelectItem>
-                        ))}
+                        <SelectGroup>
+                          {SPACE_SETTINGS_SEED.fieldTypes.map((ft) => (
+                            <SelectItem key={ft} value={ft}>{ft}</SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </TableCell>
