@@ -9,12 +9,12 @@ import {
 
 const IdeaCard = ({ idea }: { idea: IdeaItem }) => (
   <article
-    className="flex min-h-0 min-w-0 items-start gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-2"
+    className="flex min-h-0 min-w-0 items-start gap-1.5 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1.5"
     aria-label={`Idea: ${idea.title}`}
   >
     <div className="min-w-0 flex-1">
       <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">{idea.title}</h3>
-      <div className="mt-1 flex min-w-0 items-center gap-2">
+      <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
         <CorportalSoftBadge className={IDEA_STATUS_BADGE_CLASS[idea.status]}>{IDEA_STATUS_LABELS[idea.status]}</CorportalSoftBadge>
         <p className="truncate text-xs leading-tight text-muted-foreground">{idea.author}</p>
       </div>
@@ -39,7 +39,7 @@ export const HomeIdeasSection = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-2">
+    <div className="grid grid-cols-1 gap-1.5">
       {latestIdeas.map((idea) => (
         <IdeaCard key={idea.id} idea={idea} />
       ))}

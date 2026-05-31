@@ -21,12 +21,12 @@ const CompactKpiCard = ({
   leaderName: string;
   avatarUrl: string;
 }) => (
-  <article className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2.5 rounded-xl border border-[var(--corportal-border-grey)] bg-card px-4 py-3.5 lg:px-3.5 lg:py-3">
-    <div className="space-y-2">
+  <article className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2 rounded-xl border border-[var(--corportal-border-grey)] bg-card px-3 py-3 lg:px-3 lg:py-2.5">
+    <div className="space-y-1.5">
       <h3 className="text-md font-bold leading-snug tracking-tight text-foreground">{title}</h3>
     </div>
     <p className="text-xl font-bold tabular-nums leading-none tracking-tight text-foreground">{valueDisplay}</p>
-    <div className="mt-auto flex min-w-0 items-center gap-2.5">
+    <div className="mt-auto flex min-w-0 items-center gap-2">
       <HomeAvatarRing src={avatarUrl} alt="" />
       <button
         type="button"
@@ -41,9 +41,9 @@ const CompactKpiCard = ({
 
 export const HomeStatsSection = () => {
   return (
-    <div className="grid grid-cols-1 gap-3 lg:items-start lg:gap-3">
+    <div className="grid grid-cols-1 gap-2 lg:items-start lg:gap-2">
       <div
-        className="grid min-h-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4"
         aria-label="Top metrics"
       >
         {STATS_KPI_METRICS.map((metric) => (

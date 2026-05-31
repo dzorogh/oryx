@@ -18,12 +18,6 @@ const SALES_LEADERS_EXPANDED_COUNT = 5;
 const formatRubPlain = (value: number) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 
-const LEADER_ROW_CARD_CLASS: Record<number, string> = {
-  1: "bg-card",
-  2: "bg-card",
-  3: "bg-card",
-};
-
 const TOP_RANK_RIBBON_CLASS: Record<number, string> = {
   1: "bg-gradient-to-r from-amber-600 to-yellow-500 text-white",
   2: "bg-gradient-to-r from-slate-600 to-slate-500 text-white",
@@ -78,6 +72,7 @@ export const HomeSalesLeadersFilters = ({
         return (
           <HomeFilterChip
             key={tab.id}
+            size="xs"
             id={tabIds[index]}
             role="tab"
             aria-selected={selected}
@@ -130,7 +125,7 @@ export const HomeSalesLeadersSection = ({
         <HomeSalesLeadersFilters
           direction={direction}
           onDirectionChange={handleDirectionChange}
-          className="mb-2 shrink-0"
+          className="mb-1.5 shrink-0"
         />
       )}
 
@@ -140,9 +135,8 @@ export const HomeSalesLeadersSection = ({
         aria-labelledby={activeTabId}
         className="flex min-h-0 flex-col"
       >
-        <ul className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-5">
+        <ul className="grid min-h-0 grid-cols-1 gap-1.5 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-5">
           {leaders.map((row) => {
-            const cardClass = LEADER_ROW_CARD_CLASS[row.rank] ?? "";
             const turnoverLabel = `${formatRubPlain(row.turnoverRub)} ₽`;
             const isExpandedOnly = row.rank > SALES_LEADERS_COMPACT_COUNT;
 
@@ -153,41 +147,28 @@ export const HomeSalesLeadersSection = ({
               >
                 <Link
                   href={row.profileHref}
-                  className={cn(
-                    "relative flex min-h-0 flex-1 flex-col gap-1 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-card px-2.5 py-2 transition-colors hover:border-primary/35 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                    cardClass,
-                  )}
+                  className="relative flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card px-2 py-1.5 text-card-foreground no-underline transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   aria-label={`Open profile: ${row.name}, turnover ${turnoverLabel}`}
                 >
                   {row.rank <= 3 ? (
-                    <>
-                      <div
-                        className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/75 to-transparent"
-                        aria-hidden
-                      />
-                      <div
-                        className={cn(
-                          "absolute -right-7 top-2 z-10 flex w-24 rotate-45 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]",
-                          TOP_RANK_RIBBON_CLASS[row.rank as keyof typeof TOP_RANK_RIBBON_CLASS],
-                        )}
-                      >
-                        {(() => {
-                          const TopRankIcon = TOP_RANK_ICON[row.rank as keyof typeof TOP_RANK_ICON];
-                          return <TopRankIcon className="size-3" aria-hidden />;
-                        })()}
-                        <span>{`TOP ${row.rank}`}</span>
-                      </div>
-                    </>
-                  ) : null}
-                  <div className="flex min-h-0 items-center gap-2">
-                    <HomeAvatarRing src={row.avatarUrl} alt="" />
-                    <div className="min-w-0 flex-1">
-                      <div className="block w-full truncate text-left text-sm font-medium text-primary">
-                        {row.name}
-                      </div>
+                    <div
+                      className={cn(
+                        "absolute -right-7 top-2 z-10 flex w-24 rotate-45 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]",
+                        TOP_RANK_RIBBON_CLASS[row.rank as keyof typeof TOP_RANK_RIBBON_CLASS],
+                      )}
+                    >
+                      {(() => {
+                        const TopRankIcon = TOP_RANK_ICON[row.rank as keyof typeof TOP_RANK_ICON];
+                        return <TopRankIcon className="size-3" aria-hidden />;
+                      })()}
+                      <span>{`TOP ${row.rank}`}</span>
                     </div>
+                  ) : null}
+                  <div className="flex min-h-0 items-center gap-1.5">
+                    <HomeAvatarRing src={row.avatarUrl} alt="" />
+                    <p className="min-w-0 flex-1 truncate text-sm font-medium">{row.name}</p>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-1.5">
                     <div className="truncate whitespace-nowrap text-xs leading-snug text-muted-foreground">
                       Sales turnover
                     </div>

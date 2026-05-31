@@ -293,15 +293,15 @@ export const PulseHomePage = () => {
   };
 
   return (
-    <div className="flex min-h-full flex-col gap-5 p-5">
+    <div className="flex min-h-full flex-col gap-3 p-4">
       {isLayoutLoading ? (
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
-          <div className="space-y-5 xl:col-span-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
+          <div className="space-y-3 xl:col-span-3">
             {LEFT_COLUMN_PRIORITY_BLOCKS.map((blockId) => (
               <Card key={`loader-left-${blockId}`} aria-label="Loading home block">
                 <CardContent>
-                  <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
-                  <div className="space-y-2">
+                  <div className="mb-3 h-6 w-56 animate-pulse rounded-md bg-muted" />
+                  <div className="space-y-1.5">
                     <div className="h-16 animate-pulse rounded-lg bg-muted" />
                     <div className="h-16 animate-pulse rounded-lg bg-muted" />
                   </div>
@@ -309,14 +309,14 @@ export const PulseHomePage = () => {
               </Card>
             ))}
           </div>
-          <div className="space-y-5 xl:col-span-1">
+          <div className="space-y-3 xl:col-span-1">
             {DEFAULT_LAYOUT.order
               .filter((id) => !LEFT_COLUMN_PRIORITY_BLOCKS.includes(id))
               .map((blockId) => (
                 <Card key={`loader-right-${blockId}`} aria-label="Loading home block">
                   <CardContent>
-                    <div className="mb-4 h-6 w-56 animate-pulse rounded-md bg-muted" />
-                    <div className="space-y-2">
+                    <div className="mb-3 h-6 w-56 animate-pulse rounded-md bg-muted" />
+                    <div className="space-y-1.5">
                       <div className="h-16 animate-pulse rounded-lg bg-muted" />
                       <div className="h-16 animate-pulse rounded-lg bg-muted" />
                     </div>
@@ -327,11 +327,11 @@ export const PulseHomePage = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
-            <div className="space-y-5 xl:col-span-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
+            <div className="space-y-3 xl:col-span-3">
               {leftColumnIds.map((blockId) => renderBlockCard(blockId))}
             </div>
-            <div className="space-y-5 xl:col-span-1">
+            <div className="space-y-3 xl:col-span-1">
               {rightColumnIds.map((blockId) => renderBlockCard(blockId))}
             </div>
           </div>
@@ -342,20 +342,20 @@ export const PulseHomePage = () => {
                 <button
                   type="button"
                   onClick={() => setHiddenMenuOpen((prev) => !prev)}
-                  className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted"
+                  className="inline-flex items-center rounded-lg border border-[var(--corportal-border-grey)] bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
                   aria-expanded={hiddenMenuOpen}
                   aria-label="Show hidden blocks"
                 >
                   Hidden blocks ({layout.hidden.length})
                 </button>
                 {hiddenMenuOpen ? (
-                  <div className="absolute bottom-12 right-0 z-20 min-w-52 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 shadow-sm">
+                  <div className="absolute bottom-12 right-0 z-20 min-w-52 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-0.5 shadow-sm">
                     {layout.hidden.map((blockId) => (
                       <button
                         key={blockId}
                         type="button"
                         onClick={() => handleShow(blockId)}
-                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                        className="flex w-full items-center justify-between rounded-md px-1.5 py-1 text-left text-sm text-foreground hover:bg-muted"
                       >
                         <span>{blockById[blockId].title}</span>
                         <span className="text-xs text-muted-foreground">Show</span>

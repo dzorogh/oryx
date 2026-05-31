@@ -45,7 +45,7 @@ const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
   return (
     <article
       className={cn(
-        "flex min-h-0 min-w-0 items-center gap-2 rounded-lg border px-2 py-1.5",
+        "flex min-h-0 min-w-0 items-center gap-1.5 rounded-lg border px-1.5 py-1",
       )}
       aria-label={`Birthday: ${person.fullName}`}
     >
@@ -58,7 +58,7 @@ const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
           {dateMonthFormatter.format(occurrence).replace(".", "")}
         </span>
       </div>
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
         <Image
           src={person.avatarUrl}
           alt={`Employee avatar ${person.fullName}`}
@@ -90,7 +90,7 @@ export const HomeBirthdaysSection = () => {
   }, [now]);
 
   return (
-    <div className="grid grid-cols-1 gap-1.5">
+    <div className="grid grid-cols-1 gap-1">
       {rows.map(({ person, occurrence }) => (
         <BirthdayCard key={person.id} person={person} occurrence={occurrence} />
       ))}

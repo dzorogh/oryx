@@ -25,6 +25,8 @@ const MESSAGE_MAX_LENGTH = 280;
 type ThanksFormProps = {
   idPrefix?: string;
   onSent?: (entry: ThankYouEntry) => void;
+  /** Tighter spacing for embedded home widget. */
+  compact?: boolean;
 };
 
 const formatSentAtLabel = () =>
@@ -34,7 +36,7 @@ const formatSentAtLabel = () =>
     year: "numeric",
   });
 
-export const ThanksForm = ({ idPrefix = "thanks", onSent }: ThanksFormProps) => {
+export const ThanksForm = ({ idPrefix = "thanks", onSent, compact = false }: ThanksFormProps) => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
@@ -86,8 +88,8 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent }: ThanksFormProps) => 
   const isOverLimit = remainingChars < 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
+    <div className={cn("flex flex-col", compact ? "gap-3" : "gap-4")}>
+      <div className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>
         <label htmlFor={employeeSelectId} className="text-sm font-medium text-foreground">
           Colleague
         </label>
@@ -116,7 +118,7 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent }: ThanksFormProps) => 
         </Select>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>
         <label htmlFor={messageInputId} className="text-sm font-medium text-foreground">
           Message
         </label>

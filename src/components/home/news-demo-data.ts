@@ -8,6 +8,7 @@ export type NewsItem = {
   imageUrl: string;
   publishedAt: string;
   likes: number;
+  comments: number;
   rubric: NewsItemRubric;
 };
 
@@ -28,6 +29,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/support,office?lock=1",
     publishedAt: "1 hr ago",
     likes: 120,
+    comments: 18,
     rubric: "it",
   },
   {
@@ -37,6 +39,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/technology,computer?lock=2",
     publishedAt: "2 hr ago",
     likes: 127,
+    comments: 19,
     rubric: "company",
   },
   {
@@ -46,6 +49,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/pet,dog?lock=3",
     publishedAt: "3 hr ago",
     likes: 134,
+    comments: 20,
     rubric: "hr",
   },
   {
@@ -55,6 +59,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/motorcycle,road?lock=4",
     publishedAt: "4 hr ago",
     likes: 141,
+    comments: 21,
     rubric: "logistics",
   },
   {
@@ -64,6 +69,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/security,computer?lock=5",
     publishedAt: "5 hr ago",
     likes: 148,
+    comments: 22,
     rubric: "it",
   },
   {
@@ -73,6 +79,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/computer,office?lock=6",
     publishedAt: "6 hr ago",
     likes: 155,
+    comments: 23,
     rubric: "company",
   },
   {
@@ -82,6 +89,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/data,computer?lock=7",
     publishedAt: "1 hr ago",
     likes: 162,
+    comments: 24,
     rubric: "hr",
   },
   {
@@ -91,6 +99,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/warehouse,truck?lock=8",
     publishedAt: "2 hr ago",
     likes: 169,
+    comments: 25,
     rubric: "logistics",
   },
   {
@@ -100,6 +109,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/document,office?lock=9",
     publishedAt: "3 hr ago",
     likes: 176,
+    comments: 26,
     rubric: "it",
   },
   {
@@ -109,6 +119,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/mobile,smartphone?lock=10",
     publishedAt: "4 hr ago",
     likes: 183,
+    comments: 27,
     rubric: "company",
   },
   {
@@ -118,6 +129,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/cloud,computer?lock=11",
     publishedAt: "5 hr ago",
     likes: 190,
+    comments: 29,
     rubric: "hr",
   },
   {
@@ -127,6 +139,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/teamwork,people?lock=12",
     publishedAt: "6 hr ago",
     likes: 197,
+    comments: 30,
     rubric: "logistics",
   },
   {
@@ -136,6 +149,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/support,computer?lock=13",
     publishedAt: "1 hr ago",
     likes: 204,
+    comments: 31,
     rubric: "it",
   },
   {
@@ -145,6 +159,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/office,workspace?lock=14",
     publishedAt: "2 hr ago",
     likes: 211,
+    comments: 32,
     rubric: "company",
   },
   {
@@ -154,6 +169,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/meeting,business?lock=15",
     publishedAt: "3 hr ago",
     likes: 218,
+    comments: 33,
     rubric: "hr",
   },
   {
@@ -163,6 +179,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/analytics,business?lock=16",
     publishedAt: "4 hr ago",
     likes: 225,
+    comments: 34,
     rubric: "logistics",
   },
   {
@@ -172,6 +189,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/developer,computer?lock=17",
     publishedAt: "5 hr ago",
     likes: 232,
+    comments: 35,
     rubric: "it",
   },
   {
@@ -181,6 +199,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/contract,document?lock=18",
     publishedAt: "6 hr ago",
     likes: 239,
+    comments: 36,
     rubric: "company",
   },
   {
@@ -190,6 +209,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/library,book?lock=19",
     publishedAt: "1 hr ago",
     likes: 246,
+    comments: 37,
     rubric: "hr",
   },
   {
@@ -199,6 +219,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     imageUrl: "https://loremflickr.com/1600/900/security,business?lock=20",
     publishedAt: "2 hr ago",
     likes: 253,
+    comments: 38,
     rubric: "logistics",
   },
 ];

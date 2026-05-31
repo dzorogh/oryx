@@ -49,7 +49,7 @@ const handleDashboardKeyDown = (event: ReactKeyboardEvent<HTMLAnchorElement>) =>
 
 export const HomeFavoriteReportsSection = () => (
   <nav aria-label="Favorite reports">
-    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
       {FAVORITE_REPORTS.map((report) => (
         <li key={report.id} className="flex min-h-0">
           <Link
@@ -69,8 +69,8 @@ export const HomeFavoriteReportsSection = () => (
               <div className="absolute inset-0 bg-gradient-to-br from-card via-card to-muted/35" />
             </div>
 
-            <div className="relative flex h-full w-full flex-col gap-3 p-3">
-              <div className="flex items-start justify-between gap-2">
+            <div className="relative flex h-full w-full flex-col gap-2 p-2">
+              <div className="flex items-start justify-between gap-1.5">
                 <span
                   className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--corportal-border-grey)] bg-background text-xs font-semibold tracking-wide text-foreground"
                   aria-hidden
@@ -83,7 +83,7 @@ export const HomeFavoriteReportsSection = () => (
                 />
               </div>
 
-              <div className="pt-1">
+              <div className="pt-0.5">
                 <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">{report.title}</h3>
               </div>
             </div>

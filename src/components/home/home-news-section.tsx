@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ThumbsUp } from "lucide-react";
+import { MessageCircle, ThumbsUp } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { NEWS_ITEMS, type NewsItem, type NewsRubric } from "./news-demo-data";
@@ -33,6 +33,7 @@ export const HomeNewsFilters = ({ activeRubric, onRubricChange, className }: Hom
       return (
         <HomeFilterChip
           key={tab.id}
+          size="xs"
           onClick={() => onRubricChange(tab.id)}
           active={active}
           ariaLabel={`Show ${tab.label} category`}
@@ -54,7 +55,7 @@ type HomeNewsSectionProps = {
 const HOME_NEWS_LIMIT = 5;
 
 const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
-  <article className="flex w-full min-w-0 flex-col gap-3 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 pb-5">
+  <article className="flex w-full min-w-0 flex-col gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 pb-2">
     <div className="relative aspect-video overflow-hidden rounded-md">
       <Image
         src={item.imageUrl}
@@ -66,14 +67,20 @@ const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
         priority={Boolean(eager)}
       />
     </div>
-    <div className="flex flex-1 flex-col gap-2 px-2">
+    <div className="flex flex-1 flex-col gap-1.5 px-1.5">
       <div className="flex items-center justify-between text-xs leading-tight text-muted-foreground">
         <div className="flex items-center gap-1">
           <span>{item.publishedAt}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <ThumbsUp aria-hidden className="size-4" />
-          <span>{item.likes}</span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1" aria-label={`Likes: ${item.likes}`}>
+            <ThumbsUp aria-hidden className="size-3.5" />
+            {item.likes}
+          </span>
+          <span className="inline-flex items-center gap-1" aria-label={`Comments: ${item.comments}`}>
+            <MessageCircle aria-hidden className="size-3.5" />
+            {item.comments}
+          </span>
         </div>
       </div>
       <h3 className="line-clamp-2 text-sm font-bold leading-tight tracking-tight text-foreground">
@@ -109,12 +116,12 @@ export const HomeNewsSection = ({
   const displayNewsItems = filteredNewsItems.slice(0, HOME_NEWS_LIMIT);
 
   return (
-    <div className="flex flex-col gap-3" data-node-id="40007711:21918">
+    <div className="flex flex-col gap-2" data-node-id="40007711:21918">
       {hideFilters ? null : (
         <HomeNewsFilters activeRubric={activeRubric} onRubricChange={handleRubricChange} />
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-5">
         {displayNewsItems.map((item) => (
           <NewsCard key={item.id} item={item} eager />
         ))}

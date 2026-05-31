@@ -46,7 +46,7 @@ export const HomeSalesLeadersBlock = ({
       actions={actions}
       headerExtra={filters}
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <div className="md:hidden">{filters}</div>
         <HomeSalesLeadersSection
           direction={direction}

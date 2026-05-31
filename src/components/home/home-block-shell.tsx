@@ -57,9 +57,9 @@ export const HomeBlockShell = ({
   };
 
   return (
-    <Card className="overflow-visible">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-0 group-data-[size=sm]/card:px-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+    <Card size="sm" className="overflow-visible">
+      <CardHeader className="flex flex-row items-center justify-between gap-1.5 space-y-0 px-3 py-0">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <h2 className="shrink-0 whitespace-nowrap text-sm font-bold leading-tight tracking-tight text-foreground sm:text-base">
             {title}
           </h2>
@@ -67,7 +67,7 @@ export const HomeBlockShell = ({
             <div className="hidden min-w-0 flex-1 items-center gap-1 md:flex">{headerExtra}</div>
           ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5">
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger
               render={
