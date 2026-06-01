@@ -1,13 +1,8 @@
 import type { NextConfig } from "next";
 
-const pagesBasePath = process.env.PAGES_BASE_PATH;
-
 const nextConfig: NextConfig = {
   output: "export",
-  basePath: pagesBasePath,
-  env: {
-    NEXT_PUBLIC_BASE_PATH: pagesBasePath ?? "",
-  },
+  basePath: process.env.PAGES_BASE_PATH,
   images: {
     unoptimized: true,
     remotePatterns: [
