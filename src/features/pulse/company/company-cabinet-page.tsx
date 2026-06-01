@@ -53,11 +53,11 @@ export const CompanyCabinetPage = () => {
           <CompanyReportsSection reports={visibleReports} />
 
           <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <CompanyFilesSection files={company.files} />
-            </div>
             <div className="lg:col-span-3">
               <CompanyRequisitesSection requisites={company.requisites} />
+            </div>
+            <div className="lg:col-span-2">
+              <CompanyFilesSection files={company.files} />
             </div>
           </div>
         </div>

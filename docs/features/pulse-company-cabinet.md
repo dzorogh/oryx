@@ -15,7 +15,7 @@
 
 ## Что видит пользователь
 
-Компактная витрина: breadcrumb → hero → **BI reports** (первый экран) → files + legal details.
+Компактная витрина: breadcrumb → hero → **BI reports** (первый экран) → legal details + files.
 
 ### Hero
 
@@ -29,8 +29,8 @@
 | # | Секция | Содержимое | Пустое состояние |
 |---|--------|------------|------------------|
 | 1 | **BI reports** | Компактные строки-ссылки, сетка до 4 колонок | «No reports available» |
-| 2 | **Company files** | Компактный список (имя, размер, дата) | «No company files yet» |
-| 3 | **Details** | Список пар «название + значение» (`legalParameters`) | «No requisites added» |
+| 2 | **Details** | Список пар «название + значение» (`legalParameters`) | «No requisites added» |
+| 3 | **Company files** | Компактный список (имя, размер, дата) | «No company files yet» |
 
 Реквизиты и файлы — на втором экране; отчёты всегда видны сразу под hero.
 
