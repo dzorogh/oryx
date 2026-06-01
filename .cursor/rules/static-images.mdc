@@ -1,0 +1,10 @@
+---
+description: Static image imports from src/assets — see docs/conventions (canonical)
+alwaysApply: true
+---
+
+# Static images
+
+**Canonical doc:** [docs/conventions/assets/static-images.md](../../docs/conventions/assets/static-images.md)
+
+Do not use string paths like `"/tenants/logos/foo.png"` for bundled UI images — use static imports under `src/assets/` and `StaticImageData` with `next/image`. Run `npm run check:static-images` before PR.

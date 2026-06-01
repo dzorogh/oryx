@@ -1,3 +1,6 @@
+import type { StaticImageData } from "next/image";
+
+import { STORE_DEMO_IMAGE_LIST } from "@/assets/store/demo-images";
 import {
   STORE_CATALOG_ITEMS,
   type DealerStatus,
@@ -30,7 +33,7 @@ export type ProductVariant = {
   stock: number;
   dealerPrice: number | null;
   retailPrice: number | null;
-  imageSrc: string;
+  imageSrc: StaticImageData;
   imageAlt: string;
   attributeGroups: ProductAttributeGroup[];
   logistics: ProductAttributeRow[];
@@ -48,9 +51,9 @@ export type ProductDetail = {
   stock: number;
   description: string;
   shortDescription: string;
-  imageSrc: string;
+  imageSrc: StaticImageData;
   imageAlt: string;
-  galleryImages: string[];
+  galleryImages: StaticImageData[];
   variants: ProductVariant[];
 };
 
@@ -211,27 +214,9 @@ const buildVariants = (item: StoreCatalogItem): ProductVariant[] => {
   });
 };
 
-const DEMO_IMAGE_POOL = [
-  "/store/demo-images/force-1000-photo.jpg",
-  "/store/demo-images/force-750-photo.jpg",
-  "/store/demo-images/force-650-photo.jpg",
-  "/store/demo-images/cross-300-photo.jpg",
-  "/store/demo-images/cross-450-photo.jpg",
-  "/store/demo-images/cross-e250-photo.jpg",
-  "/store/demo-images/urban-180-photo.jpg",
-  "/store/demo-images/sprint-200-photo.jpg",
-  "/store/demo-images/gp-450-photo.jpg",
-  "/store/demo-images/gp-650-photo.jpg",
-  "/store/demo-images/gp-300-photo.jpg",
-  "/store/demo-images/rst-520-photo.jpg",
-  "/store/demo-images/rst-620-photo.jpg",
-  "/store/demo-images/ace-1000-photo.jpg",
-  "/store/demo-images/ace-700-photo.jpg",
-] as const;
-
 // Формирует галерею: главное фото товара первым, затем все остальные кадры из общего пула.
-const buildGalleryImages = (item: StoreCatalogItem): string[] => {
-  const others = DEMO_IMAGE_POOL.filter((src) => src !== item.imageSrc);
+const buildGalleryImages = (item: StoreCatalogItem): StaticImageData[] => {
+  const others = STORE_DEMO_IMAGE_LIST.filter((image) => image !== item.imageSrc);
   return [item.imageSrc, ...others];
 };
 

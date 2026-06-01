@@ -1,6 +1,6 @@
 import type { StaticImageData } from "next/image";
 
-import { TENANT_LOGOS } from "@/lib/tenant-logos";
+import { TENANT_LOGOS } from "@/assets/tenants/logos";
 
 export type DemoTenant = {
   id: string;

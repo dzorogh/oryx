@@ -4,25 +4,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  BarChart3,
+  Activity,
   Bell,
+  Bolt,
+  Building2,
+  ChartNoAxesCombined,
   ChevronsRight,
+  Goal,
   GraduationCap,
-  Handshake,
-  HeartPulse,
-  Library,
   LogOut,
   Menu,
   NotebookPen,
   Search,
-  Settings,
+  ShoppingCart,
   Smartphone,
-  SquareKanban,
-  Store,
-  Users,
-  Workflow,
   SquareCheckBig,
-  Building2,
+  SquareLibrary,
+  UsersRound,
+  Workflow,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -99,7 +98,7 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
     label: "Pulse",
     shortLabel: "Pulse",
-    icon: HeartPulse,
+    icon: Activity,
     href: "/",
     match: "/pulse",
     bgColor: "bg-pink-300",
@@ -107,7 +106,7 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
     label: "Tracker",
     shortLabel: "Tracker",
-    icon: SquareKanban,
+    icon: SquareCheckBig,
     href: "/tracker/tasks",
     match: "/tracker",
     bgColor: "bg-lime-300",
@@ -115,7 +114,7 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
     label: "CRM",
     shortLabel: "CRM",
-    icon: Handshake,
+    icon: Goal,
     href: "/crm/deals",
     match: "/crm",
     bgColor: "bg-amber-300",
@@ -123,7 +122,7 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
     label: "Store",
     shortLabel: "Store",
-    icon: Store,
+    icon: ShoppingCart,
     href: "/store/pim/products",
     match: "/store",
     bgColor: "bg-indigo-300",
@@ -139,7 +138,7 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
     label: "Library",
     shortLabel: "Library",
-    icon: Library,
+    icon: SquareLibrary,
     href: "/library/documents",
     match: "/library",
     bgColor: "bg-cyan-300",
@@ -147,7 +146,7 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
     label: "Analytics",
     shortLabel: "Analytics",
-    icon: BarChart3,
+    icon: ChartNoAxesCombined,
     href: "/analytics/stocks",
     match: "/analytics",
     bgColor: "bg-orange-300",
@@ -155,7 +154,7 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
   {
     label: "Team",
     shortLabel: "Team",
-    icon: Users,
+    icon: UsersRound,
     href: "/team/structure",
     match: "/team",
     bgColor: "bg-violet-300",
@@ -166,7 +165,7 @@ export const RAIL_FOOTER_ITEMS: RailSectionItem[] = [
   {
     label: "Settings",
     shortLabel: "Settings",
-    icon: Settings,
+    icon: Bolt,
     href: "/settings/auth",
     match: "/settings",
     bgColor: "bg-slate-300",
@@ -504,7 +503,7 @@ const LanguageSelectionSubmenu = ({
       aria-label={`Language, current: ${selectedLanguage.label}`}
     >
       <span className={userMenuLeadingSlotClassName}>
-        <LanguageFlag src={selectedLanguage.flagUrl} alt={selectedLanguage.label} className="size-5" />
+        <LanguageFlag src={selectedLanguage.flag} alt={selectedLanguage.label} className="size-5" />
       </span>
       <span className="min-w-0 flex-1 truncate whitespace-nowrap">{selectedLanguage.label}</span>
     </DropdownMenuSubTrigger>
@@ -523,7 +522,7 @@ const LanguageSelectionSubmenu = ({
             value={language.id}
             className="gap-2 py-2 pl-1.5 pr-8"
           >
-            <LanguageFlag src={language.flagUrl} alt={language.label} />
+            <LanguageFlag src={language.flag} alt={language.label} />
             <span className="min-w-0 flex-1 truncate">{language.label}</span>
           </DropdownMenuRadioItem>
         ))}
@@ -741,7 +740,7 @@ const MobileNavOverlay = ({ pathname, asideContent, onClose }: MobileNavOverlayP
                 <MobileMenuTile
                   key={item.label}
                   item={item}
-                  active={item.match === "/pulse" ? isPulseRoute(pathname) : pathname.startsWith(item.match)}
+                  active={getPrimaryItemActive(item, pathname)}
                   onNavigate={onClose}
                 />
               ))}

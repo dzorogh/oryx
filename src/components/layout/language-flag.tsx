@@ -1,8 +1,8 @@
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import { cn } from "@/lib/utils";
 
 type LanguageFlagProps = {
-  src: string;
+  src: StaticImageData;
   alt: string;
   className?: string;
 };

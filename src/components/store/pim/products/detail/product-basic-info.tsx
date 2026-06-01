@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,7 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
             <div className="absolute inset-0 flex flex-col gap-2 overflow-y-auto pr-0.5">
               {galleryImages.map((src, index) => (
                 <button
-                  key={`${src}-${index}`}
+                  key={`${src.src}-${index}`}
                   type="button"
                   onClick={() => setActiveImage(src)}
                   aria-label={`Show image ${index + 1}`}

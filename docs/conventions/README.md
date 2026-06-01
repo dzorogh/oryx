@@ -9,6 +9,7 @@ Canonical guidelines for humans and AI agents (Cursor, Codex, Claude, CI, etc.).
 | English UI copy | [ui/english-labels.md](ui/english-labels.md) |
 | Full-width list/content area | [ui/full-width-page-content.md](ui/full-width-page-content.md) |
 | List pages with toolbar header | [ui/list-page-toolbar.md](ui/list-page-toolbar.md) |
+| Static images (`src/assets`, not `public/` paths) | [assets/static-images.md](assets/static-images.md) |
 
 ## Entry points for agents
 
@@ -18,6 +19,7 @@ Canonical guidelines for humans and AI agents (Cursor, Codex, Claude, CI, etc.).
 ## Verification
 
 ```bash
-npm run check:ui-english   # English UI copy
-npm run lint:ui-english    # ESLint rule oryx-ui/no-cyrillic-ui
+npm run check:ui-english      # English UI copy
+npm run lint:ui-english       # ESLint rule oryx-ui/no-cyrillic-ui
+npm run check:static-images     # No public/ string paths for bundled images
 ```

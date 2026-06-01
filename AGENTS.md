@@ -12,12 +12,14 @@ All project conventions live under **[docs/conventions/](docs/conventions/)**. D
 | English UI copy | [docs/conventions/ui/english-labels.md](docs/conventions/ui/english-labels.md) |
 | Full-width content / anti-stretch | [docs/conventions/ui/full-width-page-content.md](docs/conventions/ui/full-width-page-content.md) |
 | List pages + toolbar header | [docs/conventions/ui/list-page-toolbar.md](docs/conventions/ui/list-page-toolbar.md) |
+| Static images (`src/assets`) | [docs/conventions/assets/static-images.md](docs/conventions/assets/static-images.md) |
 
 ## Quick rules
 
 1. **UI text** — English only in user-visible strings; run `npm run check:ui-english`.
 2. **List pages** — `bg-muted/30`, breadcrumb outside a white `Card` toolbar (`text-lg` title), filters/tabs inside toolbar, list full width below. See list-page-toolbar doc.
 3. **Width** — No `max-w-*` / `mx-auto` on page root; use responsive grids or tables so blocks do not stretch on ultra-wide screens.
+4. **Images** — Bundled UI images live under `src/assets/` with static imports (`StaticImageData`); not `"/…/file.png"` strings to `public/`. Run `npm run check:static-images`.
 
 ## Feature docs (how screens work)
 
@@ -38,6 +40,7 @@ npm run lint
 npm run typecheck
 npm run test
 npm run check:ui-english
+npm run check:static-images
 ```
 
 ## Tool-specific pointers
