@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { MessageCircle, ThumbsUp } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { NEWS_ITEMS, type NewsItem, type NewsRubric } from "./news-demo-data";
 import { HomeFilterChip } from "./home-filter-chip";
@@ -33,7 +34,7 @@ export const HomeNewsFilters = ({ activeRubric, onRubricChange, className }: Hom
       return (
         <HomeFilterChip
           key={tab.id}
-          size="xs"
+          size="sm"
           onClick={() => onRubricChange(tab.id)}
           active={active}
           ariaLabel={`Show ${tab.label} category`}
@@ -55,7 +56,11 @@ type HomeNewsSectionProps = {
 const HOME_NEWS_LIMIT = 5;
 
 const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
-  <article className="flex w-full min-w-0 flex-col gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1 pb-2">
+  <Link
+    href={item.href}
+    className="flex w-full min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-1 pb-2 text-card-foreground no-underline transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+    aria-label={`News: ${item.title}`}
+  >
     <div className="relative aspect-video overflow-hidden rounded-md">
       <Image
         src={item.imageUrl}
@@ -83,11 +88,11 @@ const NewsCard = ({ item, eager }: { item: NewsItem; eager?: boolean }) => (
           </span>
         </div>
       </div>
-      <h3 className="line-clamp-2 text-sm font-bold leading-tight tracking-tight text-foreground">
+      <h3 className="line-clamp-2 text-sm font-bold leading-tight tracking-tight">
         {item.title}
       </h3>
     </div>
-  </article>
+  </Link>
 );
 
 export const HomeNewsSection = ({

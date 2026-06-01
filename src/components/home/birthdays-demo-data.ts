@@ -8,6 +8,7 @@ export type BirthdayPerson = {
   month: number;
   /** 1–31 */
   day: number;
+  profileHref: string;
 };
 
 export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
@@ -19,6 +20,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=32",
     month: 3,
     day: 24,
+    profileHref: "/team/users/1",
   },
   {
     id: "bd-2",
@@ -28,6 +30,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=12",
     month: 4,
     day: 2,
+    profileHref: "/team/users/2",
   },
   {
     id: "bd-3",
@@ -37,6 +40,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=47",
     month: 3,
     day: 24,
+    profileHref: "/team/users/3",
   },
   {
     id: "bd-4",
@@ -46,6 +50,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=53",
     month: 5,
     day: 15,
+    profileHref: "/team/users/4",
   },
   {
     id: "bd-5",
@@ -55,6 +60,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=5",
     month: 3,
     day: 30,
+    profileHref: "/team/users/5",
   },
   {
     id: "bd-6",
@@ -64,6 +70,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=15",
     month: 7,
     day: 8,
+    profileHref: "/team/users/6",
   },
   {
     id: "bd-7",
@@ -73,6 +80,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=28",
     month: 11,
     day: 21,
+    profileHref: "/team/users/7",
   },
   {
     id: "bd-8",
@@ -82,5 +90,6 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=67",
     month: 12,
     day: 5,
+    profileHref: "/team/users/8",
   },
 ];

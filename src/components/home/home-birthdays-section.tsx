@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { BIRTHDAY_PEOPLE, type BirthdayPerson } from "./birthdays-demo-data";
 import { cn } from "@/lib/utils";
 
@@ -43,11 +44,12 @@ type BirthdayCardProps = {
 
 const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
   return (
-    <article
+    <Link
+      href={person.profileHref}
       className={cn(
-        "flex min-h-0 min-w-0 items-center gap-1.5 rounded-lg border px-1.5 py-1",
+        "flex min-h-0 min-w-0 items-center gap-1.5 rounded-lg border border-border bg-card px-1.5 py-1 text-card-foreground no-underline transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
       )}
-      aria-label={`Birthday: ${person.fullName}`}
+      aria-label={`Birthday: ${person.fullName}. Open profile`}
     >
       <div
         className="flex w-14 shrink-0 flex-col items-center rounded-md bg-muted/30 px-1 py-0.5 text-center"
@@ -73,7 +75,7 @@ const BirthdayCard = ({ person, occurrence }: BirthdayCardProps) => {
           <p className="line-clamp-1 text-xs leading-tight text-muted-foreground">{person.department}</p>
         </div>
       </div>
-    </article>
+    </Link>
   );
 };
 

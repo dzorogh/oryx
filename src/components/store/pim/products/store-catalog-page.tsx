@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect } from "react";
+import { Suspense, useCallback, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
@@ -28,7 +28,11 @@ import {
 } from "./catalog/catalog-helpers";
 import { useCatalogController } from "./catalog/use-catalog-controller";
 
-export const StoreCatalogPage = () => {
+const StoreCatalogPageFallback = () => (
+  <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Loading catalog" />
+);
+
+const StoreCatalogPageContent = () => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -156,3 +160,9 @@ export const StoreCatalogPage = () => {
     </main>
   );
 };
+
+export const StoreCatalogPage = () => (
+  <Suspense fallback={<StoreCatalogPageFallback />}>
+    <StoreCatalogPageContent />
+  </Suspense>
+);

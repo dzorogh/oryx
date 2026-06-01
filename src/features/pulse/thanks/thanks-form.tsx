@@ -129,12 +129,13 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent, compact = false }: Tha
             setMessage(event.target.value);
           }}
           maxLength={MESSAGE_MAX_LENGTH}
-          rows={4}
+          rows={compact ? 3 : 4}
           placeholder="e.g. Thanks for helping with the release!"
           aria-label="Thank-you message"
           aria-invalid={isOverLimit}
           className={cn(
-            "flex min-h-[96px] w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+            compact ? "min-h-[4.5rem]" : "min-h-[96px]",
             isOverLimit && "border-destructive focus-visible:ring-destructive/20",
           )}
         />

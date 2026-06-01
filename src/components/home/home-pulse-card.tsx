@@ -10,6 +10,7 @@ type HomePulseCardProps = {
   children?: ReactNode;
   ariaLabel?: string;
   className?: string;
+  href?: string;
 };
 
 export const HomePulseCard = ({
@@ -20,9 +21,11 @@ export const HomePulseCard = ({
   children,
   ariaLabel,
   className,
+  href,
 }: HomePulseCardProps) => (
   <HomeInfoCardBase
-    className={cn("border-[var(--corportal-border-grey)] bg-card", className)}
+    href={href}
+    className={className}
     ariaLabel={ariaLabel}
     header={
       <>

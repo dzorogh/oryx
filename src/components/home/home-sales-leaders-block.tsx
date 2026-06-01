@@ -8,7 +8,7 @@ import {
   type HomeBlockHeaderAction,
 } from "./home-block-shell";
 import { HomeSalesLeadersFilters, HomeSalesLeadersSection } from "./home-sales-leaders-section";
-import type { StatsDirection } from "./stats-demo-data";
+import type { SalesRankingDimension, StatsDirection } from "./stats-demo-data";
 
 type HomeSalesLeadersBlockProps = {
   title: string;
@@ -30,9 +30,15 @@ export const HomeSalesLeadersBlock = ({
   actions,
 }: HomeSalesLeadersBlockProps) => {
   const [direction, setDirection] = useState<StatsDirection>("all");
+  const [dimension, setDimension] = useState<SalesRankingDimension>("employees");
 
   const filters = (
-    <HomeSalesLeadersFilters direction={direction} onDirectionChange={setDirection} />
+    <HomeSalesLeadersFilters
+      direction={direction}
+      onDirectionChange={setDirection}
+      dimension={dimension}
+      onDimensionChange={setDimension}
+    />
   );
 
   return (
@@ -51,6 +57,8 @@ export const HomeSalesLeadersBlock = ({
         <HomeSalesLeadersSection
           direction={direction}
           onDirectionChange={setDirection}
+          dimension={dimension}
+          onDimensionChange={setDimension}
           hideFilters
         />
       </div>

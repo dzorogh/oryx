@@ -18,6 +18,7 @@ export type TodayTask = {
   title: string;
   projectName: string;
   comments: number;
+  href: string;
 };
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
@@ -108,6 +109,7 @@ const createTask = (config: {
       planningDate,
     },
     deadlineLabel: formatDeadlineLabel(deadlineAt, DEMO_REFERENCE_NOW),
+    href: `/tracker/tasks?task=${config.id}`,
   } satisfies TodayTask;
 };
 

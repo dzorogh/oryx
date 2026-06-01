@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MessageCircle, ThumbsUp } from "lucide-react";
 import { CorportalSoftBadge } from "@/components/ui/corportal-soft-badge";
 import {
@@ -8,8 +9,9 @@ import {
 } from "./ideas-demo-data";
 
 const IdeaCard = ({ idea }: { idea: IdeaItem }) => (
-  <article
-    className="flex min-h-0 min-w-0 items-start gap-1.5 rounded-lg border border-[var(--corportal-border-grey)] bg-card p-1.5"
+  <Link
+    href={idea.href}
+    className="flex min-h-0 min-w-0 items-start gap-1.5 rounded-lg border border-border bg-card p-1.5 text-card-foreground no-underline transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
     aria-label={`Idea: ${idea.title}`}
   >
     <div className="min-w-0 flex-1">
@@ -29,7 +31,7 @@ const IdeaCard = ({ idea }: { idea: IdeaItem }) => (
         {idea.comments}
       </span>
     </div>
-  </article>
+  </Link>
 );
 
 export const HomeIdeasSection = () => {

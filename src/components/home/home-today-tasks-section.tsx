@@ -6,6 +6,7 @@ import { PriorityBadge } from "./priority-badge";
 
 const TaskCard = ({ task }: { task: TodayTask }) => (
   <HomePulseCard
+    href={task.href}
     ariaLabel={`Task: ${task.title}`}
     title={task.title}
     meta={<PriorityBadge priority={task.priority} />}

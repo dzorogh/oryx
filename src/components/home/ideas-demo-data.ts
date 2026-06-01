@@ -19,6 +19,7 @@ export type IdeaItem = {
   likes: number;
   comments: number;
   createdAt: string;
+  href: string;
 };
 
 const IDEA_TITLES = [
@@ -51,12 +52,16 @@ const AUTHORS = [
   "Kirill Orlov",
 ];
 
-export const IDEAS_ITEMS: IdeaItem[] = IDEA_TITLES.map((title, index) => ({
-  id: `idea-${index + 1}`,
-  title,
-  author: AUTHORS[index % AUTHORS.length],
-  status: index % 3 === 0 ? "new" : "review",
-  likes: 18 + index * 5,
-  comments: 2 + (index % 7),
-  createdAt: `${(index % 5) + 1} hr ago`,
-}));
+export const IDEAS_ITEMS: IdeaItem[] = IDEA_TITLES.map((title, index) => {
+  const id = `idea-${index + 1}`;
+  return {
+    id,
+    title,
+    author: AUTHORS[index % AUTHORS.length],
+    status: index % 3 === 0 ? "new" : "review",
+    likes: 18 + index * 5,
+    comments: 2 + (index % 7),
+    createdAt: `${(index % 5) + 1} hr ago`,
+    href: `/pulse/ideas?idea=${id}`,
+  };
+});

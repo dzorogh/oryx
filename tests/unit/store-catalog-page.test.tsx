@@ -28,6 +28,11 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+const getCatalogMain = () => screen.getByRole("main");
+
+const getListingModeGroup = () =>
+  within(getCatalogMain()).getByRole("group", { name: "Catalog listing type" });
+
 describe("StoreCatalogPage", () => {
   afterEach(() => {
     cleanup();
@@ -39,14 +44,11 @@ describe("StoreCatalogPage", () => {
 
     expect(screen.getByRole("heading", { name: "Products" })).toBeVisible();
 
-    const [catalogMain] = screen.getAllByRole("main");
-    const listingTabs = within(catalogMain).getByRole("tablist", { name: "Catalog listing type" });
-    expect(within(listingTabs).getByRole("tab", { name: "Base products" })).toHaveAttribute("aria-pressed", "true");
-    expect(within(listingTabs).getByRole("tab", { name: "Product variants" })).toHaveAttribute("aria-pressed", "false");
+    const listingGroup = getListingModeGroup();
+    expect(within(listingGroup).getByRole("button", { name: "Products" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(listingGroup).getByRole("button", { name: "Variants" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByLabelText("Quick search by name or SKU")).toBeVisible();
     expect(screen.getByLabelText("Quick filter by category")).toBeVisible();
-    expect(screen.getByLabelText("Quick filter by dealer status")).toBeVisible();
-    expect(screen.getByLabelText("Quick filter by retail status")).toBeVisible();
     expect(screen.getByRole("button", { name: "Open catalog filters panel" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Open catalog columns panel" })).toBeVisible();
   });
@@ -55,7 +57,7 @@ describe("StoreCatalogPage", () => {
     navigationMock.reset();
     render(<StoreCatalogPage />);
 
-    const [catalogMain] = screen.getAllByRole("main");
+    const catalogMain = getCatalogMain();
     const quickSearchInput = within(catalogMain).getByLabelText("Quick search by name or SKU");
 
     fireEvent.change(quickSearchInput, {
@@ -112,9 +114,9 @@ describe("StoreCatalogPage", () => {
     navigationMock.replace("/store/pim/products?listing=variants");
     render(<StoreCatalogPage />);
 
-    const [catalogMain] = screen.getAllByRole("main");
-    const listingTabs = within(catalogMain).getByRole("tablist", { name: "Catalog listing type" });
-    expect(within(listingTabs).getByRole("tab", { name: "Product variants" })).toHaveAttribute("aria-pressed", "true");
+    const catalogMain = getCatalogMain();
+    const listingGroup = getListingModeGroup();
+    expect(within(listingGroup).getByRole("button", { name: "Variants" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByLabelText("Add a new variant to the catalog")).toBeVisible();
     expect(await within(catalogMain).findByText("100451-2")).toBeVisible();
   });
@@ -124,9 +126,8 @@ describe("StoreCatalogPage", () => {
     const user = userEvent.setup();
     render(<StoreCatalogPage />);
 
-    const [catalogMain] = screen.getAllByRole("main");
-    const listingTabs = within(catalogMain).getByRole("tablist", { name: "Catalog listing type" });
-    await user.click(within(listingTabs).getByRole("tab", { name: "Product variants" }));
+    const listingGroup = getListingModeGroup();
+    await user.click(within(listingGroup).getByRole("button", { name: "Variants" }));
 
     expect(navigationMock.getSearchParams().get("listing")).toBe("variants");
   });

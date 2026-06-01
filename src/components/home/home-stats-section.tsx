@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { STATS_KPI_METRICS } from "./stats-demo-data";
 import { HomeAvatarRing } from "./home-avatar-ring";
 
@@ -15,28 +16,26 @@ const CompactKpiCard = ({
   valueDisplay,
   leaderName,
   avatarUrl,
+  profileHref,
 }: {
   title: string;
   valueDisplay: string;
   leaderName: string;
   avatarUrl: string;
+  profileHref: string;
 }) => (
-  <article className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2 rounded-xl border border-[var(--corportal-border-grey)] bg-card px-3 py-3 lg:px-3 lg:py-2.5">
-    <div className="space-y-1.5">
-      <h3 className="text-md font-bold leading-snug tracking-tight text-foreground">{title}</h3>
-    </div>
-    <p className="text-xl font-bold tabular-nums leading-none tracking-tight text-foreground">{valueDisplay}</p>
+  <Link
+    href={profileHref}
+    className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2 rounded-xl border border-border bg-card px-3 py-3 text-card-foreground no-underline transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 lg:px-3 lg:py-2.5"
+    aria-label={`${title}: ${valueDisplay}. Open profile: ${leaderName}`}
+  >
+    <h3 className="text-md font-bold leading-snug tracking-tight">{title}</h3>
+    <p className="text-xl font-bold tabular-nums leading-none tracking-tight">{valueDisplay}</p>
     <div className="mt-auto flex min-w-0 items-center gap-2">
       <HomeAvatarRing src={avatarUrl} alt="" />
-      <button
-        type="button"
-        className="min-w-0 text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
-        aria-label={`Profile: ${leaderName}`}
-      >
-        {leaderName}
-      </button>
+      <p className="min-w-0 flex-1 truncate text-sm font-medium">{leaderName}</p>
     </div>
-  </article>
+  </Link>
 );
 
 export const HomeStatsSection = () => {
@@ -55,6 +54,7 @@ export const HomeStatsSection = () => {
               }
               leaderName={metric.leaderName}
               avatarUrl={metric.avatarUrl}
+              profileHref={metric.profileHref}
             />
           </div>
         ))}

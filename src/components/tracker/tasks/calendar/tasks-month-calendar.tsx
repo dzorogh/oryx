@@ -276,8 +276,10 @@ export const TasksMonthCalendar = ({ initialTasks }: TasksMonthCalendarProps) =>
     nextDate.setHours(parsedTime.hour, parsedTime.minute, 0, 0);
     const deadlineAt = nextDate.toISOString();
     const createdAt = new Date().toISOString();
+    const taskId = `task-${Date.now()}`;
     const nextTask: CalendarTask = {
-      id: `task-${Date.now()}`,
+      id: taskId,
+      href: `/tracker/tasks?task=${taskId}`,
       title: trimmedTitle,
       projectName: quickCreateProject.trim() || "No project",
       priority: "medium",
