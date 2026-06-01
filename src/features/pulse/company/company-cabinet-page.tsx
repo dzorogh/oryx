@@ -56,7 +56,7 @@ export const CompanyCabinetPage = () => {
             <div className="lg:col-span-2">
               <CompanyFilesSection files={company.files} />
             </div>
-            <div className="lg:col-span-3" id="company-address">
+            <div className="lg:col-span-3">
               <CompanyRequisitesSection requisites={company.requisites} />
             </div>
           </div>

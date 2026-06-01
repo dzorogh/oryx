@@ -35,6 +35,10 @@ export type CompanyProfile = {
   displayName: string;
   logo?: StaticImageData;
   description?: string;
+  country?: string;
+  contactPerson?: string;
+  contractStartDate?: string;
+  contractEndDate?: string;
   website?: string;
   email?: string;
   phone?: string;
@@ -141,6 +145,10 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
     logo: TENANT_LOGOS.globaldrive,
     description:
       "International distributor of powersports, marine, and outdoor equipment with regional hubs across EMEA.",
+    country: "Russia",
+    contactPerson: "Maria Sokolova",
+    contractStartDate: "2024-01-15T00:00:00.000Z",
+    contractEndDate: "2026-12-31T00:00:00.000Z",
     website: "https://globaldrive.example",
     email: "info@globaldrive.example",
     phone: "+7 (495) 123-45-67",
@@ -184,6 +192,9 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
     displayName: "Lunnar Capital",
     logo: TENANT_LOGOS.lunnarCapital,
     description: "Investment and holding company managing portfolio assets in retail and logistics.",
+    country: "Russia",
+    contactPerson: "Alexey Volkov",
+    contractStartDate: "2025-06-01T00:00:00.000Z",
     website: "https://lunnar-capital.example",
     email: "contact@lunnar-capital.example",
     phone: "+7 (812) 987-65-43",
@@ -204,6 +215,10 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
     displayName: "OryxBMS",
     logo: TENANT_LOGOS.oryxbms,
     description: "Business management platform for distributed teams, retail, and operations.",
+    country: "United Arab Emirates",
+    contactPerson: "Sara Al Mansouri",
+    contractStartDate: "2025-01-01T00:00:00.000Z",
+    contractEndDate: "2027-12-31T00:00:00.000Z",
     website: "https://oryxbms.example",
     email: "hello@oryxbms.example",
     phone: "+971 4 123 4567",
@@ -235,6 +250,9 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
     displayName: "Sharmax Belarus",
     logo: TENANT_LOGOS.sharmax,
     description: "Official Sharmax dealer network hub for Belarus and nearby markets.",
+    country: "Belarus",
+    contactPerson: "Dmitry Kozlov",
+    contractEndDate: "2026-06-30T00:00:00.000Z",
     website: "https://sharmax.example/by",
     email: "by@sharmax.example",
     phone: "+375 (17) 234-56-78",

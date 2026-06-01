@@ -6,6 +6,7 @@ import { Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import { TenantLogo } from "@/components/layout/tenant-logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { formatOptionalDate, formatOptionalText } from "./company-cabinet-format";
 import { COMPANY_INLINE_ICON_CLASS } from "./company-icon-styles";
 import type { CompanyProfile } from "./company-cabinet-demo-data";
 
@@ -20,6 +21,18 @@ type ContactChipProps = {
   icon: ReactNode;
   external?: boolean;
 };
+
+type BasicInfoFieldProps = {
+  label: string;
+  value: string;
+};
+
+const BasicInfoField = ({ label, value }: BasicInfoFieldProps) => (
+  <div className="min-w-0 space-y-0.5">
+    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+    <p className="text-xs font-medium leading-relaxed text-foreground break-words">{value}</p>
+  </div>
+);
 
 const ContactChip = ({ href, label, icon, external }: ContactChipProps) => (
   <Link
@@ -62,7 +75,7 @@ export const CompanyCabinetHero = ({ company, canEdit }: CompanyCabinetHeroProps
   }
   if (company.address) {
     contactChips.push({
-      href: "#company-address",
+      href: "#company-details",
       label: company.address,
       icon: <MapPin className={COMPANY_INLINE_ICON_CLASS} />,
     });
@@ -115,6 +128,21 @@ export const CompanyCabinetHero = ({ company, canEdit }: CompanyCabinetHeroProps
             Edit
           </Button>
         ) : null}
+      </div>
+
+      <div className="relative border-t border-[var(--corportal-border-grey)]/80 px-3 py-2.5 sm:px-3.5">
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <BasicInfoField label="Country" value={formatOptionalText(company.country)} />
+          <BasicInfoField label="Contact person" value={formatOptionalText(company.contactPerson)} />
+          <BasicInfoField
+            label="Contract start date"
+            value={formatOptionalDate(company.contractStartDate)}
+          />
+          <BasicInfoField
+            label="Contract end date"
+            value={formatOptionalDate(company.contractEndDate)}
+          />
+        </dl>
       </div>
 
       {contactChips.length > 0 ? (

@@ -30,11 +30,7 @@ export const getCompanyByTenantId = (tenantId: string): CompanyProfile => {
     logo: tenant?.logo,
     description: "Company profile details will appear here once configured.",
     requisites: {
-      legalParameters: [
-        { id: "legal-name", label: "Legal name", value: fallbackLabel },
-        { id: "tax-id", label: "Tax ID", value: "—" },
-        { id: "legal-address", label: "Legal address", value: "—" },
-      ],
+      legalParameters: [],
     },
     files: [],
   };

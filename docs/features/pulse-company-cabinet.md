@@ -20,7 +20,8 @@
 ### Hero
 
 - Логотип, название компании, краткое описание (до 2 строк)
-- Контакты — pill-чипы (website, email, phone, address)
+- Read-only поля (пустые → `—`): **Country**, **Contact person**, **Contract start date**, **Contract end date**
+- Контакты — pill-чипы (website, email, phone, address); адрес ведёт к якорю `#company-details`
 - **Edit** — outline-кнопка справа, если `CAN_EDIT_COMPANY === true`; ведёт на `/settings/companies`
 
 ### Порядок секций (сверху вниз)
@@ -29,7 +30,7 @@
 |---|--------|------------|------------------|
 | 1 | **BI reports** | Компактные строки-ссылки, сетка до 4 колонок | «No reports available» |
 | 2 | **Company files** | Компактный список (имя, размер, дата) | «No company files yet» |
-| 3 | **Legal & bank details** | Два динамических списка параметров (`legalParameters`, `bankParameters`), всегда развёрнут | пустой список не рендерится |
+| 3 | **Details** | Список пар «название + значение» (`legalParameters`) | «No requisites added» |
 
 Реквизиты и файлы — на втором экране; отчёты всегда видны сразу под hero.
 
@@ -47,7 +48,7 @@ Demo-сценарии:
 - **Lunnar Capital** — нет файлов, 1 отчёт (Operational KPIs)
 - **OryxBMS** — 1 файл, 1 отчёт (Inventory health)
 - **Sharmax Belarus** — файлы + 2 отчёта
-- Остальные tenant — fallback-профиль, пустые files/reports
+- Остальные tenant — fallback-профиль, пустые requisites/files/reports, поля hero с `—`
 
 ### Tenant switcher
 
