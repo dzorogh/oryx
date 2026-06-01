@@ -21,7 +21,7 @@
 
 - Логотип, название компании, краткое описание (до 2 строк)
 - Read-only поля (пустые → `—`): **Country**, **Contact person**, **Contract start date**, **Contract end date**
-- Контакты — pill-чипы (website, email, phone, address); адрес ведёт к якорю `#company-details`
+- Контакты — блок справа в hero (website, email, phone, address); адрес ведёт к якорю `#company-details`
 - **Edit** — outline-кнопка справа, если `CAN_EDIT_COMPANY === true`; ведёт на `/settings/companies`
 
 ### Порядок секций (сверху вниз)
