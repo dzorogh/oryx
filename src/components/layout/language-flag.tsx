@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { publicAssetPath } from "@/lib/public-asset-path";
 import { cn } from "@/lib/utils";
 
 type LanguageFlagProps = {
@@ -15,6 +16,6 @@ export const LanguageFlag = ({ src, alt, className }: LanguageFlagProps) => (
       className,
     )}
   >
-    <Image src={src} alt={alt} fill sizes="20px" className="object-cover" />
+    <Image src={publicAssetPath(src)} alt={alt} fill sizes="20px" className="object-cover" />
   </span>
 );
