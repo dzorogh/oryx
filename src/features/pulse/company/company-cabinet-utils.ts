@@ -27,7 +27,7 @@ export const getCompanyByTenantId = (tenantId: string): CompanyProfile => {
   return {
     tenantId: fallbackId,
     displayName: fallbackLabel,
-    logoUrl: tenant?.logoUrl,
+    logo: tenant?.logo,
     description: "Company profile details will appear here once configured.",
     requisites: {
       legalParameters: [

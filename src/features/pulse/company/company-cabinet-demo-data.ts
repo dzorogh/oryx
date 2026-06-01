@@ -1,3 +1,7 @@
+import type { StaticImageData } from "next/image";
+
+import { TENANT_LOGOS } from "@/lib/tenant-logos";
+
 export type CompanyParameter = {
   id: string;
   label: string;
@@ -29,7 +33,7 @@ export type CompanyBiReport = {
 export type CompanyProfile = {
   tenantId: string;
   displayName: string;
-  logoUrl?: string;
+  logo?: StaticImageData;
   description?: string;
   website?: string;
   email?: string;
@@ -134,7 +138,7 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
   {
     tenantId: "tenant-globaldrive",
     displayName: "Globaldrive",
-    logoUrl: "/tenants/logos/globaldrive.png",
+    logo: TENANT_LOGOS.globaldrive,
     description:
       "International distributor of powersports, marine, and outdoor equipment with regional hubs across EMEA.",
     website: "https://globaldrive.example",
@@ -178,7 +182,7 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
   {
     tenantId: "tenant-lunnar-capital",
     displayName: "Lunnar Capital",
-    logoUrl: "/tenants/logos/lunnar-capital.png",
+    logo: TENANT_LOGOS.lunnarCapital,
     description: "Investment and holding company managing portfolio assets in retail and logistics.",
     website: "https://lunnar-capital.example",
     email: "contact@lunnar-capital.example",
@@ -198,7 +202,7 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
   {
     tenantId: "tenant-oryxbms",
     displayName: "OryxBMS",
-    logoUrl: "/tenants/logos/oryxbms.png",
+    logo: TENANT_LOGOS.oryxbms,
     description: "Business management platform for distributed teams, retail, and operations.",
     website: "https://oryxbms.example",
     email: "hello@oryxbms.example",
@@ -229,7 +233,7 @@ export const COMPANY_PROFILES: CompanyProfile[] = [
   {
     tenantId: "tenant-sharmax-by",
     displayName: "Sharmax Belarus",
-    logoUrl: "/tenants/logos/sharmax.png",
+    logo: TENANT_LOGOS.sharmax,
     description: "Official Sharmax dealer network hub for Belarus and nearby markets.",
     website: "https://sharmax.example/by",
     email: "by@sharmax.example",

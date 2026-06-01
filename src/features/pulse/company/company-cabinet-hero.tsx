@@ -81,9 +81,9 @@ export const CompanyCabinetHero = ({ company, canEdit }: CompanyCabinetHeroProps
 
       <div className="relative flex flex-wrap items-start justify-between gap-3 p-3 sm:p-3.5">
         <div className="flex min-w-0 items-start gap-3">
-          {company.logoUrl ? (
+          {company.logo ? (
             <TenantLogo
-              src={company.logoUrl}
+              src={company.logo}
               alt={`${company.displayName} logo`}
               className="size-10 rounded-lg ring-1 ring-[var(--corportal-border-grey)]"
             />

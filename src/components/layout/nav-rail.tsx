@@ -457,7 +457,7 @@ const TenantSelectionSubmenu = ({
       aria-label={`Tenant, current: ${selectedTenant.label}`}
     >
       <span className={userMenuLeadingSlotClassName}>
-        <TenantLogo src={selectedTenant.logoUrl} alt={selectedTenant.label} className="size-5" />
+        <TenantLogo src={selectedTenant.logo} alt={selectedTenant.label} className="size-5" />
       </span>
       <span className="min-w-0 flex-1 truncate whitespace-nowrap">{selectedTenant.label}</span>
     </DropdownMenuSubTrigger>
@@ -476,7 +476,7 @@ const TenantSelectionSubmenu = ({
             value={tenant.id}
             className="gap-2 py-2 pl-1.5 pr-8"
           >
-            <TenantLogo src={tenant.logoUrl} alt={tenant.label} />
+            <TenantLogo src={tenant.logo} alt={tenant.label} />
             <span className="min-w-0 flex-1 truncate">{tenant.label}</span>
           </DropdownMenuRadioItem>
         ))}
