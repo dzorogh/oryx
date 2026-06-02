@@ -20,7 +20,7 @@ export const BIRTHDAY_PEOPLE: BirthdayPerson[] = [
     avatarUrl: "https://i.pravatar.cc/96?img=32",
     month: 3,
     day: 24,
-    profileHref: "/team/users/1",
+    profileHref: "/team/users/emp-12",
   },
   {
     id: "bd-2",

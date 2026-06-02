@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { Download, FileText, FolderOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   COMPANY_COUNT_BADGE_CLASS,
   COMPANY_INLINE_ICON_CLASS,
@@ -28,33 +27,25 @@ type CompanyFileRowProps = {
 };
 
 const CompanyFileRow = ({ file }: CompanyFileRowProps) => (
-  <li className="group flex items-center">
-    <Link
-      href={file.href}
-      className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-      aria-label={`Open file ${file.name}`}
+  <li>
+    <a
+      href={getFileDownloadHref(file)}
+      download={file.name}
+      className="group flex w-full items-center gap-2 px-2.5 py-2 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      aria-label={`Download ${file.name}`}
     >
       <FileText className={COMPANY_INLINE_ICON_CLASS} aria-hidden />
       <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{file.name}</span>
       <span className="hidden shrink-0 text-[10px] text-muted-foreground md:inline">{file.sizeLabel}</span>
       <span className="shrink-0 text-[10px] text-muted-foreground">{formatUploadedAt(file.uploadedAt)}</span>
-    </Link>
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-xs"
-      className="mr-1 shrink-0 text-muted-foreground hover:text-foreground"
-      nativeButton={false}
-      render={
-        <a
-          href={getFileDownloadHref(file)}
-          download={file.name}
-          aria-label={`Download ${file.name}`}
-        />
-      }
-    >
-      <Download className={COMPANY_INLINE_ICON_CLASS} aria-hidden />
-    </Button>
+      <Download
+        className={cn(
+          COMPANY_INLINE_ICON_CLASS,
+          "shrink-0 text-muted-foreground group-hover:text-foreground",
+        )}
+        aria-hidden
+      />
+    </a>
   </li>
 );
 

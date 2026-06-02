@@ -19,10 +19,6 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
     title: "Help",
     description: "Knowledge base, guides, and support contacts will appear here.",
   },
-  profile: {
-    title: "Profile",
-    description: "The user profile page is ready for account data integration.",
-  },
   search: {
     title: "Search",
     description: "The search section is ready for system-wide global search integration.",

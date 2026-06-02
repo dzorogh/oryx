@@ -1,17 +1,16 @@
 import { permanentRedirect } from "next/navigation";
-import { TEAM_PROFILE_DEMO_IDS } from "@/components/team/team-profile-demo-data";
+import { USER_PROFILE_ROUTE_IDS } from "@/features/users/profile/user-profile-demo-data";
 
-export function generateStaticParams() {
-  return TEAM_PROFILE_DEMO_IDS.map((employeeId) => ({ employeeId }));
-}
+export const generateStaticParams = () =>
+  USER_PROFILE_ROUTE_IDS.map((employeeId) => ({ employeeId }));
 
-type TeamProfileRouteProps = {
+type TeamLegacyRedirectProps = {
   params: Promise<{ employeeId: string }>;
 };
 
-const TeamProfileRoute = async ({ params }: TeamProfileRouteProps) => {
+const TeamLegacyRedirectPage = async ({ params }: TeamLegacyRedirectProps) => {
   const { employeeId } = await params;
   permanentRedirect(`/team/users/${employeeId}`);
 };
 
-export default TeamProfileRoute;
+export default TeamLegacyRedirectPage;

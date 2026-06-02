@@ -35,7 +35,9 @@ const TEAM_SUMMARY_ITEMS = [
   },
 ] as const;
 
-const TEAM_PROFILE_PREVIEW = TEAM_DIRECTORY_EMPLOYEES.find((employee) => employee.id === "1") ?? TEAM_DIRECTORY_EMPLOYEES[0];
+const TEAM_PROFILE_PREVIEW =
+  TEAM_DIRECTORY_EMPLOYEES.find((employee) => employee.id === "emp-12") ??
+  TEAM_DIRECTORY_EMPLOYEES[0];
 
 const TeamAsideSectionTitle = ({ children }: { children: string }) => (
   <p className="px-1 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{children}</p>

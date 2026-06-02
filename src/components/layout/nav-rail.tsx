@@ -317,9 +317,10 @@ const userMenuLeadingSlotClassName =
   "flex size-5 shrink-0 items-center justify-center";
 
 const CURRENT_USER =
-  TEAM_DIRECTORY_EMPLOYEES.find((employee) => employee.id === "1") ?? TEAM_DIRECTORY_EMPLOYEES[0];
+  TEAM_DIRECTORY_EMPLOYEES.find((employee) => employee.id === "emp-12") ??
+  TEAM_DIRECTORY_EMPLOYEES[0];
 
-const CURRENT_USER_PROFILE_HREF = CURRENT_USER.profileHref ?? "/team/users/1";
+const CURRENT_USER_PROFILE_HREF = CURRENT_USER.profileHref ?? "/team/users/emp-12";
 
 const USER_MENU_ITEMS: UserMenuItem[] = [
   { id: "company", label: "Company workspace", icon: Building2, href: "/pulse/company" },

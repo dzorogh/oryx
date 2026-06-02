@@ -1,23 +1,26 @@
 import { notFound } from "next/navigation";
-import { TeamProfilePage } from "@/components/team/team-profile-page";
-import { TEAM_PROFILE_DEMO_IDS, getTeamProfileDemoById } from "@/components/team/team-profile-demo-data";
+import { UserProfilePage } from "@/features/users/profile/user-profile-page";
+import {
+  USER_PROFILE_ROUTE_IDS,
+  getUserProfileDemoById,
+} from "@/features/users/profile/user-profile-demo-data";
 
 export const generateStaticParams = () =>
-  TEAM_PROFILE_DEMO_IDS.map((employeeId) => ({ employeeId }));
+  USER_PROFILE_ROUTE_IDS.map((employeeId) => ({ employeeId }));
 
-type TeamProfileRouteProps = {
+type TeamUserProfileRouteProps = {
   params: Promise<{ employeeId: string }>;
 };
 
-const TeamProfileRoute = async ({ params }: TeamProfileRouteProps) => {
+const TeamUserProfileRoute = async ({ params }: TeamUserProfileRouteProps) => {
   const { employeeId } = await params;
-  const profile = getTeamProfileDemoById(employeeId);
+  const profile = getUserProfileDemoById(employeeId);
 
   if (!profile) {
     notFound();
   }
 
-  return <TeamProfilePage profile={profile} />;
+  return <UserProfilePage initialProfile={profile} />;
 };
 
-export default TeamProfileRoute;
+export default TeamUserProfileRoute;

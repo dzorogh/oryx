@@ -1,6 +1,9 @@
 import type { ModuleSubnavItem } from "@/components/layout/module-subnav";
 
-export const TEAM_PROFILE_NAV_ITEM: ModuleSubnavItem = { href: "/team/users/1", label: "My Profile" };
+export const TEAM_PROFILE_NAV_ITEM: ModuleSubnavItem = {
+  href: "/team/users/emp-12",
+  label: "My Profile",
+};
 
 export const TEAM_SECTION_NAV_ITEMS: ModuleSubnavItem[] = [
   { href: "/team/structure", label: "Structure" },

@@ -1,4 +1,4 @@
-import { TEAM_PROFILE_DEMO_DATA, type TeamProfileData } from "./team-profile-demo-data";
+import { USER_PROFILE_CURRENT_USER_ID } from "@/features/users/profile/user-profile-demo-data";
 
 export type TeamDirectoryEmployee = {
   id: string;
@@ -11,35 +11,60 @@ export type TeamDirectoryEmployee = {
   position: string;
   avatarUrl: string;
   isLead: boolean;
-  profileHref?: string;
+  profileHref: string;
 };
 
-const getEmployeeDivisions = (profile: TeamProfileData) => {
-  const divisions = profile.orgAssignments
-    .map((assignment) => assignment.name)
-    .filter((name) => name !== profile.department);
-
-  if (divisions.length === 0) {
-    return profile.department;
-  }
-
-  return divisions.join(", ");
-};
-
-const mapProfileToDirectoryEmployee = (profile: TeamProfileData): TeamDirectoryEmployee => ({
-  id: profile.id,
-  fullName: profile.fullName,
-  employeeRole: profile.role,
-  district: profile.federalDistrict,
-  branch: profile.branch,
-  department: profile.department,
-  divisions: getEmployeeDivisions(profile),
-  position: profile.position,
-  avatarUrl: profile.avatarUrl,
-  isLead: profile.orgAssignments.some((assignment) => assignment.isLead),
-  profileHref: `/team/users/${profile.id}`,
-});
-
-export const TEAM_DIRECTORY_EMPLOYEES: TeamDirectoryEmployee[] = TEAM_PROFILE_DEMO_DATA.map(
-  mapProfileToDirectoryEmployee
-);
+export const TEAM_DIRECTORY_EMPLOYEES: TeamDirectoryEmployee[] = [
+  {
+    id: USER_PROFILE_CURRENT_USER_ID,
+    fullName: "Alexey Nazarov",
+    employeeRole: "Employee",
+    district: "Central Federal District",
+    branch: "HQ — Moscow office",
+    department: "Digital Products",
+    divisions: "Engineering",
+    position: "Senior Frontend Developer",
+    avatarUrl: "https://loremflickr.com/200/200/portrait?lock=emp12",
+    isLead: false,
+    profileHref: `/team/users/${USER_PROFILE_CURRENT_USER_ID}`,
+  },
+  {
+    id: "emp-08",
+    fullName: "Elena Kozlova",
+    employeeRole: "Manager",
+    district: "Central Federal District",
+    branch: "HQ — Moscow office",
+    department: "Digital Products",
+    divisions: "Engineering",
+    position: "Team Lead",
+    avatarUrl: "https://loremflickr.com/200/200/portrait?lock=emp08",
+    isLead: true,
+    profileHref: "/team/users/emp-08",
+  },
+  {
+    id: "emp-15",
+    fullName: "Dmitry Sokolov",
+    employeeRole: "Employee",
+    district: "Northwestern Federal District",
+    branch: "Store — Saint Petersburg",
+    department: "Sales",
+    divisions: "Retail",
+    position: "Sales Manager",
+    avatarUrl: "https://loremflickr.com/200/200/portrait?lock=emp15",
+    isLead: false,
+    profileHref: "/team/users/emp-15",
+  },
+  {
+    id: "emp-22",
+    fullName: "Anna Petrova",
+    employeeRole: "Employee",
+    district: "Central Federal District",
+    branch: "HQ — Moscow office",
+    department: "HR",
+    divisions: "People operations",
+    position: "HR Specialist",
+    avatarUrl: "https://loremflickr.com/200/200/portrait?lock=emp22",
+    isLead: false,
+    profileHref: "/team/users/emp-22",
+  },
+];
