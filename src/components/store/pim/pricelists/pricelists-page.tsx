@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/breadcrumb";
 import { CatalogFooter } from "../products/catalog/catalog-footer";
 import { useYjsPricelists } from "./collab/use-yjs-pricelists";
+import { getVisibleColumnDefinitions } from "./pricelists-columns";
+import { PricelistsColumnsSheet } from "./pricelists-columns-sheet";
 import { PricelistsFiltersSheet } from "./pricelists-filters-sheet";
 import { PricelistsTable } from "./pricelists-table";
 import { PricelistsToolbar } from "./pricelists-toolbar";
@@ -23,6 +25,7 @@ import {
   type PricelistScope,
 } from "./pricelists-demo-data";
 import { REGION_QUERY_PARAM, SCOPE_QUERY_PARAM } from "./pricelists-helpers";
+import { usePricelistColumns } from "./use-pricelist-columns";
 import { usePricelistsController } from "./use-pricelists-controller";
 
 const PricelistsPageFallback = () => (
@@ -43,7 +46,11 @@ const PricelistsPageContent = () => {
   );
 
   const controller = usePricelistsController(scope, regionId);
+  const columns = usePricelistColumns(scope);
   const collab = useYjsPricelists();
+  const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
+
+  const visibleColumns = getVisibleColumnDefinitions(scope, columns.visibleIds);
 
   const syncUrl = useCallback((nextScope: PricelistScope, nextRegionId: string) => {
     if (typeof window === "undefined") {
@@ -129,13 +136,16 @@ const PricelistsPageContent = () => {
             regionId={regionId}
             onRegionChange={handleRegionChange}
             filters={controller.filters}
+            columns={columns}
             onlineUsers={collab.onlineUsers}
             connected={collab.connected}
             onOpenFilters={() => controller.setFilterSheetOpen(true)}
+            onOpenColumns={() => setColumnSheetOpen(true)}
           />
 
           <PricelistsTable
             rows={controller.paginatedItems}
+            columns={visibleColumns}
             isLoading={controller.isLoading}
             scope={scope}
             regionId={regionId}
@@ -149,6 +159,13 @@ const PricelistsPageContent = () => {
         open={controller.isFilterSheetOpen}
         onOpenChange={controller.setFilterSheetOpen}
         filters={controller.filters}
+      />
+
+      <PricelistsColumnsSheet
+        open={isColumnSheetOpen}
+        onOpenChange={setColumnSheetOpen}
+        scope={scope}
+        columns={columns}
       />
     </main>
   );

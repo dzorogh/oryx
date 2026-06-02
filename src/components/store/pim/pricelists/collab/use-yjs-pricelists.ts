@@ -7,6 +7,7 @@ import type { PricelistCellValue } from "../pricelists-helpers";
 import {
   COLLAB_ROOM,
   COLLAB_WS_URL,
+  PRESENCE_DEBOUNCE_MS,
   PRESENCE_HEARTBEAT_MS,
   PRESENCE_STALE_MS,
   type CollabUser,
@@ -132,6 +133,7 @@ export type PricelistsCollab = {
 
 export const useYjsPricelists = (): PricelistsCollab => {
   const collabRef = useRef<CollabSingleton | null>(null);
+  const editingDebounceRef = useRef<number | null>(null);
   const [, forceRender] = useState(0);
   const [connected, setConnected] = useState(false);
   const [editorsByCell, setEditorsByCell] = useState<Map<string, CollabUser[]>>(new Map());
@@ -177,6 +179,10 @@ export const useYjsPricelists = (): PricelistsCollab => {
 
     return () => {
       window.clearTimeout(timer);
+      if (editingDebounceRef.current !== null) {
+        window.clearTimeout(editingDebounceRef.current);
+        editingDebounceRef.current = null;
+      }
       window.clearInterval(heartbeat);
       window.removeEventListener("pagehide", handlePageHide);
       collab.prices.unobserve(handlePricesChange);
@@ -197,11 +203,17 @@ export const useYjsPricelists = (): PricelistsCollab => {
   }, []);
 
   const setEditing = useCallback((cellId: string | null) => {
-    const collab = collabRef.current;
-    if (!collab) {
-      return;
+    if (editingDebounceRef.current !== null) {
+      window.clearTimeout(editingDebounceRef.current);
     }
-    publishLocalPresence(collab, cellId);
+    editingDebounceRef.current = window.setTimeout(() => {
+      editingDebounceRef.current = null;
+      const collab = collabRef.current;
+      if (!collab) {
+        return;
+      }
+      publishLocalPresence(collab, cellId);
+    }, PRESENCE_DEBOUNCE_MS);
   }, []);
 
   const getEditors = useCallback(

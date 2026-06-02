@@ -7,10 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { getCatalogItemDetailHref, getDisplayProductName, SKELETON_ROW_COUNT } from "../products/catalog/catalog-helpers";
 import { PricelistPriceCell } from "./pricelist-price-cell";
-import {
-  PRICELIST_COLUMNS_BY_SCOPE,
-  type PricelistColumnDefinition,
-} from "./pricelists-columns";
+import type { PricelistColumnDefinition } from "./pricelists-columns";
 import {
   getRegionById,
   getSeedCellValue,
@@ -20,29 +17,23 @@ import {
 import {
   buildPriceCellId,
   formatMoney,
-  formatUsd,
+  formatUsdValue,
   PRICE_AMOUNT_DISPLAY_CLASS,
+  PRICE_USD_DISPLAY_CLASS,
   toUsd,
   type PriceField,
   type PricelistCellValue,
 } from "./pricelists-helpers";
 import type { PricelistsCollab } from "./collab/use-yjs-pricelists";
 
-const COLUMN_BORDER = "border-l border-[var(--corportal-border-grey)]";
+// Shared horizontal padding keeps each header aligned with its column cells.
+const getColumnPadding = (column: PricelistColumnDefinition) => (column.kind === "name" ? "px-3" : "px-2");
 
 const getCellClassName = (column: PricelistColumnDefinition) =>
-  cn(
-    "max-w-0 min-w-0 overflow-hidden py-2 align-middle",
-    column.kind === "name" ? "px-3" : "px-2",
-    column.kind === "editable" && COLUMN_BORDER,
-  );
+  cn("max-w-0 min-w-0 overflow-hidden py-2 align-middle", getColumnPadding(column));
 
 const getHeadClassName = (column: PricelistColumnDefinition) =>
-  cn(
-    "h-9 min-w-0 overflow-hidden px-3 text-xs",
-    column.kind === "editable" && COLUMN_BORDER,
-    column.headerAlign === "right" && "text-right",
-  );
+  cn("h-9 min-w-0 overflow-hidden text-left text-xs", getColumnPadding(column));
 
 const ProductNameCell = ({ row }: { row: PricelistRow }) => {
   const displayName = getDisplayProductName(row.name);
@@ -103,18 +94,14 @@ const PricelistTableRow = ({ row, columns, scope, regionId, collab }: PricelistT
           );
         }
 
-        if (column.kind === "spacer") {
-          return <TableCell key={column.id} className={getCellClassName(column)} aria-hidden />;
-        }
-
         const field = column.field as PriceField;
         const { cellId, value } = resolveCell(field);
 
         if (column.kind === "usd") {
           return (
             <TableCell key={column.id} className={getCellClassName(column)}>
-              <span className={PRICE_AMOUNT_DISPLAY_CLASS}>
-                {formatUsd(toUsd(value.amount, value.currency))}
+              <span className={PRICE_USD_DISPLAY_CLASS}>
+                {formatUsdValue(toUsd(value.amount, value.currency))}
               </span>
             </TableCell>
           );
@@ -142,11 +129,12 @@ const PricelistTableRow = ({ row, columns, scope, regionId, collab }: PricelistT
           </TableCell>
         );
       })}
+      <TableCell aria-hidden />
     </TableRow>
   );
 };
 
-const renderSkeletonCell = (column: PricelistColumnDefinition) => {
+const renderSkeletonCell = (column: PricelistColumnDefinition, isReadOnly: boolean) => {
   if (column.kind === "name") {
     return (
       <div className="flex items-center gap-2.5">
@@ -159,19 +147,18 @@ const renderSkeletonCell = (column: PricelistColumnDefinition) => {
     );
   }
 
-  if (column.kind === "usd") {
-    return <Skeleton className="ml-auto h-4 w-16" />;
+  // USD columns and read-only prices render as plain text, so their skeleton is
+  // a short line; editable prices use a full-width input-shaped skeleton.
+  if (column.kind === "usd" || isReadOnly) {
+    return <Skeleton className="h-4 w-16" />;
   }
 
-  if (column.kind === "spacer") {
-    return null;
-  }
-
-  return <Skeleton className="h-8 w-full rounded-lg" />;
+  return <Skeleton className="h-7 w-full rounded-lg" />;
 };
 
 type PricelistsTableProps = {
   rows: PricelistRow[];
+  columns: PricelistColumnDefinition[];
   isLoading: boolean;
   scope: PricelistScope;
   regionId: string;
@@ -179,75 +166,71 @@ type PricelistsTableProps = {
   footer?: ReactNode;
 };
 
-export const PricelistsTable = ({ rows, isLoading, scope, regionId, collab, footer }: PricelistsTableProps) => {
-  const columns = PRICELIST_COLUMNS_BY_SCOPE[scope];
-
-  return (
-    <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
-      <div className="overflow-x-auto">
-        <Table className="table-fixed">
-          <colgroup>
+export const PricelistsTable = ({
+  rows,
+  columns,
+  isLoading,
+  scope,
+  regionId,
+  collab,
+  footer,
+}: PricelistsTableProps) => (
+  <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
+    <div className="overflow-x-auto">
+      <Table className="table-fixed">
+        <colgroup>
+          {columns.map((column) => (
+            <col key={column.id} className={column.widthClass} />
+          ))}
+          {/* Flexible trailing column keeps data columns at their fixed widths. */}
+          <col />
+        </colgroup>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
             {columns.map((column) => (
-              <col key={column.id} className={column.widthClass} />
+              <TableHead key={column.id} className={getHeadClassName(column)}>
+                {column.label}
+              </TableHead>
             ))}
-          </colgroup>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              {columns.map((column) => {
-                if (column.kind === "usd") {
-                  return null;
-                }
-
-                const colSpan = column.kind === "editable" ? 2 : 1;
-
-                return (
-                  <TableHead
-                    key={column.id}
-                    colSpan={colSpan}
-                    className={getHeadClassName(column)}
-                  >
-                    {column.label}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-                <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
-                  {columns.map((column) => (
-                    <TableCell key={column.id} className={getCellClassName(column)}>
-                      {renderSkeletonCell(column)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="px-3 py-8 text-center text-sm text-muted-foreground"
-                >
-                  No products match the selected filters.
-                </TableCell>
+            <TableHead aria-hidden />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+              <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
+                {columns.map((column) => (
+                  <TableCell key={column.id} className={getCellClassName(column)}>
+                    {renderSkeletonCell(column, scope === "dealer")}
+                  </TableCell>
+                ))}
+                <TableCell aria-hidden />
               </TableRow>
-            ) : (
-              rows.map((row) => (
-                <PricelistTableRow
-                  key={row.id}
-                  row={row}
-                  columns={columns}
-                  scope={scope}
-                  regionId={regionId}
-                  collab={collab}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {footer}
-    </Card>
-  );
-};
+            ))
+          ) : rows.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length + 1}
+                className="px-3 py-8 text-center text-sm text-muted-foreground"
+              >
+                No products match the selected filters.
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row) => (
+              <PricelistTableRow
+                key={row.id}
+                row={row}
+                columns={columns}
+                scope={scope}
+                regionId={regionId}
+                collab={collab}
+              />
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+    {footer}
+  </Card>
+);

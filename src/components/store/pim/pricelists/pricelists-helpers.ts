@@ -68,10 +68,22 @@ export const formatMoney = (amount: number | null, currency: CurrencyCode): stri
 export const formatUsd = (amount: number | null): string =>
   amount === null ? "—" : `${formatNumber(amount)} USD`;
 
-/** Same typography for amount, USD, and read-only cells in every pricelist table. */
-export const PRICE_AMOUNT_TYPOGRAPHY = "text-sm font-semibold tabular-nums text-foreground";
+/** USD conversion shown in its own column: formatted like currency but without the code. */
+export const formatUsdValue = (amount: number | null): string =>
+  amount === null ? "—" : formatNumber(amount);
 
-export const PRICE_AMOUNT_DISPLAY_CLASS = `block w-full text-right whitespace-nowrap ${PRICE_AMOUNT_TYPOGRAPHY}`;
+/** Same typography for editable amount and read-only primary price cells. */
+export const PRICE_AMOUNT_TYPOGRAPHY = "text-sm font-normal tabular-nums text-foreground";
+
+export const PRICE_AMOUNT_DISPLAY_CLASS = `block w-full text-left whitespace-nowrap ${PRICE_AMOUNT_TYPOGRAPHY}`;
+
+/**
+ * USD conversion is a derived/reference value, so it renders muted. The color
+ * keeps it visually distinct from the primary price without relying on column
+ * separators or a heavier font weight.
+ */
+export const PRICE_USD_DISPLAY_CLASS =
+  "block w-full text-left whitespace-nowrap text-sm font-normal tabular-nums text-muted-foreground";
 
 /**
  * Cell id is intentionally independent of the pricelist scope so a product's

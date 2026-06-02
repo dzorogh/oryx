@@ -36,6 +36,9 @@ export const PRESENCE_STALE_MS = 15_000;
 
 export const PRESENCE_HEARTBEAT_MS = 5_000;
 
+/** Coalesce rapid editing-presence changes (focus/blur, select open/close). */
+export const PRESENCE_DEBOUNCE_MS = 100;
+
 /**
  * One stable identity per browser tab. Stored in sessionStorage so reloading
  * the tab keeps the same user, while every new tab is a distinct user.

@@ -10,6 +10,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CatalogCategoryTreeFilter } from "../products/catalog/catalog-category-tree-filter";
+import { CatalogColumnsButton } from "../products/catalog/catalog-columns-button";
 import { CatalogFiltersButton, CatalogQuickSearchControl } from "../products/catalog/catalog-filters";
 import { PricelistsPresence } from "./pricelists-presence";
 import {
@@ -22,6 +23,7 @@ import {
   type PricelistScope,
 } from "./pricelists-demo-data";
 import type { PricelistFilters } from "./use-pricelists-controller";
+import type { PricelistColumns } from "./use-pricelist-columns";
 import type { CollabUser } from "./collab/collab-config";
 
 type PricelistsToolbarProps = {
@@ -30,9 +32,11 @@ type PricelistsToolbarProps = {
   regionId: string;
   onRegionChange: (regionId: string) => void;
   filters: PricelistFilters;
+  columns: PricelistColumns;
   onlineUsers: CollabUser[];
   connected: boolean;
   onOpenFilters: () => void;
+  onOpenColumns: () => void;
 };
 
 export const PricelistsToolbar = ({
@@ -41,9 +45,11 @@ export const PricelistsToolbar = ({
   regionId,
   onRegionChange,
   filters,
+  columns,
   onlineUsers,
   connected,
   onOpenFilters,
+  onOpenColumns,
 }: PricelistsToolbarProps) => (
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
     <CardHeader className="gap-0 space-y-2 pb-0">
@@ -92,19 +98,6 @@ export const PricelistsToolbar = ({
           </ToggleGroup>
         </TooltipProvider>
 
-        <CatalogQuickSearchControl value={filters.search.value} onChange={filters.search.onChange} />
-
-        <CatalogCategoryTreeFilter
-          value={filters.category.value}
-          onValueChange={filters.category.onChange}
-          ariaLabel="Quick filter by category"
-          placeholder="Category"
-          allLabel="All categories"
-          widthClassName="w-[220px]"
-        />
-
-        <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
-
         {scopeHasRegion(scope) ? (
           <Select
             items={PRICELIST_REGIONS.map((region) => ({
@@ -132,6 +125,20 @@ export const PricelistsToolbar = ({
             </SelectContent>
           </Select>
         ) : null}
+
+        <CatalogQuickSearchControl value={filters.search.value} onChange={filters.search.onChange} />
+
+        <CatalogCategoryTreeFilter
+          value={filters.category.value}
+          onValueChange={filters.category.onChange}
+          ariaLabel="Quick filter by category"
+          placeholder="Category"
+          allLabel="All categories"
+          widthClassName="w-[220px]"
+        />
+
+        <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
+        <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
       </div>
     </CardHeader>
   </Card>

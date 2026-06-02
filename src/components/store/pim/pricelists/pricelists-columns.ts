@@ -1,6 +1,8 @@
 import type { PricelistScope } from "./pricelists-demo-data";
 import type { PriceField } from "./pricelists-helpers";
 
+export const PRICELIST_COLUMNS_STORAGE_PREFIX = "store-pricelists-visible-columns";
+
 export type PricelistColumnId =
   | "name"
   | "purchase"
@@ -8,10 +10,9 @@ export type PricelistColumnId =
   | "dealer"
   | "dealerUsd"
   | "retail"
-  | "retailUsd"
-  | "spacer";
+  | "retailUsd";
 
-export type PricelistColumnKind = "name" | "editable" | "usd" | "spacer";
+export type PricelistColumnKind = "name" | "editable" | "usd";
 
 export type PricelistColumnDefinition = {
   id: PricelistColumnId;
@@ -19,100 +20,139 @@ export type PricelistColumnDefinition = {
   kind: PricelistColumnKind;
   field?: PriceField;
   widthClass: string;
-  headerAlign?: "left" | "right";
+  defaultVisible: boolean;
+  locked?: boolean;
 };
 
-const NAME: PricelistColumnDefinition = {
-  id: "name",
-  label: "Name",
-  kind: "name",
-  widthClass: "w-[260px]",
+const COLUMN_DEFINITIONS: Record<PricelistColumnId, PricelistColumnDefinition> = {
+  name: { id: "name", label: "Name", kind: "name", widthClass: "w-[260px]", defaultVisible: true, locked: true },
+  purchase: {
+    id: "purchase",
+    label: "Purchase Price",
+    kind: "editable",
+    field: "purchase",
+    widthClass: "w-[172px]",
+    defaultVisible: true,
+  },
+  purchaseUsd: {
+    id: "purchaseUsd",
+    label: "Purchase Price (USD)",
+    kind: "usd",
+    field: "purchase",
+    widthClass: "w-[136px]",
+    defaultVisible: true,
+  },
+  dealer: {
+    id: "dealer",
+    label: "Dealer Price",
+    kind: "editable",
+    field: "dealer",
+    widthClass: "w-[172px]",
+    defaultVisible: true,
+  },
+  dealerUsd: {
+    id: "dealerUsd",
+    label: "Dealer Price (USD)",
+    kind: "usd",
+    field: "dealer",
+    widthClass: "w-[136px]",
+    defaultVisible: true,
+  },
+  retail: {
+    id: "retail",
+    label: "Retail Price",
+    kind: "editable",
+    field: "retail",
+    widthClass: "w-[172px]",
+    defaultVisible: true,
+  },
+  retailUsd: {
+    id: "retailUsd",
+    label: "Retail Price (USD)",
+    kind: "usd",
+    field: "retail",
+    widthClass: "w-[136px]",
+    defaultVisible: true,
+  },
 };
 
-const PURCHASE: PricelistColumnDefinition = {
-  id: "purchase",
-  label: "Purchase Price",
-  kind: "editable",
-  field: "purchase",
-  widthClass: "w-[172px]",
+// Column order per scope. Name is locked (always visible); every other column
+// can be toggled from the Columns panel. Prices are independent — no grouped
+// header spans the editable price and its USD conversion.
+const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
+  global: ["name", "purchase", "purchaseUsd"],
+  supplier: ["name", "purchase", "purchaseUsd", "dealer", "dealerUsd", "retail", "retailUsd"],
+  dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd"],
 };
 
-const PURCHASE_USD: PricelistColumnDefinition = {
-  id: "purchaseUsd",
-  label: "",
-  kind: "usd",
-  field: "purchase",
-  widthClass: "w-[136px]",
+export const getScopeColumns = (scope: PricelistScope): PricelistColumnDefinition[] =>
+  SCOPE_COLUMN_IDS[scope].map((id) => COLUMN_DEFINITIONS[id]);
+
+export const getToggleableColumns = (scope: PricelistScope): PricelistColumnDefinition[] =>
+  getScopeColumns(scope).filter((column) => !column.locked);
+
+export const getDefaultVisibleColumnIds = (scope: PricelistScope): PricelistColumnId[] =>
+  getScopeColumns(scope)
+    .filter((column) => column.defaultVisible)
+    .map((column) => column.id);
+
+export const getColumnsStorageKey = (scope: PricelistScope): string =>
+  `${PRICELIST_COLUMNS_STORAGE_PREFIX}:${scope}`;
+
+// Keeps the scope's defined order while always including locked columns.
+export const getOrderedVisibleColumns = (
+  scope: PricelistScope,
+  visibleIds: Iterable<PricelistColumnId>,
+): PricelistColumnId[] => {
+  const visibleSet = new Set(visibleIds);
+
+  return getScopeColumns(scope)
+    .filter((column) => column.locked || visibleSet.has(column.id))
+    .map((column) => column.id);
 };
 
-const DEALER: PricelistColumnDefinition = {
-  id: "dealer",
-  label: "Dealer Price",
-  kind: "editable",
-  field: "dealer",
-  widthClass: "w-[172px]",
+export const getVisibleColumnDefinitions = (
+  scope: PricelistScope,
+  visibleIds: Iterable<PricelistColumnId>,
+): PricelistColumnDefinition[] =>
+  getOrderedVisibleColumns(scope, visibleIds).map((id) => COLUMN_DEFINITIONS[id]);
+
+export const parseStoredColumns = (
+  scope: PricelistScope,
+  raw: string | null,
+): PricelistColumnId[] | null => {
+  if (!raw) {
+    return null;
+  }
+
+  const validIdSet = new Set<PricelistColumnId>(SCOPE_COLUMN_IDS[scope]);
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    const validIds = parsed.filter(
+      (value): value is PricelistColumnId => typeof value === "string" && validIdSet.has(value as PricelistColumnId),
+    );
+
+    return getOrderedVisibleColumns(scope, validIds);
+  } catch {
+    return null;
+  }
 };
 
-const DEALER_USD: PricelistColumnDefinition = {
-  id: "dealerUsd",
-  label: "",
-  kind: "usd",
-  field: "dealer",
-  widthClass: "w-[136px]",
-};
+export const serializeVisibleColumns = (scope: PricelistScope, visibleIds: PricelistColumnId[]): string =>
+  JSON.stringify(getOrderedVisibleColumns(scope, visibleIds));
 
-const RETAIL: PricelistColumnDefinition = {
-  id: "retail",
-  label: "Retail Price",
-  kind: "editable",
-  field: "retail",
-  widthClass: "w-[172px]",
-};
+export const isDefaultColumnSet = (scope: PricelistScope, visibleIds: PricelistColumnId[]): boolean => {
+  const ordered = getOrderedVisibleColumns(scope, visibleIds);
+  const defaults = getDefaultVisibleColumnIds(scope);
 
-const RETAIL_USD: PricelistColumnDefinition = {
-  id: "retailUsd",
-  label: "",
-  kind: "usd",
-  field: "retail",
-  widthClass: "w-[136px]",
-};
+  if (ordered.length !== defaults.length) {
+    return false;
+  }
 
-// Dealer scope is read-only: prices render as right-aligned text instead of
-// editable inputs, so the columns hug their content and the header sits above
-// the values on the right. Widths stay roomy enough for large-currency amounts.
-const DEALER_READONLY: PricelistColumnDefinition = {
-  ...DEALER,
-  widthClass: "w-[140px]",
-  headerAlign: "right",
-};
-
-const DEALER_USD_READONLY: PricelistColumnDefinition = {
-  ...DEALER_USD,
-  widthClass: "w-[112px]",
-};
-
-const RETAIL_READONLY: PricelistColumnDefinition = {
-  ...RETAIL,
-  widthClass: "w-[140px]",
-  headerAlign: "right",
-};
-
-const RETAIL_USD_READONLY: PricelistColumnDefinition = {
-  ...RETAIL_USD,
-  widthClass: "w-[112px]",
-};
-
-// Flexible trailing column that absorbs extra width so the data columns keep
-// the same fixed widths as the Supplier scope instead of stretching to fill.
-const SPACER: PricelistColumnDefinition = {
-  id: "spacer",
-  label: "",
-  kind: "spacer",
-  widthClass: "",
-};
-
-export const PRICELIST_COLUMNS_BY_SCOPE: Record<PricelistScope, PricelistColumnDefinition[]> = {
-  global: [NAME, PURCHASE, PURCHASE_USD, SPACER],
-  supplier: [NAME, PURCHASE, PURCHASE_USD, DEALER, DEALER_USD, RETAIL, RETAIL_USD, SPACER],
-  dealer: [NAME, DEALER_READONLY, DEALER_USD_READONLY, RETAIL_READONLY, RETAIL_USD_READONLY, SPACER],
+  return defaults.every((columnId, index) => ordered[index] === columnId);
 };
