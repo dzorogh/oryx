@@ -38,7 +38,11 @@ const getCellClassName = (column: PricelistColumnDefinition) =>
   );
 
 const getHeadClassName = (column: PricelistColumnDefinition) =>
-  cn("h-9 min-w-0 overflow-hidden px-3 text-xs", column.kind === "editable" && COLUMN_BORDER);
+  cn(
+    "h-9 min-w-0 overflow-hidden px-3 text-xs",
+    column.kind === "editable" && COLUMN_BORDER,
+    column.headerAlign === "right" && "text-right",
+  );
 
 const ProductNameCell = ({ row }: { row: PricelistRow }) => {
   const displayName = getDisplayProductName(row.name);
@@ -99,6 +103,10 @@ const PricelistTableRow = ({ row, columns, scope, regionId, collab }: PricelistT
           );
         }
 
+        if (column.kind === "spacer") {
+          return <TableCell key={column.id} className={getCellClassName(column)} aria-hidden />;
+        }
+
         const field = column.field as PriceField;
         const { cellId, value } = resolveCell(field);
 
@@ -153,6 +161,10 @@ const renderSkeletonCell = (column: PricelistColumnDefinition) => {
 
   if (column.kind === "usd") {
     return <Skeleton className="ml-auto h-4 w-16" />;
+  }
+
+  if (column.kind === "spacer") {
+    return null;
   }
 
   return <Skeleton className="h-8 w-full rounded-lg" />;

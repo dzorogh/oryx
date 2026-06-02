@@ -8,9 +8,10 @@ export type PricelistColumnId =
   | "dealer"
   | "dealerUsd"
   | "retail"
-  | "retailUsd";
+  | "retailUsd"
+  | "spacer";
 
-export type PricelistColumnKind = "name" | "editable" | "usd";
+export type PricelistColumnKind = "name" | "editable" | "usd" | "spacer";
 
 export type PricelistColumnDefinition = {
   id: PricelistColumnId;
@@ -18,6 +19,7 @@ export type PricelistColumnDefinition = {
   kind: PricelistColumnKind;
   field?: PriceField;
   widthClass: string;
+  headerAlign?: "left" | "right";
 };
 
 const NAME: PricelistColumnDefinition = {
@@ -75,8 +77,42 @@ const RETAIL_USD: PricelistColumnDefinition = {
   widthClass: "w-[136px]",
 };
 
+// Dealer scope is read-only: prices render as right-aligned text instead of
+// editable inputs, so the columns hug their content and the header sits above
+// the values on the right. Widths stay roomy enough for large-currency amounts.
+const DEALER_READONLY: PricelistColumnDefinition = {
+  ...DEALER,
+  widthClass: "w-[140px]",
+  headerAlign: "right",
+};
+
+const DEALER_USD_READONLY: PricelistColumnDefinition = {
+  ...DEALER_USD,
+  widthClass: "w-[112px]",
+};
+
+const RETAIL_READONLY: PricelistColumnDefinition = {
+  ...RETAIL,
+  widthClass: "w-[140px]",
+  headerAlign: "right",
+};
+
+const RETAIL_USD_READONLY: PricelistColumnDefinition = {
+  ...RETAIL_USD,
+  widthClass: "w-[112px]",
+};
+
+// Flexible trailing column that absorbs extra width so the data columns keep
+// the same fixed widths as the Supplier scope instead of stretching to fill.
+const SPACER: PricelistColumnDefinition = {
+  id: "spacer",
+  label: "",
+  kind: "spacer",
+  widthClass: "",
+};
+
 export const PRICELIST_COLUMNS_BY_SCOPE: Record<PricelistScope, PricelistColumnDefinition[]> = {
-  global: [NAME, PURCHASE, PURCHASE_USD],
-  supplier: [NAME, PURCHASE, PURCHASE_USD, DEALER, DEALER_USD, RETAIL, RETAIL_USD],
-  dealer: [NAME, DEALER, DEALER_USD, RETAIL, RETAIL_USD],
+  global: [NAME, PURCHASE, PURCHASE_USD, SPACER],
+  supplier: [NAME, PURCHASE, PURCHASE_USD, DEALER, DEALER_USD, RETAIL, RETAIL_USD, SPACER],
+  dealer: [NAME, DEALER_READONLY, DEALER_USD_READONLY, RETAIL_READONLY, RETAIL_USD_READONLY, SPACER],
 };
