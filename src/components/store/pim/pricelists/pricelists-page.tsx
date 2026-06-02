@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,49 +30,68 @@ const PricelistsPageFallback = () => (
 );
 
 const PricelistsPageContent = () => {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const scope = parsePricelistScope(searchParams.get(SCOPE_QUERY_PARAM));
-  const regionId = parseRegionId(searchParams.get(REGION_QUERY_PARAM));
+  // With `output: "export"` the Next router does not update useSearchParams on
+  // client-side router.replace (a no-op after a hard reload), so we own the
+  // scope/region state and sync the URL through the History API instead.
+  const [scope, setScope] = useState<PricelistScope>(() =>
+    parsePricelistScope(searchParams.get(SCOPE_QUERY_PARAM)),
+  );
+  const [regionId, setRegionId] = useState<string>(() =>
+    parseRegionId(searchParams.get(REGION_QUERY_PARAM)),
+  );
 
   const controller = usePricelistsController(scope, regionId);
   const collab = useYjsPricelists();
 
-  const updateParams = useCallback(
-    (mutate: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(searchParams.toString());
-      mutate(params);
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    },
-    [pathname, router, searchParams],
-  );
+  const syncUrl = useCallback((nextScope: PricelistScope, nextRegionId: string) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (nextScope === "global") {
+      params.delete(SCOPE_QUERY_PARAM);
+    } else {
+      params.set(SCOPE_QUERY_PARAM, nextScope);
+    }
+    if (scopeHasRegion(nextScope)) {
+      params.set(REGION_QUERY_PARAM, nextRegionId);
+    } else {
+      params.delete(REGION_QUERY_PARAM);
+    }
+    const query = params.toString();
+    const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
+
+  // Keep state in sync with browser back/forward navigation.
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setScope(parsePricelistScope(params.get(SCOPE_QUERY_PARAM)));
+      setRegionId(parseRegionId(params.get(REGION_QUERY_PARAM)));
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleScopeChange = useCallback(
     (nextScope: PricelistScope) => {
       controller.onPageChange(1);
-      updateParams((params) => {
-        if (nextScope === "global") {
-          params.delete(SCOPE_QUERY_PARAM);
-        } else {
-          params.set(SCOPE_QUERY_PARAM, nextScope);
-        }
-        if (!scopeHasRegion(nextScope)) {
-          params.delete(REGION_QUERY_PARAM);
-        }
-      });
+      setScope(nextScope);
+      syncUrl(nextScope, regionId);
     },
-    [controller, updateParams],
+    [controller, regionId, syncUrl],
   );
 
   const handleRegionChange = useCallback(
     (nextRegionId: string) => {
       controller.onPageChange(1);
-      updateParams((params) => params.set(REGION_QUERY_PARAM, nextRegionId));
+      setRegionId(nextRegionId);
+      syncUrl(scope, nextRegionId);
     },
-    [controller, updateParams],
+    [controller, scope, syncUrl],
   );
 
   const footer = (
