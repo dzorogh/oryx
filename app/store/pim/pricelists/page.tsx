@@ -1,5 +1,5 @@
-import { ModulePlaceholderPage } from "@/components/layout/module-placeholder-page";
+import { PricelistsPage } from "@/components/store/pim/pricelists/pricelists-page";
 
-const StorePricelistsPage = () => <ModulePlaceholderPage title="Pricelists" />;
+const StorePricelistsRoute = () => <PricelistsPage />;
 
-export default StorePricelistsPage;
+export default StorePricelistsRoute;
