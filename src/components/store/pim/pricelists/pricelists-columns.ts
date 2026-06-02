@@ -10,9 +10,10 @@ export type PricelistColumnId =
   | "dealer"
   | "dealerUsd"
   | "retail"
-  | "retailUsd";
+  | "retailUsd"
+  | "dealerStatus";
 
-export type PricelistColumnKind = "name" | "editable" | "usd";
+export type PricelistColumnKind = "name" | "editable" | "usd" | "statusSummary";
 
 export type PricelistColumnDefinition = {
   id: PricelistColumnId;
@@ -74,13 +75,20 @@ const COLUMN_DEFINITIONS: Record<PricelistColumnId, PricelistColumnDefinition> =
     widthClass: "w-[136px]",
     defaultVisible: true,
   },
+  dealerStatus: {
+    id: "dealerStatus",
+    label: "Dealer Status",
+    kind: "statusSummary",
+    widthClass: "w-[200px]",
+    defaultVisible: true,
+  },
 };
 
 // Column order per scope. Name is locked (always visible); every other column
 // can be toggled from the Columns panel. Prices are independent — no grouped
 // header spans the editable price and its USD conversion.
 const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
-  global: ["name", "purchase", "purchaseUsd"],
+  global: ["name", "purchase", "purchaseUsd", "dealerStatus"],
   supplier: ["name", "purchase", "purchaseUsd", "dealer", "dealerUsd", "retail", "retailUsd"],
   dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd"],
 };

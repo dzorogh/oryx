@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import type { PricelistCellValue } from "../pricelists-helpers";
+import type { DealerStatus, PricelistCellValue } from "../pricelists-helpers";
 import {
   COLLAB_ROOM,
   COLLAB_WS_URL,
@@ -26,6 +26,7 @@ type CollabSingleton = {
   doc: Y.Doc;
   provider: WebsocketProvider;
   prices: Y.Map<PricelistCellValue>;
+  dealerStatuses: Y.Map<DealerStatus>;
   user: CollabUser;
   tabId: string;
 };
@@ -36,11 +37,12 @@ let subscriberCount = 0;
 const createCollab = (): CollabSingleton => {
   const doc = new Y.Doc();
   const prices = doc.getMap<PricelistCellValue>("prices");
+  const dealerStatuses = doc.getMap<DealerStatus>("dealerStatuses");
   const user = getOrCreateUser();
   const tabId = getOrCreateTabId();
   const provider = new WebsocketProvider(COLLAB_WS_URL, COLLAB_ROOM, doc, { connect: true });
 
-  return { doc, provider, prices, user, tabId };
+  return { doc, provider, prices, dealerStatuses, user, tabId };
 };
 
 const acquireCollab = (): CollabSingleton => {
@@ -124,6 +126,8 @@ const collectActivePresence = (collab: CollabSingleton) => {
 export type PricelistsCollab = {
   getCell: (cellId: string) => PricelistCellValue | undefined;
   setCell: (cellId: string, value: PricelistCellValue) => void;
+  getStatus: (cellId: string) => DealerStatus | undefined;
+  setStatus: (cellId: string, value: DealerStatus) => void;
   setEditing: (cellId: string | null) => void;
   getEditors: (cellId: string) => CollabUser[];
   onlineUsers: CollabUser[];
@@ -144,8 +148,9 @@ export const useYjsPricelists = (): PricelistsCollab => {
     const collab = acquireCollab();
     collabRef.current = collab;
 
-    const handlePricesChange = () => forceRender((value) => value + 1);
-    collab.prices.observe(handlePricesChange);
+    const handleSharedChange = () => forceRender((value) => value + 1);
+    collab.prices.observe(handleSharedChange);
+    collab.dealerStatuses.observe(handleSharedChange);
 
     const recomputeAwareness = () => {
       const { online, editors } = collectActivePresence(collab);
@@ -185,7 +190,8 @@ export const useYjsPricelists = (): PricelistsCollab => {
       }
       window.clearInterval(heartbeat);
       window.removeEventListener("pagehide", handlePageHide);
-      collab.prices.unobserve(handlePricesChange);
+      collab.prices.unobserve(handleSharedChange);
+      collab.dealerStatuses.unobserve(handleSharedChange);
       collab.provider.awareness.off("change", recomputeAwareness);
       collab.provider.off("status", handleStatus);
       collabRef.current = null;
@@ -200,6 +206,15 @@ export const useYjsPricelists = (): PricelistsCollab => {
 
   const setCell = useCallback((cellId: string, value: PricelistCellValue) => {
     collabRef.current?.prices.set(cellId, value);
+  }, []);
+
+  const getStatus = useCallback(
+    (cellId: string): DealerStatus | undefined => collabRef.current?.dealerStatuses.get(cellId),
+    [],
+  );
+
+  const setStatus = useCallback((cellId: string, value: DealerStatus) => {
+    collabRef.current?.dealerStatuses.set(cellId, value);
   }, []);
 
   const setEditing = useCallback((cellId: string | null) => {
@@ -224,6 +239,8 @@ export const useYjsPricelists = (): PricelistsCollab => {
   return {
     getCell,
     setCell,
+    getStatus,
+    setStatus,
     setEditing,
     getEditors,
     onlineUsers,

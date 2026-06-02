@@ -102,7 +102,7 @@ export const PricelistsToolbar = ({
           <Select
             items={PRICELIST_REGIONS.map((region) => ({
               value: region.id,
-              label: `${region.label} (${region.currency})`,
+              label: region.label,
             }))}
             value={regionId}
             onValueChange={(value) => {
@@ -118,7 +118,7 @@ export const PricelistsToolbar = ({
               <SelectGroup>
                 {PRICELIST_REGIONS.map((region) => (
                   <SelectItem key={region.id} value={region.id}>
-                    {region.label} ({region.currency})
+                    {region.label}
                   </SelectItem>
                 ))}
               </SelectGroup>

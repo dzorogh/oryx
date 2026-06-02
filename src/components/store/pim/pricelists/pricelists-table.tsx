@@ -1,21 +1,26 @@
+import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { getCatalogItemDetailHref, getDisplayProductName, SKELETON_ROW_COUNT } from "../products/catalog/catalog-helpers";
 import { PricelistPriceCell } from "./pricelist-price-cell";
+import { PricelistsExpandedRegions } from "./pricelists-expanded-regions";
 import type { PricelistColumnDefinition } from "./pricelists-columns";
 import {
   getRegionById,
   getSeedCellValue,
+  getSeedDealerStatus,
+  PRICELIST_REGIONS,
   type PricelistRow,
   type PricelistScope,
 } from "./pricelists-demo-data";
 import {
   buildPriceCellId,
+  buildStatusCellId,
   formatMoney,
   formatUsdValue,
   PRICE_AMOUNT_DISPLAY_CLASS,
@@ -58,6 +63,93 @@ const ProductNameCell = ({ row }: { row: PricelistRow }) => {
   );
 };
 
+const countAvailableRegions = (row: PricelistRow, collab: PricelistsCollab): number =>
+  PRICELIST_REGIONS.reduce((available, region) => {
+    const status = collab.getStatus(buildStatusCellId(region.id, row.id)) ?? getSeedDealerStatus(row, region.id);
+    return status === "available" ? available + 1 : available;
+  }, 0);
+
+type DealerStatusSummaryCellProps = {
+  row: PricelistRow;
+  collab: PricelistsCollab;
+  isExpandable: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+};
+
+const DealerStatusSummaryCell = ({
+  row,
+  collab,
+  isExpandable,
+  isExpanded,
+  onToggleExpand,
+}: DealerStatusSummaryCellProps) => {
+  const total = PRICELIST_REGIONS.length;
+  const available = countAvailableRegions(row, collab);
+  const ratio = total === 0 ? 0 : available / total;
+  const percent = Math.round(ratio * 100);
+  const isSold = available > 0;
+  const displayName = getDisplayProductName(row.name);
+
+  const content = (
+    <>
+      <div className="flex items-center gap-1.5">
+        <span
+          className={cn(
+            "size-2 shrink-0 rounded-full",
+            isSold ? "bg-emerald-500" : "bg-muted-foreground/40",
+          )}
+          aria-hidden
+        />
+        <span className="truncate text-xs text-foreground">
+          Sold in <span className="font-semibold tabular-nums">{available}</span> of{" "}
+          <span className="tabular-nums">{total}</span> regions
+        </span>
+        {isExpandable ? (
+          <ChevronRight
+            className={cn(
+              "ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform",
+              isExpanded && "rotate-90",
+            )}
+            aria-hidden
+          />
+        ) : null}
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn("h-full rounded-full transition-all", isSold ? "bg-emerald-500" : "bg-transparent")}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </>
+  );
+
+  if (!isExpandable) {
+    return (
+      <div className="flex w-full flex-col gap-1" title={`Sold in ${available} of ${total} regions`}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onToggleExpand}
+      aria-expanded={isExpanded}
+      aria-label={
+        isExpanded
+          ? `Collapse regional dealer status for ${displayName}`
+          : `Expand regional dealer status for ${displayName}`
+      }
+      title={`Sold in ${available} of ${total} regions`}
+      className="flex w-full cursor-pointer flex-col gap-1 rounded-md p-1 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    >
+      {content}
+    </button>
+  );
+};
+
 type EffectiveCell = {
   cellId: string;
   value: PricelistCellValue;
@@ -69,9 +161,21 @@ type PricelistTableRowProps = {
   scope: PricelistScope;
   regionId: string;
   collab: PricelistsCollab;
+  isExpandable: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
 };
 
-const PricelistTableRow = ({ row, columns, scope, regionId, collab }: PricelistTableRowProps) => {
+const PricelistTableRow = ({
+  row,
+  columns,
+  scope,
+  regionId,
+  collab,
+  isExpandable,
+  isExpanded,
+  onToggleExpand,
+}: PricelistTableRowProps) => {
   const regionCurrency = getRegionById(regionId).currency;
   const isReadOnly = scope === "dealer";
 
@@ -84,12 +188,42 @@ const PricelistTableRow = ({ row, columns, scope, regionId, collab }: PricelistT
   const displayName = getDisplayProductName(row.name);
 
   return (
+    <Fragment>
     <TableRow className="hover:bg-muted/40">
       {columns.map((column) => {
         if (column.kind === "name") {
           return (
             <TableCell key={column.id} className={getCellClassName(column)}>
-              <ProductNameCell row={row} />
+              <div className="flex w-full min-w-0 items-center gap-1.5">
+                {isExpandable ? (
+                  <button
+                    type="button"
+                    onClick={onToggleExpand}
+                    aria-expanded={isExpanded}
+                    aria-label={isExpanded ? `Collapse ${displayName}` : `Expand ${displayName}`}
+                    className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  >
+                    <ChevronRight className={cn("size-4 transition-transform", isExpanded && "rotate-90")} />
+                  </button>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <ProductNameCell row={row} />
+                </div>
+              </div>
+            </TableCell>
+          );
+        }
+
+        if (column.kind === "statusSummary") {
+          return (
+            <TableCell key={column.id} className={getCellClassName(column)}>
+              <DealerStatusSummaryCell
+                row={row}
+                collab={collab}
+                isExpandable={isExpandable}
+                isExpanded={isExpanded}
+                onToggleExpand={onToggleExpand}
+              />
             </TableCell>
           );
         }
@@ -131,6 +265,14 @@ const PricelistTableRow = ({ row, columns, scope, regionId, collab }: PricelistT
       })}
       <TableCell aria-hidden />
     </TableRow>
+      {isExpandable && isExpanded ? (
+        <TableRow className="hover:bg-transparent">
+          <TableCell colSpan={columns.length + 1} className="bg-muted/20 p-3">
+            <PricelistsExpandedRegions row={row} collab={collab} />
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </Fragment>
   );
 };
 
@@ -143,6 +285,15 @@ const renderSkeletonCell = (column: PricelistColumnDefinition, isReadOnly: boole
           <Skeleton className="h-3.5 w-3/4" />
           <Skeleton className="h-3 w-16" />
         </div>
+      </div>
+    );
+  }
+
+  if (column.kind === "statusSummary") {
+    return (
+      <div className="flex w-full flex-col gap-1">
+        <Skeleton className="h-3.5 w-28" />
+        <Skeleton className="h-1.5 w-full rounded-full" />
       </div>
     );
   }
@@ -174,7 +325,22 @@ export const PricelistsTable = ({
   regionId,
   collab,
   footer,
-}: PricelistsTableProps) => (
+}: PricelistsTableProps) => {
+  const isExpandable = scope === "global";
+  const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(() => new Set());
+
+  const toggleExpanded = (rowId: string) =>
+    setExpandedRowIds((current) => {
+      const next = new Set(current);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
+
+  return (
   <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
     <div className="overflow-x-auto">
       <Table className="table-fixed">
@@ -225,6 +391,9 @@ export const PricelistsTable = ({
                 scope={scope}
                 regionId={regionId}
                 collab={collab}
+                isExpandable={isExpandable}
+                isExpanded={expandedRowIds.has(row.id)}
+                onToggleExpand={() => toggleExpanded(row.id)}
               />
             ))
           )}
@@ -233,4 +402,5 @@ export const PricelistsTable = ({
     </div>
     {footer}
   </Card>
-);
+  );
+};

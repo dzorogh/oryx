@@ -50,6 +50,23 @@ export type PricelistCellValue = {
   currency: CurrencyCode;
 };
 
+export type DealerStatus = "available" | "unavailable" | "hidden";
+
+export const DEALER_STATUSES: { value: DealerStatus; label: string }[] = [
+  { value: "available", label: "Available for sale" },
+  { value: "unavailable", label: "Unavailable for sale" },
+  { value: "hidden", label: "Hidden" },
+];
+
+export const DEALER_STATUS_LABELS: Record<DealerStatus, string> = {
+  available: "Available for sale",
+  unavailable: "Unavailable for sale",
+  hidden: "Hidden",
+};
+
+export const isDealerStatus = (value: unknown): value is DealerStatus =>
+  value === "available" || value === "unavailable" || value === "hidden";
+
 export const SCOPE_QUERY_PARAM = "list";
 export const REGION_QUERY_PARAM = "region";
 
@@ -95,3 +112,11 @@ export const buildPriceCellId = (
   variantId: string,
   field: PriceField,
 ): string => `${regionId ?? "global"}:${variantId}:${field}`;
+
+/**
+ * Dealer status is stored per product + region. The id shares the region +
+ * variant namespace with prices but uses a distinct trailing segment so it can
+ * live in its own collaboration map and editing-presence channel.
+ */
+export const buildStatusCellId = (regionId: string, variantId: string): string =>
+  `${regionId}:${variantId}:dealerStatus`;

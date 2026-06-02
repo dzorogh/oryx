@@ -3,6 +3,7 @@ import type { StoreCatalogItem } from "../products/store-catalog-demo-data";
 import {
   CURRENCY_USD_RATE,
   type CurrencyCode,
+  type DealerStatus,
   type PriceField,
   type PricelistCellValue,
 } from "./pricelists-helpers";
@@ -104,4 +105,34 @@ export const getSeedCellValue = (
   const usd = getRowBaseUsd(row) * FIELD_FACTOR[field];
   const amount = Math.max(1, Math.round(usd / CURRENCY_USD_RATE[currency]));
   return { amount, currency };
+};
+
+const REGION_INDEX = new Map(PRICELIST_REGIONS.map((region, index) => [region.id, index]));
+
+/** Deterministic pseudo-random value in [0, 1) from two integer seeds. */
+const hashUnit = (a: number, b: number): number => {
+  const h = ((a * 73856093) ^ (b * 19349663)) >>> 0;
+  return (h % 100000) / 100000;
+};
+
+/**
+ * Deterministic default dealer status per product + region.
+ *
+ * Each product gets its own "availability level" (0..10) derived from its id,
+ * so the catalog spans the full range: some products are sold in no region at
+ * all (level 0), some in every region (level 10), and the rest in between. For
+ * a given product, a per-region hash decides whether that region clears the
+ * product's availability threshold; non-available regions split between
+ * "unavailable" and "hidden". Pure function of row + region so every client
+ * renders identical defaults until the value is edited.
+ */
+export const getSeedDealerStatus = (row: PricelistRow, regionId: string): DealerStatus => {
+  const regionIndex = REGION_INDEX.get(regionId) ?? 0;
+  const availabilityThreshold = (row.numericId % 11) / 10;
+
+  if (hashUnit(row.numericId, regionIndex) < availabilityThreshold) {
+    return "available";
+  }
+
+  return hashUnit(regionIndex, row.numericId) < 0.5 ? "unavailable" : "hidden";
 };
