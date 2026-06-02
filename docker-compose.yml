@@ -1,0 +1,29 @@
+# Deployed on Dokploy as a Compose service.
+# Domains are attached per-service through Dokploy (Traefik handles TLS + the
+# WebSocket upgrade), so no host ports are published here.
+services:
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        NEXT_PUBLIC_COLLAB_WS_URL: ${NEXT_PUBLIC_COLLAB_WS_URL}
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - dokploy-network
+
+  collab:
+    build:
+      context: .
+      target: collab
+    restart: unless-stopped
+    expose:
+      - "1234"
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true

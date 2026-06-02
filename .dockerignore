@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.git
+.github
+.cursor
+.specify
+.stryker-tmp
+coverage
+playwright-report
+test-results
+terminals
+*.log
+.env
+.env.*
+tsconfig.tsbuildinfo
