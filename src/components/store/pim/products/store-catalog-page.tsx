@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -33,33 +33,61 @@ const StoreCatalogPageFallback = () => (
 );
 
 const StoreCatalogPageContent = () => {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const listingMode = parseCatalogListingMode(searchParams.get(CATALOG_LISTING_QUERY_PARAM));
+
+  // With `output: "export"` the Next router does not update useSearchParams on
+  // client-side router.replace (a no-op after a hard reload), so we own the
+  // listing-mode state and sync the URL through the History API instead.
+  const [listingMode, setListingMode] = useState<CatalogListingMode>(() =>
+    parseCatalogListingMode(searchParams.get(CATALOG_LISTING_QUERY_PARAM)),
+  );
 
   const { viewModeStorageKey, columnsStorageKey } = getCatalogStorageKeys(listingMode);
   const catalog = useCatalogController(listingMode, viewModeStorageKey, columnsStorageKey);
 
-  useEffect(() => {
-    if (searchParams.get(CATALOG_LISTING_QUERY_PARAM)) {
+  const syncUrl = useCallback((mode: CatalogListingMode) => {
+    if (typeof window === "undefined") {
       return;
     }
+    const params = new URLSearchParams(window.location.search);
+    if (mode === "variants") {
+      params.set(CATALOG_LISTING_QUERY_PARAM, "variants");
+    } else {
+      params.delete(CATALOG_LISTING_QUERY_PARAM);
+    }
+    const query = params.toString();
+    const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
 
+  // Restore the saved listing mode when the URL has no explicit value.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get(CATALOG_LISTING_QUERY_PARAM)) {
+      return;
+    }
     const storage = window.localStorage;
     if (!storage || typeof storage.getItem !== "function") {
       return;
     }
-
-    const stored = storage.getItem(CATALOG_LISTING_MODE_STORAGE_KEY);
-    if (stored !== "variants") {
+    if (storage.getItem(CATALOG_LISTING_MODE_STORAGE_KEY) !== "variants") {
       return;
     }
+    setListingMode("variants");
+    syncUrl("variants");
+  }, [syncUrl]);
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(CATALOG_LISTING_QUERY_PARAM, "variants");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [pathname, router, searchParams]);
+  // Keep state in sync with browser back/forward navigation.
+  useEffect(() => {
+    const handlePopState = () => {
+      setListingMode(
+        parseCatalogListingMode(
+          new URLSearchParams(window.location.search).get(CATALOG_LISTING_QUERY_PARAM),
+        ),
+      );
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleListingModeChange = useCallback(
     (mode: CatalogListingMode) => {
@@ -71,17 +99,10 @@ const StoreCatalogPageContent = () => {
         storage.setItem(CATALOG_LISTING_MODE_STORAGE_KEY, mode);
       }
 
-      const params = new URLSearchParams(searchParams.toString());
-      if (mode === "variants") {
-        params.set(CATALOG_LISTING_QUERY_PARAM, "variants");
-      } else {
-        params.delete(CATALOG_LISTING_QUERY_PARAM);
-      }
-
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      setListingMode(mode);
+      syncUrl(mode);
     },
-    [catalog.onPageChange, catalog.setColumnSheetOpen, pathname, router, searchParams],
+    [catalog.onPageChange, catalog.setColumnSheetOpen, syncUrl],
   );
 
   const catalogFooter = (
