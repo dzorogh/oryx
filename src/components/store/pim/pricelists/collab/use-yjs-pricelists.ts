@@ -130,8 +130,12 @@ const collectActivePresence = (collab: CollabSingleton) => {
   return { online, editors };
 };
 
+// "Connected" must reflect the collab server link only. The WebsocketProvider
+// also opens a BroadcastChannel for same-browser tab sync, so `bcconnected` is
+// true even when the server is unreachable — relying on it would falsely report
+// a live session offline.
 const isProviderConnected = (collab: CollabSingleton): boolean =>
-  collab.provider.wsconnected || collab.provider.synced || collab.provider.bcconnected;
+  collab.provider.wsconnected || collab.provider.synced;
 
 const statusEventIsConnected = (event: ProviderStatusEvent): boolean => {
   const rawStatus = Array.isArray(event) ? event[0] : event;

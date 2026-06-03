@@ -21,8 +21,6 @@ export type PricelistColumnDefinition = {
   label: string;
   kind: PricelistColumnKind;
   field?: PriceField;
-  /** Parameter columns only: free unit label (e.g. "%" or a currency code). */
-  unit?: string;
   /** Parameter columns only: stable parameter id (without the `param:` prefix). */
   paramId?: string;
   /** Marks a dynamic, region-scoped parameter column. */
@@ -112,7 +110,6 @@ export const buildParameterColumns = (defs: ParameterDef[]): PricelistColumnDefi
     id: `param:${def.id}`,
     label: def.label,
     kind: "parameter",
-    unit: def.unit,
     paramId: def.id,
     isParameter: true,
     widthClass: PARAMETER_COLUMN_WIDTH_CLASS,

@@ -1,5 +1,6 @@
-import { GripVertical, MoreHorizontal } from "lucide-react";
-import { useState, type DragEvent } from "react";
+import { MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -21,6 +22,24 @@ type ParameterAction =
   | { kind: "resetAll"; def: ParameterDef }
   | { kind: "delete"; def: ParameterDef };
 
+type RowDragMeta = {
+  paramId: string;
+  pointerOffsetY: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
+type RowDragState = {
+  paramId: string;
+  label: string;
+  width: number;
+  height: number;
+  top: number;
+  left: number;
+  swapTargetId: string | null;
+};
+
 type PricelistsColumnsSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,42 +57,113 @@ export const PricelistsColumnsSheet = ({
   parameters,
   onParameterAction,
 }: PricelistsColumnsSheetProps) => {
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [rowDrag, setRowDrag] = useState<RowDragState | null>(null);
+  const rowDragMetaRef = useRef<RowDragMeta | null>(null);
+  const lastSwapTargetRef = useRef<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const swapParameterRef = useRef(parameters.swapParameter);
+  swapParameterRef.current = parameters.swapParameter;
 
-  const handleDragOver = (event: DragEvent<HTMLDivElement>, paramIndex: number, isSystem: boolean) => {
-    if (draggedIndex === null || isSystem) {
+  const isRowDragging = rowDrag !== null;
+
+  // Custom pointer drag for the parameter list: a fixed-position preview that
+  // moves only vertically (its left is pinned to the row column) with a solid
+  // background, and Notion-style swap as the pointer passes over neighbors.
+  useEffect(() => {
+    if (!isRowDragging) {
+      return;
+    }
+
+    const handleMove = (event: PointerEvent) => {
+      const meta = rowDragMetaRef.current;
+      const list = listRef.current;
+      if (!meta || !list) {
+        return;
+      }
+
+      const draggableRows = Array.from(
+        list.querySelectorAll<HTMLElement>("[data-param-id]"),
+      ).filter((row) => row.dataset.system !== "true");
+      if (draggableRows.length === 0) {
+        return;
+      }
+
+      let minTop = Infinity;
+      let maxBottom = -Infinity;
+      let targetId: string | null = null;
+      for (const row of draggableRows) {
+        const rect = row.getBoundingClientRect();
+        if (rect.top < minTop) {
+          minTop = rect.top;
+        }
+        if (rect.bottom > maxBottom) {
+          maxBottom = rect.bottom;
+        }
+        if (event.clientY >= rect.top && event.clientY <= rect.bottom) {
+          targetId = row.dataset.paramId ?? null;
+        }
+      }
+
+      const maxTop = Math.max(minTop, maxBottom - meta.height);
+      const top = Math.min(Math.max(event.clientY - meta.pointerOffsetY, minTop), maxTop);
+
+      let swapTargetId: string | null = null;
+      if (targetId && targetId !== meta.paramId) {
+        swapTargetId = targetId;
+        if (lastSwapTargetRef.current !== targetId) {
+          lastSwapTargetRef.current = targetId;
+          swapParameterRef.current(meta.paramId, targetId);
+        }
+      } else {
+        lastSwapTargetRef.current = null;
+      }
+
+      setRowDrag((current) => (current ? { ...current, top, swapTargetId } : current));
+    };
+
+    const endDrag = () => {
+      rowDragMetaRef.current = null;
+      lastSwapTargetRef.current = null;
+      setRowDrag(null);
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+      document.body.style.userSelect = previousUserSelect;
+    };
+  }, [isRowDragging]);
+
+  const startRowDrag = (def: ParameterDef, event: ReactPointerEvent<HTMLDivElement>) => {
+    if (isSystemParameter(def.id) || event.button !== 0) {
       return;
     }
     event.preventDefault();
-    const systemIndex = parameters.defs.length - 1;
-    const target = systemIndex >= 0 && paramIndex >= systemIndex ? systemIndex - 1 : paramIndex;
-    setDropIndex(target);
-  };
-
-  const handleDrop = (paramIndex: number, isSystem: boolean) => {
-    if (draggedIndex !== null) {
-      const systemIndex = parameters.defs.length - 1;
-      const target = isSystem
-        ? Math.max(0, systemIndex - 1)
-        : systemIndex >= 0 && paramIndex >= systemIndex
-          ? systemIndex - 1
-          : paramIndex;
-      parameters.reorderParameter(draggedIndex, target);
-    }
-    setDraggedIndex(null);
-    setDropIndex(null);
-  };
-
-  const resolveDropIndex = (paramIndex: number, isSystem: boolean): number => {
-    const systemIndex = parameters.defs.length - 1;
-    if (isSystem) {
-      return Math.max(0, systemIndex - 1);
-    }
-    if (systemIndex >= 0 && paramIndex >= systemIndex) {
-      return systemIndex - 1;
-    }
-    return paramIndex;
+    const rect = event.currentTarget.getBoundingClientRect();
+    rowDragMetaRef.current = {
+      paramId: def.id,
+      pointerOffsetY: event.clientY - rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    };
+    lastSwapTargetRef.current = null;
+    setRowDrag({
+      paramId: def.id,
+      label: def.label,
+      width: rect.width,
+      height: rect.height,
+      top: rect.top,
+      left: rect.left,
+      swapTargetId: null,
+    });
   };
 
   return (
@@ -118,63 +208,36 @@ export const PricelistsColumnsSheet = ({
 
           {parameters.enabled && parameters.defs.length > 0 ? (
             <div className="px-4 pb-4">
-              <div className="mb-2 flex items-center gap-2 border-t border-dashed border-[var(--corportal-border-grey)] pt-4">
+              <div className="mt-4 mb-2 flex items-center gap-2">
                 <span className="text-xs font-semibold text-muted-foreground">Parameters</span>
-                <span className="flex-1 border-t border-dashed border-[var(--corportal-border-grey)]" />
+                <span className="h-px flex-1 border-t border-dashed border-[var(--corportal-border-grey)]" />
               </div>
 
-              <div className="grid gap-1.5">
+              <div ref={listRef} className="grid gap-1.5">
                 {parameters.defs.map((def, index) => {
                   const system = isSystemParameter(def.id);
-                  const effectiveDropIndex = draggedIndex !== null ? resolveDropIndex(index, system) : null;
-                  const isDropTarget =
-                    effectiveDropIndex !== null &&
-                    effectiveDropIndex === dropIndex &&
-                    draggedIndex !== null &&
-                    draggedIndex !== dropIndex;
 
                   return (
                     <div
                       key={def.id}
+                      data-param-id={def.id}
+                      data-system={system}
+                      onPointerDown={system ? undefined : (event) => startRowDrag(def, event)}
                       className={cn(
-                        "group/row relative flex items-center gap-2 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2.5",
-                        draggedIndex === index && "opacity-40",
+                        "group/row relative flex items-center gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-background px-3 py-2.5 transition-[box-shadow,background-color,opacity] select-none",
+                        !system && "cursor-grab active:cursor-grabbing",
+                        rowDrag?.paramId === def.id && "opacity-40",
+                        rowDrag?.swapTargetId === def.id &&
+                        "border-primary bg-primary/5 ring-2 ring-primary ring-inset",
                       )}
-                      onDragOver={(event) => handleDragOver(event, index, system)}
-                      onDrop={() => handleDrop(index, system)}
                     >
-                      {isDropTarget ? (
-                        <span className="absolute inset-y-0 -left-0.5 w-0.5 rounded-full bg-primary" aria-hidden />
-                      ) : null}
-
-                      {!system ? (
-                        <span
-                          draggable
-                          onDragStart={(event) => {
-                            event.dataTransfer.effectAllowed = "move";
-                            setDraggedIndex(index);
-                          }}
-                          onDragEnd={() => {
-                            setDraggedIndex(null);
-                            setDropIndex(null);
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Drag to reorder ${def.label}`}
-                          title="Drag to reorder"
-                          className="flex size-5 shrink-0 cursor-grab items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
-                        >
-                          <GripVertical className="size-3.5" aria-hidden />
-                        </span>
-                      ) : (
-                        <span className="size-5 shrink-0" />
-                      )}
-
                       <Checkbox
                         id={`pricelist-param-${def.id}`}
                         checked={parameters.isVisible(def.id)}
                         onCheckedChange={() => parameters.toggleVisibility(def.id)}
                         aria-label={`Toggle ${def.label} parameter`}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
                       />
 
                       <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" title={def.label}>
@@ -183,6 +246,8 @@ export const PricelistsColumnsSheet = ({
 
                       <DropdownMenu>
                         <DropdownMenuTrigger
+                          onPointerDown={(event) => event.stopPropagation()}
+                          onClick={(event) => event.stopPropagation()}
                           aria-label={`${def.label} parameter options`}
                           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-all hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none group-hover/row:opacity-100"
                         >
@@ -223,6 +288,24 @@ export const PricelistsColumnsSheet = ({
           </Button>
         </SheetFooter>
       </SheetContent>
+
+      {rowDrag
+        ? createPortal(
+          <div
+            aria-hidden
+            className="pointer-events-none fixed z-[60] flex items-center gap-2 rounded-lg border border-[var(--corportal-border-grey)] bg-background px-3 py-2.5 text-sm font-medium text-foreground shadow-lg"
+            style={{
+              left: rowDrag.left,
+              top: rowDrag.top,
+              width: rowDrag.width,
+              height: rowDrag.height,
+            }}
+          >
+            <span className="min-w-0 flex-1 truncate">{rowDrag.label}</span>
+          </div>,
+          document.body,
+        )
+        : null}
     </Sheet>
   );
 };

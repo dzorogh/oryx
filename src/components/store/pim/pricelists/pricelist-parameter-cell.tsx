@@ -15,7 +15,6 @@ type PricelistParameterCellProps = {
   value: number;
   isOverridden: boolean;
   baseValue: number;
-  unit: string;
   parameterLabel: string;
   productName: string;
   editors: CollabUser[];
@@ -29,7 +28,6 @@ export const PricelistParameterCell = ({
   value,
   isOverridden,
   baseValue,
-  unit,
   parameterLabel,
   productName,
   editors,
@@ -50,7 +48,6 @@ export const PricelistParameterCell = ({
     productName,
     value,
     baseValue,
-    unit,
   };
 
   // Reflect external updates (base change, remote edits) while not editing by
@@ -102,7 +99,7 @@ export const PricelistParameterCell = ({
             : "border-input",
       )}
       style={activeEditor ? { boxShadow: `0 0 0 2px ${activeEditor.color}` } : undefined}
-      title={isOverridden ? `Overridden · base ${formatParameterValue(baseValue, unit)}` : undefined}
+      title={isOverridden ? `Overridden · base ${formatParameterValue(baseValue)}` : undefined}
     >
       {activeEditor ? (
         <span
@@ -141,15 +138,7 @@ export const PricelistParameterCell = ({
         )}
       />
 
-      <span className="relative flex h-7 shrink-0 items-center pr-2 pl-1 select-none">
-        <span
-          className={cn(
-            "text-xs text-muted-foreground transition-opacity",
-            (isOverridden || isComputed) && "group-hover/parameter:opacity-0",
-          )}
-        >
-          {unit}
-        </span>
+      <span className="relative flex h-7 w-6 shrink-0 items-center select-none">
         {isOverridden ? (
           <button
             type="button"

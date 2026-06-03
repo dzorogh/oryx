@@ -1,7 +1,16 @@
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, forwardRef, useImperativeHandle, useState, type DragEvent, type ReactNode } from "react";
+import {
+  Fragment,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -260,7 +269,6 @@ const PricelistTableRow = ({
                   value={value}
                   isOverridden={isOverridden}
                   baseValue={parameters.getBaseValue(paramId)}
-                  unit={column.unit ?? ""}
                   parameterLabel={column.label}
                   productName={displayName}
                   editors={collab.getEditors(overrideId)}
@@ -356,6 +364,23 @@ type DialogState =
   | { mode: "create"; atIndex?: number }
   | { mode: "edit"; def: ParameterDef };
 
+// Fixed at pointerdown; the listeners read it without re-subscribing.
+type HeaderDragMeta = {
+  paramId: string;
+  pointerOffsetX: number;
+  width: number;
+};
+
+// Drives the floating preview and the swap-target highlight while dragging.
+type HeaderDragState = {
+  paramId: string;
+  label: string;
+  width: number;
+  height: number;
+  top: number;
+  left: number;
+};
+
 export type PricelistsTableHandle = {
   openCreateParameterDialog: (atIndex?: number) => void;
   openEditParameterDialog: (def: ParameterDef) => void;
@@ -379,14 +404,120 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
   const isExpandable = scope === "global";
   const showParameters = parameters.enabled;
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(() => new Set());
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [headerDrag, setHeaderDrag] = useState<HeaderDragState | null>(null);
+  const headerDragMetaRef = useRef<HeaderDragMeta | null>(null);
+  const lastSwapTargetRef = useRef<string | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  // Always read the latest swap action without re-subscribing the drag listeners.
+  const swapParameterRef = useRef(parameters.swapParameter);
+  swapParameterRef.current = parameters.swapParameter;
   const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
   useImperativeHandle(ref, () => ({
     openCreateParameterDialog: (atIndex?: number) => setDialogState({ mode: "create", atIndex }),
     openEditParameterDialog: (def: ParameterDef) => setDialogState({ mode: "edit", def }),
   }));
+
+  const isHeaderDragging = headerDrag !== null;
+
+  // Custom pointer drag for parameter headers: a fixed-position preview that
+  // moves only horizontally (its top is pinned to the header row) with a solid
+  // background, and Notion-style swap as the pointer passes over neighbors.
+  useEffect(() => {
+    if (!isHeaderDragging) {
+      return;
+    }
+
+    const handleMove = (event: PointerEvent) => {
+      const meta = headerDragMetaRef.current;
+      const container = cardRef.current;
+      if (!meta || !container) {
+        return;
+      }
+
+      const draggableHeaders = Array.from(
+        container.querySelectorAll<HTMLElement>("th[data-param-id]"),
+      ).filter((header) => header.dataset.system !== "true");
+      if (draggableHeaders.length === 0) {
+        return;
+      }
+
+      let minLeft = Infinity;
+      let maxRight = -Infinity;
+      let targetId: string | null = null;
+      for (const header of draggableHeaders) {
+        const rect = header.getBoundingClientRect();
+        if (rect.left < minLeft) {
+          minLeft = rect.left;
+        }
+        if (rect.right > maxRight) {
+          maxRight = rect.right;
+        }
+        if (event.clientX >= rect.left && event.clientX <= rect.right) {
+          targetId = header.dataset.paramId ?? null;
+        }
+      }
+
+      const maxLeft = Math.max(minLeft, maxRight - meta.width);
+      const left = Math.min(Math.max(event.clientX - meta.pointerOffsetX, minLeft), maxLeft);
+
+      if (targetId && targetId !== meta.paramId) {
+        if (lastSwapTargetRef.current !== targetId) {
+          lastSwapTargetRef.current = targetId;
+          swapParameterRef.current(meta.paramId, targetId);
+        }
+      } else {
+        lastSwapTargetRef.current = null;
+      }
+
+      setHeaderDrag((current) => (current ? { ...current, left } : current));
+    };
+
+    const endDrag = () => {
+      headerDragMetaRef.current = null;
+      lastSwapTargetRef.current = null;
+      setHeaderDrag(null);
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+      document.body.style.userSelect = previousUserSelect;
+    };
+  }, [isHeaderDragging]);
+
+  const startHeaderDrag = (def: ParameterDef, event: ReactPointerEvent<HTMLDivElement>) => {
+    if (isSystemParameter(def.id) || event.button !== 0) {
+      return;
+    }
+    const cell = event.currentTarget.closest("th");
+    if (!cell) {
+      return;
+    }
+    event.preventDefault();
+    const rect = cell.getBoundingClientRect();
+    headerDragMetaRef.current = {
+      paramId: def.id,
+      pointerOffsetX: event.clientX - rect.left,
+      width: rect.width,
+    };
+    lastSwapTargetRef.current = null;
+    setHeaderDrag({
+      paramId: def.id,
+      label: def.label,
+      width: rect.width,
+      height: rect.height,
+      top: rect.top,
+      left: rect.left,
+    });
+  };
 
   const parameterColumns = showParameters ? parameters.visibleColumns : [];
   const allColumns = [...columns, ...parameterColumns];
@@ -403,198 +534,167 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
       return next;
     });
 
-  const resolveDropIndex = (targetParamIndex: number, targetIsSystem: boolean): number => {
-    const systemIndex = parameters.defs.length - 1;
-    if (targetIsSystem) {
-      return Math.max(0, systemIndex - 1);
-    }
-    if (systemIndex >= 0 && targetParamIndex >= systemIndex) {
-      return systemIndex - 1;
-    }
-    return targetParamIndex;
-  };
-
-  const handleDrop = (targetParamIndex: number, targetIsSystem: boolean) => {
-    if (draggedIndex !== null) {
-      parameters.reorderParameter(draggedIndex, resolveDropIndex(targetParamIndex, targetIsSystem));
-    }
-    setDraggedIndex(null);
-    setDropIndex(null);
-  };
-
   return (
-    <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
-      <div className="overflow-x-auto">
-        <Table className="table-fixed">
-          <colgroup>
-            {allColumns.map((column) => (
-              <col key={column.id} className={column.widthClass} />
-            ))}
-            {/* Flexible trailing column keeps data columns at their fixed widths. */}
-            <col />
-          </colgroup>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              {allColumns.map((column, index) => {
-                if (column.kind === "parameter" && column.paramId) {
-                  const paramId = column.paramId;
-                  const def = parameters.defs.find((entry) => entry.id === paramId);
-                  if (!def) {
-                    return <TableHead key={column.id} aria-hidden />;
+    <Fragment>
+      <Card ref={cardRef} size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
+        <div className="overflow-x-auto">
+          <Table className="table-fixed">
+            <colgroup>
+              {allColumns.map((column) => (
+                <col key={column.id} className={column.widthClass} />
+              ))}
+              {/* Flexible trailing column keeps data columns at their fixed widths. */}
+              <col />
+            </colgroup>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                {allColumns.map((column, index) => {
+                  if (column.kind === "parameter" && column.paramId) {
+                    const paramId = column.paramId;
+                    const def = parameters.defs.find((entry) => entry.id === paramId);
+                    if (!def) {
+                      return <TableHead key={column.id} aria-hidden />;
+                    }
+                    const paramIndex = parameters.defs.indexOf(def);
+                    const isFirst = index === firstParameterIndex;
+                    const isSystem = isSystemParameter(def.id);
+                    return (
+                      <TableHead
+                        key={column.id}
+                        data-param-id={def.id}
+                        data-system={isSystem}
+                        className={cn(
+                          "h-9 min-w-0 overflow-visible px-2 align-middle text-left text-xs",
+                          PARAMETER_GROUP_TINT,
+                          isFirst && PARAMETER_GROUP_DIVIDER,
+                        )}
+                      >
+                        <PricelistParameterHeaderCell
+                          def={def}
+                          isSystem={isSystem}
+                          isFirstParameter={isFirst}
+                          isDragSource={headerDrag?.paramId === def.id}
+                          onInsertBefore={() => setDialogState({ mode: "create", atIndex: paramIndex })}
+                          onInsertAfter={() => setDialogState({ mode: "create", atIndex: paramIndex + 1 })}
+                          onEdit={() => setDialogState({ mode: "edit", def })}
+                          onResetAll={() => parameters.resetAllOverrides(def.id)}
+                          onDelete={() => parameters.removeParameter(def.id)}
+                          onPointerDownDrag={(event) => startHeaderDrag(def, event)}
+                        />
+                      </TableHead>
+                    );
                   }
-                  const paramIndex = parameters.defs.indexOf(def);
-                  const isFirst = index === firstParameterIndex;
-                  const isSystem = isSystemParameter(def.id);
+
                   return (
-                    <TableHead
-                      key={column.id}
-                      className={cn(
-                        "h-9 min-w-0 overflow-visible px-2 align-middle text-left text-xs",
-                        PARAMETER_GROUP_TINT,
-                        isFirst && PARAMETER_GROUP_DIVIDER,
-                      )}
-                      onDragOver={(event: DragEvent<HTMLTableCellElement>) => {
-                        if (draggedIndex !== null) {
-                          event.preventDefault();
-                          setDropIndex(resolveDropIndex(paramIndex, isSystem));
-                        }
-                      }}
-                      onDrop={(event: DragEvent<HTMLTableCellElement>) => {
-                        if (draggedIndex !== null) {
-                          event.preventDefault();
-                          handleDrop(paramIndex, isSystem);
-                        }
-                      }}
-                    >
-                      <PricelistParameterHeaderCell
-                        def={def}
-                        isSystem={isSystem}
-                        isFirstParameter={isFirst}
-                        isDragging={draggedIndex === paramIndex}
-                        isDropTarget={
-                          dropIndex === resolveDropIndex(paramIndex, isSystem) &&
-                          draggedIndex !== null &&
-                          draggedIndex !== resolveDropIndex(paramIndex, isSystem)
-                        }
-                        onInsertBefore={() => setDialogState({ mode: "create", atIndex: paramIndex })}
-                        onInsertAfter={() => setDialogState({ mode: "create", atIndex: paramIndex + 1 })}
-                        onEdit={() => setDialogState({ mode: "edit", def })}
-                        onResetAll={() => parameters.resetAllOverrides(def.id)}
-                        onDelete={() => parameters.removeParameter(def.id)}
-                        onDragStart={(event) => {
-                          if (isSystem) {
-                            return;
-                          }
-                          event.dataTransfer.effectAllowed = "move";
-                          setDraggedIndex(paramIndex);
-                        }}
-                        onDragEnd={() => {
-                          setDraggedIndex(null);
-                          setDropIndex(null);
-                        }}
-                      />
+                    <TableHead key={column.id} className={getHeadClassName(column)}>
+                      {column.label}
                     </TableHead>
                   );
-                }
-
-                return (
-                  <TableHead key={column.id} className={getHeadClassName(column)}>
-                    {column.label}
-                  </TableHead>
-                );
-              })}
-              <TableHead aria-hidden />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-                <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
-                  {allColumns.map((column, columnIndex) => (
-                    <TableCell
-                      key={column.id}
-                      className={cn(
-                        getCellClassName(column),
-                        column.isParameter && PARAMETER_GROUP_TINT,
-                        columnIndex === firstParameterIndex && PARAMETER_GROUP_DIVIDER,
-                      )}
-                    >
-                      {renderSkeletonCell(column, scope === "dealer")}
-                    </TableCell>
-                  ))}
-                  <TableCell aria-hidden />
-                </TableRow>
-              ))
-            ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={allColumns.length + 1}
-                  className="px-3 py-8 text-center text-sm text-muted-foreground"
-                >
-                  No products match the selected filters.
-                </TableCell>
+                })}
+                <TableHead aria-hidden />
               </TableRow>
-            ) : (
-              rows.map((row) => (
-                <PricelistTableRow
-                  key={row.id}
-                  row={row}
-                  columns={allColumns}
-                  firstParameterIndex={firstParameterIndex}
-                  scope={scope}
-                  regionId={regionId}
-                  collab={collab}
-                  parameters={parameters}
-                  isExpandable={isExpandable}
-                  isExpanded={expandedRowIds.has(row.id)}
-                  onToggleExpand={() => toggleExpanded(row.id)}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {footer}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+                  <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
+                    {allColumns.map((column, columnIndex) => (
+                      <TableCell
+                        key={column.id}
+                        className={cn(
+                          getCellClassName(column),
+                          column.isParameter && PARAMETER_GROUP_TINT,
+                          columnIndex === firstParameterIndex && PARAMETER_GROUP_DIVIDER,
+                        )}
+                      >
+                        {renderSkeletonCell(column, scope === "dealer")}
+                      </TableCell>
+                    ))}
+                    <TableCell aria-hidden />
+                  </TableRow>
+                ))
+              ) : rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={allColumns.length + 1}
+                    className="px-3 py-8 text-center text-sm text-muted-foreground"
+                  >
+                    No products match the selected filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row) => (
+                  <PricelistTableRow
+                    key={row.id}
+                    row={row}
+                    columns={allColumns}
+                    firstParameterIndex={firstParameterIndex}
+                    scope={scope}
+                    regionId={regionId}
+                    collab={collab}
+                    parameters={parameters}
+                    isExpandable={isExpandable}
+                    isExpanded={expandedRowIds.has(row.id)}
+                    onToggleExpand={() => toggleExpanded(row.id)}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        {footer}
 
-      {dialogState ? (
-        <PricelistParameterDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) {
+        {dialogState ? (
+          <PricelistParameterDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) {
+                setDialogState(null);
+              }
+            }}
+            mode={dialogState.mode}
+            parameterDefs={parameters.defs}
+            editingParamId={dialogState.mode === "edit" ? dialogState.def.id : undefined}
+            initialLabel={dialogState.mode === "edit" ? dialogState.def.label : ""}
+            initialSlug={dialogState.mode === "edit" ? (dialogState.def.slug ?? "") : ""}
+            initialFormula={dialogState.mode === "edit" ? (dialogState.def.formula ?? "") : ""}
+            onSubmit={(values) => {
+              if (dialogState.mode === "create") {
+                parameters.addParameter({
+                  label: values.label,
+                  baseValue: values.baseValue,
+                  slug: values.slug,
+                  formula: values.formula,
+                  atIndex: dialogState.atIndex,
+                });
+              } else {
+                parameters.updateParameter(dialogState.def.id, {
+                  label: values.label,
+                  slug: values.slug,
+                  formula: values.formula,
+                });
+                parameters.setBaseValue(dialogState.def.id, values.baseValue);
+              }
               setDialogState(null);
-            }
+            }}
+          />
+        ) : null}
+      </Card>
+
+      {headerDrag ? (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed z-50 flex items-center rounded-md border border-[var(--corportal-border-grey)] bg-background px-2 text-xs font-semibold text-foreground shadow-lg"
+          style={{
+            left: headerDrag.left,
+            top: headerDrag.top,
+            width: headerDrag.width,
+            height: headerDrag.height,
           }}
-          mode={dialogState.mode}
-          defaultUnit={getRegionById(regionId).currency}
-          parameterDefs={parameters.defs}
-          editingParamId={dialogState.mode === "edit" ? dialogState.def.id : undefined}
-          initialLabel={dialogState.mode === "edit" ? dialogState.def.label : ""}
-          initialSlug={dialogState.mode === "edit" ? (dialogState.def.slug ?? "") : ""}
-          initialUnit={dialogState.mode === "edit" ? dialogState.def.unit : undefined}
-          initialFormula={dialogState.mode === "edit" ? (dialogState.def.formula ?? "") : ""}
-          onSubmit={(values) => {
-            if (dialogState.mode === "create") {
-              parameters.addParameter({
-                label: values.label,
-                unit: values.unit,
-                baseValue: values.baseValue,
-                slug: values.slug,
-                formula: values.formula,
-                atIndex: dialogState.atIndex,
-              });
-            } else {
-              parameters.updateParameter(dialogState.def.id, {
-                label: values.label,
-                unit: values.unit,
-                slug: values.slug,
-                formula: values.formula,
-              });
-              parameters.setBaseValue(dialogState.def.id, values.baseValue);
-            }
-            setDialogState(null);
-          }}
-        />
+        >
+          <span className="min-w-0 flex-1 truncate">{headerDrag.label}</span>
+        </div>
       ) : null}
-    </Card>
+    </Fragment>
   );
 });

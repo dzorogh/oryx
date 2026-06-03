@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, GripVertical, Plus } from "lucide-react";
-import { type DragEvent } from "react";
+import { MoreHorizontal, Plus } from "lucide-react";
+import { type PointerEvent as ReactPointerEvent } from "react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -14,41 +14,28 @@ type PricelistParameterHeaderCellProps = {
   def: ParameterDef;
   isSystem: boolean;
   isFirstParameter: boolean;
-  isDragging: boolean;
-  isDropTarget: boolean;
+  isDragSource: boolean;
   onInsertBefore: () => void;
   onInsertAfter: () => void;
   onEdit: () => void;
   onResetAll: () => void;
   onDelete: () => void;
-  onDragStart: (event: DragEvent<HTMLElement>) => void;
-  onDragEnd: () => void;
+  onPointerDownDrag: (event: ReactPointerEvent<HTMLDivElement>) => void;
 };
 
 export const PricelistParameterHeaderCell = ({
   def,
   isSystem,
   isFirstParameter,
-  isDragging,
-  isDropTarget,
+  isDragSource,
   onInsertBefore,
   onInsertAfter,
   onEdit,
   onResetAll,
   onDelete,
-  onDragStart,
-  onDragEnd,
+  onPointerDownDrag,
 }: PricelistParameterHeaderCellProps) => (
-  <div
-    className={cn(
-      "relative flex w-full flex-col gap-1 py-1 transition-opacity",
-      isDragging && "opacity-40",
-    )}
-  >
-    {isDropTarget ? (
-      <span className="absolute inset-y-0 -left-1 w-0.5 rounded-full bg-primary" aria-hidden />
-    ) : null}
-
+  <div className="relative flex w-full flex-col gap-1 py-1">
     {/* Insert-between handle: a thin hover zone revealing a + on the left edge. */}
     {!isFirstParameter && !isSystem ? (
       <button
@@ -64,32 +51,25 @@ export const PricelistParameterHeaderCell = ({
       </button>
     ) : null}
 
-    <div className="flex items-center gap-0.5">
-      {!isSystem ? (
-        <span
-          draggable
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          role="button"
-          tabIndex={0}
-          aria-label={`Drag to reorder ${def.label}`}
-          title="Drag to reorder"
-          className="flex size-5 shrink-0 cursor-grab items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
-        >
-          <GripVertical className="size-3.5" aria-hidden />
-        </span>
-      ) : null}
-
+    <div
+      onPointerDown={isSystem ? undefined : onPointerDownDrag}
+      className={cn(
+        "flex items-center gap-0.5 rounded-md px-0.5 transition-opacity select-none",
+        !isSystem && "cursor-grab active:cursor-grabbing",
+        isDragSource && "opacity-40",
+      )}
+    >
       <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground" title={def.label}>
         {def.label}
       </span>
 
       <DropdownMenu>
         <DropdownMenuTrigger
+          onPointerDown={(event) => event.stopPropagation()}
           aria-label={`${def.label} parameter options`}
           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-          <ChevronDown className="size-3.5" aria-hidden />
+          <MoreHorizontal className="size-3.5" aria-hidden />
         </DropdownMenuTrigger>
         <PricelistParameterMenu
           isSystem={isSystem}

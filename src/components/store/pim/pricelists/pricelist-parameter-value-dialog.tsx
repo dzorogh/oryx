@@ -15,7 +15,6 @@ export type ParameterValueDebugInfo = {
   productName: string;
   value: number;
   baseValue: number;
-  unit: string;
 };
 
 type PricelistParameterValueDialogProps = {
@@ -50,8 +49,8 @@ export const PricelistParameterValueDialog = ({
         <dl className="grid gap-2.5">
           <DetailRow label="Parameter">{info.parameterLabel}</DetailRow>
           <DetailRow label="Product">{info.productName}</DetailRow>
-          <DetailRow label="Resolved value">{formatParameterValue(info.value, info.unit)}</DetailRow>
-          <DetailRow label="Column base">{formatParameterValue(info.baseValue, info.unit)}</DetailRow>
+          <DetailRow label="Resolved value">{formatParameterValue(info.value)}</DetailRow>
+          <DetailRow label="Column base">{formatParameterValue(info.baseValue)}</DetailRow>
           <DetailRow label="Source">Inherited from column base</DetailRow>
           <DetailRow label="Formula">
             <span className="font-normal text-muted-foreground">Not configured</span>

@@ -50,7 +50,6 @@ export type PricelistParameters = {
   resetAllOverrides: (paramId: string) => void;
   addParameter: (input: {
     label: string;
-    unit: string;
     baseValue: number;
     slug?: string;
     formula?: string;
@@ -58,10 +57,11 @@ export type PricelistParameters = {
   }) => void;
   updateParameter: (
     paramId: string,
-    patch: { label?: string; unit?: string; slug?: string; formula?: string },
+    patch: { label?: string; slug?: string; formula?: string },
   ) => void;
   removeParameter: (paramId: string) => void;
   reorderParameter: (fromIndex: number, toIndex: number) => void;
+  swapParameter: (paramIdA: string, paramIdB: string) => void;
   isVisible: (paramId: string) => boolean;
   toggleVisibility: (paramId: string) => void;
   resetVisibility: () => void;
@@ -94,8 +94,8 @@ export const usePricelistParameters = (
     if (!enabled) {
       return [];
     }
-    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs(regionId);
-    return normalizeParameterDefs(raw, regionId);
+    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs();
+    return normalizeParameterDefs(raw);
     // collab map mutations trigger a re-render upstream, so reading during
     // render keeps `defs` current without an extra subscription here.
   }, [collab, enabled, regionId]);
@@ -138,8 +138,8 @@ export const usePricelistParameters = (
   );
 
   const getCurrentDefs = useCallback((): ParameterDef[] => {
-    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs(regionId);
-    return normalizeParameterDefs(raw, regionId);
+    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs();
+    return normalizeParameterDefs(raw);
   }, [collab, regionId]);
 
   const getSystemIndex = useCallback(
@@ -148,7 +148,7 @@ export const usePricelistParameters = (
   );
 
   const persistDefs = useCallback(
-    (next: ParameterDef[]) => collab.setParamDefs(regionId, normalizeParameterDefs(next, regionId)),
+    (next: ParameterDef[]) => collab.setParamDefs(regionId, normalizeParameterDefs(next)),
     [collab, regionId],
   );
 
@@ -192,8 +192,8 @@ export const usePricelistParameters = (
   );
 
   const addParameter = useCallback(
-    (input: { label: string; unit: string; baseValue: number; slug?: string; formula?: string; atIndex?: number }) => {
-      const def = createParameterDef(input.label.trim() || "Parameter", input.unit, {
+    (input: { label: string; baseValue: number; slug?: string; formula?: string; atIndex?: number }) => {
+      const def = createParameterDef(input.label.trim() || "Parameter", {
         slug: input.slug,
         formula: input.formula,
       });
@@ -211,7 +211,7 @@ export const usePricelistParameters = (
   );
 
   const updateParameter = useCallback(
-    (paramId: string, patch: { label?: string; unit?: string; slug?: string; formula?: string }) => {
+    (paramId: string, patch: { label?: string; slug?: string; formula?: string }) => {
       const trimmedLabel = patch.label?.trim();
       persistDefs(
         getCurrentDefs().map((def) =>
@@ -219,7 +219,6 @@ export const usePricelistParameters = (
             ? {
               ...def,
               ...(trimmedLabel ? { label: trimmedLabel } : {}),
-              ...(patch.unit !== undefined ? { unit: patch.unit } : {}),
               ...(patch.slug !== undefined ? { slug: patch.slug } : {}),
               ...(patch.formula !== undefined ? { formula: patch.formula } : {}),
             }
@@ -278,6 +277,27 @@ export const usePricelistParameters = (
     [getCurrentDefs, getSystemIndex, persistDefs],
   );
 
+  const swapParameter = useCallback(
+    (paramIdA: string, paramIdB: string) => {
+      if (paramIdA === paramIdB) {
+        return;
+      }
+      if (isSystemParameter(paramIdA) || isSystemParameter(paramIdB)) {
+        return;
+      }
+      const current = getCurrentDefs();
+      const indexA = current.findIndex((def) => def.id === paramIdA);
+      const indexB = current.findIndex((def) => def.id === paramIdB);
+      if (indexA < 0 || indexB < 0) {
+        return;
+      }
+      const next = [...current];
+      [next[indexA], next[indexB]] = [next[indexB], next[indexA]];
+      persistDefs(next);
+    },
+    [getCurrentDefs, persistDefs],
+  );
+
   return {
     enabled,
     defs,
@@ -293,6 +313,7 @@ export const usePricelistParameters = (
     updateParameter,
     removeParameter,
     reorderParameter,
+    swapParameter,
     isVisible,
     toggleVisibility,
     resetVisibility,
