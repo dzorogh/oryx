@@ -20,10 +20,28 @@ export type ParameterResolvedCell = {
   isOverridden: boolean;
 };
 
+const HIDDEN_PARAMS_STORAGE_PREFIX = "store-pricelists-hidden-params";
+
+const parseHiddenParamIds = (raw: string | null): Set<string> => {
+  if (!raw) {
+    return new Set();
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return new Set();
+    }
+    return new Set(parsed.filter((v): v is string => typeof v === "string"));
+  } catch {
+    return new Set();
+  }
+};
+
 export type PricelistParameters = {
   enabled: boolean;
   defs: ParameterDef[];
   columns: PricelistColumnDefinition[];
+  visibleColumns: PricelistColumnDefinition[];
   getBaseValue: (paramId: string) => number;
   setBaseValue: (paramId: string, value: number) => void;
   resolveCell: (paramId: string, rowId: string) => ParameterResolvedCell;
@@ -83,6 +101,41 @@ export const usePricelistParameters = (
   }, [collab, enabled, regionId]);
 
   const columns = useMemo(() => buildParameterColumns(defs), [defs]);
+
+  const storageKey = `${HIDDEN_PARAMS_STORAGE_PREFIX}:${regionId}`;
+  const [hiddenParamIds, setHiddenParamIds] = useState<Set<string>>(() => new Set());
+  const [visibilityHydrated, setVisibilityHydrated] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+    const storage = window.localStorage;
+    if (!storage || typeof storage.getItem !== "function") {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setHiddenParamIds(parseHiddenParamIds(storage.getItem(storageKey)));
+      setVisibilityHydrated(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [enabled, storageKey]);
+
+  useEffect(() => {
+    if (!visibilityHydrated) {
+      return;
+    }
+    const storage = window.localStorage;
+    if (!storage || typeof storage.setItem !== "function") {
+      return;
+    }
+    storage.setItem(storageKey, JSON.stringify([...hiddenParamIds]));
+  }, [storageKey, visibilityHydrated, hiddenParamIds]);
+
+  const visibleColumns = useMemo(
+    () => columns.filter((column) => !column.paramId || !hiddenParamIds.has(column.paramId)),
+    [columns, hiddenParamIds],
+  );
 
   const getCurrentDefs = useCallback((): ParameterDef[] => {
     const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs(regionId);
@@ -187,8 +240,6 @@ export const usePricelistParameters = (
     [getCurrentDefs, persistDefs],
   );
 
-  const [hiddenParamIds, setHiddenParamIds] = useState<Set<string>>(new Set());
-
   const isVisible = useCallback(
     (paramId: string): boolean => !hiddenParamIds.has(paramId),
     [hiddenParamIds],
@@ -231,6 +282,7 @@ export const usePricelistParameters = (
     enabled,
     defs,
     columns,
+    visibleColumns,
     getBaseValue,
     setBaseValue,
     resolveCell,

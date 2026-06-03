@@ -173,16 +173,15 @@ const PricelistsPageContent = () => {
         columns={columns}
         parameters={parameters}
         onParameterAction={(action) => {
+          if (action.kind !== "create" && action.kind !== "edit") {
+            return;
+          }
           setColumnSheetOpen(false);
           requestAnimationFrame(() => {
             if (action.kind === "create") {
               tableRef.current?.openCreateParameterDialog(action.atIndex);
-            } else if (action.kind === "edit") {
+            } else {
               tableRef.current?.openEditParameterDialog(action.def);
-            } else if (action.kind === "resetAll") {
-              parameters.resetAllOverrides(action.def.id);
-            } else if (action.kind === "delete") {
-              parameters.removeParameter(action.def.id);
             }
           });
         }}

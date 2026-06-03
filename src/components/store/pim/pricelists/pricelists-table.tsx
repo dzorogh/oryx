@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useState, type DragEvent, type ReactNode } from "react";
+import { Fragment, forwardRef, useImperativeHandle, useState, type DragEvent, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -356,6 +356,11 @@ type DialogState =
   | { mode: "create"; atIndex?: number }
   | { mode: "edit"; def: ParameterDef };
 
+export type PricelistsTableHandle = {
+  openCreateParameterDialog: (atIndex?: number) => void;
+  openEditParameterDialog: (def: ParameterDef) => void;
+};
+
 type PricelistsTableProps = {
   rows: PricelistRow[];
   columns: PricelistColumnDefinition[];
@@ -367,16 +372,10 @@ type PricelistsTableProps = {
   footer?: ReactNode;
 };
 
-export const PricelistsTable = ({
-  rows,
-  columns,
-  isLoading,
-  scope,
-  regionId,
-  collab,
-  parameters,
-  footer,
-}: PricelistsTableProps) => {
+export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTableProps>(function PricelistsTable(
+  { rows, columns, isLoading, scope, regionId, collab, parameters, footer },
+  ref,
+) {
   const isExpandable = scope === "global";
   const showParameters = parameters.enabled;
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(() => new Set());
@@ -384,7 +383,12 @@ export const PricelistsTable = ({
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
-  const parameterColumns = showParameters ? parameters.columns : [];
+  useImperativeHandle(ref, () => ({
+    openCreateParameterDialog: (atIndex?: number) => setDialogState({ mode: "create", atIndex }),
+    openEditParameterDialog: (def: ParameterDef) => setDialogState({ mode: "edit", def }),
+  }));
+
+  const parameterColumns = showParameters ? parameters.visibleColumns : [];
   const allColumns = [...columns, ...parameterColumns];
   const firstParameterIndex = allColumns.findIndex((column) => column.isParameter);
 
@@ -433,11 +437,12 @@ export const PricelistsTable = ({
             <TableRow className="hover:bg-transparent">
               {allColumns.map((column, index) => {
                 if (column.kind === "parameter" && column.paramId) {
-                  const paramIndex = index - columns.length;
-                  const def = parameters.defs[paramIndex];
+                  const paramId = column.paramId;
+                  const def = parameters.defs.find((entry) => entry.id === paramId);
                   if (!def) {
                     return <TableHead key={column.id} aria-hidden />;
                   }
+                  const paramIndex = parameters.defs.indexOf(def);
                   const isFirst = index === firstParameterIndex;
                   const isSystem = isSystemParameter(def.id);
                   return (
@@ -592,4 +597,4 @@ export const PricelistsTable = ({
       ) : null}
     </Card>
   );
-};
+});
