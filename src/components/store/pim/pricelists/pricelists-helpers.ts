@@ -91,6 +91,25 @@ export const formatUsd = (amount: number | null): string =>
 export const formatUsdValue = (amount: number | null): string =>
   amount === null ? "—" : formatNumber(amount);
 
+/**
+ * Markup is the percentage premium of the dealer price over the purchase price,
+ * computed from their USD conversions so currencies cancel out. Returns null
+ * when the purchase price is missing or non-positive (no meaningful base).
+ */
+export const computeMarkupPercent = (
+  purchaseUsd: number | null,
+  dealerUsd: number | null,
+): number | null => {
+  if (purchaseUsd === null || dealerUsd === null || purchaseUsd <= 0) {
+    return null;
+  }
+  return ((dealerUsd - purchaseUsd) / purchaseUsd) * 100;
+};
+
+/** Markup rendered in its own column: rounded whole percent, muted like USD. */
+export const formatMarkupPercent = (percent: number | null): string =>
+  percent === null ? "—" : `${formatNumber(percent)}%`;
+
 /** Same typography for editable amount and read-only primary price cells. */
 export const PRICE_AMOUNT_TYPOGRAPHY = "text-sm font-normal tabular-nums text-foreground";
 

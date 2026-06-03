@@ -8,19 +8,24 @@ import { PricelistStatusCell } from "@/components/store/pim/pricelists/pricelist
 
 afterEach(() => cleanup());
 
-const userA: CollabUser = { name: "Swift Otter", color: "#3b82f6" };
+const userA: CollabUser = {
+  name: "Swift Otter",
+  color: "#3b82f6",
+  avatarUrl: "https://i.pravatar.cc/64?u=swift-otter",
+};
 
 describe("PricelistsPresence", () => {
-  it("shows a live count and member initials", () => {
+  it("shows a live count and member avatar", () => {
     render(<PricelistsPresence users={[userA]} connected />);
     expect(screen.getByLabelText("Collaboration status: Live (1)")).toBeVisible();
-    expect(screen.getByText("SO")).toBeVisible();
+    expect(screen.getByAltText("Swift Otter")).toBeVisible();
   });
 
   it("shows an overflow badge beyond the visible cap", () => {
     const users: CollabUser[] = Array.from({ length: 7 }, (_, i) => ({
       name: `User ${i}`,
       color: "#ef4444",
+      avatarUrl: `https://i.pravatar.cc/64?u=user-${i}`,
     }));
     render(<PricelistsPresence users={users} connected />);
     expect(screen.getByText("+2")).toBeVisible();

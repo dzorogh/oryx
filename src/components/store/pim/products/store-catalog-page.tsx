@@ -11,7 +11,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { CatalogCardGrid } from "./catalog/catalog-card";
 import { CatalogColumnsSheet } from "./catalog/catalog-columns-sheet";
 import { CatalogFiltersSheet } from "./catalog/catalog-filters-sheet";
 import { CatalogFooter } from "./catalog/catalog-footer";
@@ -22,7 +21,7 @@ import {
   CATALOG_LISTING_QUERY_PARAM,
   STORE_CATALOG_PAGE,
   getCatalogAddButtonAriaLabel,
-  getCatalogStorageKeys,
+  getCatalogColumnsStorageKey,
   parseCatalogListingMode,
   type CatalogListingMode,
 } from "./catalog/catalog-helpers";
@@ -42,8 +41,8 @@ const StoreCatalogPageContent = () => {
     parseCatalogListingMode(searchParams.get(CATALOG_LISTING_QUERY_PARAM)),
   );
 
-  const { viewModeStorageKey, columnsStorageKey } = getCatalogStorageKeys(listingMode);
-  const catalog = useCatalogController(listingMode, viewModeStorageKey, columnsStorageKey);
+  const columnsStorageKey = getCatalogColumnsStorageKey(listingMode);
+  const catalog = useCatalogController(listingMode, columnsStorageKey);
 
   const syncUrl = useCallback((mode: CatalogListingMode) => {
     if (typeof window === "undefined") {
@@ -145,28 +144,17 @@ const StoreCatalogPageContent = () => {
             addButtonAriaLabel={getCatalogAddButtonAriaLabel(listingMode)}
             filters={catalog.filters}
             columns={catalog.columns}
-            viewMode={catalog.viewMode}
-            onViewModeChange={catalog.onViewModeChange}
             onOpenFilters={() => catalog.setFilterSheetOpen(true)}
             onOpenColumns={() => catalog.setColumnSheetOpen(true)}
           />
 
-          {catalog.viewMode === "table" ? (
-            <CatalogTable
-              items={catalog.paginatedItems}
-              isLoading={catalog.isLoading}
-              listingMode={listingMode}
-              visibleColumnIds={catalog.columns.visibleIds}
-              footer={catalogFooter}
-            />
-          ) : (
-            <CatalogCardGrid
-              items={catalog.paginatedItems}
-              isLoading={catalog.isLoading}
-              listingMode={listingMode}
-              footer={catalogFooter}
-            />
-          )}
+          <CatalogTable
+            items={catalog.paginatedItems}
+            isLoading={catalog.isLoading}
+            listingMode={listingMode}
+            visibleColumnIds={catalog.columns.visibleIds}
+            footer={catalogFooter}
+          />
         </div>
       </section>
 

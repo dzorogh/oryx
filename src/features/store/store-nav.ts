@@ -4,12 +4,12 @@ import type { ModuleSubnavItem } from "@/components/layout/module-subnav";
 export const STORE_CATALOG_NAV_ITEMS: ModuleSubnavItem[] = [
   { href: "/store/pim/products", label: "Products" },
   { href: "/store/pim/pricelists", label: "Pricelists" },
-  { href: "/store/pim/import-export", label: "Import/Export" },
 ];
 
 // Общие разделы Store — не зависят от выбранного каталога.
 export const STORE_GENERAL_NAV_ITEMS: ModuleSubnavItem[] = [
   { href: "/store/orders", label: "Orders" },
+  { href: "/store/pim/import-export", label: "Import/Export" },
   { href: "/store/settings", label: "Settings" },
 ];
 

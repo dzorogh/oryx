@@ -5,6 +5,8 @@ export const COLLAB_WS_URL = process.env.NEXT_PUBLIC_COLLAB_WS_URL ?? "ws://127.
 export type CollabUser = {
   name: string;
   color: string;
+  /** Portrait avatar (deterministic per identity). */
+  avatarUrl: string;
 };
 
 const USER_COLORS = [
@@ -23,10 +25,20 @@ const ANIMALS = ["Otter", "Falcon", "Lynx", "Heron", "Bison", "Marten", "Ibex", 
 
 const pick = <T,>(items: T[]): T => items[Math.floor(Math.random() * items.length)];
 
-const createRandomUser = (): CollabUser => ({
-  name: `${pick(ADJECTIVES)} ${pick(ANIMALS)}`,
-  color: pick(USER_COLORS),
-});
+/** Deterministic portrait avatar for a presence identity. */
+export const getUserAvatarUrl = (seed: string): string =>
+  `https://i.pravatar.cc/64?u=${encodeURIComponent(seed)}`;
+
+const createRandomUser = (): CollabUser => {
+  const name = `${pick(ADJECTIVES)} ${pick(ANIMALS)}`;
+  // Unique seed so two tabs that happen to pick the same name still differ.
+  const seed = `${name}-${Math.random().toString(36).slice(2, 10)}`;
+  return {
+    name,
+    color: pick(USER_COLORS),
+    avatarUrl: getUserAvatarUrl(seed),
+  };
+};
 
 const USER_STORAGE_KEY = "oryx-pricelists-user";
 const TAB_ID_STORAGE_KEY = "oryx-pricelists-tab-id";
@@ -53,7 +65,11 @@ export const getOrCreateUser = (): CollabUser => {
     try {
       const parsed = JSON.parse(stored) as Partial<CollabUser>;
       if (typeof parsed.name === "string" && typeof parsed.color === "string") {
-        return { name: parsed.name, color: parsed.color };
+        const avatarUrl =
+          typeof parsed.avatarUrl === "string" && parsed.avatarUrl.length > 0
+            ? parsed.avatarUrl
+            : getUserAvatarUrl(parsed.name);
+        return { name: parsed.name, color: parsed.color, avatarUrl };
       }
     } catch {
       // Ignore malformed value and recreate below.

@@ -1,6 +1,6 @@
 # Store PIM — каталог товаров
 
-Единая страница **Products** (`/store/pim/products`): просмотр **базовых товаров** и **вариантов** в таблице или карточками, фильтрация, настройка колонок, пагинация. Сейчас **demo-данные** в браузере (без API).
+Единая страница **Products** (`/store/pim/products`): просмотр **базовых товаров** и **вариантов** в таблице, фильтрация, настройка колонок, пагинация. Сейчас **demo-данные** в браузере (без API).
 
 Переключатель **Base products** / **Product variants** в toolbar (чипы, как вкладки в Pulse Thanks). Отдельного пункта subnav и маршрута каталога вариантов больше нет.
 
@@ -10,8 +10,6 @@
 |-----|-----------|
 | `/store/pim/products` | Каталог; режим по умолчанию — base products |
 | `/store/pim/products?listing=variants` | Тот же каталог в режиме product variants |
-| `/store/pim/product-variants` | Редирект на `?listing=variants` (закладки) |
-| `/store/variants` | Редирект на `?listing=variants` |
 
 - Страница: `app/store/pim/products/page.tsx` → `StoreCatalogPage`
 - Subnav Store: только **Products** в каталожной группе (`src/features/store/store-nav.ts`)
@@ -31,7 +29,7 @@
 При смене режима:
 
 1. Меняется `aria-label` у **Add** (подзаголовок страницы общий)
-2. Подключаются свои ключи `localStorage` для view mode и колонок (см. ниже)
+2. Подключается свой ключ `localStorage` для колонок (см. ниже)
 3. Сбрасывается страница пагинации на 1, закрывается панель Columns
 4. `router.replace` обновляет URL и пишет режим в `store-catalog-listing-mode`
 
@@ -52,17 +50,15 @@
 
 Паттерн [list-page-toolbar.md](../conventions/ui/list-page-toolbar.md). Заголовок всегда **Products**.
 
-- Чипы listing mode → строка фильтров (поиск, категория, статусы, Filters, Columns, Table/Cards)
+- Чипы listing mode → строка фильтров (поиск, категория, статусы, Filters, Columns)
+- Список всегда в виде таблицы. При наведении на миниатюру товара слева всплывает увеличенное изображение (tooltip через `@base-ui/react/tooltip`, `side="left"`).
 
 ### Различия products vs variants
 
 | Аспект | Base products | Product variants |
 |--------|---------------|------------------|
 | Префикс цены | `from 11,990 USD` | `11,990 USD` |
-| Карточки: низ | Outline-кнопка с ценой → товар | Залитая кнопка + корзина |
 | Таблица: dealer | Цена + статус | + icon buy |
-
-Подробнее про card price — в разделе карточек ниже.
 
 ### Пагинация и состояния
 
@@ -78,25 +74,22 @@ flowchart TD
   seed[getCatalogSourceItems mode]
   filter[useCatalogController filters]
   page[slice PAGE_SIZE]
-  view{viewMode table or cards}
-  ui[CatalogTable or CatalogCardGrid]
+  ui[CatalogTable]
 
   seed --> filter
   mode --> ui
   filter --> page
-  page --> view
-  view --> ui
+  page --> ui
 ```
 
 ## localStorage (по режимам)
 
 | Назначение | products | variants |
 |------------|----------|----------|
-| View mode | `store-catalog-view-mode` | `store-variants-catalog-view-mode` |
 | Колонки | `store-catalog-visible-columns` | `store-variants-catalog-visible-columns` |
 | Listing mode (страница) | `store-catalog-listing-mode` | то же |
 
-При смене `listingMode` контроллер получает новые `viewModeStorageKey` / `columnsStorageKey`; колонки подгружаются заново (`columnsHydratedKey` предотвращает запись «чужих» колонок в новый ключ).
+При смене `listingMode` контроллер получает новый `columnsStorageKey`; колонки подгружаются заново (`columnsHydratedKey` предотвращает запись «чужих» колонок в новый ключ).
 
 ## Модель данных
 
@@ -108,8 +101,6 @@ flowchart TD
 
 ```text
 app/store/pim/products/page.tsx
-app/store/pim/product-variants/page.tsx   # redirect
-app/store/variants/page.tsx               # redirect
 
 src/components/store/pim/products/
   store-catalog-page.tsx                  # listingMode state, URL, toolbar props
@@ -120,22 +111,20 @@ src/components/store/pim/products/
     catalog-toolbar.tsx                   # listing chips + filters
     use-catalog-controller.ts
     catalog-table.tsx
-    catalog-card.tsx
     ...
 ```
 
 ## Технические нюансы
 
 - **`StoreCatalogPage`** больше не принимает `config` prop — один маршрут, режим из `useSearchParams`.
-- **Редиректы** старых URL сохраняют deep links на варианты через `?listing=variants`.
-- **Карточка:** верх — `Link` на товар; низ — outline price (products) или buy button (variants).
+- **Миниатюра товара** в колонке Name — `Link` на товар + tooltip с увеличенным изображением слева.
 - **Add** в toolbar без handler (заглушка).
 - **English UI** для подписей чипов (`CATALOG_LISTING_MODE_LABELS`); русские строки в UI нарушат `check:ui-english`.
 
 ## Подключение к бэкенду (план)
 
 1. `listingMode` → query или отдельный endpoint (`/catalog/products` vs `/catalog/variants`).
-2. Сохранить раздельные prefs колонок/view per mode.
+2. Сохранить раздельные prefs колонок per mode.
 3. Опционально: не дублировать фильтры между режимами на сервере.
 
 ## Локальная проверка

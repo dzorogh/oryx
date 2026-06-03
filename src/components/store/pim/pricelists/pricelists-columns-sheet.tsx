@@ -68,6 +68,39 @@ export const PricelistsColumnsSheet = ({
     swapParameterRef.current = parameters.swapParameter;
   });
 
+  const scopeColumns = getScopeColumns(scope);
+  const leadingColumns = scopeColumns.filter((column) => !column.afterParameters);
+  const trailingColumns = scopeColumns.filter((column) => column.afterParameters);
+
+  const renderColumnToggle = (column: (typeof scopeColumns)[number]) => {
+    const checkboxId = `pricelist-column-${column.id}`;
+
+    return (
+      <label
+        key={column.id}
+        htmlFor={checkboxId}
+        className="flex items-center gap-3 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2.5"
+      >
+        <Checkbox
+          id={checkboxId}
+          checked={columns.isVisible(column.id)}
+          disabled={column.locked}
+          onCheckedChange={(checked) => {
+            if (typeof checked !== "boolean" || column.locked) {
+              return;
+            }
+
+            if (checked !== columns.isVisible(column.id)) {
+              columns.toggle(column.id);
+            }
+          }}
+          aria-label={`Toggle ${column.label} column`}
+        />
+        <span className="text-sm font-medium text-foreground">{column.label}</span>
+      </label>
+    );
+  };
+
   const isRowDragging = rowDrag !== null;
 
   // Custom pointer drag for the parameter list: a fixed-position preview that
@@ -178,41 +211,14 @@ export const PricelistsColumnsSheet = ({
           <SheetDescription>Choose which columns appear in the pricelist table.</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid gap-2 px-4 pb-4">
-            {getScopeColumns(scope).map((column) => {
-              const checkboxId = `pricelist-column-${column.id}`;
-
-              return (
-                <label
-                  key={column.id}
-                  htmlFor={checkboxId}
-                  className="flex items-center gap-3 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2.5"
-                >
-                  <Checkbox
-                    id={checkboxId}
-                    checked={columns.isVisible(column.id)}
-                    disabled={column.locked}
-                    onCheckedChange={(checked) => {
-                      if (typeof checked !== "boolean" || column.locked) {
-                        return;
-                      }
-
-                      if (checked !== columns.isVisible(column.id)) {
-                        columns.toggle(column.id);
-                      }
-                    }}
-                    aria-label={`Toggle ${column.label} column`}
-                  />
-                  <span className="text-sm font-medium text-foreground">{column.label}</span>
-                </label>
-              );
-            })}
+        <div className="flex-1 overflow-y-auto pb-4">
+          <div className="grid gap-2 px-4">
+            {leadingColumns.map((column) => renderColumnToggle(column))}
           </div>
 
           {parameters.enabled && parameters.defs.length > 0 ? (
-            <div className="px-4 pb-4">
-              <div className="mt-4 mb-2 flex items-center gap-2">
+            <div className="px-4">
+              <div className="my-2 flex items-center gap-2">
                 <span className="text-xs font-semibold text-muted-foreground">Parameters</span>
                 <span className="h-px flex-1 border-t border-dashed border-[var(--corportal-border-grey)]" />
               </div>
@@ -271,6 +277,20 @@ export const PricelistsColumnsSheet = ({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          ) : null}
+
+          {trailingColumns.length > 0 ? (
+            <div className="px-4">
+              {/* Same dashed divider that precedes the parameter group separates
+                  Total Expenses from the trailing Retail Markup column. */}
+              <div className="my-2 flex items-center">
+                <span className="h-px flex-1 border-t border-dashed border-[var(--corportal-border-grey)]" />
+              </div>
+
+              <div className="grid gap-2">
+                {trailingColumns.map((column) => renderColumnToggle(column))}
               </div>
             </div>
           ) : null}

@@ -13,14 +13,12 @@ import {
 import {
   ALL_VALUE,
   PAGE_SIZE,
-  CATALOG_VIEW_MODE_STORAGE_KEY,
   buildPaginationItems,
   extractSortedOptions,
   getSelectValue,
   getCatalogSourceItems,
   matchesSearchQuery,
   type CatalogListingMode,
-  type CatalogViewMode,
   type QuickFilterOption,
 } from "./catalog-helpers";
 
@@ -55,8 +53,6 @@ export type CatalogColumns = {
 };
 
 export type CatalogController = {
-  viewMode: CatalogViewMode;
-  onViewModeChange: (mode: CatalogViewMode) => void;
   isFilterSheetOpen: boolean;
   setFilterSheetOpen: (open: boolean) => void;
   isColumnSheetOpen: boolean;
@@ -80,13 +76,11 @@ const toFilterOptions = (values: string[]): QuickFilterOption[] =>
 
 export const useCatalogController = (
   listingMode: CatalogListingMode,
-  viewModeStorageKey = CATALOG_VIEW_MODE_STORAGE_KEY,
   columnsStorageKey?: string,
 ): CatalogController => {
   const sourceItems = useMemo(() => getCatalogSourceItems(listingMode), [listingMode]);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<CatalogViewMode>("table");
   const [visibleColumnIds, setVisibleColumnIds] = useState<CatalogColumnId[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnsHydratedKey, setColumnsHydratedKey] = useState<string | null>(null);
   const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
@@ -214,37 +208,6 @@ export const useCatalogController = (
     });
   };
 
-  const handleViewModeChange = (nextValue: CatalogViewMode) => {
-    setViewMode(nextValue);
-    if (nextValue === "cards") {
-      setColumnSheetOpen(false);
-    }
-    const storage = window.localStorage;
-    if (!storage || typeof storage.setItem !== "function") {
-      return;
-    }
-    storage.setItem(viewModeStorageKey, nextValue);
-  };
-
-  useEffect(() => {
-    const storage = window.localStorage;
-    if (!storage || typeof storage.getItem !== "function") {
-      return;
-    }
-
-    const storedViewMode = storage.getItem(viewModeStorageKey);
-    if (storedViewMode !== "table" && storedViewMode !== "cards") {
-      return;
-    }
-
-    // Избегаем синхронного setState внутри эффекта для соответствия правилам React Hooks.
-    const timer = window.setTimeout(() => {
-      setViewMode(storedViewMode);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [viewModeStorageKey]);
-
   useEffect(() => {
     if (!columnsStorageKey) {
       return;
@@ -307,8 +270,6 @@ export const useCatalogController = (
   };
 
   return {
-    viewMode,
-    onViewModeChange: handleViewModeChange,
     isFilterSheetOpen,
     setFilterSheetOpen,
     isColumnSheetOpen,

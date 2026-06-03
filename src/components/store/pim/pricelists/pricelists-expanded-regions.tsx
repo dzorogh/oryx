@@ -14,6 +14,8 @@ import {
 import {
   buildPriceCellId,
   buildStatusCellId,
+  computeMarkupPercent,
+  formatMarkupPercent,
   formatUsdValue,
   PRICE_USD_DISPLAY_CLASS,
   toUsd,
@@ -40,6 +42,7 @@ export const PricelistsExpandedRegions = ({ row, collab }: PricelistsExpandedReg
           <col className="w-[220px]" />
           <col className="w-[188px]" />
           <col className="w-[120px]" />
+          <col className="w-[100px]" />
           <col className="w-[200px]" />
           <col />
         </colgroup>
@@ -48,6 +51,7 @@ export const PricelistsExpandedRegions = ({ row, collab }: PricelistsExpandedReg
             <TableHead className="h-9 px-3 text-left text-xs">Region</TableHead>
             <TableHead className="h-9 px-2 text-left text-xs">Dealer Price</TableHead>
             <TableHead className="h-9 px-2 text-left text-xs">Dealer Price (USD)</TableHead>
+            <TableHead className="h-9 px-2 text-left text-xs">Dealer Markup</TableHead>
             <TableHead className="h-9 px-2 text-left text-xs">Dealer Status</TableHead>
             <TableHead aria-hidden />
           </TableRow>
@@ -55,7 +59,14 @@ export const PricelistsExpandedRegions = ({ row, collab }: PricelistsExpandedReg
         <TableBody>
           {PRICELIST_REGIONS.map((region) => {
             const priceCellId = buildPriceCellId(region.id, row.id, "dealer");
-            const priceValue = collab.getCell(priceCellId) ?? getSeedCellValue(row, "dealer", region.currency);
+            const priceValue = collab.getCell(priceCellId) ?? getSeedCellValue(row, "dealer", region);
+
+            const purchaseCellId = buildPriceCellId(null, row.id, "purchase");
+            const purchaseValue = collab.getCell(purchaseCellId) ?? getSeedCellValue(row, "purchase", region);
+
+            const dealerUsd = toUsd(priceValue.amount, priceValue.currency);
+            const purchaseUsd = toUsd(purchaseValue.amount, purchaseValue.currency);
+            const markupPercent = computeMarkupPercent(purchaseUsd, dealerUsd);
 
             const statusCellId = buildStatusCellId(region.id, row.id);
             const statusValue = collab.getStatus(statusCellId) ?? getSeedDealerStatus(row, region.id);
@@ -78,9 +89,10 @@ export const PricelistsExpandedRegions = ({ row, collab }: PricelistsExpandedReg
                   />
                 </TableCell>
                 <TableCell className="px-2 py-2 align-middle">
-                  <span className={PRICE_USD_DISPLAY_CLASS}>
-                    {formatUsdValue(toUsd(priceValue.amount, priceValue.currency))}
-                  </span>
+                  <span className={PRICE_USD_DISPLAY_CLASS}>{formatUsdValue(dealerUsd)}</span>
+                </TableCell>
+                <TableCell className="px-2 py-2 align-middle">
+                  <span className={PRICE_USD_DISPLAY_CLASS}>{formatMarkupPercent(markupPercent)}</span>
                 </TableCell>
                 <TableCell className="px-2 py-2 align-middle">
                   <PricelistStatusCell

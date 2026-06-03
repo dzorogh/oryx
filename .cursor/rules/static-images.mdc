@@ -7,4 +7,4 @@ alwaysApply: true
 
 **Canonical doc:** [docs/conventions/assets/static-images.md](../../docs/conventions/assets/static-images.md)
 
-Do not use string paths like `"/tenants/logos/foo.png"` for bundled UI images — use static imports under `src/assets/` and `StaticImageData` with `next/image`. Run `npm run check:static-images` before PR.
+Do not use string paths like `"/tenants/logos/foo.png"` for bundled UI images — use static imports under `src/assets/` and `StaticImageData` with `next/image`. For demo media use seeded remote URLs (`picsum.photos/seed/<id>/<w>/<h>` for images, `i.pravatar.cc/<size>?u=<id>` for avatars; never `loremflickr.com`). Run `npm run check:static-images` before PR.

@@ -8,7 +8,6 @@
 |-----|-----------|
 | `/store/pim/pricelists` | Основная страница прайслистов → `PricelistsPage` |
 | `/store/pim/pricelists?list=supplier&region=ru` | Supplier-прайслист по региону Russia (deep link) |
-| `/store/pricelists` | Отдельная заглушка `StorePlaceholderPage` (не редирект) |
 
 - Маршрут: `app/store/pim/pricelists/page.tsx` → `PricelistsPage`
 - Subnav Store: пункт **Pricelists** в каталожной группе (`src/features/store/store-nav.ts`)
@@ -42,19 +41,29 @@
 | Scope | Колонки |
 |-------|---------|
 | `global` | `Name`, `Purchase Price`, `Purchase Price (USD)`, `Dealer Status` |
-| `supplier` | `Name`, `Purchase`, `Purchase (USD)`, `Dealer`, `Dealer (USD)`, `Retail`, `Retail (USD)` |
-| `dealer` | `Name`, `Dealer`, `Dealer (USD)`, `Retail`, `Retail (USD)` |
+| `supplier` | `Name`, `Purchase Price`, `Purchase Price (USD)`, `Dealer Price`, `Dealer Price (USD)`, `Dealer Markup`, `Retail Price`, `Retail Price (USD)`, … параметры …, `Retail Markup` |
+| `dealer` | `Name`, `Dealer Price`, `Dealer Price (USD)`, `Retail Price`, `Retail Price (USD)`, … параметры …, `Retail Markup` |
 
-Виды колонок (`PricelistColumnKind`): `name`, `editable` (редактируемая цена), `usd` (производная конвертация, read-only, приглушённый цвет), `statusSummary` (сводка дилерского статуса), `parameter` (динамическая колонка-параметр).
+Виды колонок (`PricelistColumnKind`): `name`, `editable` (редактируемая цена), `usd` (производная конвертация, read-only, приглушённый цвет), `markup` (производная наценка в %, read-only, приглушённый цвет), `statusSummary` (сводка дилерского статуса), `parameter` (динамическая колонка-параметр).
+
+**Колонки наценки** (`kind: "markup"`, считаются из USD-значений):
+
+| Колонка | Где | База | Наценка |
+|---------|-----|------|---------|
+| `Dealer Markup` | `supplier` (после `Dealer Price (USD)`) + раскрытие Global-строки по регионам | Purchase Price (USD) | дилерская цена над закупочной |
+| `Retail Markup` | `supplier` + `dealer` | Dealer Price (USD) + `Total Expenses` (USD) | розничная цена над посадочной себестоимостью (дилерская + расходы) |
+
+`Retail Markup` помечена `afterParameters: true` — рендерится **после группы параметров** (правее `Total Expenses`) и отделена от неё пунктирным разделителем (`PARAMETER_GROUP_DIVIDER`, такой же как слева от параметров). В панели **Columns** она вынесена в отдельный блок под списком параметров за тем же пунктирным разделителем.
 
 Видимость колонок сохраняется **по scope** в `localStorage`: `store-pricelists-visible-columns:{scope}`. При смене scope hook `usePricelistColumns` перечитывает свой ключ (или дефолты), поэтому настройка живёт отдельно для каждого списка. `hasCustom` подсвечивает кнопку Columns, если набор отличается от дефолтного.
 
 ## Цены и валюты
 
 - **Закупочная цена** глобальна для товара (id ячейки без региона: `global:{variantId}:purchase`), дефолтная валюта — `CNY`.
-- **Дилерская и розничная** хранятся по товару + региону (`{regionId}:{variantId}:{field}`), дефолтная валюта — валюта региона.
+- **Дилерская и розничная** хранятся по товару + региону (`{regionId}:{variantId}:{field}`). Дилерская цена — в `CNY` (валюта поставщика); розничная — в валюте региона (`getDefaultCurrency`: `retail` → валюта региона, остальные → `CNY`).
 - **USD-колонки** — производные: `toUsd(amount, currency)` по статичному курсу `CURRENCY_USD_RATE` (зафиксирован как demo-константа, не обновляется в рантайме). Рендерятся приглушённо, без кода валюты.
-- Дефолтные значения детерминированы (`getSeedCellValue`): чистая функция строки/поля/валюты, поэтому все клиенты видят одинаковые значения, пока ячейку не отредактируют.
+- **Markup** — производная колонка (тоже приглушённая): наценка дилерской цены над закупочной в процентах, считается из USD-значений (`computeMarkupPercent(purchaseUsd, dealerUsd)`), поэтому валюты сокращаются. `null` (показывается `—`), если закупочная цена пустая или ≤ 0.
+- Дефолтные значения детерминированы (`getSeedCellValue(row, field, region)`): чистая функция строки/поля/региона, поэтому все клиенты видят одинаковые значения, пока ячейку не отредактируют. Дилерский seed выводится из закупочного плюс региональная наценка (`getDealerMarkupFactor`, дискретные шаги 10–40%), так что Markup читается как чистый процент и слегка различается по регионам (где-то совпадает).
 
 `buildPriceCellId` намеренно **не зависит от scope** — цена товара общая между прайслистами (например, dealer-цена редактируется и на Supplier-листе, и в раскрытии Global-строки).
 
@@ -63,7 +72,7 @@
 `DealerStatus`: `available` (`Available for sale`), `unavailable` (`Unavailable for sale`), `hidden` (`Hidden`). Хранится по товару + региону (`{regionId}:{variantId}:dealerStatus`) в отдельной collab-карте.
 
 - В scope `global` колонка `Dealer Status` — это **сводка**: «Sold in N of M regions» с прогресс-баром (зелёный, если продаётся хотя бы в одном регионе).
-- Строки в `global` **раскрываются** (`PricelistsExpandedRegions`): таблица по всем регионам с редактируемой дилерской ценой, USD-конвертацией и селектором статуса. Эти ячейки используют те же общие per-region cell-id и тот же канал presence, что и основная таблица.
+- Строки в `global` **раскрываются** (`PricelistsExpandedRegions`): таблица по всем регионам с колонками `Region`, `Dealer Price`, `Dealer Price (USD)`, `Markup`, `Dealer Status`. Дилерская цена редактируема, USD и Markup — производные. Эти ячейки используют те же общие per-region cell-id и тот же канал presence, что и основная таблица.
 
 Дефолтный статус (`getSeedDealerStatus`) детерминирован: у каждого товара свой «уровень доступности» (0..10) от его id, плюс per-region хеш — так каталог покрывает весь диапазон (от «нигде» до «везде»).
 
@@ -103,7 +112,7 @@ Shared-карты дока:
 | `parameterDefs` | список `ParameterDef[]` по `regionId` |
 | `parameterValues` | числа (base + overrides) по value-id |
 
-**Presence** (awareness): онлайн-пользователи (аватары + статус `Live (n)` / `Offline` в toolbar) и индикаторы «кто сейчас редактирует эту ячейку». Личность — случайная пара прилагательное+животное и цвет, стабильная в пределах вкладки (`sessionStorage`). Параметры тайминга: heartbeat `5s`, устаревание `15s`, debounce editing-presence `100ms`. `connected` отражает только связь с collab-сервером (не BroadcastChannel между вкладками).
+**Presence** (awareness): онлайн-пользователи (аватары + статус `Live (n)` / `Offline` в toolbar) и индикаторы «кто сейчас редактирует эту ячейку». Личность — случайная пара прилагательное+животное, цвет и фото-аватар (`i.pravatar.cc`, детерминирован по seed личности), стабильная в пределах вкладки (`sessionStorage`). Если у участника нет `avatarUrl` (старый клиент), аватар деградирует до инициалов на цветном фоне. Параметры тайминга: heartbeat `5s`, устаревание `15s`, debounce editing-presence `100ms`. `connected` отражает только связь с collab-сервером (не BroadcastChannel между вкладками).
 
 ## Что видит пользователь
 

@@ -10,21 +10,30 @@ export type PricelistColumnId =
   | "purchaseUsd"
   | "dealer"
   | "dealerUsd"
+  | "dealerMarkup"
   | "retail"
   | "retailUsd"
+  | "retailMarkup"
   | "dealerStatus";
 
-export type PricelistColumnKind = "name" | "editable" | "usd" | "statusSummary" | "parameter";
+export type PricelistColumnKind = "name" | "editable" | "usd" | "markup" | "statusSummary" | "parameter";
+
+/** Which premium a markup column reports (dealer over purchase, retail over landed cost). */
+export type MarkupBasis = "dealer" | "retail";
 
 export type PricelistColumnDefinition = {
   id: string;
   label: string;
   kind: PricelistColumnKind;
   field?: PriceField;
+  /** Markup columns only: which premium the column derives. */
+  markup?: MarkupBasis;
   /** Parameter columns only: stable parameter id (without the `param:` prefix). */
   paramId?: string;
   /** Marks a dynamic, region-scoped parameter column. */
   isParameter?: boolean;
+  /** Renders after the dynamic parameter group, behind a dashed group divider. */
+  afterParameters?: boolean;
   widthClass: string;
   defaultVisible: boolean;
   locked?: boolean;
@@ -67,6 +76,14 @@ const COLUMN_DEFINITIONS = {
     widthClass: "w-[136px]",
     defaultVisible: true,
   },
+  dealerMarkup: {
+    id: "dealerMarkup",
+    label: "Dealer Markup",
+    kind: "markup",
+    markup: "dealer",
+    widthClass: "w-[120px]",
+    defaultVisible: true,
+  },
   retail: {
     id: "retail",
     label: "Retail Price",
@@ -83,6 +100,15 @@ const COLUMN_DEFINITIONS = {
     widthClass: "w-[136px]",
     defaultVisible: true,
   },
+  retailMarkup: {
+    id: "retailMarkup",
+    label: "Retail Markup",
+    kind: "markup",
+    markup: "retail",
+    afterParameters: true,
+    widthClass: "w-[120px]",
+    defaultVisible: true,
+  },
   dealerStatus: {
     id: "dealerStatus",
     label: "Dealer Status",
@@ -97,8 +123,18 @@ const COLUMN_DEFINITIONS = {
 // header spans the editable price and its USD conversion.
 const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
   global: ["name", "purchase", "purchaseUsd", "dealerStatus"],
-  supplier: ["name", "purchase", "purchaseUsd", "dealer", "dealerUsd", "retail", "retailUsd"],
-  dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd"],
+  supplier: [
+    "name",
+    "purchase",
+    "purchaseUsd",
+    "dealer",
+    "dealerUsd",
+    "dealerMarkup",
+    "retail",
+    "retailUsd",
+    "retailMarkup",
+  ],
+  dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd", "retailMarkup"],
 };
 
 export const getScopeColumns = (scope: PricelistScope): StaticColumnDefinition[] =>

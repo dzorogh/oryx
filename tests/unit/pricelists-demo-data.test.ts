@@ -45,9 +45,9 @@ describe("pricelists-demo-data · region parsing", () => {
 });
 
 describe("pricelists-demo-data · default currency", () => {
-  it("uses CNY for purchase and the region currency otherwise", () => {
+  it("uses CNY for purchase and dealer, the region currency for retail", () => {
     expect(getDefaultCurrency("purchase", "RUB")).toBe("CNY");
-    expect(getDefaultCurrency("dealer", "RUB")).toBe("RUB");
+    expect(getDefaultCurrency("dealer", "RUB")).toBe("CNY");
     expect(getDefaultCurrency("retail", "AED")).toBe("AED");
   });
 });
@@ -65,19 +65,35 @@ describe("pricelists-demo-data · rows", () => {
 });
 
 describe("pricelists-demo-data · deterministic seeds", () => {
+  const ru = getRegionById("ru");
+  const ae = getRegionById("ae");
+
   it("returns identical seed cell values for the same inputs", () => {
     const row = getPricelistRows()[0];
-    const a = getSeedCellValue(row, "dealer", "RUB");
-    const b = getSeedCellValue(row, "dealer", "RUB");
+    const a = getSeedCellValue(row, "dealer", ru);
+    const b = getSeedCellValue(row, "dealer", ru);
 
     expect(a).toEqual(b);
     expect(a.amount).toBeGreaterThanOrEqual(1);
   });
 
-  it("uses CNY for purchase seed regardless of region currency", () => {
+  it("prices purchase and dealer in CNY, retail in the region currency", () => {
     const row = getPricelistRows()[0];
-    expect(getSeedCellValue(row, "purchase", "RUB").currency).toBe("CNY");
-    expect(getSeedCellValue(row, "retail", "AED").currency).toBe("AED");
+    expect(getSeedCellValue(row, "purchase", ru).currency).toBe("CNY");
+    expect(getSeedCellValue(row, "dealer", ru).currency).toBe("CNY");
+    expect(getSeedCellValue(row, "retail", ae).currency).toBe("AED");
+  });
+
+  it("keeps the dealer seed 10–40% above the purchase price per region", () => {
+    const row = getPricelistRows()[0];
+    for (const region of PRICELIST_REGIONS) {
+      const purchase = getSeedCellValue(row, "purchase", region);
+      const dealer = getSeedCellValue(row, "dealer", region);
+      const markup = (dealer.amount! - purchase.amount!) / purchase.amount!;
+      // Allow a little slack for integer rounding at the CNY amount level.
+      expect(markup).toBeGreaterThanOrEqual(0.08);
+      expect(markup).toBeLessThanOrEqual(0.42);
+    }
   });
 
   it("returns a deterministic, valid dealer status per row + region", () => {

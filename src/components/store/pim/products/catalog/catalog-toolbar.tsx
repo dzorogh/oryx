@@ -1,4 +1,4 @@
-import { LayoutGrid, List, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -12,7 +12,6 @@ import {
   CATALOG_LISTING_MODES,
   STORE_CATALOG_PAGE,
   type CatalogListingMode,
-  type CatalogViewMode,
 } from "./catalog-helpers";
 import type { CatalogFilters, CatalogColumns } from "./use-catalog-controller";
 
@@ -22,8 +21,6 @@ type CatalogToolbarProps = {
   addButtonAriaLabel: string;
   filters: CatalogFilters;
   columns: CatalogColumns;
-  viewMode: CatalogViewMode;
-  onViewModeChange: (mode: CatalogViewMode) => void;
   onOpenFilters: () => void;
   onOpenColumns: () => void;
 };
@@ -34,8 +31,6 @@ export const CatalogToolbar = ({
   addButtonAriaLabel,
   filters,
   columns,
-  viewMode,
-  onViewModeChange,
   onOpenFilters,
   onOpenColumns,
 }: CatalogToolbarProps) => (
@@ -99,32 +94,7 @@ export const CatalogToolbar = ({
         />
 
         <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
-        <CatalogColumnsButton
-          hasCustomColumns={columns.hasCustom}
-          disabled={viewMode === "cards"}
-          onClick={onOpenColumns}
-        />
-
-        <ToggleGroup
-          value={[viewMode]}
-          variant="outline"
-          size="default"
-          spacing={0}
-          onValueChange={(value) => {
-            const [nextValue] = value;
-            if (nextValue === "table" || nextValue === "cards") {
-              onViewModeChange(nextValue);
-            }
-          }}
-          aria-label="Switch catalog view"
-        >
-          <ToggleGroupItem value="table" aria-label="Table view">
-            <List aria-hidden className="size-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="cards" aria-label="Card view">
-            <LayoutGrid aria-hidden className="size-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
       </div>
     </CardHeader>
   </Card>

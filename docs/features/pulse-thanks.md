@@ -104,7 +104,7 @@ type ThankYouEntry = {
 
 **Сотрудники для формы и фильтров:** `EMPLOYEE_OPTIONS` в `src/components/home/thanks-demo-data.ts`
 
-**Аватары:** `THANKS_EMPLOYEE_AVATARS` + `getThanksEmployeeAvatarUrl()` в `thanks-demo-data.ts` (loremflickr, как в Team)
+**Аватары:** `THANKS_EMPLOYEE_AVATARS` + `getThanksEmployeeAvatarUrl()` в `thanks-demo-data.ts` (pravatar, как в Team)
 
 **Генерация demo:** ~11 seed-записей + программная генерация (30+ sent, 30+ received, cross-feed для All) в `buildGeneratedEntries()`.
 

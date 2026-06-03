@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getUserInitials, type CollabUser } from "./collab/collab-config";
 
@@ -28,11 +29,21 @@ export const PricelistsPresence = ({ users, connected }: PricelistsPresenceProps
         {visibleUsers.map((user, index) => (
           <span
             key={`${user.name}-${index}`}
-            className="flex size-6 items-center justify-center rounded-full text-[10px] font-semibold text-white ring-2 ring-background"
+            className="relative flex size-6 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold text-white ring-2 ring-background"
             style={{ backgroundColor: user.color }}
             title={user.name}
           >
-            {getUserInitials(user.name)}
+            {user.avatarUrl ? (
+              <Image
+                src={user.avatarUrl}
+                alt={user.name}
+                fill
+                sizes="24px"
+                className="object-cover"
+              />
+            ) : (
+              getUserInitials(user.name)
+            )}
           </span>
         ))}
         {overflow > 0 ? (

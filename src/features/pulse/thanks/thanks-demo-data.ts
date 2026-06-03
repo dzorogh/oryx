@@ -12,25 +12,25 @@ export type ThankYouEntry = {
   sentAtLabel: string;
 };
 
-/** Portrait URLs (loremflickr — same approach as Team profiles). */
+/** Portrait URLs (pravatar — same approach as Team profiles). */
 export const THANKS_EMPLOYEE_AVATARS: Record<string, string> = {
-  "emp-1": "https://loremflickr.com/320/320/woman,portrait?lock=team-petrova",
-  "emp-2": "https://loremflickr.com/320/320/man,portrait?lock=team-smirnov",
-  "emp-3": "https://loremflickr.com/320/320/woman,portrait?lock=team-sokolova",
-  "emp-4": "https://loremflickr.com/320/320/man,portrait?lock=team-volkov",
-  "emp-5": "https://loremflickr.com/320/320/woman,portrait?lock=thanks-olga-vlasova",
-  "emp-6": "https://loremflickr.com/320/320/man,portrait?lock=thanks-kirill-orlov",
-  "emp-7": "https://loremflickr.com/320/320/woman,portrait?lock=team-egorova",
-  "emp-8": "https://loremflickr.com/320/320/man,portrait?lock=thanks-pavel-gromov",
-  "emp-9": "https://loremflickr.com/320/320/woman,portrait?lock=thanks-elena-belova",
-  "emp-10": "https://loremflickr.com/320/320/man,portrait?lock=thanks-roman-zakharov",
-  "emp-11": "https://loremflickr.com/320/320/woman,portrait?lock=thanks-tatyana-lebedeva",
-  "emp-12": "https://loremflickr.com/320/320/man,portrait?lock=thanks-alexey-nazarov",
+  "emp-1": "https://i.pravatar.cc/320?u=team-petrova",
+  "emp-2": "https://i.pravatar.cc/320?u=team-smirnov",
+  "emp-3": "https://i.pravatar.cc/320?u=team-sokolova",
+  "emp-4": "https://i.pravatar.cc/320?u=team-volkov",
+  "emp-5": "https://i.pravatar.cc/320?u=thanks-olga-vlasova",
+  "emp-6": "https://i.pravatar.cc/320?u=thanks-kirill-orlov",
+  "emp-7": "https://i.pravatar.cc/320?u=team-egorova",
+  "emp-8": "https://i.pravatar.cc/320?u=thanks-pavel-gromov",
+  "emp-9": "https://i.pravatar.cc/320?u=thanks-elena-belova",
+  "emp-10": "https://i.pravatar.cc/320?u=thanks-roman-zakharov",
+  "emp-11": "https://i.pravatar.cc/320?u=thanks-tatyana-lebedeva",
+  "emp-12": "https://i.pravatar.cc/320?u=thanks-alexey-nazarov",
 };
 
 export const getThanksEmployeeAvatarUrl = (employeeId: string): string =>
   THANKS_EMPLOYEE_AVATARS[employeeId] ??
-  `https://loremflickr.com/320/320/portrait?lock=thanks-fallback-${employeeId}`;
+  `https://i.pravatar.cc/320?u=thanks-fallback-${employeeId}`;
 
 /** Demo: logged-in user (Alexey Nazarov). */
 export const THANKS_CURRENT_USER_ID = "emp-12";

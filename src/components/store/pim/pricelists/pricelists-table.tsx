@@ -21,7 +21,7 @@ import { PricelistParameterHeaderCell } from "./pricelist-parameter-header";
 import { PricelistParameterDialog } from "./pricelist-parameter-dialog";
 import { PricelistPriceCell } from "./pricelist-price-cell";
 import { PricelistsExpandedRegions } from "./pricelists-expanded-regions";
-import type { PricelistColumnDefinition } from "./pricelists-columns";
+import type { MarkupBasis, PricelistColumnDefinition } from "./pricelists-columns";
 import {
   getRegionById,
   getSeedCellValue,
@@ -30,10 +30,17 @@ import {
   type PricelistRow,
   type PricelistScope,
 } from "./pricelists-demo-data";
-import { buildParamOverrideId, isSystemParameter, type ParameterDef } from "./pricelists-parameters";
+import {
+  buildParamOverrideId,
+  isSystemParameter,
+  SYSTEM_PARAMETER_ID,
+  type ParameterDef,
+} from "./pricelists-parameters";
 import {
   buildPriceCellId,
   buildStatusCellId,
+  computeMarkupPercent,
+  formatMarkupPercent,
   formatMoney,
   formatUsdValue,
   PRICE_AMOUNT_DISPLAY_CLASS,
@@ -200,13 +207,30 @@ const PricelistTableRow = ({
   isExpanded,
   onToggleExpand,
 }: PricelistTableRowProps) => {
-  const regionCurrency = getRegionById(regionId).currency;
+  const region = getRegionById(regionId);
   const isReadOnly = scope === "dealer";
 
   const resolveCell = (field: PriceField): EffectiveCell => {
     const cellId = buildPriceCellId(field === "purchase" ? null : regionId, row.id, field);
-    const value = collab.getCell(cellId) ?? getSeedCellValue(row, field, regionCurrency);
+    const value = collab.getCell(cellId) ?? getSeedCellValue(row, field, region);
     return { cellId, value };
+  };
+
+  const resolveFieldUsd = (field: PriceField): number | null => {
+    const { value } = resolveCell(field);
+    return toUsd(value.amount, value.currency);
+  };
+
+  // Dealer markup = dealer over purchase. Retail markup = retail over the landed
+  // cost (dealer price + Total Expenses), so it reflects the dealer's margin.
+  const resolveMarkupPercent = (basis: MarkupBasis): number | null => {
+    if (basis === "dealer") {
+      return computeMarkupPercent(resolveFieldUsd("purchase"), resolveFieldUsd("dealer"));
+    }
+    const dealerUsd = resolveFieldUsd("dealer");
+    const expensesUsd = parameters.enabled ? parameters.resolveCell(SYSTEM_PARAMETER_ID, row.id).value : 0;
+    const landedCostUsd = dealerUsd === null ? null : dealerUsd + expensesUsd;
+    return computeMarkupPercent(landedCostUsd, resolveFieldUsd("retail"));
   };
 
   const displayName = getDisplayProductName(row.name);
@@ -282,6 +306,19 @@ const PricelistTableRow = ({
             );
           }
 
+          if (column.kind === "markup") {
+            return (
+              <TableCell
+                key={column.id}
+                className={cn(getCellClassName(column), column.afterParameters && PARAMETER_GROUP_DIVIDER)}
+              >
+                <span className={PRICE_USD_DISPLAY_CLASS}>
+                  {formatMarkupPercent(resolveMarkupPercent(column.markup ?? "dealer"))}
+                </span>
+              </TableCell>
+            );
+          }
+
           const field = column.field as PriceField;
           const { cellId, value } = resolveCell(field);
 
@@ -353,9 +390,10 @@ const renderSkeletonCell = (column: PricelistColumnDefinition, isReadOnly: boole
     );
   }
 
-  // USD columns and read-only prices render as plain text, so their skeleton is
-  // a short line; editable prices and parameters use a full-width input shape.
-  if (column.kind === "usd" || (isReadOnly && column.kind !== "parameter")) {
+  // USD/markup columns and read-only prices render as plain text, so their
+  // skeleton is a short line; editable prices and parameters use a full-width
+  // input shape.
+  if (column.kind === "usd" || column.kind === "markup" || (isReadOnly && column.kind !== "parameter")) {
     return <Skeleton className="h-4 w-16" />;
   }
 
@@ -525,7 +563,11 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
   };
 
   const parameterColumns = showParameters ? parameters.visibleColumns : [];
-  const allColumns = [...columns, ...parameterColumns];
+  // Markup columns flagged `afterParameters` (Retail Markup) sit behind the
+  // dynamic parameter group, separated by the same dashed group divider.
+  const leadingColumns = columns.filter((column) => !column.afterParameters);
+  const trailingColumns = columns.filter((column) => column.afterParameters);
+  const allColumns = [...leadingColumns, ...parameterColumns, ...trailingColumns];
   const firstParameterIndex = allColumns.findIndex((column) => column.isParameter);
 
   const toggleExpanded = (rowId: string) =>
@@ -591,7 +633,10 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
                   }
 
                   return (
-                    <TableHead key={column.id} className={getHeadClassName(column)}>
+                    <TableHead
+                      key={column.id}
+                      className={cn(getHeadClassName(column), column.afterParameters && PARAMETER_GROUP_DIVIDER)}
+                    >
                       {column.label}
                     </TableHead>
                   );
@@ -609,7 +654,7 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
                         className={cn(
                           getCellClassName(column),
                           column.isParameter && PARAMETER_GROUP_TINT,
-                          columnIndex === firstParameterIndex && PARAMETER_GROUP_DIVIDER,
+                          (columnIndex === firstParameterIndex || column.afterParameters) && PARAMETER_GROUP_DIVIDER,
                         )}
                       >
                         {renderSkeletonCell(column, scope === "dealer")}

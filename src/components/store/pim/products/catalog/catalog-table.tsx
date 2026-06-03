@@ -2,11 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import type { ReactNode } from "react";
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getCatalogItemDetailHref } from "./catalog-helpers";
 import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
@@ -36,20 +38,57 @@ const getColumnCellClassName = (columnId: CatalogColumnId) =>
 const getColumnHeadClassName = (columnId: CatalogColumnId) =>
   cn("h-9 min-w-0 overflow-hidden px-3 text-xs", borderedColumnIds.has(columnId) && COLUMN_BORDER);
 
+const ProductThumbnailPreview = ({
+  item,
+  productHref,
+  displayName,
+}: {
+  item: StoreCatalogItem;
+  productHref: string;
+  displayName: string;
+}) => (
+  <TooltipPrimitive.Root>
+    <TooltipPrimitive.Trigger
+      render={
+        <Link
+          href={productHref}
+          aria-label={`Open product ${displayName}`}
+          className="pointer-events-auto relative z-20 block size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-white outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        />
+      }
+    >
+      <Image src={item.imageSrc} alt={item.imageAlt} fill sizes="36px" className="object-cover" />
+    </TooltipPrimitive.Trigger>
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Positioner side="left" sideOffset={12} className="isolate z-50">
+        <TooltipPrimitive.Popup className="origin-(--transform-origin) overflow-hidden rounded-xl border border-[var(--corportal-border-grey)] bg-white p-1.5 shadow-lg data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
+          <div className="relative size-60 overflow-hidden rounded-lg bg-slate-50">
+            <Image src={item.imageSrc} alt={item.imageAlt} fill sizes="240px" className="object-contain" />
+          </div>
+          <p className="mt-1.5 max-w-60 truncate px-0.5 text-xs font-medium text-foreground">
+            {getDisplayProductName(item.name)}
+          </p>
+        </TooltipPrimitive.Popup>
+      </TooltipPrimitive.Positioner>
+    </TooltipPrimitive.Portal>
+  </TooltipPrimitive.Root>
+);
+
 const ProductNameCell = ({
   item,
   showSkuSubline,
+  listingMode,
 }: {
   item: StoreCatalogItem;
   showSkuSubline: boolean;
+  listingMode: CatalogListingMode;
 }) => {
   const displayName = getDisplayProductName(item.name);
+  const productHref = getCatalogItemDetailHref(item.id, listingMode);
 
   return (
     <div className="flex w-full max-w-full min-w-0 items-center gap-2.5" title={displayName}>
-      <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-white">
-        <Image src={item.imageSrc} alt={item.imageAlt} fill sizes="36px" className="object-cover" />
-      </div>
+      <ProductThumbnailPreview item={item} productHref={productHref} displayName={displayName} />
       <div className="min-w-0 flex-1 basis-0 overflow-hidden">
         <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
         {showSkuSubline ? (
@@ -165,7 +204,9 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
 
   switch (columnId) {
     case "name":
-      return <ProductNameCell item={item} showSkuSubline={context.showSkuSubline} />;
+      return (
+        <ProductNameCell item={item} showSkuSubline={context.showSkuSubline} listingMode={listingMode} />
+      );
     case "sku":
       return <span className="text-sm font-medium">{item.sku}</span>;
     case "brand":
@@ -306,61 +347,63 @@ export const CatalogTable = ({
   const showSkuSubline = !visibleColumnIds.includes("sku");
 
   return (
-    <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
-      <div className="overflow-x-auto">
-        <Table className="table-fixed">
-          <colgroup>
-            {visibleColumnIds.map((columnId) => {
-              const columnDefinition = getCatalogColumnDefinition(columnId);
-              return <col key={columnId} className={columnDefinition?.widthClass} />;
-            })}
-          </colgroup>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
+    <TooltipProvider delay={200}>
+      <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
+        <div className="overflow-x-auto">
+          <Table className="table-fixed">
+            <colgroup>
               {visibleColumnIds.map((columnId) => {
                 const columnDefinition = getCatalogColumnDefinition(columnId);
-                return (
-                  <TableHead key={columnId} className={getColumnHeadClassName(columnId)}>
-                    {columnDefinition?.label}
-                  </TableHead>
-                );
+                return <col key={columnId} className={columnDefinition?.widthClass} />;
               })}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-                <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
-                  {visibleColumnIds.map((columnId) => (
-                    <TableCell key={columnId} className={getColumnCellClassName(columnId)}>
-                      {renderColumnSkeleton(columnId, showBuyButton, showSkuSubline)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : items.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columnCount} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                  No products match the selected filters.
-                </TableCell>
+            </colgroup>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                {visibleColumnIds.map((columnId) => {
+                  const columnDefinition = getCatalogColumnDefinition(columnId);
+                  return (
+                    <TableHead key={columnId} className={getColumnHeadClassName(columnId)}>
+                      {columnDefinition?.label}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            ) : (
-              items.map((item) => (
-                <CatalogTableRow
-                  key={item.id}
-                  item={item}
-                  listingMode={listingMode}
-                  visibleColumnIds={visibleColumnIds}
-                  showBuyButton={showBuyButton}
-                  priceFromPrefix={priceFromPrefix}
-                  showSkuSubline={showSkuSubline}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      {footer}
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+                  <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
+                    {visibleColumnIds.map((columnId) => (
+                      <TableCell key={columnId} className={getColumnCellClassName(columnId)}>
+                        {renderColumnSkeleton(columnId, showBuyButton, showSkuSubline)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columnCount} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                    No products match the selected filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                items.map((item) => (
+                  <CatalogTableRow
+                    key={item.id}
+                    item={item}
+                    listingMode={listingMode}
+                    visibleColumnIds={visibleColumnIds}
+                    showBuyButton={showBuyButton}
+                    priceFromPrefix={priceFromPrefix}
+                    showSkuSubline={showSkuSubline}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        {footer}
+      </Card>
+    </TooltipProvider>
   );
 };

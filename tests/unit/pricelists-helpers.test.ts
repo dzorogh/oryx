@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildPriceCellId,
   buildStatusCellId,
+  computeMarkupPercent,
   CURRENCY_CODES,
   CURRENCY_USD_RATE,
+  formatMarkupPercent,
   formatMoney,
   formatUsd,
   formatUsdValue,
@@ -69,6 +71,25 @@ describe("pricelists-helpers · formatting", () => {
   it("formats the derived USD column value without a code", () => {
     expect(formatUsdValue(1234)).toBe("1,234");
     expect(formatUsdValue(null)).toBe("—");
+  });
+
+  it("formats markup as a whole percent and an em dash for null", () => {
+    expect(formatMarkupPercent(25)).toBe("25%");
+    expect(formatMarkupPercent(0)).toBe("0%");
+    expect(formatMarkupPercent(null)).toBe("—");
+  });
+});
+
+describe("pricelists-helpers · computeMarkupPercent", () => {
+  it("returns the dealer premium over the purchase price", () => {
+    expect(computeMarkupPercent(100, 125)).toBeCloseTo(25, 10);
+    expect(computeMarkupPercent(200, 220)).toBeCloseTo(10, 10);
+  });
+
+  it("returns null when the purchase base is missing or non-positive", () => {
+    expect(computeMarkupPercent(null, 100)).toBeNull();
+    expect(computeMarkupPercent(100, null)).toBeNull();
+    expect(computeMarkupPercent(0, 100)).toBeNull();
   });
 });
 

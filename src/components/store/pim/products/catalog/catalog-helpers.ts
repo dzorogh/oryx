@@ -12,8 +12,6 @@ import {
 
 export const ALL_VALUE = "all";
 export const PAGE_SIZE = 48;
-export const CATALOG_VIEW_MODE_STORAGE_KEY = "store-catalog-view-mode";
-export const VARIANTS_CATALOG_VIEW_MODE_STORAGE_KEY = "store-variants-catalog-view-mode";
 export const CATALOG_LISTING_MODE_STORAGE_KEY = "store-catalog-listing-mode";
 export const CATALOG_LISTING_QUERY_PARAM = "listing";
 export { CATALOG_COLUMNS_STORAGE_KEY, VARIANTS_CATALOG_COLUMNS_STORAGE_KEY };
@@ -53,12 +51,8 @@ export const getCatalogItemDetailHref = (itemId: string, listingMode: CatalogLis
   return getProductDetailHref(productId);
 };
 
-export const getCatalogStorageKeys = (listingMode: CatalogListingMode) => ({
-  viewModeStorageKey:
-    listingMode === "products" ? CATALOG_VIEW_MODE_STORAGE_KEY : VARIANTS_CATALOG_VIEW_MODE_STORAGE_KEY,
-  columnsStorageKey:
-    listingMode === "products" ? CATALOG_COLUMNS_STORAGE_KEY : VARIANTS_CATALOG_COLUMNS_STORAGE_KEY,
-});
+export const getCatalogColumnsStorageKey = (listingMode: CatalogListingMode) =>
+  listingMode === "products" ? CATALOG_COLUMNS_STORAGE_KEY : VARIANTS_CATALOG_COLUMNS_STORAGE_KEY;
 
 export const getCatalogAddButtonAriaLabel = (listingMode: CatalogListingMode) =>
   listingMode === "products"
@@ -66,9 +60,6 @@ export const getCatalogAddButtonAriaLabel = (listingMode: CatalogListingMode) =>
     : "Add a new variant to the catalog";
 
 export const SKELETON_ROW_COUNT = 10;
-export const SKELETON_CARD_COUNT = 12;
-
-export type CatalogViewMode = "table" | "cards";
 
 export type QuickFilterOption = {
   value: string;

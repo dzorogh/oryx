@@ -35,7 +35,34 @@ logo: TENANT_LOGOS.globaldrive,
 logoUrl: "/tenants/logos/globaldrive.png",
 ```
 
-Remote URLs (`https://…`) are fine for avatars and external media.
+## Remote demo media and avatars
+
+Bundled UI chrome (logos, flags, icons, illustrations) → static imports (above).
+**Demo content** (news covers, person photos, mock galleries) → remote `https://…` URLs are fine and preferred over committing throwaway binaries.
+
+Use only these stable, keyless services. **Do not** use `loremflickr.com` (it returns `HTTP 500` and broke every demo screen):
+
+| Use case | Service | Pattern |
+|----------|---------|---------|
+| Content / cover images | Lorem Picsum | `https://picsum.photos/seed/<seed>/<w>/<h>` |
+| Person avatars / portraits | Pravatar | `https://i.pravatar.cc/<size>?u=<seed>` |
+
+Rules:
+
+1. **Always seed for stability.** Use `seed/<id>` (Picsum) or `?u=<id>` (Pravatar) so the same record keeps the same image across reloads. Derive the seed from a stable id (e.g. `news-1`, `emp-12`). Random/unseeded URLs change every request and look broken.
+2. **Render with `next/image`.** Use `fill` + `sizes` inside a sized, `overflow-hidden rounded-*` container (see `home-news-section.tsx`, `pricelists-presence.tsx`).
+3. **Register the host** in `next.config.ts` → `images.remotePatterns` before adding a new external image host.
+4. **Provide a fallback** for generated avatars where the URL may be missing (initials on a colored background), e.g. `PricelistsPresence`.
+
+```ts
+// Good — demo data
+imageUrl: "https://picsum.photos/seed/news-1/1600/900",
+avatarUrl: "https://i.pravatar.cc/200?u=emp-12",
+
+// Bad — dead service / unseeded (changes every load)
+imageUrl: "https://loremflickr.com/1600/900/office?lock=1",
+avatarUrl: "https://i.pravatar.cc/200",
+```
 
 ## Verification
 

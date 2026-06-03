@@ -26,8 +26,10 @@ describe("pricelists-columns · scope composition", () => {
       "purchaseUsd",
       "dealer",
       "dealerUsd",
+      "dealerMarkup",
       "retail",
       "retailUsd",
+      "retailMarkup",
     ]);
     expect(getScopeColumns("dealer").map((c) => c.id)).toEqual([
       "name",
@@ -35,7 +37,23 @@ describe("pricelists-columns · scope composition", () => {
       "dealerUsd",
       "retail",
       "retailUsd",
+      "retailMarkup",
     ]);
+  });
+
+  it("defines dealer and retail markup columns, with retail behind the parameter group", () => {
+    const supplier = getScopeColumns("supplier");
+    const dealerMarkup = supplier.find((c) => c.id === "dealerMarkup");
+    const retailMarkup = supplier.find((c) => c.id === "retailMarkup");
+
+    expect(dealerMarkup).toMatchObject({ kind: "markup", markup: "dealer" });
+    expect(dealerMarkup?.afterParameters).toBeFalsy();
+    expect(retailMarkup).toMatchObject({ kind: "markup", markup: "retail", afterParameters: true });
+
+    // Dealer scope only carries the retail markup (no purchase price to compare).
+    const dealerScope = getScopeColumns("dealer").map((c) => c.id);
+    expect(dealerScope).toContain("retailMarkup");
+    expect(dealerScope).not.toContain("dealerMarkup");
   });
 
   it("keeps the locked Name column out of the toggleable set", () => {
@@ -51,6 +69,7 @@ describe("pricelists-columns · scope composition", () => {
       "dealerUsd",
       "retail",
       "retailUsd",
+      "retailMarkup",
     ]);
   });
 });
