@@ -30,7 +30,7 @@ export const FORMULA_REFERENCE_SECTIONS: FormulaReferenceSection[] = [
     title: "Terms and functions",
     entries: [
       { syntax: "if(condition, then, else)", description: "Conditional operator (Excel IF equivalent)", example: "if(10 > 5, 1, 2) = 1" },
-      { syntax: "x ? a : b", description: "Ternary operator (IF equivalent)", example: "price > 100 ? 0.9 : 1" },
+      { syntax: "x ? a : b", description: "Ternary operator (IF equivalent)", example: "50 > 100 ? 0.9 : 1 = 1" },
       { syntax: "coalesce(a, b, ...)", description: "Returns the first non-empty argument (not null, not undefined, not an empty string)", example: "coalesce(null, \"\", 0, 5) = 0" },
       { syntax: "clamp(value, min, max)", description: "Limits the value from below and above: below min returns min, above max returns max", example: "clamp(120, 0, 100) = 100" },
       { syntax: "rate_usd(cur)", description: "Exchange rate for USD", example: "rate_usd('RUB') = 100" },

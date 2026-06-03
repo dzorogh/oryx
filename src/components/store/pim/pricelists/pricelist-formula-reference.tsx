@@ -7,8 +7,8 @@ import {
   type FormulaReferenceSection,
 } from "./pricelist-formula-reference-data";
 
-const ReferenceSection = ({ section, defaultOpen }: { section: FormulaReferenceSection; defaultOpen: boolean }) => (
-  <Collapsible defaultOpen={defaultOpen} className="group rounded-lg border border-border/60">
+const ReferenceSection = ({ section }: { section: FormulaReferenceSection }) => (
+  <Collapsible className="group rounded-lg border border-border/60">
     <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
       {section.title}
       <ChevronDown
@@ -36,8 +36,8 @@ const ReferenceSection = ({ section, defaultOpen }: { section: FormulaReferenceS
 
 export const PricelistFormulaReference = () => (
   <div className="flex flex-col gap-2">
-    {FORMULA_REFERENCE_SECTIONS.map((section, index) => (
-      <ReferenceSection key={section.title} section={section} defaultOpen={index === 0} />
+    {FORMULA_REFERENCE_SECTIONS.map((section) => (
+      <ReferenceSection key={section.title} section={section} />
     ))}
   </div>
 );

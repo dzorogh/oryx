@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -165,19 +167,32 @@ export const PricelistParameterDialog = ({
 
             <section className="grid gap-2">
               <h3 className="text-sm font-semibold text-foreground">Reference</h3>
-              <dl className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-lg border border-border/60 p-3 sm:grid-cols-2">
-                {referenceVariables.map((item) => (
-                  <div key={item.slug} className="grid min-w-0 gap-0.5">
-                    <dt className="truncate text-xs text-foreground" title={item.label}>
-                      {item.label}
-                    </dt>
-                    <dd className="truncate font-mono text-[11px] text-muted-foreground" title={item.slug}>
-                      {item.slug}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <PricelistFormulaReference />
+              <div className="flex flex-col gap-2">
+                <Collapsible className="group rounded-lg border border-border/60">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
+                    Parameters
+                    <ChevronDown
+                      className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[open]:rotate-180"
+                      aria-hidden
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <dl className="grid grid-cols-1 gap-x-6 gap-y-2 border-t border-border/60 p-3 sm:grid-cols-2">
+                      {referenceVariables.map((item) => (
+                        <div key={item.slug} className="grid min-w-0 gap-0.5">
+                          <dt className="truncate text-xs text-foreground" title={item.label}>
+                            {item.label}
+                          </dt>
+                          <dd className="truncate font-mono text-[11px] text-muted-foreground" title={item.slug}>
+                            {item.slug}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </CollapsibleContent>
+                </Collapsible>
+                <PricelistFormulaReference />
+              </div>
             </section>
           </div>
 
