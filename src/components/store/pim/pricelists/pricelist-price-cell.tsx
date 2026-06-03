@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import type { CollabUser } from "./collab/collab-config";
 import {
   CURRENCY_CODES,
+  focusNextPricelistCellOnEnter,
   PRICE_AMOUNT_TYPOGRAPHY,
   type CurrencyCode,
   type PricelistCellValue,
@@ -26,6 +27,8 @@ type PricelistPriceCellProps = {
   onEditingChange: (editing: boolean) => void;
   editors: CollabUser[];
   ariaLabel: string;
+  /** Groups inputs in the same column so Enter can move focus to the cell below. */
+  columnKey?: string;
 };
 
 export const PricelistPriceCell = ({
@@ -34,6 +37,7 @@ export const PricelistPriceCell = ({
   onEditingChange,
   editors,
   ariaLabel,
+  columnKey,
 }: PricelistPriceCellProps) => {
   const activeEditor = editors[0] ?? null;
 
@@ -76,9 +80,11 @@ export const PricelistPriceCell = ({
         step={1}
         value={value.amount ?? ""}
         onChange={handleAmountChange}
+        onKeyDown={focusNextPricelistCellOnEnter}
         onFocus={() => onEditingChange(true)}
         onBlur={() => onEditingChange(false)}
         aria-label={ariaLabel}
+        data-pricelist-col={columnKey}
         className={cn(
           "h-7 w-full min-w-0 flex-1 rounded-l-lg bg-transparent px-2 py-1 text-left outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
           PRICE_AMOUNT_TYPOGRAPHY,

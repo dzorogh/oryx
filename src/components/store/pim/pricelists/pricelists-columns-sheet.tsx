@@ -61,8 +61,12 @@ export const PricelistsColumnsSheet = ({
   const rowDragMetaRef = useRef<RowDragMeta | null>(null);
   const lastSwapTargetRef = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // Keep the latest swap action in a ref so the drag listeners can read it
+  // without re-subscribing. Updated in an effect to avoid writing during render.
   const swapParameterRef = useRef(parameters.swapParameter);
-  swapParameterRef.current = parameters.swapParameter;
+  useEffect(() => {
+    swapParameterRef.current = parameters.swapParameter;
+  });
 
   const isRowDragging = rowDrag !== null;
 

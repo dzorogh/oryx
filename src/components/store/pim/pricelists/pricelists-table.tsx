@@ -273,6 +273,7 @@ const PricelistTableRow = ({
                   productName={displayName}
                   editors={collab.getEditors(overrideId)}
                   ariaLabel={`${column.label} for ${displayName}`}
+                  columnKey={`param:${paramId}`}
                   onEditingChange={(editing) => collab.setEditing(editing ? overrideId : null)}
                   onSetOverride={(next) => parameters.setOverride(paramId, row.id, next)}
                   onClearOverride={() => parameters.clearOverride(paramId, row.id)}
@@ -310,6 +311,7 @@ const PricelistTableRow = ({
                 value={value}
                 editors={collab.getEditors(cellId)}
                 ariaLabel={`${column.label} for ${displayName}`}
+                columnKey={`price:${field}`}
                 onEditingChange={(editing) => collab.setEditing(editing ? cellId : null)}
                 onChange={(next) => collab.setCell(cellId, next)}
               />
@@ -409,8 +411,11 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
   const lastSwapTargetRef = useRef<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   // Always read the latest swap action without re-subscribing the drag listeners.
+  // Updated in an effect to avoid writing a ref during render.
   const swapParameterRef = useRef(parameters.swapParameter);
-  swapParameterRef.current = parameters.swapParameter;
+  useEffect(() => {
+    swapParameterRef.current = parameters.swapParameter;
+  });
   const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
   useImperativeHandle(ref, () => ({

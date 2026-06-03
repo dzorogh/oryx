@@ -154,14 +154,10 @@ export const SpaceSettingsModal = ({ open, onOpenChange }: SpaceSettingsModalPro
       ...prev,
       { id: newId, name: "New stage", color: randomColor, order: prev.length + 1, usedInTasksCount: 0 },
     ]);
+    // Jump to the page where the new stage lands (one row is being added).
+    setStagesPage(Math.max(1, Math.ceil((stages.length + 1) / PAGE_SIZE)));
     setLastAddedStageId(newId);
   };
-
-  useEffect(() => {
-    if (!lastAddedStageId) return;
-    const lastPage = Math.max(1, Math.ceil(stages.length / PAGE_SIZE));
-    setStagesPage(lastPage);
-  }, [lastAddedStageId, stages.length]);
 
   useEffect(() => {
     if (!lastAddedStageId) return;
@@ -258,17 +254,13 @@ export const SpaceSettingsModal = ({ open, onOpenChange }: SpaceSettingsModalPro
       { id: newId, userId: selectedUser.userId, fullName: selectedUser.fullName, businessRole: "Viewer" as SpaceBusinessRole },
     ]);
     setAvailableUsers((prev) => prev.filter((u) => u.userId !== userId));
+    // Jump to the page where the new member lands (one row is being added).
+    setMembersPage(Math.max(1, Math.ceil((members.length + 1) / PAGE_SIZE)));
     setLastAddedMemberId(newId);
     setIsAddDropdownOpen(false);
     setAddSearchQuery("");
     toast.success("Member added");
   };
-
-  useEffect(() => {
-    if (!lastAddedMemberId) return;
-    const lastPage = Math.max(1, Math.ceil(members.length / PAGE_SIZE));
-    setMembersPage(lastPage);
-  }, [lastAddedMemberId, members.length]);
 
   useEffect(() => {
     if (!lastAddedMemberId) return;
@@ -328,15 +320,13 @@ export const SpaceSettingsModal = ({ open, onOpenChange }: SpaceSettingsModalPro
   const handleAddField = () => {
     const newId = `cf-${crypto.randomUUID()}`;
     setCustomFields((prev) => [...prev, { id: newId, name: "New field", fieldType: "Text" as CustomFieldType, isArchived: false }]);
+    // Jump to the page where the new (non-archived) field lands.
+    const visibleCount = showArchivedFields
+      ? customFields.length
+      : customFields.filter((f) => !f.isArchived).length;
+    setFieldsPage(Math.max(1, Math.ceil((visibleCount + 1) / PAGE_SIZE)));
     setLastAddedFieldId(newId);
   };
-
-  useEffect(() => {
-    if (!lastAddedFieldId) return;
-    const total = showArchivedFields ? customFields.length : customFields.filter((f) => !f.isArchived).length;
-    const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    setFieldsPage(lastPage);
-  }, [lastAddedFieldId, customFields, showArchivedFields]);
 
   useEffect(() => {
     if (!lastAddedFieldId) return;

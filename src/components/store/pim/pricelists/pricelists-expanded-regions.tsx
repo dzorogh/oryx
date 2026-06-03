@@ -72,6 +72,7 @@ export const PricelistsExpandedRegions = ({ row, collab }: PricelistsExpandedReg
                     value={priceValue}
                     editors={collab.getEditors(priceCellId)}
                     ariaLabel={`Dealer price for ${displayName} in ${region.label}`}
+                    columnKey={`region-dealer:${row.id}`}
                     onEditingChange={(editing) => collab.setEditing(editing ? priceCellId : null)}
                     onChange={(next) => collab.setCell(priceCellId, next)}
                   />

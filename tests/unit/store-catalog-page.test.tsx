@@ -123,12 +123,15 @@ describe("StoreCatalogPage", () => {
 
   it("updates listing query when product variants tab is clicked", async () => {
     navigationMock.reset();
+    // The page syncs listing mode through the History API (for static export),
+    // not the Next router, so assert against the real URL.
+    window.history.replaceState(null, "", "/store/pim/products");
     const user = userEvent.setup();
     render(<StoreCatalogPage />);
 
     const listingGroup = getListingModeGroup();
     await user.click(within(listingGroup).getByRole("button", { name: "Variants" }));
 
-    expect(navigationMock.getSearchParams().get("listing")).toBe("variants");
+    expect(new URLSearchParams(window.location.search).get("listing")).toBe("variants");
   });
 });

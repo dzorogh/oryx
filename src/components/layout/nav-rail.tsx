@@ -838,9 +838,11 @@ export const NavRail = () => {
 
   useEffect(() => clearCloseTimer, [clearCloseTimer]);
 
-  // Когда aside развёрнут, всплывающее подменю не нужно.
+  // Когда aside развёрнут, всплывающее подменю не нужно. Эффект также сбрасывает
+  // отложенный таймер закрытия, поэтому синхронизация состояния здесь оправдана.
   useEffect(() => {
     if (!collapsed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- closeFlyout clears a pending timer; this is real synchronization with an external timer
       closeFlyout();
     }
   }, [collapsed, closeFlyout]);

@@ -149,14 +149,14 @@ describe("PulseQuickLinksSection", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Редактировать быстрые ссылки" }));
-    expect(screen.getByRole("dialog", { name: "Быстрые ссылки" })).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: "Редактирование быстрых ссылок" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit quick links" }));
+    expect(screen.getByRole("dialog", { name: "Quick links" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Edit quick links" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Добавить ссылку" }));
-    fireEvent.change(screen.getByLabelText("Название новой ссылки"), { target: { value: "Wiki" } });
-    fireEvent.change(screen.getByLabelText("URL новой ссылки"), { target: { value: "/wiki" } });
-    fireEvent.click(screen.getByRole("button", { name: "Добавить" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+    fireEvent.change(screen.getByLabelText("New link label"), { target: { value: "Wiki" } });
+    fireEvent.change(screen.getByLabelText("New link URL"), { target: { value: "/wiki" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     expect(onAddLink).toHaveBeenCalledWith("Wiki", "/wiki");
   });

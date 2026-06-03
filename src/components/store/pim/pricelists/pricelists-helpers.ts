@@ -1,3 +1,5 @@
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+
 export type CurrencyCode =
   | "USD"
   | "CNY"
@@ -120,3 +122,43 @@ export const buildPriceCellId = (
  */
 export const buildStatusCellId = (regionId: string, variantId: string): string =>
   `${regionId}:${variantId}:dealerStatus`;
+
+/**
+ * Spreadsheet-style Enter navigation: moves focus to the editable cell directly
+ * below within the same column. Cells opt in by tagging their `<input>` with a
+ * shared `data-pricelist-col` key; the next input is resolved from DOM order,
+ * which matches the visual row order. Returns silently for non-Enter keys or
+ * when there is no cell below.
+ */
+export const focusNextPricelistCellOnEnter = (
+  event: ReactKeyboardEvent<HTMLInputElement>,
+): void => {
+  if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+    return;
+  }
+
+  const input = event.currentTarget;
+  const columnKey = input.dataset.pricelistCol;
+  if (!columnKey) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const columnInputs = Array.from(
+    document.querySelectorAll<HTMLInputElement>("input[data-pricelist-col]"),
+  ).filter((element) => element.dataset.pricelistCol === columnKey);
+
+  const currentIndex = columnInputs.indexOf(input);
+  if (currentIndex === -1) {
+    return;
+  }
+
+  const nextInput = columnInputs[currentIndex + 1];
+  if (!nextInput) {
+    return;
+  }
+
+  nextInput.focus();
+  nextInput.select();
+};

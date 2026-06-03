@@ -72,6 +72,9 @@ const StoreCatalogPageContent = () => {
     if (storage.getItem(CATALOG_LISTING_MODE_STORAGE_KEY) !== "variants") {
       return;
     }
+    // Reading localStorage in the state initializer would cause a hydration
+    // mismatch, so the saved mode is restored after mount instead.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration sync with localStorage
     setListingMode("variants");
     syncUrl("variants");
   }, [syncUrl]);
@@ -102,7 +105,7 @@ const StoreCatalogPageContent = () => {
       setListingMode(mode);
       syncUrl(mode);
     },
-    [catalog.onPageChange, catalog.setColumnSheetOpen, syncUrl],
+    [catalog, syncUrl],
   );
 
   const catalogFooter = (

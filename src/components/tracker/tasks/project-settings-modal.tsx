@@ -75,7 +75,10 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
     () => PROJECT_SETTINGS_SEED.spaces.find((space) => space.id === projectDraft.spaceId) ?? PROJECT_SETTINGS_SEED.spaces[0],
     [projectDraft.spaceId],
   );
-  const systemMembers = PROJECT_SETTINGS_SEED.systemMembersBySpaceId[projectDraft.spaceId] ?? [];
+  const systemMembers = useMemo(
+    () => PROJECT_SETTINGS_SEED.systemMembersBySpaceId[projectDraft.spaceId] ?? [],
+    [projectDraft.spaceId],
+  );
   const hasProjectNameError = projectDraft.name.trim().length === 0;
 
   const unifiedRows = useMemo<UnifiedRow[]>(() => {
@@ -111,13 +114,6 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
       requestAnimationFrame(() => addSearchInputRef.current?.focus());
     }
   }, [isAddDropdownOpen, updateDropdownPos]);
-
-  useEffect(() => {
-    if (!lastAddedMemberId) return;
-    const newTotalRows = systemMembers.length + members.length;
-    const lastPage = Math.max(1, Math.ceil(newTotalRows / PAGE_SIZE));
-    setCurrentPage(lastPage);
-  }, [lastAddedMemberId, members.length, systemMembers.length]);
 
   useEffect(() => {
     if (!lastAddedMemberId) return;
@@ -178,6 +174,8 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
     ]);
 
     setAvailableUsers((prev) => prev.filter((u) => u.userId !== userId));
+    // Jump to the page where the new member lands (one row is being added).
+    setCurrentPage(Math.max(1, Math.ceil((systemMembers.length + members.length + 1) / PAGE_SIZE)));
     setLastAddedMemberId(newId);
     setIsAddDropdownOpen(false);
     setAddSearchQuery("");
@@ -450,16 +448,16 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="flex w-[min(576px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-x-hidden bg-background p-0 text-foreground sm:max-w-none"
-        showCloseButton
-      >
-        {currentView === "main" && renderMainView()}
-        {currentView === "members" && renderMembersView()}
-      </DialogContent>
-      {isAddDropdownOpen && dropdownPos
-        ? createPortal(
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          className="flex w-[min(576px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-x-hidden bg-background p-0 text-foreground sm:max-w-none"
+          showCloseButton
+        >
+          {currentView === "main" && renderMainView()}
+          {currentView === "members" && renderMembersView()}
+        </DialogContent>
+        {isAddDropdownOpen && dropdownPos
+          ? createPortal(
             <div
               ref={addDropdownRef}
               className="fixed z-[100] w-64 rounded-lg border border-[var(--corportal-border-grey)] bg-popover p-1 shadow-md"
@@ -496,22 +494,22 @@ export const ProjectSettingsModal = ({ open, onOpenChange }: ProjectSettingsModa
             </div>,
             document.body,
           )
-        : null}
-    </Dialog>
-    <AlertDialog open={isArchiveConfirmOpen} onOpenChange={setIsArchiveConfirmOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Archive project</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to archive &quot;{projectDraft.name}&quot;? This action can be undone later.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleArchiveConfirm}>Archive</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          : null}
+      </Dialog>
+      <AlertDialog open={isArchiveConfirmOpen} onOpenChange={setIsArchiveConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive &quot;{projectDraft.name}&quot;? This action can be undone later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchiveConfirm}>Archive</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

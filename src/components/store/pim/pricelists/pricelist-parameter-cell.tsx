@@ -4,7 +4,7 @@ import { Info, RotateCcw } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { CollabUser } from "./collab/collab-config";
-import { PRICE_AMOUNT_TYPOGRAPHY } from "./pricelists-helpers";
+import { focusNextPricelistCellOnEnter, PRICE_AMOUNT_TYPOGRAPHY } from "./pricelists-helpers";
 import { formatParameterValue } from "./pricelists-parameters";
 import {
   PricelistParameterValueDialog,
@@ -19,6 +19,8 @@ type PricelistParameterCellProps = {
   productName: string;
   editors: CollabUser[];
   ariaLabel: string;
+  /** Groups inputs in the same column so Enter can move focus to the cell below. */
+  columnKey?: string;
   onEditingChange: (editing: boolean) => void;
   onSetOverride: (value: number) => void;
   onClearOverride: () => void;
@@ -32,6 +34,7 @@ export const PricelistParameterCell = ({
   productName,
   editors,
   ariaLabel,
+  columnKey,
   onEditingChange,
   onSetOverride,
   onClearOverride,
@@ -121,6 +124,8 @@ export const PricelistParameterCell = ({
         step={1}
         value={draft}
         onChange={handleChange}
+        onKeyDown={focusNextPricelistCellOnEnter}
+        data-pricelist-col={columnKey}
         onFocus={() => {
           setFocused(true);
           onEditingChange(true);
