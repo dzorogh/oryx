@@ -59,7 +59,7 @@ export const PricelistsToolbar = ({
         <div className="min-w-0 space-y-1">
           <h1 className="text-lg font-semibold text-foreground">Pricelists</h1>
           <p className="text-xs text-muted-foreground">
-            Edit purchase, dealer, and retail prices together in real time.
+            Manage product prices together in real time.
           </p>
         </div>
 

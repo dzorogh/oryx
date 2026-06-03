@@ -120,7 +120,7 @@ Shared-карты дока:
 
 Паттерн [list-page-toolbar.md](../conventions/ui/list-page-toolbar.md). Белый `Card` на `bg-muted/30`, breadcrumb снаружи.
 
-- Заголовок **Pricelists** + подзаголовок «Edit purchase, dealer, and retail prices together in real time.»
+- Заголовок **Pricelists** + подзаголовок «Manage product prices together in real time.»
 - Справа — presence-индикатор соавторов
 - Строка управления: переключатель scope, селектор региона (для supplier/dealer), поиск, фильтр по категории, `Filters`, `Columns`, `Export` (кнопка-заглушка без handler)
 
