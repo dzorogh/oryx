@@ -1,3 +1,5 @@
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import {
   Select,
@@ -139,6 +141,11 @@ export const PricelistsToolbar = ({
 
         <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
         <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
+
+        <Button type="button" variant="outline" size="default" aria-label="Export pricelist">
+          <Download aria-hidden className="size-3.5" />
+          Export
+        </Button>
       </div>
     </CardHeader>
   </Card>
