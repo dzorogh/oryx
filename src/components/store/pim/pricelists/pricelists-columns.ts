@@ -1,5 +1,6 @@
 import type { PricelistScope } from "./pricelists-demo-data";
 import type { PriceField } from "./pricelists-helpers";
+import { PARAMETER_COLUMN_WIDTH_CLASS, type ParameterDef } from "./pricelists-parameters";
 
 export const PRICELIST_COLUMNS_STORAGE_PREFIX = "store-pricelists-visible-columns";
 
@@ -13,19 +14,28 @@ export type PricelistColumnId =
   | "retailUsd"
   | "dealerStatus";
 
-export type PricelistColumnKind = "name" | "editable" | "usd" | "statusSummary";
+export type PricelistColumnKind = "name" | "editable" | "usd" | "statusSummary" | "parameter";
 
 export type PricelistColumnDefinition = {
-  id: PricelistColumnId;
+  id: string;
   label: string;
   kind: PricelistColumnKind;
   field?: PriceField;
+  /** Parameter columns only: free unit label (e.g. "%" or a currency code). */
+  unit?: string;
+  /** Parameter columns only: stable parameter id (without the `param:` prefix). */
+  paramId?: string;
+  /** Marks a dynamic, region-scoped parameter column. */
+  isParameter?: boolean;
   widthClass: string;
   defaultVisible: boolean;
   locked?: boolean;
 };
 
-const COLUMN_DEFINITIONS: Record<PricelistColumnId, PricelistColumnDefinition> = {
+/** Static columns keep their literal id so the visibility system stays typed. */
+type StaticColumnDefinition = PricelistColumnDefinition & { id: PricelistColumnId };
+
+const COLUMN_DEFINITIONS = {
   name: { id: "name", label: "Name", kind: "name", widthClass: "w-[260px]", defaultVisible: true, locked: true },
   purchase: {
     id: "purchase",
@@ -82,7 +92,7 @@ const COLUMN_DEFINITIONS: Record<PricelistColumnId, PricelistColumnDefinition> =
     widthClass: "w-[200px]",
     defaultVisible: true,
   },
-};
+} satisfies Record<PricelistColumnId, StaticColumnDefinition>;
 
 // Column order per scope. Name is locked (always visible); every other column
 // can be toggled from the Columns panel. Prices are independent — no grouped
@@ -93,8 +103,21 @@ const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
   dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd"],
 };
 
-export const getScopeColumns = (scope: PricelistScope): PricelistColumnDefinition[] =>
+export const getScopeColumns = (scope: PricelistScope): StaticColumnDefinition[] =>
   SCOPE_COLUMN_IDS[scope].map((id) => COLUMN_DEFINITIONS[id]);
+
+/** Build dynamic column definitions from the region's parameter list. */
+export const buildParameterColumns = (defs: ParameterDef[]): PricelistColumnDefinition[] =>
+  defs.map((def) => ({
+    id: `param:${def.id}`,
+    label: def.label,
+    kind: "parameter",
+    unit: def.unit,
+    paramId: def.id,
+    isParameter: true,
+    widthClass: PARAMETER_COLUMN_WIDTH_CLASS,
+    defaultVisible: true,
+  }));
 
 export const getToggleableColumns = (scope: PricelistScope): PricelistColumnDefinition[] =>
   getScopeColumns(scope).filter((column) => !column.locked);

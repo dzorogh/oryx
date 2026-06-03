@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import type { DealerStatus, PricelistCellValue } from "../pricelists-helpers";
+import type { ParameterDef } from "../pricelists-parameters";
 import {
   COLLAB_ROOM,
   COLLAB_WS_URL,
@@ -27,9 +28,13 @@ type CollabSingleton = {
   provider: WebsocketProvider;
   prices: Y.Map<PricelistCellValue>;
   dealerStatuses: Y.Map<DealerStatus>;
+  parameterDefs: Y.Map<ParameterDef[]>;
+  parameterValues: Y.Map<number>;
   user: CollabUser;
   tabId: string;
 };
+
+type ProviderStatusEvent = { status: string } | string | [{ status: string }] | [string];
 
 let collabSingleton: CollabSingleton | null = null;
 let subscriberCount = 0;
@@ -38,11 +43,13 @@ const createCollab = (): CollabSingleton => {
   const doc = new Y.Doc();
   const prices = doc.getMap<PricelistCellValue>("prices");
   const dealerStatuses = doc.getMap<DealerStatus>("dealerStatuses");
+  const parameterDefs = doc.getMap<ParameterDef[]>("parameterDefs");
+  const parameterValues = doc.getMap<number>("parameterValues");
   const user = getOrCreateUser();
   const tabId = getOrCreateTabId();
   const provider = new WebsocketProvider(COLLAB_WS_URL, COLLAB_ROOM, doc, { connect: true });
 
-  return { doc, provider, prices, dealerStatuses, user, tabId };
+  return { doc, provider, prices, dealerStatuses, parameterDefs, parameterValues, user, tabId };
 };
 
 const acquireCollab = (): CollabSingleton => {
@@ -123,11 +130,26 @@ const collectActivePresence = (collab: CollabSingleton) => {
   return { online, editors };
 };
 
+const isProviderConnected = (collab: CollabSingleton): boolean =>
+  collab.provider.wsconnected || collab.provider.synced || collab.provider.bcconnected;
+
+const statusEventIsConnected = (event: ProviderStatusEvent): boolean => {
+  const rawStatus = Array.isArray(event) ? event[0] : event;
+  const status = typeof rawStatus === "string" ? rawStatus : rawStatus.status;
+  return status === "connected";
+};
+
 export type PricelistsCollab = {
   getCell: (cellId: string) => PricelistCellValue | undefined;
   setCell: (cellId: string, value: PricelistCellValue) => void;
   getStatus: (cellId: string) => DealerStatus | undefined;
   setStatus: (cellId: string, value: DealerStatus) => void;
+  getParamDefs: (regionId: string) => ParameterDef[] | undefined;
+  setParamDefs: (regionId: string, defs: ParameterDef[]) => void;
+  getParamValue: (valueId: string) => number | undefined;
+  setParamValue: (valueId: string, value: number) => void;
+  clearParamValue: (valueId: string) => void;
+  clearParamOverrides: (regionId: string, paramId: string) => void;
   setEditing: (cellId: string | null) => void;
   getEditors: (cellId: string) => CollabUser[];
   onlineUsers: CollabUser[];
@@ -148,9 +170,14 @@ export const useYjsPricelists = (): PricelistsCollab => {
     const collab = acquireCollab();
     collabRef.current = collab;
 
-    const handleSharedChange = () => forceRender((value) => value + 1);
+    const handleSharedChange = () => {
+      setConnected(isProviderConnected(collab));
+      forceRender((value) => value + 1);
+    };
     collab.prices.observe(handleSharedChange);
     collab.dealerStatuses.observe(handleSharedChange);
+    collab.parameterDefs.observe(handleSharedChange);
+    collab.parameterValues.observe(handleSharedChange);
 
     const recomputeAwareness = () => {
       const { online, editors } = collectActivePresence(collab);
@@ -160,8 +187,12 @@ export const useYjsPricelists = (): PricelistsCollab => {
 
     collab.provider.awareness.on("change", recomputeAwareness);
 
-    const handleStatus = (event: { status: string }) => setConnected(event.status === "connected");
+    const handleStatus = (event: ProviderStatusEvent) => {
+      setConnected(statusEventIsConnected(event) || isProviderConnected(collab));
+    };
+    const handleSync = (synced: boolean) => setConnected(synced || isProviderConnected(collab));
     collab.provider.on("status", handleStatus);
+    collab.provider.on("sync", handleSync);
 
     const handlePageHide = () => {
       subscriberCount = 0;
@@ -172,12 +203,14 @@ export const useYjsPricelists = (): PricelistsCollab => {
     const heartbeat = window.setInterval(() => {
       const localState = collab.provider.awareness.getLocalState() as AwarenessState | null;
       publishLocalPresence(collab, localState?.editing ?? null);
+      setConnected(isProviderConnected(collab));
+      recomputeAwareness();
     }, PRESENCE_HEARTBEAT_MS);
 
     const timer = window.setTimeout(() => {
       publishLocalPresence(collab, null);
       setLocalUser(collab.user);
-      setConnected(collab.provider.wsconnected);
+      setConnected(isProviderConnected(collab));
       recomputeAwareness();
       forceRender((value) => value + 1);
     }, 0);
@@ -192,8 +225,11 @@ export const useYjsPricelists = (): PricelistsCollab => {
       window.removeEventListener("pagehide", handlePageHide);
       collab.prices.unobserve(handleSharedChange);
       collab.dealerStatuses.unobserve(handleSharedChange);
+      collab.parameterDefs.unobserve(handleSharedChange);
+      collab.parameterValues.unobserve(handleSharedChange);
       collab.provider.awareness.off("change", recomputeAwareness);
       collab.provider.off("status", handleStatus);
+      collab.provider.off("sync", handleSync);
       collabRef.current = null;
       releaseCollab();
     };
@@ -215,6 +251,50 @@ export const useYjsPricelists = (): PricelistsCollab => {
 
   const setStatus = useCallback((cellId: string, value: DealerStatus) => {
     collabRef.current?.dealerStatuses.set(cellId, value);
+  }, []);
+
+  const getParamDefs = useCallback(
+    (regionId: string): ParameterDef[] | undefined => collabRef.current?.parameterDefs.get(regionId),
+    [],
+  );
+
+  const setParamDefs = useCallback((regionId: string, defs: ParameterDef[]) => {
+    collabRef.current?.parameterDefs.set(regionId, defs);
+  }, []);
+
+  const getParamValue = useCallback(
+    (valueId: string): number | undefined => collabRef.current?.parameterValues.get(valueId),
+    [],
+  );
+
+  const setParamValue = useCallback((valueId: string, value: number) => {
+    collabRef.current?.parameterValues.set(valueId, value);
+  }, []);
+
+  const clearParamValue = useCallback((valueId: string) => {
+    collabRef.current?.parameterValues.delete(valueId);
+  }, []);
+
+  // Remove every per-row override for a column, leaving the base value intact.
+  const clearParamOverrides = useCallback((regionId: string, paramId: string) => {
+    const collab = collabRef.current;
+    if (!collab) {
+      return;
+    }
+    const prefix = `${regionId}:param:${paramId}:`;
+    const baseId = `${prefix}base`;
+    const keysToDelete: string[] = [];
+    collab.parameterValues.forEach((_value, key) => {
+      if (key.startsWith(prefix) && key !== baseId) {
+        keysToDelete.push(key);
+      }
+    });
+    if (keysToDelete.length === 0) {
+      return;
+    }
+    collab.doc.transact(() => {
+      keysToDelete.forEach((key) => collab.parameterValues.delete(key));
+    });
   }, []);
 
   const setEditing = useCallback((cellId: string | null) => {
@@ -241,6 +321,12 @@ export const useYjsPricelists = (): PricelistsCollab => {
     setCell,
     getStatus,
     setStatus,
+    getParamDefs,
+    setParamDefs,
+    getParamValue,
+    setParamValue,
+    clearParamValue,
+    clearParamOverrides,
     setEditing,
     getEditors,
     onlineUsers,

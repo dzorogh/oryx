@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
@@ -16,7 +16,7 @@ import { useYjsPricelists } from "./collab/use-yjs-pricelists";
 import { getVisibleColumnDefinitions } from "./pricelists-columns";
 import { PricelistsColumnsSheet } from "./pricelists-columns-sheet";
 import { PricelistsFiltersSheet } from "./pricelists-filters-sheet";
-import { PricelistsTable } from "./pricelists-table";
+import { PricelistsTable, type PricelistsTableHandle } from "./pricelists-table";
 import { PricelistsToolbar } from "./pricelists-toolbar";
 import {
   parsePricelistScope,
@@ -26,6 +26,7 @@ import {
 } from "./pricelists-demo-data";
 import { REGION_QUERY_PARAM, SCOPE_QUERY_PARAM } from "./pricelists-helpers";
 import { usePricelistColumns } from "./use-pricelist-columns";
+import { usePricelistParameters } from "./use-pricelist-parameters";
 import { usePricelistsController } from "./use-pricelists-controller";
 
 const PricelistsPageFallback = () => (
@@ -48,6 +49,8 @@ const PricelistsPageContent = () => {
   const controller = usePricelistsController(scope, regionId);
   const columns = usePricelistColumns(scope);
   const collab = useYjsPricelists();
+  const tableRef = useRef<PricelistsTableHandle>(null);
+  const parameters = usePricelistParameters(scope, regionId, collab);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
 
   const visibleColumns = getVisibleColumnDefinitions(scope, columns.visibleIds);
@@ -144,12 +147,14 @@ const PricelistsPageContent = () => {
           />
 
           <PricelistsTable
+            ref={tableRef}
             rows={controller.paginatedItems}
             columns={visibleColumns}
             isLoading={controller.isLoading}
             scope={scope}
             regionId={regionId}
             collab={collab}
+            parameters={parameters}
             footer={footer}
           />
         </div>
@@ -166,6 +171,21 @@ const PricelistsPageContent = () => {
         onOpenChange={setColumnSheetOpen}
         scope={scope}
         columns={columns}
+        parameters={parameters}
+        onParameterAction={(action) => {
+          setColumnSheetOpen(false);
+          requestAnimationFrame(() => {
+            if (action.kind === "create") {
+              tableRef.current?.openCreateParameterDialog(action.atIndex);
+            } else if (action.kind === "edit") {
+              tableRef.current?.openEditParameterDialog(action.def);
+            } else if (action.kind === "resetAll") {
+              parameters.resetAllOverrides(action.def.id);
+            } else if (action.kind === "delete") {
+              parameters.removeParameter(action.def.id);
+            }
+          });
+        }}
       />
     </main>
   );

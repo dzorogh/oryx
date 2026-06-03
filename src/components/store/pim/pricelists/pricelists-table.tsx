@@ -1,12 +1,15 @@
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useState, type DragEvent, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { getCatalogItemDetailHref, getDisplayProductName, SKELETON_ROW_COUNT } from "../products/catalog/catalog-helpers";
+import { PricelistParameterCell } from "./pricelist-parameter-cell";
+import { PricelistParameterHeaderCell } from "./pricelist-parameter-header";
+import { PricelistParameterDialog } from "./pricelist-parameter-dialog";
 import { PricelistPriceCell } from "./pricelist-price-cell";
 import { PricelistsExpandedRegions } from "./pricelists-expanded-regions";
 import type { PricelistColumnDefinition } from "./pricelists-columns";
@@ -18,6 +21,7 @@ import {
   type PricelistRow,
   type PricelistScope,
 } from "./pricelists-demo-data";
+import { buildParamOverrideId, isSystemParameter, type ParameterDef } from "./pricelists-parameters";
 import {
   buildPriceCellId,
   buildStatusCellId,
@@ -30,6 +34,7 @@ import {
   type PricelistCellValue,
 } from "./pricelists-helpers";
 import type { PricelistsCollab } from "./collab/use-yjs-pricelists";
+import type { PricelistParameters } from "./use-pricelist-parameters";
 
 // Shared horizontal padding keeps each header aligned with its column cells.
 const getColumnPadding = (column: PricelistColumnDefinition) => (column.kind === "name" ? "px-3" : "px-2");
@@ -39,6 +44,12 @@ const getCellClassName = (column: PricelistColumnDefinition) =>
 
 const getHeadClassName = (column: PricelistColumnDefinition) =>
   cn("h-9 min-w-0 overflow-hidden text-left text-xs", getColumnPadding(column));
+
+// Parameter columns read as a distinct dynamic group: faint tint + a dashed
+// divider before the first one, and visible overflow for the drag/insert/menu
+// affordances.
+const PARAMETER_GROUP_TINT = "bg-muted/20";
+const PARAMETER_GROUP_DIVIDER = "border-l border-dashed border-[var(--corportal-border-grey)]";
 
 const ProductNameCell = ({ row }: { row: PricelistRow }) => {
   const displayName = getDisplayProductName(row.name);
@@ -158,9 +169,11 @@ type EffectiveCell = {
 type PricelistTableRowProps = {
   row: PricelistRow;
   columns: PricelistColumnDefinition[];
+  firstParameterIndex: number;
   scope: PricelistScope;
   regionId: string;
   collab: PricelistsCollab;
+  parameters: PricelistParameters;
   isExpandable: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -169,9 +182,11 @@ type PricelistTableRowProps = {
 const PricelistTableRow = ({
   row,
   columns,
+  firstParameterIndex,
   scope,
   regionId,
   collab,
+  parameters,
   isExpandable,
   isExpanded,
   onToggleExpand,
@@ -189,82 +204,112 @@ const PricelistTableRow = ({
 
   return (
     <Fragment>
-    <TableRow className="hover:bg-muted/40">
-      {columns.map((column) => {
-        if (column.kind === "name") {
-          return (
-            <TableCell key={column.id} className={getCellClassName(column)}>
-              <div className="flex w-full min-w-0 items-center gap-1.5">
-                {isExpandable ? (
-                  <button
-                    type="button"
-                    onClick={onToggleExpand}
-                    aria-expanded={isExpanded}
-                    aria-label={isExpanded ? `Collapse ${displayName}` : `Expand ${displayName}`}
-                    className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  >
-                    <ChevronRight className={cn("size-4 transition-transform", isExpanded && "rotate-90")} />
-                  </button>
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <ProductNameCell row={row} />
+      <TableRow className="hover:bg-muted/40">
+        {columns.map((column, index) => {
+          if (column.kind === "name") {
+            return (
+              <TableCell key={column.id} className={getCellClassName(column)}>
+                <div className="flex w-full min-w-0 items-center gap-1.5">
+                  {isExpandable ? (
+                    <button
+                      type="button"
+                      onClick={onToggleExpand}
+                      aria-expanded={isExpanded}
+                      aria-label={isExpanded ? `Collapse ${displayName}` : `Expand ${displayName}`}
+                      className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      <ChevronRight className={cn("size-4 transition-transform", isExpanded && "rotate-90")} />
+                    </button>
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                    <ProductNameCell row={row} />
+                  </div>
                 </div>
-              </div>
-            </TableCell>
-          );
-        }
+              </TableCell>
+            );
+          }
 
-        if (column.kind === "statusSummary") {
+          if (column.kind === "statusSummary") {
+            return (
+              <TableCell key={column.id} className={getCellClassName(column)}>
+                <DealerStatusSummaryCell
+                  row={row}
+                  collab={collab}
+                  isExpandable={isExpandable}
+                  isExpanded={isExpanded}
+                  onToggleExpand={onToggleExpand}
+                />
+              </TableCell>
+            );
+          }
+
+          if (column.kind === "parameter" && column.paramId) {
+            const paramId = column.paramId;
+            const { value, isOverridden } = parameters.resolveCell(paramId, row.id);
+            const overrideId = buildParamOverrideId(regionId, paramId, row.id);
+            return (
+              <TableCell
+                key={column.id}
+                className={cn(
+                  getCellClassName(column),
+                  PARAMETER_GROUP_TINT,
+                  index === firstParameterIndex && PARAMETER_GROUP_DIVIDER,
+                )}
+              >
+                <PricelistParameterCell
+                  value={value}
+                  isOverridden={isOverridden}
+                  baseValue={parameters.getBaseValue(paramId)}
+                  unit={column.unit ?? ""}
+                  parameterLabel={column.label}
+                  productName={displayName}
+                  editors={collab.getEditors(overrideId)}
+                  ariaLabel={`${column.label} for ${displayName}`}
+                  onEditingChange={(editing) => collab.setEditing(editing ? overrideId : null)}
+                  onSetOverride={(next) => parameters.setOverride(paramId, row.id, next)}
+                  onClearOverride={() => parameters.clearOverride(paramId, row.id)}
+                />
+              </TableCell>
+            );
+          }
+
+          const field = column.field as PriceField;
+          const { cellId, value } = resolveCell(field);
+
+          if (column.kind === "usd") {
+            return (
+              <TableCell key={column.id} className={getCellClassName(column)}>
+                <span className={PRICE_USD_DISPLAY_CLASS}>
+                  {formatUsdValue(toUsd(value.amount, value.currency))}
+                </span>
+              </TableCell>
+            );
+          }
+
+          if (isReadOnly) {
+            return (
+              <TableCell key={column.id} className={getCellClassName(column)}>
+                <span className={PRICE_AMOUNT_DISPLAY_CLASS}>
+                  {formatMoney(value.amount, value.currency)}
+                </span>
+              </TableCell>
+            );
+          }
+
           return (
             <TableCell key={column.id} className={getCellClassName(column)}>
-              <DealerStatusSummaryCell
-                row={row}
-                collab={collab}
-                isExpandable={isExpandable}
-                isExpanded={isExpanded}
-                onToggleExpand={onToggleExpand}
+              <PricelistPriceCell
+                value={value}
+                editors={collab.getEditors(cellId)}
+                ariaLabel={`${column.label} for ${displayName}`}
+                onEditingChange={(editing) => collab.setEditing(editing ? cellId : null)}
+                onChange={(next) => collab.setCell(cellId, next)}
               />
             </TableCell>
           );
-        }
-
-        const field = column.field as PriceField;
-        const { cellId, value } = resolveCell(field);
-
-        if (column.kind === "usd") {
-          return (
-            <TableCell key={column.id} className={getCellClassName(column)}>
-              <span className={PRICE_USD_DISPLAY_CLASS}>
-                {formatUsdValue(toUsd(value.amount, value.currency))}
-              </span>
-            </TableCell>
-          );
-        }
-
-        if (isReadOnly) {
-          return (
-            <TableCell key={column.id} className={getCellClassName(column)}>
-              <span className={PRICE_AMOUNT_DISPLAY_CLASS}>
-                {formatMoney(value.amount, value.currency)}
-              </span>
-            </TableCell>
-          );
-        }
-
-        return (
-          <TableCell key={column.id} className={getCellClassName(column)}>
-            <PricelistPriceCell
-              value={value}
-              editors={collab.getEditors(cellId)}
-              ariaLabel={`${column.label} for ${displayName}`}
-              onEditingChange={(editing) => collab.setEditing(editing ? cellId : null)}
-              onChange={(next) => collab.setCell(cellId, next)}
-            />
-          </TableCell>
-        );
-      })}
-      <TableCell aria-hidden />
-    </TableRow>
+        })}
+        <TableCell aria-hidden />
+      </TableRow>
       {isExpandable && isExpanded ? (
         <TableRow className="hover:bg-transparent">
           <TableCell colSpan={columns.length + 1} className="bg-muted/20 p-3">
@@ -299,13 +344,17 @@ const renderSkeletonCell = (column: PricelistColumnDefinition, isReadOnly: boole
   }
 
   // USD columns and read-only prices render as plain text, so their skeleton is
-  // a short line; editable prices use a full-width input-shaped skeleton.
-  if (column.kind === "usd" || isReadOnly) {
+  // a short line; editable prices and parameters use a full-width input shape.
+  if (column.kind === "usd" || (isReadOnly && column.kind !== "parameter")) {
     return <Skeleton className="h-4 w-16" />;
   }
 
   return <Skeleton className="h-7 w-full rounded-lg" />;
 };
+
+type DialogState =
+  | { mode: "create"; atIndex?: number }
+  | { mode: "edit"; def: ParameterDef };
 
 type PricelistsTableProps = {
   rows: PricelistRow[];
@@ -314,6 +363,7 @@ type PricelistsTableProps = {
   scope: PricelistScope;
   regionId: string;
   collab: PricelistsCollab;
+  parameters: PricelistParameters;
   footer?: ReactNode;
 };
 
@@ -324,10 +374,19 @@ export const PricelistsTable = ({
   scope,
   regionId,
   collab,
+  parameters,
   footer,
 }: PricelistsTableProps) => {
   const isExpandable = scope === "global";
+  const showParameters = parameters.enabled;
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(() => new Set());
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [dialogState, setDialogState] = useState<DialogState | null>(null);
+
+  const parameterColumns = showParameters ? parameters.columns : [];
+  const allColumns = [...columns, ...parameterColumns];
+  const firstParameterIndex = allColumns.findIndex((column) => column.isParameter);
 
   const toggleExpanded = (rowId: string) =>
     setExpandedRowIds((current) => {
@@ -340,67 +399,197 @@ export const PricelistsTable = ({
       return next;
     });
 
+  const resolveDropIndex = (targetParamIndex: number, targetIsSystem: boolean): number => {
+    const systemIndex = parameters.defs.length - 1;
+    if (targetIsSystem) {
+      return Math.max(0, systemIndex - 1);
+    }
+    if (systemIndex >= 0 && targetParamIndex >= systemIndex) {
+      return systemIndex - 1;
+    }
+    return targetParamIndex;
+  };
+
+  const handleDrop = (targetParamIndex: number, targetIsSystem: boolean) => {
+    if (draggedIndex !== null) {
+      parameters.reorderParameter(draggedIndex, resolveDropIndex(targetParamIndex, targetIsSystem));
+    }
+    setDraggedIndex(null);
+    setDropIndex(null);
+  };
+
   return (
-  <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
-    <div className="overflow-x-auto">
-      <Table className="table-fixed">
-        <colgroup>
-          {columns.map((column) => (
-            <col key={column.id} className={column.widthClass} />
-          ))}
-          {/* Flexible trailing column keeps data columns at their fixed widths. */}
-          <col />
-        </colgroup>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            {columns.map((column) => (
-              <TableHead key={column.id} className={getHeadClassName(column)}>
-                {column.label}
-              </TableHead>
+    <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
+      <div className="overflow-x-auto">
+        <Table className="table-fixed">
+          <colgroup>
+            {allColumns.map((column) => (
+              <col key={column.id} className={column.widthClass} />
             ))}
-            <TableHead aria-hidden />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-              <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
-                {columns.map((column) => (
-                  <TableCell key={column.id} className={getCellClassName(column)}>
-                    {renderSkeletonCell(column, scope === "dealer")}
-                  </TableCell>
-                ))}
-                <TableCell aria-hidden />
-              </TableRow>
-            ))
-          ) : rows.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={columns.length + 1}
-                className="px-3 py-8 text-center text-sm text-muted-foreground"
-              >
-                No products match the selected filters.
-              </TableCell>
+            {/* Flexible trailing column keeps data columns at their fixed widths. */}
+            <col />
+          </colgroup>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              {allColumns.map((column, index) => {
+                if (column.kind === "parameter" && column.paramId) {
+                  const paramIndex = index - columns.length;
+                  const def = parameters.defs[paramIndex];
+                  if (!def) {
+                    return <TableHead key={column.id} aria-hidden />;
+                  }
+                  const isFirst = index === firstParameterIndex;
+                  const isSystem = isSystemParameter(def.id);
+                  return (
+                    <TableHead
+                      key={column.id}
+                      className={cn(
+                        "h-9 min-w-0 overflow-visible px-2 align-middle text-left text-xs",
+                        PARAMETER_GROUP_TINT,
+                        isFirst && PARAMETER_GROUP_DIVIDER,
+                      )}
+                      onDragOver={(event: DragEvent<HTMLTableCellElement>) => {
+                        if (draggedIndex !== null) {
+                          event.preventDefault();
+                          setDropIndex(resolveDropIndex(paramIndex, isSystem));
+                        }
+                      }}
+                      onDrop={(event: DragEvent<HTMLTableCellElement>) => {
+                        if (draggedIndex !== null) {
+                          event.preventDefault();
+                          handleDrop(paramIndex, isSystem);
+                        }
+                      }}
+                    >
+                      <PricelistParameterHeaderCell
+                        def={def}
+                        isSystem={isSystem}
+                        isFirstParameter={isFirst}
+                        isDragging={draggedIndex === paramIndex}
+                        isDropTarget={
+                          dropIndex === resolveDropIndex(paramIndex, isSystem) &&
+                          draggedIndex !== null &&
+                          draggedIndex !== resolveDropIndex(paramIndex, isSystem)
+                        }
+                        onInsertBefore={() => setDialogState({ mode: "create", atIndex: paramIndex })}
+                        onInsertAfter={() => setDialogState({ mode: "create", atIndex: paramIndex + 1 })}
+                        onEdit={() => setDialogState({ mode: "edit", def })}
+                        onResetAll={() => parameters.resetAllOverrides(def.id)}
+                        onDelete={() => parameters.removeParameter(def.id)}
+                        onDragStart={(event) => {
+                          if (isSystem) {
+                            return;
+                          }
+                          event.dataTransfer.effectAllowed = "move";
+                          setDraggedIndex(paramIndex);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedIndex(null);
+                          setDropIndex(null);
+                        }}
+                      />
+                    </TableHead>
+                  );
+                }
+
+                return (
+                  <TableHead key={column.id} className={getHeadClassName(column)}>
+                    {column.label}
+                  </TableHead>
+                );
+              })}
+              <TableHead aria-hidden />
             </TableRow>
-          ) : (
-            rows.map((row) => (
-              <PricelistTableRow
-                key={row.id}
-                row={row}
-                columns={columns}
-                scope={scope}
-                regionId={regionId}
-                collab={collab}
-                isExpandable={isExpandable}
-                isExpanded={expandedRowIds.has(row.id)}
-                onToggleExpand={() => toggleExpanded(row.id)}
-              />
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
-    {footer}
-  </Card>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+                <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
+                  {allColumns.map((column, columnIndex) => (
+                    <TableCell
+                      key={column.id}
+                      className={cn(
+                        getCellClassName(column),
+                        column.isParameter && PARAMETER_GROUP_TINT,
+                        columnIndex === firstParameterIndex && PARAMETER_GROUP_DIVIDER,
+                      )}
+                    >
+                      {renderSkeletonCell(column, scope === "dealer")}
+                    </TableCell>
+                  ))}
+                  <TableCell aria-hidden />
+                </TableRow>
+              ))
+            ) : rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={allColumns.length + 1}
+                  className="px-3 py-8 text-center text-sm text-muted-foreground"
+                >
+                  No products match the selected filters.
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((row) => (
+                <PricelistTableRow
+                  key={row.id}
+                  row={row}
+                  columns={allColumns}
+                  firstParameterIndex={firstParameterIndex}
+                  scope={scope}
+                  regionId={regionId}
+                  collab={collab}
+                  parameters={parameters}
+                  isExpandable={isExpandable}
+                  isExpanded={expandedRowIds.has(row.id)}
+                  onToggleExpand={() => toggleExpanded(row.id)}
+                />
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      {footer}
+
+      {dialogState ? (
+        <PricelistParameterDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setDialogState(null);
+            }
+          }}
+          mode={dialogState.mode}
+          defaultUnit={getRegionById(regionId).currency}
+          parameterDefs={parameters.defs}
+          editingParamId={dialogState.mode === "edit" ? dialogState.def.id : undefined}
+          initialLabel={dialogState.mode === "edit" ? dialogState.def.label : ""}
+          initialSlug={dialogState.mode === "edit" ? (dialogState.def.slug ?? "") : ""}
+          initialUnit={dialogState.mode === "edit" ? dialogState.def.unit : undefined}
+          initialFormula={dialogState.mode === "edit" ? (dialogState.def.formula ?? "") : ""}
+          onSubmit={(values) => {
+            if (dialogState.mode === "create") {
+              parameters.addParameter({
+                label: values.label,
+                unit: values.unit,
+                baseValue: values.baseValue,
+                slug: values.slug,
+                formula: values.formula,
+                atIndex: dialogState.atIndex,
+              });
+            } else {
+              parameters.updateParameter(dialogState.def.id, {
+                label: values.label,
+                unit: values.unit,
+                slug: values.slug,
+                formula: values.formula,
+              });
+              parameters.setBaseValue(dialogState.def.id, values.baseValue);
+            }
+            setDialogState(null);
+          }}
+        />
+      ) : null}
+    </Card>
   );
 };
