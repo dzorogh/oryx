@@ -21,7 +21,7 @@ export const PRICELIST_SCOPE_LABELS: Record<PricelistScope, string> = {
 export const PRICELIST_SCOPE_DESCRIPTIONS: Record<PricelistScope, string> = {
   global: "Plant prices and regional availability — the shared baseline every supplier and dealer list builds on.",
   supplier: "The full price chain for a region — from plant cost through dealer price to retail, with all markups editable in one place.",
-  dealer: "Set retail prices for the region and manage the cost expenses that shape each product's margin.",
+  dealer: "Review retail prices for the region and manage the cost expenses that shape each product's margin.",
 };
 
 export const parsePricelistScope = (value: string | null | undefined): PricelistScope =>
