@@ -22,8 +22,7 @@ import { DerivedValueCell, useDerivedTarget } from "./pricelist-derived-cell";
 import { PricelistParameterCell } from "./pricelist-parameter-cell";
 import { PricelistParameterHeaderCell } from "./pricelist-parameter-header";
 import { PricelistParameterDialog } from "./pricelist-parameter-dialog";
-import { PricelistPriceCell } from "./pricelist-price-cell";
-import { PricelistPriceUsdCell } from "./pricelist-price-usd-cell";
+import { PricelistPriceDualCell } from "./pricelist-price-dual-cell";
 import { PricelistsExpandedRegions } from "./pricelists-expanded-regions";
 import {
   buildParamComputedTargetId,
@@ -48,11 +47,6 @@ import {
   buildPriceCellId,
   buildStatusCellId,
   formatMarkupValue,
-  formatMoney,
-  formatUsdValue,
-  PRICE_AMOUNT_DISPLAY_CLASS,
-  PRICE_USD_DISPLAY_CLASS,
-  toUsd,
   type PriceField,
   type PricelistCellValue,
 } from "./pricelists-helpers";
@@ -356,50 +350,14 @@ const PricelistTableRow = ({
           const field = column.field as PriceField;
           const { cellId, value } = resolveCell(field);
 
-          if (column.kind === "usd") {
-            if (isReadOnly) {
-              return (
-                <TableCell key={column.id} className={getCellClassName(column)}>
-                  <span className={PRICE_USD_DISPLAY_CLASS}>
-                    {formatUsdValue(toUsd(value.amount, value.currency))}
-                  </span>
-                </TableCell>
-              );
-            }
-
-            // The USD column edits the same source-currency cell: typing a USD
-            // amount converts it back to the original currency on the front end.
-            // Editing presence uses a column-scoped id so the badge stays on the
-            // USD input rather than lighting up the source-currency input.
-            const usdEditingId = `${cellId}:usd`;
-            return (
-              <TableCell key={column.id} className={getCellClassName(column)}>
-                <PricelistPriceUsdCell
-                  value={value}
-                  editors={collab.getEditors(usdEditingId)}
-                  ariaLabel={`${column.label} for ${displayName}`}
-                  columnKey={`usd:${field}`}
-                  onEditingChange={(editing) => collab.setEditing(editing ? usdEditingId : null)}
-                  onChange={(next) => collab.setCell(cellId, next)}
-                />
-              </TableCell>
-            );
-          }
-
-          if (isReadOnly) {
-            return (
-              <TableCell key={column.id} className={getCellClassName(column)}>
-                <span className={PRICE_AMOUNT_DISPLAY_CLASS}>
-                  {formatMoney(value.amount, value.currency)}
-                </span>
-              </TableCell>
-            );
-          }
-
+          // A single dual cell shows both the source-currency amount and its USD
+          // conversion; editing either half writes only the source-currency
+          // price to the shared cell.
           return (
             <TableCell key={column.id} className={getCellClassName(column)}>
-              <PricelistPriceCell
+              <PricelistPriceDualCell
                 value={value}
+                isReadOnly={isReadOnly}
                 editors={collab.getEditors(cellId)}
                 ariaLabel={`${column.label} for ${displayName}`}
                 columnKey={`price:${field}`}
@@ -422,7 +380,7 @@ const PricelistTableRow = ({
   );
 };
 
-const renderSkeletonCell = (column: PricelistColumnDefinition, isReadOnly: boolean) => {
+const renderSkeletonCell = (column: PricelistColumnDefinition) => {
   if (column.kind === "name") {
     return (
       <div className="flex items-center gap-2.5">
@@ -444,10 +402,9 @@ const renderSkeletonCell = (column: PricelistColumnDefinition, isReadOnly: boole
     );
   }
 
-  // Markup columns and read-only prices render as plain text, so their skeleton
-  // is a short line; editable prices (including the editable USD conversion) and
-  // parameters use a full-width input shape.
-  if (column.kind === "markup" || (isReadOnly && column.kind !== "parameter")) {
+  // Markup columns render as plain text, so their skeleton is a short line;
+  // dual price cells (even read-only) and parameters use a full-width pill.
+  if (column.kind === "markup") {
     return <Skeleton className="h-4 w-16" />;
   }
 
@@ -713,7 +670,7 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
                             (columnIndex === firstParameterIndex || column.afterParameters) && PARAMETER_GROUP_DIVIDER,
                           )}
                         >
-                          {renderSkeletonCell(column, scope === "dealer")}
+                          {renderSkeletonCell(column)}
                         </TableCell>
                       ))}
                       <TableCell aria-hidden />

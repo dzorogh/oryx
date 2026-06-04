@@ -17,30 +17,33 @@ describe("pricelists-columns · scope composition", () => {
     expect(getScopeColumns("global").map((c) => c.id)).toEqual([
       "name",
       "purchase",
-      "purchaseUsd",
       "dealerStatus",
     ]);
     expect(getScopeColumns("supplier").map((c) => c.id)).toEqual([
       "name",
       "purchase",
-      "purchaseUsd",
       "dealer",
-      "dealerUsd",
       "dealerMarkup",
       "retail",
-      "retailUsd",
       "retailMarkupNoExpenses",
       "retailMarkup",
     ]);
     expect(getScopeColumns("dealer").map((c) => c.id)).toEqual([
       "name",
       "dealer",
-      "dealerUsd",
       "retail",
-      "retailUsd",
       "retailMarkupNoExpenses",
       "retailMarkup",
     ]);
+  });
+
+  it("models each price as a single dual (source + USD) column", () => {
+    const purchase = getScopeColumns("supplier").find((c) => c.id === "purchase");
+    expect(purchase).toMatchObject({ kind: "editable", field: "purchase" });
+    // No standalone USD columns remain in any scope.
+    for (const scope of ["global", "supplier", "dealer"] as const) {
+      expect(getScopeColumns(scope).some((c) => c.kind === "usd")).toBe(false);
+    }
   });
 
   it("defines markup columns, with the with-expenses dealer markup behind the parameter group", () => {
@@ -76,9 +79,7 @@ describe("pricelists-columns · scope composition", () => {
     expect(getDefaultVisibleColumnIds("dealer")).toEqual([
       "name",
       "dealer",
-      "dealerUsd",
       "retail",
-      "retailUsd",
       "retailMarkupNoExpenses",
       "retailMarkup",
     ]);

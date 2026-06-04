@@ -2,8 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CollabUser } from "@/components/store/pim/pricelists/collab/collab-config";
 import { PricelistsPresence } from "@/components/store/pim/pricelists/pricelists-presence";
-import { PricelistPriceCell } from "@/components/store/pim/pricelists/pricelist-price-cell";
-import { PricelistPriceUsdCell } from "@/components/store/pim/pricelists/pricelist-price-usd-cell";
+import { PricelistPriceDualCell } from "@/components/store/pim/pricelists/pricelist-price-dual-cell";
 import { PricelistParameterCell } from "@/components/store/pim/pricelists/pricelist-parameter-cell";
 import { PricelistStatusCell } from "@/components/store/pim/pricelists/pricelist-status-cell";
 import { CURRENCY_USD_RATE } from "@/components/store/pim/pricelists/pricelists-helpers";
@@ -39,78 +38,52 @@ describe("PricelistsPresence", () => {
   });
 });
 
-describe("PricelistPriceCell", () => {
-  it("clamps negative amounts to zero and keeps the currency", () => {
+describe("PricelistPriceDualCell", () => {
+  it("clamps the source amount to zero and keeps the currency", () => {
     const onChange = vi.fn();
     render(
-      <PricelistPriceCell
+      <PricelistPriceDualCell
         value={{ amount: 100, currency: "USD" }}
         onChange={onChange}
         onEditingChange={vi.fn()}
         editors={[]}
-        ariaLabel="Dealer price for Widget"
+        ariaLabel="Dealer Price for Widget"
       />,
     );
 
-    const input = screen.getByLabelText("Dealer price for Widget");
-    fireEvent.change(input, { target: { value: "-5" } });
+    fireEvent.change(screen.getByLabelText("Dealer Price for Widget"), { target: { value: "-5" } });
 
     expect(onChange).toHaveBeenCalledWith({ amount: 0, currency: "USD" });
   });
 
-  it("emits editing presence on focus and blur", () => {
-    const onEditingChange = vi.fn();
-    render(
-      <PricelistPriceCell
-        value={{ amount: 100, currency: "USD" }}
-        onChange={vi.fn()}
-        onEditingChange={onEditingChange}
-        editors={[userA]}
-        ariaLabel="Retail price for Widget"
-      />,
-    );
-
-    const input = screen.getByLabelText("Retail price for Widget");
-    fireEvent.focus(input);
-    fireEvent.blur(input);
-
-    expect(onEditingChange).toHaveBeenCalledWith(true);
-    expect(onEditingChange).toHaveBeenCalledWith(false);
-    // Active editor name badge is rendered.
-    expect(screen.getByText("Swift Otter")).toBeVisible();
-  });
-});
-
-describe("PricelistPriceUsdCell", () => {
   it("shows the source price converted to a rounded USD amount", () => {
     render(
-      <PricelistPriceUsdCell
+      <PricelistPriceDualCell
         value={{ amount: 1000, currency: "CNY" }}
         onChange={vi.fn()}
         onEditingChange={vi.fn()}
         editors={[]}
-        ariaLabel="Plant Price (USD) for Widget"
+        ariaLabel="Plant Price for Widget"
       />,
     );
 
-    const input = screen.getByLabelText<HTMLInputElement>("Plant Price (USD) for Widget");
-    expect(input.value).toBe(String(Math.round(1000 * CURRENCY_USD_RATE.CNY)));
+    const usdInput = screen.getByLabelText<HTMLInputElement>("Plant Price for Widget in USD");
+    expect(usdInput.value).toBe(String(Math.round(1000 * CURRENCY_USD_RATE.CNY)));
   });
 
   it("converts an edited USD amount back into the source currency, keeping it", () => {
     const onChange = vi.fn();
     render(
-      <PricelistPriceUsdCell
+      <PricelistPriceDualCell
         value={{ amount: 1000, currency: "CNY" }}
         onChange={onChange}
         onEditingChange={vi.fn()}
         editors={[]}
-        ariaLabel="Plant Price (USD) for Widget"
+        ariaLabel="Plant Price for Widget"
       />,
     );
 
-    const input = screen.getByLabelText("Plant Price (USD) for Widget");
-    fireEvent.change(input, { target: { value: "293" } });
+    fireEvent.change(screen.getByLabelText("Plant Price for Widget in USD"), { target: { value: "293" } });
 
     expect(onChange).toHaveBeenCalledWith({
       amount: Math.round(293 / CURRENCY_USD_RATE.CNY),
@@ -118,22 +91,42 @@ describe("PricelistPriceUsdCell", () => {
     });
   });
 
-  it("clears the amount when emptied without changing the currency", () => {
-    const onChange = vi.fn();
+  it("emits editing presence on focus/blur and renders the active editor badge", () => {
+    const onEditingChange = vi.fn();
     render(
-      <PricelistPriceUsdCell
-        value={{ amount: 1000, currency: "CNY" }}
-        onChange={onChange}
-        onEditingChange={vi.fn()}
-        editors={[]}
-        ariaLabel="Plant Price (USD) for Widget"
+      <PricelistPriceDualCell
+        value={{ amount: 100, currency: "USD" }}
+        onChange={vi.fn()}
+        onEditingChange={onEditingChange}
+        editors={[userA]}
+        ariaLabel="Retail Price for Widget"
       />,
     );
 
-    const input = screen.getByLabelText("Plant Price (USD) for Widget");
-    fireEvent.change(input, { target: { value: "" } });
+    const input = screen.getByLabelText("Retail Price for Widget");
+    fireEvent.focus(input);
+    fireEvent.blur(input);
 
-    expect(onChange).toHaveBeenCalledWith({ amount: null, currency: "CNY" });
+    expect(onEditingChange).toHaveBeenCalledWith(true);
+    expect(onEditingChange).toHaveBeenCalledWith(false);
+    expect(screen.getByText("Swift Otter")).toBeVisible();
+  });
+
+  it("renders read-only prices as static source + USD text without inputs", () => {
+    render(
+      <PricelistPriceDualCell
+        value={{ amount: 1000, currency: "CNY" }}
+        onChange={vi.fn()}
+        onEditingChange={vi.fn()}
+        editors={[]}
+        ariaLabel="Dealer Price for Widget"
+        isReadOnly
+      />,
+    );
+
+    expect(screen.queryByLabelText("Dealer Price for Widget")).toBeNull();
+    expect(screen.getByText("1,000 CNY")).toBeVisible();
+    expect(screen.getByText(`${Math.round(1000 * CURRENCY_USD_RATE.CNY).toLocaleString("en-US")} USD`)).toBeVisible();
   });
 });
 

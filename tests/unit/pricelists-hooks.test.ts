@@ -13,7 +13,7 @@ describe("usePricelistColumns", () => {
   it("starts from the scope defaults", () => {
     const { result } = renderHook(() => usePricelistColumns("global"));
 
-    expect(result.current.visibleIds).toEqual(["name", "purchase", "purchaseUsd", "dealerStatus"]);
+    expect(result.current.visibleIds).toEqual(["name", "purchase", "dealerStatus"]);
     expect(result.current.hasCustom).toBe(false);
     expect(result.current.isVisible("purchase")).toBe(true);
   });
@@ -21,16 +21,16 @@ describe("usePricelistColumns", () => {
   it("toggles an optional column and reports a custom set", () => {
     const { result } = renderHook(() => usePricelistColumns("global"));
 
-    act(() => result.current.toggle("purchaseUsd"));
+    act(() => result.current.toggle("dealerStatus"));
 
-    expect(result.current.isVisible("purchaseUsd")).toBe(false);
+    expect(result.current.isVisible("dealerStatus")).toBe(false);
     expect(result.current.hasCustom).toBe(true);
   });
 
   it("resets back to the default set", () => {
     const { result } = renderHook(() => usePricelistColumns("global"));
 
-    act(() => result.current.toggle("purchaseUsd"));
+    act(() => result.current.toggle("dealerStatus"));
     act(() => result.current.onReset());
 
     expect(result.current.hasCustom).toBe(false);

@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { PricelistParameterMenu } from "./pricelist-parameter-menu";
 import type { ParameterDef } from "./pricelists-parameters";
@@ -59,9 +60,23 @@ export const PricelistParameterHeaderCell = ({
         isDragSource && "opacity-40",
       )}
     >
-      <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground" title={def.label}>
-        {def.label}
-      </span>
+      <Tooltip>
+        <TooltipTrigger
+          render={<span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground" />}
+        >
+          {def.label}
+        </TooltipTrigger>
+        <TooltipContent
+          side="bottom"
+          align="start"
+          className="flex max-w-xs flex-col items-start gap-0.5 text-left"
+        >
+          <span className="font-semibold">{def.label}</span>
+          {def.formula ? (
+            <span className="font-mono text-background/80">{def.formula}</span>
+          ) : null}
+        </TooltipContent>
+      </Tooltip>
 
       <DropdownMenu>
         <DropdownMenuTrigger

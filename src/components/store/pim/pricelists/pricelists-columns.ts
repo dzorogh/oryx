@@ -7,16 +7,20 @@ export const PRICELIST_COLUMNS_STORAGE_PREFIX = "store-pricelists-visible-column
 export type PricelistColumnId =
   | "name"
   | "purchase"
-  | "purchaseUsd"
   | "dealer"
-  | "dealerUsd"
   | "dealerMarkup"
   | "retail"
-  | "retailUsd"
   | "retailMarkupNoExpenses"
   | "retailMarkup"
   | "dealerStatus";
 
+/**
+ * `editable` is a **dual** price column: it renders both the source-currency
+ * amount and its USD conversion in a single combined input (no separate USD
+ * column). The `usd` kind is no longer used by table columns — it survives only
+ * as a synthetic column the Excel export expands `editable` into, so the
+ * spreadsheet keeps a dedicated USD column.
+ */
 export type PricelistColumnKind = "name" | "editable" | "usd" | "markup" | "statusSummary" | "parameter";
 
 /**
@@ -63,37 +67,19 @@ const COLUMN_DEFINITIONS = {
   purchase: {
     id: "purchase",
     label: "Plant Price",
-    description: "Base price set by the plant, in its source currency.",
+    description: "Base price set by the plant. Edit it in its source currency or in USD — both stay in sync.",
     kind: "editable",
     field: "purchase",
-    widthClass: "w-[172px]",
-    defaultVisible: true,
-  },
-  purchaseUsd: {
-    id: "purchaseUsd",
-    label: "Plant Price (USD)",
-    description: "Plant Price converted to USD.",
-    kind: "usd",
-    field: "purchase",
-    widthClass: "w-[136px]",
+    widthClass: "w-[300px]",
     defaultVisible: true,
   },
   dealer: {
     id: "dealer",
     label: "Dealer Price",
-    description: "Price charged to the dealer, in its source currency.",
+    description: "Price charged to the dealer. Edit it in its source currency or in USD — both stay in sync.",
     kind: "editable",
     field: "dealer",
-    widthClass: "w-[172px]",
-    defaultVisible: true,
-  },
-  dealerUsd: {
-    id: "dealerUsd",
-    label: "Dealer Price (USD)",
-    description: "Dealer Price converted to USD.",
-    kind: "usd",
-    field: "dealer",
-    widthClass: "w-[136px]",
+    widthClass: "w-[300px]",
     defaultVisible: true,
   },
   dealerMarkup: {
@@ -108,19 +94,11 @@ const COLUMN_DEFINITIONS = {
   retail: {
     id: "retail",
     label: "Retail Price",
-    description: "Recommended price for the end customer, in its source currency.",
+    description:
+      "Recommended price for the end customer. Edit it in its source currency or in USD — both stay in sync.",
     kind: "editable",
     field: "retail",
-    widthClass: "w-[172px]",
-    defaultVisible: true,
-  },
-  retailUsd: {
-    id: "retailUsd",
-    label: "Retail Price (USD)",
-    description: "Retail Price converted to USD.",
-    kind: "usd",
-    field: "retail",
-    widthClass: "w-[136px]",
+    widthClass: "w-[300px]",
     defaultVisible: true,
   },
   retailMarkupNoExpenses: {
@@ -153,23 +131,20 @@ const COLUMN_DEFINITIONS = {
 } satisfies Record<PricelistColumnId, StaticColumnDefinition>;
 
 // Column order per scope. Name is locked (always visible); every other column
-// can be toggled from the Columns panel. Prices are independent — no grouped
-// header spans the editable price and its USD conversion.
+// can be toggled from the Columns panel. Each price is a single dual column that
+// shows its source-currency amount and USD conversion in one combined input.
 const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
-  global: ["name", "purchase", "purchaseUsd", "dealerStatus"],
+  global: ["name", "purchase", "dealerStatus"],
   supplier: [
     "name",
     "purchase",
-    "purchaseUsd",
     "dealer",
-    "dealerUsd",
     "dealerMarkup",
     "retail",
-    "retailUsd",
     "retailMarkupNoExpenses",
     "retailMarkup",
   ],
-  dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd", "retailMarkupNoExpenses", "retailMarkup"],
+  dealer: ["name", "dealer", "retail", "retailMarkupNoExpenses", "retailMarkup"],
 };
 
 export const getScopeColumns = (scope: PricelistScope): StaticColumnDefinition[] =>

@@ -134,14 +134,29 @@ const resolveCellForColumn = (
   }
 };
 
-/** Mirrors the table column assembly: leading + parameters + trailing. */
+// In the table a price is a single dual column (source currency + USD in one
+// input). For a spreadsheet that combined cell is not useful, so the export
+// expands every dual price column into two: the source-currency price followed
+// by a dedicated USD column (`Plant Price` → `Plant Price`, `Plant Price (USD)`).
+const expandColumnForExport = (column: PricelistColumnDefinition): PricelistColumnDefinition[] => {
+  if (column.kind !== "editable" || !column.field) {
+    return [column];
+  }
+  return [
+    column,
+    { ...column, id: `${column.id}Usd`, label: `${column.label} (USD)`, kind: "usd" },
+  ];
+};
+
+/** Mirrors the table column assembly (leading + parameters + trailing), then
+ * expands dual price columns into separate source + USD columns. */
 export const assembleExportColumns = (
   columns: PricelistColumnDefinition[],
   parameterColumns: PricelistColumnDefinition[],
 ): PricelistColumnDefinition[] => {
   const leadingColumns = columns.filter((column) => !column.afterParameters);
   const trailingColumns = columns.filter((column) => column.afterParameters);
-  return [...leadingColumns, ...parameterColumns, ...trailingColumns];
+  return [...leadingColumns, ...parameterColumns, ...trailingColumns].flatMap(expandColumnForExport);
 };
 
 /** Builds the full sheet matrix (bold header row + one row per product). */

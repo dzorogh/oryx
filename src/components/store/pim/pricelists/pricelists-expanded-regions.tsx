@@ -6,8 +6,7 @@ import { getDisplayProductName } from "../products/catalog/catalog-helpers";
 import type { PricelistsCollab } from "./collab/use-yjs-pricelists";
 import { ColumnHeaderLabel } from "./pricelist-column-header";
 import { DerivedValueCell } from "./pricelist-derived-cell";
-import { PricelistPriceCell } from "./pricelist-price-cell";
-import { PricelistPriceUsdCell } from "./pricelist-price-usd-cell";
+import { PricelistPriceDualCell } from "./pricelist-price-dual-cell";
 import { PricelistStatusCell } from "./pricelist-status-cell";
 import { markupDerivedTargetId, type RecalcDeps } from "./pricelist-recalc";
 import {
@@ -43,8 +42,7 @@ export const PricelistsExpandedRegions = ({ row, collab, deps }: PricelistsExpan
         <Table className="table-fixed">
           <colgroup>
             <col className="w-[220px]" />
-            <col className="w-[188px]" />
-            <col className="w-[120px]" />
+            <col className="w-[300px]" />
             <col className="w-[100px]" />
             <col className="w-[200px]" />
             <col />
@@ -57,11 +55,8 @@ export const PricelistsExpandedRegions = ({ row, collab, deps }: PricelistsExpan
               <TableHead className="h-9 min-w-0 overflow-hidden px-2 text-left text-xs">
                 <ColumnHeaderLabel
                   label="Dealer Price"
-                  description="Price charged to the dealer in this region, in its source currency."
+                  description="Price charged to the dealer in this region. Edit it in its source currency or in USD — both stay in sync."
                 />
-              </TableHead>
-              <TableHead className="h-9 min-w-0 overflow-hidden px-2 text-left text-xs">
-                <ColumnHeaderLabel label="Dealer Price (USD)" description="Dealer Price converted to USD." />
               </TableHead>
               <TableHead className="h-9 min-w-0 overflow-hidden px-2 text-left text-xs">
                 <ColumnHeaderLabel
@@ -94,24 +89,12 @@ export const PricelistsExpandedRegions = ({ row, collab, deps }: PricelistsExpan
                     </span>
                   </TableCell>
                   <TableCell className="px-2 py-2 align-middle">
-                    <PricelistPriceCell
+                    <PricelistPriceDualCell
                       value={priceValue}
                       editors={collab.getEditors(priceCellId)}
                       ariaLabel={`Dealer price for ${displayName} in ${region.label}`}
                       columnKey={`region-dealer:${row.id}`}
                       onEditingChange={(editing) => collab.setEditing(editing ? priceCellId : null)}
-                      onChange={(next) => collab.setCell(priceCellId, next)}
-                    />
-                  </TableCell>
-                  <TableCell className="px-2 py-2 align-middle">
-                    <PricelistPriceUsdCell
-                      value={priceValue}
-                      editors={collab.getEditors(`${priceCellId}:usd`)}
-                      ariaLabel={`Dealer price (USD) for ${displayName} in ${region.label}`}
-                      columnKey={`region-dealer-usd:${row.id}`}
-                      onEditingChange={(editing) =>
-                        collab.setEditing(editing ? `${priceCellId}:usd` : null)
-                      }
                       onChange={(next) => collab.setCell(priceCellId, next)}
                     />
                   </TableCell>

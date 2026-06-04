@@ -94,7 +94,7 @@ export const usePricelistParameters = (
     if (!enabled) {
       return [];
     }
-    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs();
+    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs(regionId);
     return normalizeParameterDefs(raw);
     // collab map mutations trigger a re-render upstream, so reading during
     // render keeps `defs` current without an extra subscription here.
@@ -138,7 +138,7 @@ export const usePricelistParameters = (
   );
 
   const getCurrentDefs = useCallback((): ParameterDef[] => {
-    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs();
+    const raw = collab.getParamDefs(regionId) ?? getSeedParameterDefs(regionId);
     return normalizeParameterDefs(raw);
   }, [collab, regionId]);
 

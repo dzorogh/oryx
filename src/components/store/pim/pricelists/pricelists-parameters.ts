@@ -45,15 +45,20 @@ const getRegionIndex = (regionId: string): number => {
 /**
  * Demo parameter columns present in every region until the shared collab doc
  * holds an explicit list. Values differ slightly per region so the table looks
- * realistic out of the box.
+ * realistic out of the box. The formula mirrors the region's base value, since
+ * the formula field is what produces a parameter's base value.
  */
-export const getSeedParameterDefs = (): ParameterDef[] =>
+export const getSeedParameterDefs = (regionId?: string): ParameterDef[] =>
   normalizeParameterDefs(
-    SEED_PARAMETER_BLUEPRINTS.map((blueprint) => ({
-      id: blueprint.id,
-      label: blueprint.label,
-      slug: blueprint.slug,
-    })),
+    SEED_PARAMETER_BLUEPRINTS.map((blueprint) => {
+      const base = blueprint.base + (regionId ? getRegionIndex(regionId) : 0) * blueprint.step;
+      return {
+        id: blueprint.id,
+        label: blueprint.label,
+        slug: blueprint.slug,
+        formula: String(base),
+      };
+    }),
   );
 
 /**
