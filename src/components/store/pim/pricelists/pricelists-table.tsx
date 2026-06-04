@@ -14,14 +14,23 @@ import {
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getCatalogItemDetailHref, getDisplayProductName, SKELETON_ROW_COUNT } from "../products/catalog/catalog-helpers";
+import { ColumnHeaderLabel } from "./pricelist-column-header";
+import { DerivedValueCell, useDerivedTarget } from "./pricelist-derived-cell";
 import { PricelistParameterCell } from "./pricelist-parameter-cell";
 import { PricelistParameterHeaderCell } from "./pricelist-parameter-header";
 import { PricelistParameterDialog } from "./pricelist-parameter-dialog";
 import { PricelistPriceCell } from "./pricelist-price-cell";
+import { PricelistPriceUsdCell } from "./pricelist-price-usd-cell";
 import { PricelistsExpandedRegions } from "./pricelists-expanded-regions";
-import type { MarkupBasis, PricelistColumnDefinition } from "./pricelists-columns";
+import {
+  buildParamComputedTargetId,
+  markupDerivedTargetId,
+  type RecalcDeps,
+} from "./pricelist-recalc";
+import type { PricelistColumnDefinition } from "./pricelists-columns";
 import {
   getRegionById,
   getSeedCellValue,
@@ -33,13 +42,11 @@ import {
 import {
   buildParamOverrideId,
   isSystemParameter,
-  SYSTEM_PARAMETER_ID,
   type ParameterDef,
 } from "./pricelists-parameters";
 import {
   buildPriceCellId,
   buildStatusCellId,
-  computeMarkupPercent,
   formatMarkupValue,
   formatMoney,
   formatUsdValue,
@@ -182,6 +189,52 @@ type EffectiveCell = {
   value: PricelistCellValue;
 };
 
+type ParameterRowCellProps = {
+  collab: PricelistsCollab;
+  deps: RecalcDeps;
+  parameters: PricelistParameters;
+  regionId: string;
+  paramId: string;
+  label: string;
+  row: PricelistRow;
+};
+
+// Inherited (non-overridden) parameter values are computed by the backend, so
+// they show a skeleton while a recompute is in flight. Overridden cells hold a
+// direct user value and never wait on the backend.
+const ParameterRowCell = ({
+  collab,
+  deps,
+  parameters,
+  regionId,
+  paramId,
+  label,
+  row,
+}: ParameterRowCellProps) => {
+  const { value, isOverridden } = parameters.resolveCell(paramId, row.id);
+  const overrideId = buildParamOverrideId(regionId, paramId, row.id);
+  const targetId = buildParamComputedTargetId(regionId, paramId, row.id);
+  const { loading } = useDerivedTarget(collab, targetId, deps, !isOverridden);
+  const displayName = getDisplayProductName(row.name);
+
+  return (
+    <PricelistParameterCell
+      value={value}
+      isOverridden={isOverridden}
+      baseValue={parameters.getBaseValue(paramId)}
+      parameterLabel={label}
+      productName={displayName}
+      editors={collab.getEditors(overrideId)}
+      ariaLabel={`${label} for ${displayName}`}
+      columnKey={`param:${paramId}`}
+      isLoading={loading}
+      onEditingChange={(editing) => collab.setEditing(editing ? overrideId : null)}
+      onSetOverride={(next) => parameters.setOverride(paramId, row.id, next)}
+      onClearOverride={() => parameters.clearOverride(paramId, row.id)}
+    />
+  );
+};
+
 type PricelistTableRowProps = {
   row: PricelistRow;
   columns: PricelistColumnDefinition[];
@@ -189,6 +242,7 @@ type PricelistTableRowProps = {
   scope: PricelistScope;
   regionId: string;
   collab: PricelistsCollab;
+  deps: RecalcDeps;
   parameters: PricelistParameters;
   isExpandable: boolean;
   isExpanded: boolean;
@@ -202,6 +256,7 @@ const PricelistTableRow = ({
   scope,
   regionId,
   collab,
+  deps,
   parameters,
   isExpandable,
   isExpanded,
@@ -214,23 +269,6 @@ const PricelistTableRow = ({
     const cellId = buildPriceCellId(field === "purchase" ? null : regionId, row.id, field);
     const value = collab.getCell(cellId) ?? getSeedCellValue(row, field, region);
     return { cellId, value };
-  };
-
-  const resolveFieldUsd = (field: PriceField): number | null => {
-    const { value } = resolveCell(field);
-    return toUsd(value.amount, value.currency);
-  };
-
-  // Dealer markup = dealer over purchase. Retail markup = retail over the landed
-  // cost (dealer price + Total Expenses), so it reflects the dealer's margin.
-  const resolveMarkupPercent = (basis: MarkupBasis): number | null => {
-    if (basis === "dealer") {
-      return computeMarkupPercent(resolveFieldUsd("purchase"), resolveFieldUsd("dealer"));
-    }
-    const dealerUsd = resolveFieldUsd("dealer");
-    const expensesUsd = parameters.enabled ? parameters.resolveCell(SYSTEM_PARAMETER_ID, row.id).value : 0;
-    const landedCostUsd = dealerUsd === null ? null : dealerUsd + expensesUsd;
-    return computeMarkupPercent(landedCostUsd, resolveFieldUsd("retail"));
   };
 
   const displayName = getDisplayProductName(row.name);
@@ -277,9 +315,6 @@ const PricelistTableRow = ({
           }
 
           if (column.kind === "parameter" && column.paramId) {
-            const paramId = column.paramId;
-            const { value, isOverridden } = parameters.resolveCell(paramId, row.id);
-            const overrideId = buildParamOverrideId(regionId, paramId, row.id);
             return (
               <TableCell
                 key={column.id}
@@ -289,18 +324,14 @@ const PricelistTableRow = ({
                   index === firstParameterIndex && PARAMETER_GROUP_DIVIDER,
                 )}
               >
-                <PricelistParameterCell
-                  value={value}
-                  isOverridden={isOverridden}
-                  baseValue={parameters.getBaseValue(paramId)}
-                  parameterLabel={column.label}
-                  productName={displayName}
-                  editors={collab.getEditors(overrideId)}
-                  ariaLabel={`${column.label} for ${displayName}`}
-                  columnKey={`param:${paramId}`}
-                  onEditingChange={(editing) => collab.setEditing(editing ? overrideId : null)}
-                  onSetOverride={(next) => parameters.setOverride(paramId, row.id, next)}
-                  onClearOverride={() => parameters.clearOverride(paramId, row.id)}
+                <ParameterRowCell
+                  collab={collab}
+                  deps={deps}
+                  parameters={parameters}
+                  regionId={regionId}
+                  paramId={column.paramId}
+                  label={column.label}
+                  row={row}
                 />
               </TableCell>
             );
@@ -312,9 +343,12 @@ const PricelistTableRow = ({
                 key={column.id}
                 className={cn(getCellClassName(column), column.afterParameters && PARAMETER_GROUP_DIVIDER)}
               >
-                <span className={PRICE_USD_DISPLAY_CLASS}>
-                  {formatMarkupValue(resolveMarkupPercent(column.markup ?? "dealer"))}
-                </span>
+                <DerivedValueCell
+                  collab={collab}
+                  deps={deps}
+                  targetId={markupDerivedTargetId(column.markup ?? "dealer", regionId, row.id)}
+                  format={formatMarkupValue}
+                />
               </TableCell>
             );
           }
@@ -323,11 +357,31 @@ const PricelistTableRow = ({
           const { cellId, value } = resolveCell(field);
 
           if (column.kind === "usd") {
+            if (isReadOnly) {
+              return (
+                <TableCell key={column.id} className={getCellClassName(column)}>
+                  <span className={PRICE_USD_DISPLAY_CLASS}>
+                    {formatUsdValue(toUsd(value.amount, value.currency))}
+                  </span>
+                </TableCell>
+              );
+            }
+
+            // The USD column edits the same source-currency cell: typing a USD
+            // amount converts it back to the original currency on the front end.
+            // Editing presence uses a column-scoped id so the badge stays on the
+            // USD input rather than lighting up the source-currency input.
+            const usdEditingId = `${cellId}:usd`;
             return (
               <TableCell key={column.id} className={getCellClassName(column)}>
-                <span className={PRICE_USD_DISPLAY_CLASS}>
-                  {formatUsdValue(toUsd(value.amount, value.currency))}
-                </span>
+                <PricelistPriceUsdCell
+                  value={value}
+                  editors={collab.getEditors(usdEditingId)}
+                  ariaLabel={`${column.label} for ${displayName}`}
+                  columnKey={`usd:${field}`}
+                  onEditingChange={(editing) => collab.setEditing(editing ? usdEditingId : null)}
+                  onChange={(next) => collab.setCell(cellId, next)}
+                />
               </TableCell>
             );
           }
@@ -360,7 +414,7 @@ const PricelistTableRow = ({
       {isExpandable && isExpanded ? (
         <TableRow className="hover:bg-transparent">
           <TableCell colSpan={columns.length + 1} className="bg-muted/20 p-3">
-            <PricelistsExpandedRegions row={row} collab={collab} />
+            <PricelistsExpandedRegions row={row} collab={collab} deps={deps} />
           </TableCell>
         </TableRow>
       ) : null}
@@ -390,10 +444,10 @@ const renderSkeletonCell = (column: PricelistColumnDefinition, isReadOnly: boole
     );
   }
 
-  // USD/markup columns and read-only prices render as plain text, so their
-  // skeleton is a short line; editable prices and parameters use a full-width
-  // input shape.
-  if (column.kind === "usd" || column.kind === "markup" || (isReadOnly && column.kind !== "parameter")) {
+  // Markup columns and read-only prices render as plain text, so their skeleton
+  // is a short line; editable prices (including the editable USD conversion) and
+  // parameters use a full-width input shape.
+  if (column.kind === "markup" || (isReadOnly && column.kind !== "parameter")) {
     return <Skeleton className="h-4 w-16" />;
   }
 
@@ -433,12 +487,13 @@ type PricelistsTableProps = {
   scope: PricelistScope;
   regionId: string;
   collab: PricelistsCollab;
+  deps: RecalcDeps;
   parameters: PricelistParameters;
   footer?: ReactNode;
 };
 
 export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTableProps>(function PricelistsTable(
-  { rows, columns, isLoading, scope, regionId, collab, parameters, footer },
+  { rows, columns, isLoading, scope, regionId, collab, deps, parameters, footer },
   ref,
 ) {
   const isExpandable = scope === "global";
@@ -584,114 +639,117 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
   return (
     <Fragment>
       <Card ref={cardRef} size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
-        <div className="overflow-x-auto">
-          <Table className="table-fixed">
-            <colgroup>
-              {allColumns.map((column) => (
-                <col key={column.id} className={column.widthClass} />
-              ))}
-              {/* Flexible trailing column keeps data columns at their fixed widths. */}
-              <col />
-            </colgroup>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                {allColumns.map((column, index) => {
-                  if (column.kind === "parameter" && column.paramId) {
-                    const paramId = column.paramId;
-                    const def = parameters.defs.find((entry) => entry.id === paramId);
-                    if (!def) {
-                      return <TableHead key={column.id} aria-hidden />;
+        <TooltipProvider delay={0} closeDelay={0}>
+          <div className="overflow-x-auto">
+            <Table className="table-fixed">
+              <colgroup>
+                {allColumns.map((column) => (
+                  <col key={column.id} className={column.widthClass} />
+                ))}
+                {/* Flexible trailing column keeps data columns at their fixed widths. */}
+                <col />
+              </colgroup>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  {allColumns.map((column, index) => {
+                    if (column.kind === "parameter" && column.paramId) {
+                      const paramId = column.paramId;
+                      const def = parameters.defs.find((entry) => entry.id === paramId);
+                      if (!def) {
+                        return <TableHead key={column.id} aria-hidden />;
+                      }
+                      const paramIndex = parameters.defs.indexOf(def);
+                      const isFirst = index === firstParameterIndex;
+                      const isSystem = isSystemParameter(def.id);
+                      return (
+                        <TableHead
+                          key={column.id}
+                          data-param-id={def.id}
+                          data-system={isSystem}
+                          className={cn(
+                            "h-9 min-w-0 overflow-visible px-2 align-middle text-left text-xs",
+                            PARAMETER_GROUP_TINT,
+                            isFirst && PARAMETER_GROUP_DIVIDER,
+                          )}
+                        >
+                          <PricelistParameterHeaderCell
+                            def={def}
+                            isSystem={isSystem}
+                            isFirstParameter={isFirst}
+                            isDragSource={headerDrag?.paramId === def.id}
+                            onInsertBefore={() => setDialogState({ mode: "create", atIndex: paramIndex })}
+                            onInsertAfter={() => setDialogState({ mode: "create", atIndex: paramIndex + 1 })}
+                            onEdit={() => setDialogState({ mode: "edit", def })}
+                            onResetAll={() => parameters.resetAllOverrides(def.id)}
+                            onDelete={() => parameters.removeParameter(def.id)}
+                            onPointerDownDrag={(event) => startHeaderDrag(def, event)}
+                          />
+                        </TableHead>
+                      );
                     }
-                    const paramIndex = parameters.defs.indexOf(def);
-                    const isFirst = index === firstParameterIndex;
-                    const isSystem = isSystemParameter(def.id);
+
                     return (
                       <TableHead
                         key={column.id}
-                        data-param-id={def.id}
-                        data-system={isSystem}
-                        className={cn(
-                          "h-9 min-w-0 overflow-visible px-2 align-middle text-left text-xs",
-                          PARAMETER_GROUP_TINT,
-                          isFirst && PARAMETER_GROUP_DIVIDER,
-                        )}
+                        className={cn(getHeadClassName(column), column.afterParameters && PARAMETER_GROUP_DIVIDER)}
                       >
-                        <PricelistParameterHeaderCell
-                          def={def}
-                          isSystem={isSystem}
-                          isFirstParameter={isFirst}
-                          isDragSource={headerDrag?.paramId === def.id}
-                          onInsertBefore={() => setDialogState({ mode: "create", atIndex: paramIndex })}
-                          onInsertAfter={() => setDialogState({ mode: "create", atIndex: paramIndex + 1 })}
-                          onEdit={() => setDialogState({ mode: "edit", def })}
-                          onResetAll={() => parameters.resetAllOverrides(def.id)}
-                          onDelete={() => parameters.removeParameter(def.id)}
-                          onPointerDownDrag={(event) => startHeaderDrag(def, event)}
-                        />
+                        <ColumnHeaderLabel label={column.label} description={column.description} />
                       </TableHead>
                     );
-                  }
-
-                  return (
-                    <TableHead
-                      key={column.id}
-                      className={cn(getHeadClassName(column), column.afterParameters && PARAMETER_GROUP_DIVIDER)}
-                    >
-                      {column.label}
-                    </TableHead>
-                  );
-                })}
-                <TableHead aria-hidden />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-                  <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
-                    {allColumns.map((column, columnIndex) => (
-                      <TableCell
-                        key={column.id}
-                        className={cn(
-                          getCellClassName(column),
-                          column.isParameter && PARAMETER_GROUP_TINT,
-                          (columnIndex === firstParameterIndex || column.afterParameters) && PARAMETER_GROUP_DIVIDER,
-                        )}
-                      >
-                        {renderSkeletonCell(column, scope === "dealer")}
-                      </TableCell>
-                    ))}
-                    <TableCell aria-hidden />
-                  </TableRow>
-                ))
-              ) : rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={allColumns.length + 1}
-                    className="px-3 py-8 text-center text-sm text-muted-foreground"
-                  >
-                    No products match the selected filters.
-                  </TableCell>
+                  })}
+                  <TableHead aria-hidden />
                 </TableRow>
-              ) : (
-                rows.map((row) => (
-                  <PricelistTableRow
-                    key={row.id}
-                    row={row}
-                    columns={allColumns}
-                    firstParameterIndex={firstParameterIndex}
-                    scope={scope}
-                    regionId={regionId}
-                    collab={collab}
-                    parameters={parameters}
-                    isExpandable={isExpandable}
-                    isExpanded={expandedRowIds.has(row.id)}
-                    onToggleExpand={() => toggleExpanded(row.id)}
-                  />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+                    <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
+                      {allColumns.map((column, columnIndex) => (
+                        <TableCell
+                          key={column.id}
+                          className={cn(
+                            getCellClassName(column),
+                            column.isParameter && PARAMETER_GROUP_TINT,
+                            (columnIndex === firstParameterIndex || column.afterParameters) && PARAMETER_GROUP_DIVIDER,
+                          )}
+                        >
+                          {renderSkeletonCell(column, scope === "dealer")}
+                        </TableCell>
+                      ))}
+                      <TableCell aria-hidden />
+                    </TableRow>
+                  ))
+                ) : rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={allColumns.length + 1}
+                      className="px-3 py-8 text-center text-sm text-muted-foreground"
+                    >
+                      No products match the selected filters.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  rows.map((row) => (
+                    <PricelistTableRow
+                      key={row.id}
+                      row={row}
+                      columns={allColumns}
+                      firstParameterIndex={firstParameterIndex}
+                      scope={scope}
+                      regionId={regionId}
+                      collab={collab}
+                      deps={deps}
+                      parameters={parameters}
+                      isExpandable={isExpandable}
+                      isExpanded={expandedRowIds.has(row.id)}
+                      onToggleExpand={() => toggleExpanded(row.id)}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TooltipProvider>
         {footer}
 
         {dialogState ? (
@@ -705,6 +763,7 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
             mode={dialogState.mode}
             parameterDefs={parameters.defs}
             editingParamId={dialogState.mode === "edit" ? dialogState.def.id : undefined}
+            lockIdentity={dialogState.mode === "edit" && isSystemParameter(dialogState.def.id)}
             initialLabel={dialogState.mode === "edit" ? dialogState.def.label : ""}
             initialSlug={dialogState.mode === "edit" ? (dialogState.def.slug ?? "") : ""}
             initialFormula={dialogState.mode === "edit" ? (dialogState.def.formula ?? "") : ""}

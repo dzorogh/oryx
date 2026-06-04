@@ -1,7 +1,13 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { usePricelistColumns } from "@/components/store/pim/pricelists/use-pricelist-columns";
-import { usePricelistsController } from "@/components/store/pim/pricelists/use-pricelists-controller";
+import {
+  usePricelistsController,
+  type AvailabilityFilter,
+} from "@/components/store/pim/pricelists/use-pricelists-controller";
+
+// Global scope has no region availability gate, so every product is shown.
+const ALL_AVAILABLE: AvailabilityFilter = { enabled: false, isAvailable: () => true };
 
 describe("usePricelistColumns", () => {
   it("starts from the scope defaults", () => {
@@ -33,7 +39,7 @@ describe("usePricelistColumns", () => {
 
 describe("usePricelistsController", () => {
   it("paginates the variant rows", () => {
-    const { result } = renderHook(() => usePricelistsController("global", "ru"));
+    const { result } = renderHook(() => usePricelistsController("global", "ru", ALL_AVAILABLE));
 
     expect(result.current.filteredItems.length).toBeGreaterThan(0);
     expect(result.current.paginatedItems.length).toBeLessThanOrEqual(
@@ -44,7 +50,7 @@ describe("usePricelistsController", () => {
   });
 
   it("filters out everything for an unmatched search query", () => {
-    const { result } = renderHook(() => usePricelistsController("global", "ru"));
+    const { result } = renderHook(() => usePricelistsController("global", "ru", ALL_AVAILABLE));
 
     act(() => result.current.filters.search.onChange("zzz-nonexistent-product-zzz"));
 
@@ -53,7 +59,7 @@ describe("usePricelistsController", () => {
   });
 
   it("clears active filters on reset", () => {
-    const { result } = renderHook(() => usePricelistsController("global", "ru"));
+    const { result } = renderHook(() => usePricelistsController("global", "ru", ALL_AVAILABLE));
 
     act(() => result.current.filters.search.onChange("zzz-nonexistent-product-zzz"));
     act(() => result.current.filters.onReset());

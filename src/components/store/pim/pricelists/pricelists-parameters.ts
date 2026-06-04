@@ -15,7 +15,12 @@ export type ParameterDef = {
   formula?: string;
 };
 
-/** System column pinned last; cannot be reordered, deleted, or inserted after. */
+/**
+ * System column pinned last; cannot be reordered, deleted, inserted after, or
+ * renamed/re-slugged. Its label (`Total Expenses (USD)`) and slug
+ * (`total_expenses`) are referenced by formulas and exports, so only its
+ * formula may change.
+ */
 export const SYSTEM_PARAMETER_ID = "total-expenses";
 
 /** Fixed width for every parameter column. */

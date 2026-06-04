@@ -87,13 +87,17 @@ const resolveCellForColumn = (
     return toUsd(value.amount, value.currency);
   };
 
-  // Dealer markup = dealer over purchase. Retail markup = retail over the landed
-  // cost (dealer price + Total Expenses), so it reflects the dealer's margin.
+  // Global markup = dealer over purchase. Dealer markup w/o expenses = retail
+  // over the bare dealer price; w/ expenses = retail over the landed cost
+  // (dealer price + Total Expenses), reflecting the dealer's true margin.
   const resolveMarkupPercent = (basis: MarkupBasis): number | null => {
     if (basis === "dealer") {
       return computeMarkupPercent(resolveFieldUsd("purchase"), resolveFieldUsd("dealer"));
     }
     const dealerUsd = resolveFieldUsd("dealer");
+    if (basis === "retailNoExpenses") {
+      return computeMarkupPercent(dealerUsd, resolveFieldUsd("retail"));
+    }
     const expensesUsd = parameters.enabled ? parameters.resolveCell(SYSTEM_PARAMETER_ID, row.id).value : 0;
     const landedCostUsd = dealerUsd === null ? null : dealerUsd + expensesUsd;
     return computeMarkupPercent(landedCostUsd, resolveFieldUsd("retail"));

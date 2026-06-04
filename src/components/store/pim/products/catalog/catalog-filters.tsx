@@ -15,10 +15,11 @@ import { ALL_VALUE, type QuickFilterOption } from "./catalog-helpers";
 type CatalogQuickSearchControlProps = {
   value: string;
   onChange: (value: string) => void;
+  className?: string;
 };
 
-export const CatalogQuickSearchControl = ({ value, onChange }: CatalogQuickSearchControlProps) => (
-  <label className="min-w-[240px] flex-1">
+export const CatalogQuickSearchControl = ({ value, onChange, className }: CatalogQuickSearchControlProps) => (
+  <label className={cn("min-w-[240px] flex-1", className)}>
     <span className="sr-only">Search by product name</span>
     <div className="relative">
       <Search

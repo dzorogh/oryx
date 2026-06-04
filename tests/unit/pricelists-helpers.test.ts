@@ -9,6 +9,7 @@ import {
   formatMoney,
   formatUsd,
   formatUsdValue,
+  fromUsd,
   isCurrencyCode,
   isDealerStatus,
   toUsd,
@@ -32,7 +33,7 @@ describe("pricelists-helpers · currency guards", () => {
   it("validates dealer statuses", () => {
     expect(isDealerStatus("available")).toBe(true);
     expect(isDealerStatus("unavailable")).toBe(true);
-    expect(isDealerStatus("hidden")).toBe(true);
+    expect(isDealerStatus("hidden")).toBe(false);
     expect(isDealerStatus("sold")).toBe(false);
     expect(isDealerStatus(null)).toBe(false);
   });
@@ -53,6 +54,22 @@ describe("pricelists-helpers · toUsd", () => {
   });
 });
 
+describe("pricelists-helpers · fromUsd", () => {
+  it("returns null when the USD amount is null", () => {
+    expect(fromUsd(null, "CNY")).toBeNull();
+  });
+
+  it("passes USD amounts through unchanged", () => {
+    expect(fromUsd(100, "USD")).toBe(100);
+  });
+
+  it("is the inverse of toUsd for foreign currencies", () => {
+    const original = 52486;
+    const usd = toUsd(original, "CNY");
+    expect(fromUsd(usd, "CNY")).toBeCloseTo(original, 6);
+  });
+});
+
 describe("pricelists-helpers · formatting", () => {
   it("formats money with thousands separator and currency code", () => {
     expect(formatMoney(1000, "USD")).toBe("1,000 USD");
@@ -68,15 +85,15 @@ describe("pricelists-helpers · formatting", () => {
     expect(formatUsd(null)).toBe("—");
   });
 
-  it("formats the derived USD column value without a code", () => {
-    expect(formatUsdValue(1234)).toBe("1,234");
+  it("formats the derived USD column value with a USD code", () => {
+    expect(formatUsdValue(1234)).toBe("1,234 USD");
     expect(formatUsdValue(null)).toBe("—");
   });
 
-  it("formats markup as a plain rounded number (unit lives in the header)", () => {
-    expect(formatMarkupValue(25)).toBe("25");
-    expect(formatMarkupValue(0)).toBe("0");
-    expect(formatMarkupValue(-5)).toBe("-5");
+  it("formats markup as a rounded number suffixed with %", () => {
+    expect(formatMarkupValue(25)).toBe("25%");
+    expect(formatMarkupValue(0)).toBe("0%");
+    expect(formatMarkupValue(-5)).toBe("-5%");
     expect(formatMarkupValue(null)).toBe("—");
   });
 });

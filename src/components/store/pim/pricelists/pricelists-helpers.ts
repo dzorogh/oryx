@@ -52,22 +52,20 @@ export type PricelistCellValue = {
   currency: CurrencyCode;
 };
 
-export type DealerStatus = "available" | "unavailable" | "hidden";
+export type DealerStatus = "available" | "unavailable";
 
 export const DEALER_STATUSES: { value: DealerStatus; label: string }[] = [
-  { value: "available", label: "Available for sale" },
-  { value: "unavailable", label: "Unavailable for sale" },
-  { value: "hidden", label: "Hidden" },
+  { value: "available", label: "Available" },
+  { value: "unavailable", label: "Unavailable" },
 ];
 
 export const DEALER_STATUS_LABELS: Record<DealerStatus, string> = {
-  available: "Available for sale",
-  unavailable: "Unavailable for sale",
-  hidden: "Hidden",
+  available: "Available",
+  unavailable: "Unavailable",
 };
 
 export const isDealerStatus = (value: unknown): value is DealerStatus =>
-  value === "available" || value === "unavailable" || value === "hidden";
+  value === "available" || value === "unavailable";
 
 export const SCOPE_QUERY_PARAM = "list";
 export const REGION_QUERY_PARAM = "region";
@@ -78,6 +76,15 @@ export const isCurrencyCode = (value: unknown): value is CurrencyCode =>
 export const toUsd = (amount: number | null, currency: CurrencyCode): number | null =>
   amount === null ? null : amount * CURRENCY_USD_RATE[currency];
 
+/**
+ * Inverse of {@link toUsd}: converts a USD amount back into its source currency.
+ * Used by the editable USD columns, which let the user type a price in USD while
+ * only the original-currency amount is stored. The result is the raw (unrounded)
+ * value; callers round it to the precision they persist.
+ */
+export const fromUsd = (usdAmount: number | null, currency: CurrencyCode): number | null =>
+  usdAmount === null ? null : usdAmount / CURRENCY_USD_RATE[currency];
+
 const formatNumber = (value: number, maximumFractionDigits = 0) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(value);
 
@@ -87,9 +94,9 @@ export const formatMoney = (amount: number | null, currency: CurrencyCode): stri
 export const formatUsd = (amount: number | null): string =>
   amount === null ? "—" : `${formatNumber(amount)} USD`;
 
-/** USD conversion shown in its own column: formatted like currency but without the code. */
+/** USD conversion shown in its own column, suffixed with the `USD` code. */
 export const formatUsdValue = (amount: number | null): string =>
-  amount === null ? "—" : formatNumber(amount);
+  amount === null ? "—" : `${formatNumber(amount)} USD`;
 
 /**
  * Markup is the percentage premium of the dealer price over the purchase price,
@@ -107,12 +114,11 @@ export const computeMarkupPercent = (
 };
 
 /**
- * Markup rendered in its own column: a plain rounded number. The `%` unit lives
- * in the column header (like USD and parameter columns), so the cell stays
- * unformatted. Muted like USD since it is a derived value.
+ * Markup rendered in its own column as a rounded number suffixed with `%`.
+ * Muted like USD since it is a derived value.
  */
 export const formatMarkupValue = (percent: number | null): string =>
-  percent === null ? "—" : formatNumber(percent);
+  percent === null ? "—" : `${formatNumber(percent)}%`;
 
 /** Same typography for editable amount and read-only primary price cells. */
 export const PRICE_AMOUNT_TYPOGRAPHY = "text-sm font-normal tabular-nums text-foreground";

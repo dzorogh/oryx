@@ -5,6 +5,7 @@ import { usePricelistParameters } from "@/components/store/pim/pricelists/use-pr
 import {
   buildParamBaseId,
   buildParamOverrideId,
+  getSeedParameterDefs,
   SYSTEM_PARAMETER_ID,
   type ParameterDef,
 } from "@/components/store/pim/pricelists/pricelists-parameters";
@@ -37,6 +38,18 @@ const createCollabStub = () => {
     },
     setEditing: () => { },
     getEditors: () => [],
+    getComputed: () => undefined,
+    requestCompute: () => { },
+    backend: {
+      clientId: -1,
+      getActiveClientIds: () => [],
+      getComputeRequests: () => [],
+      getComputed: () => undefined,
+      markComputedPending: () => { },
+      commitComputed: () => { },
+      clearComputeRequests: () => { },
+      observe: () => () => { },
+    },
     onlineUsers: [],
     localUser: null,
     connected: true,
@@ -130,6 +143,30 @@ describe("usePricelistParameters · definitions", () => {
     expect(updated?.label).toBe("Freight");
     expect(updated?.slug).toBe("freight");
     expect(updated?.formula).toBe("1+1");
+  });
+
+  it("keeps the system column's label and slug fixed but allows its formula", () => {
+    const { collab, defs } = createCollabStub();
+    const { result } = renderHook(() => usePricelistParameters("supplier", "ru", collab));
+
+    const original = (defs.get("ru") ?? getSeedParameterDefs()).find(
+      (d) => d.id === SYSTEM_PARAMETER_ID,
+    );
+    const originalLabel = original?.label ?? "Total Expenses (USD)";
+    const originalSlug = original?.slug ?? "total_expenses";
+
+    act(() =>
+      result.current.updateParameter(SYSTEM_PARAMETER_ID, {
+        label: "Renamed",
+        slug: "renamed",
+        formula: "customs + shipping",
+      }),
+    );
+
+    const updated = (defs.get("ru") ?? []).find((d) => d.id === SYSTEM_PARAMETER_ID);
+    expect(updated?.label).toBe(originalLabel);
+    expect(updated?.slug).toBe(originalSlug);
+    expect(updated?.formula).toBe("customs + shipping");
   });
 
   it("removes user parameters but never the system column", () => {

@@ -13,17 +13,25 @@ export type PricelistColumnId =
   | "dealerMarkup"
   | "retail"
   | "retailUsd"
+  | "retailMarkupNoExpenses"
   | "retailMarkup"
   | "dealerStatus";
 
 export type PricelistColumnKind = "name" | "editable" | "usd" | "markup" | "statusSummary" | "parameter";
 
-/** Which premium a markup column reports (dealer over purchase, retail over landed cost). */
-export type MarkupBasis = "dealer" | "retail";
+/**
+ * Which premium a markup column reports:
+ * - `dealer` — dealer price over plant price (Global Markup);
+ * - `retail` — retail price over landed cost (dealer price + Total Expenses);
+ * - `retailNoExpenses` — retail price over the bare dealer price (no expenses).
+ */
+export type MarkupBasis = "dealer" | "retail" | "retailNoExpenses";
 
 export type PricelistColumnDefinition = {
   id: string;
   label: string;
+  /** Header tooltip copy shown under the column name on hover. */
+  description?: string;
   kind: PricelistColumnKind;
   field?: PriceField;
   /** Markup columns only: which premium the column derives. */
@@ -43,10 +51,19 @@ export type PricelistColumnDefinition = {
 type StaticColumnDefinition = PricelistColumnDefinition & { id: PricelistColumnId };
 
 const COLUMN_DEFINITIONS = {
-  name: { id: "name", label: "Name", kind: "name", widthClass: "w-[260px]", defaultVisible: true, locked: true },
+  name: {
+    id: "name",
+    label: "Name",
+    description: "Product name, image, and ID.",
+    kind: "name",
+    widthClass: "w-[260px]",
+    defaultVisible: true,
+    locked: true,
+  },
   purchase: {
     id: "purchase",
-    label: "Purchase Price",
+    label: "Plant Price",
+    description: "Base price set by the plant, in its source currency.",
     kind: "editable",
     field: "purchase",
     widthClass: "w-[172px]",
@@ -54,7 +71,8 @@ const COLUMN_DEFINITIONS = {
   },
   purchaseUsd: {
     id: "purchaseUsd",
-    label: "Purchase Price (USD)",
+    label: "Plant Price (USD)",
+    description: "Plant Price converted to USD.",
     kind: "usd",
     field: "purchase",
     widthClass: "w-[136px]",
@@ -63,6 +81,7 @@ const COLUMN_DEFINITIONS = {
   dealer: {
     id: "dealer",
     label: "Dealer Price",
+    description: "Price charged to the dealer, in its source currency.",
     kind: "editable",
     field: "dealer",
     widthClass: "w-[172px]",
@@ -71,6 +90,7 @@ const COLUMN_DEFINITIONS = {
   dealerUsd: {
     id: "dealerUsd",
     label: "Dealer Price (USD)",
+    description: "Dealer Price converted to USD.",
     kind: "usd",
     field: "dealer",
     widthClass: "w-[136px]",
@@ -78,7 +98,8 @@ const COLUMN_DEFINITIONS = {
   },
   dealerMarkup: {
     id: "dealerMarkup",
-    label: "Dealer Markup (%)",
+    label: "Global Markup (%)",
+    description: "Markup over Plant Price that is included in the Dealer Price.",
     kind: "markup",
     markup: "dealer",
     widthClass: "w-[120px]",
@@ -87,6 +108,7 @@ const COLUMN_DEFINITIONS = {
   retail: {
     id: "retail",
     label: "Retail Price",
+    description: "Recommended price for the end customer, in its source currency.",
     kind: "editable",
     field: "retail",
     widthClass: "w-[172px]",
@@ -95,23 +117,35 @@ const COLUMN_DEFINITIONS = {
   retailUsd: {
     id: "retailUsd",
     label: "Retail Price (USD)",
+    description: "Retail Price converted to USD.",
     kind: "usd",
     field: "retail",
     widthClass: "w-[136px]",
     defaultVisible: true,
   },
+  retailMarkupNoExpenses: {
+    id: "retailMarkupNoExpenses",
+    label: "Dealer Markup w/o Expenses (%)",
+    description: "Dealer margin without expenses: markup of Retail Price over the bare Dealer Price.",
+    kind: "markup",
+    markup: "retailNoExpenses",
+    widthClass: "w-[140px]",
+    defaultVisible: true,
+  },
   retailMarkup: {
     id: "retailMarkup",
-    label: "Retail Markup (%)",
+    label: "Dealer Markup w/ Expenses (%)",
+    description: "Dealer margin including expenses: markup of Retail Price over landed cost (Dealer Price + Total Expenses).",
     kind: "markup",
     markup: "retail",
     afterParameters: true,
-    widthClass: "w-[120px]",
+    widthClass: "w-[140px]",
     defaultVisible: true,
   },
   dealerStatus: {
     id: "dealerStatus",
     label: "Dealer Status",
+    description: "Number of regions where this product is available.",
     kind: "statusSummary",
     widthClass: "w-[200px]",
     defaultVisible: true,
@@ -132,9 +166,10 @@ const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
     "dealerMarkup",
     "retail",
     "retailUsd",
+    "retailMarkupNoExpenses",
     "retailMarkup",
   ],
-  dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd", "retailMarkup"],
+  dealer: ["name", "dealer", "dealerUsd", "retail", "retailUsd", "retailMarkupNoExpenses", "retailMarkup"],
 };
 
 export const getScopeColumns = (scope: PricelistScope): StaticColumnDefinition[] =>

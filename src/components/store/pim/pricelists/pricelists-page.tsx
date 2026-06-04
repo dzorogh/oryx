@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/breadcrumb";
 import { CatalogFooter } from "../products/catalog/catalog-footer";
 import { useYjsPricelists } from "./collab/use-yjs-pricelists";
+import { useRecalcBackend } from "./collab/use-recalc-backend";
+import { useRecalcDeps } from "./pricelist-recalc-deps";
 import { getVisibleColumnDefinitions } from "./pricelists-columns";
 import { exportPricelistToXlsx } from "./pricelists-export";
 import { PricelistsColumnsSheet } from "./pricelists-columns-sheet";
@@ -21,15 +23,16 @@ import { PricelistsFiltersSheet } from "./pricelists-filters-sheet";
 import { PricelistsTable, type PricelistsTableHandle } from "./pricelists-table";
 import { PricelistsToolbar } from "./pricelists-toolbar";
 import {
+  getSeedDealerStatus,
   parsePricelistScope,
   parseRegionId,
   scopeHasRegion,
   type PricelistScope,
 } from "./pricelists-demo-data";
-import { REGION_QUERY_PARAM, SCOPE_QUERY_PARAM } from "./pricelists-helpers";
+import { buildStatusCellId, REGION_QUERY_PARAM, SCOPE_QUERY_PARAM } from "./pricelists-helpers";
 import { usePricelistColumns } from "./use-pricelist-columns";
 import { usePricelistParameters } from "./use-pricelist-parameters";
-import { usePricelistsController } from "./use-pricelists-controller";
+import { usePricelistsController, type AvailabilityFilter } from "./use-pricelists-controller";
 
 const PricelistsPageFallback = () => (
   <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Loading pricelists" />
@@ -48,9 +51,27 @@ const PricelistsPageContent = () => {
     parseRegionId(searchParams.get(REGION_QUERY_PARAM)),
   );
 
-  const controller = usePricelistsController(scope, regionId);
-  const columns = usePricelistColumns(scope);
   const collab = useYjsPricelists();
+  const deps = useRecalcDeps(collab);
+  // One client (the leader) acts as the pricing backend and owns the shared
+  // computed cache; every client reads results and shows loading states.
+  useRecalcBackend(collab, deps);
+
+  const getStatus = collab.getStatus;
+  const availability = useMemo<AvailabilityFilter>(() => {
+    if (!scopeHasRegion(scope)) {
+      return { enabled: false, isAvailable: () => true };
+    }
+    return {
+      enabled: true,
+      isAvailable: (row) =>
+        (getStatus(buildStatusCellId(regionId, row.id)) ?? getSeedDealerStatus(row, regionId)) ===
+        "available",
+    };
+  }, [scope, regionId, getStatus]);
+
+  const controller = usePricelistsController(scope, regionId, availability);
+  const columns = usePricelistColumns(scope);
   const tableRef = useRef<PricelistsTableHandle>(null);
   const parameters = usePricelistParameters(scope, regionId, collab);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
@@ -185,6 +206,7 @@ const PricelistsPageContent = () => {
             scope={scope}
             regionId={regionId}
             collab={collab}
+            deps={deps}
             parameters={parameters}
             footer={footer}
           />

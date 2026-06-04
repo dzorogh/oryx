@@ -212,14 +212,18 @@ export const usePricelistParameters = (
 
   const updateParameter = useCallback(
     (paramId: string, patch: { label?: string; slug?: string; formula?: string }) => {
+      // The system column (Total Expenses) has a fixed identity: its label and
+      // slug are referenced by formulas and exports, so renaming or re-slugging
+      // it is not allowed. Only its formula may change.
+      const isSystem = isSystemParameter(paramId);
       const trimmedLabel = patch.label?.trim();
       persistDefs(
         getCurrentDefs().map((def) =>
           def.id === paramId
             ? {
               ...def,
-              ...(trimmedLabel ? { label: trimmedLabel } : {}),
-              ...(patch.slug !== undefined ? { slug: patch.slug } : {}),
+              ...(trimmedLabel && !isSystem ? { label: trimmedLabel } : {}),
+              ...(patch.slug !== undefined && !isSystem ? { slug: patch.slug } : {}),
               ...(patch.formula !== undefined ? { formula: patch.formula } : {}),
             }
             : def,

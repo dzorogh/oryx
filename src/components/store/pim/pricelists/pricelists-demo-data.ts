@@ -19,9 +19,9 @@ export const PRICELIST_SCOPE_LABELS: Record<PricelistScope, string> = {
 };
 
 export const PRICELIST_SCOPE_DESCRIPTIONS: Record<PricelistScope, string> = {
-  global: "Base purchase prices shared across all suppliers and regions.",
-  supplier: "Supplier purchase, dealer, and retail prices per region.",
-  dealer: "Dealer and retail prices offered to a specific region.",
+  global: "Plant prices and regional availability — the shared baseline every supplier and dealer list builds on.",
+  supplier: "The full price chain for a region — from plant cost through dealer price to retail, with all markups editable in one place.",
+  dealer: "Set retail prices for the region and manage the cost expenses that shape each product's margin.",
 };
 
 export const parsePricelistScope = (value: string | null | undefined): PricelistScope =>
@@ -155,9 +155,9 @@ export const getSeedCellValue = (
  * so the catalog spans the full range: some products are sold in no region at
  * all (level 0), some in every region (level 10), and the rest in between. For
  * a given product, a per-region hash decides whether that region clears the
- * product's availability threshold; non-available regions split between
- * "unavailable" and "hidden". Pure function of row + region so every client
- * renders identical defaults until the value is edited.
+ * product's availability threshold; regions that fall short are "unavailable".
+ * Pure function of row + region so every client renders identical defaults
+ * until the value is edited.
  */
 export const getSeedDealerStatus = (row: PricelistRow, regionId: string): DealerStatus => {
   const regionIndex = REGION_INDEX.get(regionId) ?? 0;
@@ -167,5 +167,5 @@ export const getSeedDealerStatus = (row: PricelistRow, regionId: string): Dealer
     return "available";
   }
 
-  return hashUnit(regionIndex, row.numericId) < 0.5 ? "unavailable" : "hidden";
+  return "unavailable";
 };

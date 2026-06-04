@@ -2,6 +2,7 @@
 
 import { Info, RotateCcw } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { CollabUser } from "./collab/collab-config";
 import { focusNextPricelistCellOnEnter, PRICE_AMOUNT_TYPOGRAPHY } from "./pricelists-helpers";
@@ -19,6 +20,8 @@ type PricelistParameterCellProps = {
   productName: string;
   editors: CollabUser[];
   ariaLabel: string;
+  /** Backend is recomputing the inherited (non-overridden) value for this cell. */
+  isLoading?: boolean;
   /** Groups inputs in the same column so Enter can move focus to the cell below. */
   columnKey?: string;
   onEditingChange: (editing: boolean) => void;
@@ -34,6 +37,7 @@ export const PricelistParameterCell = ({
   productName,
   editors,
   ariaLabel,
+  isLoading = false,
   columnKey,
   onEditingChange,
   onSetOverride,
@@ -58,6 +62,17 @@ export const PricelistParameterCell = ({
   if (!focused && value !== syncedValue) {
     setSyncedValue(value);
     setDraft(String(value));
+  }
+
+  // While the backend recomputes the inherited value, show a skeleton in place
+  // of the (read-only) computed number. Overridden cells hold a direct user
+  // value, so they never wait on a recompute.
+  if (isLoading && !isOverridden && !focused) {
+    return (
+      <div className="flex h-7 items-center rounded-lg border border-input bg-background px-2">
+        <Skeleton className="h-4 w-12" />
+      </div>
+    );
   }
 
   const commit = (text: string) => {

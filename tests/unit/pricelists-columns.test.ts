@@ -29,6 +29,7 @@ describe("pricelists-columns · scope composition", () => {
       "dealerMarkup",
       "retail",
       "retailUsd",
+      "retailMarkupNoExpenses",
       "retailMarkup",
     ]);
     expect(getScopeColumns("dealer").map((c) => c.id)).toEqual([
@@ -37,21 +38,30 @@ describe("pricelists-columns · scope composition", () => {
       "dealerUsd",
       "retail",
       "retailUsd",
+      "retailMarkupNoExpenses",
       "retailMarkup",
     ]);
   });
 
-  it("defines dealer and retail markup columns, with retail behind the parameter group", () => {
+  it("defines markup columns, with the with-expenses dealer markup behind the parameter group", () => {
     const supplier = getScopeColumns("supplier");
     const dealerMarkup = supplier.find((c) => c.id === "dealerMarkup");
+    const retailMarkupNoExpenses = supplier.find((c) => c.id === "retailMarkupNoExpenses");
     const retailMarkup = supplier.find((c) => c.id === "retailMarkup");
 
     expect(dealerMarkup).toMatchObject({ kind: "markup", markup: "dealer" });
     expect(dealerMarkup?.afterParameters).toBeFalsy();
+
+    // Dealer markup w/o expenses sits in the leading group (left of parameters).
+    expect(retailMarkupNoExpenses).toMatchObject({ kind: "markup", markup: "retailNoExpenses" });
+    expect(retailMarkupNoExpenses?.afterParameters).toBeFalsy();
+
+    // Dealer markup w/ expenses renders behind the parameter group.
     expect(retailMarkup).toMatchObject({ kind: "markup", markup: "retail", afterParameters: true });
 
-    // Dealer scope only carries the retail markup (no purchase price to compare).
+    // Dealer scope carries both retail markups (no purchase price to compare).
     const dealerScope = getScopeColumns("dealer").map((c) => c.id);
+    expect(dealerScope).toContain("retailMarkupNoExpenses");
     expect(dealerScope).toContain("retailMarkup");
     expect(dealerScope).not.toContain("dealerMarkup");
   });
@@ -69,6 +79,7 @@ describe("pricelists-columns · scope composition", () => {
       "dealerUsd",
       "retail",
       "retailUsd",
+      "retailMarkupNoExpenses",
       "retailMarkup",
     ]);
   });

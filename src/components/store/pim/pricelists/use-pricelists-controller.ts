@@ -26,6 +26,16 @@ export type PricelistFilters = {
   onReset: () => void;
 };
 
+/**
+ * Region availability gate. In Supplier/Dealer scopes only products that are
+ * `Available` in the selected region appear; flipping a product's dealer status
+ * adds or removes it. `enabled` is false for Global (the baseline shows all).
+ */
+export type AvailabilityFilter = {
+  enabled: boolean;
+  isAvailable: (row: PricelistRow) => boolean;
+};
+
 export type PricelistsController = {
   isFilterSheetOpen: boolean;
   setFilterSheetOpen: (open: boolean) => void;
@@ -48,6 +58,7 @@ const toFilterOptions = (values: string[]): QuickFilterOption[] =>
 export const usePricelistsController = (
   scope: PricelistScope,
   regionId: string,
+  availability: AvailabilityFilter,
 ): PricelistsController => {
   const sourceItems = useMemo(() => getPricelistRows(), []);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -63,7 +74,7 @@ export const usePricelistsController = (
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const filteredItems = useMemo(
+  const baseFilteredItems = useMemo(
     () =>
       sourceItems.filter((item) => {
         if (!matchesSearchQuery(item, normalizedQuery)) {
@@ -83,6 +94,28 @@ export const usePricelistsController = (
     [brandFilter, categoryFilter, familyFilter, normalizedQuery, sourceItems],
   );
 
+  // The dealer-status availability gate is applied on every render because the
+  // status lives in the live collab doc (no stable dependency to memoize on).
+  // The signature is a compact view of the current membership; when a status
+  // flips — locally or from a collaborator — it changes, which both re-filters
+  // the rows and (via `requestKey`) triggers a short "recalculating" skeleton,
+  // as if the server returned a freshly filtered list.
+  let availabilitySignature = "";
+  let filteredItems = baseFilteredItems;
+  if (availability.enabled) {
+    const available: PricelistRow[] = [];
+    let signature = "";
+    for (const item of baseFilteredItems) {
+      const isAvailable = availability.isAvailable(item);
+      signature += isAvailable ? "1" : "0";
+      if (isAvailable) {
+        available.push(item);
+      }
+    }
+    availabilitySignature = signature;
+    filteredItems = available;
+  }
+
   const hasActiveFilters =
     searchQuery.length > 0 ||
     categoryFilter !== ALL_VALUE ||
@@ -94,9 +127,16 @@ export const usePricelistsController = (
   const paginatedItems = filteredItems.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE);
   const paginationItems = useMemo(() => buildPaginationItems(visiblePage, totalPages), [totalPages, visiblePage]);
 
-  const requestKey = [scope, regionId, normalizedQuery, categoryFilter, brandFilter, familyFilter, visiblePage].join(
-    "|",
-  );
+  const requestKey = [
+    scope,
+    regionId,
+    normalizedQuery,
+    categoryFilter,
+    brandFilter,
+    familyFilter,
+    visiblePage,
+    availabilitySignature,
+  ].join("|");
 
   const isLoading = loadedRequestKey !== requestKey;
 

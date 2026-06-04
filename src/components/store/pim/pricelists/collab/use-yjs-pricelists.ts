@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import type { DealerStatus, PricelistCellValue } from "../pricelists-helpers";
 import type { ParameterDef } from "../pricelists-parameters";
+import type { ComputedEntry } from "../pricelist-recalc";
 import {
   COLLAB_ROOM,
   COLLAB_WS_URL,
@@ -30,6 +31,10 @@ type CollabSingleton = {
   dealerStatuses: Y.Map<DealerStatus>;
   parameterDefs: Y.Map<ParameterDef[]>;
   parameterValues: Y.Map<number>;
+  /** Backend-computed cache (USD, markups, inherited parameters). Leader writes. */
+  computed: Y.Map<ComputedEntry>;
+  /** Pending recompute requests (targetId → desired input hash). Clients write. */
+  computeRequests: Y.Map<string>;
   user: CollabUser;
   tabId: string;
 };
@@ -45,11 +50,24 @@ const createCollab = (): CollabSingleton => {
   const dealerStatuses = doc.getMap<DealerStatus>("dealerStatuses");
   const parameterDefs = doc.getMap<ParameterDef[]>("parameterDefs");
   const parameterValues = doc.getMap<number>("parameterValues");
+  const computed = doc.getMap<ComputedEntry>("computed");
+  const computeRequests = doc.getMap<string>("computeRequests");
   const user = getOrCreateUser();
   const tabId = getOrCreateTabId();
   const provider = new WebsocketProvider(COLLAB_WS_URL, COLLAB_ROOM, doc, { connect: true });
 
-  return { doc, provider, prices, dealerStatuses, parameterDefs, parameterValues, user, tabId };
+  return {
+    doc,
+    provider,
+    prices,
+    dealerStatuses,
+    parameterDefs,
+    parameterValues,
+    computed,
+    computeRequests,
+    user,
+    tabId,
+  };
 };
 
 const acquireCollab = (): CollabSingleton => {
@@ -143,6 +161,18 @@ const statusEventIsConnected = (event: ProviderStatusEvent): boolean => {
   return status === "connected";
 };
 
+/** Low-level access the simulated backend (leader client) uses to own the cache. */
+export type RecalcBackendChannel = {
+  clientId: number;
+  getActiveClientIds: () => number[];
+  getComputeRequests: () => Array<[string, string]>;
+  getComputed: (targetId: string) => ComputedEntry | undefined;
+  markComputedPending: (items: Array<{ id: string; hash: string }>) => void;
+  commitComputed: (items: Array<{ id: string; value: number | null; hash: string }>) => void;
+  clearComputeRequests: (ids: string[]) => void;
+  observe: (listener: () => void) => () => void;
+};
+
 export type PricelistsCollab = {
   getCell: (cellId: string) => PricelistCellValue | undefined;
   setCell: (cellId: string, value: PricelistCellValue) => void;
@@ -156,6 +186,12 @@ export type PricelistsCollab = {
   clearParamOverrides: (regionId: string, paramId: string) => void;
   setEditing: (cellId: string | null) => void;
   getEditors: (cellId: string) => CollabUser[];
+  /** Read a backend-computed value from the shared cache. */
+  getComputed: (targetId: string) => ComputedEntry | undefined;
+  /** Ask the backend to (re)compute a target at the given input hash (batched). */
+  requestCompute: (targetId: string, hash: string) => void;
+  /** Backend channel for the leader-election recompute loop. */
+  backend: RecalcBackendChannel;
   onlineUsers: CollabUser[];
   localUser: CollabUser | null;
   connected: boolean;
@@ -164,11 +200,14 @@ export type PricelistsCollab = {
 export const useYjsPricelists = (): PricelistsCollab => {
   const collabRef = useRef<CollabSingleton | null>(null);
   const editingDebounceRef = useRef<number | null>(null);
+  const requestBufferRef = useRef<Map<string, string>>(new Map());
+  const requestFlushRef = useRef<number | null>(null);
   const [, forceRender] = useState(0);
   const [connected, setConnected] = useState(false);
   const [editorsByCell, setEditorsByCell] = useState<Map<string, CollabUser[]>>(new Map());
   const [onlineUsers, setOnlineUsers] = useState<CollabUser[]>([]);
   const [localUser, setLocalUser] = useState<CollabUser | null>(null);
+  const [clientId, setClientId] = useState(-1);
 
   useEffect(() => {
     const collab = acquireCollab();
@@ -182,6 +221,7 @@ export const useYjsPricelists = (): PricelistsCollab => {
     collab.dealerStatuses.observe(handleSharedChange);
     collab.parameterDefs.observe(handleSharedChange);
     collab.parameterValues.observe(handleSharedChange);
+    collab.computed.observe(handleSharedChange);
 
     const recomputeAwareness = () => {
       const { online, editors } = collectActivePresence(collab);
@@ -214,6 +254,7 @@ export const useYjsPricelists = (): PricelistsCollab => {
     const timer = window.setTimeout(() => {
       publishLocalPresence(collab, null);
       setLocalUser(collab.user);
+      setClientId(collab.provider.awareness.clientID);
       setConnected(isProviderConnected(collab));
       recomputeAwareness();
       forceRender((value) => value + 1);
@@ -226,11 +267,16 @@ export const useYjsPricelists = (): PricelistsCollab => {
         editingDebounceRef.current = null;
       }
       window.clearInterval(heartbeat);
+      if (requestFlushRef.current !== null) {
+        window.clearTimeout(requestFlushRef.current);
+        requestFlushRef.current = null;
+      }
       window.removeEventListener("pagehide", handlePageHide);
       collab.prices.unobserve(handleSharedChange);
       collab.dealerStatuses.unobserve(handleSharedChange);
       collab.parameterDefs.unobserve(handleSharedChange);
       collab.parameterValues.unobserve(handleSharedChange);
+      collab.computed.unobserve(handleSharedChange);
       collab.provider.awareness.off("change", recomputeAwareness);
       collab.provider.off("status", handleStatus);
       collab.provider.off("sync", handleSync);
@@ -320,6 +366,140 @@ export const useYjsPricelists = (): PricelistsCollab => {
     [editorsByCell],
   );
 
+  // Coalesce all compute requests raised during a render pass into one Yjs
+  // transaction, so the backend wakes up once for the whole batch instead of
+  // per cell.
+  const flushRequests = useCallback(() => {
+    requestFlushRef.current = null;
+    const collab = collabRef.current;
+    const buffer = requestBufferRef.current;
+    if (!collab || buffer.size === 0) {
+      return;
+    }
+    const entries = [...buffer.entries()];
+    buffer.clear();
+    collab.doc.transact(() => {
+      entries.forEach(([targetId, hash]) => {
+        if (collab.computeRequests.get(targetId) !== hash) {
+          collab.computeRequests.set(targetId, hash);
+        }
+      });
+    });
+  }, []);
+
+  const requestCompute = useCallback(
+    (targetId: string, hash: string) => {
+      requestBufferRef.current.set(targetId, hash);
+      if (requestFlushRef.current === null) {
+        requestFlushRef.current = window.setTimeout(flushRequests, 0);
+      }
+    },
+    [flushRequests],
+  );
+
+  const getComputed = useCallback(
+    (targetId: string): ComputedEntry | undefined => collabRef.current?.computed.get(targetId),
+    [],
+  );
+
+  const getActiveClientIds = useCallback((): number[] => {
+    const collab = collabRef.current;
+    if (!collab) {
+      return [];
+    }
+    const now = Date.now();
+    const ids = new Set<number>([collab.provider.awareness.clientID]);
+    collab.provider.awareness.getStates().forEach((rawState, id) => {
+      const state = rawState as AwarenessState;
+      if (typeof state.lastSeen === "number" && now - state.lastSeen <= PRESENCE_STALE_MS) {
+        ids.add(id);
+      }
+    });
+    return [...ids];
+  }, []);
+
+  const getComputeRequests = useCallback((): Array<[string, string]> => {
+    const collab = collabRef.current;
+    if (!collab) {
+      return [];
+    }
+    const result: Array<[string, string]> = [];
+    collab.computeRequests.forEach((hash, id) => result.push([id, hash]));
+    return result;
+  }, []);
+
+  const markComputedPending = useCallback((items: Array<{ id: string; hash: string }>) => {
+    const collab = collabRef.current;
+    if (!collab || items.length === 0) {
+      return;
+    }
+    const now = Date.now();
+    collab.doc.transact(() => {
+      items.forEach(({ id, hash }) => {
+        const prev = collab.computed.get(id);
+        collab.computed.set(id, { value: prev?.value ?? null, status: "pending", hash, updatedAt: now });
+      });
+    });
+  }, []);
+
+  const commitComputed = useCallback(
+    (items: Array<{ id: string; value: number | null; hash: string }>) => {
+      const collab = collabRef.current;
+      if (!collab || items.length === 0) {
+        return;
+      }
+      const now = Date.now();
+      collab.doc.transact(() => {
+        items.forEach(({ id, value, hash }) => {
+          collab.computed.set(id, { value, status: "ready", hash, updatedAt: now });
+        });
+      });
+    },
+    [],
+  );
+
+  const clearComputeRequests = useCallback((ids: string[]) => {
+    const collab = collabRef.current;
+    if (!collab || ids.length === 0) {
+      return;
+    }
+    collab.doc.transact(() => {
+      ids.forEach((id) => collab.computeRequests.delete(id));
+    });
+  }, []);
+
+  const observeBackend = useCallback((listener: () => void) => {
+    const collab = collabRef.current;
+    if (!collab) {
+      return () => { };
+    }
+    collab.computeRequests.observe(listener);
+    return () => collab.computeRequests.unobserve(listener);
+  }, []);
+
+  const backend = useMemo<RecalcBackendChannel>(
+    () => ({
+      clientId,
+      getActiveClientIds,
+      getComputeRequests,
+      getComputed,
+      markComputedPending,
+      commitComputed,
+      clearComputeRequests,
+      observe: observeBackend,
+    }),
+    [
+      clientId,
+      getActiveClientIds,
+      getComputeRequests,
+      getComputed,
+      markComputedPending,
+      commitComputed,
+      clearComputeRequests,
+      observeBackend,
+    ],
+  );
+
   return {
     getCell,
     setCell,
@@ -333,6 +513,9 @@ export const useYjsPricelists = (): PricelistsCollab => {
     clearParamOverrides,
     setEditing,
     getEditors,
+    getComputed,
+    requestCompute,
+    backend,
     onlineUsers,
     localUser,
     connected,

@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CollabUser } from "@/components/store/pim/pricelists/collab/collab-config";
 import { PricelistsPresence } from "@/components/store/pim/pricelists/pricelists-presence";
 import { PricelistPriceCell } from "@/components/store/pim/pricelists/pricelist-price-cell";
+import { PricelistPriceUsdCell } from "@/components/store/pim/pricelists/pricelist-price-usd-cell";
 import { PricelistParameterCell } from "@/components/store/pim/pricelists/pricelist-parameter-cell";
 import { PricelistStatusCell } from "@/components/store/pim/pricelists/pricelist-status-cell";
+import { CURRENCY_USD_RATE } from "@/components/store/pim/pricelists/pricelists-helpers";
 
 afterEach(() => cleanup());
 
@@ -76,6 +78,62 @@ describe("PricelistPriceCell", () => {
     expect(onEditingChange).toHaveBeenCalledWith(false);
     // Active editor name badge is rendered.
     expect(screen.getByText("Swift Otter")).toBeVisible();
+  });
+});
+
+describe("PricelistPriceUsdCell", () => {
+  it("shows the source price converted to a rounded USD amount", () => {
+    render(
+      <PricelistPriceUsdCell
+        value={{ amount: 1000, currency: "CNY" }}
+        onChange={vi.fn()}
+        onEditingChange={vi.fn()}
+        editors={[]}
+        ariaLabel="Plant Price (USD) for Widget"
+      />,
+    );
+
+    const input = screen.getByLabelText<HTMLInputElement>("Plant Price (USD) for Widget");
+    expect(input.value).toBe(String(Math.round(1000 * CURRENCY_USD_RATE.CNY)));
+  });
+
+  it("converts an edited USD amount back into the source currency, keeping it", () => {
+    const onChange = vi.fn();
+    render(
+      <PricelistPriceUsdCell
+        value={{ amount: 1000, currency: "CNY" }}
+        onChange={onChange}
+        onEditingChange={vi.fn()}
+        editors={[]}
+        ariaLabel="Plant Price (USD) for Widget"
+      />,
+    );
+
+    const input = screen.getByLabelText("Plant Price (USD) for Widget");
+    fireEvent.change(input, { target: { value: "293" } });
+
+    expect(onChange).toHaveBeenCalledWith({
+      amount: Math.round(293 / CURRENCY_USD_RATE.CNY),
+      currency: "CNY",
+    });
+  });
+
+  it("clears the amount when emptied without changing the currency", () => {
+    const onChange = vi.fn();
+    render(
+      <PricelistPriceUsdCell
+        value={{ amount: 1000, currency: "CNY" }}
+        onChange={onChange}
+        onEditingChange={vi.fn()}
+        editors={[]}
+        ariaLabel="Plant Price (USD) for Widget"
+      />,
+    );
+
+    const input = screen.getByLabelText("Plant Price (USD) for Widget");
+    fireEvent.change(input, { target: { value: "" } });
+
+    expect(onChange).toHaveBeenCalledWith({ amount: null, currency: "CNY" });
   });
 });
 
@@ -167,7 +225,7 @@ describe("PricelistStatusCell", () => {
     );
 
     expect(screen.getByLabelText("Dealer status for Widget")).toBeVisible();
-    expect(screen.getByText("Available for sale")).toBeVisible();
+    expect(screen.getByText("Available")).toBeVisible();
     expect(screen.getByText("Swift Otter")).toBeVisible();
   });
 });

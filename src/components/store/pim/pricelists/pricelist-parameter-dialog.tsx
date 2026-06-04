@@ -33,6 +33,8 @@ type PricelistParameterDialogProps = {
   parameterDefs: ParameterDef[];
   /** Id of the parameter being edited, excluded from the references list. */
   editingParamId?: string;
+  /** System column: name and slug are fixed and cannot be edited. */
+  lockIdentity?: boolean;
   initialLabel?: string;
   initialSlug?: string;
   initialFormula?: string;
@@ -47,6 +49,7 @@ export const PricelistParameterDialog = ({
   mode,
   parameterDefs,
   editingParamId,
+  lockIdentity = false,
   initialLabel = "",
   initialSlug = "",
   initialFormula = "",
@@ -125,8 +128,14 @@ export const PricelistParameterDialog = ({
                     }
                   }}
                   placeholder="e.g. Delivery"
-                  autoFocus
+                  autoFocus={!lockIdentity}
+                  disabled={lockIdentity}
                 />
+                {lockIdentity ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    This is a system column — its name and slug are fixed.
+                  </p>
+                ) : null}
               </div>
 
               <div className="grid gap-1.5">
@@ -143,6 +152,7 @@ export const PricelistParameterDialog = ({
                   aria-invalid={slug.length > 0 && !isSlugValid}
                   className="font-mono text-xs"
                   placeholder="delivery"
+                  disabled={lockIdentity}
                 />
               </div>
 

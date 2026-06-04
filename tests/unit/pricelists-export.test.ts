@@ -83,7 +83,7 @@ describe("buildExportMatrix", () => {
     });
 
     const seed = getSeedCellValue(row, "purchase", region);
-    const cell = cellAt(matrix, 1, "Purchase Price");
+    const cell = cellAt(matrix, 1, "Plant Price");
     expect(cell?.type).toBe(Number);
     expect(cell?.value).toBe(seed.amount);
     expect(cell?.format).toBe(`#,##0" ${seed.currency}"`);
@@ -100,7 +100,7 @@ describe("buildExportMatrix", () => {
     });
 
     const seed = getSeedCellValue(row, "purchase", region);
-    const cell = cellAt(matrix, 1, "Purchase Price (USD)");
+    const cell = cellAt(matrix, 1, "Plant Price (USD)");
     expect(cell?.type).toBe(Number);
     expect(cell?.value).toBe(toUsd(seed.amount, seed.currency));
     expect(cell?.format).toBe("#,##0");
@@ -123,7 +123,7 @@ describe("buildExportMatrix", () => {
       toUsd(dealerSeed.amount, dealerSeed.currency),
     );
 
-    const cell = cellAt(matrix, 1, "Dealer Markup (%)");
+    const cell = cellAt(matrix, 1, "Global Markup (%)");
     expect(cell?.format).toBe("#,##0");
     expect(cell?.value).toBe(expectedPercent);
   });
@@ -141,7 +141,7 @@ describe("buildExportMatrix", () => {
       parameters: constantParameters,
     });
 
-    const cell = cellAt(matrix, 1, "Purchase Price");
+    const cell = cellAt(matrix, 1, "Plant Price");
     expect(cell?.value).toBe(4242);
     expect(cell?.format).toBe(`#,##0" EUR"`);
   });
@@ -159,8 +159,8 @@ describe("buildExportMatrix", () => {
       parameters: constantParameters,
     });
 
-    expect(cellAt(matrix, 1, "Purchase Price")).toBeNull();
-    expect(cellAt(matrix, 1, "Purchase Price (USD)")).toBeNull();
+    expect(cellAt(matrix, 1, "Plant Price")).toBeNull();
+    expect(cellAt(matrix, 1, "Plant Price (USD)")).toBeNull();
   });
 
   it("renders the dealer status summary as text in the global scope", () => {

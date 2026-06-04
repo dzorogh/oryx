@@ -73,90 +73,104 @@ export const PricelistsToolbar = ({
       <div className="-mx-3 border-t border-[var(--corportal-border-grey)]" aria-hidden />
 
       <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-        <TooltipProvider delay={300}>
-          <ToggleGroup
-            value={[scope]}
+        <div className="flex items-center gap-2 lg:contents">
+          <TooltipProvider delay={300}>
+            <ToggleGroup
+              value={[scope]}
+              variant="outline"
+              size="default"
+              spacing={0}
+              onValueChange={(value) => {
+                const [nextValue] = value;
+                if (nextValue) {
+                  onScopeChange(parsePricelistScope(nextValue));
+                }
+              }}
+              aria-label="Pricelist type"
+            >
+              {PRICELIST_SCOPES.map((scopeOption) => (
+                <Tooltip key={scopeOption}>
+                  <TooltipTrigger
+                    render={
+                      <ToggleGroupItem value={scopeOption} aria-label={PRICELIST_SCOPE_LABELS[scopeOption]} />
+                    }
+                  >
+                    {PRICELIST_SCOPE_LABELS[scopeOption]}
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="start" className="max-w-xs text-left">
+                    {PRICELIST_SCOPE_DESCRIPTIONS[scopeOption]}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </ToggleGroup>
+          </TooltipProvider>
+
+          {scopeHasRegion(scope) ? (
+            <Select
+              items={PRICELIST_REGIONS.map((region) => ({
+                value: region.id,
+                label: region.label,
+              }))}
+              value={regionId}
+              onValueChange={(value) => {
+                if (value) {
+                  onRegionChange(value);
+                }
+              }}
+            >
+              <SelectTrigger
+                size="default"
+                className="flex-1 bg-background lg:w-[220px] lg:flex-none"
+                aria-label="Select region"
+              >
+                <SelectValue placeholder="Select region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {PRICELIST_REGIONS.map((region) => (
+                    <SelectItem key={region.id} value={region.id}>
+                      {region.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
+
+        <div className="flex items-center gap-2 lg:contents">
+          <CatalogQuickSearchControl
+            value={filters.search.value}
+            onChange={filters.search.onChange}
+            className="min-w-0 lg:min-w-[240px]"
+          />
+
+          <CatalogCategoryTreeFilter
+            value={filters.category.value}
+            onValueChange={filters.category.onChange}
+            ariaLabel="Quick filter by category"
+            placeholder="Category"
+            allLabel="All categories"
+            widthClassName="w-[140px] shrink-0 lg:w-[220px]"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 *:flex-1 lg:contents lg:*:flex-none">
+          <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
+          <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
+
+          <Button
+            type="button"
             variant="outline"
             size="default"
-            spacing={0}
-            onValueChange={(value) => {
-              const [nextValue] = value;
-              if (nextValue) {
-                onScopeChange(parsePricelistScope(nextValue));
-              }
-            }}
-            aria-label="Pricelist type"
+            aria-label="Export pricelist"
+            onClick={onExport}
+            disabled={isExporting}
           >
-            {PRICELIST_SCOPES.map((scopeOption) => (
-              <Tooltip key={scopeOption}>
-                <TooltipTrigger
-                  render={
-                    <ToggleGroupItem value={scopeOption} aria-label={PRICELIST_SCOPE_LABELS[scopeOption]} />
-                  }
-                >
-                  {PRICELIST_SCOPE_LABELS[scopeOption]}
-                </TooltipTrigger>
-                <TooltipContent side="bottom" align="start" className="max-w-xs text-left">
-                  {PRICELIST_SCOPE_DESCRIPTIONS[scopeOption]}
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </ToggleGroup>
-        </TooltipProvider>
-
-        {scopeHasRegion(scope) ? (
-          <Select
-            items={PRICELIST_REGIONS.map((region) => ({
-              value: region.id,
-              label: region.label,
-            }))}
-            value={regionId}
-            onValueChange={(value) => {
-              if (value) {
-                onRegionChange(value);
-              }
-            }}
-          >
-            <SelectTrigger size="default" className="w-[220px] bg-background" aria-label="Select region">
-              <SelectValue placeholder="Select region" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {PRICELIST_REGIONS.map((region) => (
-                  <SelectItem key={region.id} value={region.id}>
-                    {region.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        ) : null}
-
-        <CatalogQuickSearchControl value={filters.search.value} onChange={filters.search.onChange} />
-
-        <CatalogCategoryTreeFilter
-          value={filters.category.value}
-          onValueChange={filters.category.onChange}
-          ariaLabel="Quick filter by category"
-          placeholder="Category"
-          allLabel="All categories"
-          widthClassName="w-[220px]"
-        />
-
-        <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
-        <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
-
-        <Button
-          type="button"
-          variant="outline"
-          size="default"
-          aria-label="Export pricelist"
-          onClick={onExport}
-          disabled={isExporting}
-        >
-          <Download aria-hidden className="size-3.5" />
-          {isExporting ? "Exporting…" : "Export"}
-        </Button>
+            <Download aria-hidden className="size-3.5" />
+            {isExporting ? "Exporting…" : "Export"}
+          </Button>
+        </div>
       </div>
     </CardHeader>
   </Card>
