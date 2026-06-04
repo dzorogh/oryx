@@ -157,7 +157,7 @@ export const PricelistsExpandedRegions = ({
               <Fragment key={group.id}>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableCell colSpan={5} className="px-3 py-1.5">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
                       <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         {group.label}
                       </span>
