@@ -6,6 +6,7 @@ import { PricelistsPresence } from "@/components/store/pim/pricelists/pricelists
 import { PricelistPriceDualCell } from "@/components/store/pim/pricelists/pricelist-price-dual-cell";
 import { PricelistParameterCell } from "@/components/store/pim/pricelists/pricelist-parameter-cell";
 import { PricelistStatusCell } from "@/components/store/pim/pricelists/pricelist-status-cell";
+import { PricelistRetailStatusCell } from "@/components/store/pim/pricelists/pricelist-retail-status-cell";
 import { CURRENCY_USD_RATE } from "@/components/store/pim/pricelists/pricelists-helpers";
 
 afterEach(() => cleanup());
@@ -237,5 +238,28 @@ describe("PricelistStatusCell", () => {
     expect(screen.getByLabelText("Dealer status for Widget")).toBeVisible();
     expect(screen.getByText("Available")).toBeVisible();
     expect(screen.getByText("Swift Otter")).toBeVisible();
+  });
+});
+
+describe("PricelistRetailStatusCell", () => {
+  it("renders an editable select with the current label", () => {
+    render(
+      <PricelistRetailStatusCell
+        value="available"
+        ariaLabel="Retail status for Widget"
+        onChange={vi.fn()}
+        onEditingChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText("Retail status for Widget")).toBeVisible();
+    expect(screen.getByText("Available for sale")).toBeVisible();
+  });
+
+  it("renders read-only text without a combobox", () => {
+    render(<PricelistRetailStatusCell value="draft" ariaLabel="Retail status for Widget" readOnly />);
+
+    expect(screen.getByText("Draft")).toBeVisible();
+    expect(screen.queryByRole("combobox")).toBeNull();
   });
 });

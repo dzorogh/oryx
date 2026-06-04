@@ -1,4 +1,4 @@
-import type { PricelistScope } from "./pricelists-demo-data";
+import type { PricelistInfoField, PricelistScope } from "./pricelists-demo-data";
 import type { PriceField } from "./pricelists-helpers";
 import { PARAMETER_COLUMN_WIDTH_CLASS, type ParameterDef } from "./pricelists-parameters";
 
@@ -6,6 +6,12 @@ export const PRICELIST_COLUMNS_STORAGE_PREFIX = "store-pricelists-visible-column
 
 export type PricelistColumnId =
   | "name"
+  | "plantModelName"
+  | "plant"
+  | "retailStatus"
+  | "dimension"
+  | "cbmPerUnit"
+  | "capacityPerContainer"
   | "purchase"
   | "dealer"
   | "dealerMarkup"
@@ -21,7 +27,15 @@ export type PricelistColumnId =
  * as a synthetic column the Excel export expands `editable` into, so the
  * spreadsheet keeps a dedicated USD column.
  */
-export type PricelistColumnKind = "name" | "editable" | "usd" | "markup" | "statusSummary" | "parameter";
+export type PricelistColumnKind =
+  | "name"
+  | "info"
+  | "retailStatus"
+  | "editable"
+  | "usd"
+  | "markup"
+  | "statusSummary"
+  | "parameter";
 
 /**
  * Which premium a markup column reports:
@@ -40,6 +54,8 @@ export type PricelistColumnDefinition = {
   field?: PriceField;
   /** Markup columns only: which premium the column derives. */
   markup?: MarkupBasis;
+  /** Info columns only: which read-only source field the column displays. */
+  infoField?: PricelistInfoField;
   /** Parameter columns only: stable parameter id (without the `param:` prefix). */
   paramId?: string;
   /** Marks a dynamic, region-scoped parameter column. */
@@ -63,6 +79,60 @@ const COLUMN_DEFINITIONS = {
     widthClass: "w-[260px]",
     defaultVisible: true,
     locked: true,
+  },
+  plantModelName: {
+    id: "plantModelName",
+    label: "Plant Model Name",
+    description: "Factory model name. Maintained on the product variant card.",
+    kind: "info",
+    infoField: "plantModelName",
+    widthClass: "w-[180px]",
+    defaultVisible: true,
+  },
+  plant: {
+    id: "plant",
+    label: "Plant",
+    description: "Production site. Shown as a short code; hover for the full plant name.",
+    kind: "info",
+    infoField: "plant",
+    widthClass: "w-[110px]",
+    defaultVisible: true,
+  },
+  retailStatus: {
+    id: "retailStatus",
+    label: "Retail Status",
+    description:
+      "Marketing-facing retail state for the region. Editable on Supplier, read-only on Dealer. Does not control pricelist inclusion.",
+    kind: "retailStatus",
+    widthClass: "w-[200px]",
+    defaultVisible: true,
+  },
+  dimension: {
+    id: "dimension",
+    label: "Dimension",
+    description: "Package dimensions (length × width × height, in metres).",
+    kind: "info",
+    infoField: "dimension",
+    widthClass: "w-[150px]",
+    defaultVisible: true,
+  },
+  cbmPerUnit: {
+    id: "cbmPerUnit",
+    label: "CBM / Unit",
+    description: "Volume of a single unit, in cubic metres.",
+    kind: "info",
+    infoField: "cbmPerUnit",
+    widthClass: "w-[110px]",
+    defaultVisible: true,
+  },
+  capacityPerContainer: {
+    id: "capacityPerContainer",
+    label: "Capacity per Container",
+    description: "Number of units that fit in a full container.",
+    kind: "info",
+    infoField: "capacityPerContainer",
+    widthClass: "w-[170px]",
+    defaultVisible: true,
   },
   purchase: {
     id: "purchase",
@@ -134,9 +204,24 @@ const COLUMN_DEFINITIONS = {
 // can be toggled from the Columns panel. Each price is a single dual column that
 // shows its source-currency amount and USD conversion in one combined input.
 const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
-  global: ["name", "purchase", "dealerStatus"],
+  global: [
+    "name",
+    "plantModelName",
+    "plant",
+    "dimension",
+    "cbmPerUnit",
+    "capacityPerContainer",
+    "purchase",
+    "dealerStatus",
+  ],
   supplier: [
     "name",
+    "plantModelName",
+    "plant",
+    "retailStatus",
+    "dimension",
+    "cbmPerUnit",
+    "capacityPerContainer",
     "purchase",
     "dealer",
     "dealerMarkup",
@@ -144,7 +229,18 @@ const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
     "retailMarkupNoExpenses",
     "retailMarkup",
   ],
-  dealer: ["name", "dealer", "retail", "retailMarkupNoExpenses", "retailMarkup"],
+  dealer: [
+    "name",
+    "plant",
+    "retailStatus",
+    "dimension",
+    "cbmPerUnit",
+    "capacityPerContainer",
+    "dealer",
+    "retail",
+    "retailMarkupNoExpenses",
+    "retailMarkup",
+  ],
 };
 
 /** Dealer scope renders prices as plain read-only text, so they need far less room than the editable dual inputs. */

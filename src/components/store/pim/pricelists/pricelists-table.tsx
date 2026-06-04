@@ -14,7 +14,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getCatalogItemDetailHref, getDisplayProductName, SKELETON_ROW_COUNT } from "../products/catalog/catalog-helpers";
 import { ColumnHeaderLabel } from "./pricelist-column-header";
@@ -23,6 +23,7 @@ import { PricelistParameterCell } from "./pricelist-parameter-cell";
 import { PricelistParameterHeaderCell } from "./pricelist-parameter-header";
 import { PricelistParameterDialog } from "./pricelist-parameter-dialog";
 import { PricelistPriceDualCell } from "./pricelist-price-dual-cell";
+import { PricelistRetailStatusCell } from "./pricelist-retail-status-cell";
 import { PricelistsExpandedRegions } from "./pricelists-expanded-regions";
 import {
   buildParamComputedTargetId,
@@ -31,9 +32,12 @@ import {
 } from "./pricelist-recalc";
 import type { PricelistColumnDefinition } from "./pricelists-columns";
 import {
+  getInfoFieldValue,
+  getPlantFullName,
   getRegionById,
   getSeedCellValue,
   getSeedDealerStatus,
+  getSeedRetailStatus,
   PRICELIST_REGIONS,
   type PricelistRow,
   type PricelistScope,
@@ -45,6 +49,7 @@ import {
 } from "./pricelists-parameters";
 import {
   buildPriceCellId,
+  buildRetailStatusCellId,
   buildStatusCellId,
   formatMarkupValue,
   type CurrencyCode,
@@ -89,6 +94,45 @@ const ProductNameCell = ({ row }: { row: PricelistRow }) => {
         </p>
       </div>
     </div>
+  );
+};
+
+// Read-only source columns (Plant Model Name, Plant, Dimension, …). The Plant
+// column shows a short code; its full plant name is revealed in a tooltip only
+// in the global and supplier scopes — dealers must not see plant names.
+const InfoCell = ({
+  row,
+  column,
+  scope,
+}: {
+  row: PricelistRow;
+  column: PricelistColumnDefinition;
+  scope: PricelistScope;
+}) => {
+  if (!column.infoField) {
+    return null;
+  }
+  const text = getInfoFieldValue(row, column.infoField);
+
+  if (column.infoField === "plant" && scope !== "dealer" && text) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<span className="block max-w-full cursor-default truncate text-sm text-foreground" />}
+        >
+          {text}
+        </TooltipTrigger>
+        <TooltipContent side="bottom" align="start">
+          {getPlantFullName(text)}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <span className="block truncate text-sm text-foreground" title={text}>
+      {text || "—"}
+    </span>
   );
 };
 
@@ -299,6 +343,33 @@ const PricelistTableRow = ({
             );
           }
 
+          if (column.kind === "info") {
+            return (
+              <TableCell key={column.id} className={getCellClassName(column)}>
+                <InfoCell row={row} column={column} scope={scope} />
+              </TableCell>
+            );
+          }
+
+          if (column.kind === "retailStatus") {
+            const retailCellId = buildRetailStatusCellId(regionId, row.id);
+            const retailValue = collab.getRetailStatus(retailCellId) ?? getSeedRetailStatus(row, regionId);
+            return (
+              <TableCell key={column.id} className={getCellClassName(column)}>
+                <PricelistRetailStatusCell
+                  value={retailValue}
+                  readOnly={isReadOnly}
+                  editors={isReadOnly ? [] : collab.getEditors(retailCellId)}
+                  ariaLabel={`Retail status for ${displayName}`}
+                  onChange={isReadOnly ? undefined : (next) => collab.setRetailStatus(retailCellId, next)}
+                  onEditingChange={
+                    isReadOnly ? undefined : (editing) => collab.setEditing(editing ? retailCellId : null)
+                  }
+                />
+              </TableCell>
+            );
+          }
+
           if (column.kind === "statusSummary") {
             return (
               <TableCell key={column.id} className={getCellClassName(column)}>
@@ -415,9 +486,9 @@ const renderSkeletonCell = (column: PricelistColumnDefinition) => {
     );
   }
 
-  // Markup columns render as plain text, so their skeleton is a short line;
-  // dual price cells (even read-only) and parameters use a full-width pill.
-  if (column.kind === "markup") {
+  // Markup and info columns render as plain text, so their skeleton is a short
+  // line; dual price cells (even read-only) and parameters use a full-width pill.
+  if (column.kind === "markup" || column.kind === "info") {
     return <Skeleton className="h-4 w-16" />;
   }
 

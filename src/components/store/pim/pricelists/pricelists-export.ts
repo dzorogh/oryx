@@ -2,9 +2,11 @@ import type { Cell, Row, SheetData } from "write-excel-file/browser";
 import { getDisplayProductName } from "../products/catalog/catalog-helpers";
 import type { MarkupBasis, PricelistColumnDefinition } from "./pricelists-columns";
 import {
+  getInfoFieldValue,
   getRegionById,
   getSeedCellValue,
   getSeedDealerStatus,
+  getSeedRetailStatus,
   PRICELIST_REGIONS,
   scopeHasRegion,
   type PricelistRow,
@@ -13,9 +15,11 @@ import {
 import { SYSTEM_PARAMETER_ID } from "./pricelists-parameters";
 import {
   buildPriceCellId,
+  buildRetailStatusCellId,
   buildStatusCellId,
   computeMarkupPercent,
   convertAmount,
+  formatRetailStatus,
   toUsd,
   type CurrencyCode,
   type PriceField,
@@ -26,7 +30,7 @@ import type { PricelistParameters } from "./use-pricelist-parameters";
 // The export only reads cell values, so it depends on the narrowest possible
 // slice of the collab/parameters surfaces — this keeps `buildExportMatrix` a
 // pure, easily testable function.
-export type ExportCollab = Pick<PricelistsCollab, "getCell" | "getStatus">;
+export type ExportCollab = Pick<PricelistsCollab, "getCell" | "getStatus" | "getRetailStatus">;
 export type ExportParameters = Pick<PricelistParameters, "enabled" | "resolveCell">;
 
 export type BuildExportMatrixArgs = {
@@ -111,6 +115,14 @@ const resolveCellForColumn = (
   switch (column.kind) {
     case "name":
       return stringCell(getDisplayProductName(row.name));
+    case "info":
+      return column.infoField ? stringCell(getInfoFieldValue(row, column.infoField)) : null;
+    case "retailStatus": {
+      const status =
+        collab.getRetailStatus(buildRetailStatusCellId(regionId, row.id)) ??
+        getSeedRetailStatus(row, regionId);
+      return stringCell(formatRetailStatus(status));
+    }
     case "statusSummary": {
       const available = countAvailableRegions(row, collab);
       return stringCell(`Sold in ${available} of ${PRICELIST_REGIONS.length} regions`);

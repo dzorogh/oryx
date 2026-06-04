@@ -13,7 +13,16 @@ describe("usePricelistColumns", () => {
   it("starts from the scope defaults", () => {
     const { result } = renderHook(() => usePricelistColumns("global"));
 
-    expect(result.current.visibleIds).toEqual(["name", "purchase", "dealerStatus"]);
+    expect(result.current.visibleIds).toEqual([
+      "name",
+      "plantModelName",
+      "plant",
+      "dimension",
+      "cbmPerUnit",
+      "capacityPerContainer",
+      "purchase",
+      "dealerStatus",
+    ]);
     expect(result.current.hasCustom).toBe(false);
     expect(result.current.isVisible("purchase")).toBe(true);
   });

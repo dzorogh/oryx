@@ -20,6 +20,9 @@ const createCollabStub = () => {
     setCell: () => { },
     getStatus: () => undefined,
     setStatus: () => { },
+    setStatuses: () => { },
+    getRetailStatus: () => undefined,
+    setRetailStatus: () => { },
     getParamDefs: (regionId) => defs.get(regionId),
     setParamDefs: (regionId, next) => defs.set(regionId, next),
     getParamValue: (valueId) => values.get(valueId),
@@ -159,14 +162,14 @@ describe("usePricelistParameters · definitions", () => {
       result.current.updateParameter(SYSTEM_PARAMETER_ID, {
         label: "Renamed",
         slug: "renamed",
-        formula: "customs + shipping",
+        formula: "customs + logistics",
       }),
     );
 
     const updated = (defs.get("ru") ?? []).find((d) => d.id === SYSTEM_PARAMETER_ID);
     expect(updated?.label).toBe(originalLabel);
     expect(updated?.slug).toBe(originalSlug);
-    expect(updated?.formula).toBe("customs + shipping");
+    expect(updated?.formula).toBe("customs + logistics");
   });
 
   it("removes user parameters but never the system column", () => {
@@ -188,10 +191,10 @@ describe("usePricelistParameters · definitions", () => {
     const { result } = renderHook(() => usePricelistParameters("supplier", "ru", collab));
 
     const before = (defs.get("ru") ?? []).length;
-    // Seed list contains customs, shipping, vat then system; swap first two.
-    act(() => result.current.swapParameter("customs", "shipping"));
+    // Seed list contains logistics, customs, vat, clearance then system; swap first two.
+    act(() => result.current.swapParameter("logistics", "customs"));
     const persisted = (defs.get("ru") ?? []).map((d) => d.id);
-    expect(persisted.indexOf("shipping")).toBeLessThan(persisted.indexOf("customs"));
+    expect(persisted.indexOf("customs")).toBeLessThan(persisted.indexOf("logistics"));
     expect(persisted.at(-1)).toBe(SYSTEM_PARAMETER_ID);
     expect(persisted.length).toBeGreaterThanOrEqual(before);
   });

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import type { DealerStatus, PricelistCellValue } from "../pricelists-helpers";
+import type { DealerStatus, PricelistCellValue, RetailStatus } from "../pricelists-helpers";
 import type { ParameterDef } from "../pricelists-parameters";
 import type { ComputedEntry } from "../pricelist-recalc";
 import {
@@ -29,6 +29,7 @@ type CollabSingleton = {
   provider: WebsocketProvider;
   prices: Y.Map<PricelistCellValue>;
   dealerStatuses: Y.Map<DealerStatus>;
+  retailStatuses: Y.Map<RetailStatus>;
   parameterDefs: Y.Map<ParameterDef[]>;
   parameterValues: Y.Map<number>;
   /** Backend-computed cache (USD, markups, inherited parameters). Leader writes. */
@@ -48,6 +49,7 @@ const createCollab = (): CollabSingleton => {
   const doc = new Y.Doc();
   const prices = doc.getMap<PricelistCellValue>("prices");
   const dealerStatuses = doc.getMap<DealerStatus>("dealerStatuses");
+  const retailStatuses = doc.getMap<RetailStatus>("retailStatuses");
   const parameterDefs = doc.getMap<ParameterDef[]>("parameterDefs");
   const parameterValues = doc.getMap<number>("parameterValues");
   const computed = doc.getMap<ComputedEntry>("computed");
@@ -61,6 +63,7 @@ const createCollab = (): CollabSingleton => {
     provider,
     prices,
     dealerStatuses,
+    retailStatuses,
     parameterDefs,
     parameterValues,
     computed,
@@ -178,6 +181,10 @@ export type PricelistsCollab = {
   setCell: (cellId: string, value: PricelistCellValue) => void;
   getStatus: (cellId: string) => DealerStatus | undefined;
   setStatus: (cellId: string, value: DealerStatus) => void;
+  /** Set the dealer status of many cells at once (one Yjs transaction). */
+  setStatuses: (entries: Array<[cellId: string, value: DealerStatus]>) => void;
+  getRetailStatus: (cellId: string) => RetailStatus | undefined;
+  setRetailStatus: (cellId: string, value: RetailStatus) => void;
   getParamDefs: (regionId: string) => ParameterDef[] | undefined;
   setParamDefs: (regionId: string, defs: ParameterDef[]) => void;
   getParamValue: (valueId: string) => number | undefined;
@@ -219,6 +226,7 @@ export const useYjsPricelists = (): PricelistsCollab => {
     };
     collab.prices.observe(handleSharedChange);
     collab.dealerStatuses.observe(handleSharedChange);
+    collab.retailStatuses.observe(handleSharedChange);
     collab.parameterDefs.observe(handleSharedChange);
     collab.parameterValues.observe(handleSharedChange);
     collab.computed.observe(handleSharedChange);
@@ -274,6 +282,7 @@ export const useYjsPricelists = (): PricelistsCollab => {
       window.removeEventListener("pagehide", handlePageHide);
       collab.prices.unobserve(handleSharedChange);
       collab.dealerStatuses.unobserve(handleSharedChange);
+      collab.retailStatuses.unobserve(handleSharedChange);
       collab.parameterDefs.unobserve(handleSharedChange);
       collab.parameterValues.unobserve(handleSharedChange);
       collab.computed.unobserve(handleSharedChange);
@@ -301,6 +310,25 @@ export const useYjsPricelists = (): PricelistsCollab => {
 
   const setStatus = useCallback((cellId: string, value: DealerStatus) => {
     collabRef.current?.dealerStatuses.set(cellId, value);
+  }, []);
+
+  const setStatuses = useCallback((entries: Array<[string, DealerStatus]>) => {
+    const collab = collabRef.current;
+    if (!collab || entries.length === 0) {
+      return;
+    }
+    collab.doc.transact(() => {
+      entries.forEach(([cellId, value]) => collab.dealerStatuses.set(cellId, value));
+    });
+  }, []);
+
+  const getRetailStatus = useCallback(
+    (cellId: string): RetailStatus | undefined => collabRef.current?.retailStatuses.get(cellId),
+    [],
+  );
+
+  const setRetailStatus = useCallback((cellId: string, value: RetailStatus) => {
+    collabRef.current?.retailStatuses.set(cellId, value);
   }, []);
 
   const getParamDefs = useCallback(
@@ -505,6 +533,9 @@ export const useYjsPricelists = (): PricelistsCollab => {
     setCell,
     getStatus,
     setStatus,
+    setStatuses,
+    getRetailStatus,
+    setRetailStatus,
     getParamDefs,
     setParamDefs,
     getParamValue,

@@ -12,14 +12,17 @@ import {
   type PricelistColumnDefinition,
 } from "@/components/store/pim/pricelists/pricelists-columns";
 import {
+  getInfoFieldValue,
   getPricelistRows,
   getRegionById,
   getSeedCellValue,
+  getSeedRetailStatus,
   DEFAULT_REGION_ID,
 } from "@/components/store/pim/pricelists/pricelists-demo-data";
 import {
   computeMarkupPercent,
   convertAmount,
+  formatRetailStatus,
   toUsd,
 } from "@/components/store/pim/pricelists/pricelists-helpers";
 
@@ -42,6 +45,7 @@ const paramColumn: PricelistColumnDefinition = {
 const emptyCollab: ExportCollab = {
   getCell: () => undefined,
   getStatus: () => undefined,
+  getRetailStatus: () => undefined,
 };
 
 const constantParameters: ExportParameters = {
@@ -165,6 +169,7 @@ describe("buildExportMatrix", () => {
       collab: {
         getCell: (cellId) => (cellId.endsWith(":purchase") ? { amount: 4242, currency: "EUR" } : undefined),
         getStatus: () => undefined,
+        getRetailStatus: () => undefined,
       },
       parameters: constantParameters,
       displayCurrency: "USD",
@@ -184,6 +189,7 @@ describe("buildExportMatrix", () => {
       collab: {
         getCell: (cellId) => (cellId.endsWith(":purchase") ? { amount: null, currency: "CNY" } : undefined),
         getStatus: () => undefined,
+        getRetailStatus: () => undefined,
       },
       parameters: constantParameters,
       displayCurrency: "USD",
@@ -191,6 +197,38 @@ describe("buildExportMatrix", () => {
 
     expect(cellAt(matrix, 1, "Plant Price")).toBeNull();
     expect(cellAt(matrix, 1, "Plant Price (USD)")).toBeNull();
+  });
+
+  it("emits read-only source columns (Plant) as strings", () => {
+    const matrix = buildExportMatrix({
+      rows: [row],
+      columns: supplierColumns,
+      parameterColumns: [],
+      regionId: DEFAULT_REGION_ID,
+      collab: emptyCollab,
+      parameters: constantParameters,
+      displayCurrency: "USD",
+    });
+
+    const cell = cellAt(matrix, 1, "Plant");
+    expect(cell?.type).toBe(String);
+    expect(cell?.value).toBe(getInfoFieldValue(row, "plant"));
+  });
+
+  it("emits retail status as its dictionary label", () => {
+    const matrix = buildExportMatrix({
+      rows: [row],
+      columns: supplierColumns,
+      parameterColumns: [],
+      regionId: DEFAULT_REGION_ID,
+      collab: emptyCollab,
+      parameters: constantParameters,
+      displayCurrency: "USD",
+    });
+
+    const cell = cellAt(matrix, 1, "Retail Status");
+    expect(cell?.type).toBe(String);
+    expect(cell?.value).toBe(formatRetailStatus(getSeedRetailStatus(row, DEFAULT_REGION_ID)));
   });
 
   it("renders the dealer status summary as text in the global scope", () => {

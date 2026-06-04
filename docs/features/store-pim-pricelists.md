@@ -42,11 +42,19 @@
 
 | Scope | Колонки |
 |-------|---------|
-| `global` | `Name`, `Plant Price`, `Dealer Status` |
-| `supplier` | `Name`, `Plant Price`, `Dealer Price`, `Global Markup`, `Retail Price`, `Dealer Markup w/o Expenses`, … параметры …, `Dealer Markup w/ Expenses` |
-| `dealer` | `Name`, `Dealer Price`, `Retail Price`, `Dealer Markup w/o Expenses`, … параметры …, `Dealer Markup w/ Expenses` |
+| `global` | `Name`, `Plant Model Name`, `Plant`, `Dimension`, `CBM / Unit`, `Capacity per Container`, `Plant Price`, `Dealer Status` |
+| `supplier` | `Name`, `Plant Model Name`, `Plant`, `Retail Status`, `Dimension`, `CBM / Unit`, `Capacity per Container`, `Plant Price`, `Dealer Price`, `Global Markup`, `Retail Price`, `Dealer Markup w/o Expenses`, … параметры …, `Dealer Markup w/ Expenses` |
+| `dealer` | `Name`, `Plant`, `Retail Status`, `Dimension`, `CBM / Unit`, `Capacity per Container`, `Dealer Price`, `Retail Price`, `Dealer Markup w/o Expenses`, … параметры …, `Dealer Markup w/ Expenses` |
 
-Виды колонок (`PricelistColumnKind`): `name`, `editable` (**двойная ценовая ячейка**: исходная валюта + валюта отображения в одном инпуте), `markup` (производная наценка, read-only, приглушённый цвет), `statusSummary` (сводка дилерского статуса), `parameter` (динамическая колонка-параметр). Вид `usd` в таблице не используется — он остаётся только как синтетическая колонка, в которую экспорт разворачивает двойную колонку (см. «Экспорт»).
+### Read-only source-колонки (`kind: "info"`)
+
+`Plant Model Name`, `Plant`, `Dimension`, `CBM / Unit`, `Capacity per Container` тянутся из карточки товара/варианта (в демо — детерминированные seed-функции в `pricelists-demo-data.ts`: `getInfoFieldValue`). Размещение по scope соответствует доке (1.1 / 2.1 / 3.1): `Plant Model Name` есть только в `global` и `supplier`; остальные — во всех трёх. `Plant` показывается коротким кодом (`SH-33`); полное название завода в тултипе доступно только в `global` и `supplier` — в `dealer` тултипа нет (по доступам дилеры не видят названия заводов).
+
+### Retail Status (`kind: "retailStatus"`)
+
+Региональный маркетинговый статус товара (`pricelist-retail-status-cell.tsx`), хранится по товару + региону в collab-карте `retailStatuses` (cell-id `{regionId}:{variantId}:retailStatus`), фолбэк — детерминированный seed (`getSeedRetailStatus`). Справочник из 9 значений (дефолт `Draft`): `Draft`, `Available for sale`, `Pre-order only`, `Temporarily unavailable`, `Discontinued`, `Banned`, `Hidden`, `Pending approval`, `Archived`. **Редактируется только в `supplier`; в `dealer` — read-only текст.** Статус **не управляет** попаданием товара в прайслист (это по-прежнему делает `Dealer Status`).
+
+Виды колонок (`PricelistColumnKind`): `name`, `info` (read-only source-колонка из карточки варианта), `retailStatus` (региональный маркетинговый статус), `editable` (**двойная ценовая ячейка**: исходная валюта + валюта отображения в одном инпуте), `markup` (производная наценка, read-only, приглушённый цвет), `statusSummary` (сводка дилерского статуса), `parameter` (динамическая колонка-параметр). Вид `usd` в таблице не используется — он остаётся только как синтетическая колонка, в которую экспорт разворачивает двойную колонку (см. «Экспорт»).
 
 У каждой статичной колонки есть `description` — текст подсказки в заголовке. Заголовок оборачивается в `ColumnHeaderLabel` (`pricelist-column-header.tsx`): видимый лейбл обрезается по ширине колонки (`truncate`), а в тултипе всегда повторяется **полное название колонки** и под ним описание. Таблица и раскрытие по регионам обёрнуты в `TooltipProvider delay={0} closeDelay={0}`, поэтому подсказка появляется сразу при наведении.
 
@@ -80,7 +88,11 @@
 `DealerStatus`: `available` (`Available`) и `unavailable` (`Unavailable`) — всего два значения. Хранится по товару + региону (`{regionId}:{variantId}:dealerStatus`) в отдельной collab-карте.
 
 - В scope `global` колонка `Dealer Status` — это **сводка**: «Sold in N of M regions» с прогресс-баром (зелёный, если продаётся хотя бы в одном регионе).
-- Строки в `global` **раскрываются** (`PricelistsExpandedRegions`): таблица по всем регионам с колонками `Region`, `Dealer Price` (двойная ячейка), `Markup`, `Dealer Status`. Дилерская цена редактируема в обеих валютах (исходная и USD пишут в один cell-id), Markup — производный. Эти ячейки используют те же общие per-region cell-id и тот же канал presence, что и основная таблица.
+- Строки в `global` **раскрываются** (`PricelistsExpandedRegions`): таблица по всем регионам с колонками `Region`, `Dealer Price` (двойная ячейка), `Global Markup`, `Dealer Status`. Строки **сгруппированы по группам регионов** (`getRegionsByGroup`): у каждой группы есть строка-заголовок с её названием и **групповым контролом Dealer Status**. Контрол показывает общий статус группы (или `Mixed`, если статусы различаются), а при выборе значения **каскадно** проставляет его всем регионам группы одной Yjs-транзакцией (`collab.setStatuses`). Дилерская цена редактируема в обеих валютах (исходная и USD пишут в один cell-id), Markup — производный. Эти ячейки используют те же общие per-region cell-id и тот же канал presence, что и основная таблица.
+
+### Группы регионов
+
+Регионы кластеризованы по **группам** (`PricelistRegionGroup`: CIS, MENA, Europe, Americas, APAC) через поле `group` в `PricelistRegion`. Группы используются только для раскрытия Global-строки (заголовок группы + каскадный Dealer Status). Список и хелперы — `PRICELIST_REGION_GROUPS`, `getRegionsByGroup`, `getRegionGroupById` в `pricelists-demo-data.ts`.
 
 Дефолтный статус (`getSeedDealerStatus`) детерминирован: у каждого товара свой «уровень доступности» (0..10) от его id, плюс per-region хеш — так каталог покрывает весь диапазон (от «нигде» до «везде»).
 
@@ -88,7 +100,7 @@
 
 Параметр — это **динамическая колонка на весь регион**, общая для вкладок Supplier и Dealer (`enabled = scope !== "global"`). Содержит одно базовое значение для всех товаров плюс опциональные per-row переопределения. Значения — числа; единицы измерения живут в подписи (`Customs (USD)`).
 
-Seed-параметры в каждом регионе до появления явного списка в collab-доке: `Customs (USD)`, `Shipping (USD)`, `VAT (%)`, `Total Expenses (USD)`. Значения слегка варьируются по региону (`getSeedParamBase`).
+Seed-параметры в каждом регионе до появления явного списка в collab-доке: `Logistics (USD)`, `Customs (USD)`, `VAT (%)`, `Clearance (%)`, `Total Expenses (USD)`. Значения слегка варьируются по региону (`getSeedParamBase`).
 
 | Возможность | Поведение |
 |-------------|-----------|
@@ -117,6 +129,7 @@ Shared-карты дока:
 |-------|-----------|
 | `prices` | `PricelistCellValue` по cell-id |
 | `dealerStatuses` | `DealerStatus` по cell-id |
+| `retailStatuses` | `RetailStatus` по cell-id (`{regionId}:{variantId}:retailStatus`) |
 | `parameterDefs` | список `ParameterDef[]` по `regionId` |
 | `parameterValues` | числа (base + overrides) по value-id |
 | `computed` | кэш вычисленных значений (`ComputedEntry`) по target-id — пишет только лидер-«бэкенд» |
@@ -193,6 +206,8 @@ Shared-карты дока:
 | Тип колонки | Ячейка | Формат |
 |-------------|--------|--------|
 | `name` | строка (отображаемое имя) | — |
+| `info` | строка (значение source-колонки) | — |
+| `retailStatus` | строка (подпись из справочника) | — |
 | `editable` (цена) | число `amount` | `#,##0" {currency}"` (валюта per-cell, т.к. может отличаться при ручном редактировании) |
 | `usd` (синтетическая, из разворота) | число (`toUsd`) | `#,##0` |
 | `markup` | число `percent/100` | `0%` |
@@ -270,6 +285,7 @@ src/components/store/pim/pricelists/
   pricelist-currency-popover.tsx             # кликабельная серединка-чип + попавер выбора валют (price/display)
   use-pricelist-display-currency.ts          # глобальная валюта отображения (localStorage)
   pricelist-status-cell.tsx                  # селектор дилерского статуса
+  pricelist-retail-status-cell.tsx           # розничный статус (select / read-only)
   pricelist-parameter-*.{tsx}                # ячейка/заголовок/меню/диалог параметра
   pricelists-columns-sheet.tsx               # панель Columns (+ действия с параметрами)
   pricelists-filters-sheet.tsx               # панель Filters

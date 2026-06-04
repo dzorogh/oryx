@@ -67,6 +67,45 @@ export const DEALER_STATUS_LABELS: Record<DealerStatus, string> = {
 export const isDealerStatus = (value: unknown): value is DealerStatus =>
   value === "available" || value === "unavailable";
 
+/**
+ * Retail status is a per-product + region marketing flag. It does NOT gate a
+ * product's inclusion in the regional pricelists (that stays driven by the
+ * dealer status); it is editable on the supplier list and read-only on dealer.
+ */
+export type RetailStatus =
+  | "draft"
+  | "available"
+  | "preorder"
+  | "temporarily_unavailable"
+  | "discontinued"
+  | "banned"
+  | "hidden"
+  | "pending_approval"
+  | "archived";
+
+export const RETAIL_STATUSES: { value: RetailStatus; label: string }[] = [
+  { value: "draft", label: "Draft" },
+  { value: "available", label: "Available for sale" },
+  { value: "preorder", label: "Pre-order only" },
+  { value: "temporarily_unavailable", label: "Temporarily unavailable" },
+  { value: "discontinued", label: "Discontinued" },
+  { value: "banned", label: "Banned" },
+  { value: "hidden", label: "Hidden" },
+  { value: "pending_approval", label: "Pending approval" },
+  { value: "archived", label: "Archived" },
+];
+
+export const DEFAULT_RETAIL_STATUS: RetailStatus = "draft";
+
+export const RETAIL_STATUS_LABELS: Record<RetailStatus, string> = Object.fromEntries(
+  RETAIL_STATUSES.map((status) => [status.value, status.label]),
+) as Record<RetailStatus, string>;
+
+export const isRetailStatus = (value: unknown): value is RetailStatus =>
+  typeof value === "string" && RETAIL_STATUSES.some((status) => status.value === value);
+
+export const formatRetailStatus = (value: RetailStatus): string => RETAIL_STATUS_LABELS[value];
+
 export const SCOPE_QUERY_PARAM = "list";
 export const REGION_QUERY_PARAM = "region";
 
@@ -172,6 +211,13 @@ export const buildPriceCellId = (
  */
 export const buildStatusCellId = (regionId: string, variantId: string): string =>
   `${regionId}:${variantId}:dealerStatus`;
+
+/**
+ * Retail status is stored per product + region in its own collaboration map,
+ * mirroring the dealer status id shape with a distinct trailing segment.
+ */
+export const buildRetailStatusCellId = (regionId: string, variantId: string): string =>
+  `${regionId}:${variantId}:retailStatus`;
 
 /**
  * Spreadsheet-style Enter navigation: moves focus to the editable cell directly

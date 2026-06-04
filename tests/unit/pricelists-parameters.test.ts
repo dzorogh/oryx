@@ -22,7 +22,7 @@ describe("pricelists-parameters · system parameter", () => {
 
   it("identifies seed parameter ids", () => {
     expect(isSeedParameterId("customs")).toBe(true);
-    expect(isSeedParameterId("shipping")).toBe(true);
+    expect(isSeedParameterId("logistics")).toBe(true);
     expect(isSeedParameterId("user-defined")).toBe(false);
   });
 });

@@ -16,11 +16,22 @@ describe("pricelists-columns · scope composition", () => {
   it("exposes the expected columns per scope", () => {
     expect(getScopeColumns("global").map((c) => c.id)).toEqual([
       "name",
+      "plantModelName",
+      "plant",
+      "dimension",
+      "cbmPerUnit",
+      "capacityPerContainer",
       "purchase",
       "dealerStatus",
     ]);
     expect(getScopeColumns("supplier").map((c) => c.id)).toEqual([
       "name",
+      "plantModelName",
+      "plant",
+      "retailStatus",
+      "dimension",
+      "cbmPerUnit",
+      "capacityPerContainer",
       "purchase",
       "dealer",
       "dealerMarkup",
@@ -30,6 +41,11 @@ describe("pricelists-columns · scope composition", () => {
     ]);
     expect(getScopeColumns("dealer").map((c) => c.id)).toEqual([
       "name",
+      "plant",
+      "retailStatus",
+      "dimension",
+      "cbmPerUnit",
+      "capacityPerContainer",
       "dealer",
       "retail",
       "retailMarkupNoExpenses",
@@ -78,6 +94,11 @@ describe("pricelists-columns · scope composition", () => {
   it("treats every default-visible column as a default", () => {
     expect(getDefaultVisibleColumnIds("dealer")).toEqual([
       "name",
+      "plant",
+      "retailStatus",
+      "dimension",
+      "cbmPerUnit",
+      "capacityPerContainer",
       "dealer",
       "retail",
       "retailMarkupNoExpenses",
