@@ -118,7 +118,7 @@ const InfoCell = ({
     return (
       <Tooltip>
         <TooltipTrigger
-          render={<span className="block max-w-full cursor-default truncate text-sm text-foreground" />}
+          render={<span className="inline-block max-w-full cursor-default truncate align-middle text-sm text-foreground" />}
         >
           {text}
         </TooltipTrigger>
