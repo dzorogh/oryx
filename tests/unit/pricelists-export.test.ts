@@ -17,7 +17,11 @@ import {
   getSeedCellValue,
   DEFAULT_REGION_ID,
 } from "@/components/store/pim/pricelists/pricelists-demo-data";
-import { computeMarkupPercent, toUsd } from "@/components/store/pim/pricelists/pricelists-helpers";
+import {
+  computeMarkupPercent,
+  convertAmount,
+  toUsd,
+} from "@/components/store/pim/pricelists/pricelists-helpers";
 
 const [row] = getPricelistRows();
 const region = getRegionById(DEFAULT_REGION_ID);
@@ -64,9 +68,10 @@ describe("buildExportMatrix", () => {
       regionId: DEFAULT_REGION_ID,
       collab: emptyCollab,
       parameters: constantParameters,
+      displayCurrency: "USD",
     });
 
-    const expected = assembleExportColumns(supplierColumns, [paramColumn]).map((column) => column.label);
+    const expected = assembleExportColumns(supplierColumns, [paramColumn], "USD").map((column) => column.label);
     expect(headerLabels(matrix)).toEqual(expected);
     expect((matrix[0][0] as CellObject).fontWeight).toBe("bold");
     expect(matrix).toHaveLength(2);
@@ -80,6 +85,7 @@ describe("buildExportMatrix", () => {
       regionId: DEFAULT_REGION_ID,
       collab: emptyCollab,
       parameters: constantParameters,
+      displayCurrency: "USD",
     });
 
     const seed = getSeedCellValue(row, "purchase", region);
@@ -97,6 +103,7 @@ describe("buildExportMatrix", () => {
       regionId: DEFAULT_REGION_ID,
       collab: emptyCollab,
       parameters: constantParameters,
+      displayCurrency: "USD",
     });
 
     const seed = getSeedCellValue(row, "purchase", region);
@@ -104,6 +111,26 @@ describe("buildExportMatrix", () => {
     expect(cell?.type).toBe(Number);
     expect(cell?.value).toBe(toUsd(seed.amount, seed.currency));
     expect(cell?.format).toBe("#,##0");
+  });
+
+  it("makes the conversion column follow the chosen display currency", () => {
+    const matrix = buildExportMatrix({
+      rows: [row],
+      columns: supplierColumns,
+      parameterColumns: [],
+      regionId: DEFAULT_REGION_ID,
+      collab: emptyCollab,
+      parameters: constantParameters,
+      displayCurrency: "EUR",
+    });
+
+    const seed = getSeedCellValue(row, "purchase", region);
+    const cell = cellAt(matrix, 1, "Plant Price (EUR)");
+    expect(cell?.type).toBe(Number);
+    expect(cell?.value).toBe(convertAmount(seed.amount, seed.currency, "EUR"));
+    expect(cell?.format).toBe("#,##0");
+    // The USD-labelled column no longer exists when the display currency is EUR.
+    expect(headerLabels(matrix)).not.toContain("Plant Price (USD)");
   });
 
   it("stores markup as a plain percent number with the unit in the header", () => {
@@ -114,6 +141,7 @@ describe("buildExportMatrix", () => {
       regionId: DEFAULT_REGION_ID,
       collab: emptyCollab,
       parameters: constantParameters,
+      displayCurrency: "USD",
     });
 
     const purchaseSeed = getSeedCellValue(row, "purchase", region);
@@ -123,7 +151,7 @@ describe("buildExportMatrix", () => {
       toUsd(dealerSeed.amount, dealerSeed.currency),
     );
 
-    const cell = cellAt(matrix, 1, "Global Markup (%)");
+    const cell = cellAt(matrix, 1, "Global Markup");
     expect(cell?.format).toBe("#,##0");
     expect(cell?.value).toBe(expectedPercent);
   });
@@ -139,6 +167,7 @@ describe("buildExportMatrix", () => {
         getStatus: () => undefined,
       },
       parameters: constantParameters,
+      displayCurrency: "USD",
     });
 
     const cell = cellAt(matrix, 1, "Plant Price");
@@ -157,6 +186,7 @@ describe("buildExportMatrix", () => {
         getStatus: () => undefined,
       },
       parameters: constantParameters,
+      displayCurrency: "USD",
     });
 
     expect(cellAt(matrix, 1, "Plant Price")).toBeNull();
@@ -172,6 +202,7 @@ describe("buildExportMatrix", () => {
       regionId: DEFAULT_REGION_ID,
       collab: emptyCollab,
       parameters: { enabled: false, resolveCell: () => ({ value: 0, isOverridden: false }) },
+      displayCurrency: "USD",
     });
 
     const cell = cellAt(matrix, 1, "Dealer Status");
@@ -188,6 +219,7 @@ describe("buildExportMatrix", () => {
       regionId: DEFAULT_REGION_ID,
       collab: emptyCollab,
       parameters: constantParameters,
+      displayCurrency: "USD",
     });
 
     expect(matrix).toHaveLength(rows.length + 1);

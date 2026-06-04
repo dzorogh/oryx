@@ -47,6 +47,7 @@ import {
   buildPriceCellId,
   buildStatusCellId,
   formatMarkupValue,
+  type CurrencyCode,
   type PriceField,
   type PricelistCellValue,
 } from "./pricelists-helpers";
@@ -238,6 +239,8 @@ type PricelistTableRowProps = {
   collab: PricelistsCollab;
   deps: RecalcDeps;
   parameters: PricelistParameters;
+  displayCurrency: CurrencyCode;
+  onDisplayCurrencyChange: (currency: CurrencyCode) => void;
   isExpandable: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -252,6 +255,8 @@ const PricelistTableRow = ({
   collab,
   deps,
   parameters,
+  displayCurrency,
+  onDisplayCurrencyChange,
   isExpandable,
   isExpanded,
   onToggleExpand,
@@ -359,6 +364,8 @@ const PricelistTableRow = ({
                 value={value}
                 isReadOnly={isReadOnly}
                 editors={collab.getEditors(cellId)}
+                displayCurrency={displayCurrency}
+                onDisplayCurrencyChange={onDisplayCurrencyChange}
                 ariaLabel={`${column.label} for ${displayName}`}
                 columnKey={`price:${field}`}
                 onEditingChange={(editing) => collab.setEditing(editing ? cellId : null)}
@@ -372,7 +379,13 @@ const PricelistTableRow = ({
       {isExpandable && isExpanded ? (
         <TableRow className="hover:bg-transparent">
           <TableCell colSpan={columns.length + 1} className="bg-muted/20 p-3">
-            <PricelistsExpandedRegions row={row} collab={collab} deps={deps} />
+            <PricelistsExpandedRegions
+              row={row}
+              collab={collab}
+              deps={deps}
+              displayCurrency={displayCurrency}
+              onDisplayCurrencyChange={onDisplayCurrencyChange}
+            />
           </TableCell>
         </TableRow>
       ) : null}
@@ -446,11 +459,13 @@ type PricelistsTableProps = {
   collab: PricelistsCollab;
   deps: RecalcDeps;
   parameters: PricelistParameters;
+  displayCurrency: CurrencyCode;
+  onDisplayCurrencyChange: (currency: CurrencyCode) => void;
   footer?: ReactNode;
 };
 
 export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTableProps>(function PricelistsTable(
-  { rows, columns, isLoading, scope, regionId, collab, deps, parameters, footer },
+  { rows, columns, isLoading, scope, regionId, collab, deps, parameters, displayCurrency, onDisplayCurrencyChange, footer },
   ref,
 ) {
   const isExpandable = scope === "global";
@@ -634,6 +649,7 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
                             isSystem={isSystem}
                             isFirstParameter={isFirst}
                             isDragSource={headerDrag?.paramId === def.id}
+                            isDragging={isHeaderDragging}
                             onInsertBefore={() => setDialogState({ mode: "create", atIndex: paramIndex })}
                             onInsertAfter={() => setDialogState({ mode: "create", atIndex: paramIndex + 1 })}
                             onEdit={() => setDialogState({ mode: "edit", def })}
@@ -697,6 +713,8 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
                       collab={collab}
                       deps={deps}
                       parameters={parameters}
+                      displayCurrency={displayCurrency}
+                      onDisplayCurrencyChange={onDisplayCurrencyChange}
                       isExpandable={isExpandable}
                       isExpanded={expandedRowIds.has(row.id)}
                       onToggleExpand={() => toggleExpanded(row.id)}

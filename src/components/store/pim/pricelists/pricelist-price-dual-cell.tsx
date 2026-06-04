@@ -1,29 +1,18 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { CollabUser } from "./collab/collab-config";
+import { PricelistCurrencyPopover } from "./pricelist-currency-popover";
 import {
-  CURRENCY_CODES,
+  convertAmount,
   focusNextPricelistCellOnEnter,
+  formatConvertedValue,
   formatMoney,
-  formatUsdValue,
-  fromUsd,
   PRICE_AMOUNT_TYPOGRAPHY,
-  toUsd,
   type CurrencyCode,
   type PricelistCellValue,
 } from "./pricelists-helpers";
-
-const CURRENCY_SELECT_ITEMS = CURRENCY_CODES.map((currency) => ({ value: currency, label: currency }));
 
 type PricelistPriceDualCellProps = {
   /** The stored price in its source currency — the single source of truth. */
@@ -32,6 +21,10 @@ type PricelistPriceDualCellProps = {
   onChange: (value: PricelistCellValue) => void;
   onEditingChange: (editing: boolean) => void;
   editors: CollabUser[];
+  /** Currency the display half converts into — a global, view-wide preference. */
+  displayCurrency: CurrencyCode;
+  /** Changes the global display currency for every row at once. */
+  onDisplayCurrencyChange: (currency: CurrencyCode) => void;
   /** Base label, e.g. "Plant Price for Widget"; each half appends its unit. */
   ariaLabel: string;
   /** Groups inputs in the same column so Enter can move focus to the cell below. */
@@ -40,55 +33,76 @@ type PricelistPriceDualCellProps = {
 };
 
 /**
- * The USD half shows a rounded amount; the stored value stays in the source
- * currency, so USD is purely a front-end conversion (no second stored field).
+ * The display half shows a rounded amount in the chosen display currency; the
+ * stored value stays in the source currency, so the conversion is purely on the
+ * front end (no second stored field).
  */
-const toUsdInputText = (value: PricelistCellValue): string => {
-  const usd = toUsd(value.amount, value.currency);
-  return usd === null ? "" : String(Math.round(usd));
+const toDisplayInputText = (value: PricelistCellValue, displayCurrency: CurrencyCode): string => {
+  const converted = convertAmount(value.amount, value.currency, displayCurrency);
+  return converted === null ? "" : String(Math.round(converted));
 };
 
 const INPUT_CLASS =
-  "h-7 w-full min-w-0 flex-1 bg-transparent px-2 py-1 text-left outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "h-7 w-full min-w-0 flex-1 bg-transparent px-2 py-1 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 /**
- * A single combined price input: source amount + currency selector on the left,
- * a divider, then a fixed `USD` unit + the USD amount on the right
- * (`1000 CNY ⌄ | USD 500`). Editing either side writes only the source-currency
- * price; the USD half converts the entered amount back on the fly. Read-only
- * lists (dealer scope) render the same shape as static text.
+ * A single combined price input: the source amount on the left, a clickable
+ * currency chip in the middle (`CNY │ USD`, no chevron), and the converted
+ * display amount on the right. The middle opens a picker for the per-cell price
+ * currency and the global display currency. Editing either amount writes only
+ * the source-currency price; the display half converts the entry back on the
+ * fly. Read-only lists (dealer scope) render the amounts as static text with a
+ * plain divider in the middle — the display currency is switched from the toolbar.
  */
 export const PricelistPriceDualCell = ({
   value,
   onChange,
   onEditingChange,
   editors,
+  displayCurrency,
+  onDisplayCurrencyChange,
   ariaLabel,
   columnKey,
   isReadOnly = false,
 }: PricelistPriceDualCellProps) => {
   const activeEditor = editors[0] ?? null;
-  const [usdFocused, setUsdFocused] = useState(false);
-  const [usdDraft, setUsdDraft] = useState<string>(() => toUsdInputText(value));
-  const [syncedUsd, setSyncedUsd] = useState<string>(() => toUsdInputText(value));
+  const [displayFocused, setDisplayFocused] = useState(false);
+  const [displayDraft, setDisplayDraft] = useState<string>(() => toDisplayInputText(value, displayCurrency));
+  const [syncedDisplay, setSyncedDisplay] = useState<string>(() => toDisplayInputText(value, displayCurrency));
 
-  // Keep the USD half in sync with external/source-currency edits while it is
-  // not being typed into (adjust during render, mirroring the parameter cell).
-  const nextUsd = toUsdInputText(value);
-  if (!usdFocused && nextUsd !== syncedUsd) {
-    setSyncedUsd(nextUsd);
-    setUsdDraft(nextUsd);
+  // Keep the display half in sync with external edits or a display-currency
+  // change while it is not being typed into (adjust during render, mirroring the
+  // parameter cell).
+  const nextDisplay = toDisplayInputText(value, displayCurrency);
+  if (!displayFocused && nextDisplay !== syncedDisplay) {
+    setSyncedDisplay(nextDisplay);
+    setDisplayDraft(nextDisplay);
   }
+
+  const currencyPicker = (
+    <PricelistCurrencyPopover
+      priceCurrency={value.currency}
+      displayCurrency={displayCurrency}
+      onPriceCurrencyChange={(currency) => onChange({ amount: value.amount, currency })}
+      onDisplayCurrencyChange={onDisplayCurrencyChange}
+      allowPriceCurrency={!isReadOnly}
+      ariaLabel={ariaLabel}
+      onOpenChange={(open) => onEditingChange(open)}
+    />
+  );
 
   if (isReadOnly) {
     return (
-      <div className="flex h-7 items-center rounded-lg border border-input bg-muted/30">
-        <span className={cn("min-w-0 flex-1 truncate px-2", PRICE_AMOUNT_TYPOGRAPHY)}>
+      <div className="flex h-7 min-w-0 items-center gap-2">
+        <span className={cn("truncate", PRICE_AMOUNT_TYPOGRAPHY)}>
           {formatMoney(value.amount, value.currency)}
         </span>
-        <span className="h-7 w-px shrink-0 bg-input" aria-hidden />
-        <span className="min-w-0 flex-1 truncate px-2 text-sm tabular-nums text-muted-foreground">
-          {formatUsdValue(toUsd(value.amount, value.currency))}
+        <span className="h-3.5 w-px shrink-0 bg-input" aria-hidden />
+        <span className="truncate text-sm tabular-nums text-muted-foreground">
+          {formatConvertedValue(
+            convertAmount(value.amount, value.currency, displayCurrency),
+            displayCurrency,
+          )}
         </span>
       </div>
     );
@@ -102,14 +116,7 @@ export const PricelistPriceDualCell = ({
     });
   };
 
-  const handleCurrencyChange = (nextCurrency: string | null) => {
-    if (!nextCurrency) {
-      return;
-    }
-    onChange({ amount: value.amount, currency: nextCurrency as CurrencyCode });
-  };
-
-  const commitUsd = (text: string) => {
+  const commitDisplay = (text: string) => {
     if (text.trim() === "") {
       onChange({ amount: null, currency: value.currency });
       return;
@@ -118,17 +125,17 @@ export const PricelistPriceDualCell = ({
     if (!Number.isFinite(parsed)) {
       return;
     }
-    const original = fromUsd(Math.max(0, parsed), value.currency);
+    const original = convertAmount(Math.max(0, parsed), displayCurrency, value.currency);
     onChange({
       amount: original === null ? null : Math.round(original),
       currency: value.currency,
     });
   };
 
-  const handleUsdChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleDisplayChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { value: text } = event.target;
-    setUsdDraft(text);
-    commitUsd(text);
+    setDisplayDraft(text);
+    commitDisplay(text);
   };
 
   return (
@@ -160,67 +167,30 @@ export const PricelistPriceDualCell = ({
         onBlur={() => onEditingChange(false)}
         aria-label={ariaLabel}
         data-pricelist-col={columnKey}
-        className={cn("rounded-l-lg", INPUT_CLASS, PRICE_AMOUNT_TYPOGRAPHY)}
+        className={cn("rounded-l-lg text-right", INPUT_CLASS, PRICE_AMOUNT_TYPOGRAPHY)}
       />
 
-      <Select
-        items={CURRENCY_SELECT_ITEMS}
-        value={value.currency}
-        onValueChange={handleCurrencyChange}
-        onOpenChange={(open) => onEditingChange(open)}
-      >
-        <SelectTrigger
-          size="sm"
-          className={cn(
-            "h-7 shrink-0 gap-1 rounded-none border-0 bg-muted/40 pr-1.5 pl-2 [&_[data-slot=select-value]]:overflow-visible",
-            PRICE_AMOUNT_TYPOGRAPHY,
-          )}
-          aria-label={`${ariaLabel} currency`}
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {CURRENCY_CODES.map((currency) => (
-              <SelectItem key={currency} value={currency}>
-                {currency}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-
-      <span className="h-7 w-px shrink-0 bg-input" aria-hidden />
-
-      <span
-        className={cn(
-          "flex h-7 shrink-0 items-center bg-muted/40 px-2 text-muted-foreground select-none",
-          PRICE_AMOUNT_TYPOGRAPHY,
-        )}
-        aria-hidden
-      >
-        USD
-      </span>
+      {currencyPicker}
 
       <input
         type="number"
         inputMode="decimal"
         min={0}
         step={1}
-        value={usdDraft}
-        onChange={handleUsdChange}
+        value={displayDraft}
+        onChange={handleDisplayChange}
         onKeyDown={focusNextPricelistCellOnEnter}
         onFocus={() => {
-          setUsdFocused(true);
+          setDisplayFocused(true);
           onEditingChange(true);
         }}
         onBlur={() => {
-          setUsdFocused(false);
+          setDisplayFocused(false);
           onEditingChange(false);
         }}
-        aria-label={`${ariaLabel} in USD`}
-        data-pricelist-col={columnKey ? `${columnKey}-usd` : undefined}
-        className={cn("rounded-r-lg", INPUT_CLASS, PRICE_AMOUNT_TYPOGRAPHY)}
+        aria-label={`${ariaLabel} in ${displayCurrency}`}
+        data-pricelist-col={columnKey ? `${columnKey}-display` : undefined}
+        className={cn("rounded-r-lg text-left", INPUT_CLASS, PRICE_AMOUNT_TYPOGRAPHY)}
       />
     </div>
   );

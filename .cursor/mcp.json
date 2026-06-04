@@ -6,6 +6,10 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "token-saver-mcp": {
+      "command": "npx",
+      "args": ["-y", "token-saver-mcp"]
     }
   }
 }

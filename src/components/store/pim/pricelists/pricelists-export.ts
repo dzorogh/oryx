@@ -15,6 +15,7 @@ import {
   buildPriceCellId,
   buildStatusCellId,
   computeMarkupPercent,
+  convertAmount,
   toUsd,
   type CurrencyCode,
   type PriceField,
@@ -37,6 +38,8 @@ export type BuildExportMatrixArgs = {
   regionId: string;
   collab: ExportCollab;
   parameters: ExportParameters;
+  /** Currency the synthetic conversion column follows (the view-wide setting). */
+  displayCurrency: CurrencyCode;
 };
 
 export type ExportPricelistArgs = BuildExportMatrixArgs & {
@@ -45,10 +48,11 @@ export type ExportPricelistArgs = BuildExportMatrixArgs & {
 
 // Numbers stay raw so Excel can compute on them; the number format only changes
 // how the value is displayed. Prices carry their currency code as a literal
-// suffix; USD, parameters, and markup are plain integers (the markup `%` unit
-// lives in the column header, like the USD and parameter columns).
+// suffix; the converted column, parameters, and markup are plain integers (no
+// `%` unit on the markup value, and the converted column's currency lives in its
+// header label).
 const CURRENCY_NUMBER_FORMAT = (currency: CurrencyCode): string => `#,##0" ${currency}"`;
-const USD_NUMBER_FORMAT = "#,##0";
+const CONVERTED_NUMBER_FORMAT = "#,##0";
 const PARAMETER_NUMBER_FORMAT = "#,##0";
 const MARKUP_NUMBER_FORMAT = "#,##0";
 
@@ -74,6 +78,7 @@ const resolveCellForColumn = (
   regionId: string,
   collab: ExportCollab,
   parameters: ExportParameters,
+  displayCurrency: CurrencyCode,
 ): Cell => {
   const region = getRegionById(regionId);
 
@@ -111,8 +116,11 @@ const resolveCellForColumn = (
       return stringCell(`Sold in ${available} of ${PRICELIST_REGIONS.length} regions`);
     }
     case "usd": {
-      const usd = resolveFieldUsd(column.field as PriceField);
-      return usd === null ? null : numberCell(usd, USD_NUMBER_FORMAT);
+      // Synthetic conversion column: follows the view-wide display currency
+      // (markup above still uses USD, since it is a currency-independent ratio).
+      const value = resolvePrice(column.field as PriceField);
+      const converted = convertAmount(value.amount, value.currency, displayCurrency);
+      return converted === null ? null : numberCell(converted, CONVERTED_NUMBER_FORMAT);
     }
     case "markup": {
       const percent = resolveMarkupPercent(column.markup ?? "dealer");
@@ -134,29 +142,36 @@ const resolveCellForColumn = (
   }
 };
 
-// In the table a price is a single dual column (source currency + USD in one
-// input). For a spreadsheet that combined cell is not useful, so the export
-// expands every dual price column into two: the source-currency price followed
-// by a dedicated USD column (`Plant Price` → `Plant Price`, `Plant Price (USD)`).
-const expandColumnForExport = (column: PricelistColumnDefinition): PricelistColumnDefinition[] => {
+// In the table a price is a single dual column (source currency + display
+// currency in one input). For a spreadsheet that combined cell is not useful,
+// so the export expands every dual price column into two: the source-currency
+// price followed by a dedicated conversion column in the chosen display currency
+// (`Plant Price` → `Plant Price`, `Plant Price (USD)` / `Plant Price (EUR)` / …).
+const expandColumnForExport = (
+  column: PricelistColumnDefinition,
+  displayCurrency: CurrencyCode,
+): PricelistColumnDefinition[] => {
   if (column.kind !== "editable" || !column.field) {
     return [column];
   }
   return [
     column,
-    { ...column, id: `${column.id}Usd`, label: `${column.label} (USD)`, kind: "usd" },
+    { ...column, id: `${column.id}Usd`, label: `${column.label} (${displayCurrency})`, kind: "usd" },
   ];
 };
 
 /** Mirrors the table column assembly (leading + parameters + trailing), then
- * expands dual price columns into separate source + USD columns. */
+ * expands dual price columns into separate source + display-currency columns. */
 export const assembleExportColumns = (
   columns: PricelistColumnDefinition[],
   parameterColumns: PricelistColumnDefinition[],
+  displayCurrency: CurrencyCode,
 ): PricelistColumnDefinition[] => {
   const leadingColumns = columns.filter((column) => !column.afterParameters);
   const trailingColumns = columns.filter((column) => column.afterParameters);
-  return [...leadingColumns, ...parameterColumns, ...trailingColumns].flatMap(expandColumnForExport);
+  return [...leadingColumns, ...parameterColumns, ...trailingColumns].flatMap((column) =>
+    expandColumnForExport(column, displayCurrency),
+  );
 };
 
 /** Builds the full sheet matrix (bold header row + one row per product). */
@@ -167,13 +182,16 @@ export const buildExportMatrix = ({
   regionId,
   collab,
   parameters,
+  displayCurrency,
 }: BuildExportMatrixArgs): SheetData => {
-  const allColumns = assembleExportColumns(columns, parameterColumns);
+  const allColumns = assembleExportColumns(columns, parameterColumns, displayCurrency);
 
   const headerRow: Row = allColumns.map((column) => ({ value: column.label, fontWeight: "bold" }));
 
   const dataRows: Row[] = rows.map((row) =>
-    allColumns.map((column) => resolveCellForColumn(column, row, regionId, collab, parameters)),
+    allColumns.map((column) =>
+      resolveCellForColumn(column, row, regionId, collab, parameters, displayCurrency),
+    ),
   );
 
   return [headerRow, ...dataRows];
@@ -203,7 +221,7 @@ export const buildExportFileName = (scope: PricelistScope, regionId: string): st
 export const exportPricelistToXlsx = async (args: ExportPricelistArgs): Promise<void> => {
   const { scope, ...matrixArgs } = args;
   const data = buildExportMatrix(matrixArgs);
-  const allColumns = assembleExportColumns(args.columns, args.parameterColumns);
+  const allColumns = assembleExportColumns(args.columns, args.parameterColumns, args.displayCurrency);
 
   const { default: writeXlsxFile } = await import("write-excel-file/browser");
   await writeXlsxFile(data, {

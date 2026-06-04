@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CollabUser } from "@/components/store/pim/pricelists/collab/collab-config";
 import { PricelistsPresence } from "@/components/store/pim/pricelists/pricelists-presence";
@@ -38,18 +39,24 @@ describe("PricelistsPresence", () => {
   });
 });
 
+const renderDualCell = (props: Partial<ComponentProps<typeof PricelistPriceDualCell>> = {}) =>
+  render(
+    <PricelistPriceDualCell
+      value={{ amount: 100, currency: "USD" }}
+      onChange={vi.fn()}
+      onEditingChange={vi.fn()}
+      editors={[]}
+      displayCurrency="USD"
+      onDisplayCurrencyChange={vi.fn()}
+      ariaLabel="Dealer Price for Widget"
+      {...props}
+    />,
+  );
+
 describe("PricelistPriceDualCell", () => {
   it("clamps the source amount to zero and keeps the currency", () => {
     const onChange = vi.fn();
-    render(
-      <PricelistPriceDualCell
-        value={{ amount: 100, currency: "USD" }}
-        onChange={onChange}
-        onEditingChange={vi.fn()}
-        editors={[]}
-        ariaLabel="Dealer Price for Widget"
-      />,
-    );
+    renderDualCell({ onChange });
 
     fireEvent.change(screen.getByLabelText("Dealer Price for Widget"), { target: { value: "-5" } });
 
@@ -57,31 +64,28 @@ describe("PricelistPriceDualCell", () => {
   });
 
   it("shows the source price converted to a rounded USD amount", () => {
-    render(
-      <PricelistPriceDualCell
-        value={{ amount: 1000, currency: "CNY" }}
-        onChange={vi.fn()}
-        onEditingChange={vi.fn()}
-        editors={[]}
-        ariaLabel="Plant Price for Widget"
-      />,
-    );
+    renderDualCell({ value: { amount: 1000, currency: "CNY" }, ariaLabel: "Plant Price for Widget" });
 
     const usdInput = screen.getByLabelText<HTMLInputElement>("Plant Price for Widget in USD");
     expect(usdInput.value).toBe(String(Math.round(1000 * CURRENCY_USD_RATE.CNY)));
   });
 
+  it("converts the display half into the chosen (non-USD) display currency", () => {
+    renderDualCell({
+      value: { amount: 1000, currency: "CNY" },
+      displayCurrency: "EUR",
+      ariaLabel: "Plant Price for Widget",
+    });
+
+    const displayInput = screen.getByLabelText<HTMLInputElement>("Plant Price for Widget in EUR");
+    expect(displayInput.value).toBe(
+      String(Math.round((1000 * CURRENCY_USD_RATE.CNY) / CURRENCY_USD_RATE.EUR)),
+    );
+  });
+
   it("converts an edited USD amount back into the source currency, keeping it", () => {
     const onChange = vi.fn();
-    render(
-      <PricelistPriceDualCell
-        value={{ amount: 1000, currency: "CNY" }}
-        onChange={onChange}
-        onEditingChange={vi.fn()}
-        editors={[]}
-        ariaLabel="Plant Price for Widget"
-      />,
-    );
+    renderDualCell({ value: { amount: 1000, currency: "CNY" }, onChange, ariaLabel: "Plant Price for Widget" });
 
     fireEvent.change(screen.getByLabelText("Plant Price for Widget in USD"), { target: { value: "293" } });
 
@@ -93,15 +97,7 @@ describe("PricelistPriceDualCell", () => {
 
   it("emits editing presence on focus/blur and renders the active editor badge", () => {
     const onEditingChange = vi.fn();
-    render(
-      <PricelistPriceDualCell
-        value={{ amount: 100, currency: "USD" }}
-        onChange={vi.fn()}
-        onEditingChange={onEditingChange}
-        editors={[userA]}
-        ariaLabel="Retail Price for Widget"
-      />,
-    );
+    renderDualCell({ onEditingChange, editors: [userA], ariaLabel: "Retail Price for Widget" });
 
     const input = screen.getByLabelText("Retail Price for Widget");
     fireEvent.focus(input);
@@ -112,21 +108,42 @@ describe("PricelistPriceDualCell", () => {
     expect(screen.getByText("Swift Otter")).toBeVisible();
   });
 
-  it("renders read-only prices as static source + USD text without inputs", () => {
-    render(
-      <PricelistPriceDualCell
-        value={{ amount: 1000, currency: "CNY" }}
-        onChange={vi.fn()}
-        onEditingChange={vi.fn()}
-        editors={[]}
-        ariaLabel="Dealer Price for Widget"
-        isReadOnly
-      />,
-    );
+  it("changes the per-cell price currency from the picker, keeping the amount", () => {
+    const onChange = vi.fn();
+    renderDualCell({ value: { amount: 1000, currency: "CNY" }, onChange, ariaLabel: "Plant Price for Widget" });
+
+    fireEvent.click(screen.getByLabelText("Plant Price for Widget: choose price and display currency"));
+    const priceGroup = screen.getByRole("group", { name: "Price currency" });
+    fireEvent.click(within(priceGroup).getByText("EUR"));
+
+    expect(onChange).toHaveBeenCalledWith({ amount: 1000, currency: "EUR" });
+  });
+
+  it("changes the global display currency from the picker", () => {
+    const onDisplayCurrencyChange = vi.fn();
+    renderDualCell({ onDisplayCurrencyChange, ariaLabel: "Plant Price for Widget" });
+
+    fireEvent.click(screen.getByLabelText("Plant Price for Widget: choose price and display currency"));
+    const displayGroup = screen.getByRole("group", { name: "Display currency" });
+    fireEvent.click(within(displayGroup).getByText("EUR"));
+
+    expect(onDisplayCurrencyChange).toHaveBeenCalledWith("EUR");
+  });
+
+  it("renders read-only prices as static source + display text without amount inputs", () => {
+    renderDualCell({ value: { amount: 1000, currency: "CNY" }, isReadOnly: true });
 
     expect(screen.queryByLabelText("Dealer Price for Widget")).toBeNull();
     expect(screen.getByText("1,000 CNY")).toBeVisible();
     expect(screen.getByText(`${Math.round(1000 * CURRENCY_USD_RATE.CNY).toLocaleString("en-US")} USD`)).toBeVisible();
+  });
+
+  it("renders a plain divider without a currency picker in read-only cells", () => {
+    renderDualCell({ value: { amount: 1000, currency: "CNY" }, isReadOnly: true });
+
+    expect(
+      screen.queryByLabelText("Dealer Price for Widget: choose price and display currency"),
+    ).toBeNull();
   });
 });
 

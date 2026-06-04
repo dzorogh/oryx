@@ -84,7 +84,7 @@ const COLUMN_DEFINITIONS = {
   },
   dealerMarkup: {
     id: "dealerMarkup",
-    label: "Global Markup (%)",
+    label: "Global Markup",
     description: "Markup over Plant Price that is included in the Dealer Price.",
     kind: "markup",
     markup: "dealer",
@@ -103,7 +103,7 @@ const COLUMN_DEFINITIONS = {
   },
   retailMarkupNoExpenses: {
     id: "retailMarkupNoExpenses",
-    label: "Dealer Markup w/o Expenses (%)",
+    label: "Dealer Markup w/o Expenses",
     description: "Dealer margin without expenses: markup of Retail Price over the bare Dealer Price.",
     kind: "markup",
     markup: "retailNoExpenses",
@@ -112,7 +112,7 @@ const COLUMN_DEFINITIONS = {
   },
   retailMarkup: {
     id: "retailMarkup",
-    label: "Dealer Markup w/ Expenses (%)",
+    label: "Dealer Markup w/ Expenses",
     description: "Dealer margin including expenses: markup of Retail Price over landed cost (Dealer Price + Total Expenses).",
     kind: "markup",
     markup: "retail",
@@ -147,8 +147,17 @@ const SCOPE_COLUMN_IDS: Record<PricelistScope, PricelistColumnId[]> = {
   dealer: ["name", "dealer", "retail", "retailMarkupNoExpenses", "retailMarkup"],
 };
 
+/** Dealer scope renders prices as plain read-only text, so they need far less room than the editable dual inputs. */
+const DEALER_PRICE_WIDTH_CLASS = "w-[220px]";
+
 export const getScopeColumns = (scope: PricelistScope): StaticColumnDefinition[] =>
-  SCOPE_COLUMN_IDS[scope].map((id) => COLUMN_DEFINITIONS[id]);
+  SCOPE_COLUMN_IDS[scope].map((id) => {
+    const column = COLUMN_DEFINITIONS[id];
+    if (scope === "dealer" && column.kind === "editable") {
+      return { ...column, widthClass: DEALER_PRICE_WIDTH_CLASS };
+    }
+    return column;
+  });
 
 /** Build dynamic column definitions from the region's parameter list. */
 export const buildParameterColumns = (defs: ParameterDef[]): PricelistColumnDefinition[] =>
@@ -188,8 +197,12 @@ export const getOrderedVisibleColumns = (
 export const getVisibleColumnDefinitions = (
   scope: PricelistScope,
   visibleIds: Iterable<PricelistColumnId>,
-): PricelistColumnDefinition[] =>
-  getOrderedVisibleColumns(scope, visibleIds).map((id) => COLUMN_DEFINITIONS[id]);
+): PricelistColumnDefinition[] => {
+  // Use getScopeColumns (not COLUMN_DEFINITIONS) so scope-specific overrides like
+  // the narrower dealer price width survive into the rendered table.
+  const visibleSet = new Set(visibleIds);
+  return getScopeColumns(scope).filter((column) => column.locked || visibleSet.has(column.id));
+};
 
 export const parseStoredColumns = (
   scope: PricelistScope,

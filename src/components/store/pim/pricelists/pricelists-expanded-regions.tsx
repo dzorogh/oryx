@@ -19,12 +19,15 @@ import {
   buildPriceCellId,
   buildStatusCellId,
   formatMarkupValue,
+  type CurrencyCode,
 } from "./pricelists-helpers";
 
 type PricelistsExpandedRegionsProps = {
   row: PricelistRow;
   collab: PricelistsCollab;
   deps: RecalcDeps;
+  displayCurrency: CurrencyCode;
+  onDisplayCurrencyChange: (currency: CurrencyCode) => void;
 };
 
 /**
@@ -33,7 +36,13 @@ type PricelistsExpandedRegionsProps = {
  * dealer status lives in its own collaboration map. Both edit asynchronously
  * through the same sockets/presence channel as the main table.
  */
-export const PricelistsExpandedRegions = ({ row, collab, deps }: PricelistsExpandedRegionsProps) => {
+export const PricelistsExpandedRegions = ({
+  row,
+  collab,
+  deps,
+  displayCurrency,
+  onDisplayCurrencyChange,
+}: PricelistsExpandedRegionsProps) => {
   const displayName = getDisplayProductName(row.name);
 
   return (
@@ -60,7 +69,7 @@ export const PricelistsExpandedRegions = ({ row, collab, deps }: PricelistsExpan
               </TableHead>
               <TableHead className="h-9 min-w-0 overflow-hidden px-2 text-left text-xs">
                 <ColumnHeaderLabel
-                  label="Global Markup (%)"
+                  label="Global Markup"
                   description="Markup over Plant Price that is included in the Dealer Price."
                 />
               </TableHead>
@@ -92,6 +101,8 @@ export const PricelistsExpandedRegions = ({ row, collab, deps }: PricelistsExpan
                     <PricelistPriceDualCell
                       value={priceValue}
                       editors={collab.getEditors(priceCellId)}
+                      displayCurrency={displayCurrency}
+                      onDisplayCurrencyChange={onDisplayCurrencyChange}
                       ariaLabel={`Dealer price for ${displayName} in ${region.label}`}
                       columnKey={`region-dealer:${row.id}`}
                       onEditingChange={(editing) => collab.setEditing(editing ? priceCellId : null)}

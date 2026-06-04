@@ -31,6 +31,7 @@ import {
 } from "./pricelists-demo-data";
 import { buildStatusCellId, REGION_QUERY_PARAM, SCOPE_QUERY_PARAM } from "./pricelists-helpers";
 import { usePricelistColumns } from "./use-pricelist-columns";
+import { usePricelistDisplayCurrency } from "./use-pricelist-display-currency";
 import { usePricelistParameters } from "./use-pricelist-parameters";
 import { usePricelistsController, type AvailabilityFilter } from "./use-pricelists-controller";
 
@@ -72,6 +73,7 @@ const PricelistsPageContent = () => {
 
   const controller = usePricelistsController(scope, regionId, availability);
   const columns = usePricelistColumns(scope);
+  const { displayCurrency, setDisplayCurrency } = usePricelistDisplayCurrency();
   const tableRef = useRef<PricelistsTableHandle>(null);
   const parameters = usePricelistParameters(scope, regionId, collab);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
@@ -145,6 +147,7 @@ const PricelistsPageContent = () => {
         parameterColumns: parameters.enabled ? parameters.visibleColumns : [],
         collab,
         parameters,
+        displayCurrency,
       });
       toast.success(`Exported ${controller.filteredItems.length} products`);
     } catch {
@@ -152,7 +155,7 @@ const PricelistsPageContent = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [collab, controller.filteredItems, isExporting, parameters, regionId, scope, visibleColumns]);
+  }, [collab, controller.filteredItems, displayCurrency, isExporting, parameters, regionId, scope, visibleColumns]);
 
   const footer = (
     <CatalogFooter
@@ -190,6 +193,8 @@ const PricelistsPageContent = () => {
             onRegionChange={handleRegionChange}
             filters={controller.filters}
             columns={columns}
+            displayCurrency={displayCurrency}
+            onDisplayCurrencyChange={setDisplayCurrency}
             onlineUsers={collab.onlineUsers}
             connected={collab.connected}
             onOpenFilters={() => controller.setFilterSheetOpen(true)}
@@ -208,6 +213,8 @@ const PricelistsPageContent = () => {
             collab={collab}
             deps={deps}
             parameters={parameters}
+            displayCurrency={displayCurrency}
+            onDisplayCurrencyChange={setDisplayCurrency}
             footer={footer}
           />
         </div>

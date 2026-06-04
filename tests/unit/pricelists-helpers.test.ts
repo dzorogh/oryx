@@ -3,6 +3,7 @@ import {
   buildPriceCellId,
   buildStatusCellId,
   computeMarkupPercent,
+  convertAmount,
   CURRENCY_CODES,
   CURRENCY_USD_RATE,
   formatMarkupValue,
@@ -67,6 +68,32 @@ describe("pricelists-helpers · fromUsd", () => {
     const original = 52486;
     const usd = toUsd(original, "CNY");
     expect(fromUsd(usd, "CNY")).toBeCloseTo(original, 6);
+  });
+});
+
+describe("pricelists-helpers · convertAmount", () => {
+  it("returns null when amount is null", () => {
+    expect(convertAmount(null, "CNY", "EUR")).toBeNull();
+  });
+
+  it("is a no-op when the currencies match", () => {
+    expect(convertAmount(1000, "CNY", "CNY")).toBe(1000);
+  });
+
+  it("matches toUsd when converting to USD", () => {
+    expect(convertAmount(1000, "CNY", "USD")).toBeCloseTo(toUsd(1000, "CNY") ?? 0, 10);
+  });
+
+  it("converts between two foreign currencies via their USD rates", () => {
+    expect(convertAmount(1000, "CNY", "EUR")).toBeCloseTo(
+      (1000 * CURRENCY_USD_RATE.CNY) / CURRENCY_USD_RATE.EUR,
+      10,
+    );
+  });
+
+  it("round-trips an amount through a second currency", () => {
+    const eur = convertAmount(1000, "CNY", "EUR");
+    expect(convertAmount(eur, "EUR", "CNY")).toBeCloseTo(1000, 6);
   });
 });
 

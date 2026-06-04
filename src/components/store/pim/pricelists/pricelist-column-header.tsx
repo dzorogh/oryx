@@ -16,7 +16,9 @@ type ColumnHeaderLabelProps = {
  */
 export const ColumnHeaderLabel = ({ label, description }: ColumnHeaderLabelProps) => (
   <Tooltip>
-    <TooltipTrigger render={<span className="block w-full cursor-default truncate" />}>{label}</TooltipTrigger>
+    <TooltipTrigger render={<span className="inline-block max-w-full cursor-default truncate align-middle" />}>
+      {label}
+    </TooltipTrigger>
     <TooltipContent side="bottom" align="start" className="flex max-w-xs flex-col items-start gap-0.5 text-left">
       <span className="font-semibold">{label}</span>
       {description ? <span className="text-background/80">{description}</span> : null}

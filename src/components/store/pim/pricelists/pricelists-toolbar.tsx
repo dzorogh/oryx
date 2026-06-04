@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Coins, Columns3, Download, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import {
@@ -12,8 +12,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CatalogCategoryTreeFilter } from "../products/catalog/catalog-category-tree-filter";
-import { CatalogColumnsButton } from "../products/catalog/catalog-columns-button";
-import { CatalogFiltersButton, CatalogQuickSearchControl } from "../products/catalog/catalog-filters";
+import { CatalogQuickSearchControl } from "../products/catalog/catalog-filters";
 import { PricelistsPresence } from "./pricelists-presence";
 import {
   PRICELIST_REGIONS,
@@ -24,6 +23,7 @@ import {
   scopeHasRegion,
   type PricelistScope,
 } from "./pricelists-demo-data";
+import { CURRENCY_CODES, type CurrencyCode } from "./pricelists-helpers";
 import type { PricelistFilters } from "./use-pricelists-controller";
 import type { PricelistColumns } from "./use-pricelist-columns";
 import type { CollabUser } from "./collab/collab-config";
@@ -35,6 +35,8 @@ type PricelistsToolbarProps = {
   onRegionChange: (regionId: string) => void;
   filters: PricelistFilters;
   columns: PricelistColumns;
+  displayCurrency: CurrencyCode;
+  onDisplayCurrencyChange: (currency: CurrencyCode) => void;
   onlineUsers: CollabUser[];
   connected: boolean;
   onOpenFilters: () => void;
@@ -50,6 +52,8 @@ export const PricelistsToolbar = ({
   onRegionChange,
   filters,
   columns,
+  displayCurrency,
+  onDisplayCurrencyChange,
   onlineUsers,
   connected,
   onOpenFilters,
@@ -63,7 +67,8 @@ export const PricelistsToolbar = ({
         <div className="min-w-0 space-y-1">
           <h1 className="text-lg font-semibold text-foreground">Pricelists</h1>
           <p className="text-xs text-muted-foreground">
-            Manage product prices together in real time.
+            Review and update product prices across regions, compare them side by side, and
+            collaborate with your team in real time.
           </p>
         </div>
 
@@ -72,9 +77,9 @@ export const PricelistsToolbar = ({
 
       <div className="-mx-3 border-t border-[var(--corportal-border-grey)]" aria-hidden />
 
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-        <div className="flex items-center gap-2 lg:contents">
-          <TooltipProvider delay={300}>
+      <TooltipProvider delay={300}>
+        <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+          <div className="flex flex-wrap items-center gap-2 lg:contents">
             <ToggleGroup
               value={[scope]}
               variant="outline"
@@ -103,75 +108,150 @@ export const PricelistsToolbar = ({
                 </Tooltip>
               ))}
             </ToggleGroup>
-          </TooltipProvider>
 
-          {scopeHasRegion(scope) ? (
+            {scopeHasRegion(scope) ? (
+              <Select
+                items={PRICELIST_REGIONS.map((region) => ({
+                  value: region.id,
+                  label: region.label,
+                }))}
+                value={regionId}
+                onValueChange={(value) => {
+                  if (value) {
+                    onRegionChange(value);
+                  }
+                }}
+              >
+                <SelectTrigger
+                  size="default"
+                  className="min-w-[140px] flex-1 bg-background lg:w-[180px] lg:flex-none"
+                  aria-label="Select region"
+                >
+                  <SelectValue placeholder="Select region" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {PRICELIST_REGIONS.map((region) => (
+                      <SelectItem key={region.id} value={region.id}>
+                        {region.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            ) : null}
+
             <Select
-              items={PRICELIST_REGIONS.map((region) => ({
-                value: region.id,
-                label: region.label,
-              }))}
-              value={regionId}
+              items={CURRENCY_CODES.map((currency) => ({ value: currency, label: currency }))}
+              value={displayCurrency}
               onValueChange={(value) => {
                 if (value) {
-                  onRegionChange(value);
+                  onDisplayCurrencyChange(value as CurrencyCode);
                 }
               }}
             >
-              <SelectTrigger
-                size="default"
-                className="flex-1 bg-background lg:w-[220px] lg:flex-none"
-                aria-label="Select region"
-              >
-                <SelectValue placeholder="Select region" />
-              </SelectTrigger>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <SelectTrigger
+                      size="default"
+                      className="w-[90px] shrink-0 gap-1 bg-background"
+                      aria-label="Display currency"
+                    />
+                  }
+                >
+                  <Coins aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+                  <SelectValue />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start" className="max-w-xs text-left">
+                  Display currency for every row. Prices are converted on the fly — only the
+                  source-currency price is stored.
+                </TooltipContent>
+              </Tooltip>
               <SelectContent>
                 <SelectGroup>
-                  {PRICELIST_REGIONS.map((region) => (
-                    <SelectItem key={region.id} value={region.id}>
-                      {region.label}
+                  {CURRENCY_CODES.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
                     </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
-          ) : null}
+          </div>
+
+          <div className="flex items-center gap-2 lg:contents">
+            <CatalogQuickSearchControl
+              value={filters.search.value}
+              onChange={filters.search.onChange}
+              className="min-w-0 lg:min-w-[180px]"
+            />
+
+            <CatalogCategoryTreeFilter
+              value={filters.category.value}
+              onValueChange={filters.category.onChange}
+              ariaLabel="Quick filter by category"
+              placeholder="Category"
+              allLabel="All categories"
+              widthClassName="w-[120px] shrink-0 lg:w-[176px]"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 lg:contents">
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant={filters.hasActive ? "default" : "outline"}
+                    size="icon"
+                    aria-label="Open catalog filters panel"
+                    onClick={onOpenFilters}
+                  />
+                }
+              >
+                <SlidersHorizontal aria-hidden />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Filters</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant={columns.hasCustom ? "default" : "outline"}
+                    size="icon"
+                    aria-label="Open catalog columns panel"
+                    onClick={onOpenColumns}
+                  />
+                }
+              >
+                <Columns3 aria-hidden />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Columns</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Export pricelist"
+                    onClick={onExport}
+                    disabled={isExporting}
+                  />
+                }
+              >
+                <Download aria-hidden />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{isExporting ? "Exporting…" : "Export"}</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
-
-        <div className="flex items-center gap-2 lg:contents">
-          <CatalogQuickSearchControl
-            value={filters.search.value}
-            onChange={filters.search.onChange}
-            className="min-w-0 lg:min-w-[240px]"
-          />
-
-          <CatalogCategoryTreeFilter
-            value={filters.category.value}
-            onValueChange={filters.category.onChange}
-            ariaLabel="Quick filter by category"
-            placeholder="Category"
-            allLabel="All categories"
-            widthClassName="w-[140px] shrink-0 lg:w-[220px]"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 *:flex-1 lg:contents lg:*:flex-none">
-          <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
-          <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
-
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
-            aria-label="Export pricelist"
-            onClick={onExport}
-            disabled={isExporting}
-          >
-            <Download aria-hidden className="size-3.5" />
-            {isExporting ? "Exporting…" : "Export"}
-          </Button>
-        </div>
-      </div>
+      </TooltipProvider>
     </CardHeader>
   </Card>
 );

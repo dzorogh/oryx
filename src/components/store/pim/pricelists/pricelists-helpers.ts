@@ -85,6 +85,27 @@ export const toUsd = (amount: number | null, currency: CurrencyCode): number | n
 export const fromUsd = (usdAmount: number | null, currency: CurrencyCode): number | null =>
   usdAmount === null ? null : usdAmount / CURRENCY_USD_RATE[currency];
 
+/**
+ * Converts an amount between any two currencies via their USD rates
+ * (`amount × rate[from] / rate[to]`). Powers the dual price cell, whose display
+ * half can render any chosen currency (not just USD). Returns the raw value;
+ * callers round to the precision they persist. A no-op when `from === to`.
+ */
+export const convertAmount = (
+  amount: number | null,
+  from: CurrencyCode,
+  to: CurrencyCode,
+): number | null => {
+  if (amount === null || from === to) {
+    return amount;
+  }
+  return (amount * CURRENCY_USD_RATE[from]) / CURRENCY_USD_RATE[to];
+};
+
+/** Conversion shown in the dual cell's display half, suffixed with the code. */
+export const formatConvertedValue = (amount: number | null, currency: CurrencyCode): string =>
+  amount === null ? "—" : `${formatNumber(amount)} ${currency}`;
+
 const formatNumber = (value: number, maximumFractionDigits = 0) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(value);
 
