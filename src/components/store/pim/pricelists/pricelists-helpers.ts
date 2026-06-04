@@ -106,9 +106,13 @@ export const computeMarkupPercent = (
   return ((dealerUsd - purchaseUsd) / purchaseUsd) * 100;
 };
 
-/** Markup rendered in its own column: rounded whole percent, muted like USD. */
-export const formatMarkupPercent = (percent: number | null): string =>
-  percent === null ? "—" : `${formatNumber(percent)}%`;
+/**
+ * Markup rendered in its own column: a plain rounded number. The `%` unit lives
+ * in the column header (like USD and parameter columns), so the cell stays
+ * unformatted. Muted like USD since it is a derived value.
+ */
+export const formatMarkupValue = (percent: number | null): string =>
+  percent === null ? "—" : formatNumber(percent);
 
 /** Same typography for editable amount and read-only primary price cells. */
 export const PRICE_AMOUNT_TYPOGRAPHY = "text-sm font-normal tabular-nums text-foreground";

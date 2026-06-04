@@ -5,7 +5,7 @@ import {
   computeMarkupPercent,
   CURRENCY_CODES,
   CURRENCY_USD_RATE,
-  formatMarkupPercent,
+  formatMarkupValue,
   formatMoney,
   formatUsd,
   formatUsdValue,
@@ -73,10 +73,11 @@ describe("pricelists-helpers · formatting", () => {
     expect(formatUsdValue(null)).toBe("—");
   });
 
-  it("formats markup as a whole percent and an em dash for null", () => {
-    expect(formatMarkupPercent(25)).toBe("25%");
-    expect(formatMarkupPercent(0)).toBe("0%");
-    expect(formatMarkupPercent(null)).toBe("—");
+  it("formats markup as a plain rounded number (unit lives in the header)", () => {
+    expect(formatMarkupValue(25)).toBe("25");
+    expect(formatMarkupValue(0)).toBe("0");
+    expect(formatMarkupValue(-5)).toBe("-5");
+    expect(formatMarkupValue(null)).toBe("—");
   });
 });
 

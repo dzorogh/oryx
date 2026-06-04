@@ -78,7 +78,7 @@ const COLUMN_DEFINITIONS = {
   },
   dealerMarkup: {
     id: "dealerMarkup",
-    label: "Dealer Markup",
+    label: "Dealer Markup (%)",
     kind: "markup",
     markup: "dealer",
     widthClass: "w-[120px]",
@@ -102,7 +102,7 @@ const COLUMN_DEFINITIONS = {
   },
   retailMarkup: {
     id: "retailMarkup",
-    label: "Retail Markup",
+    label: "Retail Markup (%)",
     kind: "markup",
     markup: "retail",
     afterParameters: true,

@@ -15,7 +15,7 @@ import {
   buildPriceCellId,
   buildStatusCellId,
   computeMarkupPercent,
-  formatMarkupPercent,
+  formatMarkupValue,
   formatUsdValue,
   PRICE_USD_DISPLAY_CLASS,
   toUsd,
@@ -51,7 +51,7 @@ export const PricelistsExpandedRegions = ({ row, collab }: PricelistsExpandedReg
             <TableHead className="h-9 px-3 text-left text-xs">Region</TableHead>
             <TableHead className="h-9 px-2 text-left text-xs">Dealer Price</TableHead>
             <TableHead className="h-9 px-2 text-left text-xs">Dealer Price (USD)</TableHead>
-            <TableHead className="h-9 px-2 text-left text-xs">Dealer Markup</TableHead>
+            <TableHead className="h-9 px-2 text-left text-xs">Dealer Markup (%)</TableHead>
             <TableHead className="h-9 px-2 text-left text-xs">Dealer Status</TableHead>
             <TableHead aria-hidden />
           </TableRow>
@@ -92,7 +92,7 @@ export const PricelistsExpandedRegions = ({ row, collab }: PricelistsExpandedReg
                   <span className={PRICE_USD_DISPLAY_CLASS}>{formatUsdValue(dealerUsd)}</span>
                 </TableCell>
                 <TableCell className="px-2 py-2 align-middle">
-                  <span className={PRICE_USD_DISPLAY_CLASS}>{formatMarkupPercent(markupPercent)}</span>
+                  <span className={PRICE_USD_DISPLAY_CLASS}>{formatMarkupValue(markupPercent)}</span>
                 </TableCell>
                 <TableCell className="px-2 py-2 align-middle">
                   <PricelistStatusCell

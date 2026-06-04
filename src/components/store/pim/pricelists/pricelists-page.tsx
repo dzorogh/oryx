@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,6 +15,7 @@ import {
 import { CatalogFooter } from "../products/catalog/catalog-footer";
 import { useYjsPricelists } from "./collab/use-yjs-pricelists";
 import { getVisibleColumnDefinitions } from "./pricelists-columns";
+import { exportPricelistToXlsx } from "./pricelists-export";
 import { PricelistsColumnsSheet } from "./pricelists-columns-sheet";
 import { PricelistsFiltersSheet } from "./pricelists-filters-sheet";
 import { PricelistsTable, type PricelistsTableHandle } from "./pricelists-table";
@@ -52,6 +54,7 @@ const PricelistsPageContent = () => {
   const tableRef = useRef<PricelistsTableHandle>(null);
   const parameters = usePricelistParameters(scope, regionId, collab);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const visibleColumns = getVisibleColumnDefinitions(scope, columns.visibleIds);
 
@@ -104,6 +107,32 @@ const PricelistsPageContent = () => {
     [controller, scope, syncUrl],
   );
 
+  // Exports the current pricelist: the selected scope/region, every row that
+  // matches the active filters (not just the visible page), and only the
+  // columns currently shown in the table.
+  const handleExport = useCallback(async () => {
+    if (isExporting) {
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await exportPricelistToXlsx({
+        scope,
+        regionId,
+        rows: controller.filteredItems,
+        columns: visibleColumns,
+        parameterColumns: parameters.enabled ? parameters.visibleColumns : [],
+        collab,
+        parameters,
+      });
+      toast.success(`Exported ${controller.filteredItems.length} products`);
+    } catch {
+      toast.error("Could not export the pricelist. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [collab, controller.filteredItems, isExporting, parameters, regionId, scope, visibleColumns]);
+
   const footer = (
     <CatalogFooter
       shownCount={controller.paginatedItems.length}
@@ -144,6 +173,8 @@ const PricelistsPageContent = () => {
             connected={collab.connected}
             onOpenFilters={() => controller.setFilterSheetOpen(true)}
             onOpenColumns={() => setColumnSheetOpen(true)}
+            onExport={handleExport}
+            isExporting={isExporting}
           />
 
           <PricelistsTable

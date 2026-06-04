@@ -41,19 +41,19 @@
 | Scope | Колонки |
 |-------|---------|
 | `global` | `Name`, `Purchase Price`, `Purchase Price (USD)`, `Dealer Status` |
-| `supplier` | `Name`, `Purchase Price`, `Purchase Price (USD)`, `Dealer Price`, `Dealer Price (USD)`, `Dealer Markup`, `Retail Price`, `Retail Price (USD)`, … параметры …, `Retail Markup` |
-| `dealer` | `Name`, `Dealer Price`, `Dealer Price (USD)`, `Retail Price`, `Retail Price (USD)`, … параметры …, `Retail Markup` |
+| `supplier` | `Name`, `Purchase Price`, `Purchase Price (USD)`, `Dealer Price`, `Dealer Price (USD)`, `Dealer Markup (%)`, `Retail Price`, `Retail Price (USD)`, … параметры …, `Retail Markup (%)` |
+| `dealer` | `Name`, `Dealer Price`, `Dealer Price (USD)`, `Retail Price`, `Retail Price (USD)`, … параметры …, `Retail Markup (%)` |
 
-Виды колонок (`PricelistColumnKind`): `name`, `editable` (редактируемая цена), `usd` (производная конвертация, read-only, приглушённый цвет), `markup` (производная наценка в %, read-only, приглушённый цвет), `statusSummary` (сводка дилерского статуса), `parameter` (динамическая колонка-параметр).
+Виды колонок (`PricelistColumnKind`): `name`, `editable` (редактируемая цена), `usd` (производная конвертация, read-only, приглушённый цвет), `markup` (производная наценка, read-only, приглушённый цвет), `statusSummary` (сводка дилерского статуса), `parameter` (динамическая колонка-параметр).
 
-**Колонки наценки** (`kind: "markup"`, считаются из USD-значений):
+**Колонки наценки** (`kind: "markup"`, считаются из USD-значений). Единица `%` живёт в заголовке (`Dealer Markup (%)`, `Retail Markup (%)`), а в ячейке — чистое округлённое число без знака `%` (как USD- и параметр-колонки):
 
 | Колонка | Где | База | Наценка |
 |---------|-----|------|---------|
-| `Dealer Markup` | `supplier` (после `Dealer Price (USD)`) + раскрытие Global-строки по регионам | Purchase Price (USD) | дилерская цена над закупочной |
-| `Retail Markup` | `supplier` + `dealer` | Dealer Price (USD) + `Total Expenses` (USD) | розничная цена над посадочной себестоимостью (дилерская + расходы) |
+| `Dealer Markup (%)` | `supplier` (после `Dealer Price (USD)`) + раскрытие Global-строки по регионам | Purchase Price (USD) | дилерская цена над закупочной |
+| `Retail Markup (%)` | `supplier` + `dealer` | Dealer Price (USD) + `Total Expenses` (USD) | розничная цена над посадочной себестоимостью (дилерская + расходы) |
 
-`Retail Markup` помечена `afterParameters: true` — рендерится **после группы параметров** (правее `Total Expenses`) и отделена от неё пунктирным разделителем (`PARAMETER_GROUP_DIVIDER`, такой же как слева от параметров). В панели **Columns** она вынесена в отдельный блок под списком параметров за тем же пунктирным разделителем.
+`Retail Markup (%)` помечена `afterParameters: true` — рендерится **после группы параметров** (правее `Total Expenses`) и отделена от неё пунктирным разделителем (`PARAMETER_GROUP_DIVIDER`, такой же как слева от параметров). В панели **Columns** она вынесена в отдельный блок под списком параметров за тем же пунктирным разделителем.
 
 Видимость колонок сохраняется **по scope** в `localStorage`: `store-pricelists-visible-columns:{scope}`. При смене scope hook `usePricelistColumns` перечитывает свой ключ (или дефолты), поэтому настройка живёт отдельно для каждого списка. `hasCustom` подсвечивает кнопку Columns, если набор отличается от дефолтного.
 
@@ -122,7 +122,7 @@ Shared-карты дока:
 
 - Заголовок **Pricelists** + подзаголовок «Manage product prices together in real time.»
 - Справа — presence-индикатор соавторов
-- Строка управления: переключатель scope, селектор региона (для supplier/dealer), поиск, фильтр по категории, `Filters`, `Columns`, `Export` (кнопка-заглушка без handler)
+- Строка управления: переключатель scope, селектор региона (для supplier/dealer), поиск, фильтр по категории, `Filters`, `Columns`, `Export` (выгрузка в `.xlsx`)
 
 ### Фильтры и пагинация
 
@@ -130,6 +130,31 @@ Shared-карты дока:
 - `PAGE_SIZE` записей на страницу (общая константа каталога), футер с пагинацией (`CatalogFooter`)
 - Имитация ответа сервера ~200 ms при смене scope/region/фильтра/страницы (`SERVER_RESPONSE_DELAY_MS`), на это время — скелетон
 - Пустой список: «No products match the selected filters.»
+
+## Экспорт в Excel
+
+Кнопка **Export** в toolbar выгружает текущий прайслист в `.xlsx` целиком на клиенте (важно при `output: "export"`). Генерация — через `write-excel-file` (импорт `write-excel-file/browser`, библиотека грузится лениво внутри обработчика).
+
+Что попадает в файл:
+
+- **Scope + регион** — текущий выбранный лист (`global` / `supplier` / `dealer`) и регион в имени файла: `pricelist-{scope}[-{regionId}]-{YYYY-MM-DD}.xlsx`.
+- **Строки** — **все строки под активными фильтрами** (`controller.filteredItems`), а не только текущая страница пагинации.
+- **Колонки** — только видимые, в том же порядке, что и в таблице (`leadingColumns + parameters.visibleColumns + trailingColumns`).
+
+Значения — **числами** с per-cell Excel-форматом, чтобы в Excel можно было считать:
+
+| Тип колонки | Ячейка | Формат |
+|-------------|--------|--------|
+| `name` | строка (отображаемое имя) | — |
+| `editable` (цена) | число `amount` | `#,##0" {currency}"` (валюта per-cell, т.к. может отличаться при ручном редактировании) |
+| `usd` | число (`toUsd`) | `#,##0` |
+| `markup` | число `percent/100` | `0%` |
+| `parameter` | число | `#,##0` |
+| `statusSummary` (global) | строка «Sold in N of M regions» | — |
+
+Значения и фолбэк на seed вычисляются той же логикой, что и в таблице (отредактированные значения из collab → иначе детерминированный seed). Пустые числовые ячейки (`amount === null`) остаются пустыми. После выгрузки — toast «Exported N products»; на время генерации кнопка показывает «Exporting…».
+
+> USD/наценки берут «сырое» точное число, а Excel-формат округляет его визуально — это отличие от текстового UI, где значения уже округлены.
 
 ## Поток данных
 
@@ -184,6 +209,7 @@ src/components/store/pim/pricelists/
 
   pricelists-demo-data.ts                    # scope, регионы, seed-значения, rows
   pricelists-helpers.ts                      # валюты, форматирование, cell-id
+  pricelists-export.ts                       # сборка матрицы и выгрузка .xlsx (write-excel-file)
   pricelists-columns.ts                      # определения и порядок колонок
   pricelists-parameters.ts                   # ParameterDef, seed, normalize, slug
   pricelist-formula-variables.ts             # переменные для формул
@@ -208,14 +234,15 @@ src/components/store/pim/pricelists/
 - **Курсы валют статичны** (demo-константа), USD-колонки — производные.
 - **collab singleton** делится между подписчиками; на `pagehide` уничтожается, чтобы корректно убрать presence.
 - **English UI** для всех подписей; русские строки в UI нарушат `check:ui-english`.
-- **Export / formula evaluation** — заглушки (UI готов, логики нет).
+- **Export** — клиентская генерация `.xlsx` (`write-excel-file/browser`, ленивый импорт); экспортируются все отфильтрованные строки и видимые колонки числами с Excel-форматом.
+- **Formula evaluation** — заглушка (выражение хранится, но не вычисляется).
 
 ## Подключение к бэкенду (план)
 
 1. Заменить `getPricelistRows()`/seed на API товаров и цен; ячейки — те же scope-независимые id.
 2. Перенести collab-карты на серверный Yjs-провайдер (или CRDT-бэкенд) с авторизацией по `room`/тенанту.
 3. Реализовать вычисление формул параметров (сейчас выражение только хранится).
-4. Подключить `Export` к генерации файла прайслиста.
+4. При необходимости перенести `Export` на серверную генерацию (сейчас файл собирается на клиенте из тех же данных, что и таблица).
 
 ## Локальная проверка
 

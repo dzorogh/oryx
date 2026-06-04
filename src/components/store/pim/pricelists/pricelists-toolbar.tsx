@@ -39,6 +39,8 @@ type PricelistsToolbarProps = {
   connected: boolean;
   onOpenFilters: () => void;
   onOpenColumns: () => void;
+  onExport: () => void;
+  isExporting: boolean;
 };
 
 export const PricelistsToolbar = ({
@@ -52,6 +54,8 @@ export const PricelistsToolbar = ({
   connected,
   onOpenFilters,
   onOpenColumns,
+  onExport,
+  isExporting,
 }: PricelistsToolbarProps) => (
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
     <CardHeader className="gap-0 space-y-2 pb-0">
@@ -142,9 +146,16 @@ export const PricelistsToolbar = ({
         <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
         <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
 
-        <Button type="button" variant="outline" size="default" aria-label="Export pricelist">
+        <Button
+          type="button"
+          variant="outline"
+          size="default"
+          aria-label="Export pricelist"
+          onClick={onExport}
+          disabled={isExporting}
+        >
           <Download aria-hidden className="size-3.5" />
-          Export
+          {isExporting ? "Exporting…" : "Export"}
         </Button>
       </div>
     </CardHeader>

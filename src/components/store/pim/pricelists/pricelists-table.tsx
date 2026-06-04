@@ -40,7 +40,7 @@ import {
   buildPriceCellId,
   buildStatusCellId,
   computeMarkupPercent,
-  formatMarkupPercent,
+  formatMarkupValue,
   formatMoney,
   formatUsdValue,
   PRICE_AMOUNT_DISPLAY_CLASS,
@@ -313,7 +313,7 @@ const PricelistTableRow = ({
                 className={cn(getCellClassName(column), column.afterParameters && PARAMETER_GROUP_DIVIDER)}
               >
                 <span className={PRICE_USD_DISPLAY_CLASS}>
-                  {formatMarkupPercent(resolveMarkupPercent(column.markup ?? "dealer"))}
+                  {formatMarkupValue(resolveMarkupPercent(column.markup ?? "dealer"))}
                 </span>
               </TableCell>
             );
