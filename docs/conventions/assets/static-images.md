@@ -2,7 +2,7 @@
 
 ## Rule
 
-Bundled UI images (logos, flags, product photos, illustrations) must **not** be served via string paths to `public/` (e.g. `src="/tenants/logos/foo.png"`). That breaks on GitHub Pages when `basePath` is set: Next.js prefixes routes and `_next` assets, but not arbitrary `public/` URLs in JSX.
+Bundled UI images (logos, flags, product photos, illustrations) must **not** be served via string paths to `public/` (e.g. `src="/tenants/logos/foo.png"`). Static imports are content-hashed, bundled, and verified at build time; raw `public/` strings bypass all of that — no cache-busting, silent typos go unnoticed, and they break under any `basePath`/asset-prefix change.
 
 Use **static imports** from `src/assets/` instead.
 
@@ -31,7 +31,7 @@ export const TENANT_LOGOS = { globaldrive } as const;
 // Good — demo data
 logo: TENANT_LOGOS.globaldrive,
 
-// Bad — breaks on /oryx GitHub Pages
+// Bad — raw public/ string path (no hashing, fragile)
 logoUrl: "/tenants/logos/globaldrive.png",
 ```
 

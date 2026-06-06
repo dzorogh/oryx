@@ -64,6 +64,7 @@ export const NewsFeaturedHero = ({ item }: NewsFeaturedHeroProps) => {
             <Button
               variant="outline"
               size="lg"
+              nativeButton={false}
               render={<Link href={item.href} />}
               aria-label={`Read article: ${item.title}`}
             >

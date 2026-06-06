@@ -165,6 +165,7 @@ export const NewsArticlePage = ({ item, commentSeed }: NewsArticlePageProps) => 
                     <Button
                       variant="ghost"
                       size="sm"
+                      nativeButton={false}
                       render={<a href="#news-comments-heading" />}
                     >
                       <MessageSquare className="size-4" />
