@@ -9,3 +9,4 @@ Product and module behavior (how screens work, data flow, file map).
 | Pulse — Thanks | [pulse-thanks.md](pulse-thanks.md) |
 | Pulse — Company workspace | [pulse-company-cabinet.md](pulse-company-cabinet.md) |
 | User profile | [user-profile.md](user-profile.md) |
+| Comments module (reusable) | [comments-module.md](comments-module.md) |

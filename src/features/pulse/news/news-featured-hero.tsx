@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Clock3, ThumbsUp } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Clock3, ThumbsUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NEWS_RUBRIC_LABELS, type NewsItem } from "@/components/home/news-demo-data";
@@ -40,7 +41,12 @@ export const NewsFeaturedHero = ({ item }: NewsFeaturedHeroProps) => {
               id={`news-hero-title-${item.id}`}
               className="text-balance text-xl font-semibold tracking-tight text-foreground md:text-2xl lg:text-3xl"
             >
-              {item.title}
+              <Link
+                href={item.href}
+                className="outline-none transition-colors hover:text-primary focus-visible:text-primary"
+              >
+                {item.title}
+              </Link>
             </h2>
             <p className="line-clamp-2 text-sm text-foreground/85 md:text-base">{item.excerpt}</p>
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground md:text-sm">
@@ -56,14 +62,13 @@ export const NewsFeaturedHero = ({ item }: NewsFeaturedHeroProps) => {
           </div>
           <div className="shrink-0 pt-1 md:pb-0.5">
             <Button
-              type="button"
               variant="outline"
               size="lg"
-              disabled
-              aria-disabled="true"
-              aria-label="Full article coming soon"
+              render={<Link href={item.href} />}
+              aria-label={`Read article: ${item.title}`}
             >
               Read
+              <ArrowRight aria-hidden className="size-4" />
             </Button>
           </div>
         </div>
