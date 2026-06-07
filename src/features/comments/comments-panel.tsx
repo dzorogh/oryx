@@ -70,6 +70,9 @@ const useIsomorphicLayoutEffect =
 
 const SCROLL_LOAD_THRESHOLD_PX = 48;
 const LOAD_EARLIER_DELAY_MS = 650;
+// While the user is within this distance of the bottom we keep the view pinned
+// there as late-loading content (avatars, embeds) and new comments grow the list.
+const SCROLL_STICK_THRESHOLD_PX = 96;
 /** Above this many root rows we let the browser skip off-screen layout work. */
 const WINDOWING_THRESHOLD = 30;
 
@@ -121,6 +124,12 @@ export const CommentsPanel = ({
   className,
 }: CommentsPanelProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Pin the view to the bottom while true; cleared only when the user scrolls up.
+  const stickToBottomRef = useRef(true);
+  // Last observed scrollTop, used to tell a genuine user upward scroll apart from
+  // programmatic pins and content growth (both of which only push scrollTop down).
+  const lastScrollTopRef = useRef(0);
   const didInitialScrollRef = useRef(false);
   const anchorFromBottomRef = useRef<number | null>(null);
   const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -284,13 +293,86 @@ export const CommentsPanel = ({
     return () => window.clearTimeout(timer);
   }, [loadAll]);
 
-  // Land at the newest comment on first mount.
-  useEffect(() => {
+  // Land at the newest comment on first mount and stay pinned to the bottom as
+  // the list grows — late-loading avatars/embeds and freshly sent comments would
+  // otherwise leave the view a little short of the end (a single mount-time
+  // scrollTop assignment runs before that content lays out). A ResizeObserver
+  // re-pins on every content size change, but only while the user is at the
+  // bottom (stickToBottomRef), so reading older comments is never disrupted.
+  useIsomorphicLayoutEffect(() => {
     const node = scrollRef.current;
-    if (node && !didInitialScrollRef.current) {
-      node.scrollTop = node.scrollHeight;
-      didInitialScrollRef.current = true;
+    const content = contentRef.current;
+    if (!node || !content) {
+      return;
     }
+    // A deep-link (#comment-<id>) owns the scroll position; don't fight it.
+    if (typeof window !== "undefined" && window.location.hash.startsWith("#comment-")) {
+      return;
+    }
+
+    let cancelled = false;
+    const pin = () => {
+      // Only while the user hasn't scrolled away from the bottom. Track the
+      // resulting scrollTop so the scroll event this triggers is recognised as
+      // programmatic (downward) and never disengages stickiness.
+      if (!cancelled && stickToBottomRef.current) {
+        node.scrollTop = node.scrollHeight;
+        lastScrollTopRef.current = node.scrollTop;
+      }
+    };
+
+    pin();
+    didInitialScrollRef.current = true;
+
+    // Event-driven re-pins for size changes and late-loading media. On their own
+    // these are not enough on a cold/hard reload: the ResizeObserver can drop a
+    // throttled notification ("undelivered notifications") and `load` doesn't
+    // fire for font swaps or JS-driven height changes — so the rare miss left us
+    // a little short of the newest comment. They complement the stabilization
+    // loop below. Stickiness is only released by a genuine upward user scroll
+    // (see handleScroll), so re-pinning is safe for the panel's whole lifetime.
+    const observer = new ResizeObserver(pin);
+    observer.observe(content);
+    node.addEventListener("load", pin, true);
+
+    // Stabilization loop: pin every animation frame until the content height has
+    // stayed unchanged for a stretch of consecutive frames (or a hard time cap
+    // is reached). This makes the initial landing deterministic regardless of
+    // when late layout settles (fonts, avatars, embeds, hydration reflow) — any
+    // growth resets the "stable" counter, so we keep pinning until it's truly
+    // done instead of guessing fixed timeouts.
+    const STABLE_FRAMES = 30;
+    const MAX_MS = 4000;
+    let stableFrames = 0;
+    let lastHeight = -1;
+    const startedAt = performance.now();
+    let rafId = requestAnimationFrame(function step() {
+      pin();
+      const height = node.scrollHeight;
+      if (height === lastHeight) {
+        stableFrames += 1;
+      } else {
+        stableFrames = 0;
+        lastHeight = height;
+      }
+      const settled = stableFrames >= STABLE_FRAMES;
+      const timedOut = performance.now() - startedAt >= MAX_MS;
+      if (!cancelled && stickToBottomRef.current && !settled && !timedOut) {
+        rafId = requestAnimationFrame(step);
+      }
+    });
+
+    // Web fonts finishing can reflow comment text height after the loop ends.
+    if (typeof document !== "undefined" && "fonts" in document) {
+      document.fonts.ready.then(() => pin()).catch(() => { });
+    }
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      node.removeEventListener("load", pin, true);
+      cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Preserve the reading position when older comments are prepended.
@@ -298,15 +380,20 @@ export const CommentsPanel = ({
     const node = scrollRef.current;
     if (node && anchorFromBottomRef.current !== null) {
       node.scrollTop = node.scrollHeight - anchorFromBottomRef.current;
+      lastScrollTopRef.current = node.scrollTop;
       anchorFromBottomRef.current = null;
     }
   }, [visibleRows]);
 
   const scrollToBottom = useCallback(() => {
+    // Re-engage stickiness so the ResizeObserver keeps the new comment in view
+    // even as its avatar/attachments finish loading after this frame.
+    stickToBottomRef.current = true;
     requestAnimationFrame(() => {
       const node = scrollRef.current;
       if (node) {
         node.scrollTop = node.scrollHeight;
+        lastScrollTopRef.current = node.scrollTop;
       }
     });
   }, []);
@@ -328,6 +415,19 @@ export const CommentsPanel = ({
     const node = scrollRef.current;
     if (!node) {
       return;
+    }
+    const previousTop = lastScrollTopRef.current;
+    const currentTop = node.scrollTop;
+    lastScrollTopRef.current = currentTop;
+    const fromBottom = node.scrollHeight - node.clientHeight - currentTop;
+    // Disengage stickiness only on a genuine upward scroll (the user moving the
+    // view up). Programmatic pins and content growth only ever push scrollTop
+    // down, so they can never falsely release the bottom pin — this is what
+    // makes the landing reliable even as media finishes loading after mount.
+    if (currentTop < previousTop - 1) {
+      stickToBottomRef.current = fromBottom <= SCROLL_STICK_THRESHOLD_PX;
+    } else if (fromBottom <= SCROLL_STICK_THRESHOLD_PX) {
+      stickToBottomRef.current = true;
     }
     if (node.scrollTop <= SCROLL_LOAD_THRESHOLD_PX) {
       triggerLoadEarlier();
@@ -650,61 +750,63 @@ export const CommentsPanel = ({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex flex-col gap-4 overflow-y-auto px-4 py-4"
+          className="overflow-y-auto px-4 py-4 [overflow-anchor:none]"
           style={{ maxHeight }}
         >
-          {isLoadingEarlier ? <CommentSkeletonRow /> : null}
+          <div ref={contentRef} className="flex flex-col gap-4">
+            {isLoadingEarlier ? <CommentSkeletonRow /> : null}
 
-          {visibleRows.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              {filtersActive ? (
-                <span className="inline-flex flex-col items-center gap-2">
-                  No comments match the current filters.
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setPrefs({
-                        ...prefs,
-                        filters: {
-                          mineOnly: false,
-                          withAttachments: false,
-                        },
-                      })
-                    }
-                  >
-                    Clear filters
-                  </Button>
-                </span>
-              ) : (
-                "No comments yet. Be the first to start the discussion."
-              )}
-            </div>
-          ) : (
-            visibleRows.map((row) => {
-              const key = rowKey(row);
-              const animationClass =
-                "animate-in fade-in-0 slide-in-from-top-1 duration-300";
-              return (
-                <div key={key}>
-                  {newDividerKey === key ? <NewSinceDivider /> : null}
-                  <div
-                    className={cn(
-                      animationClass,
-                      windowed && "[content-visibility:auto] [contain-intrinsic-size:auto_160px]",
-                    )}
-                  >
-                    {row.kind === "system" ? (
-                      <CommentSystemNotice notification={row.notification} />
-                    ) : (
-                      renderThread(row)
-                    )}
+            {visibleRows.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                {filtersActive ? (
+                  <span className="inline-flex flex-col items-center gap-2">
+                    No comments match the current filters.
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setPrefs({
+                          ...prefs,
+                          filters: {
+                            mineOnly: false,
+                            withAttachments: false,
+                          },
+                        })
+                      }
+                    >
+                      Clear filters
+                    </Button>
+                  </span>
+                ) : (
+                  "No comments yet. Be the first to start the discussion."
+                )}
+              </div>
+            ) : (
+              visibleRows.map((row) => {
+                const key = rowKey(row);
+                const animationClass =
+                  "animate-in fade-in-0 slide-in-from-top-1 duration-300";
+                return (
+                  <div key={key}>
+                    {newDividerKey === key ? <NewSinceDivider /> : null}
+                    <div
+                      className={cn(
+                        animationClass,
+                        windowed && "[content-visibility:auto] [contain-intrinsic-size:auto_160px]",
+                      )}
+                    >
+                      {row.kind === "system" ? (
+                        <CommentSystemNotice notification={row.notification} />
+                      ) : (
+                        renderThread(row)
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 

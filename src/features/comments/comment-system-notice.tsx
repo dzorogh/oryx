@@ -22,7 +22,9 @@ export const CommentSystemNotice = ({ notification }: CommentSystemNoticeProps) 
   return (
     <div className="flex justify-center px-2 py-1">
       <div className="inline-flex max-w-full items-start gap-2 rounded-full bg-muted/60 px-3 py-1.5 text-center">
-        <Icon aria-hidden className={cn("mt-0.5 size-3.5 shrink-0", ring)} />
+        <span className="flex h-4 items-center">
+          <Icon aria-hidden className={cn("size-3.5 shrink-0", ring)} />
+        </span>
         <div className="min-w-0 text-left">
           {notification.title ? (
             <p className="text-xs font-medium text-foreground">{notification.title}</p>

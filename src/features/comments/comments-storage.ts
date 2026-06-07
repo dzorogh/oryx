@@ -5,7 +5,6 @@ import type { JSONContent } from "@tiptap/react";
 import type {
   CommentDraft,
   CommentPrefs,
-  CommentSavedReply,
   CommentScope,
 } from "@/features/comments/comments-types";
 import { DEFAULT_COMMENT_PREFS } from "@/features/comments/comments-types";
@@ -42,8 +41,16 @@ const snapshotCache = new Map<string, { raw: string | null; parsed: unknown }>()
 const scopeKey = (scope: CommentScope, bucket: string): string =>
   `${NAMESPACE}:${scope.type}:${scope.id}:${bucket}`;
 
-const hasStorage = (): boolean =>
-  typeof window !== "undefined" && !!window.localStorage;
+const hasStorage = (): boolean => {
+  // Accessing `window.localStorage` itself can throw a SecurityError in Chrome
+  // when site data/cookies are blocked for the origin, so the access must be
+  // guarded — not just the read/write that follows.
+  try {
+    return typeof window !== "undefined" && !!window.localStorage;
+  } catch {
+    return false;
+  }
+};
 
 const readJson = <T,>(key: string, fallback: T): T => {
   if (!hasStorage()) {
@@ -134,33 +141,6 @@ export const writeDraft = (
 
 export const clearDraft = (scope: CommentScope, target: string): void =>
   removeKey(draftKey(scope, target));
-
-// ---------------------------------------------------------------------------
-// Saved replies (personal canned snippets, shared across scopes of a type)
-// ---------------------------------------------------------------------------
-
-const savedRepliesKey = (scope: CommentScope): string =>
-  `${NAMESPACE}:${scope.type}:saved-replies`;
-
-export const readSavedReplies = (scope: CommentScope): CommentSavedReply[] =>
-  readJson<CommentSavedReply[]>(savedRepliesKey(scope), []);
-
-export const writeSavedReplies = (
-  scope: CommentScope,
-  replies: CommentSavedReply[],
-): void => writeJson(savedRepliesKey(scope), replies);
-
-const EMPTY_SAVED_REPLIES: CommentSavedReply[] = [];
-
-/** Hydration-safe per-scope-type saved replies (re-reads on cross-tab/in-app writes). */
-export const useSavedReplies = (scope?: CommentScope): CommentSavedReply[] => {
-  const key = scope ? savedRepliesKey(scope) : "";
-  return useSyncExternalStore(
-    subscribeStorage,
-    () => (scope ? readCached<CommentSavedReply[]>(key, EMPTY_SAVED_REPLIES) : EMPTY_SAVED_REPLIES),
-    () => EMPTY_SAVED_REPLIES,
-  );
-};
 
 // ---------------------------------------------------------------------------
 // Last-visit marker (drives the "New since last visit" divider)

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import { NavRail } from "@/components/layout/nav-rail";
 import { SidebarAsideProvider } from "@/components/layout/sidebar-aside-context";
 import { CatalogScopeProvider } from "@/features/store/catalog-scope-context";
@@ -23,7 +24,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={`${inter.className} ${inter.variable} antialiased pb-16 sm:pb-0`}>
-        <script dangerouslySetInnerHTML={{ __html: sidebarCollapseInitScript }} />
+        <Script
+          id="sidebar-collapse-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: sidebarCollapseInitScript }}
+        />
         <SidebarAsideProvider>
           <CatalogScopeProvider>
             <NavRail />

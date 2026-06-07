@@ -123,13 +123,6 @@ export type CommentDraft = {
   updatedAtIso: string;
 };
 
-/** A personal canned reply (saved snippet) the user can quickly insert. */
-export type CommentSavedReply = {
-  id: string;
-  title: string;
-  contentJson: JSONContent;
-};
-
 export type CommentTone = "info" | "success" | "warning";
 
 /** Author-less, system-generated timeline entry. */

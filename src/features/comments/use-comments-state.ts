@@ -45,8 +45,14 @@ export type EditCommentInput = {
 const createId = (): string =>
   `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
+// Deterministic comparison for ISO 8601 UTC timestamps. `localeCompare` is
+// locale-sensitive and orders the same strings differently across browsers
+// (notably Chrome under some locales), which jumbled the feed and dropped new
+// comments into the middle. Fixed-format ISO strings sort correctly by code unit.
+const compareIso = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 const sortByCreatedAtAsc = (a: CommentFeedItem, b: CommentFeedItem): number =>
-  a.createdAtIso.localeCompare(b.createdAtIso);
+  compareIso(a.createdAtIso, b.createdAtIso);
 
 type UseCommentsStateOptions = {
   initialItems: CommentFeedItem[];
@@ -205,10 +211,10 @@ export const useCommentsState = ({
         if (aLikes !== bLikes) {
           return bLikes - aLikes;
         }
-        return bTime.localeCompare(aTime);
+        return compareIso(bTime, aTime);
       }
       // newest
-      return bTime.localeCompare(aTime);
+      return compareIso(bTime, aTime);
     };
     return [...filtered].sort(compare);
   }, [allRows, matchesFilters, sort]);

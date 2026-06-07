@@ -288,7 +288,7 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
 | Rich content: link previews, audio/video/screen recording + players | **done** | `comment-link-preview.tsx`, `app/api/comments/unfurl/route.ts`, `comment-recorder.tsx`, `comment-attachments.tsx` |
 | Quotes & entities: multi-quote, `#task`/`#oms` mentions, convert-to-task | **done** | `comment-quote.ts`, `comment-entities.ts`, `comment-entity-mention.ts`, `comment-entity-list.tsx`, `comment-actions-menu.tsx` |
 | Reactions / badges / read receipts | **done** | `comment-reactions.tsx`, `comment-item.tsx`, `use-comments-state.ts`, `comments-storage.ts` |
-| Drafts / saved replies / offline queue / scheduled send | **done** | `comment-composer.tsx`, `comments-storage.ts`, `use-comments-state.ts` |
+| Drafts / offline queue / scheduled send | **done** | `comment-composer.tsx`, `comments-storage.ts`, `use-comments-state.ts` |
 | Realtime (Yjs): presence, typing, live record sync | **done** | `comments-collab.ts`, `comment-presence.tsx`, `comments-panel.tsx` |
 | AI: rewrite/translate/TL;DR/soften + search | **done** | `app/api/comments/ai/route.ts`, `comments-ai-service.ts`, `comment-text.ts`, `comment-editor.tsx`, `comment-item.tsx`, `comments-panel.tsx` |
 
@@ -296,9 +296,9 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
 
 - `comments-types.ts` extended: `reactions` (emoji → user ids), `pinned`,
   `readBy`, `badge` (author affiliation), `entityRefs`, `quotedRefs`,
-  `scheduledAtIso`, `delivery`, plus draft/saved-reply/prefs/AI types.
+  `scheduledAtIso`, `delivery`, plus draft/prefs/AI types.
 - `comments-storage.ts`: hydration-safe per-`scope` localStorage via `useSyncExternalStore`
-  (drafts, saved replies, last-visit marker, read receipts, sort/filter prefs).
+  (drafts, last-visit marker, read receipts, sort/filter prefs).
   Cross-tab + in-app writes notify a shared snapshot cache so getSnapshot stays stable.
 - Deep-link: `#comment-<id>` scrolls to and flashes the target (`loadAll()` first so it isn't
   hidden behind pagination).
@@ -340,11 +340,12 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
 - Author badges (author / reporter / assignee) in the comment header.
 - Read receipts ("Read by N").
 
-### Drafts, offline, scheduled send, templates (Phase 6)
+### Drafts, offline, scheduled send (Phase 6)
 
 - Draft autosave per `scope` + target (`root` / `reply:<id>`), debounced; restored on mount
-  (unless the composer was seeded with a quote) and cleared on send/cancel.
-- Personal **saved replies** (insert / save-current / delete) via the "Saved" menu.
+  (unless the composer was seeded with a quote) and cleared on send/cancel. An unobtrusive
+  **"Draft saved"** status (not a button) shows in the composer footer only while a draft is
+  persisted.
 - Offline send queue: new comments are `sending → sent` when online, `queued` when offline,
   `failed` on a retry while still offline; an `online` event flushes the queue; per-comment
   **Retry** affordance. Indicators render in the comment header.
@@ -383,9 +384,12 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
 | Variable | Scope | Purpose | Default |
 |----------|-------|---------|---------|
 | `NEXT_PUBLIC_COLLAB_WS_URL` | client | y-websocket endpoint for realtime presence + record sync | `ws://127.0.0.1:1234` |
-| `AI_BASE_URL` | server-only | OpenAI-compatible base URL (without trailing `/chat/completions`) | — (AI disabled) |
-| `AI_API_KEY` | server-only | Bearer token for the AI provider | — (AI disabled) |
+| `AI_BASE_URL` | server-only | OpenAI-compatible base URL (without trailing `/chat/completions`) | `https://api.openai.com/v1` |
+| `OPENAI_API_KEY` / `AI_API_KEY` | server-only | Bearer token for the AI provider (either name works) | — (AI disabled) |
 | `AI_MODEL` | server-only | Model id for completions | `gpt-4o-mini` |
+
+To enable real OpenAI, set `OPENAI_API_KEY` in `.env.local` (the base URL defaults to OpenAI).
+Restart `next dev` after editing env. Without a key, AI features degrade to the local mock.
 
 Without AI env, AI features degrade to the local mock; without the ws server, realtime degrades
 to local-only with no presence.

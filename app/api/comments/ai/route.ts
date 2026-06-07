@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 import type {
   CommentAiAction,
   CommentAiRequest,
@@ -41,11 +42,13 @@ const buildUserPrompt = (body: CommentAiRequest): string => {
 };
 
 export async function POST(request: Request) {
-  const baseUrl = process.env.AI_BASE_URL;
-  const apiKey = process.env.AI_API_KEY;
+  // Default to OpenAI so a bare `OPENAI_API_KEY` is enough to enable real AI.
+  // `AI_BASE_URL` still allows pointing at any OpenAI-compatible provider.
+  const baseURL = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
+  const apiKey = process.env.AI_API_KEY ?? process.env.OPENAI_API_KEY;
   const model = process.env.AI_MODEL ?? "gpt-4o-mini";
 
-  if (!baseUrl || !apiKey) {
+  if (!apiKey) {
     return NextResponse.json(
       { error: "not_configured" },
       { status: 503 },
@@ -64,39 +67,21 @@ export async function POST(request: Request) {
   }
 
   const text = body.text.slice(0, MAX_INPUT_CHARS);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const client = new OpenAI({ apiKey, baseURL, timeout: REQUEST_TIMEOUT_MS });
 
   try {
-    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: body.action === "toxicity" ? 0 : 0.5,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPTS[body.action] },
-          { role: "user", content: buildUserPrompt({ ...body, text }) },
-        ],
-      }),
-      signal: controller.signal,
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: body.action === "toxicity" ? 0 : 0.5,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPTS[body.action] },
+        { role: "user", content: buildUserPrompt({ ...body, text }) },
+      ],
     });
 
-    if (!response.ok) {
-      return NextResponse.json({ error: "provider_error" }, { status: 502 });
-    }
-
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const result = data.choices?.[0]?.message?.content?.trim() ?? "";
+    const result = completion.choices[0]?.message?.content?.trim() ?? "";
     return NextResponse.json({ result, source: "ai" });
   } catch {
-    return NextResponse.json({ error: "provider_unreachable" }, { status: 502 });
-  } finally {
-    clearTimeout(timer);
+    return NextResponse.json({ error: "provider_error" }, { status: 502 });
   }
 }

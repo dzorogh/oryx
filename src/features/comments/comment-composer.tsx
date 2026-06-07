@@ -1,16 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BookmarkPlus,
   CalendarClock,
+  Check,
   ChevronDown,
-  MessageSquareText,
   Paperclip,
   SendHorizontal,
 } from "lucide-react";
 import type { JSONContent } from "@tiptap/react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +18,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type {
   CommentAttachment,
-  CommentSavedReply,
   CommentScope,
   CommentUser,
 } from "@/features/comments/comments-types";
@@ -40,9 +38,8 @@ import type { CommentEntityRef } from "@/features/comments/comments-types";
 import {
   clearDraft,
   readDraft,
-  useSavedReplies,
+  useHydrated,
   writeDraft,
-  writeSavedReplies,
 } from "@/features/comments/comments-storage";
 import { looksHostile, runAiAction } from "@/features/comments/comments-ai-service";
 import { htmlToText } from "@/features/comments/comment-text";
@@ -68,7 +65,7 @@ type CommentComposerProps = {
   autoFocus?: boolean;
   submitLabel?: string;
   placeholder?: string;
-  /** Scope enables draft autosave + saved replies persistence. */
+  /** Scope enables draft autosave persistence. */
   scope?: CommentScope;
   /** Draft bucket key within the scope (e.g. "root" or `reply:<id>`). */
   draftTarget?: string;
@@ -112,28 +109,49 @@ export const CommentComposer = ({
   const uploadTimersRef = useRef<Set<ReturnType<typeof setInterval>>>(new Set());
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragDepthRef = useRef(0);
+  // Read a persisted draft once (client-only) and seed it as the editor's initial
+  // content. Doing this at init — rather than reacting to the editor's first
+  // onChange — avoids a race where the editor instance is still null when restore
+  // would run. Seeded content (e.g. a quote) always takes precedence over a draft.
+  const draftContent = useMemo<JSONContent | undefined>(() => {
+    if (initialContent || !scope || !draftTarget || variant === "edit") {
+      return undefined;
+    }
+    return readDraft(scope, draftTarget)?.contentJson ?? undefined;
+  }, [initialContent, scope, draftTarget, variant]);
+
+  const editorInitialContent = initialContent ?? draftContent;
+
   const [attachments, setAttachments] = useState<CommentAttachment[]>(initialAttachments);
-  const [isEmpty, setIsEmpty] = useState(true);
+  // Seed with the server-equivalent value (draft is ignored here). Drafts live in
+  // localStorage and only exist on the client; applying them during the first
+  // render would diverge from the server HTML and break hydration. The persisted
+  // draft is reconciled in an effect after mount instead — this also matches the
+  // editor, which is client-only (immediatelyRender: false).
+  const [isEmpty, setIsEmpty] = useState(() => !initialContent);
   const [isDragging, setIsDragging] = useState(false);
   const [softenOpen, setSoftenOpen] = useState(false);
   const [softening, setSoftening] = useState(false);
   const softenAckRef = useRef(false);
   const pendingScheduleRef = useRef<string | undefined>(undefined);
-  const savedReplies = useSavedReplies(scope);
+  // True while the in-progress draft is persisted to localStorage (drives the
+  // unobtrusive "Draft saved" status; not a button). Starts false to match the
+  // server; reconciled from the persisted draft after mount.
+  const [draftSaved, setDraftSaved] = useState(false);
+  // Drafts come from localStorage, so they only exist on the client. Gate the
+  // status badge behind hydration to keep the first client render in sync with
+  // the server-rendered HTML.
+  const hydrated = useHydrated();
 
-  // Restore a saved draft (only when the composer has no seeded content, e.g. a quote).
-  const restoredDraft = useRef(false);
-  const restoreDraft = useCallback(() => {
-    if (restoredDraft.current || !scope || !draftTarget || variant === "edit" || initialContent) {
-      return;
+  // Apply the persisted draft once after mount, keeping the first client render
+  // identical to the server (no draft) and avoiding hydration mismatches on the
+  // composer's enabled/disabled state and the "Draft saved" badge.
+  useEffect(() => {
+    if (draftContent) {
+      setIsEmpty(isDocEmpty(draftContent));
+      setDraftSaved(true);
     }
-    restoredDraft.current = true;
-    const draft = readDraft(scope, draftTarget);
-    if (draft?.contentJson) {
-      editorRef.current?.setContent(draft.contentJson, false);
-      setIsEmpty(isDocEmpty(draft.contentJson));
-    }
-  }, [variant, initialContent, scope, draftTarget]);
+  }, [draftContent]);
 
   useEffect(
     () => () => {
@@ -167,54 +185,21 @@ export const CommentComposer = ({
       }
       if (isDocEmpty(json)) {
         clearDraft(scope, draftTarget);
+        setDraftSaved(false);
       } else {
         writeDraft(scope, draftTarget, json);
+        setDraftSaved(true);
       }
     }, 600);
   }, [variant, scope, draftTarget]);
 
   const handleEditorChange = useCallback(
     (empty: boolean) => {
-      restoreDraft();
       setIsEmpty(empty);
       scheduleDraftSave();
       onTyping?.(!empty);
     },
-    [restoreDraft, scheduleDraftSave, onTyping],
-  );
-
-  const insertSavedReply = useCallback((reply: CommentSavedReply) => {
-    editorRef.current?.insertContent(reply.contentJson);
-  }, []);
-
-  const saveCurrentAsReply = useCallback(() => {
-    if (!scope) {
-      return;
-    }
-    const json = editorRef.current?.getJson();
-    if (!json || isDocEmpty(json)) {
-      return;
-    }
-    const title = (editorRef.current?.getHtml() ?? "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 48);
-    const next: CommentSavedReply[] = [
-      { id: `sr-${Date.now().toString(36)}`, title: title || "Saved reply", contentJson: json },
-      ...savedReplies,
-    ].slice(0, 12);
-    writeSavedReplies(scope, next);
-  }, [scope, savedReplies]);
-
-  const removeSavedReply = useCallback(
-    (id: string) => {
-      if (!scope) {
-        return;
-      }
-      writeSavedReplies(scope, savedReplies.filter((reply) => reply.id !== id));
-    },
-    [scope, savedReplies],
+    [scheduleDraftSave, onTyping],
   );
 
   // Demo-only: animate a freshly added attachment from 0→100% then mark it ready.
@@ -324,29 +309,62 @@ export const CommentComposer = ({
       if (!editor) {
         return;
       }
-      const contentJson = editor.getJson();
-      const hasText = !isDocEmpty(contentJson);
-      if (!hasText && attachments.length === 0) {
+
+      // Reading the editor can throw if a browser extension (e.g. Grammarly,
+      // translators, password managers) has mutated ProseMirror's contentEditable
+      // out from under it — a common Chrome-only failure. Build the payload first
+      // and only mutate UI state (clear, drop attachments, wipe the draft) after a
+      // successful submit, so a failure never silently swallows the user's text.
+      let payload: CommentSubmitPayload;
+      try {
+        const contentJson = editor.getJson();
+        const hasText = !isDocEmpty(contentJson);
+        if (!hasText && attachments.length === 0) {
+          return;
+        }
+        payload = {
+          contentHtml: editor.getHtml(),
+          contentJson,
+          mentionIds: collectMentionIds(contentJson),
+          entityRefs: collectEntityRefs(contentJson),
+          scheduledAtIso,
+          // Drop transient upload state so persisted attachments stay clean.
+          attachments: attachments.map((item) => ({
+            id: item.id,
+            name: item.name,
+            sizeBytes: item.sizeBytes,
+            mimeType: item.mimeType,
+            url: item.url,
+            kind: item.kind,
+          })),
+        };
+      } catch (error) {
+        console.error("Comment composer: failed to read editor content", error);
+        toast.error("Couldn't send your comment", {
+          description:
+            "The editor hit an error (often caused by a browser extension). Your text is kept — try again, or reload the page.",
+        });
         return;
       }
-      onSubmit({
-        contentHtml: editor.getHtml(),
-        contentJson,
-        mentionIds: collectMentionIds(contentJson),
-        entityRefs: collectEntityRefs(contentJson),
-        scheduledAtIso,
-        // Drop transient upload state so persisted attachments stay clean.
-        attachments: attachments.map((item) => ({
-          id: item.id,
-          name: item.name,
-          sizeBytes: item.sizeBytes,
-          mimeType: item.mimeType,
-          url: item.url,
-          kind: item.kind,
-        })),
-      });
+
+      try {
+        onSubmit(payload);
+      } catch (error) {
+        console.error("Comment composer: onSubmit handler threw", error);
+        toast.error("Couldn't send your comment", {
+          description: "Something went wrong while posting. Your text is kept — please try again.",
+        });
+        return;
+      }
+
       if (variant !== "edit") {
-        editor.clear();
+        // Best-effort cleanup: the comment is already submitted, so never let a
+        // clear()/draft failure surface as a lost send.
+        try {
+          editor.clear();
+        } catch (error) {
+          console.error("Comment composer: failed to clear editor after send", error);
+        }
         setAttachments([]);
         createdUrlsRef.current.clear();
         onTyping?.(false);
@@ -354,6 +372,7 @@ export const CommentComposer = ({
         setSoftenOpen(false);
         if (scope && draftTarget) {
           clearDraft(scope, draftTarget);
+          setDraftSaved(false);
         }
       }
     },
@@ -367,12 +386,18 @@ export const CommentComposer = ({
         return;
       }
       // Nudge toward a more constructive tone before sending (new comments only).
+      // Never let this optional check block a send: if reading the editor throws,
+      // skip the nudge and fall through to emit (which surfaces real failures).
       if (variant !== "edit" && !softenAckRef.current) {
-        const text = htmlToText(editor.getHtml());
-        if (looksHostile(text)) {
-          pendingScheduleRef.current = scheduledAtIso;
-          setSoftenOpen(true);
-          return;
+        try {
+          const text = htmlToText(editor.getHtml());
+          if (looksHostile(text)) {
+            pendingScheduleRef.current = scheduledAtIso;
+            setSoftenOpen(true);
+            return;
+          }
+        } catch (error) {
+          console.error("Comment composer: tone check failed, sending anyway", error);
         }
       }
       emit(scheduledAtIso);
@@ -405,6 +430,7 @@ export const CommentComposer = ({
     onTyping?.(false);
     if (scope && draftTarget) {
       clearDraft(scope, draftTarget);
+      setDraftSaved(false);
     }
     onCancel?.();
   }, [scope, draftTarget, onCancel, onTyping]);
@@ -464,7 +490,7 @@ export const CommentComposer = ({
             ref={editorRef}
             placeholder={placeholder}
             mentionableUsers={mentionableUsers}
-            initialContent={initialContent}
+            initialContent={editorInitialContent}
             autoFocus={autoFocus}
             onSubmit={() => handleSubmit()}
             onChange={handleEditorChange}
@@ -506,57 +532,14 @@ export const CommentComposer = ({
               <span className="hidden sm:inline">Attach</span>
             </Button>
             <CommentRecorder onRecorded={(file) => addFiles([file])} />
-            {scope ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground"
-                      nativeButton={false}
-                    >
-                      <MessageSquareText />
-                      <span className="hidden sm:inline">Saved</span>
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="start" className="w-64">
-                  <DropdownMenuLabel>Saved replies</DropdownMenuLabel>
-                  {savedReplies.length === 0 ? (
-                    <p className="px-2 py-1.5 text-xs text-muted-foreground">
-                      No saved replies yet.
-                    </p>
-                  ) : (
-                    savedReplies.map((reply) => (
-                      <DropdownMenuItem
-                        key={reply.id}
-                        onClick={() => insertSavedReply(reply)}
-                        className="flex items-center justify-between gap-2"
-                      >
-                        <span className="truncate">{reply.title}</span>
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-destructive"
-                          aria-label="Delete saved reply"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            removeSavedReply(reply.id);
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={saveCurrentAsReply} disabled={isEmpty}>
-                    <BookmarkPlus />
-                    Save current as reply
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            {hydrated && scope && variant !== "edit" && draftSaved ? (
+              <span
+                role="status"
+                className="ml-1 inline-flex items-center gap-1 text-xs text-muted-foreground"
+              >
+                <Check aria-hidden className="size-3" />
+                Draft saved
+              </span>
             ) : null}
           </div>
 
@@ -587,7 +570,6 @@ export const CommentComposer = ({
                         disabled={!canSubmit}
                         aria-label="Schedule send"
                         className="rounded-l-none border-l border-primary-foreground/20 px-2"
-                        nativeButton={false}
                       >
                         <ChevronDown />
                       </Button>
