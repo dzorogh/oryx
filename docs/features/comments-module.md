@@ -376,8 +376,10 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
   so the UI never blocks. `looksHostile`/`checkToxicity` back the soften flow.
 - UI surfaces: editor AI-assist dropdown (now real service), per-comment **Translate** toggle,
   header **TL;DR** thread summary banner, **soften?** banner before sending a harsh-sounding
-  comment, and toolbar **search** with safe in-body `<mark>` highlighting (`comment-text.ts`,
-  `.comment-search-hit`).
+  comment, and toolbar **search**. Searching replaces the threaded feed with a compact,
+  snippet-only result list (`comment-search-results.tsx`, `buildHighlightedSnippet` in
+  `comment-text.ts`); selecting a result clears the query and reveals the full comment in
+  context. The matched term is wrapped in a safe in-body `<mark>` (`.comment-search-hit`).
 
 ### Environment configuration
 

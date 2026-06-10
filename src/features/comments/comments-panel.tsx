@@ -63,6 +63,10 @@ import {
 } from "@/features/comments/comment-composer";
 import { CommentQuoteSelectionButton } from "@/features/comments/comment-quote-selection";
 import type { QuoteSeed } from "@/features/comments/comment-quote";
+import {
+  CommentSearchResults,
+  type CommentSearchMatch,
+} from "@/features/comments/comment-search-results";
 
 // Avoid the SSR warning while still scrolling synchronously before paint on the client.
 const useIsomorphicLayoutEffect =
@@ -138,6 +142,10 @@ export const CommentsPanel = ({
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
+  // Term to highlight on a comment revealed from search results, kept briefly
+  // after the query is cleared so the match stays visible in context.
+  const [highlightTerm, setHighlightTerm] = useState("");
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tldr, setTldr] = useState<string | null>(null);
   const [tldrBusy, setTldrBusy] = useState(false);
 
@@ -267,6 +275,24 @@ export const CommentsPanel = ({
     [],
   );
 
+  // Load every page, then scroll the target comment into view and flash it.
+  // Shared by deep-links (#comment-<id>) and search-result selection.
+  const revealComment = useCallback(
+    (commentId: string) => {
+      loadAll();
+      window.setTimeout(() => {
+        const target = document.getElementById(`comment-${commentId}`);
+        if (!target) {
+          return;
+        }
+        target.scrollIntoView({ block: "center" });
+        target.setAttribute("data-flash", "");
+        window.setTimeout(() => target.removeAttribute("data-flash"), 1800);
+      }, 60);
+    },
+    [loadAll],
+  );
+
   // Deep-link: #comment-<id> reveals the target (loads all pages), scrolls it into
   // view inside the panel, and flashes a highlight. Takes precedence over the
   // initial scroll-to-bottom.
@@ -278,20 +304,35 @@ export const CommentsPanel = ({
     if (!hash.startsWith("#comment-")) {
       return;
     }
-    const id = hash.slice(1);
     didInitialScrollRef.current = true;
-    loadAll();
-    const timer = window.setTimeout(() => {
-      const target = document.getElementById(id);
-      if (!target) {
-        return;
+    revealComment(hash.slice("#comment-".length));
+  }, [revealComment]);
+
+  // Jump to a comment from the search-results list: clear the query so the full
+  // thread is shown, but keep the term highlighted on the revealed comment until
+  // the reveal flash fades.
+  const handleSelectSearchResult = useCallback(
+    (commentId: string) => {
+      const term = search.trim();
+      setSearch("");
+      setHighlightTerm(term);
+      revealComment(commentId);
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
       }
-      target.scrollIntoView({ block: "center" });
-      target.setAttribute("data-flash", "");
-      window.setTimeout(() => target.removeAttribute("data-flash"), 1800);
-    }, 60);
-    return () => window.clearTimeout(timer);
-  }, [loadAll]);
+      highlightTimerRef.current = setTimeout(() => setHighlightTerm(""), 4000);
+    },
+    [revealComment, search],
+  );
+
+  useEffect(
+    () => () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+    },
+    [],
+  );
 
   // Land at the newest comment on first mount and stay pinned to the bottom as
   // the list grows — late-loading avatars/embeds and freshly sent comments would
@@ -559,10 +600,37 @@ export const CommentsPanel = ({
     [prefs, setPrefs],
   );
 
-  const showFloatingHint = hasEarlier || isLoadingEarlier;
   const windowed = filteredRootCount > WINDOWING_THRESHOLD;
   const filtersActive =
     prefs.filters.mineOnly || prefs.filters.withAttachments;
+
+  const trimmedSearch = deferredSearch.trim();
+  const searching = trimmedSearch.length > 0;
+
+  // Flat list of comments whose body or author matches the query, newest first.
+  // Replaces the threaded feed while searching so results stay compact.
+  const searchMatches = useMemo<CommentSearchMatch[]>(() => {
+    if (!searching) {
+      return [];
+    }
+    const needle = trimmedSearch.toLowerCase();
+    return comments
+      .filter((record) => {
+        if (record.deleted || record.delivery === "scheduled") {
+          return false;
+        }
+        return (
+          htmlToText(record.contentHtml).toLowerCase().includes(needle) ||
+          record.author.name.toLowerCase().includes(needle)
+        );
+      })
+      .sort((a, b) =>
+        a.createdAtIso < b.createdAtIso ? 1 : a.createdAtIso > b.createdAtIso ? -1 : 0,
+      )
+      .map((record) => ({ comment: record, isReply: record.parentId !== null }));
+  }, [comments, searching, trimmedSearch]);
+
+  const showFloatingHint = (hasEarlier || isLoadingEarlier) && !searching;
 
   // Index of the first visible row that is newer than the last visit (New divider).
   const newDividerKey = useMemo(() => {
@@ -596,7 +664,7 @@ export const CommentsPanel = ({
       onToggleReaction={handleToggleReaction}
       onTogglePin={togglePinned}
       onConvertToTask={handleConvertToTask}
-      searchQuery={deferredSearch}
+      searchQuery={highlightTerm}
     />
   );
 
@@ -620,7 +688,7 @@ export const CommentsPanel = ({
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
-              type="search"
+              type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search…"
@@ -710,7 +778,7 @@ export const CommentsPanel = ({
         </div>
       ) : null}
 
-      {pinnedRows.length > 0 ? (
+      {pinnedRows.length > 0 && !searching ? (
         <div className="flex flex-col gap-3 border-b border-border bg-amber-50/60 px-4 py-3 dark:bg-amber-400/5">
           <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
             <Pin aria-hidden className="size-3.5" />
@@ -754,57 +822,67 @@ export const CommentsPanel = ({
           style={{ maxHeight }}
         >
           <div ref={contentRef} className="flex flex-col gap-4">
-            {isLoadingEarlier ? <CommentSkeletonRow /> : null}
-
-            {visibleRows.length === 0 ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                {filtersActive ? (
-                  <span className="inline-flex flex-col items-center gap-2">
-                    No comments match the current filters.
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPrefs({
-                          ...prefs,
-                          filters: {
-                            mineOnly: false,
-                            withAttachments: false,
-                          },
-                        })
-                      }
-                    >
-                      Clear filters
-                    </Button>
-                  </span>
-                ) : (
-                  "No comments yet. Be the first to start the discussion."
-                )}
-              </div>
+            {searching ? (
+              <CommentSearchResults
+                query={trimmedSearch}
+                matches={searchMatches}
+                onSelect={handleSelectSearchResult}
+              />
             ) : (
-              visibleRows.map((row) => {
-                const key = rowKey(row);
-                const animationClass =
-                  "animate-in fade-in-0 slide-in-from-top-1 duration-300";
-                return (
-                  <div key={key}>
-                    {newDividerKey === key ? <NewSinceDivider /> : null}
-                    <div
-                      className={cn(
-                        animationClass,
-                        windowed && "[content-visibility:auto] [contain-intrinsic-size:auto_160px]",
-                      )}
-                    >
-                      {row.kind === "system" ? (
-                        <CommentSystemNotice notification={row.notification} />
-                      ) : (
-                        renderThread(row)
-                      )}
-                    </div>
+              <>
+                {isLoadingEarlier ? <CommentSkeletonRow /> : null}
+
+                {visibleRows.length === 0 ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    {filtersActive ? (
+                      <span className="inline-flex flex-col items-center gap-2">
+                        No comments match the current filters.
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setPrefs({
+                              ...prefs,
+                              filters: {
+                                mineOnly: false,
+                                withAttachments: false,
+                              },
+                            })
+                          }
+                        >
+                          Clear filters
+                        </Button>
+                      </span>
+                    ) : (
+                      "No comments yet. Be the first to start the discussion."
+                    )}
                   </div>
-                );
-              })
+                ) : (
+                  visibleRows.map((row) => {
+                    const key = rowKey(row);
+                    const animationClass =
+                      "animate-in fade-in-0 slide-in-from-top-1 duration-300";
+                    return (
+                      <div key={key}>
+                        {newDividerKey === key ? <NewSinceDivider /> : null}
+                        <div
+                          className={cn(
+                            animationClass,
+                            windowed && "[content-visibility:auto] [contain-intrinsic-size:auto_160px]",
+                          )}
+                        >
+                          {row.kind === "system" ? (
+                            <CommentSystemNotice notification={row.notification} />
+                          ) : (
+                            renderThread(row)
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </>
             )}
           </div>
         </div>

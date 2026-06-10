@@ -46,3 +46,29 @@ export const highlightHtml = (html: string, query: string): string => {
     );
   });
 };
+
+/**
+ * Build a short plain-text excerpt of a comment body centred on the first match
+ * of `query`, returned as HTML with the match wrapped in `<mark>`. Used by the
+ * compact search-results view so long comments don't dump their full text.
+ */
+export const buildHighlightedSnippet = (
+  html: string,
+  query: string,
+  radius = 70,
+): string => {
+  const text = htmlToText(html).replace(/\s+/g, " ").trim();
+  const q = query.trim();
+  if (!q) {
+    return escapeHtml(text.slice(0, radius * 2));
+  }
+  const index = text.toLowerCase().indexOf(q.toLowerCase());
+  if (index === -1) {
+    return highlightHtml(escapeHtml(text.slice(0, radius * 2)), q);
+  }
+  const start = Math.max(0, index - radius);
+  const end = Math.min(text.length, index + q.length + radius);
+  const excerpt =
+    (start > 0 ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
+  return highlightHtml(escapeHtml(excerpt), q);
+};
