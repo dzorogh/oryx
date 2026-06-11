@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/react";
 import { EMPLOYEE_OPTIONS } from "@/components/home/thanks-demo-data";
+import { demoContentImageUrl } from "@/lib/demo-content-image";
 import type { CalloutTone } from "@/features/comments/comment-callout";
 import { getEntity } from "@/features/comments/comment-entities";
 import type {
@@ -685,7 +686,7 @@ const buildAttachment = (
   mimeType: attachment.mimeType,
   url:
     attachment.kind === "image"
-      ? `https://picsum.photos/seed/${attachment.imageSeed ?? `${commentId}-${index}`}/640/480`
+      ? demoContentImageUrl(attachment.imageSeed ?? `${commentId}-${index}`, 640, 480)
       : "#",
   kind: attachment.kind,
 });

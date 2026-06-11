@@ -1,3 +1,5 @@
+import { demoContentImageUrl } from "@/lib/demo-content-image";
+
 /** Рубрика материала (значение «all» используется только в фильтрах, не в данных). */
 export type NewsItemRubric = Exclude<NewsRubric, "all">;
 
@@ -420,7 +422,7 @@ const enrichSeed = (seed: NewsSeed): NewsItem => {
   const body = buildBody(seed);
   return {
     ...seed,
-    imageUrl: `https://picsum.photos/seed/oryx-${seed.id}/1600/900`,
+    imageUrl: demoContentImageUrl(`oryx-${seed.id}`, 1600, 900),
     href: `/pulse/news/${seed.id}`,
     author: RUBRIC_AUTHORS[seed.rubric],
     readingMinutes: estimateReadingMinutes(body),

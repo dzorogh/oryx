@@ -44,23 +44,26 @@ Use only these stable, keyless services. **Do not** use `loremflickr.com` (it re
 
 | Use case | Service | Pattern |
 |----------|---------|---------|
-| Content / cover images | Lorem Picsum | `https://picsum.photos/seed/<seed>/<w>/<h>` |
+| Content / cover images | Unsplash CDN | `demoContentImageUrl(<seed>, <w>, <h>)` from `@/lib/demo-content-image` |
 | Person avatars / portraits | Pravatar | `https://i.pravatar.cc/<size>?u=<seed>` |
 
 Rules:
 
-1. **Always seed for stability.** Use `seed/<id>` (Picsum) or `?u=<id>` (Pravatar) so the same record keeps the same image across reloads. Derive the seed from a stable id (e.g. `news-1`, `emp-12`). Random/unseeded URLs change every request and look broken.
+1. **Always seed for stability.** Use `demoContentImageUrl(seed, w, h)` (Unsplash) or `?u=<id>` (Pravatar) so the same record keeps the same image across reloads. Derive the seed from a stable id (e.g. `news-1`, `emp-12`). Random/unseeded URLs change every request and look broken.
 2. **Render with `next/image`.** Use `fill` + `sizes` inside a sized, `overflow-hidden rounded-*` container (see `home-news-section.tsx`, `pricelists-presence.tsx`).
 3. **Register the host** in `next.config.ts` → `images.remotePatterns` before adding a new external image host.
 4. **Provide a fallback** for generated avatars where the URL may be missing (initials on a colored background), e.g. `PricelistsPresence`.
 
 ```ts
 // Good — demo data
-imageUrl: "https://picsum.photos/seed/news-1/1600/900",
+import { demoContentImageUrl } from "@/lib/demo-content-image";
+
+imageUrl: demoContentImageUrl("news-1", 1600, 900),
 avatarUrl: "https://i.pravatar.cc/200?u=emp-12",
 
 // Bad — dead service / unseeded (changes every load)
 imageUrl: "https://loremflickr.com/1600/900/office?lock=1",
+imageUrl: "https://picsum.photos/seed/news-1/1600/900", // geoblocked in some regions
 avatarUrl: "https://i.pravatar.cc/200",
 ```
 
