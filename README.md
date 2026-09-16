@@ -156,7 +156,7 @@ npm run check:ui-english
 ## Текущий статус и ограничения
 
 - Часть разделов пока реализована как placeholder-страницы (`app/[section]/page.tsx`).
-- Контент на главной странице и на отдельных экранах сейчас построен на демо-данных из `src/components/home/*-demo-data.ts`.
+- Контент на главной странице и на отдельных экранах в основном demo-данные. Pulse Thanks при заданных `NEXT_PUBLIC_SUPABASE_*` ходит в **свой** self-hosted Supabase (Dokploy compose `supabase`). Как работать: [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md).
 - PIM-модуль работает на преднастроенных пресетах заказов из `src/domain/packing/constants.ts`.
 
 ## Документация по спецификации упаковки

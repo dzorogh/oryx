@@ -11,6 +11,12 @@ Canonical guidelines for humans and AI agents (Cursor, Codex, Claude, CI, etc.).
 | List pages with toolbar header | [ui/list-page-toolbar.md](ui/list-page-toolbar.md) |
 | Images & avatars (`src/assets`; Picsum/Pravatar for demo media) | [assets/static-images.md](assets/static-images.md) |
 
+## Backend
+
+| Topic | Document |
+|-------|----------|
+| Demo Supabase (Oryx Dokploy only, anon / no login) | [backend/supabase.md](backend/supabase.md) |
+
 ## Entry points for agents
 
 - Root: [AGENTS.md](../../AGENTS.md)

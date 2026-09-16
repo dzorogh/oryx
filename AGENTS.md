@@ -13,6 +13,7 @@ All project conventions live under **[docs/conventions/](docs/conventions/)**. D
 | Full-width content / anti-stretch | [docs/conventions/ui/full-width-page-content.md](docs/conventions/ui/full-width-page-content.md) |
 | List pages + toolbar header | [docs/conventions/ui/list-page-toolbar.md](docs/conventions/ui/list-page-toolbar.md) |
 | Images & avatars (`src/assets`; Unsplash/Pravatar demo media) | [docs/conventions/assets/static-images.md](docs/conventions/assets/static-images.md) |
+| Demo backend (self-hosted Supabase) | [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md) |
 
 ## Quick rules
 
@@ -20,6 +21,7 @@ All project conventions live under **[docs/conventions/](docs/conventions/)**. D
 2. **List pages** — `bg-muted/30`, breadcrumb outside a white `Card` toolbar (`text-lg` title), filters/tabs inside toolbar, list full width below. See list-page-toolbar doc.
 3. **Width** — No `max-w-*` / `mx-auto` on page root; use responsive grids or tables so blocks do not stretch on ultra-wide screens.
 4. **Images & avatars** — Bundled UI images live under `src/assets/` with static imports (`StaticImageData`); not `"/…/file.png"` strings to `public/`. Demo content images use `demoContentImageUrl(seed, w, h)` from `@/lib/demo-content-image` (Unsplash CDN); avatars use `i.pravatar.cc/<size>?u=<id>` (never `loremflickr.com`). Run `npm run check:static-images`.
+5. **Supabase** — Oryx Dokploy compose only (`oryx-supabase-bb1dnn`). Never Capacity or YNAPB. Anon key, no login. See the supabase convention doc.
 
 ## Feature docs (how screens work)
 

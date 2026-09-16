@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { HandHeart } from "lucide-react";
+import { toast } from "sonner";
 import { buildPaginationItems } from "@/lib/pagination";
 import {
   Breadcrumb,
@@ -30,6 +31,7 @@ import { ThanksListFooter } from "@/features/pulse/thanks/thanks-list-footer";
 import { THANKS_FILTER_ALL } from "@/features/pulse/thanks/thanks-person-filters";
 import { ThanksToolbar } from "@/features/pulse/thanks/thanks-toolbar";
 import { ThanksForm } from "@/features/pulse/thanks/thanks-form";
+import { isSupabaseConfigured, listThankYouEntries } from "@/features/pulse/thanks/thanks-api";
 import { cn } from "@/lib/utils";
 
 type ThanksTabId = "received" | "sent" | "all";
@@ -106,11 +108,46 @@ const FILTERED_EMPTY_COPY: Record<ThanksTabId, { title: string; description: str
 
 export const ThanksPage = () => {
   const [activeTab, setActiveTab] = useState<ThanksTabId>("received");
-  const [entries, setEntries] = useState<ThankYouEntry[]>(THANK_YOU_ENTRIES);
+  const [entries, setEntries] = useState<ThankYouEntry[]>(
+    isSupabaseConfigured() ? [] : THANK_YOU_ENTRIES,
+  );
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured());
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [senderFilterId, setSenderFilterId] = useState(THANKS_FILTER_ALL);
   const [recipientFilterId, setRecipientFilterId] = useState(THANKS_FILTER_ALL);
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void listThankYouEntries()
+      .then((rows) => {
+        if (!cancelled) {
+          setEntries(rows);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "Could not load thank-yous.";
+          setLoadError(message);
+          toast.error("Could not load thank-yous from the demo backend.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const tabEntries = useMemo(
     () => filterEntriesByTab(entries, activeTab),
@@ -232,7 +269,31 @@ export const ThanksPage = () => {
           )}
           aria-label={`${activeTab} thank-you messages`}
         >
-          {filteredEntries.length === 0 ? (
+          {isLoading ? (
+            <li
+              className={cn(
+                "min-w-0 list-none",
+                activeTab !== "all" && "md:col-span-2 xl:col-span-3",
+                "flex flex-col items-center gap-2 rounded-xl border border-dashed border-[var(--corportal-border-grey)] bg-muted/30 px-6 py-12 text-center",
+              )}
+            >
+              <p className="text-sm font-semibold text-foreground">Loading thank-yous</p>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                Fetching the shared demo feed.
+              </p>
+            </li>
+          ) : loadError ? (
+            <li
+              className={cn(
+                "min-w-0 list-none",
+                activeTab !== "all" && "md:col-span-2 xl:col-span-3",
+                "flex flex-col items-center gap-2 rounded-xl border border-dashed border-[var(--corportal-border-grey)] bg-muted/30 px-6 py-12 text-center",
+              )}
+            >
+              <p className="text-sm font-semibold text-foreground">Could not load thank-yous</p>
+              <p className="max-w-sm text-sm text-muted-foreground">{loadError}</p>
+            </li>
+          ) : filteredEntries.length === 0 ? (
             <li
               className={cn(
                 "min-w-0 list-none",
@@ -268,7 +329,7 @@ export const ThanksPage = () => {
           )}
         </ul>
 
-        {filteredEntries.length > 0 ? (
+        {!isLoading && !loadError && filteredEntries.length > 0 ? (
           <ThanksListFooter
             shownCount={paginatedEntries.length}
             totalCount={filteredEntries.length}

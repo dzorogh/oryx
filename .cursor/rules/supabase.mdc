@@ -1,0 +1,10 @@
+---
+description: Oryx demo Supabase — never Capacity/YNAPB; see docs/conventions
+alwaysApply: true
+---
+
+# Oryx demo Supabase
+
+**Canonical doc:** [docs/conventions/backend/supabase.md](../../docs/conventions/backend/supabase.md)
+
+Use the Oryx Dokploy compose `supabase` (`oryx-supabase-bb1dnn`) only. Do not use Capacity or YNAPB Supabase. Browser talks with the anon key; no login. Do not duplicate this rule here — edit the markdown file above.

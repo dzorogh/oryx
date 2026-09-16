@@ -8,6 +8,14 @@ The app runs as a single Dokploy **Compose** service built from this repo
 | `web`    | Next.js server (`output: "standalone"`, `node server.js`) | `3000`        | `oryx.indenbom.ru`         |
 | `collab` | Yjs collaboration WebSocket server                  | `1234`        | `oryx-collab.indenbom.ru`  |
 
+A **second Compose service** in the same Dokploy project (`supabase`, isolated)
+is the demo backend. How to use it (client, migrations, seed, which instance
+**not** to touch): [docs/conventions/backend/supabase.md](../conventions/backend/supabase.md).
+
+| Service  | What it is                          | Internal port | Domain |
+|----------|-------------------------------------|---------------|--------|
+| `kong`   | Supabase API gateway (PostgREST, Auth, Studio) | `8000` | `oryx-supabase-8de6bd-72-56-83-48.sslip.io` and `supabase.oryx.indenbom.ru` |
+
 Traefik (managed by Dokploy) terminates TLS and proxies directly to the Next.js
 server on port `3000`; it also upgrades the WebSocket so the browser talks to
 `wss://oryx-collab.indenbom.ru`.
@@ -23,20 +31,28 @@ the collab URL is passed as a Docker build arg sourced from the Compose env:
 
 ```
 NEXT_PUBLIC_COLLAB_WS_URL=wss://oryx-collab.indenbom.ru
+NEXT_PUBLIC_SUPABASE_URL=https://oryx-supabase-8de6bd-72-56-83-48.sslip.io
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon JWT from the supabase compose Environment>
 ```
 
 Set this in the Dokploy Compose **Environment** tab. Changing it requires a
 redeploy (rebuild). Server-only secrets (no `NEXT_PUBLIC_` prefix) can be set as
 plain runtime env vars on the `web` service and are read at request time.
 
+Do **not** reuse Capacity or YNAPB Supabase. The Oryx compose is `oryx-supabase-bb1dnn`.
+
 ## DNS (manual, one-time)
 
 Point both hostnames at the Dokploy server with `A` records:
 
 ```
-oryx.indenbom.ru         A   72.56.83.48
-oryx-collab.indenbom.ru  A   72.56.83.48
+oryx.indenbom.ru             A   72.56.83.48
+oryx-collab.indenbom.ru      A   72.56.83.48
+supabase.oryx.indenbom.ru    A   72.56.83.48
 ```
+
+`sslip.io` already resolves to the server IP, so the API works before the pretty
+hostname has a Cloudflare A record.
 
 Let's Encrypt certificates are issued automatically once DNS resolves and
 ports 80/443 are reachable.

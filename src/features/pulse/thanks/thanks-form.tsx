@@ -18,6 +18,7 @@ import {
   THANKS_CURRENT_USER_NAME,
   type ThankYouEntry,
 } from "@/features/pulse/thanks/thanks-demo-data";
+import { insertThankYouEntry, isSupabaseConfigured } from "@/features/pulse/thanks/thanks-api";
 import { cn } from "@/lib/utils";
 
 const MESSAGE_MAX_LENGTH = 280;
@@ -39,6 +40,7 @@ const formatSentAtLabel = () =>
 export const ThanksForm = ({ idPrefix = "thanks", onSent, compact = false }: ThanksFormProps) => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const recipientOptions = useMemo(
     () => EMPLOYEE_OPTIONS.filter((employee) => employee.id !== THANKS_CURRENT_USER_ID),
@@ -54,8 +56,8 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent, compact = false }: Tha
     [recipientOptions],
   );
 
-  const handleSubmit = () => {
-    if (!selectedEmployeeId || !message.trim()) {
+  const handleSubmit = async () => {
+    if (!selectedEmployeeId || !message.trim() || isSending) {
       return;
     }
 
@@ -75,6 +77,23 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent, compact = false }: Tha
       message: message.trim(),
       sentAtLabel: formatSentAtLabel(),
     };
+
+    if (isSupabaseConfigured()) {
+      setIsSending(true);
+      try {
+        const saved = await insertThankYouEntry(entry);
+        onSent?.(saved);
+        toast.success("Thank-you sent");
+        setSelectedEmployeeId(null);
+        setMessage("");
+      } catch (error: unknown) {
+        const description = error instanceof Error ? error.message : "Please try again.";
+        toast.error("Could not send thank-you", { description });
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
 
     onSent?.(entry);
     toast.success("Thank-you sent");
@@ -153,7 +172,7 @@ export const ThanksForm = ({ idPrefix = "thanks", onSent, compact = false }: Tha
       <Button
         type="button"
         onClick={handleSubmit}
-        disabled={!selectedEmployeeId || !message.trim() || isOverLimit}
+        disabled={!selectedEmployeeId || !message.trim() || isOverLimit || isSending}
         aria-label="Send thank-you"
         className="w-full sm:w-auto"
       >

@@ -10,3 +10,5 @@ Product and module behavior (how screens work, data flow, file map).
 | Pulse — Company workspace | [pulse-company-cabinet.md](pulse-company-cabinet.md) |
 | User profile | [user-profile.md](user-profile.md) |
 | Comments module (reusable) | [comments-module.md](comments-module.md) |
+
+Demo backend (shared, not a screen): [../conventions/backend/supabase.md](../conventions/backend/supabase.md).

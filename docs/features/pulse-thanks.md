@@ -1,6 +1,6 @@
 # Pulse — Thanks (`/pulse/thanks`)
 
-Раздел **Thanks** в модуле Pulse: просмотр благодарностей коллегам, отправка новых сообщений, фильтрация и пагинация. Сейчас работает на **demo-данных** в браузере (без API).
+Раздел **Thanks** в модуле Pulse: просмотр благодарностей коллегам, отправка новых сообщений, фильтрация и пагинация. При заданных `NEXT_PUBLIC_SUPABASE_URL` и `NEXT_PUBLIC_SUPABASE_ANON_KEY` лента читается и пишется в **отдельный self-hosted Supabase** проекта Oryx (без логина, `anon` + открытый RLS). Без этих переменных страница остаётся на локальных demo-данных.
 
 ## Маршруты и навигация
 
@@ -47,7 +47,7 @@
 2. Выбор коллеги (себя в списке нет), текст до 280 символов
 3. **Send** → toast «Thank-you sent», запись добавляется **в начало** локального state, вкладка переключается на **Sent**, Sheet закрывается
 
-Данные до перезагрузки страницы сохраняются только в React state (demo).
+Если Supabase настроен, запись уходит в таблицу `thank_you_entry` и видна всем, кто открыл демо. Без бэкенда запись остаётся только в React state до перезагрузки.
 
 ### Пустые состояния
 
@@ -74,7 +74,7 @@ flowchart TD
   form[ThanksForm Send] -->|prepend entry| state
 ```
 
-1. Инициализация: `useState(THANK_YOU_ENTRIES)` из `thanks-demo-data.ts`
+1. Инициализация: при наличии Supabase — `listThankYouEntries()`, иначе `THANK_YOU_ENTRIES`
 2. **По вкладке**: `filterEntriesByTab` (received / sent / all)
 3. **По фильтрам**: `applyPersonFilters` (`senderId`, `recipientId`; `all` = без ограничения)
 4. **Пагинация**: `filteredEntries.slice((page - 1) * 12, page * 12)`
@@ -134,17 +134,17 @@ src/components/home/
 - Ширина и сетка: [full-width-page-content.md](../conventions/ui/full-width-page-content.md)
 - Шапка над списком: [list-page-toolbar.md](../conventions/ui/list-page-toolbar.md)
 
-## Подключение к бэкенду (план)
+## Бэкенд (self-hosted Supabase)
 
-Сейчас API нет. Типичная замена demo:
+Как работать с инстансом (какой Dokploy, что нельзя трогать, миграции, seed): [supabase.md](../conventions/backend/supabase.md).
 
-1. Загрузка списка: `GET /thanks?tab=…&sender=…&recipient=…&page=…` → заменить `THANK_YOU_ENTRIES` и server-side slice
-2. Отправка: `POST /thanks` → в `ThanksForm` вместо локального `onSent`
-3. Текущий пользователь: из сессии вместо `THANKS_CURRENT_USER_ID`
-4. Вкладка **All**: скрывать при `!isAdmin` (комментарий TODO в `thanks-page.tsx`)
-5. Аватары: URL из профиля сотрудника
-
-`ThankYouEntry` и цепочка tab → person filters → pagination можно сохранить; меняется только источник `entries` и мутации после Send.
+- Клиент: `src/lib/supabase/client.ts` (`@supabase/supabase-js`, без session/login)
+- Таблица: `public.thank_you_entry` — миграция `supabase/migrations/20260916180000_thank_you_entry.sql`
+- Политика: `FOR ALL TO anon, authenticated USING (true) WITH CHECK (true)`
+- Загрузка: `listThankYouEntries()` в `thanks-page.tsx`
+- Отправка: `insertThankYouEntry()` в `ThanksForm`
+- Текущий пользователь пока demo: `THANKS_CURRENT_USER_ID` = `emp-12`
+- Вкладка **All**: скрывать при `!isAdmin` (комментарий TODO в `thanks-page.tsx`)
 
 ## Локальная проверка
 
