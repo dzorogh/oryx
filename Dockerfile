@@ -29,9 +29,10 @@ ENV NEXT_PUBLIC_COLLAB_WS_URL=${NEXT_PUBLIC_COLLAB_WS_URL} \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production \
-    NODE_OPTIONS=--max-old-space-size=2048 \
+    NODE_OPTIONS=--max-old-space-size=1536 \
     UV_THREADPOOL_SIZE=2
-RUN npm run build
+# Webpack (not Turbopack): lower peak RAM on the shared 15 GiB Dokploy host.
+RUN npm run build -- --webpack
 
 # ---------- web: run the Next.js server (standalone output) ----------
 FROM node:22-alpine AS web

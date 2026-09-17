@@ -52,7 +52,7 @@ Hardening in this repo:
 | Piece | What it does |
 |-------|----------------|
 | Dokploy **Command** on `oryx-demo` | Builds `web`, then `collab`, then `up -d` (no parallel image builds) |
-| `Dockerfile` | Caps Node heap (`2048` MiB build / `512` MiB web / `256` MiB collab), limits npm sockets, npm cache mounts |
+| `Dockerfile` | Caps Node heap (`1536` MiB build / `512` MiB web / `256` MiB collab), builds with `next build --webpack` (Turbopack peaks higher), limits npm sockets, npm cache mounts |
 | `scripts/collab-package.json` | Collab image installs only `ws` / `yjs` / `y-protocols` / `lib0` — not the full app lockfile |
 | `.dockerignore` | Drops `.agents`, `_bmad*`, `docs`, `tests`, `supabase`, etc. from the build context |
 | `docker-compose.yml` | Runtime `mem_limit` / `cpus` on `web` and `collab` |
