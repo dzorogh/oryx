@@ -1,10 +1,6 @@
-import { notFound } from "next/navigation";
-import { ProductDetailPage } from "@/components/store/pim/products/detail/product-detail-page";
+import { ProductDetailPage as StoreDemoProductDetailPage } from "@/components/store/pim/products/detail/product-detail-page";
 import { getProductDetail } from "@/components/store/pim/products/detail/product-detail-demo-data";
-import { STORE_CATALOG_ITEMS } from "@/components/store/pim/products/store-catalog-demo-data";
-
-export const generateStaticParams = () =>
-  STORE_CATALOG_ITEMS.map((item) => ({ productId: item.id }));
+import { ProductDetailPage as LogisticsProductDetailPage } from "@/features/logistics/catalog-pages";
 
 type StoreProductDetailRouteProps = {
   params: Promise<{ productId: string }>;
@@ -13,11 +9,11 @@ type StoreProductDetailRouteProps = {
 const StoreProductDetailRoute = async ({ params }: StoreProductDetailRouteProps) => {
   const { productId } = await params;
 
-  if (!getProductDetail(productId)) {
-    notFound();
+  if (getProductDetail(productId)) {
+    return <StoreDemoProductDetailPage productId={productId} />;
   }
 
-  return <ProductDetailPage productId={productId} />;
+  return <LogisticsProductDetailPage productId={productId} />;
 };
 
 export default StoreProductDetailRoute;

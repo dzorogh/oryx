@@ -1,12 +1,10 @@
 ---
-description: Prefer local main; never push unless the user asks
+description: Prefer local main; never push unless the user asks — see AGENTS.md Policy
 alwaysApply: true
 ---
 
 # Main branch workflow
 
-1. Do completed work on local `main` (or merge into local `main` when finishing a feature branch). Fast-forward preferred.
-2. Do **not** push to `origin` unless the user explicitly asks (push / publish / задеплой / запушь).
-3. Do **not** open a PR unless the user explicitly asks for one.
+**Canonical:** [AGENTS.md](../../AGENTS.md) Policy section.
 
-Git safety still applies: no force-push to `main`, no `--no-verify`, no amending others' commits.
+Do not duplicate this rule here — edit the managed block in `AGENTS.md`.

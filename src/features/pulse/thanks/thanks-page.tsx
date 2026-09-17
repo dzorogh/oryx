@@ -349,7 +349,7 @@ export const ThanksPage = () => {
               Choose a colleague and write a short thank-you message.
             </SheetDescription>
           </SheetHeader>
-          <div className="px-4 pb-6">
+          <div className="pb-6">
             <ThanksForm
               key={isFormOpen ? "thanks-sheet-open" : "thanks-sheet-closed"}
               idPrefix="thanks-sheet"

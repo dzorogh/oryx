@@ -65,7 +65,7 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
             <div className="absolute inset-0 flex flex-col gap-2 overflow-y-auto pr-0.5">
               {galleryImages.map((src, index) => (
                 <button
-                  key={`${src.src}-${index}`}
+                  key={`${typeof src === "string" ? src : src.src}-${index}`}
                   type="button"
                   onClick={() => setActiveImage(src)}
                   aria-label={`Show image ${index + 1}`}

@@ -26,6 +26,8 @@ import {
   type CatalogListingMode,
 } from "./catalog/catalog-helpers";
 import { useCatalogController } from "./catalog/use-catalog-controller";
+import { loadDbCatalogItems } from "@/features/store/store-catalog-from-logistics";
+import type { StoreCatalogItem } from "./store-catalog-demo-data";
 
 const StoreCatalogPageFallback = () => (
   <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Loading catalog" />
@@ -42,7 +44,27 @@ const StoreCatalogPageContent = () => {
   );
 
   const columnsStorageKey = getCatalogColumnsStorageKey(listingMode);
-  const catalog = useCatalogController(listingMode, columnsStorageKey);
+  const [dbItems, setDbItems] = useState<StoreCatalogItem[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadDbCatalogItems()
+      .then((items) => {
+        if (!cancelled && items) {
+          setDbItems(items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDbItems(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const catalog = useCatalogController(listingMode, columnsStorageKey, dbItems ?? undefined);
 
   const syncUrl = useCallback((mode: CatalogListingMode) => {
     if (typeof window === "undefined") {

@@ -7,4 +7,4 @@ alwaysApply: true
 
 **Canonical doc:** [docs/conventions/backend/supabase.md](../../docs/conventions/backend/supabase.md)
 
-Use the Oryx Dokploy compose `supabase` (`oryx-supabase-bb1dnn`) only. Do not use Capacity or YNAPB Supabase. Browser talks with the anon key; no login. Do not duplicate this rule here — edit the markdown file above.
+Use the Oryx Dokploy compose `supabase` (`oryx-supabase-bb1dnn`) only. Agent access is MCP `oryx-supabase`. Do not use Capacity, YNAPB, or cloud `user-supabase`. Browser talks with the anon key; no login. Do not duplicate this rule here — edit the markdown file above.

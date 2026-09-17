@@ -1,0 +1,4380 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "sku": "FORCE-1100-EFI",
+      "name": "Force 1100 EFI",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/09/01/03/223416/conversions/Force-1100-(6)-medium.webp",
+      "dealer_price": 39950,
+      "retail_price": 42990
+    },
+    {
+      "id": 17,
+      "sku": "CROSS-180-RX",
+      "name": "Cross 180 RX",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/19/191255/conversions/180-Cross-RX-medium.webp",
+      "dealer_price": 3321,
+      "retail_price": 33900
+    },
+    {
+      "id": 29,
+      "sku": "ACTIVATOR-280-RX",
+      "name": "Activator 280 RX",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/16/197015/conversions/Activator-280-RX-(19)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 36,
+      "sku": "CRUISER-300-FJ",
+      "name": "Cruiser 300 FJ",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/04/203877/conversions/6825efde5c4d1620449154-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 46,
+      "sku": "HUMMER-320-RX-LTD",
+      "name": "Hummer 320 RX LTD",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/19/191279/conversions/Hummer-320-RX-LTD-medium.webp",
+      "dealer_price": 6557,
+      "retail_price": 78900
+    },
+    {
+      "id": 131,
+      "sku": "FORCE-650",
+      "name": "Force 650",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/12/191383/conversions/Sharmax-Force-650-—-копия-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 207,
+      "sku": "CROSS-E-200",
+      "name": "Cross E-200",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/04/203871/conversions/Cross-E-200-(4)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 2,
+      "sku": "CRUISER-RACE-350-GX",
+      "name": "Cruiser Race 350 GX",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191296/conversions/6825ef08146ea335049195-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 3,
+      "sku": "CRUISER-RACE-550-GX",
+      "name": "Cruiser Race 550 GX",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191303/conversions/6825ef3629508319286321-(1)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 4,
+      "sku": "JUNIOR-200",
+      "name": "Junior 200",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205018/conversions/200_pro-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 5,
+      "sku": "JUNIOR-250",
+      "name": "Junior 250",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205044/conversions/Junior-250-(20)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 6,
+      "sku": "PREDATOR-420-2-SEATER",
+      "name": "Predator 420 2 seater",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205062/conversions/682f4bf95e3e7197477387-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 9,
+      "sku": "5000-2-2-SEATER",
+      "name": "5000 2+2 Seater",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/21/205098/conversions/6826ed31be73e096857416-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 10,
+      "sku": "5000-4-SEATER-PRO",
+      "name": "5000 4 Seater Pro",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/22/205107/conversions/69b0366638c32931032066-(1)-medium.webp",
+      "dealer_price": 26055,
+      "retail_price": null
+    },
+    {
+      "id": 11,
+      "sku": "SPORT-250",
+      "name": "Sport 250",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/14/203013/conversions/Sport-309-(2)-medium.webp",
+      "dealer_price": 4398,
+      "retail_price": 43900
+    },
+    {
+      "id": 12,
+      "sku": "POWER-MAX-250",
+      "name": "Power Max 250",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203129/conversions/682cba5b16b63445981055-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 14,
+      "sku": "POWER-MAX-320",
+      "name": "Power Max 320",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/13/15/219616/conversions/Power-Max-320-(38)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 18,
+      "sku": "EXPERT-PRO-450",
+      "name": "Expert Pro 450",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/13/17/219657/conversions/Expert-Pro-RXP-450-(5)-medium.webp",
+      "dealer_price": 13400,
+      "retail_price": null
+    },
+    {
+      "id": 21,
+      "sku": "CUSTOM-1000-RST-ROADSTER",
+      "name": "Custom 1000 RST Roadster",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/01/17/22/167548/conversions/6827442d38d25426040151-medium.webp",
+      "dealer_price": 48500,
+      "retail_price": null
+    },
+    {
+      "id": 22,
+      "sku": "ENDURO-250",
+      "name": "Enduro 250",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2025/12/14/21/162355/conversions/6827446e7e4bf842911729-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 23,
+      "sku": "ENDURO-300",
+      "name": "Enduro 300",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/17/204160/conversions/Tour-Enduro-300-Ultra-(22)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 24,
+      "sku": "FX-200",
+      "name": "FX 200",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/17/208117/conversions/FX-200-(10)-medium.webp",
+      "dealer_price": null,
+      "retail_price": 46900
+    },
+    {
+      "id": 25,
+      "sku": "FX-150-ULTRA-EFI",
+      "name": "FX 150 Ultra EFI",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/22/204792/conversions/682748de90b7e098173401-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 26,
+      "sku": "FX-350-ULTRA",
+      "name": "FX 350 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207690/conversions/FX-350-ultra-(3)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 30,
+      "sku": "RST-240-ULTRA",
+      "name": "RST 240 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/02/25/14/175790/conversions/69299a86f36c8084011751-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 31,
+      "sku": "RST-250-LATINA",
+      "name": "RST 250 Latina",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/15/204436/conversions/RST-250-Latina-(8)-medium.webp",
+      "dealer_price": 4248,
+      "retail_price": 37900
+    },
+    {
+      "id": 32,
+      "sku": "RST-322-ULTRA",
+      "name": "RST 322 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/07/167553/conversions/682c9b1430cf9837319837-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 33,
+      "sku": "RST-422-ULTRA",
+      "name": "RST 422 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/15/204442/conversions/1-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 34,
+      "sku": "RST-750-ULTRA",
+      "name": "RST 750 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/12/167567/conversions/682c9b73ec327178111119_converted-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 35,
+      "sku": "RR-301-ULTRA",
+      "name": "RR 301 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/09/218156/conversions/Custom-1000-RST-Roadster-(3)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 37,
+      "sku": "SCOOTER-TANK-150",
+      "name": "Scooter Tank 150",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204687/conversions/1-(30)-medium.webp",
+      "dealer_price": 4880,
+      "retail_price": 41900
+    },
+    {
+      "id": 42,
+      "sku": "GP-401-ULTRA",
+      "name": "GP 401 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207723/conversions/GP-401-Ultra-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 43,
+      "sku": "GP-881-ULTRA",
+      "name": "GP 881 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/08/204635/conversions/682c9711e990e228619270-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 44,
+      "sku": "GP-1100-ULTRA",
+      "name": "GP 1100 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/09/204647/conversions/GP-1100-Ultra-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 45,
+      "sku": "GL-250",
+      "name": "GL 250",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208069/conversions/GL-102122-medium.webp",
+      "dealer_price": 7120,
+      "retail_price": null
+    },
+    {
+      "id": 47,
+      "sku": "GL-300-DUBAI",
+      "name": "GL 300 Dubai",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/09/204316/conversions/682749a8e151e380172377-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 48,
+      "sku": "GL-400",
+      "name": "GL 400",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/15/19/219953/conversions/GL-400-medium.webp",
+      "dealer_price": 2878,
+      "retail_price": 13790
+    },
+    {
+      "id": 49,
+      "sku": "GL-570-ULTRA",
+      "name": "GL 570 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208056/conversions/GL-570-Ult1ra-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 62,
+      "sku": "GL-770-ULTRA",
+      "name": "GL 770 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207728/conversions/GL-770-Ultra-medium.webp",
+      "dealer_price": 27058,
+      "retail_price": null
+    },
+    {
+      "id": 109,
+      "sku": "GL-991-ULTRA",
+      "name": "GL 991 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/12/204368/conversions/682c95e50d088313130977-medium.webp",
+      "dealer_price": 34000,
+      "retail_price": null
+    },
+    {
+      "id": 129,
+      "sku": "POWER-MAX-145",
+      "name": "Power Max 145",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/15/203644/conversions/POWER-MAX-301-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 130,
+      "sku": "POWER-MAX-190",
+      "name": "Power Max 190",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/17/203774/conversions/67dc316d75ee5976035250-(3)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 132,
+      "sku": "RR-801-V-ULTRA",
+      "name": "RR 801 V Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/08/218141/conversions/69a9595f48396410292739-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 50,
+      "sku": "CROSS-130",
+      "name": "Cross 130",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/15/191246/conversions/130-Cross-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 51,
+      "sku": "RAIZER-250-RACE-CUP",
+      "name": "Raizer 250 Race Cup",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191291/conversions/Raizer-250-Race-Cup-(6)-medium.webp",
+      "dealer_price": 5350,
+      "retail_price": null
+    },
+    {
+      "id": 52,
+      "sku": "FORCE-800-EFI-CHALLENGER",
+      "name": "Force 800 EFI Challenger",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207746/conversions/Force-Challenger-801-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 53,
+      "sku": "FORCE-420-CYBER-EFI",
+      "name": "Force 420 Cyber EFI",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/17/197037/conversions/Force-420-Cyber-(9)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 54,
+      "sku": "FORCE-1100-EFI-LTD",
+      "name": "Force 1100 EFI LTD",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/14/191452/conversions/68f76dd9681a6202957510-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 55,
+      "sku": "XFORCE-1100-SPORT-X4",
+      "name": "XForce 1100 Sport x4",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/17/205015/conversions/XForce-1100-Sport-X4-(17)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 56,
+      "sku": "XFORCE-1100-SPORT",
+      "name": "XForce 1100 Sport",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/02/09/03/172240/conversions/XForce-1101-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 57,
+      "sku": "SPORT-230",
+      "name": "Sport 230",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/09/202924/conversions/Sport-230-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 58,
+      "sku": "SPORT-280",
+      "name": "Sport 280",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/14/203035/conversions/Sport-310-(1)-medium.webp",
+      "dealer_price": 4980,
+      "retail_price": 47900
+    },
+    {
+      "id": 59,
+      "sku": "SPORT-300-AIR-ULTIMATUM",
+      "name": "Sport 300 Air Ultimatum",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/19/203094/conversions/Sport-300-Air-Ultimatum-(6)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 60,
+      "sku": "POWER-MAX-300-AIR",
+      "name": "Power Max 300 Air",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203143/conversions/Power-Max-300-Air-2029-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 61,
+      "sku": "POWER-MAX-330",
+      "name": "Power Max 330",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 63,
+      "sku": "EXPERT-PRO-320",
+      "name": "Expert Pro 320",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/05/203229/conversions/Expert-Pro-454-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 64,
+      "sku": "EXPERT-PRO-300-AIR",
+      "name": "Expert Pro 300 Air",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/04/203212/conversions/Expert-Pro-300-Air-(3)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 65,
+      "sku": "SPORT-320",
+      "name": "Sport 320",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/19/203105/conversions/Sport-320-(15)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 66,
+      "sku": "POWER-MAX-322",
+      "name": "Power Max 322",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203169/conversions/Power-Max-322-(8)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 67,
+      "sku": "SPORT-145",
+      "name": "Sport 145",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/10/203384/conversions/Sport-145-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 68,
+      "sku": "SPORT-190",
+      "name": "Sport 190",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207761/conversions/Sport-190-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 69,
+      "sku": "SPORT-145-MIAMI",
+      "name": "Sport 145 Miami",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/15/204149/conversions/Sport-145-Miami-(9)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 70,
+      "sku": "SPORT-190-MIAMI",
+      "name": "Sport 190 Miami",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/12/203490/conversions/Sport-190-Miami-(6)-medium.webp",
+      "dealer_price": 3130,
+      "retail_price": null
+    },
+    {
+      "id": 71,
+      "sku": "POWER-MAX-145-MIAMI",
+      "name": "Power Max 145 Miami",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/11/203427/conversions/Power-Max-145-MIAMI-(6)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 72,
+      "sku": "POWER-MAX-190-MIAMI",
+      "name": "Power Max 190 Miami",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/18/203823/conversions/Power-Max-190-MIAMI-(4)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 73,
+      "sku": "POWER-MAX-140-MINI",
+      "name": "Power Max 140 Mini",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/13/203562/conversions/682f37799436e829910344-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 74,
+      "sku": "SPORT-130-MINI",
+      "name": "Sport 130 Mini",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/07/203259/conversions/130-Mini-(1)-medium.webp",
+      "dealer_price": 1931,
+      "retail_price": null
+    },
+    {
+      "id": 75,
+      "sku": "ENDURO-125",
+      "name": "Enduro 125",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/18/204188/conversions/Enduro-125-EU-(13)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 76,
+      "sku": "ENDURO-250-LATINA",
+      "name": "Enduro 250 Latina",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218088/conversions/Enduro-250-Latina-medium.webp",
+      "dealer_price": 4042,
+      "retail_price": null
+    },
+    {
+      "id": 77,
+      "sku": "ENDURO-351",
+      "name": "Enduro 351",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218102/conversions/Enduro-351-(13)-medium.webp",
+      "dealer_price": 6150,
+      "retail_price": null
+    },
+    {
+      "id": 78,
+      "sku": "VESPITO-150-EFI",
+      "name": "Vespito 150 EFI",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204732/conversions/68fb9d7fae8b9320909486-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 79,
+      "sku": "MOPED-150",
+      "name": "Moped 150",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207712/conversions/Moped-152-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 80,
+      "sku": "VESPITO-150",
+      "name": "Vespito 150",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204751/conversions/Vespito-150-medium.webp",
+      "dealer_price": 3451,
+      "retail_price": null
+    },
+    {
+      "id": 81,
+      "sku": "VESPITO-125-EU",
+      "name": "Vespito 125 EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/20/204759/conversions/Vespito-126-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 82,
+      "sku": "FX-MAX-125-EU",
+      "name": "FX Max 125 EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/21/204783/conversions/69de5432ee8b4168704633-(1)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 83,
+      "sku": "FX-250-LATINA",
+      "name": "FX 250 Latina",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/23/204803/conversions/FX-250-medium.webp",
+      "dealer_price": 13178,
+      "retail_price": null
+    },
+    {
+      "id": 84,
+      "sku": "FX-300-EFI",
+      "name": "FX 300 EFI",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207697/conversions/FX-300-EFI-(8)-medium.webp",
+      "dealer_price": 10200,
+      "retail_price": null
+    },
+    {
+      "id": 85,
+      "sku": "FX-441-EU",
+      "name": "FX 441 EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/17/208124/conversions/FX-441-EU-(29)-medium.webp",
+      "dealer_price": 15120,
+      "retail_price": null
+    },
+    {
+      "id": 86,
+      "sku": "PHANTOM-125",
+      "name": "Phantom 125",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/20/204769/conversions/Phantom-125-(33)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 87,
+      "sku": "RST-140-MINI-BANANA",
+      "name": "RST 140 Mini Banana",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/19/204515/conversions/RST-MINI-BANANA-140-(5)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 88,
+      "sku": "RST-210-LATINA",
+      "name": "RST 210 Latina",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": 4113,
+      "retail_price": null
+    },
+    {
+      "id": 89,
+      "sku": "RST-501-ZOOMA",
+      "name": "RST 501 Zooma",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/17/204478/conversions/RST-501-Zooma-(2)-—-копия-medium.webp",
+      "dealer_price": 24850,
+      "retail_price": 121900
+    },
+    {
+      "id": 90,
+      "sku": "RST-501-ULTRA",
+      "name": "RST 501 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/14/204418/conversions/RST-501-ULTRA-(30)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 91,
+      "sku": "BANDIT-501",
+      "name": "Bandit 501",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/17/204466/conversions/Bandit-502-(1)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 92,
+      "sku": "RST-351",
+      "name": "RST 351",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/13/204413/conversions/RST-351-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 93,
+      "sku": "RST-125",
+      "name": "RST 125",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/14/208018/conversions/RST-125-EU-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 94,
+      "sku": "GP-501-L",
+      "name": "GP 501 L",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/08/204629/conversions/GP-501-L-(24)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 95,
+      "sku": "GP-301",
+      "name": "GP 301",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/06/204546/conversions/691f6ee98a643412876997-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 96,
+      "sku": "GP-451",
+      "name": "GP 451",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/13/204680/conversions/Frame-22-medium.webp",
+      "dealer_price": 8075,
+      "retail_price": null
+    },
+    {
+      "id": 97,
+      "sku": "GP-501-E",
+      "name": "GP 501 E",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/04/207658/conversions/_E-GP-510-(1)-medium.webp",
+      "dealer_price": 19000,
+      "retail_price": null
+    },
+    {
+      "id": 98,
+      "sku": "GP-301-LATINA",
+      "name": "GP 301 Latina",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/09/204654/conversions/691f6ee98a643412876997-medium.webp",
+      "dealer_price": 6880,
+      "retail_price": null
+    },
+    {
+      "id": 99,
+      "sku": "GP-601-ULTRA",
+      "name": "GP 601 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208080/conversions/GP-1104-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 100,
+      "sku": "GP-321-S",
+      "name": "GP 321 S",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208084/conversions/GP-321-S-(7)-medium.webp",
+      "dealer_price": 7489,
+      "retail_price": null
+    },
+    {
+      "id": 101,
+      "sku": "GP-410",
+      "name": "GP 410",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208096/conversions/GP-410-(7)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 102,
+      "sku": "GP-125-EU-X",
+      "name": "GP 125 EU X",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/07/204603/conversions/GP-125-EU-(21)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 103,
+      "sku": "RR-771-VICTORIA",
+      "name": "RR 771 Victoria",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/05/204250/conversions/RR-771-Victoria-(14)-medium.webp",
+      "dealer_price": 21300,
+      "retail_price": 179900
+    },
+    {
+      "id": 104,
+      "sku": "RR-661",
+      "name": "RR 661",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/19/167597/conversions/6967b9aa54ec2155133016_converted-medium.webp",
+      "dealer_price": 16468,
+      "retail_price": 138900
+    },
+    {
+      "id": 105,
+      "sku": "RR-351",
+      "name": "RR 351",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/04/204217/conversions/691f6fcfa3875256201900-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 106,
+      "sku": "RR-801-ULTRA",
+      "name": "RR 801 Ultra",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 107,
+      "sku": "RR-611-EU",
+      "name": "RR 611 EU",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 108,
+      "sku": "CR-125",
+      "name": "CR 125",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/06/204278/conversions/CR-125-EU-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 134,
+      "sku": "GL-351",
+      "name": "GL 351",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/15/17/219938/conversions/GL-351-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 135,
+      "sku": "GL-601-ULTRA",
+      "name": "GL 601 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/08/204303/conversions/GL-601-Ultra-(1)-medium.webp",
+      "dealer_price": 23500,
+      "retail_price": null
+    },
+    {
+      "id": 136,
+      "sku": "GL-801-ULTRA",
+      "name": "GL 801 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/09/204315/conversions/691f6d03939a1162939527-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 137,
+      "sku": "STREET-BIKE-175-ME-DUBAI",
+      "name": "Street Bike 175 ME Dubai",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/08/204859/conversions/Street-Bike-175-ME-Dubai-(8)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 138,
+      "sku": "STREET-BIKE-125-EU",
+      "name": "Street Bike 125 EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/06/204838/conversions/1-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 139,
+      "sku": "CUSTOM-1000-RR-LIMITED",
+      "name": "Custom 1000 RR Limited",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/01/17/20/167543/conversions/682c9c37dabd0256125411-medium.webp",
+      "dealer_price": 45000,
+      "retail_price": 318900
+    },
+    {
+      "id": 140,
+      "sku": "SPYDER-661",
+      "name": "Spyder 661",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207677/conversions/Spyder-1115-(1)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 141,
+      "sku": "SPYDER-301",
+      "name": "Spyder 301",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/08/204890/conversions/69202fde73525836429749-medium.webp",
+      "dealer_price": 10080,
+      "retail_price": null
+    },
+    {
+      "id": 142,
+      "sku": "5000-6-SEATER-PRO",
+      "name": "5000 6 Seater Pro",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/22/205120/conversions/Golf-Cart-5000-6-Seater-Pro-(43)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 143,
+      "sku": "COUNTRY-CLUB-4-2-SEATER",
+      "name": "Country Club 4+2 seater",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/11/06/218669/conversions/Country-Club-4-Seater-(5)-medium.webp",
+      "dealer_price": 21960,
+      "retail_price": null
+    },
+    {
+      "id": 144,
+      "sku": "COUNTRY-CLUB-2-2-SEATER",
+      "name": "Country Club 2+2 Seater",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205127/conversions/Country-Club-2+2-(5)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 145,
+      "sku": "COUNTRY-CLUB-6-SEATER",
+      "name": "Country Club 6 Seater",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205157/conversions/Country-Club-6-Seater-(20)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 146,
+      "sku": "COUNTRY-CLUB-4-SEATER",
+      "name": "Country Club 4 Seater",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205139/conversions/Country-Club-4-Seater-(6)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 7,
+      "sku": "EXPERT-PRO-300-2T-HUSQ-EDITION",
+      "name": "Expert Pro 300 2t Husq Edition",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2025/12/14/18/162343/conversions/1-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 8,
+      "sku": "GL-301",
+      "name": "GL 301",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2025/12/15/00/162358/conversions/682f372dc216f574983584-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 13,
+      "sku": "RR-250",
+      "name": "RR 250",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/15/167576/conversions/682c98ad9fa59143257323-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 15,
+      "sku": "TOUR-ENDURO-300-EURASIA",
+      "name": "Tour Enduro 300 Eurasia",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/19/204195/conversions/Frame-21-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 16,
+      "sku": "STREET-BIKE-175-ME-MAX-ULTRA",
+      "name": "Street Bike 175 ME Max Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/02/08/19/172191/conversions/68d3c35c8ca4a126124719-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 19,
+      "sku": "ACE-1000",
+      "name": "Ace 1000",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/12/204994/conversions/ACE-1001-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 20,
+      "sku": "FORCE-720",
+      "name": "Force 720",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/08/14/202658/conversions/Rage-720-LTD-(18)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 27,
+      "sku": "SN-380-ULTRA",
+      "name": "SN 380 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/11/204953/conversions/SN-380-(6)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 28,
+      "sku": "SN-500",
+      "name": "SN 500",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/04/207642/conversions/SN-500-(10)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 38,
+      "sku": "ACTIVATOR-300-RX",
+      "name": "Activator 300 RX",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/25/07/197155/conversions/Activator-300-RX-(16)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 39,
+      "sku": "FORCE-425-CYBER",
+      "name": "Force 425 Cyber",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/19/197050/conversions/Force-425-Cyber-(7)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 40,
+      "sku": "FORCE-720-RAGE-LTD",
+      "name": "Force 720 Rage LTD",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/13/191426/conversions/69206379cc218670595640-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 41,
+      "sku": "FORCE-1100-MUD-LITE",
+      "name": "Force 1100 Mud Lite",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/16/191478/conversions/113-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 110,
+      "sku": "SPORT-240",
+      "name": "Sport 240",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/10/202934/conversions/Sport-240-1-(1)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 111,
+      "sku": "POWERMAX-140-MINI-SEMI-AUTOMATIC",
+      "name": "PowerMax 140 MINI Semi-Automatic",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/14/203611/conversions/682f37799436e829910344-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 112,
+      "sku": "POWERMAX-140-MINI-MANUAL",
+      "name": "PowerMax 140 MINI Manual",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/14/203619/conversions/682f37799436e829910344-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 113,
+      "sku": "POWER-MAX-145-MANUAL",
+      "name": "Power Max 145 Manual",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/16/203749/conversions/POWER-MAX-301-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 114,
+      "sku": "POWER-MAX-145-SEMI-AUTOMATIC",
+      "name": "Power Max 145 Semi-Automatic",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/16/203754/conversions/POWER-MAX-301-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 115,
+      "sku": "POWER-MAX-190-MANUAL",
+      "name": "Power Max 190 Manual",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/08/21/218058/conversions/68dd29a956fbb316574661-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 116,
+      "sku": "POWER-MAX-190-SEMI-AUTOMATIC",
+      "name": "Power Max 190 Semi-Automatic",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/17/203784/conversions/67dc316d75ee5976035250-(3)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 117,
+      "sku": "FORCE-1000-RANGER",
+      "name": "Force 1000 Ranger",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207770/conversions/Force-1000-Ranger-(7)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 118,
+      "sku": "TOUR-ENDURO-300-ULTRA",
+      "name": "Tour Enduro 300 Ultra",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/17/204168/conversions/Tour-Enduro-300-Ultra-(22)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 119,
+      "sku": "RR-240",
+      "name": "RR 240",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218117/conversions/RR-1005-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 120,
+      "sku": "RR-801",
+      "name": "RR 801",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/08/218130/conversions/RR-801-Ultra-(11)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 121,
+      "sku": "EURO-TANK-125",
+      "name": "Euro Tank 125",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204696/conversions/Eurotank-133-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 122,
+      "sku": "JET-X-50",
+      "name": "Jet X 50",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204716/conversions/Eurotank-133-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 123,
+      "sku": "JET-X-125",
+      "name": "Jet X 125",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204731/conversions/JET-X-125-(18)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 124,
+      "sku": "SN-280",
+      "name": "SN 280",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/17/00/220081/conversions/SN-282-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 125,
+      "sku": "GTX-190",
+      "name": "GTX 190",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/11/08/218704/conversions/SN-500-(16)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 126,
+      "sku": "FX-190",
+      "name": "FX 190",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 127,
+      "sku": "GP-501-E-BLACK",
+      "name": "GP 501 E Black",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207667/conversions/_E-GP-511-medium.webp",
+      "dealer_price": 19000,
+      "retail_price": null
+    },
+    {
+      "id": 128,
+      "sku": "RST-250",
+      "name": "RST 250",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207685/conversions/RST-250-(14)-medium.webp",
+      "dealer_price": 4248,
+      "retail_price": null
+    },
+    {
+      "id": 133,
+      "sku": "5000-4-2-SEATER",
+      "name": "5000 4+2 Seater",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/10/18/218608/conversions/6826ed8738853947330495-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 147,
+      "sku": "RR-1390-BLACK-STAR",
+      "name": "RR 1390 Black Star",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/04/07/216674/conversions/RR-1390-Black-Star-(19)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 148,
+      "sku": "FX-125-ADV-EU",
+      "name": "FX 125 ADV EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/04/09/216731/conversions/FX-125-ADV-EU-(16)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 149,
+      "sku": "FORCE-450-CYBER-EU",
+      "name": "Force 450 Cyber EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/06/13/217705/conversions/Force-425-Cyber-(7)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 150,
+      "sku": "SPORT-300-AIR",
+      "name": "Sport 300 Air",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/08/10/217964/conversions/6a75bb646fb21138579033-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 151,
+      "sku": "RST-511-EU",
+      "name": "RST 511 EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218168/conversions/RST-511-EU-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 152,
+      "sku": "RST-125-MINI-BANANA-EU",
+      "name": "RST 125 Mini Banana EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218172/conversions/RST-MINI-BANANA-140-(5)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 153,
+      "sku": "RST-MINI-MOON-200",
+      "name": "RST Mini Moon 200",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218180/conversions/RST-Mini-Moon-200-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 154,
+      "sku": "PREDATOR-500",
+      "name": "Predator 500",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 155,
+      "sku": "SPYDER-881",
+      "name": "Spyder 881",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 156,
+      "sku": "GP-377-EFI",
+      "name": "GP 377 EFI",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222201/conversions/PIM_TEST_bike_transparent-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 157,
+      "sku": "FX-200-ADV",
+      "name": "FX 200 ADV",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 158,
+      "sku": "FX-401-ADV",
+      "name": "FX 401 ADV",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/07/222129/conversions/PIM_TEST_bike_transparent-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 159,
+      "sku": "STREET-BIKE-49",
+      "name": "Street Bike 49",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 160,
+      "sku": "RST-911",
+      "name": "RST 911",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 161,
+      "sku": "RST-451",
+      "name": "RST 451",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 162,
+      "sku": "RST-1100",
+      "name": "RST 1100",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 163,
+      "sku": "RST-301",
+      "name": "RST 301",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 164,
+      "sku": "AFRO-125",
+      "name": "Afro 125",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 165,
+      "sku": "RETRO-180",
+      "name": "Retro 180",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 166,
+      "sku": "EURASIA-250",
+      "name": "Eurasia 250",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 167,
+      "sku": "5000-CARGO",
+      "name": "5000 Cargo",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 168,
+      "sku": "CARGO-350",
+      "name": "Cargo 350",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 169,
+      "sku": "GL-441",
+      "name": "GL 441",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 170,
+      "sku": "GL-901",
+      "name": "GL 901",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 171,
+      "sku": "SPORT-322",
+      "name": "Sport 322",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 172,
+      "sku": "RST-911-EU",
+      "name": "RST 911 EU",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 173,
+      "sku": "FORCE-450-CYBER-EU-EQ-73523",
+      "name": "Force 450 Cyber EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/06/13/217705/conversions/Force-425-Cyber-(7)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 174,
+      "sku": "FORCE-450-CYBER-EFI-BLACK",
+      "name": "Force 450 Cyber EFI (Black)",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/24/02/221837/conversions/Force-450-black-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 175,
+      "sku": "FORCE-450-CYBER-EFI-RED",
+      "name": "Force 450 Cyber EFI (Red)",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/24/02/221843/conversions/Force-450-red-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 176,
+      "sku": "GL-511-EFI",
+      "name": "GL 511 EFI",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/10/222192/conversions/PIM_TEST_bike_transparent-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 177,
+      "sku": "GL-511-EFI-X",
+      "name": "GL 511 EFI X",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 178,
+      "sku": "JUNIOR-300",
+      "name": "Junior 300",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/01/222084/conversions/1-(34)-Photoroom-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 179,
+      "sku": "SPORT-380",
+      "name": "Sport 380",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 180,
+      "sku": "RST-351-EFI",
+      "name": "RST 351 EFI",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 181,
+      "sku": "DIO-150",
+      "name": "DIO 150",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 182,
+      "sku": "GL-401-ROVER-MAX-X",
+      "name": "GL 401 Rover Max X",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222198/conversions/PIM_TEST_bike_transparent-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 183,
+      "sku": "FX-401-MX",
+      "name": "FX 401 MX",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222203/conversions/PIM_TEST_bike_transparent-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 184,
+      "sku": "RST-150-MINI",
+      "name": "RST 150 Mini",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222209/conversions/PIM_TEST_bike_transparent-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 185,
+      "sku": "CUB-MAX-130",
+      "name": "Cub Max 130",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 186,
+      "sku": "RST-125-MINI-EU",
+      "name": "RST 125 Mini EU",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/08/27/03/222774/conversions/PIM_TEST_bike_transparent-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 187,
+      "sku": "EURASIA-320",
+      "name": "Eurasia 320",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/09/15/09/226355/conversions/Eurasia-320-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 188,
+      "sku": "JUNIOR-300-PRO",
+      "name": "Junior 300 Pro",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/09/15/09/226380/conversions/Junior-300-Pro-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 189,
+      "sku": "FORCE-525-SUPERCHARGER",
+      "name": "Force 525 Supercharger",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/09/14/12/226205/conversions/Force-525-Supercharge-(7)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 190,
+      "sku": "SPORT-300-AIR-BLACK-EDITION",
+      "name": "Sport 300 Air Black Edition",
+      "unit": "pcs",
+      "image_url": "https://my.globaldrive.ru/s3/media/2026/09/14/16/226272/conversions/Sport-300-air-black-edition-(15)-medium.webp",
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 191,
+      "sku": "RST-311",
+      "name": "RST 311",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 192,
+      "sku": "RST-377-EFI",
+      "name": "RST 377 EFI",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 193,
+      "sku": "BANDIT-125-EU",
+      "name": "Bandit 125 EU",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 194,
+      "sku": "RST-501-EFI",
+      "name": "RST 501 EFi",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 195,
+      "sku": "GP-250-MX",
+      "name": "GP 250 MX",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 196,
+      "sku": "RR-681",
+      "name": "RR 681",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 197,
+      "sku": "SPRINTER-125",
+      "name": "Sprinter 125",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 198,
+      "sku": "CITYWALK-4-PRO",
+      "name": "CityWalk 4 Pro",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 199,
+      "sku": "CITYWALK-6-PRO",
+      "name": "CityWalk 6 Pro",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 200,
+      "sku": "FX-3000-ADV",
+      "name": "FX 3000 ADV",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 201,
+      "sku": "CARGO-PRO-2000",
+      "name": "Cargo Pro 2000",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 202,
+      "sku": "URBAN-2000",
+      "name": "Urban 2000",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 203,
+      "sku": "POWER-MAX-450-EFI",
+      "name": "Power Max 450 EFI",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 204,
+      "sku": "FX-50-EU",
+      "name": "FX 50 EU",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 205,
+      "sku": "GL-401-TRAVEL",
+      "name": "GL 401 Travel",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    },
+    {
+      "id": 206,
+      "sku": "GP-451-EFI",
+      "name": "GP 451 EFI",
+      "unit": "pcs",
+      "image_url": null,
+      "dealer_price": null,
+      "retail_price": null
+    }
+  ],
+  "warehouses": [
+    {
+      "id": 11,
+      "name": "Dubai Hub",
+      "manufacturer_id": null
+    },
+    {
+      "id": 22,
+      "name": "SHANDONG SHENGWO NEW ENERGY VEHICLE CO., LTD",
+      "manufacturer_id": 1
+    },
+    {
+      "id": 33,
+      "name": "Yongkang Sunyee Industrial Co., Ltd",
+      "manufacturer_id": 12
+    },
+    {
+      "id": 39,
+      "name": "Yongkang Eagle Motor Co., Ltd.",
+      "manufacturer_id": 23
+    },
+    {
+      "id": 40,
+      "name": "ZHEJIANG TAOTAO VEHICLES CO.,LTD",
+      "manufacturer_id": 34
+    },
+    {
+      "id": 41,
+      "name": "ZHEJIANG QIANJIANG MOTOR IMP &EXP CO., LTD.",
+      "manufacturer_id": 38
+    },
+    {
+      "id": 42,
+      "name": "ZHEJIANG APOLLO SPORTS TECHNOLOGY CO., LTD.",
+      "manufacturer_id": 39
+    },
+    {
+      "id": 43,
+      "name": "CHONGQING MIKE WAY MOTORCYCLE CO.,LTD",
+      "manufacturer_id": 40
+    },
+    {
+      "id": 1,
+      "name": "CHONGQING COWELLS MACHINERY MANUFACTURING CO., LTD",
+      "manufacturer_id": 41
+    },
+    {
+      "id": 2,
+      "name": "CHONGQING NICOT INDUSTRY AND TRADE CO., LTD",
+      "manufacturer_id": 42
+    },
+    {
+      "id": 3,
+      "name": "ZHEJIANG KOOLCNCHET INDUSTRY & TRADE CO., LTD",
+      "manufacturer_id": 2
+    },
+    {
+      "id": 4,
+      "name": "CHONGQING GREEN TRADE CO.,LTD.",
+      "manufacturer_id": 3
+    },
+    {
+      "id": 5,
+      "name": "Yongkang Kehan Industry and Trade Co.,ltd",
+      "manufacturer_id": 4
+    },
+    {
+      "id": 6,
+      "name": "Zhejiang Zhizhan Technology Co.,LTD",
+      "manufacturer_id": 5
+    },
+    {
+      "id": 7,
+      "name": "CHONGQING SHINERAY MOTORCYCLE CO., LTD.",
+      "manufacturer_id": 6
+    },
+    {
+      "id": 8,
+      "name": "CHONGQING FUEGO POWER CO., LTD",
+      "manufacturer_id": 7
+    },
+    {
+      "id": 9,
+      "name": "GUANGZHOU DAYUN MOTORCYCLE CO., LTD",
+      "manufacturer_id": 8
+    },
+    {
+      "id": 10,
+      "name": "SANYOU HOLDING GROUP YINYOU MOTORCYCLE CO.,LTD",
+      "manufacturer_id": 9
+    },
+    {
+      "id": 12,
+      "name": "CHONGQING ANDES MOTORCYCLE MANUFACTURING CO.,LTD",
+      "manufacturer_id": 10
+    },
+    {
+      "id": 13,
+      "name": "ZHEJIANG GEELY MING INDUSTRIAL CO.,LTD",
+      "manufacturer_id": 11
+    },
+    {
+      "id": 14,
+      "name": "Wisper Power Technology (zhejiang) Co., Ltd",
+      "manufacturer_id": 13
+    },
+    {
+      "id": 15,
+      "name": "ZHEJIANG CHUANGTAI MOTORCYCLE CO., LTD.",
+      "manufacturer_id": 14
+    },
+    {
+      "id": 16,
+      "name": "ZHEJIANG JIAJUE MOTORCYCLE MANUFACTURING CO.,LTD.",
+      "manufacturer_id": 15
+    },
+    {
+      "id": 17,
+      "name": "JIANGMEN DIHAO MOTORCYCLE CO., LTD",
+      "manufacturer_id": 16
+    },
+    {
+      "id": 18,
+      "name": "CHONGQING WOIDEAL SPECIAL VEHICLE CO., LTD",
+      "manufacturer_id": 17
+    },
+    {
+      "id": 19,
+      "name": "HESHAN GUOJI NANLIAN MOTORCYCLE INDUSTRY CO.,LTD (Senke)",
+      "manufacturer_id": 18
+    },
+    {
+      "id": 20,
+      "name": "JIANGSU SINSKI VEHICLE",
+      "manufacturer_id": 19
+    },
+    {
+      "id": 21,
+      "name": "Chongqing XGJAO Motorcycle Co., Ltd.",
+      "manufacturer_id": 20
+    },
+    {
+      "id": 23,
+      "name": "JIANGSU RONGCHI MOTORCYCLE TECHNOLOGY CO., LTD.",
+      "manufacturer_id": 21
+    },
+    {
+      "id": 24,
+      "name": "Ningbo Longjia Power Technology Co.Ltd",
+      "manufacturer_id": 22
+    },
+    {
+      "id": 25,
+      "name": "ZHEJIANG JONWAY MOTORCYCLE MANUFACTURING CO.,LTD",
+      "manufacturer_id": 24
+    },
+    {
+      "id": 26,
+      "name": "GUANGDONG JIANYA MOTORCYCLE TECHNOLOGY",
+      "manufacturer_id": 25
+    },
+    {
+      "id": 27,
+      "name": "Chongqing Guangyu Motorcycle Manufacturer Co., Ltd.",
+      "manufacturer_id": 26
+    },
+    {
+      "id": 28,
+      "name": "JIANGSU TRAIL-BLAZER MANUFACTURING CO.,LTD",
+      "manufacturer_id": 27
+    },
+    {
+      "id": 29,
+      "name": "Shandong Shengwo New Energy Vehicle Co, Ltd",
+      "manufacturer_id": 28
+    },
+    {
+      "id": 30,
+      "name": "TAIZHOU YINGCHUAN IMPORT&EXPORT CO..LTD",
+      "manufacturer_id": 29
+    },
+    {
+      "id": 31,
+      "name": "Cangzhou Zhongqing Juchuang Technology Co.,Ltd",
+      "manufacturer_id": 30
+    },
+    {
+      "id": 32,
+      "name": "WUYI MOLE MOTION APPARATUS CO.,LTD.",
+      "manufacturer_id": 31
+    },
+    {
+      "id": 34,
+      "name": "Hangzhou Jingyue Import and Export Co., Ltd.",
+      "manufacturer_id": 32
+    },
+    {
+      "id": 35,
+      "name": "SHAN DONG ZHUOXING AUTOMOTIVE INDUSTRY CO.,LTD",
+      "manufacturer_id": 33
+    },
+    {
+      "id": 36,
+      "name": "HPMOTO CO., LIMITED",
+      "manufacturer_id": 35
+    },
+    {
+      "id": 37,
+      "name": "Chongqing Astronautic Bashan Motorcycle Manufacturing Co.,Ltd",
+      "manufacturer_id": 37
+    },
+    {
+      "id": 38,
+      "name": "FENGXIAN DADE TRADING CO., LTD.",
+      "manufacturer_id": 36
+    }
+  ],
+  "manufacturers": [
+    {
+      "id": 1,
+      "name": "SHANDONG SHENGWO NEW ENERGY VEHICLE CO., LTD",
+      "warehouse_id": 22
+    },
+    {
+      "id": 12,
+      "name": "Yongkang Sunyee Industrial Co., Ltd",
+      "warehouse_id": 33
+    },
+    {
+      "id": 23,
+      "name": "Yongkang Eagle Motor Co., Ltd.",
+      "warehouse_id": 39
+    },
+    {
+      "id": 34,
+      "name": "ZHEJIANG TAOTAO VEHICLES CO.,LTD",
+      "warehouse_id": 40
+    },
+    {
+      "id": 38,
+      "name": "ZHEJIANG QIANJIANG MOTOR IMP &EXP CO., LTD.",
+      "warehouse_id": 41
+    },
+    {
+      "id": 39,
+      "name": "ZHEJIANG APOLLO SPORTS TECHNOLOGY CO., LTD.",
+      "warehouse_id": 42
+    },
+    {
+      "id": 40,
+      "name": "CHONGQING MIKE WAY MOTORCYCLE CO.,LTD",
+      "warehouse_id": 43
+    },
+    {
+      "id": 41,
+      "name": "CHONGQING COWELLS MACHINERY MANUFACTURING CO., LTD",
+      "warehouse_id": 1
+    },
+    {
+      "id": 42,
+      "name": "CHONGQING NICOT INDUSTRY AND TRADE CO., LTD",
+      "warehouse_id": 2
+    },
+    {
+      "id": 2,
+      "name": "ZHEJIANG KOOLCNCHET INDUSTRY & TRADE CO., LTD",
+      "warehouse_id": 3
+    },
+    {
+      "id": 3,
+      "name": "CHONGQING GREEN TRADE CO.,LTD.",
+      "warehouse_id": 4
+    },
+    {
+      "id": 4,
+      "name": "Yongkang Kehan Industry and Trade Co.,ltd",
+      "warehouse_id": 5
+    },
+    {
+      "id": 5,
+      "name": "Zhejiang Zhizhan Technology Co.,LTD",
+      "warehouse_id": 6
+    },
+    {
+      "id": 6,
+      "name": "CHONGQING SHINERAY MOTORCYCLE CO., LTD.",
+      "warehouse_id": 7
+    },
+    {
+      "id": 7,
+      "name": "CHONGQING FUEGO POWER CO., LTD",
+      "warehouse_id": 8
+    },
+    {
+      "id": 8,
+      "name": "GUANGZHOU DAYUN MOTORCYCLE CO., LTD",
+      "warehouse_id": 9
+    },
+    {
+      "id": 9,
+      "name": "SANYOU HOLDING GROUP YINYOU MOTORCYCLE CO.,LTD",
+      "warehouse_id": 10
+    },
+    {
+      "id": 10,
+      "name": "CHONGQING ANDES MOTORCYCLE MANUFACTURING CO.,LTD",
+      "warehouse_id": 12
+    },
+    {
+      "id": 11,
+      "name": "ZHEJIANG GEELY MING INDUSTRIAL CO.,LTD",
+      "warehouse_id": 13
+    },
+    {
+      "id": 13,
+      "name": "Wisper Power Technology (zhejiang) Co., Ltd",
+      "warehouse_id": 14
+    },
+    {
+      "id": 14,
+      "name": "ZHEJIANG CHUANGTAI MOTORCYCLE CO., LTD.",
+      "warehouse_id": 15
+    },
+    {
+      "id": 15,
+      "name": "ZHEJIANG JIAJUE MOTORCYCLE MANUFACTURING CO.,LTD.",
+      "warehouse_id": 16
+    },
+    {
+      "id": 16,
+      "name": "JIANGMEN DIHAO MOTORCYCLE CO., LTD",
+      "warehouse_id": 17
+    },
+    {
+      "id": 17,
+      "name": "CHONGQING WOIDEAL SPECIAL VEHICLE CO., LTD",
+      "warehouse_id": 18
+    },
+    {
+      "id": 18,
+      "name": "HESHAN GUOJI NANLIAN MOTORCYCLE INDUSTRY CO.,LTD (Senke)",
+      "warehouse_id": 19
+    },
+    {
+      "id": 19,
+      "name": "JIANGSU SINSKI VEHICLE",
+      "warehouse_id": 20
+    },
+    {
+      "id": 20,
+      "name": "Chongqing XGJAO Motorcycle Co., Ltd.",
+      "warehouse_id": 21
+    },
+    {
+      "id": 21,
+      "name": "JIANGSU RONGCHI MOTORCYCLE TECHNOLOGY CO., LTD.",
+      "warehouse_id": 23
+    },
+    {
+      "id": 22,
+      "name": "Ningbo Longjia Power Technology Co.Ltd",
+      "warehouse_id": 24
+    },
+    {
+      "id": 24,
+      "name": "ZHEJIANG JONWAY MOTORCYCLE MANUFACTURING CO.,LTD",
+      "warehouse_id": 25
+    },
+    {
+      "id": 25,
+      "name": "GUANGDONG JIANYA MOTORCYCLE TECHNOLOGY",
+      "warehouse_id": 26
+    },
+    {
+      "id": 26,
+      "name": "Chongqing Guangyu Motorcycle Manufacturer Co., Ltd.",
+      "warehouse_id": 27
+    },
+    {
+      "id": 27,
+      "name": "JIANGSU TRAIL-BLAZER MANUFACTURING CO.,LTD",
+      "warehouse_id": 28
+    },
+    {
+      "id": 28,
+      "name": "Shandong Shengwo New Energy Vehicle Co, Ltd",
+      "warehouse_id": 29
+    },
+    {
+      "id": 29,
+      "name": "TAIZHOU YINGCHUAN IMPORT&EXPORT CO..LTD",
+      "warehouse_id": 30
+    },
+    {
+      "id": 30,
+      "name": "Cangzhou Zhongqing Juchuang Technology Co.,Ltd",
+      "warehouse_id": 31
+    },
+    {
+      "id": 31,
+      "name": "WUYI MOLE MOTION APPARATUS CO.,LTD.",
+      "warehouse_id": 32
+    },
+    {
+      "id": 32,
+      "name": "Hangzhou Jingyue Import and Export Co., Ltd.",
+      "warehouse_id": 34
+    },
+    {
+      "id": 33,
+      "name": "SHAN DONG ZHUOXING AUTOMOTIVE INDUSTRY CO.,LTD",
+      "warehouse_id": 35
+    },
+    {
+      "id": 35,
+      "name": "HPMOTO CO., LIMITED",
+      "warehouse_id": 36
+    },
+    {
+      "id": 36,
+      "name": "FENGXIAN DADE TRADING CO., LTD.",
+      "warehouse_id": 38
+    },
+    {
+      "id": 37,
+      "name": "SH-73",
+      "warehouse_id": 37
+    }
+  ],
+  "customer_orders": [
+    {
+      "id": 49,
+      "status": "closed",
+      "created_at": "2025-11-14T15:45:26+00:00",
+      "closed_at": "2025-11-14T16:04:03+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 50,
+      "status": "closed",
+      "created_at": "2025-11-14T20:17:26+00:00",
+      "closed_at": "2025-11-17T12:38:24+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 51,
+      "status": "closed",
+      "created_at": "2025-11-14T20:18:28+00:00",
+      "closed_at": "2025-11-17T12:44:30+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 52,
+      "status": "closed",
+      "created_at": "2025-11-14T20:20:45+00:00",
+      "closed_at": "2025-11-17T12:53:14+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 53,
+      "status": "closed",
+      "created_at": "2025-11-14T20:24:45+00:00",
+      "closed_at": "2025-11-17T13:06:28+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 54,
+      "status": "closed",
+      "created_at": "2025-11-14T20:25:53+00:00",
+      "closed_at": "2026-01-19T01:58:49+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 55,
+      "status": "open",
+      "created_at": "2025-11-14T20:27:52+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 56,
+      "status": "closed",
+      "created_at": "2025-11-17T13:25:31+00:00",
+      "closed_at": "2025-11-17T13:29:40+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 57,
+      "status": "closed",
+      "created_at": "2025-11-18T08:25:24+00:00",
+      "closed_at": "2026-01-19T01:59:16+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 58,
+      "status": "closed",
+      "created_at": "2025-11-18T11:26:02+00:00",
+      "closed_at": "2025-11-18T11:49:22+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 59,
+      "status": "closed",
+      "created_at": "2025-11-19T08:32:36+00:00",
+      "closed_at": "2025-11-19T09:59:02+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 60,
+      "status": "closed",
+      "created_at": "2026-01-20T11:55:51+00:00",
+      "closed_at": "2026-09-16T14:09:26+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 61,
+      "status": "closed",
+      "created_at": "2026-01-21T10:10:11+00:00",
+      "closed_at": "2026-07-27T15:43:09+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 62,
+      "status": "closed",
+      "created_at": "2026-01-28T04:44:07+00:00",
+      "closed_at": "2026-08-19T08:06:07+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 63,
+      "status": "closed",
+      "created_at": "2026-01-28T04:53:04+00:00",
+      "closed_at": "2026-08-20T07:34:53+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 64,
+      "status": "closed",
+      "created_at": "2026-01-28T04:56:40+00:00",
+      "closed_at": "2026-08-20T07:36:15+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 65,
+      "status": "closed",
+      "created_at": "2026-01-28T05:17:03+00:00",
+      "closed_at": "2026-08-20T07:37:21+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 66,
+      "status": "closed",
+      "created_at": "2026-01-29T00:04:07+00:00",
+      "closed_at": "2026-08-20T07:37:46+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 67,
+      "status": "closed",
+      "created_at": "2026-01-29T00:33:26+00:00",
+      "closed_at": "2026-08-20T07:38:20+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 68,
+      "status": "closed",
+      "created_at": "2026-01-29T01:35:21+00:00",
+      "closed_at": "2026-08-20T07:38:51+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 69,
+      "status": "closed",
+      "created_at": "2026-01-29T02:37:48+00:00",
+      "closed_at": "2026-08-20T07:39:06+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 70,
+      "status": "closed",
+      "created_at": "2026-02-13T10:56:18+00:00",
+      "closed_at": "2026-07-27T15:43:41+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 1,
+      "status": "open",
+      "created_at": "2026-03-30T11:49:35+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 2,
+      "status": "open",
+      "created_at": "2026-04-17T08:46:54+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 3,
+      "status": "open",
+      "created_at": "2026-04-20T17:29:24+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 4,
+      "status": "closed",
+      "created_at": "2026-06-19T07:24:57+00:00",
+      "closed_at": "2026-08-19T08:03:50+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 5,
+      "status": "closed",
+      "created_at": "2026-06-19T07:24:58+00:00",
+      "closed_at": "2026-08-19T08:05:15+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 6,
+      "status": "closed",
+      "created_at": "2026-06-19T13:30:37+00:00",
+      "closed_at": "2026-08-19T08:04:12+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 7,
+      "status": "open",
+      "created_at": "2026-07-09T00:45:13+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 8,
+      "status": "open",
+      "created_at": "2026-07-09T00:45:15+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 9,
+      "status": "open",
+      "created_at": "2026-08-19T21:27:56+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 10,
+      "status": "open",
+      "created_at": "2026-08-19T21:27:56+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 11,
+      "status": "open",
+      "created_at": "2026-08-19T21:31:38+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 12,
+      "status": "open",
+      "created_at": "2026-08-20T07:52:45+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 13,
+      "status": "closed",
+      "created_at": "2026-08-21T03:16:37+00:00",
+      "closed_at": "2026-08-25T05:28:57+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 14,
+      "status": "closed",
+      "created_at": "2026-08-21T06:09:26+00:00",
+      "closed_at": "2026-08-25T05:29:12+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 15,
+      "status": "open",
+      "created_at": "2026-08-21T08:21:36+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 16,
+      "status": "open",
+      "created_at": "2026-08-24T03:25:03+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 17,
+      "status": "open",
+      "created_at": "2026-08-24T03:26:05+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 18,
+      "status": "open",
+      "created_at": "2026-08-24T03:50:08+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 19,
+      "status": "open",
+      "created_at": "2026-08-24T03:52:14+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 20,
+      "status": "closed",
+      "created_at": "2026-08-24T04:21:59+00:00",
+      "closed_at": "2026-08-24T13:03:45+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 21,
+      "status": "open",
+      "created_at": "2026-08-24T07:04:02+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 22,
+      "status": "open",
+      "created_at": "2026-08-24T09:18:40+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 23,
+      "status": "closed",
+      "created_at": "2026-08-24T15:07:57+00:00",
+      "closed_at": "2026-08-24T15:12:11+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 24,
+      "status": "open",
+      "created_at": "2026-08-24T15:25:47+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 25,
+      "status": "open",
+      "created_at": "2026-08-24T15:25:47+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 26,
+      "status": "open",
+      "created_at": "2026-08-24T15:29:12+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 27,
+      "status": "open",
+      "created_at": "2026-08-26T08:37:07+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 28,
+      "status": "open",
+      "created_at": "2026-08-26T08:50:42+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 29,
+      "status": "open",
+      "created_at": "2026-08-26T15:55:44+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 30,
+      "status": "open",
+      "created_at": "2026-08-27T07:33:45+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 31,
+      "status": "open",
+      "created_at": "2026-08-27T10:22:51+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 32,
+      "status": "open",
+      "created_at": "2026-09-02T04:48:46+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 33,
+      "status": "open",
+      "created_at": "2026-09-02T09:54:59+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 34,
+      "status": "open",
+      "created_at": "2026-09-02T10:12:21+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 35,
+      "status": "open",
+      "created_at": "2026-09-02T10:23:07+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 36,
+      "status": "closed",
+      "created_at": "2026-09-02T21:56:31+00:00",
+      "closed_at": "2026-09-02T21:57:26+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 37,
+      "status": "open",
+      "created_at": "2026-09-16T14:12:50+00:00",
+      "closed_at": null,
+      "expected_end_on": null
+    },
+    {
+      "id": 38,
+      "status": "closed",
+      "created_at": "2026-09-16T14:24:12+00:00",
+      "closed_at": "2026-09-16T14:26:57+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 39,
+      "status": "closed",
+      "created_at": "2026-09-16T14:44:27+00:00",
+      "closed_at": "2026-09-16T14:44:46+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 40,
+      "status": "closed",
+      "created_at": "2026-09-16T14:45:51+00:00",
+      "closed_at": "2026-09-16T14:45:56+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 41,
+      "status": "closed",
+      "created_at": "2026-09-16T14:51:20+00:00",
+      "closed_at": "2026-09-16T14:51:25+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 42,
+      "status": "closed",
+      "created_at": "2026-09-16T14:52:28+00:00",
+      "closed_at": "2026-09-16T14:52:33+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 43,
+      "status": "closed",
+      "created_at": "2026-09-17T07:00:43+00:00",
+      "closed_at": "2026-09-17T07:00:49+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 44,
+      "status": "closed",
+      "created_at": "2026-09-17T07:04:35+00:00",
+      "closed_at": "2026-09-17T07:07:02+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 45,
+      "status": "closed",
+      "created_at": "2026-09-17T07:08:25+00:00",
+      "closed_at": "2026-09-17T07:10:51+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 46,
+      "status": "closed",
+      "created_at": "2026-09-17T07:11:31+00:00",
+      "closed_at": "2026-09-17T07:12:27+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 47,
+      "status": "closed",
+      "created_at": "2026-09-17T07:52:05+00:00",
+      "closed_at": "2026-09-17T07:55:05+00:00",
+      "expected_end_on": null
+    },
+    {
+      "id": 48,
+      "status": "closed",
+      "created_at": "2026-09-17T07:55:55+00:00",
+      "closed_at": "2026-09-17T07:56:41+00:00",
+      "expected_end_on": null
+    }
+  ],
+  "customer_order_lines": [
+    {
+      "id": 90,
+      "order_id": 49,
+      "product_id": 11,
+      "quantity": 50
+    },
+    {
+      "id": 91,
+      "order_id": 49,
+      "product_id": 57,
+      "quantity": 44
+    },
+    {
+      "id": 92,
+      "order_id": 49,
+      "product_id": 58,
+      "quantity": 50
+    },
+    {
+      "id": 93,
+      "order_id": 50,
+      "product_id": 46,
+      "quantity": 39
+    },
+    {
+      "id": 94,
+      "order_id": 51,
+      "product_id": 17,
+      "quantity": 100
+    },
+    {
+      "id": 95,
+      "order_id": 52,
+      "product_id": 89,
+      "quantity": 30
+    },
+    {
+      "id": 96,
+      "order_id": 53,
+      "product_id": 98,
+      "quantity": 40
+    },
+    {
+      "id": 97,
+      "order_id": 54,
+      "product_id": 104,
+      "quantity": 31
+    },
+    {
+      "id": 98,
+      "order_id": 55,
+      "product_id": 24,
+      "quantity": 36
+    },
+    {
+      "id": 99,
+      "order_id": 55,
+      "product_id": 37,
+      "quantity": 39
+    },
+    {
+      "id": 100,
+      "order_id": 56,
+      "product_id": 45,
+      "quantity": 54
+    },
+    {
+      "id": 101,
+      "order_id": 57,
+      "product_id": 207,
+      "quantity": 1
+    },
+    {
+      "id": 102,
+      "order_id": 57,
+      "product_id": 51,
+      "quantity": 1
+    },
+    {
+      "id": 103,
+      "order_id": 57,
+      "product_id": 3,
+      "quantity": 1
+    },
+    {
+      "id": 104,
+      "order_id": 57,
+      "product_id": 103,
+      "quantity": 1
+    },
+    {
+      "id": 105,
+      "order_id": 57,
+      "product_id": 89,
+      "quantity": 1
+    },
+    {
+      "id": 106,
+      "order_id": 57,
+      "product_id": 18,
+      "quantity": 1
+    },
+    {
+      "id": 107,
+      "order_id": 57,
+      "product_id": 74,
+      "quantity": 1
+    },
+    {
+      "id": 108,
+      "order_id": 57,
+      "product_id": 83,
+      "quantity": 1
+    },
+    {
+      "id": 109,
+      "order_id": 57,
+      "product_id": 84,
+      "quantity": 1
+    },
+    {
+      "id": 110,
+      "order_id": 57,
+      "product_id": 4,
+      "quantity": 1
+    },
+    {
+      "id": 111,
+      "order_id": 57,
+      "product_id": 5,
+      "quantity": 1
+    },
+    {
+      "id": 112,
+      "order_id": 57,
+      "product_id": 9,
+      "quantity": 1
+    },
+    {
+      "id": 113,
+      "order_id": 58,
+      "product_id": 131,
+      "quantity": 1
+    },
+    {
+      "id": 114,
+      "order_id": 58,
+      "product_id": 69,
+      "quantity": 1
+    },
+    {
+      "id": 115,
+      "order_id": 58,
+      "product_id": 70,
+      "quantity": 1
+    },
+    {
+      "id": 116,
+      "order_id": 58,
+      "product_id": 46,
+      "quantity": 1
+    },
+    {
+      "id": 117,
+      "order_id": 58,
+      "product_id": 9,
+      "quantity": 1
+    },
+    {
+      "id": 118,
+      "order_id": 58,
+      "product_id": 17,
+      "quantity": 1
+    },
+    {
+      "id": 1,
+      "order_id": 58,
+      "product_id": 37,
+      "quantity": 1
+    },
+    {
+      "id": 2,
+      "order_id": 58,
+      "product_id": 24,
+      "quantity": 1
+    },
+    {
+      "id": 3,
+      "order_id": 58,
+      "product_id": 57,
+      "quantity": 1
+    },
+    {
+      "id": 4,
+      "order_id": 58,
+      "product_id": 76,
+      "quantity": 1
+    },
+    {
+      "id": 5,
+      "order_id": 58,
+      "product_id": 104,
+      "quantity": 1
+    },
+    {
+      "id": 6,
+      "order_id": 58,
+      "product_id": 6,
+      "quantity": 1
+    },
+    {
+      "id": 7,
+      "order_id": 58,
+      "product_id": 21,
+      "quantity": 1
+    },
+    {
+      "id": 8,
+      "order_id": 60,
+      "product_id": 46,
+      "quantity": 38
+    },
+    {
+      "id": 9,
+      "order_id": 61,
+      "product_id": 1,
+      "quantity": 4
+    },
+    {
+      "id": 10,
+      "order_id": 62,
+      "product_id": 71,
+      "quantity": 97
+    },
+    {
+      "id": 11,
+      "order_id": 62,
+      "product_id": 72,
+      "quantity": 97
+    },
+    {
+      "id": 12,
+      "order_id": 63,
+      "product_id": 46,
+      "quantity": 39
+    },
+    {
+      "id": 13,
+      "order_id": 64,
+      "product_id": 50,
+      "quantity": 68
+    },
+    {
+      "id": 14,
+      "order_id": 64,
+      "product_id": 74,
+      "quantity": 112
+    },
+    {
+      "id": 15,
+      "order_id": 65,
+      "product_id": 82,
+      "quantity": 34
+    },
+    {
+      "id": 16,
+      "order_id": 65,
+      "product_id": 81,
+      "quantity": 36
+    },
+    {
+      "id": 17,
+      "order_id": 66,
+      "product_id": 86,
+      "quantity": 49
+    },
+    {
+      "id": 18,
+      "order_id": 67,
+      "product_id": 138,
+      "quantity": 74
+    },
+    {
+      "id": 19,
+      "order_id": 69,
+      "product_id": 4,
+      "quantity": 46
+    },
+    {
+      "id": 20,
+      "order_id": 69,
+      "product_id": 5,
+      "quantity": 20
+    },
+    {
+      "id": 21,
+      "order_id": 61,
+      "product_id": 53,
+      "quantity": 20
+    },
+    {
+      "id": 22,
+      "order_id": 70,
+      "product_id": 90,
+      "quantity": 2
+    },
+    {
+      "id": 23,
+      "order_id": 70,
+      "product_id": 30,
+      "quantity": 8
+    },
+    {
+      "id": 24,
+      "order_id": 70,
+      "product_id": 99,
+      "quantity": 2
+    },
+    {
+      "id": 25,
+      "order_id": 70,
+      "product_id": 1,
+      "quantity": 2
+    },
+    {
+      "id": 26,
+      "order_id": 70,
+      "product_id": 19,
+      "quantity": 2
+    },
+    {
+      "id": 27,
+      "order_id": 1,
+      "product_id": 17,
+      "quantity": 10
+    },
+    {
+      "id": 28,
+      "order_id": 1,
+      "product_id": 207,
+      "quantity": 13
+    },
+    {
+      "id": 29,
+      "order_id": 1,
+      "product_id": 142,
+      "quantity": 8
+    },
+    {
+      "id": 30,
+      "order_id": 1,
+      "product_id": 74,
+      "quantity": 8
+    },
+    {
+      "id": 31,
+      "order_id": 2,
+      "product_id": 3,
+      "quantity": 1
+    },
+    {
+      "id": 32,
+      "order_id": 3,
+      "product_id": 46,
+      "quantity": 69
+    },
+    {
+      "id": 33,
+      "order_id": 4,
+      "product_id": 93,
+      "quantity": 60
+    },
+    {
+      "id": 34,
+      "order_id": 7,
+      "product_id": 10,
+      "quantity": 16
+    },
+    {
+      "id": 35,
+      "order_id": 8,
+      "product_id": 46,
+      "quantity": 39
+    },
+    {
+      "id": 36,
+      "order_id": 12,
+      "product_id": 108,
+      "quantity": 44
+    },
+    {
+      "id": 37,
+      "order_id": 12,
+      "product_id": 75,
+      "quantity": 45
+    },
+    {
+      "id": 38,
+      "order_id": 13,
+      "product_id": 17,
+      "quantity": 56
+    },
+    {
+      "id": 39,
+      "order_id": 13,
+      "product_id": 207,
+      "quantity": 54
+    },
+    {
+      "id": 40,
+      "order_id": 14,
+      "product_id": 122,
+      "quantity": 10
+    },
+    {
+      "id": 41,
+      "order_id": 14,
+      "product_id": 123,
+      "quantity": 10
+    },
+    {
+      "id": 42,
+      "order_id": 14,
+      "product_id": 121,
+      "quantity": 10
+    },
+    {
+      "id": 43,
+      "order_id": 14,
+      "product_id": 148,
+      "quantity": 28
+    },
+    {
+      "id": 44,
+      "order_id": 14,
+      "product_id": 86,
+      "quantity": 1
+    },
+    {
+      "id": 45,
+      "order_id": 15,
+      "product_id": 102,
+      "quantity": 60
+    },
+    {
+      "id": 46,
+      "order_id": 16,
+      "product_id": 46,
+      "quantity": 39
+    },
+    {
+      "id": 47,
+      "order_id": 17,
+      "product_id": 46,
+      "quantity": 39
+    },
+    {
+      "id": 48,
+      "order_id": 18,
+      "product_id": 148,
+      "quantity": 50
+    },
+    {
+      "id": 49,
+      "order_id": 19,
+      "product_id": 148,
+      "quantity": 50
+    },
+    {
+      "id": 50,
+      "order_id": 20,
+      "product_id": 174,
+      "quantity": 18
+    },
+    {
+      "id": 51,
+      "order_id": 20,
+      "product_id": 175,
+      "quantity": 18
+    },
+    {
+      "id": 52,
+      "order_id": 21,
+      "product_id": 3,
+      "quantity": 21
+    },
+    {
+      "id": 53,
+      "order_id": 21,
+      "product_id": 2,
+      "quantity": 21
+    },
+    {
+      "id": 54,
+      "order_id": 22,
+      "product_id": 121,
+      "quantity": 39
+    },
+    {
+      "id": 55,
+      "order_id": 23,
+      "product_id": 46,
+      "quantity": 39
+    },
+    {
+      "id": 56,
+      "order_id": 24,
+      "product_id": 19,
+      "quantity": 18
+    },
+    {
+      "id": 57,
+      "order_id": 25,
+      "product_id": 23,
+      "quantity": 16
+    },
+    {
+      "id": 58,
+      "order_id": 26,
+      "product_id": 1,
+      "quantity": 18
+    },
+    {
+      "id": 59,
+      "order_id": 27,
+      "product_id": 158,
+      "quantity": 30
+    },
+    {
+      "id": 60,
+      "order_id": 28,
+      "product_id": 152,
+      "quantity": 105
+    },
+    {
+      "id": 61,
+      "order_id": 29,
+      "product_id": 2,
+      "quantity": 30
+    },
+    {
+      "id": 62,
+      "order_id": 30,
+      "product_id": 182,
+      "quantity": 35
+    },
+    {
+      "id": 63,
+      "order_id": 30,
+      "product_id": 186,
+      "quantity": 30
+    },
+    {
+      "id": 64,
+      "order_id": 9,
+      "product_id": 156,
+      "quantity": 72
+    },
+    {
+      "id": 65,
+      "order_id": 10,
+      "product_id": 178,
+      "quantity": 36
+    },
+    {
+      "id": 66,
+      "order_id": 11,
+      "product_id": 183,
+      "quantity": 48
+    },
+    {
+      "id": 67,
+      "order_id": 31,
+      "product_id": 50,
+      "quantity": 30
+    },
+    {
+      "id": 68,
+      "order_id": 32,
+      "product_id": 4,
+      "quantity": 1
+    },
+    {
+      "id": 69,
+      "order_id": 33,
+      "product_id": 17,
+      "quantity": 62
+    },
+    {
+      "id": 70,
+      "order_id": 33,
+      "product_id": 38,
+      "quantity": 1
+    },
+    {
+      "id": 71,
+      "order_id": 33,
+      "product_id": 207,
+      "quantity": 33
+    },
+    {
+      "id": 72,
+      "order_id": 34,
+      "product_id": 38,
+      "quantity": 1
+    },
+    {
+      "id": 73,
+      "order_id": 35,
+      "product_id": 89,
+      "quantity": 1
+    },
+    {
+      "id": 74,
+      "order_id": 36,
+      "product_id": 1,
+      "quantity": 1
+    },
+    {
+      "id": 75,
+      "order_id": 37,
+      "product_id": 46,
+      "quantity": 42
+    },
+    {
+      "id": 76,
+      "order_id": 38,
+      "product_id": 20,
+      "quantity": 4
+    },
+    {
+      "id": 77,
+      "order_id": 38,
+      "product_id": 1,
+      "quantity": 4
+    },
+    {
+      "id": 78,
+      "order_id": 39,
+      "product_id": 20,
+      "quantity": 33
+    },
+    {
+      "id": 79,
+      "order_id": 40,
+      "product_id": 1,
+      "quantity": 24
+    },
+    {
+      "id": 80,
+      "order_id": 41,
+      "product_id": 39,
+      "quantity": 20
+    },
+    {
+      "id": 81,
+      "order_id": 42,
+      "product_id": 39,
+      "quantity": 36
+    },
+    {
+      "id": 82,
+      "order_id": 43,
+      "product_id": 38,
+      "quantity": 30
+    },
+    {
+      "id": 83,
+      "order_id": 44,
+      "product_id": 66,
+      "quantity": 55
+    },
+    {
+      "id": 84,
+      "order_id": 44,
+      "product_id": 171,
+      "quantity": 56
+    },
+    {
+      "id": 85,
+      "order_id": 45,
+      "product_id": 129,
+      "quantity": 67
+    },
+    {
+      "id": 86,
+      "order_id": 46,
+      "product_id": 190,
+      "quantity": 111
+    },
+    {
+      "id": 87,
+      "order_id": 47,
+      "product_id": 17,
+      "quantity": 68
+    },
+    {
+      "id": 88,
+      "order_id": 47,
+      "product_id": 38,
+      "quantity": 30
+    },
+    {
+      "id": 89,
+      "order_id": 48,
+      "product_id": 11,
+      "quantity": 50
+    }
+  ],
+  "product_manufacturers": [
+    {
+      "id": 1,
+      "product_id": 1,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 17,
+      "product_id": 17,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 29,
+      "product_id": 29,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 36,
+      "product_id": 36,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 46,
+      "product_id": 46,
+      "manufacturer_id": 12
+    },
+    {
+      "id": 125,
+      "product_id": 131,
+      "manufacturer_id": 1
+    },
+    {
+      "id": 176,
+      "product_id": 207,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 2,
+      "product_id": 2,
+      "manufacturer_id": 23
+    },
+    {
+      "id": 3,
+      "product_id": 3,
+      "manufacturer_id": 23
+    },
+    {
+      "id": 4,
+      "product_id": 4,
+      "manufacturer_id": 27
+    },
+    {
+      "id": 5,
+      "product_id": 5,
+      "manufacturer_id": 27
+    },
+    {
+      "id": 6,
+      "product_id": 6,
+      "manufacturer_id": 28
+    },
+    {
+      "id": 9,
+      "product_id": 9,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 10,
+      "product_id": 10,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 11,
+      "product_id": 11,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 12,
+      "product_id": 12,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 14,
+      "product_id": 14,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 18,
+      "product_id": 18,
+      "manufacturer_id": 42
+    },
+    {
+      "id": 21,
+      "product_id": 21,
+      "manufacturer_id": 25
+    },
+    {
+      "id": 22,
+      "product_id": 22,
+      "manufacturer_id": 6
+    },
+    {
+      "id": 23,
+      "product_id": 23,
+      "manufacturer_id": 7
+    },
+    {
+      "id": 24,
+      "product_id": 24,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 25,
+      "product_id": 25,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 26,
+      "product_id": 26,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 30,
+      "product_id": 30,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 31,
+      "product_id": 31,
+      "manufacturer_id": 16
+    },
+    {
+      "id": 32,
+      "product_id": 32,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 33,
+      "product_id": 33,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 34,
+      "product_id": 34,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 35,
+      "product_id": 35,
+      "manufacturer_id": 25
+    },
+    {
+      "id": 37,
+      "product_id": 37,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 42,
+      "product_id": 42,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 43,
+      "product_id": 43,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 44,
+      "product_id": 44,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 45,
+      "product_id": 45,
+      "manufacturer_id": 25
+    },
+    {
+      "id": 47,
+      "product_id": 47,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 48,
+      "product_id": 48,
+      "manufacturer_id": 6
+    },
+    {
+      "id": 49,
+      "product_id": 49,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 62,
+      "product_id": 62,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 109,
+      "product_id": 109,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 123,
+      "product_id": 129,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 124,
+      "product_id": 130,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 126,
+      "product_id": 132,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 50,
+      "product_id": 50,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 51,
+      "product_id": 51,
+      "manufacturer_id": 12
+    },
+    {
+      "id": 52,
+      "product_id": 52,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 53,
+      "product_id": 53,
+      "manufacturer_id": 39
+    },
+    {
+      "id": 54,
+      "product_id": 54,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 55,
+      "product_id": 55,
+      "manufacturer_id": 29
+    },
+    {
+      "id": 56,
+      "product_id": 56,
+      "manufacturer_id": 29
+    },
+    {
+      "id": 57,
+      "product_id": 57,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 58,
+      "product_id": 58,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 59,
+      "product_id": 59,
+      "manufacturer_id": 42
+    },
+    {
+      "id": 60,
+      "product_id": 60,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 61,
+      "product_id": 61,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 63,
+      "product_id": 63,
+      "manufacturer_id": 42
+    },
+    {
+      "id": 64,
+      "product_id": 64,
+      "manufacturer_id": 42
+    },
+    {
+      "id": 65,
+      "product_id": 65,
+      "manufacturer_id": 3
+    },
+    {
+      "id": 66,
+      "product_id": 66,
+      "manufacturer_id": 3
+    },
+    {
+      "id": 67,
+      "product_id": 67,
+      "manufacturer_id": 4
+    },
+    {
+      "id": 68,
+      "product_id": 68,
+      "manufacturer_id": 4
+    },
+    {
+      "id": 69,
+      "product_id": 69,
+      "manufacturer_id": 5
+    },
+    {
+      "id": 70,
+      "product_id": 70,
+      "manufacturer_id": 5
+    },
+    {
+      "id": 71,
+      "product_id": 71,
+      "manufacturer_id": 5
+    },
+    {
+      "id": 72,
+      "product_id": 72,
+      "manufacturer_id": 5
+    },
+    {
+      "id": 73,
+      "product_id": 73,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 74,
+      "product_id": 74,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 75,
+      "product_id": 75,
+      "manufacturer_id": 7
+    },
+    {
+      "id": 76,
+      "product_id": 76,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 77,
+      "product_id": 77,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 78,
+      "product_id": 78,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 79,
+      "product_id": 79,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 80,
+      "product_id": 80,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 81,
+      "product_id": 81,
+      "manufacturer_id": 11
+    },
+    {
+      "id": 82,
+      "product_id": 82,
+      "manufacturer_id": 11
+    },
+    {
+      "id": 83,
+      "product_id": 83,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 84,
+      "product_id": 84,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 85,
+      "product_id": 85,
+      "manufacturer_id": 14
+    },
+    {
+      "id": 86,
+      "product_id": 86,
+      "manufacturer_id": 15
+    },
+    {
+      "id": 87,
+      "product_id": 87,
+      "manufacturer_id": 17
+    },
+    {
+      "id": 88,
+      "product_id": 88,
+      "manufacturer_id": 16
+    },
+    {
+      "id": 89,
+      "product_id": 89,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 90,
+      "product_id": 90,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 91,
+      "product_id": 91,
+      "manufacturer_id": 14
+    },
+    {
+      "id": 92,
+      "product_id": 92,
+      "manufacturer_id": 14
+    },
+    {
+      "id": 93,
+      "product_id": 93,
+      "manufacturer_id": 10
+    },
+    {
+      "id": 94,
+      "product_id": 94,
+      "manufacturer_id": 14
+    },
+    {
+      "id": 95,
+      "product_id": 95,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 96,
+      "product_id": 96,
+      "manufacturer_id": 19
+    },
+    {
+      "id": 97,
+      "product_id": 97,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 98,
+      "product_id": 98,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 99,
+      "product_id": 99,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 100,
+      "product_id": 100,
+      "manufacturer_id": 20
+    },
+    {
+      "id": 101,
+      "product_id": 101,
+      "manufacturer_id": 21
+    },
+    {
+      "id": 102,
+      "product_id": 102,
+      "manufacturer_id": 21
+    },
+    {
+      "id": 103,
+      "product_id": 103,
+      "manufacturer_id": 22
+    },
+    {
+      "id": 104,
+      "product_id": 104,
+      "manufacturer_id": 24
+    },
+    {
+      "id": 105,
+      "product_id": 105,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 106,
+      "product_id": 106,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 107,
+      "product_id": 107,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 108,
+      "product_id": 108,
+      "manufacturer_id": 7
+    },
+    {
+      "id": 128,
+      "product_id": 134,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 129,
+      "product_id": 135,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 130,
+      "product_id": 136,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 131,
+      "product_id": 137,
+      "manufacturer_id": 16
+    },
+    {
+      "id": 132,
+      "product_id": 138,
+      "manufacturer_id": 18
+    },
+    {
+      "id": 133,
+      "product_id": 139,
+      "manufacturer_id": 24
+    },
+    {
+      "id": 134,
+      "product_id": 140,
+      "manufacturer_id": 24
+    },
+    {
+      "id": 135,
+      "product_id": 141,
+      "manufacturer_id": 24
+    },
+    {
+      "id": 136,
+      "product_id": 142,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 137,
+      "product_id": 143,
+      "manufacturer_id": 33
+    },
+    {
+      "id": 138,
+      "product_id": 144,
+      "manufacturer_id": 33
+    },
+    {
+      "id": 139,
+      "product_id": 145,
+      "manufacturer_id": 33
+    },
+    {
+      "id": 140,
+      "product_id": 146,
+      "manufacturer_id": 33
+    },
+    {
+      "id": 7,
+      "product_id": 7,
+      "manufacturer_id": 3
+    },
+    {
+      "id": 8,
+      "product_id": 8,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 13,
+      "product_id": 13,
+      "manufacturer_id": 21
+    },
+    {
+      "id": 15,
+      "product_id": 15,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 16,
+      "product_id": 16,
+      "manufacturer_id": 16
+    },
+    {
+      "id": 19,
+      "product_id": 19,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 20,
+      "product_id": 20,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 27,
+      "product_id": 27,
+      "manufacturer_id": 17
+    },
+    {
+      "id": 28,
+      "product_id": 28,
+      "manufacturer_id": 17
+    },
+    {
+      "id": 38,
+      "product_id": 38,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 39,
+      "product_id": 39,
+      "manufacturer_id": 39
+    },
+    {
+      "id": 40,
+      "product_id": 40,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 41,
+      "product_id": 41,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 110,
+      "product_id": 112,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 111,
+      "product_id": 113,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 112,
+      "product_id": 114,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 113,
+      "product_id": 115,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 114,
+      "product_id": 116,
+      "manufacturer_id": 2
+    },
+    {
+      "id": 115,
+      "product_id": 118,
+      "manufacturer_id": 7
+    },
+    {
+      "id": 116,
+      "product_id": 119,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 117,
+      "product_id": 120,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 118,
+      "product_id": 121,
+      "manufacturer_id": 15
+    },
+    {
+      "id": 119,
+      "product_id": 122,
+      "manufacturer_id": 15
+    },
+    {
+      "id": 120,
+      "product_id": 123,
+      "manufacturer_id": 15
+    },
+    {
+      "id": 121,
+      "product_id": 127,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 122,
+      "product_id": 128,
+      "manufacturer_id": 16
+    },
+    {
+      "id": 127,
+      "product_id": 133,
+      "manufacturer_id": 34
+    },
+    {
+      "id": 141,
+      "product_id": 147,
+      "manufacturer_id": 6
+    },
+    {
+      "id": 142,
+      "product_id": 148,
+      "manufacturer_id": 15
+    },
+    {
+      "id": 143,
+      "product_id": 150,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 144,
+      "product_id": 151,
+      "manufacturer_id": 18
+    },
+    {
+      "id": 145,
+      "product_id": 152,
+      "manufacturer_id": 17
+    },
+    {
+      "id": 146,
+      "product_id": 153,
+      "manufacturer_id": 10
+    },
+    {
+      "id": 147,
+      "product_id": 154,
+      "manufacturer_id": 28
+    },
+    {
+      "id": 148,
+      "product_id": 155,
+      "manufacturer_id": 24
+    },
+    {
+      "id": 149,
+      "product_id": 156,
+      "manufacturer_id": 8
+    },
+    {
+      "id": 150,
+      "product_id": 157,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 151,
+      "product_id": 158,
+      "manufacturer_id": 14
+    },
+    {
+      "id": 152,
+      "product_id": 160,
+      "manufacturer_id": 11
+    },
+    {
+      "id": 153,
+      "product_id": 162,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 154,
+      "product_id": 166,
+      "manufacturer_id": 37
+    },
+    {
+      "id": 155,
+      "product_id": 167,
+      "manufacturer_id": 36
+    },
+    {
+      "id": 156,
+      "product_id": 170,
+      "manufacturer_id": 38
+    },
+    {
+      "id": 157,
+      "product_id": 171,
+      "manufacturer_id": 3
+    },
+    {
+      "id": 158,
+      "product_id": 172,
+      "manufacturer_id": 11
+    },
+    {
+      "id": 159,
+      "product_id": 173,
+      "manufacturer_id": 39
+    },
+    {
+      "id": 160,
+      "product_id": 174,
+      "manufacturer_id": 39
+    },
+    {
+      "id": 161,
+      "product_id": 175,
+      "manufacturer_id": 39
+    },
+    {
+      "id": 162,
+      "product_id": 176,
+      "manufacturer_id": 18
+    },
+    {
+      "id": 163,
+      "product_id": 177,
+      "manufacturer_id": 18
+    },
+    {
+      "id": 164,
+      "product_id": 178,
+      "manufacturer_id": 17
+    },
+    {
+      "id": 165,
+      "product_id": 179,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 166,
+      "product_id": 180,
+      "manufacturer_id": 14
+    },
+    {
+      "id": 167,
+      "product_id": 181,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 168,
+      "product_id": 182,
+      "manufacturer_id": 10
+    },
+    {
+      "id": 169,
+      "product_id": 183,
+      "manufacturer_id": 9
+    },
+    {
+      "id": 170,
+      "product_id": 184,
+      "manufacturer_id": 10
+    },
+    {
+      "id": 171,
+      "product_id": 185,
+      "manufacturer_id": 36
+    },
+    {
+      "id": 172,
+      "product_id": 186,
+      "manufacturer_id": 10
+    },
+    {
+      "id": 173,
+      "product_id": 187,
+      "manufacturer_id": 40
+    },
+    {
+      "id": 174,
+      "product_id": 189,
+      "manufacturer_id": 39
+    },
+    {
+      "id": 175,
+      "product_id": 190,
+      "manufacturer_id": 41
+    }
+  ]
+}

@@ -109,7 +109,7 @@ export const matchesSearchQuery = (item: StoreCatalogItem, query: string) => {
     return true;
   }
 
-  return `${item.name} ${getDisplayProductName(item.name)} ${item.sku}`.toLowerCase().includes(query);
+  return `${item.name} ${getDisplayProductName(item.name)} ${item.code} ${item.sku}`.toLowerCase().includes(query);
 };
 
 export const statusBadgeClassMap: Record<DealerStatus | RetailStatus, string> = {

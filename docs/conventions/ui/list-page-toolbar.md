@@ -6,6 +6,7 @@ Use this layout for module pages that show a **filterable list** (cards, table, 
 
 - Store: `src/components/store/pim/products/store-catalog-page.tsx` + `catalog/catalog-toolbar.tsx`
 - Pulse Thanks: `src/features/pulse/thanks/thanks-page.tsx` + `thanks-toolbar.tsx`
+- Logistics: `src/features/logistics/stock-page.tsx` + `ui/logistics-toolbar.tsx`
 
 Works together with [full-width-page-content.md](full-width-page-content.md) for the list body below the toolbar.
 
@@ -71,6 +72,10 @@ Extract a `*Toolbar` component per feature. Structure matches `CatalogToolbar` /
 ### Tabs in the toolbar
 
 Use `HomeFilterChip` in a `role="tablist"` row inside the controls section (not below the card).
+
+## Forms next to lists
+
+Do not put create or edit fields inline beside a table or list. The list stays a list; a header button opens a sheet or modal.
 
 ## List body (below toolbar)
 

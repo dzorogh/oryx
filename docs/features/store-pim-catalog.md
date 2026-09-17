@@ -1,6 +1,8 @@
 # Store PIM — каталог товаров
 
-Единая страница **Products** (`/store/pim/products`): просмотр **базовых товаров** и **вариантов** в таблице, фильтрация, настройка колонок, пагинация. Сейчас **demo-данные** в браузере (без API).
+Единая страница **Products** (`/store/pim/products`): просмотр товаров в таблице, фильтрация, настройка колонок, пагинация. Источник — таблица `logistics_product` в demo Supabase (тот же список, что документы логистики). Если Supabase не настроен, страница падает обратно на локальный demo-массив.
+
+Логистика живёт в том же разделе Store (`/store/logistics/...`). Отдельного каталога товаров у логистики нет.
 
 Переключатель **Base products** / **Product variants** в toolbar (чипы, как вкладки в Pulse Thanks). Отдельного пункта subnav и маршрута каталога вариантов больше нет.
 
@@ -10,10 +12,12 @@
 |-----|-----------|
 | `/store/pim/products` | Каталог; режим по умолчанию — base products |
 | `/store/pim/products?listing=variants` | Тот же каталог в режиме product variants |
+| `/store/pim/products/[productId]` | Карточка: demo PIM UI для старых `bike-*` id, иначе логистическая карточка того же товара. Код товара — `PRD-{id}` (`formatLogisticsCode`), фото из `logistics_product.image_url` (Корпортал Spatie medium `/s3/media/.../conversions/{stem}-medium.webp`). |
+| `/store/logistics/...` | Заказы, остатки, заказы на производство — см. [logistics.md](logistics.md) |
 
 - Страница: `app/store/pim/products/page.tsx` → `StoreCatalogPage`
-- Subnav Store: только **Products** в каталожной группе (`src/features/store/store-nav.ts`)
-- Карточка товара: `/store/pim/products/[productId]`
+- Subnav Store: **Products** / **Pricelists**, затем блок **Logistics**, затем общие разделы (`src/features/store/store-nav.ts`)
+- Карточка товара: `/store/pim/products/[productId]` — тот же `id`, что в `logistics_product` / строках заказов
 
 ## Переключатель listing mode
 
@@ -35,12 +39,12 @@
 
 Фильтры и поиск **общие** при переключении (не сбрасываются). Список **перезагружается**: другой источник данных + скелетон ~200 ms (как при смене фильтра).
 
-### Источники данных (demo)
+### Источники данных
 
-| Режим | Массив | Содержимое |
-|-------|--------|------------|
-| Base products | `STORE_CATALOG_ITEMS` | Базовые товары (~70 строк) |
-| Product variants | `getVariantCatalogItems()` | Все варианты всех товаров (flatten из `buildVariants`) |
+| Режим | Источник | Содержимое |
+|-------|----------|------------|
+| Base products / variants | `loadDbCatalogItems()` → `logistics_product` | Те же товары, что в логистике (цены/фото из колонок или `demoContentImageUrl`) |
+| Fallback без Supabase | `STORE_CATALOG_ITEMS` / `getVariantCatalogItems()` | Локальный demo-массив для тестов и офлайна |
 
 Ссылки с варианта ведут на карточку **родительского** товара (`getCatalogItemDetailHref`).
 
@@ -121,11 +125,9 @@ src/components/store/pim/products/
 - **Add** в toolbar без handler (заглушка).
 - **English UI** для подписей чипов (`CATALOG_LISTING_MODE_LABELS`); русские строки в UI нарушат `check:ui-english`.
 
-## Подключение к бэкенду (план)
+## Подключение к бэкенду
 
-1. `listingMode` → query или отдельный endpoint (`/catalog/products` vs `/catalog/variants`).
-2. Сохранить раздельные prefs колонок per mode.
-3. Опционально: не дублировать фильтры между режимами на сервере.
+Каталог читает `logistics_product` через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Отдельной store-таблицы товаров нет. Карточка товара с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
 
 ## Локальная проверка
 
@@ -133,6 +135,7 @@ src/components/store/pim/products/
 npm run dev
 # http://localhost:3000/store/pim/products
 # http://localhost:3000/store/pim/products?listing=variants
+# http://localhost:3000/store/logistics/stock
 
 npm run test -- tests/unit/store-catalog-page.test.tsx
 npm run check:ui-english

@@ -13,4 +13,9 @@ describe("NavRail Store section", () => {
   it("не содержит старый отдельный пункт каталога", () => {
     expect(RAIL_PRIMARY_ITEMS.some((item) => item.href === "/catalog")).toBe(false);
   });
+
+  it("does not keep Logistics as a top-level rail section", () => {
+    expect(RAIL_PRIMARY_ITEMS.some((item) => item.match === "/logistics")).toBe(false);
+    expect(RAIL_PRIMARY_ITEMS.some((item) => item.label === "Logistics")).toBe(false);
+  });
 });

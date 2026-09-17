@@ -19,7 +19,7 @@ export const CatalogColumnsSheet = ({ open, onOpenChange, columns }: CatalogColu
         <SheetDescription>Choose which columns appear in the catalog table.</SheetDescription>
       </SheetHeader>
 
-      <div className="grid gap-2 px-4 pb-4">
+      <div className="grid gap-2 pb-4">
         {CATALOG_COLUMNS.map((column) => {
           const checkboxId = `catalog-column-${column.id}`;
 

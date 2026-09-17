@@ -1,5 +1,5 @@
-import { ModulePlaceholderPage } from "@/components/layout/module-placeholder-page";
+import { StoreSettingsPage } from "@/features/store/store-settings-page";
 
-const StoreSettingsPage = () => <ModulePlaceholderPage title="Settings" />;
+const StoreSettingsRoute = () => <StoreSettingsPage />;
 
-export default StoreSettingsPage;
+export default StoreSettingsRoute;

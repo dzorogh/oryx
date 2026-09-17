@@ -45,6 +45,31 @@ If env is unset, UI may keep local demo data. If env is set, talk to this Kong U
 
 Reference (Pulse Thanks): `listThankYouEntries` / `insertThankYouEntry` — no login, shared feed.
 
+## Agent access (MCP)
+
+Agents talk to this instance through the project MCP **`oryx-supabase`**. Do **not** use `user-supabase` (hosted supabase.com) or `capacity-supabase`.
+
+| Piece | Where |
+|-------|--------|
+| MCP server | Project `.cursor/mcp.json` → `oryx-supabase` only. Do not add it to the user MCP list. |
+| Command | `~/.config/oryx/mcp-venv/bin/python` + `scripts/oryx_supabase_mcp.py` |
+| Tools | `list_tables`, `execute_sql`, `apply_migration`, `list_migrations`, `list_policies`, `list_extensions`, `rest`, `generate_typescript_types`, `get_project_url`, `list_auth_users` |
+| Client | `scripts/oryx_supabase.py` (`sync`, `check`, `tables`, `sql`, `rest`) |
+| Secrets | `~/.config/oryx/supabase.env` and `~/.config/oryx/dokploy.env` (mode `600`, never commit) |
+
+`rest` uses the **service role**. `execute_sql` / `apply_migration` run via Dokploy exec into `oryx-supabase-bb1dnn-db-1`. `apply_migration` also writes `supabase/migrations/<timestamp>_<name>.sql`.
+
+One-time on a machine:
+
+```bash
+python3 scripts/oryx_supabase.py sync   # copies keys from Dokploy compose Environment
+python3 scripts/oryx_supabase.py check  # auth health + smoke table, no secrets
+```
+
+`sync` reads Dokploy API credentials from `~/.config/oryx/dokploy.env` (`DOKPLOY_URL`, `DOKPLOY_API_KEY`). If that file is missing, it can bootstrap from the local Dokploy env file already used for other projects — values stay on disk, never in chat.
+
+In chat report HTTP status, row counts, and table names only. After a live probe (`TEST`, dummy, wiring-check), delete that row in the same session.
+
 ## Add a table
 
 1. Add `supabase/migrations/<timestamp>_<name>.sql`:
@@ -52,7 +77,7 @@ Reference (Pulse Thanks): `listThankYouEntries` / `insertThankYouEntry` — no l
    - `alter table ... enable row level security`
    - `create policy ... for all to anon, authenticated using (true) with check (true)`
    - `grant select, insert, update, delete on table public.<name> to anon, authenticated, service_role`
-2. Apply the SQL on **this** instance (Dokploy exec into `oryx-supabase-bb1dnn-db-1` as `postgres`, or Studio SQL on the Oryx Kong URL). Do not apply it on Capacity/YNAPB.
+2. Apply the SQL on **this** instance via MCP `apply_migration` / `execute_sql` (or Studio SQL on the Oryx Kong URL). Do not apply it on Capacity/YNAPB.
 3. Add a feature API module that uses `getSupabaseBrowserClient()`.
 4. Seed via PostgREST + anon key (see `scripts/seed-thanks.mjs` / `npm run seed:thanks`) or a new script. Prefer `on_conflict=id` + `Prefer: resolution=merge-duplicates`.
 5. Confirm without printing keys: HTTP status and `content-range` / row count only.
@@ -65,6 +90,7 @@ Reference (Pulse Thanks): `listThankYouEntries` / `insertThankYouEntry` — no l
 # headers: apikey + Authorization: Bearer <anon>
 
 npm run seed:thanks    # upserts Thanks demo rows
+npm run seed:logistics # upserts Logistics demo rows and posts the story
 npm run test           # includes thanks mapping test
 ```
 

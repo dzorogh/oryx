@@ -77,8 +77,10 @@ const toFilterOptions = (values: string[]): QuickFilterOption[] =>
 export const useCatalogController = (
   listingMode: CatalogListingMode,
   columnsStorageKey?: string,
+  sourceItemsOverride?: StoreCatalogItem[],
 ): CatalogController => {
-  const sourceItems = useMemo(() => getCatalogSourceItems(listingMode), [listingMode]);
+  const fallbackItems = useMemo(() => getCatalogSourceItems(listingMode), [listingMode]);
+  const sourceItems = sourceItemsOverride ?? fallbackItems;
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
   const [visibleColumnIds, setVisibleColumnIds] = useState<CatalogColumnId[]>(DEFAULT_VISIBLE_COLUMNS);

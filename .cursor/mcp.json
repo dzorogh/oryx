@@ -9,7 +9,16 @@
     },
     "token-saver-mcp": {
       "command": "npx",
-      "args": ["-y", "token-saver-mcp"]
+      "args": [
+        "-y",
+        "token-saver-mcp"
+      ]
+    },
+    "oryx-supabase": {
+      "command": "sh",
+      "args": [
+        "scripts/oryx-supabase-mcp.sh"
+      ]
     }
   }
 }

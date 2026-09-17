@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import type { ReactNode } from "react";
@@ -10,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { ProductPhoto } from "@/features/store/product-photo";
 import { getCatalogItemDetailHref } from "./catalog-helpers";
 import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
 import { CatalogBuyTooltip } from "./catalog-buy-tooltip";
@@ -53,18 +53,27 @@ const ProductThumbnailPreview = ({
         <Link
           href={productHref}
           aria-label={`Open product ${displayName}`}
-          className="pointer-events-auto relative z-20 block size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-white outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="pointer-events-auto relative z-20 block size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         />
       }
     >
-      <Image src={item.imageSrc} alt={item.imageAlt} fill sizes="36px" className="object-cover" />
+      <ProductPhoto
+        src={item.imageSrc}
+        alt={item.imageAlt}
+        sizes="36px"
+        className="size-full rounded-none border-0"
+      />
     </TooltipPrimitive.Trigger>
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner side="left" sideOffset={12} className="isolate z-50">
         <TooltipPrimitive.Popup className="origin-(--transform-origin) overflow-hidden rounded-xl border border-[var(--corportal-border-grey)] bg-white p-1.5 shadow-lg data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
-          <div className="relative size-60 overflow-hidden rounded-lg bg-slate-50">
-            <Image src={item.imageSrc} alt={item.imageAlt} fill sizes="240px" className="object-contain" />
-          </div>
+          <ProductPhoto
+            src={item.imageSrc}
+            alt={item.imageAlt}
+            sizes="240px"
+            className="size-60 rounded-lg bg-slate-50"
+            imageClassName="object-contain"
+          />
           <p className="mt-1.5 max-w-60 truncate px-0.5 text-xs font-medium text-foreground">
             {getDisplayProductName(item.name)}
           </p>
@@ -92,8 +101,8 @@ const ProductNameCell = ({
       <div className="min-w-0 flex-1 basis-0 overflow-hidden">
         <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
         {showSkuSubline ? (
-          <p className="truncate text-xs text-muted-foreground" title={item.sku}>
-            {item.sku}
+          <p className="truncate text-xs text-muted-foreground" title={item.code}>
+            {item.code}
           </p>
         ) : null}
       </div>
@@ -344,7 +353,7 @@ export const CatalogTable = ({
   const showBuyButton = listingMode === "variants";
   const priceFromPrefix = listingMode === "products";
   const columnCount = visibleColumnIds.length;
-  const showSkuSubline = !visibleColumnIds.includes("sku");
+  const showSkuSubline = true;
 
   return (
     <TooltipProvider delay={200}>

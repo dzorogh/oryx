@@ -33,7 +33,7 @@ export type ProductVariant = {
   stock: number;
   dealerPrice: number | null;
   retailPrice: number | null;
-  imageSrc: StaticImageData;
+  imageSrc: StaticImageData | string;
   imageAlt: string;
   attributeGroups: ProductAttributeGroup[];
   logistics: ProductAttributeRow[];
@@ -51,9 +51,9 @@ export type ProductDetail = {
   stock: number;
   description: string;
   shortDescription: string;
-  imageSrc: StaticImageData;
+  imageSrc: StaticImageData | string;
   imageAlt: string;
-  galleryImages: StaticImageData[];
+  galleryImages: Array<StaticImageData | string>;
   variants: ProductVariant[];
 };
 
@@ -215,7 +215,7 @@ const buildVariants = (item: StoreCatalogItem): ProductVariant[] => {
 };
 
 // Формирует галерею: главное фото товара первым, затем все остальные кадры из общего пула.
-const buildGalleryImages = (item: StoreCatalogItem): StaticImageData[] => {
+const buildGalleryImages = (item: StoreCatalogItem): Array<StaticImageData | string> => {
   const others = STORE_DEMO_IMAGE_LIST.filter((image) => image !== item.imageSrc);
   return [item.imageSrc, ...others];
 };
@@ -271,6 +271,7 @@ export const getVariantCatalogItems = (): StoreCatalogItem[] => {
       id: variant.id,
       name: variant.isDefault ? product.name : `Oryx ${variant.name}`,
       sku: variant.sku ?? "",
+      code: product.code,
       imageSrc: variant.imageSrc,
       imageAlt: variant.imageAlt,
       categoryId: product.categoryId,

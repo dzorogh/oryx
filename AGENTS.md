@@ -1,51 +1,43 @@
 # Agent instructions (Oryx BMS)
 
-This file is the **tool-neutral** entry point for AI agents and automation. Follow it before changing UI or layout.
+<!-- bmad:context -->
+<!-- Verified 2026-09-17 against 449bbfc1f698928b4c6f88924e04ea9c245798e2. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
-## Conventions (canonical source)
+## Oryx BMS
 
-All project conventions live under **[docs/conventions/](docs/conventions/)**. Do not duplicate long rules in Cursor-only or IDE-only config — update the markdown there and keep tool configs as pointers.
+Internal business management app. Next.js App Router, React, TypeScript, Tailwind v4, Vitest. Conventions live in `docs/conventions/`; screen behavior in `docs/features/`. Follow this file before changing UI, layout, or the demo backend.
 
-| Topic | Path |
-|-------|------|
-| Index | [docs/conventions/README.md](docs/conventions/README.md) |
-| English UI copy | [docs/conventions/ui/english-labels.md](docs/conventions/ui/english-labels.md) |
-| Full-width content / anti-stretch | [docs/conventions/ui/full-width-page-content.md](docs/conventions/ui/full-width-page-content.md) |
-| List pages + toolbar header | [docs/conventions/ui/list-page-toolbar.md](docs/conventions/ui/list-page-toolbar.md) |
-| Images & avatars (`src/assets`; Unsplash/Pravatar demo media) | [docs/conventions/assets/static-images.md](docs/conventions/assets/static-images.md) |
-| Demo backend (self-hosted Supabase) | [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md) |
+## Policy
 
-## Quick rules
+- Finish work on local `main` (fast-forward merge preferred). Do not push to `origin` or open a PR unless the user explicitly asks (push / publish / задеплой / запушь). No force-push to `main`, no `--no-verify`, no amending others' commits.
+- Never put secrets in any user-visible message (quotes, diffs, logs, tables, code blocks): passwords, hashes, API keys, tokens, JWTs, PATs, private keys, connection strings with credentials, OTP/magic-link secrets, Studio/DB/auth credentials. Write secrets only to a gitignored file or the secret store (Dokploy env, password manager). In chat say only that it was set and where to open it; confirm without the value.
+- After any diagnostic write to a live system (Oryx demo Supabase, APIs, UI), delete or revert it in the same session. Do not leave rows, users, files, or groups named TEST, dummy, DELETE ME, or similar. Prefer mocks and local fixtures.
+- Use only this project's Dokploy compose `supabase` (`oryx-supabase-bb1dnn`). Agent access is MCP `oryx-supabase`. Never Capacity, YNAPB, or cloud `user-supabase`. Browser uses the anon key, no login. Details: `docs/conventions/backend/supabase.md`.
+- User-facing page text must be in English. Do not regenerate `scripts/english-ui-baseline.json` unless intentionally allowing new Cyrillic.
 
-1. **UI text** — English only in user-visible strings; run `npm run check:ui-english`.
-2. **List pages** — `bg-muted/30`, breadcrumb outside a white `Card` toolbar (`text-lg` title), filters/tabs inside toolbar, list full width below. See list-page-toolbar doc.
-3. **Width** — No `max-w-*` / `mx-auto` on page root; use responsive grids or tables so blocks do not stretch on ultra-wide screens.
-4. **Images & avatars** — Bundled UI images live under `src/assets/` with static imports (`StaticImageData`); not `"/…/file.png"` strings to `public/`. Demo content images use `demoContentImageUrl(seed, w, h)` from `@/lib/demo-content-image` (Unsplash CDN); avatars use `i.pravatar.cc/<size>?u=<id>` (never `loremflickr.com`). Run `npm run check:static-images`.
-5. **Supabase** — Oryx Dokploy compose only (`oryx-supabase-bb1dnn`). Never Capacity or YNAPB. Anon key, no login. See the supabase convention doc.
+## Where things are
 
-## Feature docs (how screens work)
+- Conventions (canonical): `docs/conventions/README.md`. Edit those files; keep `.cursor/rules/*.mdc` as pointers.
+- Feature behavior: `docs/features/README.md`.
+- List-page / toolbar reference: `src/components/store/pim/products/store-catalog-page.tsx`, `src/components/store/pim/products/catalog/catalog-toolbar.tsx`; Pulse Thanks: `src/features/pulse/thanks/thanks-page.tsx`, `src/features/pulse/thanks/thanks-toolbar.tsx`.
+- Logistics: `src/features/logistics/` — `docs/features/logistics.md`.
+- Demo images helper: `src/lib/demo-content-image.ts` (`demoContentImageUrl`). Browser Supabase client: `src/lib/supabase/client.ts` (returns `null` if env is unset).
+- Humans: `README.md` and `docs/conventions/`.
 
-| Feature | Path |
-|---------|------|
-| Index | [docs/features/README.md](docs/features/README.md) |
-| Pulse Thanks | [docs/features/pulse-thanks.md](docs/features/pulse-thanks.md) |
+## Running and verifying
 
-## Reference implementations
+- There is no CI. Before handing off UI work, run `npm run lint`, `npm run typecheck`, `npm run test`, `npm run check:ui-english`, and `npm run check:static-images` locally.
+- `npm run lint` does not include the Cyrillic UI rule; `npm run test` does not run the English-UI or static-image scanners. Use `check:ui-english` / `lint:ui-english` and `check:static-images` for those.
 
-- Products catalog: `src/components/store/pim/products/store-catalog-page.tsx`, `catalog/catalog-toolbar.tsx` — behavior: [docs/features/store-pim-catalog.md](docs/features/store-pim-catalog.md)
-- Pulse Thanks: `src/features/pulse/thanks/thanks-page.tsx`, `thanks-toolbar.tsx` — [docs/features/pulse-thanks.md](docs/features/pulse-thanks.md)
+## Conventions that differ from defaults
 
-## Verification before PR
+- List pages: `bg-muted/30`, breadcrumb outside a white `Card` toolbar (`text-lg` title), filters/tabs inside the toolbar, list full width below. See `docs/conventions/ui/list-page-toolbar.md`.
+- No `max-w-*` / `mx-auto` on the page root; use responsive grids or tables. See `docs/conventions/ui/full-width-page-content.md`.
+- Bundled UI images: static imports from `src/assets/` with `StaticImageData` and `next/image`, not `"/….png"` strings to `public/`. Demo content: `demoContentImageUrl(seed, w, h)` (Unsplash). Avatars: `i.pravatar.cc/<size>?u=<id>`. Never `loremflickr.com` (HTTP 500) or `picsum.photos` (geoblocked).
+- Do not duplicate convention text into Cursor/IDE rule files — point at `docs/conventions/`.
 
-```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run check:ui-english
-npm run check:static-images
-```
+## Known pitfalls
 
-## Tool-specific pointers
+- Do not treat a working UI with local demo data as proof the Oryx demo backend is configured — `src/lib/supabase/client.ts` returns `null` when env is unset.
 
-- **Cursor**: `.cursor/rules/*.mdc` → links to `docs/conventions/`
-- **Humans**: [README.md](README.md) and `docs/conventions/`
+<!-- /bmad:context -->

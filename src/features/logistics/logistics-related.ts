@@ -1,0 +1,502 @@
+import {
+  hrefForCustomerOrder,
+  hrefForProductionOrder,
+  hrefForTransfer,
+} from "@/features/logistics/logistics-availability";
+import { manufacturerCode, warehouseCode } from "@/features/logistics/logistics-lookups";
+import { computeStockBalances } from "@/features/logistics/logistics-balances";
+import { expectedEndMeta, formatQuantity } from "@/features/logistics/logistics-labels";
+import type { DocumentStatus, LogisticsSnapshot, StockBalance, TransferStatus } from "@/features/logistics/logistics-types";
+
+export type RelatedDocumentItem = {
+  id: string;
+  href: string;
+  label: string;
+  meta: string;
+};
+
+const statusMeta = (status: DocumentStatus | TransferStatus | string): string => status;
+
+const uniqueRelated = (items: RelatedDocumentItem[]): RelatedDocumentItem[] => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) {
+      return false;
+    }
+    seen.add(item.id);
+    return true;
+  });
+};
+
+const activeReservation = (snapshot: LogisticsSnapshot, reservationId: string): boolean => {
+  const status = snapshot.reservations.find((item) => item.id === reservationId)?.status;
+  return status === "draft" || status === "posted";
+};
+
+export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
+  snapshot.reservations
+    .filter((item) => item.customerOrderId === customerOrderId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/reservations/${item.id}`,
+      label: item.number,
+      meta: `${item.operation} · ${statusMeta(item.status)}`,
+    }));
+
+export const relatedShipments = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
+  snapshot.shipments
+    .filter((item) => item.customerOrderId === customerOrderId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/shipments/${item.id}`,
+      label: item.number,
+      meta: statusMeta(item.status),
+    }));
+
+export const relatedReturnsForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
+  const shipmentIds = new Set(
+    snapshot.shipments.filter((item) => item.customerOrderId === customerOrderId).map((item) => item.id),
+  );
+  return snapshot.returns
+    .filter((item) => shipmentIds.has(item.shipmentId))
+    .map((item) => {
+      const shipment = snapshot.shipments.find((entry) => entry.id === item.shipmentId);
+      return {
+        id: item.id,
+        href: `/store/logistics/returns/${item.id}`,
+        label: item.number,
+        meta: `${statusMeta(item.status)}${shipment ? ` · ${shipment.number}` : ""}`,
+      };
+    });
+};
+
+export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
+  const transferIds = new Set<string>();
+  for (const allocation of snapshot.transferAllocations) {
+    if (allocation.customerOrderId !== customerOrderId) {
+      continue;
+    }
+    const transferId = snapshot.transferLines.find((line) => line.id === allocation.lineId)?.transferId;
+    if (transferId) {
+      transferIds.add(transferId);
+    }
+  }
+  for (const reservation of snapshot.reservations) {
+    if (reservation.locationType !== "transfer" || !activeReservation(snapshot, reservation.id)) {
+      continue;
+    }
+    if (reservation.customerOrderId === customerOrderId) {
+      transferIds.add(reservation.locationId);
+    }
+  }
+  for (const entry of snapshot.transactions) {
+    if (
+      entry.locationType === "transfer" &&
+      entry.customerOrderId === customerOrderId &&
+      Math.abs(entry.quantity) > 1e-9
+    ) {
+      transferIds.add(entry.locationId);
+    }
+  }
+  return snapshot.transfers
+    .filter((item) => transferIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/transfers/${item.id}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+    }));
+};
+
+export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
+  const outputIds = new Set<string>();
+  for (const entry of snapshot.transactions) {
+    if (entry.sourceType === "production_output" && entry.customerOrderId === customerOrderId) {
+      outputIds.add(entry.sourceId);
+    }
+  }
+  for (const allocation of snapshot.outputAllocations) {
+    if (allocation.customerOrderId !== customerOrderId) {
+      continue;
+    }
+    const outputId = snapshot.outputLines.find((line) => line.id === allocation.lineId)?.outputId;
+    if (outputId) {
+      outputIds.add(outputId);
+    }
+  }
+  return snapshot.outputs
+    .filter((item) => outputIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/outputs/${item.id}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+    }));
+};
+
+export const relatedProductionsForOrder = (
+  snapshot: LogisticsSnapshot,
+  customerOrderId: string,
+  balances?: StockBalance[],
+): RelatedDocumentItem[] => {
+  const stock = balances ?? computeStockBalances(snapshot.transactions);
+  const productionIds = new Set<string>();
+  for (const reservation of snapshot.reservations) {
+    if (
+      reservation.locationType !== "production_order_line" ||
+      !activeReservation(snapshot, reservation.id) ||
+      reservation.customerOrderId !== customerOrderId
+    ) {
+      continue;
+    }
+    const productionLine = snapshot.productionOrderLines.find((item) => item.id === reservation.locationId);
+    if (productionLine) {
+      productionIds.add(productionLine.orderId);
+    }
+  }
+  return snapshot.productionOrders
+    .filter((item) => productionIds.has(item.id))
+    .map((item) => {
+      const lineIds = snapshot.productionOrderLines
+        .filter((line) => line.orderId === item.id)
+        .map((line) => line.id);
+      const reserved = stock
+        .filter(
+          (entry) =>
+            entry.stockState === "reserved" &&
+            entry.customerOrderId === customerOrderId &&
+            entry.locationType === "production_order_line" &&
+            lineIds.includes(entry.locationId),
+        )
+        .reduce((sum, entry) => sum + entry.quantity, 0);
+      const outputted = snapshot.transactions
+        .filter(
+          (entry) =>
+            entry.sourceType === "production_output" &&
+            entry.customerOrderId === customerOrderId &&
+            entry.quantity > 0 &&
+            entry.locationType === "warehouse",
+        )
+        .filter((entry) => {
+          const output = snapshot.outputs.find((doc) => doc.id === entry.sourceId);
+          return output?.productionOrderId === item.id;
+        })
+        .reduce((sum, entry) => sum + entry.quantity, 0);
+      const extras = [
+        reserved > 0 ? `занято ${formatQuantity(reserved)}` : null,
+        outputted > 0 ? `выпущено ${formatQuantity(outputted)}` : null,
+      ].filter((part): part is string => Boolean(part));
+      return {
+        id: item.id,
+        href: `/store/logistics/production-orders/${item.id}`,
+        label: item.number,
+        meta: expectedEndMeta(item.status, item.expectedEndOn, extras),
+      };
+    });
+};
+
+export const relatedOrdersForOutput = (
+  snapshot: LogisticsSnapshot,
+  outputId: string,
+): RelatedDocumentItem[] => {
+  const fromLedger = snapshot.transactions
+    .filter(
+      (entry) =>
+        entry.sourceType === "production_output" &&
+        entry.sourceId === outputId &&
+        entry.customerOrderId &&
+        entry.quantity > 0,
+    )
+    .map((entry) => ({
+      orderId: entry.customerOrderId as string,
+      quantity: entry.quantity,
+    }));
+  const fromAllocations = snapshot.outputAllocations
+    .filter((item) => snapshot.outputLines.some((line) => line.id === item.lineId && line.outputId === outputId))
+    .map((item) => ({ orderId: item.customerOrderId, quantity: item.quantity }));
+  const totals = new Map<string, number>();
+  for (const item of [...fromLedger, ...fromAllocations]) {
+    totals.set(item.orderId, (totals.get(item.orderId) ?? 0) + item.quantity);
+  }
+  return uniqueRelated(
+    [...totals.entries()].map(([orderId, quantity]) => {
+      const order = snapshot.customerOrders.find((item) => item.id === orderId);
+      return {
+        id: orderId,
+        href: hrefForCustomerOrder(orderId),
+        label: order?.number ?? orderId,
+        meta: formatQuantity(quantity),
+      };
+    }),
+  );
+};
+
+export const relatedReservationsForProduction = (
+  snapshot: LogisticsSnapshot,
+  productionOrderId: string,
+): RelatedDocumentItem[] => {
+  const lineIds = new Set(
+    snapshot.productionOrderLines.filter((line) => line.orderId === productionOrderId).map((line) => line.id),
+  );
+  const reservationIds = new Set(
+    snapshot.reservations
+      .filter((item) => item.locationType === "production_order_line" && lineIds.has(item.locationId))
+      .map((item) => item.id),
+  );
+  return snapshot.reservations
+    .filter((item) => reservationIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/reservations/${item.id}`,
+      label: item.number,
+      meta: statusMeta(item.status),
+    }));
+};
+
+export const relatedReturnsForShipment = (snapshot: LogisticsSnapshot, shipmentId: string): RelatedDocumentItem[] =>
+  snapshot.returns
+    .filter((item) => item.shipmentId === shipmentId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/returns/${item.id}`,
+      label: item.number,
+      meta: statusMeta(item.status),
+    }));
+
+export const relatedTransfersForWarehouse = (
+  snapshot: LogisticsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] =>
+  snapshot.transfers
+    .filter((item) => item.fromWarehouseId === warehouseId || item.toWarehouseId === warehouseId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/transfers/${item.id}`,
+      label: item.number,
+      meta: expectedEndMeta(
+        item.status,
+        item.expectedEndOn,
+        [item.fromWarehouseId === warehouseId ? "исходящее" : "входящее"],
+      ),
+    }));
+
+export const relatedShipmentsForWarehouse = (
+  snapshot: LogisticsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] =>
+  snapshot.shipments
+    .filter((item) => item.warehouseId === warehouseId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/shipments/${item.id}`,
+      label: item.number,
+      meta: statusMeta(item.status),
+    }));
+
+export const relatedProductionsForManufacturer = (
+  snapshot: LogisticsSnapshot,
+  manufacturerId: string,
+): RelatedDocumentItem[] =>
+  snapshot.productionOrders
+    .filter((item) => item.manufacturerId === manufacturerId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/production-orders/${item.id}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+    }));
+
+export const relatedProductionsForWarehouse = (
+  snapshot: LogisticsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] => {
+  const manufacturer = snapshot.manufacturers.find((item) => item.warehouseId === warehouseId);
+  if (!manufacturer) {
+    return [];
+  }
+  return relatedProductionsForManufacturer(snapshot, manufacturer.id);
+};
+
+export const relatedOrderItem = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem | null => {
+  const order = snapshot.customerOrders.find((item) => item.id === customerOrderId);
+  if (!order) {
+    return null;
+  }
+  return {
+    id: order.id,
+    href: hrefForCustomerOrder(order.id),
+    label: order.number,
+    meta: order.status,
+  };
+};
+
+export const PRODUCT_ACTIVITY_KINDS = [
+  "customer_order",
+  "production_order",
+  "transfer",
+  "output",
+  "shipment",
+] as const;
+
+export type ProductActivityKind = (typeof PRODUCT_ACTIVITY_KINDS)[number];
+
+export type ProductActivityRow = {
+  id: string;
+  href: string;
+  number: string;
+  quantity: number;
+  status: string;
+  expectedEndOn: string | null;
+  hasExpectedEnd: boolean;
+  hint: string | null;
+  manufacturerId: string | null;
+};
+
+export type ProductActivityGroup = {
+  kind: ProductActivityKind;
+  items: ProductActivityRow[];
+};
+
+const ACTIVE_ACTIVITY_STATUSES = new Set([
+  "open",
+  "draft",
+  "planned",
+  "in_progress",
+  "sent",
+  "posted",
+]);
+
+const sortActivityRows = (left: ProductActivityRow, right: ProductActivityRow): number => {
+  const leftActive = ACTIVE_ACTIVITY_STATUSES.has(left.status) ? 0 : 1;
+  const rightActive = ACTIVE_ACTIVITY_STATUSES.has(right.status) ? 0 : 1;
+  if (leftActive !== rightActive) {
+    return leftActive - rightActive;
+  }
+  return left.number.localeCompare(right.number);
+};
+
+const addQuantity = (totals: Map<string, number>, id: string, quantity: number) => {
+  totals.set(id, (totals.get(id) ?? 0) + quantity);
+};
+
+export const productActivity = (snapshot: LogisticsSnapshot, productId: string): ProductActivityGroup[] => {
+  const orderQty = new Map<string, number>();
+  for (const line of snapshot.customerOrderLines) {
+    if (line.productId === productId) {
+      addQuantity(orderQty, line.orderId, line.quantity);
+    }
+  }
+  const productionQty = new Map<string, number>();
+  for (const line of snapshot.productionOrderLines) {
+    if (line.productId === productId) {
+      addQuantity(productionQty, line.orderId, line.quantity);
+    }
+  }
+  const transferQty = new Map<string, number>();
+  for (const line of snapshot.transferLines) {
+    if (line.productId === productId) {
+      addQuantity(transferQty, line.transferId, line.quantity);
+    }
+  }
+  const outputQty = new Map<string, number>();
+  for (const line of snapshot.outputLines) {
+    if (line.productId === productId) {
+      addQuantity(outputQty, line.outputId, line.quantity);
+    }
+  }
+  const shipmentQty = new Map<string, number>();
+  for (const line of snapshot.shipmentLines) {
+    if (line.productId === productId) {
+      addQuantity(shipmentQty, line.shipmentId, line.quantity);
+    }
+  }
+
+  const orders: ProductActivityRow[] = snapshot.customerOrders
+    .filter((item) => orderQty.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: hrefForCustomerOrder(item.id),
+      number: item.number,
+      quantity: orderQty.get(item.id) ?? 0,
+      status: item.status,
+      expectedEndOn: item.expectedEndOn,
+      hasExpectedEnd: true,
+      hint: null,
+      manufacturerId: null,
+    }))
+    .sort(sortActivityRows);
+
+  const productions: ProductActivityRow[] = snapshot.productionOrders
+    .filter((item) => productionQty.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: hrefForProductionOrder(item.id),
+      number: item.number,
+      quantity: productionQty.get(item.id) ?? 0,
+      status: item.status,
+      expectedEndOn: item.expectedEndOn,
+      hasExpectedEnd: true,
+      hint: manufacturerCode(snapshot, item.manufacturerId),
+      manufacturerId: item.manufacturerId,
+    }))
+    .sort(sortActivityRows);
+
+  const transfers: ProductActivityRow[] = snapshot.transfers
+    .filter((item) => transferQty.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: hrefForTransfer(item.id),
+      number: item.number,
+      quantity: transferQty.get(item.id) ?? 0,
+      status: item.status,
+      expectedEndOn: item.expectedEndOn,
+      hasExpectedEnd: true,
+      hint: `${warehouseCode(snapshot, item.fromWarehouseId)} → ${warehouseCode(snapshot, item.toWarehouseId)}`,
+      manufacturerId: null,
+    }))
+    .sort(sortActivityRows);
+
+  const outputs: ProductActivityRow[] = snapshot.outputs
+    .filter((item) => outputQty.has(item.id))
+    .map((item) => {
+      const production = snapshot.productionOrders.find((order) => order.id === item.productionOrderId);
+      return {
+        id: item.id,
+        href: `/store/logistics/outputs/${item.id}`,
+        number: item.number,
+        quantity: outputQty.get(item.id) ?? 0,
+        status: item.status,
+        expectedEndOn: item.expectedEndOn,
+        hasExpectedEnd: true,
+        hint: production ? production.number : null,
+        manufacturerId: null,
+      };
+    })
+    .sort(sortActivityRows);
+
+  const shipments: ProductActivityRow[] = snapshot.shipments
+    .filter((item) => shipmentQty.has(item.id))
+    .map((item) => {
+      const order = snapshot.customerOrders.find((entry) => entry.id === item.customerOrderId);
+      return {
+        id: item.id,
+        href: `/store/logistics/shipments/${item.id}`,
+        number: item.number,
+        quantity: shipmentQty.get(item.id) ?? 0,
+        status: item.status,
+        expectedEndOn: null,
+        hasExpectedEnd: false,
+        hint: order?.number ?? warehouseCode(snapshot, item.warehouseId),
+        manufacturerId: null,
+      };
+    })
+    .sort(sortActivityRows);
+
+  return [
+    { kind: "customer_order", items: orders },
+    { kind: "production_order", items: productions },
+    { kind: "transfer", items: transfers },
+    { kind: "output", items: outputs },
+    { kind: "shipment", items: shipments },
+  ];
+};

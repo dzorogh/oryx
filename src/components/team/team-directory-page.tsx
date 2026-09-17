@@ -221,7 +221,7 @@ export const TeamDirectoryPage = () => {
                 </SheetDescription>
               </SheetHeader>
 
-              <div className="grid gap-4 px-4 pb-4">
+              <div className="grid gap-4 pb-4">
                 <label className="space-y-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Search</span>
                   <div className="relative">

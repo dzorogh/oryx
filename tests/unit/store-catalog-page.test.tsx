@@ -18,6 +18,10 @@ const navigationMock = vi.hoisted(() => {
   };
 });
 
+vi.mock("@/features/store/store-catalog-from-logistics", () => ({
+  loadDbCatalogItems: async () => null,
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/store/pim/products",
   useSearchParams: () => navigationMock.getSearchParams(),
@@ -118,7 +122,7 @@ describe("StoreCatalogPage", () => {
     const listingGroup = getListingModeGroup();
     expect(within(listingGroup).getByRole("button", { name: "Variants" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByLabelText("Add a new variant to the catalog")).toBeVisible();
-    expect(await within(catalogMain).findByText("100451-2")).toBeVisible();
+    expect(await within(catalogMain).findByText("Force 1000 EFI Touring")).toBeVisible();
   });
 
   it("updates listing query when product variants tab is clicked", async () => {

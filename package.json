@@ -22,6 +22,7 @@
     "check:ui-english": "node scripts/check-english-ui.mjs",
     "check:static-images": "node scripts/check-static-images.mjs",
     "seed:thanks": "node scripts/seed-thanks.mjs",
+    "seed:logistics": "node scripts/seed-logistics.mjs",
     "lint:ui-english": "eslint -c eslint.english-ui.config.mjs ."
   },
   "dependencies": {

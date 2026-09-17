@@ -1,6 +1,7 @@
 import type { StaticImageData } from "next/image";
 
 import { STORE_DEMO_IMAGES } from "@/assets/store/demo-images";
+import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 
 export type DealerStatus = "Hidden" | "Available for purchase" | "Unavailable for purchase";
 
@@ -10,7 +11,8 @@ export type StoreCatalogItem = {
   id: string;
   name: string;
   sku: string;
-  imageSrc: StaticImageData;
+  code: string;
+  imageSrc: StaticImageData | string;
   imageAlt: string;
   categoryId: string;
   category: string;
@@ -25,7 +27,7 @@ export type StoreCatalogItem = {
   productionSite: string;
 };
 
-type StoreCatalogSeedItem = Omit<StoreCatalogItem, "brand" | "stock" | "updatedAt">;
+type StoreCatalogSeedItem = Omit<StoreCatalogItem, "brand" | "stock" | "updatedAt" | "code">;
 
 const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
@@ -461,6 +463,7 @@ const applyPriceGaps = (items: StoreCatalogSeedItem[]): StoreCatalogSeedItem[] =
 const applyCatalogEnrichment = (items: StoreCatalogSeedItem[]): StoreCatalogItem[] =>
   items.map((item, index) => ({
     ...item,
+    code: formatLogisticsCode("product", item.id),
     brand: "Sharmax",
     stock: 5 + ((index * 7) % 116),
     updatedAt: new Date(Date.UTC(2026, 0, 15 - (index % 45), 12, 0, 0)).toISOString(),

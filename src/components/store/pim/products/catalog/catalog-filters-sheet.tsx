@@ -20,7 +20,7 @@ export const CatalogFiltersSheet = ({ open, onOpenChange, filters }: CatalogFilt
         <SheetDescription>Advanced filtering for precise catalog item selection.</SheetDescription>
       </SheetHeader>
 
-      <div className="grid gap-4 px-4 pb-4">
+      <div className="grid gap-4 pb-4">
         <label className="space-y-1.5">
           <span className="text-xs font-medium text-muted-foreground">Search by name</span>
           <Input

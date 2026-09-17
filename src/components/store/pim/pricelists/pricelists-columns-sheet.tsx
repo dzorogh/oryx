@@ -212,12 +212,12 @@ export const PricelistsColumnsSheet = ({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto pb-4">
-          <div className="grid gap-2 px-4">
+          <div className="grid gap-2">
             {leadingColumns.map((column) => renderColumnToggle(column))}
           </div>
 
           {parameters.enabled && parameters.defs.length > 0 ? (
-            <div className="px-4">
+            <div>
               <div className="my-2 flex items-center gap-2">
                 <span className="text-xs font-semibold text-muted-foreground">Parameters</span>
                 <span className="h-px flex-1 border-t border-dashed border-[var(--corportal-border-grey)]" />
@@ -282,7 +282,7 @@ export const PricelistsColumnsSheet = ({
           ) : null}
 
           {trailingColumns.length > 0 ? (
-            <div className="px-4">
+            <div>
               {/* Same dashed divider that precedes the parameter group separates
                   Total Expenses from the trailing Retail Markup column. */}
               <div className="my-2 flex items-center">
