@@ -41,6 +41,33 @@ plain runtime env vars on the `web` service and are read at request time.
 
 Do **not** reuse Capacity or YNAPB Supabase. The Oryx compose is `oryx-supabase-bb1dnn`.
 
+## Keeping builds from hanging the host
+
+The Dokploy box is shared (≈15 GiB RAM). A default `docker compose up --build`
+builds `web` and `collab` in parallel: two `npm ci` plus `next build` can push
+load into the hundreds and take the whole server offline.
+
+Hardening in this repo:
+
+| Piece | What it does |
+|-------|----------------|
+| Dokploy **Command** on `oryx-demo` | Builds `web`, then `collab`, then `up -d` (no parallel image builds) |
+| `Dockerfile` | Caps Node heap (`2048` MiB build / `512` MiB web / `256` MiB collab), limits npm sockets, npm cache mounts |
+| `scripts/collab-package.json` | Collab image installs only `ws` / `yjs` / `y-protocols` / `lib0` — not the full app lockfile |
+| `.dockerignore` | Drops `.agents`, `_bmad*`, `docs`, `tests`, `supabase`, etc. from the build context |
+| `docker-compose.yml` | Runtime `mem_limit` / `cpus` on `web` and `collab` |
+
+Dokploy Command (Advanced) for `oryx-demo` — must be the full replacement line
+(Dokploy prefixes `docker `). Chained steps after `&&` must start with
+`docker compose `:
+
+```
+compose -p compose-synthesize-neural-capacitor-1obmbe -f ./docker-compose.yml build web && docker compose -p compose-synthesize-neural-capacitor-1obmbe -f ./docker-compose.yml build collab && docker compose -p compose-synthesize-neural-capacitor-1obmbe -f ./docker-compose.yml up -d --remove-orphans
+```
+
+Also keep **Settings → Deployments → concurrent builds = 1** on this server so
+another project does not build at the same time.
+
 ## DNS (manual, one-time)
 
 Point both hostnames at the Dokploy server with `A` records:

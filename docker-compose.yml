@@ -1,6 +1,10 @@
 # Deployed on Dokploy as a Compose service.
 # Domains are attached per-service through Dokploy (Traefik handles TLS + the
 # WebSocket upgrade), so no host ports are published here.
+#
+# Builds must stay sequential on the shared host: Dokploy command builds `web`
+# then `collab` (see docs/deploy/dokploy.md). Runtime caps keep a runaway Node
+# process from starving every other app on the box.
 services:
   web:
     build:
@@ -13,6 +17,8 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
+    mem_limit: 768m
+    cpus: 1.0
     networks:
       - dokploy-network
 
@@ -23,6 +29,8 @@ services:
     restart: unless-stopped
     expose:
       - "1234"
+    mem_limit: 256m
+    cpus: 0.5
     networks:
       - dokploy-network
 

@@ -1,10 +1,18 @@
 # syntax=docker/dockerfile:1
 
+# Keep builds gentle on the shared Dokploy host (15 GiB RAM, many apps).
+# Cap Node heap and npm sockets so `next build` cannot fork-bomb the machine.
+
 # ---------- install all deps (needed to build the app) ----------
 FROM node:22-alpine AS deps
 WORKDIR /app
+ENV NPM_CONFIG_MAXSOCKETS=3 \
+    NPM_CONFIG_FETCH_RETRIES=2 \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 # ---------- build the Next.js server bundle (output: "standalone") ----------
 FROM node:22-alpine AS build
@@ -16,19 +24,23 @@ COPY . .
 ARG NEXT_PUBLIC_COLLAB_WS_URL
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_COLLAB_WS_URL=${NEXT_PUBLIC_COLLAB_WS_URL}
-ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_COLLAB_WS_URL=${NEXT_PUBLIC_COLLAB_WS_URL} \
+    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production \
+    NODE_OPTIONS=--max-old-space-size=2048 \
+    UV_THREADPOOL_SIZE=2
 RUN npm run build
 
 # ---------- web: run the Next.js server (standalone output) ----------
 FROM node:22-alpine AS web
 WORKDIR /app
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0 \
+    NODE_OPTIONS=--max-old-space-size=512
 # The standalone output ships its own minimal server.js + node_modules.
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
@@ -36,14 +48,19 @@ COPY --from=build /app/public ./public
 EXPOSE 3000
 CMD ["node", "server.js"]
 
-# ---------- collab: Yjs websocket server (runtime deps only) ----------
+# ---------- collab: tiny Yjs websocket image (not a full npm ci of the app) ----------
 FROM node:22-alpine AS collab
 WORKDIR /app
-ENV NODE_ENV=production
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+ENV NODE_ENV=production \
+    NPM_CONFIG_MAXSOCKETS=2 \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false \
+    HOST=0.0.0.0 \
+    PORT=1234 \
+    NODE_OPTIONS=--max-old-space-size=256
+COPY scripts/collab-package.json ./package.json
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --omit=dev
 COPY scripts/collab-server.mjs ./scripts/collab-server.mjs
-ENV HOST=0.0.0.0
-ENV PORT=1234
 EXPOSE 1234
 CMD ["node", "scripts/collab-server.mjs"]
