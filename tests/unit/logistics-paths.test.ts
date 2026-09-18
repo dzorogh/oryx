@@ -23,6 +23,9 @@ describe("logistics paths", () => {
     expect(redirectLegacyLogisticsPath(["products"])).toBe("/store/pim/products");
     expect(redirectLegacyLogisticsPath(["products", "17"])).toBe("/store/pim/products/17");
     expect(redirectLegacyLogisticsPath(["customer-orders", "3"])).toBe("/store/logistics/customer-orders/3");
+    expect(redirectLegacyLogisticsPath(["releases"])).toBe(
+      "/store/logistics/reservations?operation=release",
+    );
   });
 });
 

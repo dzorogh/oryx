@@ -1,37 +1,38 @@
-# Операционная модель RSV / REL
+# Операционная модель единой Reservation
 
-## Документы
+## Документ
 
-| Документ | Код | Эффект | Ссылки |
-|---|---|---|---|
-| Бронирование | RSV | `free → reserved` на месте строки | `customer_order_id`; строка: `customer_order_line_id`, место, qty |
-| Снятие брони | REL | `reserved → free` на месте строки | `customer_order_id`; строка: место, заказ/строка, qty. **Нет `reservation_id`** |
+Одна сущность `Reservation`, код `RSV-n`.
 
-Posted документ не редактируется, не удаляется, не переводится в `cancelled`. Черновик можно править до проведения.
+| Поле заголовка | Правило |
+|---|---|
+| `operation` | `reserve` или `release`; на все строки |
+| `customer_order_id` | ровно один заказ |
+| `location_type` + `location_id` | одно место: warehouse / production_order_line / transfer |
+| `status` | `draft` или `posted` |
+| `origin` | `manual` или `order_close` |
+| `note` | необязательно |
 
-Бизнес-отмена брони = новый posted REL на фактический reserved, не правка RSV.
+Строка: `customer_order_line_id` + `qty > 0`. Товар выводится из строки заказа.
+
+`reserve`: `free → reserved`. `release`: `reserved → free`. Знак только в журнале.
+
+Posted не редактируется и не сторнируется. Обратное действие = новая Reservation с другим `operation`.
 
 ## Ключ остатка
 
 `(product_id, location_type, location_id, stock_state, customer_order_id, customer_order_line_id)`
 
-`stock_state`: `free` | `reserved` | `shipped`.
-
-Места: `warehouse` | `production_order_line` | `transfer` | `customer_order`.
-
-## Проверки при проведении
+## Проверки
 
 | Операция | Отказ если |
 |---|---|
-| RSV | qty > free места **или** qty > `ordered − shipped − reserved` строки заказа |
-| REL | qty > reserved ключа `(place, order, line)` |
-| Transfer | qty выбранного типа > доступного этого типа на источнике |
-| Shipment | qty > reserved склада по строке заказа |
+| reserve | qty > free места или qty > `ordered − shipped − reserved` строки |
+| release | qty > reserved `(place, order, line)` |
+| post любой | документ уже posted; недопустимое место; строка не принадлежит заказу заголовка |
 
-## Перемещение
+Закрытие заказа: одна транзакция, по одной posted Reservation(`release`, `origin=order_close`) на каждое место с остатком reserved.
 
-Строка задаёт источник: `free` или `reserved` + заказ/строка. Смешанная строка допустима через allocation reserved + remainder free. Тип и заказ резерва не меняются. Отмена/возврат перемещения (если есть в модуле) не меняет статус RSV и не пишет REL.
+## Миграция
 
-## Отгрузка
-
-`warehouse / reserved / order` → `customer_order / shipped / order`. REL после этого видит только оставшийся складской reserved. `shipped` REL не трогает.
+Старые RSV → `operation=reserve`. Старые REL → `operation=release`. Документ с несколькими местами → несколько Reservation. Ledger `source_*` переназначается; балансы не меняются.

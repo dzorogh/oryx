@@ -1,28 +1,28 @@
-# Brownfield: Store Logistics
+# Brownfield: единая Reservation
 
-Модуль уже содержит пару RSV/REL без взаимных ссылок, qty-only SKU и журнал. Перемещение reserved сохраняет тип. Разрыв спецификации — сторно posted RSV/REL.
+Канон схемы после `supabase/migrations/20260918100000_logistics_unified_reservation.sql`.
 
-## Что оставить
+## Что оставить / считать источником
 
-- Таблицы `logistics_reservation`, `logistics_reservation_line`, `logistics_reservation_release`, `logistics_reservation_release_line`
-- Журнал `logistics_stock_transaction` и `logistics_move` / `logistics_write_tx`
-- RPC `logistics_post_reservation`, `logistics_post_release`
-- UI списков `/store/logistics/reservations`, `/releases`, хаб заказа
+- `logistics_reservation` + `logistics_reservation_line`
+- Журнал `logistics_stock_transaction`, `logistics_move`, `logistics_write_tx`
+- Один RPC `logistics_post_reservation`
+- UI `/store/logistics/reservations` и `?operation=release`
 - Формулы `remainingToReserve`, `reservationCap`, `computeStockBalances`
 
-## Что убрать / запретить для RSV и REL
+## Что удалено этой работой
 
-- `logistics_cancel_document('reservation' | 'reservation_release')` → ошибка
-- `logistics_reverse_source` по источнику RSV/REL
-- Кнопки «Отменить» / тексты «Бронирование сторнировано» на карточках RSV/REL
-- Фильтр «Отменён» как рабочий путь можно оставить только для архивных строк
+- Таблицы и RPC REL
+- UI Releases и префикс REL
+- Cancel/сторно Reservation
+- `product_id` и место в строке Reservation
 
-## Не трогать в этой работе
+## Не трогать
 
 - Cancel/сторно transfer, shipment, return, output
-- Production close, output claim через RSV
-- Схему integer id и коды `RSV-n` / `REL-n`
+- Production close, output claim
+- Integer PK и `formatLogisticsCode` кроме удаления REL-префиксов
 
-## Расхождение docs
+## Миграция данных
 
-`docs/features/logistics.md` пишет «Draft → Check → Posted → Cancelled» и «отмена пишет сторно». Для RSV/REL это больше неверно: Draft → Posted; освобождение = REL.
+Существующие RSV/REL и строки журнала переносятся, multi-location документы режутся по месту, балансы сверяются до/после. Reset демо не допускается.

@@ -31,5 +31,9 @@ export const redirectLegacyLogisticsPath = (segments: string[] | undefined): str
   if (parts[0] === "products") {
     return parts[1] ? hrefForStoreProduct(parts[1]) : STORE_PRODUCTS_PATH;
   }
+  // Old Releases section → unified Reservations filtered to release.
+  if (parts[0] === "releases") {
+    return `${LOGISTICS_PATHS.reservations}?operation=release`;
+  }
   return logisticsPath(...parts);
 };

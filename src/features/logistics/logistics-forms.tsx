@@ -485,23 +485,6 @@ export const ReservationForm = ({
   );
 };
 
-/** @deprecated Use ReservationForm with operation=release */
-export const ReleaseForm = (
-  props: SharedFormProps & {
-    preset?: {
-      customerOrderId?: string;
-      customerOrderLineId?: string;
-      locationType?: ReservationLocationType;
-      locationId?: string;
-    };
-  },
-) => (
-  <ReservationForm
-    {...props}
-    preset={{ ...props.preset, operation: "release" }}
-  />
-);
-
 export const ShipmentForm = ({
   snapshot,
   balances,
