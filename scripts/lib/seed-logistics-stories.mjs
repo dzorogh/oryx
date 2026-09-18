@@ -1,10 +1,10 @@
 /**
- * Dedicated OMS-901..905 demo stories with a full logistics chain.
+ * Dedicated OMS-901..906 demo stories with a full logistics chain.
  * Uses existing logistics tables and post RPCs. Does not print secrets.
  */
 
-const STORY_LO = 901;
-const STORY_HI = 999;
+export const STORY_LO = 901;
+export const STORY_HI = 999;
 
 const PRODUCT = {
   enduro250: 22,
@@ -14,11 +14,13 @@ const PRODUCT = {
   cruiser300: 36,
 };
 
-const PLANT = {
+export const PLANT = {
   shineray: { id: 6, warehouseId: 7 },
   qianjiang: { id: 38, warehouseId: 41 },
   taotao: { id: 34, warehouseId: 40 },
   sunyee: { id: 12, warehouseId: 33 },
+  koolcnchet: { id: 2, warehouseId: 3 },
+  dayun: { id: 8, warehouseId: 9 },
 };
 
 const DUBAI_HUB = 11;
@@ -61,6 +63,55 @@ export const STORY_ORDERS = [
   },
 ];
 
+export const MIXED_DEMO_ORDER = {
+  id: 906,
+  createdAt: "2026-09-18T16:00:00+00:00",
+  expectedEndOn: "2026-10-10",
+  description:
+    "Twenty mixed SKUs for Allocation Atlas. Eighteen are reserved at the plant warehouse; two finished bikes sit free at their factories with no RSV on this order.",
+  lines: [
+    { id: 906, productId: 26, quantity: 2, plant: "qianjiang", reserve: true },
+    { id: 907, productId: 30, quantity: 2, plant: "qianjiang", reserve: true },
+    { id: 908, productId: 32, quantity: 2, plant: "qianjiang", reserve: true },
+    { id: 909, productId: 33, quantity: 2, plant: "qianjiang", reserve: true },
+    { id: 910, productId: 34, quantity: 2, plant: "qianjiang", reserve: true },
+    { id: 911, productId: 42, quantity: 2, plant: "qianjiang", reserve: true },
+    { id: 912, productId: 43, quantity: 2, plant: "qianjiang", reserve: true },
+    { id: 913, productId: 44, quantity: 2, plant: "qianjiang", reserve: false },
+    { id: 914, productId: 29, quantity: 2, plant: "taotao", reserve: true },
+    { id: 915, productId: 207, quantity: 2, plant: "taotao", reserve: true },
+    { id: 916, productId: 9, quantity: 2, plant: "taotao", reserve: true },
+    { id: 917, productId: 10, quantity: 2, plant: "taotao", reserve: true },
+    { id: 918, productId: 50, quantity: 2, plant: "taotao", reserve: false },
+    { id: 919, productId: 12, quantity: 2, plant: "koolcnchet", reserve: true },
+    { id: 920, productId: 14, quantity: 2, plant: "koolcnchet", reserve: true },
+    { id: 921, productId: 129, quantity: 2, plant: "koolcnchet", reserve: true },
+    { id: 922, productId: 130, quantity: 2, plant: "koolcnchet", reserve: true },
+    { id: 923, productId: 47, quantity: 2, plant: "dayun", reserve: true },
+    { id: 924, productId: 77, quantity: 2, plant: "dayun", reserve: true },
+    { id: 925, productId: 89, quantity: 2, plant: "dayun", reserve: true },
+  ],
+};
+
+export const mixedDemoLinesByWarehouse = (lines = MIXED_DEMO_ORDER.lines) => {
+  const groups = new Map();
+  for (const line of lines) {
+    const plant = PLANT[line.plant];
+    if (!plant) {
+      throw new Error(`Unknown plant ${line.plant} for mixed demo line ${line.id}`);
+    }
+    const current = groups.get(plant.warehouseId) ?? {
+      manufacturerId: plant.id,
+      warehouseId: plant.warehouseId,
+      plant: line.plant,
+      lines: [],
+    };
+    current.lines.push(line);
+    groups.set(plant.warehouseId, current);
+  }
+  return [...groups.values()];
+};
+
 const createClient = (url, anon) => {
   const jsonHeaders = {
     apikey: anon,
@@ -93,36 +144,11 @@ const createClient = (url, anon) => {
   };
 };
 
-const rangeFilter = `id=gte.${STORY_LO}&id=lte.${STORY_HI}`;
-
 const resetStories = async (client) => {
-  await client.remove(
-    `store_stock_transaction?or=(and(customer_order_id.gte.${STORY_LO},customer_order_id.lte.905),and(source_id.gte.${STORY_LO},source_id.lte.${STORY_HI}))`,
-  );
-  const tables = [
-    "store_return_line",
-    "store_return",
-    "store_shipment_line",
-    "store_shipment",
-    "store_output_allocation",
-    "store_output_line",
-    "store_output",
-    "store_transfer_allocation",
-    "store_transfer_line",
-    "store_transfer",
-    "store_reservation_line",
-    "store_reservation",
-    "store_production_order_line",
-    "store_production_order",
-    "store_customer_order_line",
-    "store_customer_order",
-  ];
-  for (const table of tables) {
-    await client.remove(`${table}?${rangeFilter}`);
-  }
+  await client.rpc("store_reset_logistics_stories", { p_lo: STORY_LO, p_hi: STORY_HI });
 };
 
-const insertCustomerOrder = async (client, story, productId, quantity) => {
+const insertCustomerOrderLines = async (client, story, lines) => {
   await client.insert("store_customer_order", {
     id: story.id,
     status: "open",
@@ -130,15 +156,22 @@ const insertCustomerOrder = async (client, story, productId, quantity) => {
     expected_end_on: story.expectedEndOn,
     description: story.description,
   });
-  await client.insert("store_customer_order_line", {
-    id: story.id,
-    order_id: story.id,
-    product_id: productId,
-    quantity,
-  });
+  for (const line of lines) {
+    await client.insert("store_customer_order_line", {
+      id: line.id,
+      order_id: story.id,
+      product_id: line.productId,
+      quantity: line.quantity,
+    });
+  }
 };
 
-const insertProduction = async (client, { id, manufacturerId, productId, quantity, createdAt, expectedEndOn, status }) => {
+const insertCustomerOrder = async (client, story, productId, quantity) => {
+  await insertCustomerOrderLines(client, story, [{ id: story.id, productId, quantity }]);
+};
+
+const insertProduction = async (client, { id, manufacturerId, productId, quantity, lines, createdAt, expectedEndOn, status }) => {
+  const resolvedLines = lines ?? [{ id, productId, quantity }];
   await client.insert("store_production_order", {
     id,
     manufacturer_id: manufacturerId,
@@ -146,20 +179,23 @@ const insertProduction = async (client, { id, manufacturerId, productId, quantit
     created_at: createdAt,
     expected_end_on: expectedEndOn,
   });
-  await client.insert("store_production_order_line", {
-    id,
-    order_id: id,
-    product_id: productId,
-    quantity,
-    activated_quantity: 0,
-  });
+  for (const line of resolvedLines) {
+    await client.insert("store_production_order_line", {
+      id: line.id,
+      order_id: id,
+      product_id: line.productId,
+      quantity: line.quantity,
+      activated_quantity: 0,
+    });
+  }
   await client.rpc("store_sync_production_activation", { p_id: id });
   if (status && status !== "draft") {
     await client.rpc("store_set_production_status", { p_id: id, p_status: status });
   }
 };
 
-const completeOutput = async (client, { id, productionOrderId, productId, quantity, createdAt, expectedEndOn }) => {
+const completeOutput = async (client, { id, productionOrderId, productId, quantity, lines, createdAt, expectedEndOn }) => {
+  const resolvedLines = lines ?? [{ id, productionOrderLineId: productionOrderId, productId, quantity }];
   await client.insert("store_output", {
     id,
     production_order_id: productionOrderId,
@@ -167,17 +203,20 @@ const completeOutput = async (client, { id, productionOrderId, productId, quanti
     created_at: createdAt,
     expected_end_on: expectedEndOn,
   });
-  await client.insert("store_output_line", {
-    id,
-    output_id: id,
-    production_order_line_id: productionOrderId,
-    product_id: productId,
-    quantity,
-  });
+  for (const line of resolvedLines) {
+    await client.insert("store_output_line", {
+      id: line.id,
+      output_id: id,
+      production_order_line_id: line.productionOrderLineId,
+      product_id: line.productId,
+      quantity: line.quantity,
+    });
+  }
   await client.rpc("store_complete_output", { p_id: id });
 };
 
-const postReservation = async (client, { id, orderId, productId, quantity, locationType, locationId, createdAt, operation = "reserve", note = "" }) => {
+const postReservation = async (client, { id, orderId, productId, quantity, locationType, locationId, createdAt, operation = "reserve", note = "", lines }) => {
+  const resolvedLines = lines ?? [{ id, customerOrderLineId: orderId, quantity }];
   await client.insert("store_reservation", {
     id,
     customer_order_id: orderId,
@@ -189,12 +228,14 @@ const postReservation = async (client, { id, orderId, productId, quantity, locat
     status: "draft",
     created_at: createdAt,
   });
-  await client.insert("store_reservation_line", {
-    id,
-    reservation_id: id,
-    customer_order_line_id: orderId,
-    quantity,
-  });
+  for (const line of resolvedLines) {
+    await client.insert("store_reservation_line", {
+      id: line.id,
+      reservation_id: id,
+      customer_order_line_id: line.customerOrderLineId,
+      quantity: line.quantity,
+    });
+  }
   await client.rpc("store_post_reservation", { p_id: id });
 };
 
@@ -443,7 +484,7 @@ const seedReleaseHeavy = async (client) => {
     createdAt: "2026-09-03T09:00:00+00:00",
   });
   await postRelease(client, {
-    id: 904,
+    id: 934,
     orderId: 904,
     productId: PRODUCT.hummer320,
     quantity: 3,
@@ -519,6 +560,60 @@ const seedReturnHeavy = async (client) => {
   });
 };
 
+export const seedMixedDemoOrder = async (client) => {
+  const story = MIXED_DEMO_ORDER;
+  await insertCustomerOrderLines(client, story, story.lines);
+  const groups = mixedDemoLinesByWarehouse(story.lines);
+  let documentId = story.id;
+  for (const group of groups) {
+    const poId = documentId;
+    const outputId = documentId;
+    const reservationId = documentId;
+    documentId += 1;
+    await insertProduction(client, {
+      id: poId,
+      manufacturerId: group.manufacturerId,
+      lines: group.lines.map((line) => ({
+        id: line.id,
+        productId: line.productId,
+        quantity: line.quantity,
+      })),
+      createdAt: "2026-09-10T06:00:00+00:00",
+      expectedEndOn: "2026-09-16",
+      status: "in_progress",
+    });
+    await completeOutput(client, {
+      id: outputId,
+      productionOrderId: poId,
+      lines: group.lines.map((line) => ({
+        id: line.id,
+        productionOrderLineId: line.id,
+        productId: line.productId,
+        quantity: line.quantity,
+      })),
+      createdAt: "2026-09-16T08:00:00+00:00",
+      expectedEndOn: "2026-09-16",
+    });
+    await client.rpc("store_set_production_status", { p_id: poId, p_status: "done" });
+    const reserved = group.lines.filter((line) => line.reserve);
+    if (reserved.length === 0) {
+      continue;
+    }
+    await postReservation(client, {
+      id: reservationId,
+      orderId: story.id,
+      locationType: "warehouse",
+      locationId: group.warehouseId,
+      createdAt: "2026-09-18T16:30:00+00:00",
+      lines: reserved.map((line) => ({
+        id: line.id,
+        customerOrderLineId: line.id,
+        quantity: line.quantity,
+      })),
+    });
+  }
+};
+
 export const seedLogisticsStories = async ({ url, anon }) => {
   const client = createClient(url, anon);
   await resetStories(client);
@@ -527,8 +622,9 @@ export const seedLogisticsStories = async ({ url, anon }) => {
   await seedLeftoverAtPlant(client);
   await seedReleaseHeavy(client);
   await seedReturnHeavy(client);
+  await seedMixedDemoOrder(client);
   const orders = await client.get(
-    `store_customer_order?id=gte.${STORY_LO}&id=lte.905&select=id&order=id.asc`,
+    `store_customer_order?id=gte.${STORY_LO}&id=lte.${STORY_HI}&select=id&order=id.asc`,
   );
   return { orders: orders?.length ?? 0 };
 };

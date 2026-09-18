@@ -41,3 +41,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-products-in-production-column.md`
   summary: Пометить базовую спецификацию Allocation Atlas как расширенную колонкой In production.
   evidence: Завершённая базовая спецификация сохраняет прежний перечень колонок без In production; новая спецификация и код корректно расширяют его, но между документами нет явной связи supersedes.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-orders-newest-mixed-demo.md`
+  summary: Vitest не исполняет SQL `store_reset_logistics_stories` и не доказывает, что posted RSV 906 реально удаляются до p_hi=999.
+  evidence: Тест читает только JS-строки RPC; в репозитории нет Postgres-харнесса. Live повторный `npm run seed:logistics` уже оставил 70 снимковых OMS и 6 историй, включая открытый OMS-906. Закрыло бы: SQL-тест функции или явная проверка, что DELETE reservation/journal идёт по `p_hi`, а не 905.

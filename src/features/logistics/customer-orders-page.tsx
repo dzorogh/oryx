@@ -51,6 +51,7 @@ import { OrderProgressTracker } from "@/features/logistics/ui/order-progress-tra
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { CustomerOrderStatusBadge } from "@/features/logistics/ui/status-badge";
+import { visibleCustomerOrders } from "@/features/logistics/customer-orders-sort";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const STATUS_FILTERS: Array<{ id: "all" | CustomerOrderStatus; label: string }> = [
@@ -69,7 +70,10 @@ export const CustomerOrdersPage = () => {
   const [expectedEndOn, setExpectedEndOn] = useState("");
   const [description, setDescription] = useState("");
 
-  const rows = snapshot.customerOrders.filter((order) => status === "all" || order.status === status);
+  const rows = useMemo(
+    () => visibleCustomerOrders(snapshot.customerOrders, status),
+    [snapshot.customerOrders, status],
+  );
   const productItems = snapshot.products.map((product) => ({
     value: product.id,
     label: productIdentityLabel(
