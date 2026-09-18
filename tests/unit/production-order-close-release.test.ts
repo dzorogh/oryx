@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 const read = (relative: string) => readFileSync(resolve(process.cwd(), relative), "utf8");
 
@@ -20,6 +21,11 @@ describe("production order close releases reserved holds", () => {
     expect(sql).toContain("'order_close'");
     expect(sql).toContain("'Production order closed'");
     expect(sql).toContain("perform public.store_post_reservation(v_res_id)");
+    expect(sql).toContain("Cannot close a production order while reserved quantity remains");
+    expect(
+      translateLogisticsError("Cannot close a production order while reserved quantity remains"),
+    ).toBe("Не удалось снять резерв при закрытии заказа на производство");
+    expect(sql).toContain("and stock_state = 'free'");
     expect(sql).toContain("'production_close'");
     expect(sql.indexOf("store_post_reservation")).toBeLessThan(sql.indexOf("'production_close', p_id"));
     expect(sql).not.toMatch(/PO-2|RSV-11|transaction_id = 71/i);

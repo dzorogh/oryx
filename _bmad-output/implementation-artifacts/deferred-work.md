@@ -17,3 +17,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-production-order-dialog-compact-table.md`
   summary: Кнопка Create не блокируется на время запроса, а success-toast не ссылается на новый заказ на производство.
   evidence: `runLogisticsAction` у соседних logistics-форм такой же; это не регрессия компактной таблицы.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-production-order-close-release-holds.md`
+  summary: Vitest не вызывает `store_close_production_order`, только grep текста миграции.
+  evidence: В `npm run test` нет Postgres; матрица reserved/free/два OMS/already-closed уже прогнана live с ROLLBACK.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-production-order-close-release-holds.md`
+  summary: RPC close неизвестного или null id возвращает `closed` без ошибки.
+  evidence: Тот же ранний `exists (... status = 'closed')` + UPDATE 0 строк был в прежнем `store_close_production_order`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-production-order-close-release-holds.md`
+  summary: RPC может закрыть заказ на производство в статусе `cancelled`.
+  evidence: Кнопка close в UI скрыта для cancelled; старый RPC тоже не фильтровал этот статус.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-production-order-close-release-holds.md`
+  summary: Параллельный reserve после проверки leftover reserved может оставить claim на уже closed PO.
+  evidence: Нет `FOR UPDATE` на шапке; прежний close тоже не блокировал строку. Чтобы подтвердить, нужен двухтранзакционный тест.

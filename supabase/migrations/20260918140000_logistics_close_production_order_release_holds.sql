@@ -62,11 +62,24 @@ begin
     perform public.store_post_reservation(v_res_id);
   end loop;
 
+  if exists (
+    select 1
+    from public.store_stock_transaction
+    where stock_state = 'reserved'
+      and location_type = 'production_order_line'
+      and location_id in (select id from public.store_production_order_line where order_id = p_id)
+    group by product_id, location_id, customer_order_id, customer_order_line_id
+    having sum(quantity) > 0
+  ) then
+    raise exception 'Cannot close a production order while reserved quantity remains';
+  end if;
+
   for r in
     select product_id, location_id, stock_state, customer_order_id, customer_order_line_id, sum(quantity) as qty
     from public.store_stock_transaction
     where location_type = 'production_order_line'
       and location_id in (select id from public.store_production_order_line where order_id = p_id)
+      and stock_state = 'free'
     group by 1, 2, 3, 4, 5
     having sum(quantity) > 0
   loop

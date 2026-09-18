@@ -17,6 +17,7 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/Cannot ship more than the ordered quantity/i, "Нельзя отгрузить больше заказанного количества"],
   [/Cannot output more than the production order line/i, "Нельзя выпустить больше количества заказа на производство"],
   [/Cannot output from a closed production order/i, "Из закрытого заказа на производство выпускать нельзя"],
+  [/Cannot close a production order while reserved quantity remains/i, "Не удалось снять резерв при закрытии заказа на производство"],
   [/Cancelled documents cannot be posted/i, "Отменённый документ нельзя провести"],
   [/Reservation line must belong to the customer order/i, "Строка резерва должна относиться к заказу клиента"],
   [/Shipment line must match the single customer order/i, "Строка отгрузки должна относиться к одному заказу клиента"],
