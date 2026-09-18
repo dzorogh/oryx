@@ -1,0 +1,10 @@
+---
+description: On Grok, quality over speed/tokens; do not skip checks — see AGENTS.md
+alwaysApply: true
+---
+
+# Grok models — quality first
+
+**Canonical:** [AGENTS.md](../../AGENTS.md) section **Grok models** (after the managed `bmad:context` block).
+
+When the active model is Grok: do not save tokens, do not optimize for speed or the smallest change, and do not skip verification or clarifying questions. Work as a senior engineer. There is no cap on change volume or time; quality outranks speed. Leave the token-saver MCP `off` (never `active`). Do not duplicate this rule here — edit `AGENTS.md`.

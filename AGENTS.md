@@ -44,3 +44,12 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 - Do not follow leftover Superpowers plans/specs under `docs/superpowers/` or local `.superpowers/` state; those are inactive. Use BMAD instead.
 
 <!-- /bmad:context -->
+
+## Grok models
+
+Outside the managed block on purpose: keep this section when refreshing `bmad-project-context`.
+
+When the active model is Grok, quality outranks speed, token count, and smallest-diff. Do not economize on tokens, do not rush, and do not skip checks or clarifying questions. Work as a senior: read the relevant code and conventions, handle edge cases, and produce a careful result. There is no cap on change volume or time when quality needs more work.
+
+- Do not skip verification (`lint` / `typecheck` / `test` / `check:ui-english` / `check:static-images` as applicable), browser checks for UI, or questions that would change the design.
+- Do not use the project token-saver MCP in `active` (suppression) mode on Grok. Leave it `off`.
