@@ -33,3 +33,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-production-order-close-release-holds.md`
   summary: Параллельный reserve после проверки leftover reserved может оставить claim на уже closed PO.
   evidence: Нет `FOR UPDATE` на шапке; прежний close тоже не блокировал строку. Чтобы подтвердить, нужен двухтранзакционный тест.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-products-allocation-atlas.md`
+  summary: Уточнить в Implementation Notes формулировку расчёта Produced при сторно.
+  evidence: Первая заметка говорит только о положительных production_output-транзакциях, тогда как реализация корректно суммирует и отрицательные сторно для получения накопительного net-значения; это документальное расхождение без влияния на код.

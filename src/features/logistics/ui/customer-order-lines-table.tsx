@@ -1,114 +1,140 @@
-// english-ui:ignore-file
+"use client";
+
+import { Check, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { TableCell, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  ALLOCATION_ATLAS_EPSILON,
+  isLineFullyShipped,
+  lineLocationAllocations,
+  sumProducedForLine,
+  warehouseIdsWithReservedForOrder,
+} from "@/features/logistics/allocation-atlas";
 import {
   freePlacesForProduct,
+  hrefForProduct,
+  hrefForWarehouse,
   remainingToReserveForLine,
   reservedPlacesForLine,
-  type StockPlaceQty,
 } from "@/features/logistics/logistics-availability";
-import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
+import { sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
-import { locationIdentity, productById } from "@/features/logistics/logistics-lookups";
+import { locationIdentity, productById, warehouseById, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type {
   CustomerOrderLine,
   LocationType,
   LogisticsSnapshot,
   StockBalance,
 } from "@/features/logistics/logistics-types";
-import { LocationLink } from "@/features/logistics/ui/location-link";
-import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { cn } from "@/lib/utils";
 
-const PLACE_KIND: Record<LocationType, string> = {
-  warehouse: "Склад",
-  production_order_line: "Заказ на производство",
-  transfer: "В пути",
-  customer_order: "У клиента",
-};
-
-const HEADERS = [
-  "Товар",
-  "Заказано",
-  "Зарезервировано",
-  "Склад",
-  "Заказы на производство",
-  "В пути",
-  "Отгружено",
-  "К резерву",
-  "Свободно",
-  "Нехватка",
-  "Действия",
-] as const;
-
-const Qty = ({
-  quantity,
-  unit,
-  className,
-}: {
-  quantity: number;
-  unit?: string;
-  className?: string;
-}) => {
-  if (quantity <= 1e-9) {
-    return <span className="text-muted-foreground">—</span>;
+const Qty = ({ quantity, className }: { quantity: number; className?: string }) => {
+  if (quantity <= ALLOCATION_ATLAS_EPSILON) {
+    return <span className="font-medium text-muted-foreground">—</span>;
   }
-  return (
-    <span className={cn("tabular-nums font-medium", className)}>{formatQuantity(quantity, unit)}</span>
-  );
+  return <span className={cn("font-semibold tabular-nums", className)}>{formatQuantity(quantity)}</span>;
 };
 
-const PlaceLines = ({
+const ATLAS_HELP =
+  "Produced is cumulative output for this order. In transit and warehouse columns show current reserved quantity for this order.";
+
+const CompactProduct = ({
   snapshot,
-  items,
+  productId,
 }: {
   snapshot: LogisticsSnapshot;
-  items: StockPlaceQty[];
+  productId: string;
 }) => {
-  if (items.length === 0) {
-    return null;
-  }
+  const product = productById(snapshot, productId);
+  const name = product?.name ?? productId;
   return (
-    <div className="mt-0.5 flex flex-col gap-0.5">
-      {items.map((item) => {
-        const identity = locationIdentity(snapshot, item.locationType, item.locationId);
-        return (
-          <span key={`${item.locationType}:${item.locationId}`} className="inline-flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-            <LocationLink
-              snapshot={snapshot}
-              locationType={item.locationType}
-              locationId={item.locationId}
-            />
-            <span className="tabular-nums">· {formatQuantity(item.quantity)}</span>
-            {identity.hint ? <span>· {identity.hint}</span> : null}
-          </span>
-        );
-      })}
+    <div className="min-w-0">
+      <Link
+        href={hrefForProduct(productId)}
+        className="block truncate text-sm font-medium text-primary hover:underline"
+      >
+        {name}
+      </Link>
+      {product?.sku ? <div className="truncate text-[10px] text-muted-foreground">{product.sku}</div> : null}
     </div>
   );
 };
 
-const PlaceQtyCell = ({
-  snapshot,
-  items,
-  unit,
+const LineActionsMenu = ({
+  productName,
+  canReserve,
+  canShip,
+  releasePlaces,
+  onReserve,
+  onShip,
+  onRelease,
 }: {
-  snapshot: LogisticsSnapshot;
-  items: StockPlaceQty[];
-  unit?: string;
+  productName: string;
+  canReserve: boolean;
+  canShip: boolean;
+  releasePlaces: Array<{
+    locationType: LocationType;
+    locationId: string;
+    title: string;
+    hint: string | null;
+    quantity: number;
+  }>;
+  onReserve: () => void;
+  onShip: () => void;
+  onRelease: (place: { locationType: LocationType; locationId: string }) => void;
 }) => {
-  const total = items.reduce((sum, item) => sum + item.quantity, 0);
+  if (!canReserve && !canShip && releasePlaces.length === 0) {
+    return null;
+  }
+
   return (
-    <TableCell className="px-3 py-2 align-top text-sm">
-      <Qty quantity={total} unit={unit} />
-      <PlaceLines snapshot={snapshot} items={items} />
-    </TableCell>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Actions for ${productName}`}
+            className="shrink-0 text-muted-foreground"
+          />
+        }
+      >
+        <MoreHorizontal className="size-3.5" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-40">
+        {canReserve ? <DropdownMenuItem onClick={onReserve}>Reserve</DropdownMenuItem> : null}
+        {canShip ? <DropdownMenuItem onClick={onShip}>Ship</DropdownMenuItem> : null}
+        {releasePlaces.map((place) => {
+          const details = [place.title, formatQuantity(place.quantity)];
+          if (place.hint) {
+            details.push(place.hint);
+          }
+          return (
+            <DropdownMenuItem
+              key={`${place.locationType}:${place.locationId}`}
+              onClick={() => onRelease({ locationType: place.locationType, locationId: place.locationId })}
+            >
+              Release {details.join(" · ")}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
-const ofType = (places: StockPlaceQty[], locationType: LocationType): StockPlaceQty[] =>
-  places.filter((place) => place.locationType === locationType);
+const headClass = "h-8 px-2 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap";
+const cellClass = "px-2 py-1.5 text-center";
 
 export const CustomerOrderLinesTable = ({
   snapshot,
@@ -130,91 +156,149 @@ export const CustomerOrderLinesTable = ({
     locationType: LocationType;
     locationId: string;
   }) => void;
-}) => (
-  <LogisticsTableCard
-    title={lines.length > 0 ? `Товары · ${lines.length}` : "Товары"}
-    headers={canAct ? [...HEADERS] : HEADERS.filter((header) => header !== "Действия")}
-    isEmpty={lines.length === 0}
-    empty="В этом заказе клиента нет товаров."
-  >
-    {lines.map((line) => {
-      const product = productById(snapshot, line.productId);
-      const unit = product?.unit;
-      const reserved = reservedPlacesForLine(balances, line.id);
-      const freePlaces = freePlacesForProduct(balances, line.productId);
-      const reservedQty = sumReservedForLine(balances, line.id);
-      const shippedQty = sumShippedForLine(balances, line.id);
-      const toReserve = remainingToReserveForLine(line, balances);
-      const freeQty = freePlaces.reduce((sum, place) => sum + place.quantity, 0);
-      const shortQty = Math.max(0, toReserve - freeQty);
-      const warehouseReserved = ofType(reserved, "warehouse");
-      const canReserve = canAct && toReserve > 0 && freePlaces.length > 0;
-      const canShip = canAct && warehouseReserved.length > 0;
+}) => {
+  const warehouseIds = warehouseIdsWithReservedForOrder(snapshot, balances, lines);
+  const title = lines.length > 0 ? `Products · ${lines.length}` : "Products";
 
-      return (
-        <TableRow key={line.id}>
-          <TableCell className="px-3 py-2 align-top">
-            <ProductIdentity snapshot={snapshot} productId={line.productId} />
-          </TableCell>
-          <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={line.quantity} unit={unit} />
-          </TableCell>
-          <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={reservedQty} unit={unit} />
-          </TableCell>
-          <PlaceQtyCell snapshot={snapshot} items={warehouseReserved} unit={unit} />
-          <PlaceQtyCell snapshot={snapshot} items={ofType(reserved, "production_order_line")} unit={unit} />
-          <PlaceQtyCell snapshot={snapshot} items={ofType(reserved, "transfer")} unit={unit} />
-          <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={shippedQty} unit={unit} />
-          </TableCell>
-          <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={toReserve} unit={unit} />
-          </TableCell>
-          <PlaceQtyCell snapshot={snapshot} items={freePlaces} unit={unit} />
-          <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={shortQty} unit={unit} className="text-destructive" />
-          </TableCell>
-          {canAct ? (
-            <TableCell className="px-3 py-2 align-top">
-              <div className="flex flex-col items-start gap-1">
-                {canReserve ? (
-                  <Button type="button" size="sm" variant="outline" onClick={() => onReserve(line)}>
-                    Зарезервировать
-                  </Button>
-                ) : null}
-                {canShip ? (
-                  <Button type="button" size="sm" variant="outline" onClick={onShip}>
-                    Отгрузить
-                  </Button>
-                ) : null}
-                {reserved.map((place) => {
-                  const identity = locationIdentity(snapshot, place.locationType, place.locationId);
-                  return (
-                    <Button
-                      key={`${place.locationType}:${place.locationId}`}
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-auto whitespace-normal px-2 text-left"
-                      aria-label={`Снять ${PLACE_KIND[place.locationType]} ${identity.title}`}
-                      onClick={() =>
-                        onRelease({
-                          line,
-                          locationType: place.locationType,
-                          locationId: place.locationId,
-                        })
-                      }
+  return (
+    <Card size="sm" className={logisticsCardClass}>
+      <div className="space-y-1 px-3">
+        <h2 className="text-sm font-semibold">{title}</h2>
+        {lines.length > 0 ? <p className="text-[11px] text-muted-foreground">{ATLAS_HELP}</p> : null}
+      </div>
+      <CardContent className="px-0">
+        <Table className="w-max min-w-full">
+          <TableCaption className="sr-only">{ATLAS_HELP}</TableCaption>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={cn(headClass, "sticky left-0 z-20 min-w-44 max-w-56 bg-muted text-left")}>
+                Product
+              </TableHead>
+              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Ordered</TableHead>
+              <TableHead className={cn(headClass, "bg-muted/30 text-center text-muted-foreground")}>
+                Produced
+              </TableHead>
+              <TableHead className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}>
+                In transit
+              </TableHead>
+              {warehouseIds.map((warehouseId) => {
+                const warehouse = warehouseById(snapshot, warehouseId);
+                return (
+                  <TableHead
+                    key={warehouseId}
+                    className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}
+                  >
+                    <Link
+                      href={hrefForWarehouse(warehouseId)}
+                      title={warehouse?.name}
+                      className="whitespace-nowrap font-semibold text-muted-foreground hover:underline"
                     >
-                      Снять {identity.title}
-                    </Button>
-                  );
-                })}
-              </div>
-            </TableCell>
-          ) : null}
-        </TableRow>
-      );
-    })}
-  </LogisticsTableCard>
-);
+                      {warehouseCode(snapshot, warehouseId)}
+                    </Link>
+                  </TableHead>
+                );
+              })}
+              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Shipped</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lines.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={5 + warehouseIds.length}
+                  className="px-3 py-8 text-center text-sm text-muted-foreground"
+                >
+                  This customer order has no products.
+                </TableCell>
+              </TableRow>
+            ) : (
+              lines.map((line) => {
+                const product = productById(snapshot, line.productId);
+                const productName = product?.name ?? line.productId;
+                const reserved = reservedPlacesForLine(balances, line.id);
+                const freePlaces = freePlacesForProduct(balances, line.productId);
+                const shippedQty = sumShippedForLine(balances, line.id);
+                const producedQty = sumProducedForLine(snapshot, line.id);
+                const locations = lineLocationAllocations(balances, line.id);
+                const toReserve = remainingToReserveForLine(line, balances);
+                const warehouseReserved = reserved.filter((place) => place.locationType === "warehouse");
+                const canReserve = canAct && toReserve > 0 && freePlaces.length > 0;
+                const canShip = canAct && warehouseReserved.length > 0;
+                const complete = isLineFullyShipped(line.quantity, shippedQty);
+                const completeCell = complete ? "bg-emerald-50" : undefined;
+                const bookendCell = complete ? completeCell : "bg-muted/30";
+                const locationCell = complete ? completeCell : "bg-muted/10";
+                const productCell = complete ? "bg-emerald-50" : "bg-card";
+
+                return (
+                  <TableRow
+                    key={line.id}
+                    className={cn("hover:bg-transparent", complete && "bg-emerald-50 hover:bg-emerald-50")}
+                  >
+                    <TableCell
+                      className={cn(cellClass, "sticky left-0 z-10 min-w-44 max-w-56 text-left", productCell)}
+                    >
+                      <div className="flex min-w-0 items-center gap-1">
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <CompactProduct snapshot={snapshot} productId={line.productId} />
+                        </div>
+                        {canAct ? (
+                          <LineActionsMenu
+                            productName={productName}
+                            canReserve={canReserve}
+                            canShip={canShip}
+                            releasePlaces={reserved.map((place) => {
+                              const identity = locationIdentity(snapshot, place.locationType, place.locationId);
+                              return {
+                                locationType: place.locationType,
+                                locationId: place.locationId,
+                                title: identity.title,
+                                hint: identity.hint,
+                                quantity: place.quantity,
+                              };
+                            })}
+                            onReserve={() => onReserve(line)}
+                            onShip={onShip}
+                            onRelease={(place) => onRelease({ line, ...place })}
+                          />
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className={cn(cellClass, bookendCell)}>
+                      <Qty quantity={line.quantity} className="text-sm font-extrabold" />
+                    </TableCell>
+                    <TableCell className={cn(cellClass, complete ? completeCell : "bg-muted/5")}>
+                      <Qty quantity={producedQty} className="font-medium text-muted-foreground" />
+                    </TableCell>
+                    <TableCell className={cn(cellClass, locationCell)}>
+                      <Qty quantity={locations.inTransit} />
+                    </TableCell>
+                    {warehouseIds.map((warehouseId) => (
+                      <TableCell key={warehouseId} className={cn(cellClass, locationCell)}>
+                        <Qty quantity={locations.byWarehouseId[warehouseId] ?? 0} />
+                      </TableCell>
+                    ))}
+                    <TableCell
+                      className={cn(
+                        cellClass,
+                        complete ? "bg-emerald-50 text-emerald-800" : bookendCell,
+                      )}
+                    >
+                      <span className="inline-flex items-center justify-center gap-1">
+                        <Qty
+                          quantity={shippedQty}
+                          className={cn("text-sm font-extrabold", complete && "text-emerald-800")}
+                        />
+                        {complete ? <Check className="size-3.5" aria-label="Complete" /> : null}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
