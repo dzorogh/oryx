@@ -171,6 +171,51 @@ describe("OrderProgressTracker", () => {
     );
   });
 
+  it("keeps related documents collapsed until the header is opened", async () => {
+    const user = userEvent.setup();
+    render(
+      <OrderProgressTracker
+        orderNumber="OMS-905"
+        status="open"
+        expectedEndOn="2026-09-20"
+        canAct
+        onCloseOrder={vi.fn()}
+        onExpectedEndChange={vi.fn()}
+        primaryStages={primaryBase()}
+        secondaryStages={[
+          {
+            id: "reservations",
+            title: "Reservations",
+            items: [doc("rsv-1", "RSV-2", "reserve · posted", { coveragePercent: 100 })],
+            doneStatuses: ["posted"],
+            actions: [{ label: "Reserve", onClick: vi.fn() }],
+          },
+          {
+            id: "returns",
+            title: "Returns",
+            items: [],
+            doneStatuses: ["posted"],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Связанные" })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Связанные документы" })).not.toBeInTheDocument();
+    expect(screen.queryByText("RSV-2")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Связанные" }));
+
+    const related = await screen.findByRole("list", { name: "Связанные документы" });
+    expect(within(related).getByText("RSV-2")).toBeInTheDocument();
+    expect(within(related).getByText("Reservations")).toBeInTheDocument();
+    expect(within(related).getByText("Returns")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Связанные" }));
+    expect(screen.queryByRole("list", { name: "Связанные документы" })).not.toBeInTheDocument();
+    expect(screen.queryByText("RSV-2")).not.toBeInTheDocument();
+  });
+
   it("keeps several documents in one stage and prefers active cards", () => {
     render(
       <OrderProgressTracker

@@ -2,10 +2,15 @@
 "use client";
 
 import Link from "next/link";
-import { Check, MoreHorizontal } from "lucide-react";
+import { Check, ChevronDown, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -451,23 +456,34 @@ export const OrderProgressTracker = ({
         </ol>
 
         {secondaryStages.length > 0 ? (
-          <div className="rounded-lg bg-muted/30 px-3.5 py-3">
-            <p className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-              Связанные
-            </p>
-            <ol className="grid grid-cols-2 items-start gap-x-8" aria-label="Связанные документы">
-              {secondaryStages.map((stage, index) => (
-                <JourneyStage
-                  key={stage.id}
-                  stage={stage}
-                  marker={secondaryMarkers[index] ?? "pending"}
-                  index={index}
-                  showActions={canAct}
-                  quiet
-                />
-              ))}
-            </ol>
-          </div>
+          <Collapsible defaultOpen={false} className="group rounded-lg bg-muted/30">
+            <CollapsibleTrigger
+              type="button"
+              className="flex w-full items-center justify-between gap-2 rounded-lg px-3.5 py-3 text-left outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                Связанные
+              </span>
+              <ChevronDown
+                className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[open]:rotate-180"
+                aria-hidden
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <ol className="grid grid-cols-2 items-start gap-x-8 px-3.5 pb-3" aria-label="Связанные документы">
+                {secondaryStages.map((stage, index) => (
+                  <JourneyStage
+                    key={stage.id}
+                    stage={stage}
+                    marker={secondaryMarkers[index] ?? "pending"}
+                    index={index}
+                    showActions={canAct}
+                    quiet
+                  />
+                ))}
+              </ol>
+            </CollapsibleContent>
+          </Collapsible>
         ) : null}
       </CardHeader>
     </Card>
