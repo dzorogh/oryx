@@ -1,6 +1,6 @@
 # Store PIM — каталог товаров
 
-Единая страница **Products** (`/store/pim/products`): просмотр товаров в таблице, фильтрация, настройка колонок, пагинация. Источник — таблица `store_product` в demo Supabase (тот же список, что документы логистики). Если Supabase не настроен, страница падает обратно на локальный demo-массив.
+Единая страница **Products** (`/store/pim/products`): просмотр товаров в таблице, фильтрация, настройка колонок, пагинация. Источник — таблица `store_product` в demo Supabase (тот же список, что документы логистики). Пока запрос не завершён, таблица показывает скелетоны. Если Supabase не настроен, запрос вернул `null` или упал с ошибкой, список пустой — локальный demo-массив на этой странице не используется.
 
 Логистика живёт в том же разделе Store (`/store/logistics/...`). Отдельного каталога товаров у логистики нет.
 
@@ -37,14 +37,14 @@
 3. Сбрасывается страница пагинации на 1, закрывается панель Columns
 4. `router.replace` обновляет URL и пишет режим в `store-catalog-listing-mode`
 
-Фильтры и поиск **общие** при переключении (не сбрасываются). Список **перезагружается**: другой источник данных + скелетон ~200 ms (как при смене фильтра).
+Фильтры и поиск **общие** при переключении (не сбрасываются). Источник данных тот же (`loadDbCatalogItems`); при смене режима таблица снова показывает скелетон ~200 ms (как при смене фильтра).
 
 ### Источники данных
 
 | Режим | Источник | Содержимое |
 |-------|----------|------------|
-| Base products / variants | `loadDbCatalogItems()` → `store_product` | Те же товары, что в логистике (цены/фото из колонок или `demoContentImageUrl`; завод с `manufacturer_id`) |
-| Fallback без Supabase | `STORE_CATALOG_ITEMS` / `getVariantCatalogItems()` | Локальный demo-массив для тестов и офлайна |
+| Base products / variants | `loadDbCatalogItems()` → `store_product` | Те же товары, что в логистике (цены/фото из колонок; завод с `manufacturer_id`) |
+| Нет Supabase / ошибка / `null` | пустой массив | Скелетоны до ответа, затем пустое состояние |
 
 Ссылки с варианта ведут на карточку **родительского** товара (`getCatalogItemDetailHref`).
 
@@ -74,13 +74,15 @@
 
 ```mermaid
 flowchart TD
-  mode[listingMode]
-  seed[getCatalogSourceItems mode]
+  db[loadDbCatalogItems]
+  wait[skeletons while dbItems is null]
   filter[useCatalogController filters]
   page[slice PAGE_SIZE]
   ui[CatalogTable]
+  mode[listingMode]
 
-  seed --> filter
+  db --> wait
+  wait --> filter
   mode --> ui
   filter --> page
   page --> ui
@@ -97,7 +99,7 @@ flowchart TD
 
 ## Модель данных
 
-См. прежний раздел `StoreCatalogItem` в этом файле — тип не менялся. Варианты и товары в demo используют один массив `STORE_CATALOG_ITEMS`.
+Тип `StoreCatalogItem` общий. Список каталога читает БД; массив `STORE_CATALOG_ITEMS` остаётся только для demo-карточки `bike-*` и прайс-листов.
 
 **Покупка:** `getPurchaseBlockReason` + `CatalogBuyTooltip` (режим variants).
 

@@ -17,7 +17,6 @@ import {
   extractSortedOptions,
   formatCatalogStatus,
   getSelectValue,
-  getCatalogSourceItems,
   matchesSearchQuery,
   type CatalogListingMode,
   type QuickFilterOption,
@@ -78,10 +77,8 @@ const toFilterOptions = (values: string[], formatLabel?: (value: string) => stri
 export const useCatalogController = (
   listingMode: CatalogListingMode,
   columnsStorageKey?: string,
-  sourceItemsOverride?: StoreCatalogItem[],
+  sourceItems: StoreCatalogItem[] = [],
 ): CatalogController => {
-  const fallbackItems = useMemo(() => getCatalogSourceItems(listingMode), [listingMode]);
-  const sourceItems = sourceItemsOverride ?? fallbackItems;
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
   const [visibleColumnIds, setVisibleColumnIds] = useState<CatalogColumnId[]>(DEFAULT_VISIBLE_COLUMNS);

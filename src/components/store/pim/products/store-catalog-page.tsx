@@ -51,13 +51,13 @@ const StoreCatalogPageContent = () => {
     let cancelled = false;
     void loadDbCatalogItems()
       .then((items) => {
-        if (!cancelled && items) {
-          setDbItems(items);
+        if (!cancelled) {
+          setDbItems(items ?? []);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setDbItems(null);
+          setDbItems([]);
         }
       });
     return () => {
@@ -65,7 +65,7 @@ const StoreCatalogPageContent = () => {
     };
   }, []);
 
-  const catalog = useCatalogController(listingMode, columnsStorageKey, dbItems ?? undefined);
+  const catalog = useCatalogController(listingMode, columnsStorageKey, dbItems ?? []);
 
   const syncUrl = useCallback((mode: CatalogListingMode) => {
     if (typeof window === "undefined") {
@@ -134,6 +134,7 @@ const StoreCatalogPageContent = () => {
     <CatalogFooter
       shownCount={catalog.paginatedItems.length}
       totalCount={catalog.filteredItems.length}
+      isLoading={dbItems === null}
       visiblePage={catalog.visiblePage}
       totalPages={catalog.totalPages}
       paginationItems={catalog.paginationItems}
@@ -173,7 +174,7 @@ const StoreCatalogPageContent = () => {
 
           <CatalogTable
             items={catalog.paginatedItems}
-            isLoading={catalog.isLoading}
+            isLoading={dbItems === null || catalog.isLoading}
             listingMode={listingMode}
             visibleColumnIds={catalog.columns.visibleIds}
             footer={catalogFooter}

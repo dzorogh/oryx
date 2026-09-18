@@ -362,7 +362,7 @@ export const CatalogTable = ({
     <TooltipProvider delay={200}>
       <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
         <div className="overflow-x-auto">
-          <Table className="table-fixed">
+          <Table aria-busy={isLoading} aria-label="Каталог товаров" className="table-fixed">
             <colgroup>
               {visibleColumnIds.map((columnId) => {
                 const columnDefinition = getCatalogColumnDefinition(columnId);

@@ -13,6 +13,7 @@ import {
 type CatalogFooterProps = {
   shownCount: number;
   totalCount: number;
+  isLoading?: boolean;
   visiblePage: number;
   totalPages: number;
   paginationItems: Array<number | "ellipsis">;
@@ -22,6 +23,7 @@ type CatalogFooterProps = {
 export const CatalogFooter = ({
   shownCount,
   totalCount,
+  isLoading = false,
   visiblePage,
   totalPages,
   paginationItems,
@@ -33,7 +35,7 @@ export const CatalogFooter = ({
   return (
     <CardFooter className="justify-between border-t bg-background px-3">
       <span className="text-xs text-muted-foreground">
-        Показано {shownCount} из {totalCount}
+        {isLoading ? "Загрузка…" : `Показано ${shownCount} из ${totalCount}`}
       </span>
       <Pagination className="mx-0 w-auto justify-end">
         <PaginationContent>

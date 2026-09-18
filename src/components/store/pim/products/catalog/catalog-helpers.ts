@@ -1,9 +1,8 @@
 import {
   getParentProductIdFromVariantCatalogId,
   getProductDetailHref,
-  getVariantCatalogItems,
 } from "../detail/product-detail-demo-data";
-import { STORE_CATALOG_ITEMS, type DealerStatus, RetailStatus, type StoreCatalogItem } from "../store-catalog-demo-data";
+import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
 import { getDisplayProductName } from "./catalog-display";
 import {
   CATALOG_COLUMNS_STORAGE_KEY,
@@ -41,9 +40,6 @@ export const STORE_CATALOG_PAGE = {
 
 export const parseCatalogListingMode = (value: string | null | undefined): CatalogListingMode =>
   value === "variants" ? "variants" : "products";
-
-export const getCatalogSourceItems = (listingMode: CatalogListingMode): StoreCatalogItem[] =>
-  listingMode === "variants" ? getVariantCatalogItems() : STORE_CATALOG_ITEMS;
 
 export const getCatalogItemDetailHref = (itemId: string, listingMode: CatalogListingMode): string => {
   const productId =

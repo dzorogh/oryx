@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StoreCatalogPage } from "@/components/store/pim/products/store-catalog-page";
+import type { StoreCatalogItem } from "@/components/store/pim/products/store-catalog-demo-data";
 
 const navigationMock = vi.hoisted(() => {
   let searchParams = new URLSearchParams();
@@ -18,8 +19,65 @@ const navigationMock = vi.hoisted(() => {
   };
 });
 
+const catalogDbMock = vi.hoisted(() => {
+  const item = (overrides: StoreCatalogItem): StoreCatalogItem => overrides;
+  const fixtures: StoreCatalogItem[] = [
+    item({
+      id: "db-ace",
+      name: "Oryx Ace 1000 Side-by-Side",
+      sku: "689220",
+      code: "PRD-db-ace",
+      imageSrc: "",
+      imageAlt: "Oryx Ace 1000 Side-by-Side",
+      categoryId: "atv-side-by-side",
+      category: "Side-by-Side",
+      family: "Ace",
+      brand: "Oryx",
+      stock: 4,
+      updatedAt: "2026-09-01T00:00:00.000Z",
+      dealerPrice: 18990,
+      retailPrice: 21990,
+      dealerStatus: "Available for purchase",
+      retailStatus: "Available for sale",
+      productionSite: "SH-53",
+    }),
+    item({
+      id: "db-sprint",
+      name: "Oryx Sprint 200 ABS",
+      sku: "310946",
+      code: "PRD-db-sprint",
+      imageSrc: "",
+      imageAlt: "Oryx Sprint 200 ABS",
+      categoryId: "road-scooter",
+      category: "Scooter",
+      family: "Sprint",
+      brand: "Oryx",
+      stock: 8,
+      updatedAt: "2026-09-01T00:00:00.000Z",
+      dealerPrice: 3290,
+      retailPrice: 3890,
+      dealerStatus: "Available for purchase",
+      retailStatus: "Available for sale",
+      productionSite: "SH-12",
+    }),
+  ];
+
+  let impl: () => Promise<StoreCatalogItem[] | null> = async () => fixtures;
+
+  return {
+    fixtures,
+    load: () => impl(),
+    use: (next: () => Promise<StoreCatalogItem[] | null>) => {
+      impl = next;
+    },
+    reset: () => {
+      impl = async () => fixtures;
+    },
+  };
+});
+
 vi.mock("@/features/store/store-catalog-from-logistics", () => ({
-  loadDbCatalogItems: async () => null,
+  loadDbCatalogItems: () => catalogDbMock.load(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -39,6 +97,7 @@ const getListingModeGroup = () =>
 
 describe("StoreCatalogPage", () => {
   afterEach(() => {
+    catalogDbMock.reset();
     cleanup();
   });
 
@@ -57,11 +116,63 @@ describe("StoreCatalogPage", () => {
     expect(screen.getByRole("button", { name: "Открыть панель колонок каталога" })).toBeVisible();
   });
 
+  it("does not render hardcoded catalog items before the database responds", async () => {
+    navigationMock.reset();
+    let resolveLoad: (items: StoreCatalogItem[] | null) => void = () => {};
+    catalogDbMock.use(
+      () =>
+        new Promise((resolve) => {
+          resolveLoad = resolve;
+        }),
+    );
+
+    render(<StoreCatalogPage />);
+
+    const table = screen.getByRole("table", { name: "Каталог товаров" });
+    expect(table).toHaveAttribute("aria-busy", "true");
+    expect(table.querySelectorAll("[data-slot='skeleton']").length).toBeGreaterThan(0);
+    expect(screen.getByText("Загрузка…")).toBeVisible();
+    expect(screen.queryByText("Нет товаров, подходящих под выбранные фильтры.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ace 1000 Side-by-Side")).not.toBeInTheDocument();
+    expect(screen.queryByText("Force 1000 EFI")).not.toBeInTheDocument();
+    expect(screen.queryByText("Force 1000 EFI Series 01")).not.toBeInTheDocument();
+
+    resolveLoad(catalogDbMock.fixtures);
+
+    expect(await screen.findByText("Ace 1000 Side-by-Side")).toBeVisible();
+    expect(screen.getByRole("table", { name: "Каталог товаров" })).toHaveAttribute("aria-busy", "false");
+    expect(screen.queryByText("Force 1000 EFI Series 01")).not.toBeInTheDocument();
+    expect(screen.getByText("Показано 2 из 2")).toBeVisible();
+  });
+
+  it("shows an empty catalog when the database request fails", async () => {
+    navigationMock.reset();
+    catalogDbMock.use(async () => {
+      throw new Error("catalog unavailable");
+    });
+    render(<StoreCatalogPage />);
+
+    expect(await screen.findByText("Нет товаров, подходящих под выбранные фильтры.")).toBeVisible();
+    expect(screen.queryByText("Force 1000 EFI")).not.toBeInTheDocument();
+  });
+
+  it("shows an empty catalog when the database returns nothing", async () => {
+    navigationMock.reset();
+    catalogDbMock.use(async () => null);
+    render(<StoreCatalogPage />);
+
+    expect(await screen.findByText("Нет товаров, подходящих под выбранные фильтры.")).toBeVisible();
+    expect(screen.queryByText("Force 1000 EFI")).not.toBeInTheDocument();
+  });
+
   it("filters list by product name search", async () => {
     navigationMock.reset();
     render(<StoreCatalogPage />);
 
     const catalogMain = getCatalogMain();
+    expect(await within(catalogMain).findByText("Ace 1000 Side-by-Side")).toBeVisible();
+    expect(within(catalogMain).getByText("Sprint 200 ABS")).toBeVisible();
+
     const quickSearchInput = within(catalogMain).getByLabelText("Быстрый поиск по названию или артикулу");
 
     fireEvent.change(quickSearchInput, {
@@ -122,7 +233,8 @@ describe("StoreCatalogPage", () => {
     const listingGroup = getListingModeGroup();
     expect(within(listingGroup).getByRole("button", { name: "Варианты" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByLabelText("Добавить вариант в каталог")).toBeVisible();
-    expect(await within(catalogMain).findByText("Force 1000 EFI Touring")).toBeVisible();
+    expect(await within(catalogMain).findByText("Ace 1000 Side-by-Side")).toBeVisible();
+    expect(within(catalogMain).queryByText("Force 1000 EFI Touring")).not.toBeInTheDocument();
   });
 
   it("updates listing query when product variants tab is clicked", async () => {
