@@ -16,7 +16,7 @@
 | `/store/logistics/...` | Заказы, остатки, заказы на производство — см. [logistics.md](logistics.md) |
 
 - Страница: `app/store/pim/products/page.tsx` → `StoreCatalogPage`
-- Subnav Store: **Products** / **Pricelists**, затем блок **Logistics**, затем общие разделы (`src/features/store/store-nav.ts`)
+- Subnav Store: **Products** / **Pricelists** / **Orders** / **Stock**, затем движение, затем справочники, **Ledger**, импорт/экспорт и настройки (`src/features/store/store-nav.ts`)
 - Карточка товара: `/store/pim/products/[productId]` — тот же `id`, что в `logistics_product` / строках заказов
 
 ## Переключатель listing mode

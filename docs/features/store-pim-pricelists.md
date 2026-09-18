@@ -10,7 +10,7 @@
 | `/store/pim/pricelists?list=supplier&region=ru` | Supplier-прайслист по региону Russia (deep link) |
 
 - Маршрут: `app/store/pim/pricelists/page.tsx` → `PricelistsPage`
-- Subnav Store: пункт **Pricelists** в каталожной группе (`src/features/store/store-nav.ts`)
+- Subnav Store: пункт **Pricelists** во втором месте верхнего блока (`src/features/store/store-nav.ts`)
 - Карточка строки (Name) ведёт на родительский товар варианта (`getCatalogItemDetailHref(row.id, "variants")`)
 
 ### Состояние в URL

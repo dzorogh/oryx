@@ -25,7 +25,7 @@
 
 Старые URL `/logistics/...` редиректят сюда. `/logistics/products` и `/store/logistics/products` ведут в `/store/pim/products`.
 
-Пункт **Logistics** больше не в левом рейле — он в aside **Store**, рядом с Products. Меню: операции (остатки, заказы, заказы на производство, выпуски, перемещения, отгрузки, возвраты), справочники (склады, заводы), технические (бронирования с фильтром Reserve/Release, журнал). `src/features/logistics/logistics-nav.ts`. Legacy `/store/logistics/releases` redirects to Reservations filtered to release.
+Пункт **Logistics** больше не в левом рейле — он в aside **Store**. Меню: обзор (товары, прайслисты, заказы, остатки), движение (заказы на производство, перемещения, отгрузки), затем выпуски, бронирования, возвраты, склады, заводы, журнал, импорт/экспорт и настройки. `src/features/store/store-nav.ts`, `src/features/logistics/logistics-nav.ts`. Legacy `/store/logistics/releases` redirects to Reservations filtered to release.
 
 ## Что видит пользователь
 
