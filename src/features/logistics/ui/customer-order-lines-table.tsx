@@ -1,9 +1,15 @@
 // english-ui:ignore-file
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import type { StockPlaceQty } from "@/features/logistics/logistics-availability";
+import {
+  freePlacesForProduct,
+  remainingToReserveForLine,
+  reservedPlacesForLine,
+  type StockPlaceQty,
+} from "@/features/logistics/logistics-availability";
+import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
-import { locationIdentity } from "@/features/logistics/logistics-lookups";
+import { locationIdentity, productById } from "@/features/logistics/logistics-lookups";
 import type {
   CustomerOrderLine,
   LocationType,
@@ -13,13 +19,9 @@ import type {
 import { LocationLink } from "@/features/logistics/ui/location-link";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
-import {
-  buildCustomerOrderLineView,
-  type CustomerOrderLineView,
-} from "@/features/logistics/ui/customer-order-line-view";
 import { cn } from "@/lib/utils";
 
-export const PLACE_KIND: Record<LocationType, string> = {
+const PLACE_KIND: Record<LocationType, string> = {
   warehouse: "Склад",
   production_order_line: "Заказ на производство",
   transfer: "В пути",
@@ -39,16 +41,6 @@ const HEADERS = [
   "Нехватка",
   "Действия",
 ] as const;
-
-export type CustomerOrderLinesActionProps = {
-  onReserve: (line: CustomerOrderLine) => void;
-  onShip: () => void;
-  onRelease: (place: {
-    line: CustomerOrderLine;
-    locationType: LocationType;
-    locationId: string;
-  }) => void;
-};
 
 const Qty = ({
   quantity,
@@ -115,60 +107,14 @@ const PlaceQtyCell = ({
   );
 };
 
-export const LineActions = ({
-  view,
-  snapshot,
-  onReserve,
-  onShip,
-  onRelease,
-  className,
-}: CustomerOrderLinesActionProps & {
-  view: CustomerOrderLineView;
-  snapshot: LogisticsSnapshot;
-  className?: string;
-}) => (
-  <div className={cn("flex flex-col items-start gap-1", className)}>
-    {view.canReserve ? (
-      <Button type="button" size="sm" variant="outline" onClick={() => onReserve(view.line)}>
-        Зарезервировать
-      </Button>
-    ) : null}
-    {view.canShip ? (
-      <Button type="button" size="sm" variant="outline" onClick={onShip}>
-        Отгрузить
-      </Button>
-    ) : null}
-    {view.reservedPlaces.map((place) => {
-      const identity = locationIdentity(snapshot, place.locationType, place.locationId);
-      return (
-        <Button
-          key={`${place.locationType}:${place.locationId}`}
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="h-auto whitespace-normal px-2 text-left"
-          aria-label={`Снять ${PLACE_KIND[place.locationType]} ${identity.title}`}
-          onClick={() =>
-            onRelease({
-              line: view.line,
-              locationType: place.locationType,
-              locationId: place.locationId,
-            })
-          }
-        >
-          Снять {identity.title}
-        </Button>
-      );
-    })}
-  </div>
-);
+const ofType = (places: StockPlaceQty[], locationType: LocationType): StockPlaceQty[] =>
+  places.filter((place) => place.locationType === locationType);
 
 export const CustomerOrderLinesTable = ({
   snapshot,
   balances,
   lines,
   canAct,
-  action,
   onReserve,
   onShip,
   onRelease,
@@ -177,50 +123,94 @@ export const CustomerOrderLinesTable = ({
   balances: StockBalance[];
   lines: CustomerOrderLine[];
   canAct: boolean;
-  action?: React.ReactNode;
-} & CustomerOrderLinesActionProps) => (
+  onReserve: (line: CustomerOrderLine) => void;
+  onShip: () => void;
+  onRelease: (place: {
+    line: CustomerOrderLine;
+    locationType: LocationType;
+    locationId: string;
+  }) => void;
+}) => (
   <LogisticsTableCard
     title={lines.length > 0 ? `Товары · ${lines.length}` : "Товары"}
-    action={action}
     headers={canAct ? [...HEADERS] : HEADERS.filter((header) => header !== "Действия")}
     isEmpty={lines.length === 0}
     empty="В этом заказе клиента нет товаров."
   >
     {lines.map((line) => {
-      const view = buildCustomerOrderLineView(snapshot, balances, line, canAct);
+      const product = productById(snapshot, line.productId);
+      const unit = product?.unit;
+      const reserved = reservedPlacesForLine(balances, line.id);
+      const freePlaces = freePlacesForProduct(balances, line.productId);
+      const reservedQty = sumReservedForLine(balances, line.id);
+      const shippedQty = sumShippedForLine(balances, line.id);
+      const toReserve = remainingToReserveForLine(line, balances);
+      const freeQty = freePlaces.reduce((sum, place) => sum + place.quantity, 0);
+      const shortQty = Math.max(0, toReserve - freeQty);
+      const warehouseReserved = ofType(reserved, "warehouse");
+      const canReserve = canAct && toReserve > 0 && freePlaces.length > 0;
+      const canShip = canAct && warehouseReserved.length > 0;
+
       return (
         <TableRow key={line.id}>
           <TableCell className="px-3 py-2 align-top">
             <ProductIdentity snapshot={snapshot} productId={line.productId} />
           </TableCell>
           <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={view.ordered} unit={view.unit} />
+            <Qty quantity={line.quantity} unit={unit} />
           </TableCell>
           <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={view.produced + view.inTransit + view.inWarehouse} unit={view.unit} />
+            <Qty quantity={reservedQty} unit={unit} />
           </TableCell>
-          <PlaceQtyCell snapshot={snapshot} items={view.warehousePlaces} unit={view.unit} />
-          <PlaceQtyCell snapshot={snapshot} items={view.productionPlaces} unit={view.unit} />
-          <PlaceQtyCell snapshot={snapshot} items={view.transitPlaces} unit={view.unit} />
+          <PlaceQtyCell snapshot={snapshot} items={warehouseReserved} unit={unit} />
+          <PlaceQtyCell snapshot={snapshot} items={ofType(reserved, "production_order_line")} unit={unit} />
+          <PlaceQtyCell snapshot={snapshot} items={ofType(reserved, "transfer")} unit={unit} />
           <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={view.shipped} unit={view.unit} />
+            <Qty quantity={shippedQty} unit={unit} />
           </TableCell>
           <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={view.toReserve} unit={view.unit} />
+            <Qty quantity={toReserve} unit={unit} />
           </TableCell>
-          <PlaceQtyCell snapshot={snapshot} items={view.freePlaces} unit={view.unit} />
+          <PlaceQtyCell snapshot={snapshot} items={freePlaces} unit={unit} />
           <TableCell className="px-3 py-2 align-top text-sm">
-            <Qty quantity={view.shortQty} unit={view.unit} className="text-destructive" />
+            <Qty quantity={shortQty} unit={unit} className="text-destructive" />
           </TableCell>
           {canAct ? (
             <TableCell className="px-3 py-2 align-top">
-              <LineActions
-                view={view}
-                snapshot={snapshot}
-                onReserve={onReserve}
-                onShip={onShip}
-                onRelease={onRelease}
-              />
+              <div className="flex flex-col items-start gap-1">
+                {canReserve ? (
+                  <Button type="button" size="sm" variant="outline" onClick={() => onReserve(line)}>
+                    Зарезервировать
+                  </Button>
+                ) : null}
+                {canShip ? (
+                  <Button type="button" size="sm" variant="outline" onClick={onShip}>
+                    Отгрузить
+                  </Button>
+                ) : null}
+                {reserved.map((place) => {
+                  const identity = locationIdentity(snapshot, place.locationType, place.locationId);
+                  return (
+                    <Button
+                      key={`${place.locationType}:${place.locationId}`}
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-auto whitespace-normal px-2 text-left"
+                      aria-label={`Снять ${PLACE_KIND[place.locationType]} ${identity.title}`}
+                      onClick={() =>
+                        onRelease({
+                          line,
+                          locationType: place.locationType,
+                          locationId: place.locationId,
+                        })
+                      }
+                    >
+                      Снять {identity.title}
+                    </Button>
+                  );
+                })}
+              </div>
             </TableCell>
           ) : null}
         </TableRow>

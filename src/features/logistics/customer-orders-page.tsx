@@ -39,7 +39,7 @@ import {
 } from "@/features/logistics/order-document-coverage";
 import type { CustomerOrderLine, CustomerOrderStatus, LocationType } from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
-import { CustomerOrderLinesBlock } from "@/features/logistics/ui/customer-order-lines-block";
+import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
@@ -341,9 +341,9 @@ export const CustomerOrderDetailPage = () => {
             doneStatuses: ["done", "closed"],
             actions: canAct
               ? [
-                { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
-                { label: "Зарезервировать в заказе на производство", onClick: () => setReserveOnProductionOpen(true) },
-              ]
+                  { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
+                  { label: "Зарезервировать в заказе на производство", onClick: () => setReserveOnProductionOpen(true) },
+                ]
               : undefined,
           },
           {
@@ -370,9 +370,9 @@ export const CustomerOrderDetailPage = () => {
             doneStatuses: ["delivered"],
             actions: canAct
               ? [
-                { label: "Переместить занятое", onClick: () => setTransferOpen(true) },
-                { label: "Зарезервировать в пути", onClick: () => setReserveOnTransferOpen(true) },
-              ]
+                  { label: "Переместить занятое", onClick: () => setTransferOpen(true) },
+                  { label: "Зарезервировать в пути", onClick: () => setReserveOnTransferOpen(true) },
+                ]
               : undefined,
           },
           {
@@ -398,14 +398,14 @@ export const CustomerOrderDetailPage = () => {
             doneStatuses: ["posted"],
             actions: canAct
               ? [
-                {
-                  label: "Зарезервировать",
-                  onClick: () => {
-                    setReserveLine(null);
-                    setReserveOpen(true);
+                  {
+                    label: "Зарезервировать",
+                    onClick: () => {
+                      setReserveLine(null);
+                      setReserveOpen(true);
+                    },
                   },
-                },
-              ]
+                ]
               : undefined,
           },
           {
@@ -421,7 +421,7 @@ export const CustomerOrderDetailPage = () => {
         ]}
       />
 
-      <CustomerOrderLinesBlock
+      <CustomerOrderLinesTable
         snapshot={snapshot}
         balances={balances}
         lines={lines}
