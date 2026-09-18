@@ -592,7 +592,7 @@ export const OutputDetailPage = () => {
           value={doc.expectedEndOn ?? ""}
           onChange={(value) => {
             void runLogisticsAction(
-              () => updateExpectedEnd("logistics_output", doc.id, value || null),
+              () => updateExpectedEnd("store_output", doc.id, value || null),
               "Срок выпуска обновлён",
               store.reload,
             );

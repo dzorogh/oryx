@@ -52,11 +52,7 @@ type LogisticsProductRow = {
   retail_price?: number | string | null;
   category?: string | null;
   family?: string | null;
-};
-
-type ProductPlantRow = {
-  product_id: string | number;
-  manufacturer_id: string | number;
+  manufacturer_id?: string | number | null;
 };
 
 type ManufacturerRow = {
@@ -71,6 +67,16 @@ const toNumber = (value: number | string | null | undefined): number | null => {
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+export const catalogProductionSite = (
+  manufacturerId: string | number | null | undefined,
+  plants: ReadonlyMap<string, string>,
+): string => {
+  if (manufacturerId == null || manufacturerId === "") {
+    return "—";
+  }
+  return plants.get(String(manufacturerId)) || "—";
 };
 
 export const mapLogisticsProductToCatalogItem = (
@@ -112,14 +118,13 @@ export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> =
     return null;
   }
 
-  const [, productsResult, linksResult, manufacturersResult] = await Promise.all([
+  const [, productsResult, manufacturersResult] = await Promise.all([
     loadLogisticsSettings(),
     client
-      .from("logistics_product")
-      .select("id,sku,name,image_url,dealer_price,retail_price,category,family")
+      .from("store_product")
+      .select("id,sku,name,image_url,dealer_price,retail_price,category,family,manufacturer_id")
       .order("id", { ascending: true }),
-    client.from("logistics_product_manufacturer").select("product_id,manufacturer_id"),
-    client.from("logistics_manufacturer").select("id,name"),
+    client.from("store_manufacturer").select("id,name"),
   ]);
 
   if (productsResult.error) {
@@ -135,22 +140,8 @@ export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> =
       String(row.code || row.name || row.id),
     ]),
   );
-  const plantsByProduct = new Map<string, string[]>();
-  for (const link of (linksResult.data ?? []) as ProductPlantRow[]) {
-    const productId = String(link.product_id);
-    const plant = manufacturers.get(String(link.manufacturer_id));
-    if (!plant) {
-      continue;
-    }
-    const current = plantsByProduct.get(productId) ?? [];
-    if (!current.includes(plant)) {
-      current.push(plant);
-    }
-    plantsByProduct.set(productId, current);
-  }
 
-  return (productsResult.data as LogisticsProductRow[]).map((row) => {
-    const plants = plantsByProduct.get(String(row.id)) ?? [];
-    return mapLogisticsProductToCatalogItem(row, plants.join(", ") || "—");
-  });
+  return (productsResult.data as LogisticsProductRow[]).map((row) =>
+    mapLogisticsProductToCatalogItem(row, catalogProductionSite(row.manufacturer_id, manufacturers)),
+  );
 };

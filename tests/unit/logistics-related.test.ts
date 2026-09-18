@@ -43,9 +43,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot>): LogisticsSnapshot =>
   ({
     products: [],
     manufacturers: [],
-    productManufacturers: [],
     warehouses: [],
-    settings: { id: "1", productionActivationStatus: "planned", codePrefixes: mergeLogisticsCodePrefixes() },
+    settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
     customerOrders: [{ id: "co-101", number: "CO-101", status: "open", createdAt: "", closedAt: null, expectedEndOn: "2026-10-15", description: "" }],
     customerOrderLines: [{ id: "col-101-chair", orderId: "co-101", productId: "p-chair", quantity: 10 }],
     productionOrders: [
@@ -437,5 +436,17 @@ describe("productActivity", () => {
         manufacturerId: "m-1",
       },
     ]);
+  });
+});
+
+describe("store schema model", () => {
+  it("keeps settings as prefixes only, without production activation", () => {
+    const data = snapshot({});
+    expect(data.settings).toEqual({
+      id: "1",
+      codePrefixes: mergeLogisticsCodePrefixes(),
+    });
+    expect("productionActivationStatus" in data.settings).toBe(false);
+    expect("productManufacturer" in data.settings.codePrefixes).toBe(false);
   });
 });

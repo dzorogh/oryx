@@ -475,7 +475,7 @@ export const ProductionOrderDetailPage = () => {
           value={order.expectedEndOn ?? ""}
           onChange={(value) => {
             void runLogisticsAction(
-              () => updateExpectedEnd("logistics_production_order", order.id, value || null),
+              () => updateExpectedEnd("store_production_order", order.id, value || null),
               "Production order due date updated",
               reload,
             );

@@ -46,9 +46,7 @@ export const manufacturerIdsForProducts = (
   let allowed: Set<string> | null = null;
   for (const productId of selected) {
     const plants = new Set(
-      snapshot.productManufacturers
-        .filter((link) => link.productId === productId)
-        .map((link) => link.manufacturerId),
+      [productById(snapshot, productId)?.manufacturerId].filter((id): id is string => Boolean(id)),
     );
     if (plants.size === 0) {
       continue;
@@ -69,15 +67,8 @@ export const manufacturerSelectItems = (snapshot: LogisticsSnapshot, productIds?
     .map((item) => ({ value: item.id, label: item.code }));
 };
 
-export const productsForManufacturer = (snapshot: LogisticsSnapshot, manufacturerId: string) => {
-  const linkedIds = new Set(
-    snapshot.productManufacturers
-      .filter((link) => link.manufacturerId === manufacturerId)
-      .map((link) => link.productId),
-  );
-  const constrainedIds = new Set(snapshot.productManufacturers.map((link) => link.productId));
-  return snapshot.products.filter((product) => !constrainedIds.has(product.id) || linkedIds.has(product.id));
-};
+export const productsForManufacturer = (snapshot: LogisticsSnapshot, manufacturerId: string) =>
+  snapshot.products.filter((product) => !product.manufacturerId || product.manufacturerId === manufacturerId);
 
 export const manufacturersForProduct = (snapshot: LogisticsSnapshot, productId: string) => {
   const allowed = manufacturerIdsForProducts(snapshot, [productId]);
@@ -88,12 +79,11 @@ export const manufacturersForProduct = (snapshot: LogisticsSnapshot, productId: 
 };
 
 export const linkedManufacturersForProduct = (snapshot: LogisticsSnapshot, productId: string) => {
-  const ids = new Set(
-    snapshot.productManufacturers
-      .filter((link) => link.productId === productId)
-      .map((link) => link.manufacturerId),
-  );
-  return snapshot.manufacturers.filter((item) => ids.has(item.id));
+  const plantId = productById(snapshot, productId)?.manufacturerId;
+  if (!plantId) {
+    return [];
+  }
+  return snapshot.manufacturers.filter((item) => item.id === plantId);
 };
 
 export const warehouseCode = (snapshot: LogisticsSnapshot, id: string): string =>

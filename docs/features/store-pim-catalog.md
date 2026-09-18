@@ -1,6 +1,6 @@
 # Store PIM — каталог товаров
 
-Единая страница **Products** (`/store/pim/products`): просмотр товаров в таблице, фильтрация, настройка колонок, пагинация. Источник — таблица `logistics_product` в demo Supabase (тот же список, что документы логистики). Если Supabase не настроен, страница падает обратно на локальный demo-массив.
+Единая страница **Products** (`/store/pim/products`): просмотр товаров в таблице, фильтрация, настройка колонок, пагинация. Источник — таблица `store_product` в demo Supabase (тот же список, что документы логистики). Если Supabase не настроен, страница падает обратно на локальный demo-массив.
 
 Логистика живёт в том же разделе Store (`/store/logistics/...`). Отдельного каталога товаров у логистики нет.
 
@@ -12,12 +12,12 @@
 |-----|-----------|
 | `/store/pim/products` | Каталог; режим по умолчанию — base products |
 | `/store/pim/products?listing=variants` | Тот же каталог в режиме product variants |
-| `/store/pim/products/[productId]` | Карточка: demo PIM UI для старых `bike-*` id, иначе логистическая карточка того же товара. Код товара — `PRD-{id}` (`formatLogisticsCode`), фото из `logistics_product.image_url` (Корпортал Spatie medium `/s3/media/.../conversions/{stem}-medium.webp`). |
+| `/store/pim/products/[productId]` | Карточка: demo PIM UI для старых `bike-*` id, иначе логистическая карточка того же товара. Код товара — `PRD-{id}` (`formatLogisticsCode`), фото из `store_product.image_url` (Корпортал Spatie medium `/s3/media/.../conversions/{stem}-medium.webp`). |
 | `/store/logistics/...` | Заказы, остатки, заказы на производство — см. [logistics.md](logistics.md) |
 
 - Страница: `app/store/pim/products/page.tsx` → `StoreCatalogPage`
 - Subnav Store: **Products** / **Pricelists** / **Orders** / **Stock**, затем движение, затем справочники, **Ledger**, импорт/экспорт и настройки (`src/features/store/store-nav.ts`)
-- Карточка товара: `/store/pim/products/[productId]` — тот же `id`, что в `logistics_product` / строках заказов
+- Карточка товара: `/store/pim/products/[productId]` — тот же `id`, что в `store_product` / строках заказов
 
 ## Переключатель listing mode
 
@@ -43,7 +43,7 @@
 
 | Режим | Источник | Содержимое |
 |-------|----------|------------|
-| Base products / variants | `loadDbCatalogItems()` → `logistics_product` | Те же товары, что в логистике (цены/фото из колонок или `demoContentImageUrl`) |
+| Base products / variants | `loadDbCatalogItems()` → `store_product` | Те же товары, что в логистике (цены/фото из колонок или `demoContentImageUrl`; завод с `manufacturer_id`) |
 | Fallback без Supabase | `STORE_CATALOG_ITEMS` / `getVariantCatalogItems()` | Локальный demo-массив для тестов и офлайна |
 
 Ссылки с варианта ведут на карточку **родительского** товара (`getCatalogItemDetailHref`).
@@ -127,7 +127,7 @@ src/components/store/pim/products/
 
 ## Подключение к бэкенду
 
-Каталог читает `logistics_product` через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Отдельной store-таблицы товаров нет. Карточка товара с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
+Каталог читает `store_product` через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Завод товара — nullable `store_product.manufacturer_id`. Карточка товара с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
 
 ## Локальная проверка
 

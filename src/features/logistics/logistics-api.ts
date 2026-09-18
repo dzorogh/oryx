@@ -3,7 +3,6 @@ import type {
   CustomerOrderLine,
   LogisticsManufacturer,
   LogisticsProduct,
-  LogisticsProductManufacturer,
   LogisticsSetting,
   LogisticsSnapshot,
   LogisticsWarehouse,
@@ -66,6 +65,7 @@ const mapProduct = (row: Record<string, unknown>): LogisticsProduct => {
     name: String(row.name),
     unit: String(row.unit),
     imageUrl: preferKorportalMediaConversion(row.image_url ? String(row.image_url) : null),
+    manufacturerId: row.manufacturer_id ? String(row.manufacturer_id) : null,
   };
 };
 
@@ -89,15 +89,8 @@ const mapManufacturer = (row: Record<string, unknown>): LogisticsManufacturer =>
   };
 };
 
-const mapProductManufacturer = (row: Record<string, unknown>): LogisticsProductManufacturer => ({
-  id: String(row.id),
-  productId: String(row.product_id),
-  manufacturerId: String(row.manufacturer_id),
-});
-
 const mapSetting = (row: Record<string, unknown>): LogisticsSetting => ({
   id: String(row.id),
-  productionActivationStatus: row.production_activation_status as ProductionStatus,
   codePrefixes: mergeLogisticsCodePrefixes(
     row.code_prefixes && typeof row.code_prefixes === "object" && !Array.isArray(row.code_prefixes)
       ? (row.code_prefixes as Record<string, unknown>)
@@ -307,14 +300,13 @@ const selectAll = async <T>(
 
 const DEFAULT_SETTING: LogisticsSetting = {
   id: "1",
-  productionActivationStatus: "planned",
   codePrefixes: mergeLogisticsCodePrefixes(),
 };
 
 export const loadLogisticsSettings = async (): Promise<LogisticsSetting> => {
   const rows = await selectAll(
-    "logistics_setting",
-    "id,production_activation_status,code_prefixes",
+    "store_setting",
+    "id,code_prefixes",
     mapSetting,
     "id",
   );
@@ -328,7 +320,7 @@ export const saveLogisticsCodePrefixes = async (
 ): Promise<LogisticsSetting> => {
   const current = await loadLogisticsSettings();
   const next = mergeLogisticsCodePrefixes(prefixes);
-  await updateRow("logistics_setting", current.id, { code_prefixes: next });
+  await updateRow("store_setting", current.id, { code_prefixes: next });
   setActiveLogisticsCodePrefixes(next);
   return { ...current, codePrefixes: next };
 };
@@ -339,7 +331,6 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     products,
     warehouses,
     manufacturers,
-    productManufacturers,
     customerOrders,
     customerOrderLines,
     productionOrders,
@@ -358,93 +349,87 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     returnLines,
     transactions,
   ] = await Promise.all([
-    selectAll("logistics_product", "id,sku,name,unit,image_url", mapProduct, "id"),
-    selectAll("logistics_warehouse", "id,name,manufacturer_id", mapWarehouse, "id"),
-    selectAll("logistics_manufacturer", "id,name,warehouse_id", mapManufacturer, "id"),
+    selectAll("store_product", "id,sku,name,unit,image_url,manufacturer_id", mapProduct, "id"),
+    selectAll("store_warehouse", "id,name,manufacturer_id", mapWarehouse, "id"),
+    selectAll("store_manufacturer", "id,name,warehouse_id", mapManufacturer, "id"),
+    selectAll("store_customer_order", "id,status,created_at,closed_at,expected_end_on,description", mapCustomerOrder, "id"),
+    selectAll("store_customer_order_line", "id,order_id,product_id,quantity", mapCustomerOrderLine, "id"),
     selectAll(
-      "logistics_product_manufacturer",
-      "id,product_id,manufacturer_id",
-      mapProductManufacturer,
-      "id",
-    ),
-    selectAll("logistics_customer_order", "id,status,created_at,closed_at,expected_end_on,description", mapCustomerOrder, "id"),
-    selectAll("logistics_customer_order_line", "id,order_id,product_id,quantity", mapCustomerOrderLine, "id"),
-    selectAll(
-      "logistics_production_order",
+      "store_production_order",
       "id,manufacturer_id,status,created_at,closed_at,expected_end_on",
       mapProductionOrder,
       "id",
     ),
     selectAll(
-      "logistics_production_order_line",
+      "store_production_order_line",
       "id,order_id,product_id,quantity,activated_quantity",
       mapProductionOrderLine,
       "id",
     ),
     selectAll(
-      "logistics_reservation",
+      "store_reservation",
       "id,customer_order_id,location_type,location_id,operation,status,origin,note,created_at,posted_at",
       mapReservation,
       "id",
     ),
     selectAll(
-      "logistics_reservation_line",
+      "store_reservation_line",
       "id,reservation_id,customer_order_line_id,quantity",
       mapReservationLine,
       "id",
     ),
     selectAll(
-      "logistics_transfer",
+      "store_transfer",
       "id,from_warehouse_id,to_warehouse_id,status,created_at,sent_at,cancelled_at,expected_end_on",
       mapTransfer,
       "id",
     ),
-    selectAll("logistics_transfer_line", "id,transfer_id,product_id,quantity", mapTransferLine, "id"),
+    selectAll("store_transfer_line", "id,transfer_id,product_id,quantity", mapTransferLine, "id"),
     selectAll(
-      "logistics_transfer_allocation",
+      "store_transfer_allocation",
       "id,line_id,customer_order_id,customer_order_line_id,quantity",
       mapTransferAllocation,
       "id",
     ),
     selectAll(
-      "logistics_shipment",
+      "store_shipment",
       "id,customer_order_id,warehouse_id,status,created_at,posted_at,cancelled_at",
       mapShipment,
       "id",
     ),
     selectAll(
-      "logistics_shipment_line",
+      "store_shipment_line",
       "id,shipment_id,customer_order_line_id,product_id,quantity",
       mapShipmentLine,
       "id",
     ),
     selectAll(
-      "logistics_output",
+      "store_output",
       "id,production_order_id,status,created_at,done_at,cancelled_at,expected_end_on",
       mapOutput,
       "id",
     ),
     selectAll(
-      "logistics_output_line",
+      "store_output_line",
       "id,output_id,production_order_line_id,product_id,quantity",
       mapOutputLine,
       "id",
     ),
     selectAll(
-      "logistics_output_allocation",
+      "store_output_allocation",
       "id,line_id,customer_order_id,customer_order_line_id,quantity",
       mapOutputAllocation,
       "id",
     ),
     selectAll(
-      "logistics_return",
+      "store_return",
       "id,shipment_id,status,created_at,posted_at,cancelled_at",
       mapReturn,
       "id",
     ),
-    selectAll("logistics_return_line", "id,return_id,shipment_line_id,quantity", mapReturnLine, "id"),
+    selectAll("store_return_line", "id,return_id,shipment_line_id,quantity", mapReturnLine, "id"),
     selectAll(
-      "logistics_stock_transaction",
+      "store_stock_transaction",
       "transaction_id,occurred_at,posted_at,product_id,unit,quantity,location_type,location_id,stock_state,customer_order_id,customer_order_line_id,source_type,source_id,source_line_id,operation_id,idempotency_key,reverses_transaction_id",
       mapTransaction,
       "posted_at",
@@ -455,7 +440,6 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     products,
     warehouses,
     manufacturers,
-    productManufacturers,
     settings,
     customerOrders,
     customerOrderLines,
@@ -498,7 +482,7 @@ export const insertReturningId = async (table: string, row: Record<string, unkno
   return String(requireData(data, error).id);
 };
 
-export const postReservation = (id: string) => rpc("logistics_post_reservation", { p_id: id });
+export const postReservation = (id: string) => rpc("store_post_reservation", { p_id: id });
 
 export type ReservationLineInput = {
   customerOrderLineId: string;
@@ -513,7 +497,7 @@ export const createReservationDraft = async (args: {
   note?: string;
   lines: ReservationLineInput[];
 }) => {
-  const id = await insertReturningId("logistics_reservation", {
+  const id = await insertReturningId("store_reservation", {
     customer_order_id: args.customerOrderId,
     location_type: args.locationType,
     location_id: args.locationId,
@@ -523,7 +507,7 @@ export const createReservationDraft = async (args: {
     status: "draft",
   });
   await insertRows(
-    "logistics_reservation_line",
+    "store_reservation_line",
     args.lines.map((line) => ({
       reservation_id: id,
       customer_order_line_id: line.customerOrderLineId,
@@ -547,15 +531,15 @@ export const createAndPostReservation = async (args: {
 };
 
 export const addReservationLine = (args: ReservationLineInput & { reservationId: string }) =>
-  insertRows("logistics_reservation_line", {
+  insertRows("store_reservation_line", {
     reservation_id: args.reservationId,
     customer_order_line_id: args.customerOrderLineId,
     quantity: args.quantity,
   });
 
-export const postShipment = (id: string) => rpc("logistics_post_shipment", { p_id: id });
-export const postReturn = (id: string) => rpc("logistics_post_return", { p_id: id });
-export const completeOutput = (id: string) => rpc("logistics_complete_output", { p_id: id });
+export const postShipment = (id: string) => rpc("store_post_shipment", { p_id: id });
+export const postReturn = (id: string) => rpc("store_post_return", { p_id: id });
+export const completeOutput = (id: string) => rpc("store_complete_output", { p_id: id });
 
 export const createAndPostShipment = async (args: {
   customerOrderId: string;
@@ -563,13 +547,13 @@ export const createAndPostShipment = async (args: {
   lines: Array<{ customerOrderLineId: string; productId: string; quantity: number }>;
   post?: boolean;
 }) => {
-  const id = await insertReturningId("logistics_shipment", {
+  const id = await insertReturningId("store_shipment", {
     customer_order_id: args.customerOrderId,
     warehouse_id: args.warehouseId,
     status: "draft",
   });
   await insertRows(
-    "logistics_shipment_line",
+    "store_shipment_line",
     args.lines.map((line) => ({
       shipment_id: id,
       customer_order_line_id: line.customerOrderLineId,
@@ -588,12 +572,12 @@ export const createAndPostReturn = async (args: {
   lines: Array<{ shipmentLineId: string; quantity: number }>;
   post?: boolean;
 }) => {
-  const id = await insertReturningId("logistics_return", {
+  const id = await insertReturningId("store_return", {
     shipment_id: args.shipmentId,
     status: "draft",
   });
   await insertRows(
-    "logistics_return_line",
+    "store_return_line",
     args.lines.map((line) => ({
       return_id: id,
       shipment_line_id: line.shipmentLineId,
@@ -633,12 +617,12 @@ export const createProductionOutput = async (args: {
       ],
     });
   }
-  const id = await insertReturningId("logistics_output", {
+  const id = await insertReturningId("store_output", {
     production_order_id: args.orderId,
     status: "planned",
     expected_end_on: args.expectedEndOn || null,
   });
-  await insertRows("logistics_output_line", {
+  await insertRows("store_output_line", {
     output_id: id,
     production_order_line_id: args.lineId,
     product_id: args.productId,
@@ -697,20 +681,20 @@ export const createAndSendReservedTransfer = async (args: {
   expectedEndOn?: string | null;
   send?: boolean;
 }) => {
-  const id = await insertReturningId("logistics_transfer", {
+  const id = await insertReturningId("store_transfer", {
     from_warehouse_id: args.fromWarehouseId,
     to_warehouse_id: args.toWarehouseId,
     status: "draft",
     expected_end_on: args.expectedEndOn || null,
   });
   for (const line of args.lines) {
-    const lineId = await insertReturningId("logistics_transfer_line", {
+    const lineId = await insertReturningId("store_transfer_line", {
       transfer_id: id,
       product_id: line.productId,
       quantity: line.quantity,
     });
     if (line.allocated > 0) {
-      await insertRows("logistics_transfer_allocation", {
+      await insertRows("store_transfer_allocation", {
         line_id: lineId,
         customer_order_id: line.customerOrderId,
         customer_order_line_id: line.customerOrderLineId,
@@ -723,19 +707,19 @@ export const createAndSendReservedTransfer = async (args: {
   }
   return id;
 };
-export const sendTransfer = (id: string) => rpc("logistics_send_transfer", { p_id: id });
-export const completeTransfer = (id: string) => rpc("logistics_complete_transfer", { p_id: id });
-export const closeCustomerOrder = (id: string) => rpc("logistics_close_customer_order", { p_id: id });
-export const closeProductionOrder = (id: string) => rpc("logistics_close_production_order", { p_id: id });
+export const sendTransfer = (id: string) => rpc("store_send_transfer", { p_id: id });
+export const completeTransfer = (id: string) => rpc("store_complete_transfer", { p_id: id });
+export const closeCustomerOrder = (id: string) => rpc("store_close_customer_order", { p_id: id });
+export const closeProductionOrder = (id: string) => rpc("store_close_production_order", { p_id: id });
 export const setProductionStatus = (id: string, status: ProductionStatus) =>
-  rpc("logistics_set_production_status", { p_id: id, p_status: status });
+  rpc("store_set_production_status", { p_id: id, p_status: status });
 export const createProductionOrder = async (args: {
   manufacturerId: string;
   expectedEndOn?: string | null;
   lines: Array<{ productId: string; quantity: number }>;
 }) => {
   const created = await rpcJson<{ id: number | string; lines: Array<{ id: number | string; product_id: number | string }> }>(
-    "logistics_create_production_order",
+    "store_create_production_order",
     {
       p_manufacturer_id: Number(args.manufacturerId),
       p_lines: args.lines.map((line) => ({
@@ -746,20 +730,20 @@ export const createProductionOrder = async (args: {
   );
   const id = String(created.id);
   if (args.expectedEndOn) {
-    await updateExpectedEnd("logistics_production_order", id, args.expectedEndOn);
+    await updateExpectedEnd("store_production_order", id, args.expectedEndOn);
   }
   return { id, lines: created.lines };
 };
 export const addProductionLine = (args: { orderId: string; productId: string; quantity: number }) =>
-  rpc("logistics_add_production_line", {
+  rpc("store_add_production_line", {
     p_id: Number(args.orderId),
     p_product_id: Number(args.productId),
     p_quantity: args.quantity,
   });
-export const syncProductionStock = (id: string) => rpc("logistics_sync_production_activation", { p_id: id });
+export const syncProductionStock = (id: string) => rpc("store_sync_production_activation", { p_id: id });
 export const cancelDocument = (kind: string, id: string) => {
   assertDocumentCanBeCancelled(kind);
-  return rpc("logistics_cancel_document", { p_kind: kind, p_id: id });
+  return rpc("store_cancel_document", { p_kind: kind, p_id: id });
 };
 
 export const insertRows = async (table: string, rows: Record<string, unknown> | Record<string, unknown>[]) => {
@@ -790,36 +774,36 @@ export const deleteRows = async (table: string, column: string, value: string) =
 };
 
 export const createProduct = (args: { sku: string; name: string; unit: string }) =>
-  insertRows("logistics_product", {
+  insertRows("store_product", {
     sku: args.sku,
     name: args.name,
     unit: args.unit,
   });
 
 export const createWarehouse = (args: { name: string }) =>
-  insertReturningId("logistics_warehouse", {
+  insertReturningId("store_warehouse", {
     name: args.name,
     manufacturer_id: null,
   });
 
 export const updateWarehouse = (args: { id: string; name: string }) =>
-  updateRow("logistics_warehouse", args.id, { name: args.name });
+  updateRow("store_warehouse", args.id, { name: args.name });
 
 export const createManufacturer = async (args: { name: string }) => {
-  const warehouseId = await insertReturningId("logistics_warehouse", {
+  const warehouseId = await insertReturningId("store_warehouse", {
     name: args.name,
     manufacturer_id: null,
   });
-  const id = await insertReturningId("logistics_manufacturer", {
+  const id = await insertReturningId("store_manufacturer", {
     name: args.name,
     warehouse_id: warehouseId,
   });
-  await updateRow("logistics_warehouse", warehouseId, { manufacturer_id: id });
+  await updateRow("store_warehouse", warehouseId, { manufacturer_id: id });
   return id;
 };
 
 export const updateManufacturer = async (args: { id: string; name: string }) => {
-  await updateRow("logistics_manufacturer", args.id, { name: args.name });
+  await updateRow("store_manufacturer", args.id, { name: args.name });
 };
 
 export { isSupabaseConfigured };

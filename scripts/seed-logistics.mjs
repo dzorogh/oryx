@@ -79,19 +79,18 @@ const upsert = async (table, rows) => {
   return res.status;
 };
 
-await upsert("logistics_setting", [{ id: 1, production_activation_status: "planned" }]);
-await upsert("logistics_product", snapshot.products.map(enrichProduct));
+await upsert("store_setting", [{ id: 1 }]);
 await upsert(
-  "logistics_warehouse",
+  "store_warehouse",
   snapshot.warehouses.map((row) => ({ ...row, manufacturer_id: null })),
 );
-await upsert("logistics_manufacturer", snapshot.manufacturers);
-await upsert("logistics_warehouse", snapshot.warehouses);
-await upsert("logistics_product_manufacturer", snapshot.product_manufacturers ?? []);
-await upsert("logistics_customer_order", snapshot.customer_orders);
-await upsert("logistics_customer_order_line", snapshot.customer_order_lines);
+await upsert("store_manufacturer", snapshot.manufacturers);
+await upsert("store_warehouse", snapshot.warehouses);
+await upsert("store_product", snapshot.products.map(enrichProduct));
+await upsert("store_customer_order", snapshot.customer_orders);
+await upsert("store_customer_order_line", snapshot.customer_order_lines);
 
-const countRes = await fetch(`${url}/rest/v1/logistics_customer_order?select=id`, {
+const countRes = await fetch(`${url}/rest/v1/store_customer_order?select=id`, {
   headers: {
     apikey: anon,
     Authorization: `Bearer ${anon}`,
@@ -102,5 +101,5 @@ const countRes = await fetch(`${url}/rest/v1/logistics_customer_order?select=id`
 const range = countRes.headers.get("content-range");
 const stories = await seedLogisticsStories({ url, anon });
 console.log(
-  `seed_ok products=${snapshot.products.length} warehouses=${snapshot.warehouses.length} manufacturers=${snapshot.manufacturers.length} product_plants=${(snapshot.product_manufacturers ?? []).length} orders=${snapshot.customer_orders.length} lines=${snapshot.customer_order_lines.length} story_orders=${stories.orders} order_content_range=${range}`,
+  `seed_ok products=${snapshot.products.length} warehouses=${snapshot.warehouses.length} manufacturers=${snapshot.manufacturers.length} product_plants=${snapshot.products.filter((row) => row.manufacturer_id != null).length} orders=${snapshot.customer_orders.length} lines=${snapshot.customer_order_lines.length} story_orders=${stories.orders} order_content_range=${range}`,
 );

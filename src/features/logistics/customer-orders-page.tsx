@@ -83,13 +83,13 @@ export const CustomerOrdersPage = () => {
     }
     const ok = await runLogisticsAction(
       async () => {
-        const id = await insertReturningId("logistics_customer_order", {
+        const id = await insertReturningId("store_customer_order", {
           status: "open",
           expected_end_on: expectedEndOn || null,
           description: description.trim(),
         });
         await insertRows(
-          "logistics_customer_order_line",
+          "store_customer_order_line",
           validLines.map((line) => ({
             order_id: id,
             product_id: line.productId,
@@ -334,7 +334,7 @@ export const CustomerOrderDetailPage = () => {
             value={order.expectedEndOn ?? ""}
             onChange={(value) => {
               void runLogisticsAction(
-                () => updateExpectedEnd("logistics_customer_order", order.id, value || null),
+                () => updateExpectedEnd("store_customer_order", order.id, value || null),
                 "Срок заказа обновлён",
                 reload,
               );

@@ -22,6 +22,7 @@ describe("logistics codes", () => {
     expect(LOGISTICS_CODE_PREFIXES.reservation).toBe("RSV");
     expect(LOGISTICS_CODE_PREFIXES.shipment).toBe("SHP");
     expect("reservationRelease" in LOGISTICS_CODE_PREFIXES).toBe(false);
+    expect("productManufacturer" in LOGISTICS_CODE_PREFIXES).toBe(false);
   });
 
   it("does not invent a code without an id", () => {

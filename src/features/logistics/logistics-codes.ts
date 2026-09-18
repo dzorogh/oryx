@@ -18,7 +18,6 @@ export const LOGISTICS_CODE_PREFIXES = {
   outputLine: "OUTL",
   outputAllocation: "OUA",
   returnLine: "RETL",
-  productManufacturer: "PM",
   stockTransaction: "TXN",
   setting: "SET",
 } as const;

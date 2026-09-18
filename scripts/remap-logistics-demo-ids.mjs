@@ -26,7 +26,6 @@ const warehouses = idMap(data.warehouses);
 const manufacturers = idMap(data.manufacturers);
 const orders = idMap(data.customer_orders);
 const orderLines = idMap(data.customer_order_lines);
-const links = idMap(data.product_manufacturers ?? []);
 
 const requireId = (map, value, label) => {
   if (value == null) return null;
@@ -42,6 +41,9 @@ data.products = data.products.map((row) => ({
   sku: row.sku,
   name: row.name,
   unit: row.unit,
+  manufacturer_id: row.manufacturer_id
+    ? requireId(manufacturers, row.manufacturer_id, "manufacturer")
+    : null,
 }));
 
 data.warehouses = data.warehouses.map((row) => ({
@@ -71,13 +73,7 @@ data.customer_order_lines = data.customer_order_lines.map((row) => ({
   quantity: row.quantity,
 }));
 
-data.product_manufacturers = (data.product_manufacturers ?? []).map((row) => ({
-  id: requireId(links, row.id, "product_manufacturer"),
-  product_id: requireId(products, row.product_id, "product"),
-  manufacturer_id: requireId(manufacturers, row.manufacturer_id, "manufacturer"),
-}));
-
 writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
 console.log(
-  `remap_ok products=${data.products.length} warehouses=${data.warehouses.length} manufacturers=${data.manufacturers.length} orders=${data.customer_orders.length} lines=${data.customer_order_lines.length} plants=${data.product_manufacturers.length}`,
+  `remap_ok products=${data.products.length} warehouses=${data.warehouses.length} manufacturers=${data.manufacturers.length} orders=${data.customer_orders.length} lines=${data.customer_order_lines.length} plants=${data.products.filter((row) => row.manufacturer_id != null).length}`,
 );

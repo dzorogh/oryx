@@ -1,6 +1,6 @@
 # Logistics (`/store/logistics`)
 
-Демо-модуль **заказов и логистики** внутри раздела **Store**: документы, движение товара и расчёт остатков из неизменяемого журнала. Товары — тот же список, что и каталог Store/PIM (`logistics_product` в demo Supabase). Данные в self-hosted Supabase проекта Oryx, без логина (`anon` + открытый RLS). Схема соответствует канвасу Orders Logistics Schema.
+Демо-модуль **заказов и логистики** внутри раздела **Store**: документы, движение товара и расчёт остатков из неизменяемого журнала. Товары — тот же список, что и каталог Store/PIM (`store_product` в demo Supabase). Данные в self-hosted Supabase проекта Oryx, без логина (`anon` + открытый RLS). Схема соответствует канвасу Orders Logistics Schema.
 
 ## Маршруты
 
@@ -47,7 +47,7 @@
 
 ```mermaid
 flowchart TD
-  catalog[Store catalog / logistics_product]
+  catalog[Store catalog / store_product]
   doc[Document draft]
   check[Posting checks]
   ledger[Immutable ledger]
@@ -59,13 +59,13 @@ flowchart TD
   ledger --> stock
 ```
 
-Проведение и проверка доступности выполняются одной RPC-транзакцией Postgres (`logistics_post_*`, `logistics_send_transfer`, `logistics_complete_transfer`, …). Повторный вызов не создаёт новых движений (идемпотентность + статус).
+Проведение и проверка доступности выполняются одной RPC-транзакцией Postgres (`store_post_*`, `store_send_transfer`, `store_complete_transfer`, …). Повторный вызов не создаёт новых движений (идемпотентность + статус).
 
 ## Модель
 
-Минимальные сущности канваса: **общий товар** (`logistics_product`, тот же integer id что в каталоге Store), производитель (ровно один склад), склад, заказ, заказ на производство, единое бронирование Reservation (reserve|release), перемещение, отгрузка, выпуск, возврат, товарная транзакция.
+Минимальные сущности канваса: **общий товар** (`store_product`, тот же integer id что в каталоге Store, необязательный `manufacturer_id`), производитель (ровно один склад), склад, заказ, заказ на производство, единое бронирование Reservation (reserve|release), перемещение, отгрузка, выпуск, возврат, товарная транзакция.
 
-Все таблицы логистики имеют sequential `bigint identity` PK (журнал — `transaction_id`). Отображаемый код **не хранится**: `formatLogisticsCode` / `public.logistics_code(kind, id)` → `PREFIX-id`. Дефолты в `LOGISTICS_CODE_PREFIXES`; живые значения — `logistics_setting.code_prefixes`, правятся на `/store/settings`:
+Все таблицы Store имеют sequential `bigint identity` PK (журнал — `transaction_id`). Отображаемый код **не хранится**: `formatLogisticsCode` / `public.store_code(kind, id)` → `PREFIX-id`. Дефолты в `LOGISTICS_CODE_PREFIXES`; живые значения — `store_setting.code_prefixes`, правятся на `/store/settings`:
 
 | Kind | Prefix | Example |
 |------|--------|---------|
@@ -79,7 +79,7 @@ flowchart TD
 | shipment | SHP | SHP-1 |
 | output | OUT | OUT-1 |
 | return | RET | RET-1 |
-| lines / allocations / product–plant / ledger / setting | COL POL RSVL TRL TRA SHL OUTL OUA RETL PM TXN SET | COL-1 |
+| lines / allocations / ledger / setting | COL POL RSVL TRL TRA SHL OUTL OUA RETL TXN SET | COL-1 |
 
 URL используют integer id (`/store/logistics/customer-orders/12`, `/store/pim/products/1`). Старые строковые id (`p-6365`, `po-e004c202-…`, `OMS-120`, `SH-4`) сняты.
 
@@ -92,10 +92,10 @@ URL используют integer id (`/store/logistics/customer-orders/12`, `/st
 - Клиент: `src/lib/supabase/client.ts`
 - Пути: `src/features/logistics/logistics-paths.ts`
 - Каталог из той же таблицы: `src/features/store/store-catalog-from-logistics.ts`
-- Миграции: `supabase/migrations/20260916200000_logistics.sql` и последующие `logistics_*`, включая integer PK `20260917230000`–`20260917230200`
-- Коды: `src/features/logistics/logistics-codes.ts`, `logistics_setting.code_prefixes` (UI: `/store/settings`) и `public.logistics_code`
-- Seed: `npm run seed:logistics` — remapped Korportal snapshot in `scripts/data/logistics-demo.json` (dense integer ids 1…n, no stored document codes). Equipment products, plants + plant warehouses, product↔plant links from `pim_product_variants.plant_id`, non-deleted OMS orders. Seed copies portal `image_url` / prices from that snapshot and infers category/family.
-- Product–plant: Korportal stores the factory on the variant (`pim_product_variants.plant_id` → `pim_plants`). Import copies that into `logistics_product_manufacturer`. Creating production from a product (or with selected products) offers only those plants; a product without links can use any plant.
+- Миграции: `supabase/migrations/20260916200000_logistics.sql` и последующие `logistics_*`, integer PK `20260917230000`–`20260917230200`, единая Reservation `20260918100000_logistics_unified_reservation.sql`, префикс схемы `20260918120000_store_schema_prefix.sql`
+- Коды: `src/features/logistics/logistics-codes.ts`, `store_setting.code_prefixes` (UI: `/store/settings`) и `public.store_code`
+- Seed: `npm run seed:logistics` — remapped Korportal snapshot in `scripts/data/logistics-demo.json` (dense integer ids 1…n, no stored document codes). Equipment products, plants + plant warehouses, optional `store_product.manufacturer_id` from `pim_product_variants.plant_id`, non-deleted OMS orders. Seed copies portal `image_url` / prices from that snapshot and infers category/family.
+- Product–plant: Korportal stores the factory on the variant (`pim_product_variants.plant_id` → `pim_plants`). Import copies that onto `store_product.manufacturer_id` (nullable; no junction). Creating production from a product (or with selected products) offers only that plant; a product without a plant can use any plant.
 - Завод и склад вне своего списка и своей карточки показываются только автокодом (`ManufacturerLink` / `WarehouseLink`).
 
 Как работать с инстансом: [supabase.md](../conventions/backend/supabase.md).

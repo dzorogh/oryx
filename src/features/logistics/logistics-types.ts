@@ -52,12 +52,7 @@ export type LogisticsProduct = {
   name: string;
   unit: string;
   imageUrl?: string | null;
-};
-
-export type LogisticsProductManufacturer = {
-  id: string;
-  productId: string;
-  manufacturerId: string;
+  manufacturerId: string | null;
 };
 
 export type LogisticsManufacturer = {
@@ -76,7 +71,6 @@ export type LogisticsWarehouse = {
 
 export type LogisticsSetting = {
   id: string;
-  productionActivationStatus: ProductionStatus;
   codePrefixes: LogisticsCodePrefixes;
 };
 
@@ -259,7 +253,6 @@ export type StockBalance = {
 export type LogisticsSnapshot = {
   products: LogisticsProduct[];
   manufacturers: LogisticsManufacturer[];
-  productManufacturers: LogisticsProductManufacturer[];
   warehouses: LogisticsWarehouse[];
   settings: LogisticsSetting;
   customerOrders: CustomerOrder[];

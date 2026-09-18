@@ -196,21 +196,21 @@ export const TransfersPage = () => {
     }
     const ok = await runLogisticsAction(
       async () => {
-        const id = await insertReturningId("logistics_transfer", {
+        const id = await insertReturningId("store_transfer", {
           from_warehouse_id: fromId,
           to_warehouse_id: toId,
           status: "draft",
           expected_end_on: expectedEndOn || null,
         });
         for (const line of prepared) {
-          const lineId = await insertReturningId("logistics_transfer_line", {
+          const lineId = await insertReturningId("store_transfer_line", {
             transfer_id: id,
             product_id: line.productId,
             quantity: Number(line.quantity),
           });
           const allocation = allocationInsert(snapshot, lineId, line);
           if (allocation) {
-            await insertRows("logistics_transfer_allocation", allocation);
+            await insertRows("store_transfer_allocation", allocation);
           }
         }
       },
@@ -388,21 +388,21 @@ export const TransferDetailPage = () => {
     const ok = await runLogisticsAction(
       async () => {
         const lineId = editingLineId
-          ?? await insertReturningId("logistics_transfer_line", {
+          ?? await insertReturningId("store_transfer_line", {
             transfer_id: doc.id,
             product_id: formLine.productId,
             quantity: Number(formLine.quantity),
           });
         if (editingLineId) {
-          await updateRow("logistics_transfer_line", lineId, {
+          await updateRow("store_transfer_line", lineId, {
             product_id: formLine.productId,
             quantity: Number(formLine.quantity),
           });
-          await deleteRows("logistics_transfer_allocation", "line_id", lineId);
+          await deleteRows("store_transfer_allocation", "line_id", lineId);
         }
         const allocation = allocationInsert(snapshot, lineId, formLine);
         if (allocation) {
-          await insertRows("logistics_transfer_allocation", allocation);
+          await insertRows("store_transfer_allocation", allocation);
         }
       },
       editingLineId ? "Строка перемещения обновлена" : "Товар добавлен в перемещение",
@@ -418,7 +418,7 @@ export const TransferDetailPage = () => {
       return;
     }
     const ok = await runLogisticsAction(
-      () => deleteRows("logistics_transfer_line", "id", editingLineId),
+      () => deleteRows("store_transfer_line", "id", editingLineId),
       "Товар удалён из перемещения",
       reload,
     );
@@ -474,7 +474,7 @@ export const TransferDetailPage = () => {
           value={doc.expectedEndOn ?? ""}
           onChange={(value) => {
             void runLogisticsAction(
-              () => updateExpectedEnd("logistics_transfer", doc.id, value || null),
+              () => updateExpectedEnd("store_transfer", doc.id, value || null),
               "Срок перемещения обновлён",
               reload,
             );

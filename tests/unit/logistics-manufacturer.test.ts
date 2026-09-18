@@ -16,9 +16,9 @@ import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 
 const snapshot = {
   products: [
-    { id: "3", code: formatLogisticsCode("product", 3), sku: "CROSS-180-RX", name: "Cross 180 RX", unit: "pcs" },
-    { id: "7", code: formatLogisticsCode("product", 7), sku: "FORCE-650", name: "Force 650", unit: "pcs" },
-    { id: "99", code: formatLogisticsCode("product", 99), sku: "MANUAL", name: "Manual product", unit: "pcs" },
+    { id: "3", code: formatLogisticsCode("product", 3), sku: "CROSS-180-RX", name: "Cross 180 RX", unit: "pcs", manufacturerId: "4" },
+    { id: "7", code: formatLogisticsCode("product", 7), sku: "FORCE-650", name: "Force 650", unit: "pcs", manufacturerId: "1" },
+    { id: "99", code: formatLogisticsCode("product", 99), sku: "MANUAL", name: "Manual product", unit: "pcs", manufacturerId: null },
   ],
   manufacturers: [
     {
@@ -33,10 +33,6 @@ const snapshot = {
       name: "SHANDONG SHENGWO NEW ENERGY VEHICLE CO., LTD",
       warehouseId: "3",
     },
-  ],
-  productManufacturers: [
-    { id: "1", productId: "3", manufacturerId: "4" },
-    { id: "2", productId: "7", manufacturerId: "1" },
   ],
   warehouses: [
     { id: "6", code: formatLogisticsCode("warehouse", 6), name: "ZHEJIANG TAOTAO VEHICLES CO.,LTD", manufacturerId: "4" },
@@ -63,6 +59,11 @@ const snapshot = {
 } as LogisticsSnapshot;
 
 describe("manufacturer display", () => {
+  it("keeps a single plant on the product itself instead of a junction", () => {
+    expect(snapshot.products.find((item) => item.id === "3")?.manufacturerId).toBe("4");
+    expect(snapshot.products.find((item) => item.id === "99")?.manufacturerId).toBeNull();
+  });
+
   it("shows the plant code instead of the legal name", () => {
     expect(manufacturerCode(snapshot, "4")).toBe("PLT-4");
     expect(warehouseOwnerLabel(snapshot, "6")).toBe("PLT-4");

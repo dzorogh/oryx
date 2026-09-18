@@ -97,25 +97,25 @@ const rangeFilter = `id=gte.${STORY_LO}&id=lte.${STORY_HI}`;
 
 const resetStories = async (client) => {
   await client.remove(
-    `logistics_stock_transaction?or=(and(customer_order_id.gte.${STORY_LO},customer_order_id.lte.905),and(source_id.gte.${STORY_LO},source_id.lte.${STORY_HI}))`,
+    `store_stock_transaction?or=(and(customer_order_id.gte.${STORY_LO},customer_order_id.lte.905),and(source_id.gte.${STORY_LO},source_id.lte.${STORY_HI}))`,
   );
   const tables = [
-    "logistics_return_line",
-    "logistics_return",
-    "logistics_shipment_line",
-    "logistics_shipment",
-    "logistics_output_allocation",
-    "logistics_output_line",
-    "logistics_output",
-    "logistics_transfer_allocation",
-    "logistics_transfer_line",
-    "logistics_transfer",
-    "logistics_reservation_line",
-    "logistics_reservation",
-    "logistics_production_order_line",
-    "logistics_production_order",
-    "logistics_customer_order_line",
-    "logistics_customer_order",
+    "store_return_line",
+    "store_return",
+    "store_shipment_line",
+    "store_shipment",
+    "store_output_allocation",
+    "store_output_line",
+    "store_output",
+    "store_transfer_allocation",
+    "store_transfer_line",
+    "store_transfer",
+    "store_reservation_line",
+    "store_reservation",
+    "store_production_order_line",
+    "store_production_order",
+    "store_customer_order_line",
+    "store_customer_order",
   ];
   for (const table of tables) {
     await client.remove(`${table}?${rangeFilter}`);
@@ -123,14 +123,14 @@ const resetStories = async (client) => {
 };
 
 const insertCustomerOrder = async (client, story, productId, quantity) => {
-  await client.insert("logistics_customer_order", {
+  await client.insert("store_customer_order", {
     id: story.id,
     status: "open",
     created_at: story.createdAt,
     expected_end_on: story.expectedEndOn,
     description: story.description,
   });
-  await client.insert("logistics_customer_order_line", {
+  await client.insert("store_customer_order_line", {
     id: story.id,
     order_id: story.id,
     product_id: productId,
@@ -139,46 +139,46 @@ const insertCustomerOrder = async (client, story, productId, quantity) => {
 };
 
 const insertProduction = async (client, { id, manufacturerId, productId, quantity, createdAt, expectedEndOn, status }) => {
-  await client.insert("logistics_production_order", {
+  await client.insert("store_production_order", {
     id,
     manufacturer_id: manufacturerId,
     status: "draft",
     created_at: createdAt,
     expected_end_on: expectedEndOn,
   });
-  await client.insert("logistics_production_order_line", {
+  await client.insert("store_production_order_line", {
     id,
     order_id: id,
     product_id: productId,
     quantity,
     activated_quantity: 0,
   });
-  await client.rpc("logistics_sync_production_activation", { p_id: id });
+  await client.rpc("store_sync_production_activation", { p_id: id });
   if (status && status !== "draft") {
-    await client.rpc("logistics_set_production_status", { p_id: id, p_status: status });
+    await client.rpc("store_set_production_status", { p_id: id, p_status: status });
   }
 };
 
 const completeOutput = async (client, { id, productionOrderId, productId, quantity, createdAt, expectedEndOn }) => {
-  await client.insert("logistics_output", {
+  await client.insert("store_output", {
     id,
     production_order_id: productionOrderId,
     status: "planned",
     created_at: createdAt,
     expected_end_on: expectedEndOn,
   });
-  await client.insert("logistics_output_line", {
+  await client.insert("store_output_line", {
     id,
     output_id: id,
     production_order_line_id: productionOrderId,
     product_id: productId,
     quantity,
   });
-  await client.rpc("logistics_complete_output", { p_id: id });
+  await client.rpc("store_complete_output", { p_id: id });
 };
 
 const postReservation = async (client, { id, orderId, productId, quantity, locationType, locationId, createdAt, operation = "reserve", note = "" }) => {
-  await client.insert("logistics_reservation", {
+  await client.insert("store_reservation", {
     id,
     customer_order_id: orderId,
     location_type: locationType,
@@ -189,13 +189,13 @@ const postReservation = async (client, { id, orderId, productId, quantity, locat
     status: "draft",
     created_at: createdAt,
   });
-  await client.insert("logistics_reservation_line", {
+  await client.insert("store_reservation_line", {
     id,
     reservation_id: id,
     customer_order_line_id: orderId,
     quantity,
   });
-  await client.rpc("logistics_post_reservation", { p_id: id });
+  await client.rpc("store_post_reservation", { p_id: id });
 };
 
 const postRelease = async (client, { id, orderId, productId, quantity, locationType, locationId, reason, createdAt }) => {
@@ -213,7 +213,7 @@ const postRelease = async (client, { id, orderId, productId, quantity, locationT
 };
 
 const deliverTransfer = async (client, { id, fromWarehouseId, toWarehouseId, orderId, productId, quantity, createdAt, expectedEndOn }) => {
-  await client.insert("logistics_transfer", {
+  await client.insert("store_transfer", {
     id,
     from_warehouse_id: fromWarehouseId,
     to_warehouse_id: toWarehouseId,
@@ -221,55 +221,55 @@ const deliverTransfer = async (client, { id, fromWarehouseId, toWarehouseId, ord
     created_at: createdAt,
     expected_end_on: expectedEndOn,
   });
-  await client.insert("logistics_transfer_line", {
+  await client.insert("store_transfer_line", {
     id,
     transfer_id: id,
     product_id: productId,
     quantity,
   });
-  await client.insert("logistics_transfer_allocation", {
+  await client.insert("store_transfer_allocation", {
     id,
     line_id: id,
     customer_order_id: orderId,
     customer_order_line_id: orderId,
     quantity,
   });
-  await client.rpc("logistics_send_transfer", { p_id: id });
-  await client.rpc("logistics_complete_transfer", { p_id: id });
+  await client.rpc("store_send_transfer", { p_id: id });
+  await client.rpc("store_complete_transfer", { p_id: id });
 };
 
 const postShipment = async (client, { id, orderId, warehouseId, productId, quantity, createdAt }) => {
-  await client.insert("logistics_shipment", {
+  await client.insert("store_shipment", {
     id,
     customer_order_id: orderId,
     warehouse_id: warehouseId,
     status: "draft",
     created_at: createdAt,
   });
-  await client.insert("logistics_shipment_line", {
+  await client.insert("store_shipment_line", {
     id,
     shipment_id: id,
     customer_order_line_id: orderId,
     product_id: productId,
     quantity,
   });
-  await client.rpc("logistics_post_shipment", { p_id: id });
+  await client.rpc("store_post_shipment", { p_id: id });
 };
 
 const postReturn = async (client, { id, shipmentId, shipmentLineId, quantity, createdAt }) => {
-  await client.insert("logistics_return", {
+  await client.insert("store_return", {
     id,
     shipment_id: shipmentId,
     status: "draft",
     created_at: createdAt,
   });
-  await client.insert("logistics_return_line", {
+  await client.insert("store_return_line", {
     id,
     return_id: id,
     shipment_line_id: shipmentLineId,
     quantity,
   });
-  await client.rpc("logistics_post_return", { p_id: id });
+  await client.rpc("store_post_return", { p_id: id });
 };
 
 const seedSurplusThenReserve = async (client) => {
@@ -291,7 +291,7 @@ const seedSurplusThenReserve = async (client) => {
     createdAt: "2026-08-20T08:00:00+00:00",
     expectedEndOn: "2026-08-20",
   });
-  await client.rpc("logistics_set_production_status", { p_id: 901, p_status: "done" });
+  await client.rpc("store_set_production_status", { p_id: 901, p_status: "done" });
   await insertCustomerOrder(client, story, PRODUCT.enduro250, 4);
   await postReservation(client, {
     id: 901,
@@ -351,7 +351,7 @@ const seedOrderThenProduce = async (client) => {
     createdAt: "2026-09-10T09:00:00+00:00",
     expectedEndOn: "2026-09-10",
   });
-  await client.rpc("logistics_set_production_status", { p_id: 902, p_status: "done" });
+  await client.rpc("store_set_production_status", { p_id: 902, p_status: "done" });
   await deliverTransfer(client, {
     id: 902,
     fromWarehouseId: PLANT.qianjiang.warehouseId,
@@ -391,7 +391,7 @@ const seedLeftoverAtPlant = async (client) => {
     createdAt: "2026-08-01T08:00:00+00:00",
     expectedEndOn: "2026-08-01",
   });
-  await client.rpc("logistics_set_production_status", { p_id: 903, p_status: "done" });
+  await client.rpc("store_set_production_status", { p_id: 903, p_status: "done" });
   await insertCustomerOrder(client, story, PRODUCT.cross180, 6);
   await postReservation(client, {
     id: 903,
@@ -431,7 +431,7 @@ const seedReleaseHeavy = async (client) => {
     createdAt: "2026-09-01T08:00:00+00:00",
     expectedEndOn: "2026-09-01",
   });
-  await client.rpc("logistics_set_production_status", { p_id: 904, p_status: "done" });
+  await client.rpc("store_set_production_status", { p_id: 904, p_status: "done" });
   await insertCustomerOrder(client, story, PRODUCT.hummer320, 8);
   await postReservation(client, {
     id: 904,
@@ -501,7 +501,7 @@ const seedReturnHeavy = async (client) => {
     createdAt: "2026-09-04T08:30:00+00:00",
     expectedEndOn: "2026-09-04",
   });
-  await client.rpc("logistics_set_production_status", { p_id: 905, p_status: "done" });
+  await client.rpc("store_set_production_status", { p_id: 905, p_status: "done" });
   await postShipment(client, {
     id: 905,
     orderId: 905,
@@ -528,7 +528,7 @@ export const seedLogisticsStories = async ({ url, anon }) => {
   await seedReleaseHeavy(client);
   await seedReturnHeavy(client);
   const orders = await client.get(
-    `logistics_customer_order?id=gte.${STORY_LO}&id=lte.905&select=id&order=id.asc`,
+    `store_customer_order?id=gte.${STORY_LO}&id=lte.905&select=id&order=id.asc`,
   );
   return { orders: orders?.length ?? 0 };
 };
