@@ -427,7 +427,7 @@ export const ProductionOrderDetailPage = () => {
             ? () => {
               void runLogisticsAction(
                 () => closeProductionOrder(order.id),
-                "Заказ на производство закрыт",
+                "Резервы сняты, заказ на производство закрыт",
                 reload,
               );
             }
