@@ -11,8 +11,8 @@ Use **this project's** Dokploy compose. Do **not** read or write Capacity (`supa
 | Dokploy project | **Oryx** → environment **production** |
 | Compose name | `supabase` |
 | Docker project | `oryx-supabase-bb1dnn` |
-| Public Kong URL (works now) | `https://oryx-supabase-8de6bd-72-56-83-48.sslip.io` |
-| Pretty host (needs Cloudflare A → `72.56.83.48`) | `https://supabase.oryx.indenbom.ru` |
+| Public Kong URL | `https://supabase.oryx.indenbom.ru` |
+| Fallback Kong URL | `https://oryx-supabase-8de6bd-72-56-83-48.sslip.io` |
 
 Kong is the only public entry (`/rest/v1`, `/auth/v1`, Studio). Isolated deployment — containers do not share the Capacity/YNAPB stack.
 
@@ -29,7 +29,7 @@ Kong is the only public entry (`/rest/v1`, `/auth/v1`, Studio). Isolated deploym
 Env (copy from `.env.example` into `.env.local`; restart `npm run dev`):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://oryx-supabase-8de6bd-72-56-83-48.sslip.io
+NEXT_PUBLIC_SUPABASE_URL=https://supabase.oryx.indenbom.ru
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon JWT from Dokploy supabase Environment>
 ```
 

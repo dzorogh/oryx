@@ -14,7 +14,7 @@ is the demo backend. How to use it (client, migrations, seed, which instance
 
 | Service  | What it is                          | Internal port | Domain |
 |----------|-------------------------------------|---------------|--------|
-| `kong`   | Supabase API gateway (PostgREST, Auth, Studio) | `8000` | `oryx-supabase-8de6bd-72-56-83-48.sslip.io` and `supabase.oryx.indenbom.ru` |
+| `kong`   | Supabase API gateway (PostgREST, Auth, Studio) | `8000` | `supabase.oryx.indenbom.ru` (fallback: `*.sslip.io`) |
 
 Traefik (managed by Dokploy) terminates TLS and proxies directly to the Next.js
 server on port `3000`; it also upgrades the WebSocket so the browser talks to
@@ -31,7 +31,7 @@ the collab URL is passed as a Docker build arg sourced from the Compose env:
 
 ```
 NEXT_PUBLIC_COLLAB_WS_URL=wss://oryx-collab.indenbom.ru
-NEXT_PUBLIC_SUPABASE_URL=https://oryx-supabase-8de6bd-72-56-83-48.sslip.io
+NEXT_PUBLIC_SUPABASE_URL=https://supabase.oryx.indenbom.ru
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon JWT from the supabase compose Environment>
 ```
 
@@ -78,8 +78,8 @@ oryx-collab.indenbom.ru      A   72.56.83.48
 supabase.oryx.indenbom.ru    A   72.56.83.48
 ```
 
-`sslip.io` already resolves to the server IP, so the API works before the pretty
-hostname has a Cloudflare A record.
+`supabase.oryx.indenbom.ru` already has a Cloudflare `A` → `72.56.83.48` and a
+Let's Encrypt cert via Traefik. Keep the `sslip.io` domain as a fallback.
 
 Let's Encrypt certificates are issued automatically once DNS resolves and
 ports 80/443 are reachable.
