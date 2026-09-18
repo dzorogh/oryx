@@ -98,5 +98,7 @@ CORS is `*` on Kong. After a live probe (`TEST`, dummy, wiring-check), **delete 
 
 ## Secrets and Studio
 
-- Open Studio through the Oryx Kong URL. Login: Dokploy → Oryx → `supabase` → Environment → `DASHBOARD_USERNAME` / `DASHBOARD_PASSWORD`.
+- Open Studio through the Oryx Kong URL (`https://supabase.oryx.indenbom.ru/`). Login: Dokploy → Oryx → `supabase` → Environment → `DASHBOARD_USERNAME` / `DASHBOARD_PASSWORD`.
+- Studio (+ `postgres-meta`) is a **separate** Dokploy compose named **`studio`**. Start/stop it from the Dokploy UI without taking REST down. Kong `/rest/v1` stays on the main `supabase` compose.
+- The demo stack does **not** run Storage, Realtime, or imgproxy.
 - Rotate or set secrets only in that Environment tab (or local gitignored `.env.local` for the two `NEXT_PUBLIC_*` keys). In chat say the **key name and where to open it**, never the value.

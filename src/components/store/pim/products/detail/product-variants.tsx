@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import Image from "next/image";
@@ -6,6 +7,21 @@ import { cn } from "@/lib/utils";
 import { formatCatalogPrice } from "../catalog/catalog-helpers";
 import type { ProductVariant } from "./product-detail-demo-data";
 import { VariantCard } from "./variant-card";
+
+const formatVariantCount = (count: number) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod100 >= 11 && mod100 <= 14) {
+    return `${count} вариантов`;
+  }
+  if (mod10 === 1) {
+    return `${count} вариант`;
+  }
+  if (mod10 >= 2 && mod10 <= 4) {
+    return `${count} варианта`;
+  }
+  return `${count} вариантов`;
+};
 
 type ProductVariantsProps = {
   variants: ProductVariant[];
@@ -20,7 +36,7 @@ type VariantMenuProps = {
 const VariantMenu = ({ variants, activeVariantId, onSelect }: VariantMenuProps) => (
   <div
     role="tablist"
-    aria-label="Select variant"
+    aria-label="Выбор варианта"
     className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible"
   >
     {variants.map((variant) => {
@@ -55,7 +71,7 @@ const VariantMenu = ({ variants, activeVariantId, onSelect }: VariantMenuProps) 
               </p>
               {variant.isDefault ? (
                 <span className="shrink-0 rounded-full bg-muted px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Default
+                  Основной
                 </span>
               ) : null}
             </div>
@@ -82,12 +98,10 @@ export const ProductVariants = ({ variants }: ProductVariantsProps) => {
   const hasMultipleVariants = variants.length > 1;
 
   return (
-    <section className="space-y-3" aria-label="Product variants">
+    <section className="space-y-3" aria-label="Варианты товара">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-foreground">Variants</h2>
-        <span className="text-xs text-muted-foreground">
-          {variants.length} {variants.length === 1 ? "variant" : "variants"}
-        </span>
+        <h2 className="text-sm font-semibold text-foreground">Варианты</h2>
+        <span className="text-xs text-muted-foreground">{formatVariantCount(variants.length)}</span>
       </div>
 
       <div className={cn("grid gap-4", hasMultipleVariants && "lg:grid-cols-[260px_minmax(0,1fr)]")}>

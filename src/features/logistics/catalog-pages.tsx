@@ -183,7 +183,7 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
           expectedEndOn: expectedEndOn || null,
           lines: [{ productId: product.id, quantity: Number(quantity) }],
         }),
-      "Production order created",
+      "Заказ на производство создан",
       reload,
     );
     if (ok) {
@@ -196,14 +196,14 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
 
   if (isLoading || error || !product) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Products", href: "/store/pim/products" }, { label: "Product" }]}>
-        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Product not found."} />}
+      <LogisticsPageShell crumbs={[{ label: "Товары", href: "/store/pim/products" }, { label: "Товар" }]}>
+        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Товар не найден."} />}
       </LogisticsPageShell>
     );
   }
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Products", href: "/store/pim/products" }, { label: product.name }]}>
+    <LogisticsPageShell crumbs={[{ label: "Товары", href: "/store/pim/products" }, { label: product.name }]}>
       <LogisticsToolbar
         title={product.name}
         leading={
@@ -221,13 +221,13 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
               В остатках
             </Link>
             <Button type="button" size="sm" onClick={openProduction}>
-              New production order
+              Новый заказ на производство
             </Button>
           </>
         }
       >
         {plants.length > 0 ? (
-          <LogisticsMetaField label="Plants">
+          <LogisticsMetaField label="Производители">
             <span className="text-sm">
               {plants.map((plant, index) => (
                 <span key={plant.id}>
@@ -263,7 +263,7 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
             setExpectedEndOn("");
           }
         }}
-        title="New production order"
+        title="Новый заказ на производство"
         description="Завод можно выбрать только среди площадок, где этот товар производится."
       >
         <div className="flex flex-col gap-3">
@@ -480,7 +480,7 @@ export const WarehouseDetailPage = () => {
         <RelatedDocuments title="Перемещения" href="/store/logistics/transfers" items={transfers} />
         <RelatedDocuments title="Отгрузки" href="/store/logistics/shipments" items={shipments} />
         {productions.length > 0 ? (
-          <RelatedDocuments title="Production orders" href="/store/logistics/production-orders" items={productions} />
+          <RelatedDocuments title="Заказы на производство" href="/store/logistics/production-orders" items={productions} />
         ) : null}
       </RelatedDocumentsBoard>
       <DocumentLedger
@@ -496,7 +496,7 @@ export const WarehouseDetailPage = () => {
       >
         <div className="flex flex-col gap-3">
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            Code: <LogisticsCodeBadge code={warehouse.code} />
+            Код: <LogisticsCodeBadge code={warehouse.code} />
           </p>
           <label className="space-y-1 text-sm">
             <span className="font-medium">Название</span>
@@ -687,7 +687,7 @@ export const ManufacturerDetailPage = () => {
         })}
       </LogisticsTableCard>
       <RelatedDocumentsBoard columns={2}>
-        <RelatedDocuments title="Production orders" href="/store/logistics/production-orders" items={productions} />
+        <RelatedDocuments title="Заказы на производство" href="/store/logistics/production-orders" items={productions} />
       </RelatedDocumentsBoard>
       {warehouse ? (
         <DocumentLedger
@@ -704,14 +704,14 @@ export const ManufacturerDetailPage = () => {
       >
         <div className="flex flex-col gap-3">
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            Code: <LogisticsCodeBadge code={manufacturer.code} />
+            Код: <LogisticsCodeBadge code={manufacturer.code} />
           </p>
           <label className="space-y-1 text-sm">
             <span className="font-medium">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="ZHEJIANG TAOTAO VEHICLES CO.,LTD" />
           </label>
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            Warehouse:{" "}
+            Склад:{" "}
             {warehouse ? (
               <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
             ) : (

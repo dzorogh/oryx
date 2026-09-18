@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { ModuleAsideFrame } from "@/components/layout/module-aside-frame";
 import { PimOrderNav } from "./pim-order-nav";
 
@@ -13,15 +14,15 @@ type PimAsideContentProps = {
 
 export const PimAsideContent = ({ activeOrderId, onItemClick }: PimAsideContentProps) => (
   <>
-    <p className="shrink-0 font-medium text-xs text-muted-foreground">Orders</p>
-    <nav aria-label="Orders" className="min-h-0 flex-1 overflow-y-auto">
+    <p className="shrink-0 font-medium text-xs text-muted-foreground">Заказы</p>
+    <nav aria-label="Заказы" className="min-h-0 flex-1 overflow-y-auto">
       <PimOrderNav activeOrderId={activeOrderId} onItemClick={onItemClick} />
     </nav>
   </>
 );
 
 export const PimAside = ({ activeOrderId }: PimAsideProps) => (
-  <ModuleAsideFrame title="Store" ariaLabel="Store context and orders">
+  <ModuleAsideFrame title="Магазин" ariaLabel="Контекст магазина и заказы">
     <PimAsideContent activeOrderId={activeOrderId} />
   </ModuleAsideFrame>
 );

@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import Link from "next/link";
 import { Construction } from "lucide-react";
 import {
@@ -22,8 +23,8 @@ export const StorePlaceholderPage = ({ title, description }: StorePlaceholderPag
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href="/store/catalog" aria-label="Open Store section" />}>
-                Store
+              <BreadcrumbLink render={<Link href="/store/catalog" aria-label="Открыть магазин" />}>
+                Магазин
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -46,9 +47,9 @@ export const StorePlaceholderPage = ({ title, description }: StorePlaceholderPag
             <Construction aria-hidden className="size-6" />
           </span>
           <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold text-foreground">Section in development</p>
+            <p className="text-sm font-semibold text-foreground">Раздел в разработке</p>
             <p className="max-w-sm text-sm text-muted-foreground">
-              Functionality for the &ldquo;{title}&rdquo; section will appear here. We are already working on it.
+              Функциональность раздела «{title}» появится здесь. Мы уже работаем над этим.
             </p>
           </div>
         </Card>

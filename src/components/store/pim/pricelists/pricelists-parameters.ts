@@ -29,11 +29,11 @@ export const PARAMETER_COLUMN_WIDTH_CLASS = "w-[160px]";
 export const isSystemParameter = (paramId: string): boolean => paramId === SYSTEM_PARAMETER_ID;
 
 const SEED_PARAMETER_BLUEPRINTS: { id: string; label: string; slug: string; base: number; step: number }[] = [
-  { id: "logistics", label: "Logistics (USD)", slug: "logistics", base: 1200, step: 40 },
-  { id: "customs", label: "Customs (USD)", slug: "customs", base: 300, step: 25 },
-  { id: "vat", label: "VAT (%)", slug: "vat", base: 5, step: 0 },
-  { id: "clearance", label: "Clearance (%)", slug: "clearance", base: 3, step: 0 },
-  { id: "total-expenses", label: "Total Expenses (USD)", slug: "total_expenses", base: 1800, step: 60 },
+  { id: "logistics", label: "Логистика (USD)", slug: "logistics", base: 1200, step: 40 },
+  { id: "customs", label: "Таможня (USD)", slug: "customs", base: 300, step: 25 },
+  { id: "vat", label: "НДС (%)", slug: "vat", base: 5, step: 0 },
+  { id: "clearance", label: "Растаможка (%)", slug: "clearance", base: 3, step: 0 },
+  { id: "total-expenses", label: "Суммарные расходы (USD)", slug: "total_expenses", base: 1800, step: 60 },
 ];
 
 const SEED_PARAMETER_IDS = new Set(SEED_PARAMETER_BLUEPRINTS.map((blueprint) => blueprint.id));

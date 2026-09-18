@@ -3,7 +3,7 @@ import { RAIL_PRIMARY_ITEMS } from "@/components/layout/nav-rail";
 
 describe("NavRail Store section", () => {
   it("содержит единый верхнеуровневый раздел Store", () => {
-    const storeItem = RAIL_PRIMARY_ITEMS.find((item) => item.label === "Store");
+    const storeItem = RAIL_PRIMARY_ITEMS.find((item) => item.label === "Магазин");
 
     expect(storeItem).toBeDefined();
     expect(storeItem?.href).toBe("/store/pim/products");

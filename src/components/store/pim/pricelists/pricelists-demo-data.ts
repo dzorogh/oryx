@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { getVariantCatalogItems } from "../products/detail/product-detail-demo-data";
 import type { StoreCatalogItem } from "../products/store-catalog-demo-data";
 import {
@@ -15,15 +16,15 @@ export type PricelistScope = "global" | "supplier" | "dealer";
 export const PRICELIST_SCOPES: PricelistScope[] = ["global", "supplier", "dealer"];
 
 export const PRICELIST_SCOPE_LABELS: Record<PricelistScope, string> = {
-  global: "Global",
-  supplier: "Supplier",
-  dealer: "Dealer",
+  global: "Глобальный",
+  supplier: "Поставщик",
+  dealer: "Дилер",
 };
 
 export const PRICELIST_SCOPE_DESCRIPTIONS: Record<PricelistScope, string> = {
-  global: "Plant prices and regional availability — the shared baseline every supplier and dealer list builds on.",
-  supplier: "The full price chain for a region — from plant cost through dealer price to retail, with all markups editable in one place.",
-  dealer: "Review retail prices for the region and manage the cost expenses that shape each product's margin.",
+  global: "Заводские цены и доступность по регионам — общая база для списков поставщика и дилера.",
+  supplier: "Полная цепочка цен региона: от заводской себестоимости через дилерскую до розничной, с наценками в одном месте.",
+  dealer: "Розничные цены региона и расходы, из которых складывается маржа по каждому товару.",
 };
 
 export const parsePricelistScope = (value: string | null | undefined): PricelistScope =>
@@ -38,11 +39,11 @@ export type PricelistRegionGroup = {
 };
 
 export const PRICELIST_REGION_GROUPS: PricelistRegionGroup[] = [
-  { id: "cis", label: "CIS" },
-  { id: "mena", label: "MENA" },
-  { id: "europe", label: "Europe" },
-  { id: "americas", label: "Americas" },
-  { id: "apac", label: "APAC" },
+  { id: "cis", label: "СНГ" },
+  { id: "mena", label: "Ближний Восток и Северная Африка" },
+  { id: "europe", label: "Европа" },
+  { id: "americas", label: "Америка" },
+  { id: "apac", label: "Азиатско-Тихоокеанский регион" },
 ];
 
 export const getRegionGroupById = (groupId: string): PricelistRegionGroup =>
@@ -58,16 +59,16 @@ export type PricelistRegion = {
 
 /** First region is selected by default. Currency = the region's default retail currency. */
 export const PRICELIST_REGIONS: PricelistRegion[] = [
-  { id: "ae", label: "United Arab Emirates", currency: "AED", group: "mena" },
-  { id: "ru", label: "Russia", currency: "RUB", group: "cis" },
-  { id: "kz", label: "Kazakhstan", currency: "KZT", group: "cis" },
-  { id: "by", label: "Belarus", currency: "BYN", group: "cis" },
-  { id: "uz", label: "Uzbekistan", currency: "UZS", group: "cis" },
-  { id: "mx", label: "Mexico", currency: "MXN", group: "americas" },
-  { id: "de", label: "Germany", currency: "EUR", group: "europe" },
-  { id: "us", label: "United States", currency: "USD", group: "americas" },
-  { id: "in", label: "India", currency: "INR", group: "apac" },
-  { id: "om", label: "Oman", currency: "OMR", group: "mena" },
+  { id: "ae", label: "ОАЭ", currency: "AED", group: "mena" },
+  { id: "ru", label: "Россия", currency: "RUB", group: "cis" },
+  { id: "kz", label: "Казахстан", currency: "KZT", group: "cis" },
+  { id: "by", label: "Беларусь", currency: "BYN", group: "cis" },
+  { id: "uz", label: "Узбекистан", currency: "UZS", group: "cis" },
+  { id: "mx", label: "Мексика", currency: "MXN", group: "americas" },
+  { id: "de", label: "Германия", currency: "EUR", group: "europe" },
+  { id: "us", label: "США", currency: "USD", group: "americas" },
+  { id: "in", label: "Индия", currency: "INR", group: "apac" },
+  { id: "om", label: "Оман", currency: "OMR", group: "mena" },
 ];
 
 export const DEFAULT_REGION_ID = PRICELIST_REGIONS[0].id;

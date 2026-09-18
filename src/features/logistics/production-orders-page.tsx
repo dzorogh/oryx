@@ -117,7 +117,7 @@ export const ProductionOrdersPage = () => {
             quantity: Number(line.quantity),
           })),
         }),
-      "Production order created",
+      "Заказ на производство создан",
       reload,
     );
     if (ok) {
@@ -129,14 +129,14 @@ export const ProductionOrdersPage = () => {
   };
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Production orders" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Заказы на производство" }]}>
       <LogisticsToolbar
-        title="Production orders"
-        description="Планирует и ограничивает выпуск. После создания количество сразу появляется в производственном наличии."
-        actionLabel="New production order"
+        title="Заказы на производство"
+        description="Планирует и ограничивает выпуск. После создания количество сразу появляется в остатках заказа на производство."
+        actionLabel="Новый заказ на производство"
         onAction={() => setOpen(true)}
       >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Production order status">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус заказа на производство">
           <HomeFilterChip active={status === "all"} role="tab" aria-selected={status === "all"} onClick={() => setStatus("all")}>
             Все
           </HomeFilterChip>
@@ -189,8 +189,8 @@ export const ProductionOrdersPage = () => {
       <LogisticsDialog
         open={open}
         onOpenChange={setOpen}
-        title="New production order"
-        description="Можно указать несколько товаров. После создания они сразу в производственном наличии."
+        title="Новый заказ на производство"
+        description="Можно указать несколько товаров. После создания они сразу в остатках заказа на производство."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -408,8 +408,8 @@ export const ProductionOrderDetailPage = () => {
 
   if (isLoading || error || !order) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Production orders", href: "/store/logistics/production-orders" }, { label: "Production order" }]}>
-        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Production order not found."} />}
+      <LogisticsPageShell crumbs={[{ label: "Заказы на производство", href: "/store/logistics/production-orders" }, { label: "Заказ на производство" }]}>
+        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Заказ на производство не найден."} />}
       </LogisticsPageShell>
     );
   }
@@ -417,17 +417,17 @@ export const ProductionOrderDetailPage = () => {
   const canEditStatus = order.status !== "closed" && order.status !== "cancelled";
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Production orders", href: "/store/logistics/production-orders" }, { label: order.number }]}>
+    <LogisticsPageShell crumbs={[{ label: "Заказы на производство", href: "/store/logistics/production-orders" }, { label: order.number }]}>
       <LogisticsToolbar
         title={order.number}
-        description="Количество сразу в производственном наличии."
-        actionLabel={order.status !== "closed" ? "Close production order" : undefined}
+        description="Количество сразу в остатках заказа на производство."
+        actionLabel={order.status !== "closed" ? "Закрыть заказ на производство" : undefined}
         onAction={
           order.status !== "closed"
             ? () => {
               void runLogisticsAction(
                 () => closeProductionOrder(order.id),
-                "Production order closed",
+                "Заказ на производство закрыт",
                 reload,
               );
             }
@@ -448,12 +448,12 @@ export const ProductionOrderDetailPage = () => {
                 }
                 void runLogisticsAction(
                   () => setProductionStatus(order.id, value as ProductionStatus),
-                  "Production order status updated",
+                  "Статус заказа на производство обновлён",
                   reload,
                 );
               }}
             >
-              <SelectTrigger id="production-status" className="bg-background" aria-label="Production order status">
+              <SelectTrigger id="production-status" className="bg-background" aria-label="Статус заказа на производство">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -476,7 +476,7 @@ export const ProductionOrderDetailPage = () => {
           onChange={(value) => {
             void runLogisticsAction(
               () => updateExpectedEnd("store_production_order", order.id, value || null),
-              "Production order due date updated",
+              "Срок заказа на производство обновлён",
               reload,
             );
           }}
@@ -492,7 +492,7 @@ export const ProductionOrderDetailPage = () => {
             </Button>
           ) : undefined
         }
-        headers={["Товар", "План", "Свободно", "Забронировано", "Уже выпущено", "Действие"]}
+        headers={["Товар", "План", "Свободно", "Зарезервировано", "Уже выпущено", "Действие"]}
       >
         {lines.map((line) => {
           const product = productById(snapshot, line.productId);
@@ -542,7 +542,7 @@ export const ProductionOrderDetailPage = () => {
                   })),
                 {
                   key: `${line.id}:unreserved`,
-                  label: <span className="text-muted-foreground">Unreserved</span>,
+                  label: <span className="text-muted-foreground">Свободно</span>,
                   free: breakdown.free,
                   reserved: null as number | null,
                 },
@@ -556,7 +556,7 @@ export const ProductionOrderDetailPage = () => {
                     type="button"
                     className="inline-flex items-center gap-1.5 text-left"
                     aria-expanded={expanded}
-                    aria-label={expanded ? `Collapse ${product?.name ?? line.productId}` : `Expand ${product?.name ?? line.productId}`}
+                    aria-label={expanded ? `Свернуть ${product?.name ?? line.productId}` : `Развернуть ${product?.name ?? line.productId}`}
                     onClick={toggleExpanded}
                   >
                     <ChevronRight
@@ -590,7 +590,7 @@ export const ProductionOrderDetailPage = () => {
                         setReserveOpen(true);
                       }}
                     >
-                      Забронировать
+                      Зарезервировать
                     </Button>
                   ) : null}
                 </TableCell>
@@ -628,7 +628,7 @@ export const ProductionOrderDetailPage = () => {
             </Button>
           ) : undefined
         }
-        headers={["Номер", "Товар", "Количество", "Под заказ", "Статус", "Ожидаемое окончание"]}
+        headers={["Номер", "Товар", "Количество", "Под заказ клиента", "Статус", "Ожидаемое окончание"]}
         isEmpty={outputs.length === 0}
         empty="Выпусков пока нет."
       >
@@ -679,14 +679,14 @@ export const ProductionOrderDetailPage = () => {
           outputs.some((item) => item.id === entry.sourceId) ||
           (entry.locationType === "production_order_line" && lines.some((line) => line.id === entry.locationId))
         }
-        title="Движения производства"
+        title="Движения заказа на производство"
       />
 
       <LogisticsDialog
         open={productOpen}
         onOpenChange={setProductOpen}
         title="Добавить товар"
-        description="Новая строка сразу появляется в производственном наличии."
+        description="Новая строка сразу появляется в остатках заказа на производство."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -738,7 +738,7 @@ export const ProductionOrderDetailPage = () => {
                     productId: newProductId,
                     quantity: Number(newQuantity),
                   }),
-                "Product added to the production order",
+                "Товар добавлен в заказ на производство",
                 reload,
               ).then((ok) => {
                 if (ok) {
@@ -757,7 +757,7 @@ export const ProductionOrderDetailPage = () => {
       <LogisticsDialog
         open={reserveOpen}
         onOpenChange={setReserveOpen}
-        title="Забронировать"
+        title="Зарезервировать"
         description={
           reserveLine
             ? `${productIdentityLabel(productById(snapshot, reserveLine.productId), reserveLine.productId)}. Свободно ${formatQuantity(reserveFree)}.`
@@ -766,14 +766,14 @@ export const ProductionOrderDetailPage = () => {
       >
         <div className="flex flex-col gap-3">
           <FieldSelect
-            label="Заказ"
+            label="Заказ клиента"
             value={reserveOrderLineId}
             items={reserveOrderItems}
             disabled={reserveOrderItems.length === 0}
             placeholder={
               reserveOrderItems.length === 0
-                ? "Нет заказов с открытым количеством"
-                : "Выберите заказ"
+                ? "Нет заказов клиента с открытым количеством"
+                : "Выберите заказ клиента"
             }
             onChange={(value) => {
               setReserveOrderLineId(value);
@@ -786,7 +786,7 @@ export const ProductionOrderDetailPage = () => {
           />
           {reserveOrderItems.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              Нет открытых заказов с незабронированным количеством этого товара.
+              Нет открытых заказов клиента с незарезервированным количеством этого товара.
             </p>
           ) : null}
           <QuantityField
@@ -801,15 +801,15 @@ export const ProductionOrderDetailPage = () => {
             onClick={() => {
               const orderLine = reserveOrderLine;
               if (!reserveLine || !orderLine || !isAllowedQuantity(reserveQuantity, reserveMax)) {
-                toast.error("Выберите заказ и количество");
+                toast.error("Выберите заказ клиента и количество");
                 return;
               }
               if (Number(reserveQuantity) > reserveFree) {
-                toast.error("Нельзя забронировать больше свободного количества");
+                toast.error("Нельзя зарезервировать больше свободного количества");
                 return;
               }
               if (Number(reserveQuantity) > remainingToReserve(orderLine.quantity, balances, orderLine.id)) {
-                toast.error("Нельзя забронировать больше открытого количества заказа");
+                toast.error("Нельзя зарезервировать больше открытого количества заказа клиента");
                 return;
               }
               void runLogisticsAction(
@@ -826,7 +826,7 @@ export const ProductionOrderDetailPage = () => {
                       },
                     ],
                   }),
-                "Бронирование проведено",
+                "Резерв проведён",
                 reload,
               ).then((ok) => {
                 if (ok) {
@@ -837,7 +837,7 @@ export const ProductionOrderDetailPage = () => {
               });
             }}
           >
-            Забронировать
+            Зарезервировать
           </Button>
         </div>
       </LogisticsDialog>
@@ -846,7 +846,7 @@ export const ProductionOrderDetailPage = () => {
         open={outputOpen}
         onOpenChange={setOutputOpen}
         title="Новый выпуск"
-        description="Можно выпускать частями, пока заказ не закрыт."
+        description="Можно выпускать частями, пока заказ на производство не закрыт."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -894,13 +894,13 @@ export const ProductionOrderDetailPage = () => {
           {outputLine ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={outputLine.productId} /> : null}
           <QuantityField value={outputQuantity} onChange={setOutputQuantity} max={outputRemaining} />
           <label className="space-y-1 text-sm">
-            <span className="font-medium">Под заказ</span>
+            <span className="font-medium">Под заказ клиента</span>
             <Select
               items={[{ value: "none", label: "Нет — свободно на складе" }, ...allocItems]}
               value={outputAllocLineId}
               onValueChange={(value) => setOutputAllocLineId(value ?? "none")}
             >
-              <SelectTrigger className="w-full bg-background" aria-label="Заказ для выпуска">
+              <SelectTrigger className="w-full bg-background" aria-label="Заказ клиента для выпуска">
                 <SelectValue placeholder="Не занимать" />
               </SelectTrigger>
               <SelectContent>

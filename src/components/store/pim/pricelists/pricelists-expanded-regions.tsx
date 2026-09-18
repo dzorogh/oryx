@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { Fragment } from "react";
@@ -80,9 +81,9 @@ const RegionGroupStatusControl = ({
       <SelectTrigger
         size="sm"
         className="h-7 w-[160px] bg-background text-xs font-normal text-foreground"
-        aria-label={`Set dealer status for every ${group.label} region`}
+        aria-label={`Задать статус дилера для всех регионов: ${group.label}`}
       >
-        <SelectValue placeholder="Mixed" />
+        <SelectValue placeholder="Разные" />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
@@ -129,24 +130,24 @@ export const PricelistsExpandedRegions = ({
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="h-9 min-w-0 overflow-hidden px-3 text-left text-xs">
-                <ColumnHeaderLabel label="Region" description="Sales region for this product." />
+                <ColumnHeaderLabel label="Регион" description="Регион продаж этого товара." />
               </TableHead>
               <TableHead className="h-9 min-w-0 overflow-hidden px-2 text-left text-xs">
                 <ColumnHeaderLabel
-                  label="Dealer Price"
-                  description="Price charged to the dealer in this region. Edit it in its source currency or in USD — both stay in sync."
+                  label="Дилерская цена"
+                  description="Цена для дилера в этом регионе. Редактируйте в исходной валюте или в USD — значения остаются согласованными."
                 />
               </TableHead>
               <TableHead className="h-9 min-w-0 overflow-hidden px-2 text-left text-xs">
                 <ColumnHeaderLabel
-                  label="Global Markup"
-                  description="Markup over Plant Price that is included in the Dealer Price."
+                  label="Глобальная наценка"
+                  description="Наценка над заводской ценой, входящая в дилерскую цену."
                 />
               </TableHead>
               <TableHead className="h-9 min-w-0 overflow-hidden px-2 text-left text-xs">
                 <ColumnHeaderLabel
-                  label="Dealer Status"
-                  description="Whether this product is available in the region."
+                  label="Статус дилера"
+                  description="Доступен ли товар в этом регионе."
                 />
               </TableHead>
               <TableHead aria-hidden />
@@ -162,7 +163,7 @@ export const PricelistsExpandedRegions = ({
                         {group.label}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Set all regions</span>
+                        <span className="text-xs text-muted-foreground">Задать для всех регионов</span>
                         <RegionGroupStatusControl
                           group={group}
                           regions={regions}
@@ -194,7 +195,7 @@ export const PricelistsExpandedRegions = ({
                           editors={collab.getEditors(priceCellId)}
                           displayCurrency={displayCurrency}
                           onDisplayCurrencyChange={onDisplayCurrencyChange}
-                          ariaLabel={`Dealer price for ${displayName} in ${region.label}`}
+                          ariaLabel={`Дилерская цена для ${displayName} в регионе ${region.label}`}
                           columnKey={`region-dealer:${row.id}`}
                           onEditingChange={(editing) => collab.setEditing(editing ? priceCellId : null)}
                           onChange={(next) => collab.setCell(priceCellId, next)}
@@ -212,7 +213,7 @@ export const PricelistsExpandedRegions = ({
                         <PricelistStatusCell
                           value={statusValue}
                           editors={collab.getEditors(statusCellId)}
-                          ariaLabel={`Dealer status for ${displayName} in ${region.label}`}
+                          ariaLabel={`Статус дилера для ${displayName} в регионе ${region.label}`}
                           onEditingChange={(editing) => collab.setEditing(editing ? statusCellId : null)}
                           onChange={(next) => collab.setStatus(statusCellId, next)}
                         />

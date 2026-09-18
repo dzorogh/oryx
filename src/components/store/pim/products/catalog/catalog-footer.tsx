@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { CardFooter } from "@/components/ui/card";
 import {
   Pagination,
@@ -32,14 +33,15 @@ export const CatalogFooter = ({
   return (
     <CardFooter className="justify-between border-t bg-background px-3">
       <span className="text-xs text-muted-foreground">
-        Showing {shownCount} of {totalCount}
+        Показано {shownCount} из {totalCount}
       </span>
       <Pagination className="mx-0 w-auto justify-end">
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
               href="#"
-              text="Previous"
+              text="Назад"
+              aria-label="Предыдущая страница"
               aria-disabled={isFirstPage}
               className={isFirstPage ? "pointer-events-none opacity-50" : undefined}
               onClick={(event) => {
@@ -64,7 +66,7 @@ export const CatalogFooter = ({
                     event.preventDefault();
                     onPageChange(item);
                   }}
-                  aria-label={`Go to page ${item}`}
+                  aria-label={`Перейти на страницу ${item}`}
                 >
                   {item}
                 </PaginationLink>
@@ -75,7 +77,8 @@ export const CatalogFooter = ({
           <PaginationItem>
             <PaginationNext
               href="#"
-              text="Next"
+              text="Вперёд"
+              aria-label="Следующая страница"
               aria-disabled={isLastPage}
               className={isLastPage ? "pointer-events-none opacity-50" : undefined}
               onClick={(event) => {

@@ -20,7 +20,7 @@ const userA: CollabUser = {
 describe("PricelistsPresence", () => {
   it("shows a live count and member avatar", () => {
     render(<PricelistsPresence users={[userA]} connected />);
-    expect(screen.getByLabelText("Collaboration status: Live (1)")).toBeVisible();
+    expect(screen.getByLabelText("Статус совместной работы: Онлайн (1)")).toBeVisible();
     expect(screen.getByAltText("Swift Otter")).toBeVisible();
   });
 
@@ -36,7 +36,7 @@ describe("PricelistsPresence", () => {
 
   it("reports offline when disconnected", () => {
     render(<PricelistsPresence users={[]} connected={false} />);
-    expect(screen.getByLabelText("Collaboration status: Offline")).toBeVisible();
+    expect(screen.getByLabelText("Статус совместной работы: Офлайн")).toBeVisible();
   });
 });
 
@@ -67,7 +67,7 @@ describe("PricelistPriceDualCell", () => {
   it("shows the source price converted to a rounded USD amount", () => {
     renderDualCell({ value: { amount: 1000, currency: "CNY" }, ariaLabel: "Plant Price for Widget" });
 
-    const usdInput = screen.getByLabelText<HTMLInputElement>("Plant Price for Widget in USD");
+    const usdInput = screen.getByLabelText<HTMLInputElement>("Plant Price for Widget в USD");
     expect(usdInput.value).toBe(String(Math.round(1000 * CURRENCY_USD_RATE.CNY)));
   });
 
@@ -78,7 +78,7 @@ describe("PricelistPriceDualCell", () => {
       ariaLabel: "Plant Price for Widget",
     });
 
-    const displayInput = screen.getByLabelText<HTMLInputElement>("Plant Price for Widget in EUR");
+    const displayInput = screen.getByLabelText<HTMLInputElement>("Plant Price for Widget в EUR");
     expect(displayInput.value).toBe(
       String(Math.round((1000 * CURRENCY_USD_RATE.CNY) / CURRENCY_USD_RATE.EUR)),
     );
@@ -88,7 +88,7 @@ describe("PricelistPriceDualCell", () => {
     const onChange = vi.fn();
     renderDualCell({ value: { amount: 1000, currency: "CNY" }, onChange, ariaLabel: "Plant Price for Widget" });
 
-    fireEvent.change(screen.getByLabelText("Plant Price for Widget in USD"), { target: { value: "293" } });
+    fireEvent.change(screen.getByLabelText("Plant Price for Widget в USD"), { target: { value: "293" } });
 
     expect(onChange).toHaveBeenCalledWith({
       amount: Math.round(293 / CURRENCY_USD_RATE.CNY),
@@ -113,8 +113,8 @@ describe("PricelistPriceDualCell", () => {
     const onChange = vi.fn();
     renderDualCell({ value: { amount: 1000, currency: "CNY" }, onChange, ariaLabel: "Plant Price for Widget" });
 
-    fireEvent.click(screen.getByLabelText("Plant Price for Widget: choose price and display currency"));
-    const priceGroup = screen.getByRole("group", { name: "Price currency" });
+    fireEvent.click(screen.getByLabelText("Plant Price for Widget: выбрать валюту цены и отображения"));
+    const priceGroup = screen.getByRole("group", { name: "Валюта цены" });
     fireEvent.click(within(priceGroup).getByText("EUR"));
 
     expect(onChange).toHaveBeenCalledWith({ amount: 1000, currency: "EUR" });
@@ -124,8 +124,8 @@ describe("PricelistPriceDualCell", () => {
     const onDisplayCurrencyChange = vi.fn();
     renderDualCell({ onDisplayCurrencyChange, ariaLabel: "Plant Price for Widget" });
 
-    fireEvent.click(screen.getByLabelText("Plant Price for Widget: choose price and display currency"));
-    const displayGroup = screen.getByRole("group", { name: "Display currency" });
+    fireEvent.click(screen.getByLabelText("Plant Price for Widget: выбрать валюту цены и отображения"));
+    const displayGroup = screen.getByRole("group", { name: "Валюта отображения" });
     fireEvent.click(within(displayGroup).getByText("EUR"));
 
     expect(onDisplayCurrencyChange).toHaveBeenCalledWith("EUR");
@@ -143,7 +143,7 @@ describe("PricelistPriceDualCell", () => {
     renderDualCell({ value: { amount: 1000, currency: "CNY" }, isReadOnly: true });
 
     expect(
-      screen.queryByLabelText("Dealer Price for Widget: choose price and display currency"),
+      screen.queryByLabelText("Dealer Price for Widget: выбрать валюту цены и отображения"),
     ).toBeNull();
   });
 });
@@ -236,7 +236,7 @@ describe("PricelistStatusCell", () => {
     );
 
     expect(screen.getByLabelText("Dealer status for Widget")).toBeVisible();
-    expect(screen.getByText("Available")).toBeVisible();
+    expect(screen.getByText("Доступен")).toBeVisible();
     expect(screen.getByText("Swift Otter")).toBeVisible();
   });
 });
@@ -253,13 +253,13 @@ describe("PricelistRetailStatusCell", () => {
     );
 
     expect(screen.getByLabelText("Retail status for Widget")).toBeVisible();
-    expect(screen.getByText("Available for sale")).toBeVisible();
+    expect(screen.getByText("В продаже")).toBeVisible();
   });
 
   it("renders read-only text without a combobox", () => {
     render(<PricelistRetailStatusCell value="draft" ariaLabel="Retail status for Widget" readOnly />);
 
-    expect(screen.getByText("Draft")).toBeVisible();
+    expect(screen.getByText("Черновик")).toBeVisible();
     expect(screen.queryByRole("combobox")).toBeNull();
   });
 });

@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { ModuleSubnav } from "@/components/layout/module-subnav";
@@ -16,7 +17,7 @@ export const StoreAsideContent = ({ onItemClick }: StoreAsideContentProps) => (
   <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
     <ModuleSubnav
       items={STORE_PRIMARY_NAV_ITEMS}
-      navAriaLabel="Store overview"
+      navAriaLabel="Обзор магазина"
       onItemClick={onItemClick}
       className="flex-none"
     />
@@ -25,7 +26,7 @@ export const StoreAsideContent = ({ onItemClick }: StoreAsideContentProps) => (
 
     <ModuleSubnav
       items={STORE_FLOW_NAV_ITEMS}
-      navAriaLabel="Store movements"
+      navAriaLabel="Движения магазина"
       onItemClick={onItemClick}
       className="flex-none"
     />
@@ -34,7 +35,7 @@ export const StoreAsideContent = ({ onItemClick }: StoreAsideContentProps) => (
 
     <ModuleSubnav
       items={STORE_MORE_NAV_ITEMS}
-      navAriaLabel="Store sections"
+      navAriaLabel="Разделы магазина"
       onItemClick={onItemClick}
       className="flex-none"
     />

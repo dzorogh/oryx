@@ -1,9 +1,10 @@
+// english-ui:ignore-file
 import type { Metadata } from "next";
 import { ProductionOrderDetailPage } from "@/features/logistics/production-orders-page";
 
 export const metadata: Metadata = {
-  title: "Production order | Store Logistics | Oryx BMS",
-  description: "Production order",
+  title: "Заказ на производство | Логистика магазина | Oryx BMS",
+  description: "Заказ на производство",
 };
 
 const Page = () => <ProductionOrderDetailPage />;

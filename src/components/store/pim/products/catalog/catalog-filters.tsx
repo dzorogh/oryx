@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ type CatalogQuickSearchControlProps = {
 
 export const CatalogQuickSearchControl = ({ value, onChange, className }: CatalogQuickSearchControlProps) => (
   <label className={cn("min-w-[240px] flex-1", className)}>
-    <span className="sr-only">Search by product name</span>
+    <span className="sr-only">Поиск по названию товара</span>
     <div className="relative">
       <Search
         aria-hidden
@@ -29,9 +30,9 @@ export const CatalogQuickSearchControl = ({ value, onChange, className }: Catalo
       <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Search by name or SKU"
+        placeholder="Поиск по названию или артикулу"
         className="pl-8"
-        aria-label="Quick search by name or SKU"
+        aria-label="Быстрый поиск по названию или артикулу"
       />
     </div>
   </label>
@@ -91,9 +92,9 @@ export const CatalogFiltersButton = ({ hasActiveFilters, onClick }: CatalogFilte
     variant={hasActiveFilters ? "default" : "outline"}
     size="default"
     onClick={onClick}
-    aria-label="Open catalog filters panel"
+    aria-label="Открыть панель фильтров каталога"
   >
     <SlidersHorizontal aria-hidden className="size-3.5" />
-    Filters
+    Фильтры
   </Button>
 );

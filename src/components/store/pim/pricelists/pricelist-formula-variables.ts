@@ -15,32 +15,32 @@ export type FormulaVariableGroup = {
 
 export const FORMULA_VARIABLE_GROUPS: FormulaVariableGroup[] = [
   {
-    title: "Region status",
+    title: "Статус региона",
     variables: [
-      { label: "Region retail status", slug: "retail_status" },
-      { label: "Region dealer status", slug: "dealer_status" },
+      { label: "Розничный статус региона", slug: "retail_status" },
+      { label: "Дилерский статус региона", slug: "dealer_status" },
     ],
   },
   {
-    title: "Product",
-    variables: [{ label: "Volume (cbm)", slug: "product_variant_volume" }],
+    title: "Товар",
+    variables: [{ label: "Объём (м³)", slug: "product_variant_volume" }],
   },
   {
-    title: "Dealer price",
+    title: "Дилерская цена",
     variables: [
-      { label: "Dealer price", slug: "dealer_price_amount" },
-      { label: "Dealer currency", slug: "dealer_price_currency" },
-      { label: "Dealer price (region dealer currency)", slug: "dealer_price_in_region_dealer_currency_amount" },
-      { label: "Dealer price (region retail currency)", slug: "dealer_price_in_region_retail_currency_amount" },
+      { label: "Дилерская цена", slug: "dealer_price_amount" },
+      { label: "Валюта дилера", slug: "dealer_price_currency" },
+      { label: "Дилерская цена (валюта дилера региона)", slug: "dealer_price_in_region_dealer_currency_amount" },
+      { label: "Дилерская цена (розничная валюта региона)", slug: "dealer_price_in_region_retail_currency_amount" },
     ],
   },
   {
-    title: "Retail price",
+    title: "Розничная цена",
     variables: [
-      { label: "Expenses", slug: "expenses" },
-      { label: "Retail markup", slug: "retail_price_markup" },
-      { label: "Retail price", slug: "retail_price_amount" },
-      { label: "Retail currency", slug: "retail_price_currency" },
+      { label: "Расходы", slug: "expenses" },
+      { label: "Розничная наценка", slug: "retail_price_markup" },
+      { label: "Розничная цена", slug: "retail_price_amount" },
+      { label: "Розничная валюта", slug: "retail_price_currency" },
     ],
   },
 ];

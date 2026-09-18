@@ -227,7 +227,7 @@ export const TransfersPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Перемещения" }]}>
       <LogisticsToolbar
         title="Перемещения"
-        description="Со склада на склад. Несколько товаров в одном документе. Занятые части сохраняют заказ на всём маршруте."
+        description="Со склада на склад. Несколько товаров в одном документе. Занятые части сохраняют заказ клиента на всём маршруте."
         actionLabel="Новое перемещение"
         onAction={() => setOpen(true)}
       >
@@ -291,7 +291,7 @@ export const TransfersPage = () => {
           }
         }}
         title="Новое перемещение"
-        description="Можно указать несколько товаров. Размещения — количества по заказу; остаток строки остаётся свободным."
+        description="Можно указать несколько товаров. Размещения — количества по заказу клиента; остаток строки остаётся свободным."
       >
         <div className="flex flex-col gap-3">
           <WarehouseSelect label="Склад отправления" value={fromId} onChange={setFromId} snapshot={snapshot} />
@@ -542,7 +542,7 @@ export const TransferDetailPage = () => {
       </LogisticsTableCard>
 
       {allocations.length > 0 ? (
-        <LogisticsTableCard title="Заказы в перемещении" headers={["Заказ", "Товар", "Количество"]}>
+        <LogisticsTableCard title="Заказы клиента в перемещении" headers={["Заказ клиента", "Товар", "Количество"]}>
           {allocations.map((item) => {
             const line = lines.find((line) => line.id === item.lineId);
             const product = line ? productById(snapshot, line.productId) : undefined;
@@ -678,7 +678,7 @@ const TransferLineFields = ({
         max={line.productId && warehouseId ? sendMax : undefined}
       />
       <FieldSelect
-        label="Занято под строку заказа"
+        label="Занято под строку заказа клиента"
         value={line.allocLineId}
         items={[
           { value: "none", label: "Нет — оставить свободным" },

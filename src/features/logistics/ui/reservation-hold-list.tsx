@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { Fragment } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { hrefForCustomerOrder } from "@/features/logistics/logistics-availability";
@@ -16,7 +17,7 @@ import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { DocumentStatusBadge } from "@/features/logistics/ui/status-badge";
 
 export const HOLD_STATUS_FILTERS: Array<{ id: "all" | ReservationStatus | "cancelled"; label: string }> = [
-  { id: "all", label: "All" },
+  { id: "all", label: "Все" },
   { id: "draft", label: DOCUMENT_STATUS_LABELS.draft },
   { id: "posted", label: DOCUMENT_STATUS_LABELS.posted },
   { id: "cancelled", label: DOCUMENT_STATUS_LABELS.cancelled },
@@ -50,7 +51,7 @@ export const ReservationHoldTable = ({
   placeHeader: string;
 }) => (
   <LogisticsTableCard
-    headers={["Number", "Operation", "Order", "Products", placeHeader, "Status"]}
+    headers={["Номер", "Операция", "Заказ клиента", "Товары", placeHeader, "Статус"]}
     isEmpty={rows.length === 0}
   >
     {rows.map((item) => {

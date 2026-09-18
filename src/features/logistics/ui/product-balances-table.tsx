@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { Fragment, useState } from "react";
@@ -9,20 +10,13 @@ import {
   placeStockBreakdown,
   productPlacesByState,
 } from "@/features/logistics/logistics-availability";
-import { formatQuantity } from "@/features/logistics/logistics-labels";
+import { formatQuantity, locationKindLabel } from "@/features/logistics/logistics-labels";
 import { locationIdentity, orderNumber } from "@/features/logistics/logistics-lookups";
-import type { LocationType, LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
+import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { cn } from "@/lib/utils";
-
-const LOCATION_KIND: Record<LocationType, (isPlantWarehouse: boolean) => string> = {
-  warehouse: (isPlantWarehouse) => (isPlantWarehouse ? "Plant warehouse" : "Warehouse"),
-  production_order_line: () => "Production order",
-  transfer: () => "Transfer",
-  customer_order: () => "At customer",
-};
 
 const Qty = ({
   quantity,
@@ -71,16 +65,16 @@ export const ProductBalancesTable = ({
 
   return (
     <LogisticsTableCard
-      title="Balances"
-      headers={["Location", "Free", "Reserved", "At customer"]}
+      title="Остатки"
+      headers={["Место", "Свободно", "Зарезервировано", "У клиента"]}
       isEmpty={places.length === 0}
-      empty="No stock for this product yet."
+      empty="Для этого товара пока нет остатков."
     >
       {places.map((place) => {
         const key = `${place.locationType}:${place.locationId}`;
         const identity = locationIdentity(snapshot, place.locationType, place.locationId);
         const href = hrefForLocation(snapshot, place.locationType, place.locationId);
-        const kind = LOCATION_KIND[place.locationType](identity.isPlantWarehouse);
+        const kind = locationKindLabel(place.locationType, identity.isPlantWarehouse);
         const breakdown = placeStockBreakdown(balances, productId, place.locationType, place.locationId);
         const canExpand =
           breakdown.reserved.length > 0 ||
@@ -101,7 +95,7 @@ export const ProductBalancesTable = ({
                   key: `${key}:reserved:${item.customerOrderId}:${item.customerOrderLineId ?? "line"}`,
                   label: (
                     <span className="inline-flex flex-wrap items-center gap-1.5">
-                      Reserved for
+                      Зарезервировано для
                       <LogisticsCodeBadge
                         code={orderNumber(snapshot, item.customerOrderId)}
                         href={hrefForCustomerOrder(item.customerOrderId)}
@@ -125,7 +119,7 @@ export const ProductBalancesTable = ({
                       key: `${key}:shipped:${item.customerOrderId}:${item.customerOrderLineId ?? "line"}`,
                       label: (
                         <span className="inline-flex flex-wrap items-center gap-1.5">
-                          Shipped on
+                          Отгружено по
                           <LogisticsCodeBadge
                             code={orderNumber(snapshot, item.customerOrderId)}
                             href={hrefForCustomerOrder(item.customerOrderId)}
@@ -138,7 +132,7 @@ export const ProductBalancesTable = ({
                     }))),
               {
                 key: `${key}:unreserved`,
-                label: <span className="text-muted-foreground">Unreserved</span>,
+                label: <span className="text-muted-foreground">Свободно</span>,
                 free: breakdown.free,
                 reserved: null as number | null,
                 shipped: null as number | null,
@@ -156,7 +150,7 @@ export const ProductBalancesTable = ({
                       type="button"
                       className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center"
                       aria-expanded={isOpen}
-                      aria-label={isOpen ? `Collapse ${kind} ${identity.title}` : `Expand ${kind} ${identity.title}`}
+                      aria-label={isOpen ? `Свернуть ${kind} ${identity.title}` : `Развернуть ${kind} ${identity.title}`}
                       onClick={() => toggle(key)}
                     >
                       <ChevronRight

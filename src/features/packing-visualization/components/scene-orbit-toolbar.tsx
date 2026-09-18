@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import type { RefObject } from "react";
@@ -42,7 +43,7 @@ export const SceneOrbitToolbar = ({ controlsRef }: SceneOrbitToolbarProps) => {
           variant="secondary"
           size="icon"
           className="size-9"
-          aria-label="Zoom in"
+          aria-label="Приблизить"
           onClick={handleZoomIn}
         >
           <ZoomIn className="size-4" aria-hidden />
@@ -52,7 +53,7 @@ export const SceneOrbitToolbar = ({ controlsRef }: SceneOrbitToolbarProps) => {
           variant="secondary"
           size="icon"
           className="size-9"
-          aria-label="Zoom out"
+          aria-label="Отдалить"
           onClick={handleZoomOut}
         >
           <ZoomOut className="size-4" aria-hidden />
@@ -62,7 +63,7 @@ export const SceneOrbitToolbar = ({ controlsRef }: SceneOrbitToolbarProps) => {
           variant="secondary"
           size="icon"
           className="size-9"
-          aria-label="Reset view and zoom"
+          aria-label="Сбросить вид и масштаб"
           onClick={handleReset}
         >
           <RotateCcw className="size-4" aria-hidden />

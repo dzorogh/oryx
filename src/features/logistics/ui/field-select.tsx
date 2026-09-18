@@ -20,7 +20,7 @@ export const FieldSelect = ({
   value,
   items,
   onChange,
-  placeholder = "Select",
+  placeholder = "Выберите",
   emptyLabel,
   disabled,
 }: {

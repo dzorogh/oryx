@@ -14,6 +14,6 @@
   summary: `remap-logistics-demo-ids.mjs` не читает старый ключ `product_manufacturers`.
   evidence: Текущий demo JSON уже несёт `manufacturer_id` на продукте.
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-store-schema-prefix.md`
-  summary: Нет правила, какой `plant_id` варианта побеждает при повторном импорте из Корпортала.
-  evidence: Эта работа только копирует уже 1:1 live-связи в колонку.
+- source_spec: `_bmad-output/implementation-artifacts/spec-production-order-dialog-compact-table.md`
+  summary: Кнопка Create не блокируется на время запроса, а success-toast не ссылается на новый заказ на производство.
+  evidence: `runLogisticsAction` у соседних logistics-форм такой же; это не регрессия компактной таблицы.

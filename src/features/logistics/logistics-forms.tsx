@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useMemo, useState } from "react";
@@ -64,8 +65,8 @@ const FormActions = ({
   onDraft,
   onPost,
   canSubmit,
-  draftLabel = "Save draft",
-  postLabel = "Post",
+  draftLabel = "Сохранить черновик",
+  postLabel = "Провести",
 }: {
   mode: FormMode;
   onDraft?: () => void;
@@ -156,7 +157,7 @@ export const ReservationLineFields = ({
             label: productIdentityLabel(
               productById(snapshot, item.productId),
               item.productId,
-              `open ${formatQuantity(remainingToReserveForLine(item, balances))}`,
+              `открыто ${formatQuantity(remainingToReserveForLine(item, balances))}`,
             ),
           }))
       : snapshot.customerOrderLines
@@ -178,7 +179,7 @@ export const ReservationLineFields = ({
               productById(snapshot, item.productId),
               item.productId,
               locationType && locationId
-                ? `reserved ${formatQuantity(reservedQtyForLineAtPlace(balances, item.id, locationType, locationId))}`
+                ? `зарезервировано ${formatQuantity(reservedQtyForLineAtPlace(balances, item.id, locationType, locationId))}`
                 : undefined,
             ),
           }));
@@ -186,7 +187,7 @@ export const ReservationLineFields = ({
   return (
     <div className="space-y-2 rounded-md border p-3">
       <FieldSelect
-        label={`Product ${index + 1}`}
+        label={`Товар ${index + 1}`}
         value={line.customerOrderLineId}
         items={lineItems}
         onChange={(value) => {
@@ -199,7 +200,7 @@ export const ReservationLineFields = ({
               : 0;
           onChange({ customerOrderLineId: value, quantity: String(nextMax > 0 ? nextMax : 1) });
         }}
-        placeholder={orderId ? "Select a product" : "Select an order first"}
+        placeholder={orderId ? "Выберите товар" : "Сначала выберите заказ клиента"}
         disabled={!orderId || !locationType || !locationId}
       />
       {orderLine ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={orderLine.productId} /> : null}
@@ -265,7 +266,7 @@ export const ReservationForm = ({
           seen.add(key);
           items.push({
             value: key,
-            label: `${locationLabel(snapshot, place.locationType, place.locationId)} · free ${formatQuantity(place.quantity)}`,
+            label: `${locationLabel(snapshot, place.locationType, place.locationId)} · свободно ${formatQuantity(place.quantity)}`,
           });
         }
       }
@@ -284,7 +285,7 @@ export const ReservationForm = ({
         return [
           {
             value: key,
-            label: `${locationLabel(snapshot, place.locationType, place.locationId)} · reserved ${formatQuantity(
+            label: `${locationLabel(snapshot, place.locationType, place.locationId)} · зарезервировано ${formatQuantity(
               places
                 .filter((item) => item.locationType === place.locationType && item.locationId === place.locationId)
                 .reduce((sum, item) => sum + item.quantity, 0),
@@ -336,7 +337,7 @@ export const ReservationForm = ({
 
   const submit = async (post: boolean) => {
     if (!selectedOrderId || !locationType || !locationId || validLines.length === 0) {
-      toast.error("Select an order, place, and at least one product line");
+      toast.error("Выберите заказ клиента, место и хотя бы одну строку товара");
       return;
     }
     const payloadLines = [];
@@ -352,7 +353,7 @@ export const ReservationForm = ({
             : reservedQtyForLineAtPlace(balances, orderLine.id, locationType, locationId)
           : 0;
       if (!orderLine || !isAllowedQuantity(line.quantity, max)) {
-        toast.error("Each line needs a product and an allowed quantity");
+        toast.error("В каждой строке нужны товар и допустимое количество");
         return;
       }
       const qty = Number(line.quantity);
@@ -362,7 +363,7 @@ export const ReservationForm = ({
           assertCustomerCapacity(orderLine, balances, qty);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Not enough stock");
+        toast.error(error instanceof Error ? error.message : "Недостаточно остатка");
         return;
       }
       payloadLines.push({
@@ -382,9 +383,9 @@ export const ReservationForm = ({
       () => (post ? createAndPostReservation(payload) : createReservationDraft(payload)),
       post
         ? operation === "reserve"
-          ? "Reservation posted"
-          : "Release posted"
-        : "Reservation draft created",
+          ? "Резерв проведён"
+          : "Снятие проведено"
+        : "Черновик резерва создан",
       reload,
     );
     if (ok) {
@@ -402,14 +403,14 @@ export const ReservationForm = ({
           reset();
         }
       }}
-      title="Reservation"
-      description="One order, one place, one operation. Quantities stay positive; the ledger carries the signed move."
+      title="Резерв"
+      description="Один заказ клиента, одно место, одна операция. Количество всегда положительное; знак движения пишет журнал."
       className="sm:max-w-lg"
     >
       <div className="flex flex-col gap-3">
         {preset?.operation ? null : (
           <FieldSelect
-            label="Operation"
+            label="Операция"
             value={operation}
             items={[
               { value: "reserve", label: RESERVATION_OPERATION_LABELS.reserve },
@@ -424,7 +425,7 @@ export const ReservationForm = ({
         )}
         {preset?.customerOrderId ? null : (
           <FieldSelect
-            label="Order"
+            label="Заказ клиента"
             value={selectedOrderId}
             items={snapshot.customerOrders
               .filter((item) => (operation === "reserve" ? item.status === "open" : true))
@@ -437,15 +438,15 @@ export const ReservationForm = ({
           />
         )}
         <FieldSelect
-          label="Place"
+          label="Место"
           value={location}
           items={placeItems}
           onChange={(value) => {
             setLocation(value);
             setLines([emptyReservationLine(preset)]);
           }}
-          placeholder="Select a place"
-          emptyLabel={operation === "reserve" ? "No free stock" : "No reserved stock"}
+          placeholder="Выберите место"
+          emptyLabel={operation === "reserve" ? "Нет свободного остатка" : "Нет зарезервированного остатка"}
           disabled={!selectedOrderId}
         />
         {lines.map((_, index) => (
@@ -466,19 +467,19 @@ export const ReservationForm = ({
         ))}
         {canAddLine ? (
           <Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, emptyReservationLine()])}>
-            Add product
+            Добавить товар
           </Button>
         ) : null}
         <label className="space-y-1 text-sm">
-          <span className="font-medium">Note</span>
-          <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional" />
+          <span className="font-medium">Комментарий</span>
+          <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Необязательно" />
         </label>
         <FormActions
           mode={mode}
           canSubmit={Boolean(selectedOrderId && location && linesReady)}
           onDraft={() => void submit(false)}
           onPost={() => void submit(true)}
-          postLabel={operation === "reserve" ? "Reserve" : "Release"}
+          postLabel={operation === "reserve" ? "Зарезервировать" : "Снять"}
         />
       </div>
     </LogisticsDialog>
@@ -520,7 +521,7 @@ export const ShipmentForm = ({
       }))
       .filter((item) => item.quantity > 0);
     if (!selectedOrderId || !warehouseId || payload.length === 0) {
-      toast.error("Select an order, a warehouse with reserved stock, and quantities");
+      toast.error("Выберите заказ клиента, склад с резервом и количества");
       return;
     }
     for (const item of payload) {
@@ -533,7 +534,7 @@ export const ShipmentForm = ({
         assertEnoughStock(max, item.quantity, "reserved");
         assertShipmentCapacity(line, balances, item.quantity);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Cannot ship more than available");
+        toast.error(error instanceof Error ? error.message : "Нельзя отгрузить больше доступного");
         return;
       }
     }
@@ -545,7 +546,7 @@ export const ShipmentForm = ({
           lines: payload,
           post,
         }),
-      post ? "Shipment posted" : "Shipment draft created",
+      post ? "Отгрузка проведена" : "Черновик отгрузки создан",
       reload,
     );
     if (ok) {
@@ -567,13 +568,13 @@ export const ShipmentForm = ({
           reset();
         }
       }}
-      title="Shipment"
-      description="One order and one warehouse. Lines come from reserved stock at that warehouse."
+      title="Отгрузка"
+      description="Один заказ клиента и один склад. Строки берутся из зарезервированного остатка на этом складе."
     >
       <div className="flex flex-col gap-3">
         {preset?.customerOrderId ? null : (
           <FieldSelect
-            label="Order"
+            label="Заказ клиента"
             value={selectedOrderId}
             items={snapshot.customerOrders
               .filter((item) => item.status === "open")
@@ -586,11 +587,11 @@ export const ShipmentForm = ({
           />
         )}
         <FieldSelect
-          label="Warehouse"
+          label="Склад"
           value={warehouseId}
           items={warehouses.map((item) => ({
             value: item.warehouseId,
-            label: `${warehouseCode(snapshot, item.warehouseId)} · reserved ${formatQuantity(item.quantity)}`,
+            label: `${warehouseCode(snapshot, item.warehouseId)} · зарезервировано ${formatQuantity(item.quantity)}`,
           }))}
           onChange={(value) => {
             setWarehouseId(value);
@@ -599,8 +600,8 @@ export const ShipmentForm = ({
               Object.fromEntries(nextLines.map((item) => [item.line.id, String(item.reserved)])),
             );
           }}
-          placeholder="Select a warehouse"
-          emptyLabel="No reservation in warehouses"
+          placeholder="Выберите склад"
+          emptyLabel="Нет резерва на складах"
         />
         {lines.map((item) => {
           const product = productById(snapshot, item.line.productId);
@@ -622,7 +623,7 @@ export const ShipmentForm = ({
           canSubmit={canSubmit}
           onDraft={() => void submit(false)}
           onPost={() => void submit(true)}
-          postLabel="Ship"
+          postLabel="Отгрузить"
         />
       </div>
     </LogisticsDialog>
@@ -667,7 +668,7 @@ export const ReturnForm = ({
       }))
       .filter((item) => item.quantity > 0);
     if (!selectedShipmentId || payload.length === 0) {
-      toast.error("Enter a return quantity");
+      toast.error("Укажите количество возврата");
       return;
     }
     const ok = await runLogisticsAction(
@@ -677,7 +678,7 @@ export const ReturnForm = ({
           lines: payload,
           post,
         }),
-      post ? "Return posted" : "Return draft created",
+      post ? "Возврат проведён" : "Черновик возврата создан",
       reload,
     );
     if (ok) {
@@ -695,13 +696,13 @@ export const ReturnForm = ({
           reset();
         }
       }}
-      title="Return"
-      description="Return no more than the unreturned shipped quantity. Stock becomes free at the shipment warehouse."
+      title="Возврат"
+      description="Возвращайте не больше ещё не возвращённого отгруженного количества. Остаток становится свободным на складе исходной отгрузки."
     >
       <div className="flex flex-col gap-3">
         {preset?.shipmentId ? null : (
           <FieldSelect
-            label="Shipment"
+            label="Отгрузка"
             value={selectedShipmentId}
             items={snapshot.shipments
               .filter((item) => item.status === "posted")
@@ -735,7 +736,7 @@ export const ReturnForm = ({
           )}
           onDraft={() => void submit(false)}
           onPost={() => void submit(true)}
-          postLabel="Return"
+          postLabel="Вернуть"
         />
       </div>
     </LogisticsDialog>

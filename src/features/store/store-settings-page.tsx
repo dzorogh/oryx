@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -41,7 +42,7 @@ export const StoreSettingsPage = () => {
   const [isLoading, setIsLoading] = useState(configured);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(
-    configured ? null : "Supabase is not configured. Prefixes cannot be saved until the demo backend is connected.",
+    configured ? null : "Supabase не настроен. Префиксы нельзя сохранить, пока не подключён демо-бэкенд.",
   );
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export const StoreSettingsPage = () => {
         setError(null);
       } catch (caught: unknown) {
         if (!cancelled) {
-          setError(caught instanceof Error ? caught.message : "Could not load document prefixes.");
+          setError(caught instanceof Error ? caught.message : "Не удалось загрузить префиксы документов.");
         }
       } finally {
         if (!cancelled) {
@@ -104,10 +105,10 @@ export const StoreSettingsPage = () => {
       const next = await saveLogisticsCodePrefixes(prefixesFromDraft(draft));
       setDraft(next.codePrefixes);
       setSaved(next.codePrefixes);
-      toast.success("Document prefixes saved");
+      toast.success("Префиксы документов сохранены");
     } catch (caught: unknown) {
-      toast.error("Could not save document prefixes", {
-        description: caught instanceof Error ? caught.message : "Try again.",
+      toast.error("Не удалось сохранить префиксы документов", {
+        description: caught instanceof Error ? caught.message : "Попробуйте ещё раз.",
       });
     } finally {
       setIsSaving(false);
@@ -121,13 +122,13 @@ export const StoreSettingsPage = () => {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink render={<Link href={STORE_PRODUCTS_HREF} aria-label="Open Store" />}>
-                  Store
+                <BreadcrumbLink render={<Link href={STORE_PRODUCTS_HREF} aria-label="Открыть магазин" />}>
+                  Магазин
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Settings</BreadcrumbPage>
+                <BreadcrumbPage>Настройки</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -136,9 +137,10 @@ export const StoreSettingsPage = () => {
             <CardHeader className="gap-0 space-y-3 pb-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <h1 className="text-lg font-semibold text-foreground">Settings</h1>
+                  <h1 className="text-lg font-semibold text-foreground">Настройки</h1>
                   <p className="text-xs text-muted-foreground">
-                    Document number prefixes for Store logistics. Codes stay automatic: prefix plus the integer id.
+                    Префиксы номеров документов логистики магазина. Коды остаются автоматическими:
+                    префикс плюс целочисленный id.
                   </p>
                 </div>
                 <Button
@@ -147,7 +149,7 @@ export const StoreSettingsPage = () => {
                   onClick={() => void save()}
                   disabled={!configured || isLoading || isSaving || !isDirty || invalidKinds.length > 0}
                 >
-                  {isSaving ? "Saving…" : "Save prefixes"}
+                  {isSaving ? "Сохранение…" : "Сохранить префиксы"}
                 </Button>
               </div>
             </CardHeader>
@@ -155,7 +157,7 @@ export const StoreSettingsPage = () => {
 
           {error ? (
             <Alert variant={configured ? "destructive" : "default"}>
-              <AlertTitle>{configured ? "Could not load settings" : "Demo backend is offline"}</AlertTitle>
+              <AlertTitle>{configured ? "Не удалось загрузить настройки" : "Демо-бэкенд недоступен"}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : null}
@@ -168,10 +170,10 @@ export const StoreSettingsPage = () => {
           ) : (
             <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
               <CardHeader className="gap-1">
-                <h2 className="text-sm font-semibold text-foreground">Document prefixes</h2>
+                <h2 className="text-sm font-semibold text-foreground">Префиксы документов</h2>
                 <p className="text-xs text-muted-foreground">
-                  Changing a prefix updates displayed codes immediately after save. Existing records keep the same
-                  integer id.
+                  После сохранения отображаемые коды сразу используют новый префикс. У существующих
+                  записей целочисленный id не меняется.
                 </p>
               </CardHeader>
               <CardContent>
@@ -187,14 +189,14 @@ export const StoreSettingsPage = () => {
                           value={prefix}
                           onChange={(event) => updatePrefix(field.kind, event.target.value)}
                           aria-invalid={invalid}
-                          aria-label={`${field.label} prefix`}
+                          aria-label={`Префикс: ${field.label}`}
                           autoCapitalize="characters"
                           autoComplete="off"
                           spellCheck={false}
                           maxLength={8}
                           disabled={!configured}
                         />
-                        <span className="block text-xs text-muted-foreground">Example {example}</span>
+                        <span className="block text-xs text-muted-foreground">Пример {example}</span>
                       </label>
                     );
                   })}

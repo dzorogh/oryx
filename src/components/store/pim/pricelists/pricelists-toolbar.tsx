@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { Coins, Columns3, Download, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -65,10 +66,10 @@ export const PricelistsToolbar = ({
     <CardHeader className="gap-0 space-y-2 pb-0">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="min-w-0 space-y-1">
-          <h1 className="text-lg font-semibold text-foreground">Pricelists</h1>
+          <h1 className="text-lg font-semibold text-foreground">Прайс-листы</h1>
           <p className="text-xs text-muted-foreground">
-            Review and update product prices across regions, compare them side by side, and
-            collaborate with your team in real time.
+            Просматривайте и обновляйте цены по регионам, сравнивайте их рядом
+            и работайте с командой в реальном времени.
           </p>
         </div>
 
@@ -91,7 +92,7 @@ export const PricelistsToolbar = ({
                   onScopeChange(parsePricelistScope(nextValue));
                 }
               }}
-              aria-label="Pricelist type"
+              aria-label="Тип прайс-листа"
             >
               {PRICELIST_SCOPES.map((scopeOption) => (
                 <Tooltip key={scopeOption}>
@@ -125,9 +126,9 @@ export const PricelistsToolbar = ({
                 <SelectTrigger
                   size="default"
                   className="min-w-[140px] flex-1 bg-background lg:w-[180px] lg:flex-none"
-                  aria-label="Select region"
+                  aria-label="Выбрать регион"
                 >
-                  <SelectValue placeholder="Select region" />
+                  <SelectValue placeholder="Выберите регион" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -156,7 +157,7 @@ export const PricelistsToolbar = ({
                     <SelectTrigger
                       size="default"
                       className="w-[90px] shrink-0 gap-1 bg-background"
-                      aria-label="Display currency"
+                      aria-label="Валюта отображения"
                     />
                   }
                 >
@@ -164,8 +165,8 @@ export const PricelistsToolbar = ({
                   <SelectValue />
                 </TooltipTrigger>
                 <TooltipContent side="bottom" align="start" className="max-w-xs text-left">
-                  Display currency for every row. Prices are converted on the fly — only the
-                  source-currency price is stored.
+                  Валюта отображения для всех строк. Цены конвертируются на лету —
+                  сохраняется только цена в исходной валюте.
                 </TooltipContent>
               </Tooltip>
               <SelectContent>
@@ -190,9 +191,9 @@ export const PricelistsToolbar = ({
             <CatalogCategoryTreeFilter
               value={filters.category.value}
               onValueChange={filters.category.onChange}
-              ariaLabel="Quick filter by category"
-              placeholder="Category"
-              allLabel="All categories"
+              ariaLabel="Быстрый фильтр по категории"
+              placeholder="Категория"
+              allLabel="Все категории"
               widthClassName="w-[120px] shrink-0 lg:w-[176px]"
             />
           </div>
@@ -205,14 +206,14 @@ export const PricelistsToolbar = ({
                     type="button"
                     variant={filters.hasActive ? "default" : "outline"}
                     size="icon"
-                    aria-label="Open catalog filters panel"
+                    aria-label="Открыть панель фильтров каталога"
                     onClick={onOpenFilters}
                   />
                 }
               >
                 <SlidersHorizontal aria-hidden />
               </TooltipTrigger>
-              <TooltipContent side="bottom">Filters</TooltipContent>
+              <TooltipContent side="bottom">Фильтры</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -222,14 +223,14 @@ export const PricelistsToolbar = ({
                     type="button"
                     variant={columns.hasCustom ? "default" : "outline"}
                     size="icon"
-                    aria-label="Open catalog columns panel"
+                    aria-label="Открыть панель колонок каталога"
                     onClick={onOpenColumns}
                   />
                 }
               >
                 <Columns3 aria-hidden />
               </TooltipTrigger>
-              <TooltipContent side="bottom">Columns</TooltipContent>
+              <TooltipContent side="bottom">Колонки</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -239,7 +240,7 @@ export const PricelistsToolbar = ({
                     type="button"
                     variant="outline"
                     size="icon"
-                    aria-label="Export pricelist"
+                    aria-label="Экспортировать прайс-лист"
                     onClick={onExport}
                     disabled={isExporting}
                   />
@@ -247,7 +248,7 @@ export const PricelistsToolbar = ({
               >
                 <Download aria-hidden />
               </TooltipTrigger>
-              <TooltipContent side="bottom">{isExporting ? "Exporting…" : "Export"}</TooltipContent>
+              <TooltipContent side="bottom">{isExporting ? "Экспорт…" : "Экспорт"}</TooltipContent>
             </Tooltip>
           </div>
         </div>

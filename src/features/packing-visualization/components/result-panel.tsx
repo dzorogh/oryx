@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -20,7 +21,7 @@ type ResultPanelProps = {
   renderMs: number | null;
 };
 
-const buildStatusText = (isValid: boolean) => (isValid ? "OK" : "Error");
+const buildStatusText = (isValid: boolean) => (isValid ? "ОК" : "Ошибка");
 
 export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) => {
   const [packingMsDisplay, setPackingMsDisplay] = useState<string | null>(null);
@@ -87,7 +88,7 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
 
   return (
     <Card
-      aria-label="Audit panel"
+      aria-label="Панель аудита"
       className="border border-[var(--corportal-border-grey)] bg-[var(--corportal-surface-white)] ring-0"
     >
       <Collapsible defaultOpen={false} className="group">
@@ -99,7 +100,7 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             )}
           >
-            <CardTitle className="text-base">Result audit</CardTitle>
+            <CardTitle className="text-base">Аудит результата</CardTitle>
             <ChevronDown
               className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[open]:rotate-180"
               aria-hidden
@@ -109,46 +110,46 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-2">
             <div className="grid gap-2 text-sm">
-              <p aria-label="Used container count">
-                Containers: {result.usedContainerCount}
+              <p aria-label="Число использованных контейнеров">
+                Контейнеры: {result.usedContainerCount}
               </p>
-              <p aria-label="Packing time across containers">
-                Packing: {packingMsDisplay === null ? "measuring..." : `${packingMsDisplay} ms`}
+              <p aria-label="Время упаковки по контейнерам">
+                Упаковка: {packingMsDisplay === null ? "измерение..." : `${packingMsDisplay} мс`}
               </p>
-              <p aria-label="Result page render time">
-                Render: {renderMs === null ? "measuring..." : `${renderMs.toFixed(2)} ms`}
+              <p aria-label="Время отрисовки страницы результата">
+                Отрисовка: {renderMs === null ? "измерение..." : `${renderMs.toFixed(2)} мс`}
               </p>
-              <p aria-label="Placed unit count">
-                Placed: {result.summary.placedUnits} / {result.summary.totalUnits}
+              <p aria-label="Число размещённых единиц">
+                Размещено: {result.summary.placedUnits} / {result.summary.totalUnits}
               </p>
-              <p aria-label="Unplaced unit count">Unplaced: {result.summary.unplacedUnits}</p>
+              <p aria-label="Число неразмещённых единиц">Не размещено: {result.summary.unplacedUnits}</p>
             </div>
 
             <Separator />
 
             <div className="flex flex-wrap gap-x-3 gap-y-2 text-sm">
               <span className="inline-flex items-center gap-2">
-                Geometry: {statusBadge(result.validation.geometryValid)}
+                Геометрия: {statusBadge(result.validation.geometryValid)}
               </span>
               <span className="inline-flex items-center gap-2">
-                Support: {statusBadge(result.validation.supportValid)}
+                Опора: {statusBadge(result.validation.supportValid)}
               </span>
               <span className="inline-flex items-center gap-2">
-                Completeness: {statusBadge(result.validation.completenessValid)}
+                Полнота: {statusBadge(result.validation.completenessValid)}
               </span>
               <span className="inline-flex items-center gap-2">
-                Deterministic: {statusBadge(result.validation.deterministic)}
+                Детерминированность: {statusBadge(result.validation.deterministic)}
               </span>
             </div>
 
             <Separator />
 
             <div className="space-y-2 text-sm">
-              <h3 className="font-medium">Issues</h3>
+              <h3 className="font-medium">Проблемы</h3>
               {result.validation.violations.length === 0 ? (
-                <p aria-label="No violations">No violations.</p>
+                <p aria-label="Нарушений нет">Нарушений нет.</p>
               ) : (
-                <ul className="list-disc space-y-1 pl-5 text-destructive" aria-label="Violation list">
+                <ul className="list-disc space-y-1 pl-5 text-destructive" aria-label="Список нарушений">
                   {result.validation.violations.map((violation) => (
                     <li key={violation}>{violation}</li>
                   ))}
@@ -159,16 +160,16 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
             <Separator />
 
             <div className="space-y-2 text-sm">
-              <h3 className="font-medium" aria-label="Side orientation check">
-                Units placed on side
+              <h3 className="font-medium" aria-label="Проверка ориентации на бок">
+                Единицы на боку
               </h3>
               {onSideUnits.length === 0 ? (
-                <p aria-label="On side: none">None.</p>
+                <p aria-label="На боку: нет">Нет.</p>
               ) : (
-                <ul className="list-disc space-y-1 pl-5" aria-label="Units on side list">
+                <ul className="list-disc space-y-1 pl-5" aria-label="Список единиц на боку">
                   {onSideUnits.map((u) => (
-                    <li key={u.unitId} aria-label={`Unit ${u.unitId} on side`}>
-                      {u.unitId} — {u.itemName} (height: expected {u.expectedHeight}, got {u.actualHeight})
+                    <li key={u.unitId} aria-label={`Единица ${u.unitId} на боку`}>
+                      {u.unitId} — {u.itemName} (высота: ожидалось {u.expectedHeight}, получилось {u.actualHeight})
                     </li>
                   ))}
                 </ul>
@@ -178,20 +179,20 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
             <Separator />
 
             <div className="space-y-2 text-sm">
-              <h3 className="font-medium">Post-check</h3>
-              <p aria-label="Non-last container empty volume post-check status">
-                Non-last containers (empty volume): {statusBadge(emptyVolumePostCheck.pass)}
+              <h3 className="font-medium">Постпроверка</h3>
+              <p aria-label="Статус постпроверки пустого объёма непоследних контейнеров">
+                Непоследние контейнеры (пустой объём): {statusBadge(emptyVolumePostCheck.pass)}
               </p>
-              <p aria-label="Max empty volume in non-last containers">
-                Max empty volume: {emptyVolumePostCheck.maxEmptyVolumePercent.toFixed(2)}% (threshold{" "}
+              <p aria-label="Максимальный пустой объём в непоследних контейнерах">
+                Макс. пустой объём: {emptyVolumePostCheck.maxEmptyVolumePercent.toFixed(2)}% (порог{" "}
                 {emptyVolumePostCheck.thresholdPercent}%)
               </p>
-              <p aria-label="Checked non-last container count">
-                Containers checked: {emptyVolumePostCheck.checkedContainerCount}
+              <p aria-label="Число проверенных непоследних контейнеров">
+                Проверено контейнеров: {emptyVolumePostCheck.checkedContainerCount}
               </p>
               {!emptyVolumePostCheck.pass && emptyVolumePostCheck.failingContainerIndex !== null ? (
-                <p aria-label="Container exceeding empty volume threshold" className="text-destructive">
-                  Threshold exceeded in container #{emptyVolumePostCheck.failingContainerIndex}
+                <p aria-label="Контейнер с превышением порога пустого объёма" className="text-destructive">
+                  Порог превышен в контейнере #{emptyVolumePostCheck.failingContainerIndex}
                 </p>
               ) : null}
             </div>
@@ -199,11 +200,11 @@ export const ResultPanel = ({ result, orderItems, renderMs }: ResultPanelProps) 
             <Separator />
 
             <div className="space-y-2 text-sm">
-              <h3 className="font-medium">Unplaced units</h3>
+              <h3 className="font-medium">Неразмещённые единицы</h3>
               {result.unplacedItemUnitIds.length === 0 ? (
-                <p aria-label="All units placed">All units placed.</p>
+                <p aria-label="Все единицы размещены">Все единицы размещены.</p>
               ) : (
-                <ul className="list-disc space-y-1 pl-5" aria-label="Unplaced units list">
+                <ul className="list-disc space-y-1 pl-5" aria-label="Список неразмещённых единиц">
                   {result.unplacedItemUnitIds.map((unitId) => (
                     <li key={unitId}>{unitId}</li>
                   ))}

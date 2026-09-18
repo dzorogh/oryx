@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import type { ReactNode } from "react";
@@ -10,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ProductPhoto } from "@/features/store/product-photo";
+import { getCategoryNodeLabel } from "@/features/store/category-tree";
 import { getCatalogItemDetailHref } from "./catalog-helpers";
 import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
 import { CatalogBuyTooltip } from "./catalog-buy-tooltip";
@@ -17,6 +19,7 @@ import { type CatalogColumnId, getCatalogColumnDefinition } from "./catalog-colu
 import {
   SKELETON_ROW_COUNT,
   formatCatalogPrice,
+  formatCatalogStatus,
   formatCatalogUpdatedAt,
   formatPrice,
   getDisplayProductName,
@@ -52,7 +55,7 @@ const ProductThumbnailPreview = ({
       render={
         <Link
           href={productHref}
-          aria-label={`Open product ${displayName}`}
+          aria-label={`Открыть товар ${displayName}`}
           className="pointer-events-auto relative z-20 block size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         />
       }
@@ -117,7 +120,7 @@ const StatusBadge = ({ status, className }: { status: DealerStatus | RetailStatu
       className,
     )}
   >
-    {status}
+    {formatCatalogStatus(status)}
   </Badge>
 );
 
@@ -169,8 +172,8 @@ const DealerCell = ({ item, showBuyButton, priceFromPrefix }: DealerCellProps) =
   const blockReason = getPurchaseBlockReason(item);
   const canBuy = blockReason === null;
   const buyLabel = canBuy
-    ? `Add "${displayName}" to cart for ${formatPrice(item.dealerPrice as number)}`
-    : `"${displayName}" is unavailable for purchase: ${blockReason}`;
+    ? `Добавить «${displayName}» в корзину за ${formatPrice(item.dealerPrice as number)}`
+    : `«${displayName}» недоступен для заказа: ${blockReason}`;
 
   return (
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
@@ -222,14 +225,14 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
       return <Badge variant="outline">{item.brand}</Badge>;
     case "category":
       return (
-        <span className="block truncate text-sm" title={item.category}>
-          {item.category}
+        <span className="block truncate text-sm" title={getCategoryNodeLabel(item.categoryId) ?? item.category}>
+          {getCategoryNodeLabel(item.categoryId) ?? item.category}
         </span>
       );
     case "site":
       return <span className="text-xs font-semibold text-muted-foreground">{item.productionSite}</span>;
     case "stock":
-      return <span className="text-sm">{item.stock} pcs</span>;
+      return <span className="text-sm">{item.stock} шт</span>;
     case "updatedAt":
       return <span className="text-sm text-muted-foreground">{formatCatalogUpdatedAt(item.updatedAt)}</span>;
     case "dealer":
@@ -318,7 +321,7 @@ const CatalogTableRow = ({
           <Link
             href={productHref}
             className="absolute inset-0 z-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
-            aria-label={columnIndex === 0 ? `Open product ${displayName}` : undefined}
+            aria-label={columnIndex === 0 ? `Открыть товар ${displayName}` : undefined}
             aria-hidden={columnIndex === 0 ? undefined : true}
             tabIndex={columnIndex === 0 ? undefined : -1}
           />
@@ -392,7 +395,7 @@ export const CatalogTable = ({
               ) : items.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columnCount} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                    No products match the selected filters.
+                    Нет товаров, подходящих под выбранные фильтры.
                   </TableCell>
                 </TableRow>
               ) : (

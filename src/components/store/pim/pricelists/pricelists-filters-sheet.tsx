@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,54 +17,54 @@ export const PricelistsFiltersSheet = ({ open, onOpenChange, filters }: Pricelis
   <Sheet open={open} onOpenChange={onOpenChange}>
     <SheetContent side="right" className="w-full sm:max-w-md">
       <SheetHeader>
-        <SheetTitle>Filters</SheetTitle>
-        <SheetDescription>Narrow down products before editing prices.</SheetDescription>
+        <SheetTitle>Фильтры</SheetTitle>
+        <SheetDescription>Отберите товары перед правкой цен.</SheetDescription>
       </SheetHeader>
 
       <div className="grid gap-4 pb-4">
         <label className="space-y-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Search by name</span>
+          <span className="text-xs font-medium text-muted-foreground">Поиск по названию</span>
           <Input
             value={filters.search.value}
             onChange={(event) => filters.search.onChange(event.target.value)}
-            placeholder="Name or SKU"
-            aria-label="Search by name or SKU in the full filters panel"
+            placeholder="Название или артикул"
+            aria-label="Поиск по названию или артикулу в панели фильтров"
           />
         </label>
 
         <div className="space-y-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Category</span>
+          <span className="text-xs font-medium text-muted-foreground">Категория</span>
           <CatalogCategoryTreeFilter
             value={filters.category.value}
             onValueChange={filters.category.onChange}
-            ariaLabel="Filter by category"
-            placeholder="All categories"
-            allLabel="All categories"
+            ariaLabel="Фильтр по категории"
+            placeholder="Все категории"
+            allLabel="Все категории"
             widthClassName="w-full"
           />
         </div>
 
         <label className="space-y-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Brand</span>
+          <span className="text-xs font-medium text-muted-foreground">Бренд</span>
           <CatalogQuickSelectControl
             value={filters.brand.value}
             onValueChange={filters.brand.onChange}
-            ariaLabel="Filter by brand"
-            placeholder="All brands"
-            allLabel="All brands"
+            ariaLabel="Фильтр по бренду"
+            placeholder="Все бренды"
+            allLabel="Все бренды"
             options={filters.brand.options}
             widthClassName="w-full"
           />
         </label>
 
         <label className="space-y-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Family</span>
+          <span className="text-xs font-medium text-muted-foreground">Семейство</span>
           <CatalogQuickSelectControl
             value={filters.family.value}
             onValueChange={filters.family.onChange}
-            ariaLabel="Filter by product family"
-            placeholder="All families"
-            allLabel="All families"
+            ariaLabel="Фильтр по семейству товара"
+            placeholder="Все семейства"
+            allLabel="Все семейства"
             options={filters.family.options}
             widthClassName="w-full"
           />
@@ -77,10 +78,10 @@ export const PricelistsFiltersSheet = ({ open, onOpenChange, filters }: Pricelis
             variant="ghost"
             size="sm"
             onClick={filters.onReset}
-            aria-label="Reset all pricelist filters"
+            aria-label="Сбросить все фильтры прайс-листа"
           >
             <X aria-hidden className="size-3.5" />
-            Reset filters
+            Сбросить фильтры
           </Button>
         ) : null}
       </SheetFooter>

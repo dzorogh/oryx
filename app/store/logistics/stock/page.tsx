@@ -1,9 +1,10 @@
+// english-ui:ignore-file
 import type { Metadata } from "next";
 import { StockPage } from "@/features/logistics/stock-page";
 
 export const metadata: Metadata = {
-  title: "Stock | Store Logistics | Oryx BMS",
-  description: "Stock by place and state from the immutable ledger",
+  title: "Остатки | Логистика магазина | Oryx BMS",
+  description: "Остатки по местам и состояниям из журнала",
 };
 
 const Page = () => <StockPage />;

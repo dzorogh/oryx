@@ -21,21 +21,21 @@ export type CatalogListingMode = "products" | "variants";
 export const CATALOG_LISTING_MODES: CatalogListingMode[] = ["products", "variants"];
 
 export const CATALOG_LISTING_MODE_LABELS: Record<CatalogListingMode, string> = {
-  products: "Products",
-  variants: "Variants",
+  products: "Товары",
+  variants: "Варианты",
 };
 
 export const CATALOG_LISTING_MODE_DESCRIPTIONS: Record<CatalogListingMode, string> = {
   products:
-    "Base items linked to category, brand, and family. Not purchasable — for info catalogs and presentations.",
+    "Базовые позиции с категорией, брендом и семейством. Не продаются — для информационных каталогов и презентаций.",
   variants:
-    "Purchasable items with prices and stock. Site, specs, and channel status may differ between variants.",
+    "Позиции с ценами и остатками, которые можно заказать. Площадка, характеристики и статусы каналов могут отличаться.",
 };
 
 export const STORE_CATALOG_PAGE = {
-  breadcrumbLabel: "Products",
-  pageTitle: "Products",
-  pageDescription: "Manage assortment, pricing, and dealer and retail channel statuses.",
+  breadcrumbLabel: "Товары",
+  pageTitle: "Товары",
+  pageDescription: "Ассортимент, цены и статусы дилерского и розничного каналов.",
   storeLinkHref: "/store/pim/products",
 } as const;
 
@@ -56,8 +56,8 @@ export const getCatalogColumnsStorageKey = (listingMode: CatalogListingMode) =>
 
 export const getCatalogAddButtonAriaLabel = (listingMode: CatalogListingMode) =>
   listingMode === "products"
-    ? "Add a new product to the catalog"
-    : "Add a new variant to the catalog";
+    ? "Добавить товар в каталог"
+    : "Добавить вариант в каталог";
 
 export const SKELETON_ROW_COUNT = 10;
 
@@ -67,14 +67,14 @@ export type QuickFilterOption = {
 };
 
 export const formatPrice = (price: number) =>
-  `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(price)} USD`;
+  `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(price)} USD`;
 
 export const formatCatalogPrice = (price: number | null, { from = false }: { from?: boolean } = {}) => {
   if (price === null) {
     return "—";
   }
   const formatted = formatPrice(price);
-  return from ? `from ${formatted}` : formatted;
+  return from ? `от ${formatted}` : formatted;
 };
 
 export const getSelectValue = (value: string | null) => value ?? ALL_VALUE;
@@ -90,15 +90,15 @@ type PurchasableCatalogItem = Pick<StoreCatalogItem, "dealerStatus" | "dealerPri
 
 export const getPurchaseBlockReason = (item: PurchasableCatalogItem): string | null => {
   if (item.dealerStatus === "Hidden") {
-    return "This product is hidden and cannot be ordered.";
+    return "Товар скрыт и его нельзя заказать.";
   }
 
   if (item.dealerStatus === "Unavailable for purchase") {
-    return "This product is temporarily unavailable for purchase.";
+    return "Товар временно недоступен для заказа.";
   }
 
   if (item.dealerPrice === null) {
-    return "No dealer price is set for this product.";
+    return "Для товара не задана дилерская цена.";
   }
 
   return null;
@@ -112,6 +112,24 @@ export const matchesSearchQuery = (item: StoreCatalogItem, query: string) => {
   return `${item.name} ${getDisplayProductName(item.name)} ${item.code} ${item.sku}`.toLowerCase().includes(query);
 };
 
+export const CATALOG_DEALER_STATUS_LABELS: Record<DealerStatus, string> = {
+  Hidden: "Скрыт",
+  "Available for purchase": "Доступен к заказу",
+  "Unavailable for purchase": "Недоступен к заказу",
+};
+
+export const CATALOG_RETAIL_STATUS_LABELS: Record<RetailStatus, string> = {
+  "Available for sale": "В продаже",
+  "Made to order": "Под заказ",
+  "Awaiting delivery": "Ожидает поставки",
+  Archived: "В архиве",
+};
+
+export const formatCatalogStatus = (status: DealerStatus | RetailStatus): string =>
+  CATALOG_DEALER_STATUS_LABELS[status as DealerStatus] ??
+  CATALOG_RETAIL_STATUS_LABELS[status as RetailStatus] ??
+  status;
+
 export const statusBadgeClassMap: Record<DealerStatus | RetailStatus, string> = {
   Hidden: "bg-zinc-100 text-zinc-700",
   "Available for purchase": "bg-emerald-100 text-emerald-700",
@@ -123,7 +141,7 @@ export const statusBadgeClassMap: Record<DealerStatus | RetailStatus, string> = 
 };
 
 export const formatCatalogUpdatedAt = (updatedAt: string) =>
-  new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(updatedAt));
+  new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(new Date(updatedAt));
 
 export const buildPaginationItems = (currentPage: number, totalPages: number): Array<number | "ellipsis"> => {
   if (totalPages <= 7) {

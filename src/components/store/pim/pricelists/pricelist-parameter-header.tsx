@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { MoreHorizontal, Plus } from "lucide-react";
@@ -52,8 +53,8 @@ export const PricelistParameterHeaderCell = ({
         <button
           type="button"
           onClick={onInsertBefore}
-          aria-label={`Insert parameter before ${def.label}`}
-          title="Insert parameter here"
+          aria-label={`Вставить параметр перед «${def.label}»`}
+          title="Вставить параметр здесь"
           className="group/insert absolute inset-y-0 -left-2 z-10 flex w-3 items-center justify-center"
         >
           <span className="flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-sm transition-opacity group-hover/insert:opacity-100">
@@ -100,7 +101,7 @@ export const PricelistParameterHeaderCell = ({
         <DropdownMenu>
           <DropdownMenuTrigger
             onPointerDown={(event) => event.stopPropagation()}
-            aria-label={`${def.label} parameter options`}
+            aria-label={`Параметры «${def.label}»`}
             className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <MoreHorizontal className="size-3.5" aria-hidden />

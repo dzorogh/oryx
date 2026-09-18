@@ -1,9 +1,10 @@
+// english-ui:ignore-file
 import type { Metadata } from "next";
 import { OutputsPage } from "@/features/logistics/flow-documents-pages";
 
 export const metadata: Metadata = {
-  title: "Outputs | Store Logistics | Oryx BMS",
-  description: "Production outputs",
+  title: "Выпуски | Логистика магазина | Oryx BMS",
+  description: "Выпуски заказов на производство",
 };
 
 const Page = () => <OutputsPage />;

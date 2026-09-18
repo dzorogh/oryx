@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { itemMatchesCategoryFilter } from "@/features/store/category-tree";
-import type { StoreCatalogItem } from "../store-catalog-demo-data";
+import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
 import {
   DEFAULT_VISIBLE_COLUMNS,
   type CatalogColumnId,
@@ -15,6 +15,7 @@ import {
   PAGE_SIZE,
   buildPaginationItems,
   extractSortedOptions,
+  formatCatalogStatus,
   getSelectValue,
   getCatalogSourceItems,
   matchesSearchQuery,
@@ -71,8 +72,8 @@ export type CatalogController = {
 // Имитация задержки ответа сервера при загрузке данных каталога.
 const SERVER_RESPONSE_DELAY_MS = 200;
 
-const toFilterOptions = (values: string[]): QuickFilterOption[] =>
-  values.map((value) => ({ value, label: value }));
+const toFilterOptions = (values: string[], formatLabel?: (value: string) => string): QuickFilterOption[] =>
+  values.map((value) => ({ value, label: formatLabel?.(value) ?? value }));
 
 export const useCatalogController = (
   listingMode: CatalogListingMode,
@@ -95,11 +96,17 @@ export const useCatalogController = (
   const [familyFilter, setFamilyFilter] = useState(ALL_VALUE);
 
   const dealerStatusOptions = useMemo(
-    () => toFilterOptions(extractSortedOptions(sourceItems, "dealerStatus")),
+    () =>
+      toFilterOptions(extractSortedOptions(sourceItems, "dealerStatus"), (value) =>
+        formatCatalogStatus(value as DealerStatus),
+      ),
     [sourceItems],
   );
   const retailStatusOptions = useMemo(
-    () => toFilterOptions(extractSortedOptions(sourceItems, "retailStatus")),
+    () =>
+      toFilterOptions(extractSortedOptions(sourceItems, "retailStatus"), (value) =>
+        formatCatalogStatus(value as RetailStatus),
+      ),
     [sourceItems],
   );
   const siteOptions = useMemo(

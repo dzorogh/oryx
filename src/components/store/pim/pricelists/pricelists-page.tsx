@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import Link from "next/link";
@@ -36,7 +37,7 @@ import { usePricelistParameters } from "./use-pricelist-parameters";
 import { usePricelistsController, type AvailabilityFilter } from "./use-pricelists-controller";
 
 const PricelistsPageFallback = () => (
-  <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Loading pricelists" />
+  <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Загрузка прайс-листов" />
 );
 
 const PricelistsPageContent = () => {
@@ -149,9 +150,9 @@ const PricelistsPageContent = () => {
         parameters,
         displayCurrency,
       });
-      toast.success(`Exported ${controller.filteredItems.length} products`);
+      toast.success(`Экспортировано товаров: ${controller.filteredItems.length}`);
     } catch {
-      toast.error("Could not export the pricelist. Please try again.");
+      toast.error("Не удалось экспортировать прайс-лист. Попробуйте ещё раз.");
     } finally {
       setIsExporting(false);
     }
@@ -175,13 +176,13 @@ const PricelistsPageContent = () => {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink render={<Link href="/store/pim/products" aria-label="Open Store section" />}>
-                  Store
+                <BreadcrumbLink render={<Link href="/store/pim/products" aria-label="Открыть магазин" />}>
+                  Магазин
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Pricelists</BreadcrumbPage>
+                <BreadcrumbPage>Прайс-листы</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>

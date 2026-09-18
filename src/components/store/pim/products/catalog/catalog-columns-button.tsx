@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { Columns3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -14,10 +15,10 @@ export const CatalogColumnsButton = ({ hasCustomColumns, disabled = false, onCli
     size="default"
     disabled={disabled}
     onClick={onClick}
-    aria-label="Open catalog columns panel"
+    aria-label="Открыть панель колонок каталога"
     aria-disabled={disabled}
   >
     <Columns3 aria-hidden className="size-3.5" />
-    Columns
+    Колонки
   </Button>
 );

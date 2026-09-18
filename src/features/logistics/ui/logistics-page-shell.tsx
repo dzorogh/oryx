@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import type { ReactNode } from "react";
@@ -29,14 +30,14 @@ export const LogisticsPageShell = ({ crumbs, children }: LogisticsPageShellProps
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href={STORE_PRODUCTS_PATH} aria-label="Open Store" />}>
-                Store
+              <BreadcrumbLink render={<Link href={STORE_PRODUCTS_PATH} aria-label="Открыть Магазин" />}>
+                Магазин
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href={LOGISTICS_PATHS.stock} aria-label="Open Logistics" />}>
-                Logistics
+              <BreadcrumbLink render={<Link href={LOGISTICS_PATHS.stock} aria-label="Открыть Логистику" />}>
+                Логистика
               </BreadcrumbLink>
             </BreadcrumbItem>
             {crumbs.map((crumb, index) => (

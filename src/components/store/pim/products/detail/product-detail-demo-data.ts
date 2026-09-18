@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import type { StaticImageData } from "next/image";
 
 import { STORE_DEMO_IMAGE_LIST } from "@/assets/store/demo-images";
@@ -7,6 +8,7 @@ import {
   type RetailStatus,
   type StoreCatalogItem,
 } from "../store-catalog-demo-data";
+import { getCategoryNodeLabel } from "@/features/store/category-tree";
 import { getDisplayProductName } from "../catalog/catalog-display";
 import { buildProductDescriptions } from "./product-detail-descriptions";
 
@@ -60,58 +62,58 @@ export type ProductDetail = {
 const ATTRIBUTE_GROUPS_TEMPLATE: ProductAttributeGroup[] = [
   {
     id: "dimensions",
-    label: "Dimensions",
-    rows: [{ label: "Fuel tank volume", value: "5" }],
+    label: "Габариты",
+    rows: [{ label: "Объём топливного бака", value: "5" }],
   },
   {
     id: "engine",
-    label: "Engine",
+    label: "Двигатель",
     rows: [
-      { label: "Number of strokes", value: "4" },
-      { label: "Number of cylinders", value: "1" },
-      { label: "Maximum speed", value: "32" },
-      { label: "Power (hp)", value: "21" },
-      { label: "Engine displacement", value: "250" },
-      { label: "Fuel consumption", value: "3" },
-      { label: "Starting system", value: "Electric starter" },
-      { label: "Fuel delivery system", value: "Carburetor" },
-      { label: "Ignition type", value: "CDI" },
-      { label: "Cooling type", value: "Air" },
+      { label: "Число тактов", value: "4" },
+      { label: "Число цилиндров", value: "1" },
+      { label: "Максимальная скорость", value: "32" },
+      { label: "Мощность (л.с.)", value: "21" },
+      { label: "Рабочий объём", value: "250" },
+      { label: "Расход топлива", value: "3" },
+      { label: "Система запуска", value: "Электростартер" },
+      { label: "Система подачи топлива", value: "Карбюратор" },
+      { label: "Тип зажигания", value: "CDI" },
+      { label: "Тип охлаждения", value: "Воздушное" },
     ],
   },
   {
     id: "recommendations",
-    label: "Recommendations",
-    rows: [{ label: "Recommended fuel", value: "AI-92" }],
+    label: "Рекомендации",
+    rows: [{ label: "Рекомендуемое топливо", value: "АИ-92" }],
   },
   {
     id: "transmission",
-    label: "Transmission",
-    rows: [{ label: "Transmission type", value: "Automatic" }],
+    label: "Трансмиссия",
+    rows: [{ label: "Тип трансмиссии", value: "Автомат" }],
   },
   {
     id: "specifications",
-    label: "Specifications",
-    rows: [{ label: "Drive type", value: "4x4" }],
+    label: "Характеристики",
+    rows: [{ label: "Тип привода", value: "4x4" }],
   },
   {
     id: "chassis",
-    label: "Chassis",
-    rows: [{ label: "Suspension", value: "Independent" }],
+    label: "Ходовая часть",
+    rows: [{ label: "Подвеска", value: "Независимая" }],
   },
 ];
 
 const LOGISTICS_TEMPLATE: ProductAttributeRow[] = [
-  { label: "Height (cm)", value: "85" },
-  { label: "Width (cm)", value: "80" },
-  { label: "Length (cm)", value: "149" },
-  { label: "Weight (kg)", value: "208" },
-  { label: "Max units per container", value: "64" },
-  { label: "Volume (m³)", value: "1.0132" },
-  { label: "Stacking", value: "Yes" },
-  { label: "Stacking limit", value: "—" },
-  { label: "Rotate along length", value: "No" },
-  { label: "Rotate along width", value: "No" },
+  { label: "Высота (см)", value: "85" },
+  { label: "Ширина (см)", value: "80" },
+  { label: "Длина (см)", value: "149" },
+  { label: "Вес (кг)", value: "208" },
+  { label: "Макс. единиц в контейнере", value: "64" },
+  { label: "Объём (м³)", value: "1.0132" },
+  { label: "Штабелирование", value: "Да" },
+  { label: "Лимит штабелирования", value: "—" },
+  { label: "Поворот по длине", value: "Нет" },
+  { label: "Поворот по ширине", value: "Нет" },
 ];
 
 type VariantTrim = {
@@ -125,10 +127,10 @@ type VariantTrim = {
 };
 
 const VARIANT_TRIMS: VariantTrim[] = [
-  { suffix: "", trimLabel: "Standard", color: "Graphite Black", powerDelta: 0, speedDelta: 0, priceDelta: 0, productionSite: null },
-  { suffix: "Touring", trimLabel: "Touring", color: "Arctic White", powerDelta: 3, speedDelta: 5, priceDelta: 750, productionSite: "SH-21" },
-  { suffix: "Expedition", trimLabel: "Expedition", color: "Forest Green", powerDelta: 6, speedDelta: 9, priceDelta: 1450, productionSite: "SH-40" },
-  { suffix: "Pro", trimLabel: "Pro", color: "Racing Red", powerDelta: 10, speedDelta: 14, priceDelta: 2400, productionSite: "SH-53" },
+  { suffix: "", trimLabel: "Стандарт", color: "Графитовый чёрный", powerDelta: 0, speedDelta: 0, priceDelta: 0, productionSite: null },
+  { suffix: "Touring", trimLabel: "Туринг", color: "Арктический белый", powerDelta: 3, speedDelta: 5, priceDelta: 750, productionSite: "SH-21" },
+  { suffix: "Expedition", trimLabel: "Экспедиция", color: "Лесной зелёный", powerDelta: 6, speedDelta: 9, priceDelta: 1450, productionSite: "SH-40" },
+  { suffix: "Pro", trimLabel: "Pro", color: "Гоночный красный", powerDelta: 10, speedDelta: 14, priceDelta: 2400, productionSite: "SH-53" },
 ];
 
 // Распределение количества вариантов по «корзине» хэша: чаще 1, реже 2, ещё реже 3–4.
@@ -159,10 +161,10 @@ const buildAttributeGroups = (trim: VariantTrim): ProductAttributeGroup[] =>
       return {
         ...group,
         rows: group.rows.map((row) => {
-          if (row.label === "Power (hp)") {
+          if (row.label === "Мощность (л.с.)") {
             return { ...row, value: String(BASE_POWER_HP + trim.powerDelta) };
           }
-          if (row.label === "Maximum speed") {
+          if (row.label === "Максимальная скорость") {
             return { ...row, value: String(BASE_MAX_SPEED + trim.speedDelta) };
           }
           return row;
@@ -175,8 +177,8 @@ const buildAttributeGroups = (trim: VariantTrim): ProductAttributeGroup[] =>
         ...group,
         rows: [
           ...group.rows,
-          { label: "Trim level", value: trim.trimLabel },
-          { label: "Color", value: trim.color },
+          { label: "Комплектация", value: trim.trimLabel },
+          { label: "Цвет", value: trim.color },
         ],
       };
     }
@@ -232,7 +234,7 @@ const buildProductDetail = (item: StoreCatalogItem): ProductDetail => {
     sku: item.sku || null,
     brand: "Sharmax",
     family: item.family,
-    category: item.category,
+    category: getCategoryNodeLabel(item.categoryId) ?? item.category,
     categoryId: item.categoryId,
     stock,
     description,

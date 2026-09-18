@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -44,7 +45,7 @@ export const CatalogToolbar = ({
 
         <Button type="button" size="default" className="shrink-0" aria-label={addButtonAriaLabel}>
           <Plus aria-hidden className="size-3.5" />
-          Add
+          Добавить
         </Button>
       </div>
 
@@ -63,7 +64,7 @@ export const CatalogToolbar = ({
                 onListingModeChange(nextValue);
               }
             }}
-            aria-label="Catalog listing type"
+            aria-label="Тип списка каталога"
           >
             {CATALOG_LISTING_MODES.map((mode) => (
               <Tooltip key={mode}>
@@ -87,9 +88,9 @@ export const CatalogToolbar = ({
         <CatalogCategoryTreeFilter
           value={filters.category.value}
           onValueChange={filters.category.onChange}
-          ariaLabel="Quick filter by category"
-          placeholder="Category"
-          allLabel="All categories"
+          ariaLabel="Быстрый фильтр по категории"
+          placeholder="Категория"
+          allLabel="Все категории"
           widthClassName="w-[220px]"
         />
 

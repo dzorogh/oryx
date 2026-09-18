@@ -1,9 +1,10 @@
+// english-ui:ignore-file
 import type { Metadata } from "next";
 import { ReservationsPage } from "@/features/logistics/reservations-page";
 
 export const metadata: Metadata = {
-  title: "Reservations | Store Logistics | Oryx BMS",
-  description: "Stock reservations",
+  title: "Резервы | Логистика магазина | Oryx BMS",
+  description: "Резервы остатков",
 };
 
 const Page = () => <ReservationsPage />;

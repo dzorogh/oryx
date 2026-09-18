@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import Link from "next/link";
@@ -5,7 +6,15 @@ import { ArrowUpRight, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatQuantity } from "@/features/logistics/logistics-labels";
+import {
+  CUSTOMER_ORDER_STATUS_LABELS,
+  DOCUMENT_STATUS_LABELS,
+  formatExpectedEnd,
+  formatQuantity,
+  OUTPUT_STATUS_LABELS,
+  PRODUCTION_STATUS_LABELS,
+  TRANSFER_STATUS_LABELS,
+} from "@/features/logistics/logistics-labels";
 import {
   productActivity,
   type ProductActivityKind,
@@ -21,36 +30,20 @@ const SECTION_COPY: Record<
   ProductActivityKind,
   { title: string; href: string; always: boolean }
 > = {
-  customer_order: { title: "Customer orders", href: "/store/logistics/customer-orders", always: true },
-  production_order: { title: "Production orders", href: "/store/logistics/production-orders", always: true },
-  transfer: { title: "Transfers", href: "/store/logistics/transfers", always: false },
-  output: { title: "Outputs", href: "/store/logistics/outputs", always: false },
-  shipment: { title: "Shipments", href: "/store/logistics/shipments", always: false },
+  customer_order: { title: "Заказы клиента", href: "/store/logistics/customer-orders", always: true },
+  production_order: { title: "Заказы на производство", href: "/store/logistics/production-orders", always: true },
+  transfer: { title: "Перемещения", href: "/store/logistics/transfers", always: false },
+  output: { title: "Выпуски", href: "/store/logistics/outputs", always: false },
+  shipment: { title: "Отгрузки", href: "/store/logistics/shipments", always: false },
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  open: "Open",
-  closed: "Closed",
-  draft: "Draft",
-  planned: "Planned",
-  in_progress: "In progress",
-  done: "Done",
-  cancelled: "Cancelled",
-  posted: "Posted",
-  sent: "Sent",
-  delivered: "Delivered",
-};
-
-const formatDue = (value: string | null): string | null => {
-  if (!value) {
-    return null;
-  }
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
+const STATUS_LABELS = {
+  ...DOCUMENT_STATUS_LABELS,
+  ...TRANSFER_STATUS_LABELS,
+  ...PRODUCTION_STATUS_LABELS,
+  ...OUTPUT_STATUS_LABELS,
+  ...CUSTOMER_ORDER_STATUS_LABELS,
+} as Record<string, string>;
 
 const statusVariant = (status: string): "outline" | "secondary" | "default" | "destructive" => {
   if (status === "cancelled") {
@@ -74,11 +67,14 @@ const ActivityRow = ({
   row: ProductActivityRow;
   unit?: string;
 }) => {
-  const due = formatDue(row.expectedEndOn);
   const details = [
     formatQuantity(row.quantity, unit),
     row.manufacturerId ? null : row.hint,
-    row.hasExpectedEnd ? (due ? `Expected end ${due}` : "No expected end") : null,
+    row.hasExpectedEnd
+      ? row.expectedEndOn
+        ? `Ожидаемое окончание ${formatExpectedEnd(row.expectedEndOn)}`
+        : "Без срока"
+      : null,
   ].filter(Boolean);
 
   return (
@@ -107,7 +103,7 @@ const ActivityRow = ({
           <Link
             href={row.href}
             className="text-muted-foreground opacity-0 transition-opacity group-hover/item:opacity-100"
-            aria-label={`Open ${row.number}`}
+            aria-label={`Открыть ${row.number}`}
           >
             <ArrowUpRight className="size-3" />
           </Link>
@@ -135,9 +131,9 @@ export const ProductActivityCard = ({
   return (
     <Card size="sm" className={cn(logisticsCardClass, "gap-0 overflow-hidden py-0")}>
       <div className="flex flex-col gap-1 px-3 py-2.5">
-        <h2 className="text-sm font-semibold">Current activity</h2>
+        <h2 className="text-sm font-semibold">Текущая активность</h2>
         <p className="text-xs text-muted-foreground">
-          Documents that currently involve this product — status and expected end when the document has one.
+          Документы, в которых сейчас участвует этот товар — статус и ожидаемое окончание, если они есть.
         </p>
       </div>
       <div className="divide-y divide-[var(--corportal-border-grey)] border-t border-[var(--corportal-border-grey)]">
@@ -156,7 +152,7 @@ export const ProductActivityCard = ({
                     <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/title:opacity-100" />
                   </Link>
                   {isEmpty ? (
-                    <span className="text-xs text-muted-foreground">None yet</span>
+                    <span className="text-xs text-muted-foreground">Пока нет</span>
                   ) : (
                     <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
                       {group.items.length}
@@ -166,7 +162,7 @@ export const ProductActivityCard = ({
                 {group.kind === "production_order" && onCreateProduction ? (
                   <Button type="button" size="xs" variant="outline" onClick={onCreateProduction}>
                     <Plus data-icon="inline-start" />
-                    New production order
+                    Новый заказ на производство
                   </Button>
                 ) : null}
               </div>

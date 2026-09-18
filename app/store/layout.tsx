@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import type { ReactNode } from "react";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { StoreAsideContent } from "@/components/store/store-aside-content";
@@ -9,10 +10,10 @@ type StoreLayoutProps = {
 
 const StoreLayout = ({ children }: StoreLayoutProps) => (
   <ModuleShell
-    moduleTitle="Store"
-    asideLabel="Store"
+    moduleTitle="Магазин"
+    asideLabel="Магазин"
     subnavItems={STORE_SUBNAV_ITEMS}
-    subnavAriaLabel="Store sections"
+    subnavAriaLabel="Разделы магазина"
     asideContent={<StoreAsideContent />}
   >
     {children}

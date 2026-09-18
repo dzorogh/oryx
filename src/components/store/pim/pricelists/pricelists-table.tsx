@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -175,8 +176,8 @@ const DealerStatusSummaryCell = ({
           aria-hidden
         />
         <span className="truncate text-xs text-foreground">
-          Sold in <span className="font-semibold tabular-nums">{available}</span> of{" "}
-          <span className="tabular-nums">{total}</span> regions
+          Продаётся в <span className="font-semibold tabular-nums">{available}</span> из{" "}
+          <span className="tabular-nums">{total}</span> регионов
         </span>
         {isExpandable ? (
           <ChevronRight
@@ -199,7 +200,7 @@ const DealerStatusSummaryCell = ({
 
   if (!isExpandable) {
     return (
-      <div className="flex w-full flex-col gap-1" title={`Sold in ${available} of ${total} regions`}>
+      <div className="flex w-full flex-col gap-1" title={`Продаётся в ${available} из ${total} регионов`}>
         {content}
       </div>
     );
@@ -212,10 +213,10 @@ const DealerStatusSummaryCell = ({
       aria-expanded={isExpanded}
       aria-label={
         isExpanded
-          ? `Collapse regional dealer status for ${displayName}`
-          : `Expand regional dealer status for ${displayName}`
+          ? `Свернуть региональный статус дилера для ${displayName}`
+          : `Развернуть региональный статус дилера для ${displayName}`
       }
-      title={`Sold in ${available} of ${total} regions`}
+      title={`Продаётся в ${available} из ${total} регионов`}
       className="flex w-full cursor-pointer flex-col gap-1 rounded-md p-1 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
       {content}
@@ -264,7 +265,7 @@ const ParameterRowCell = ({
       parameterLabel={label}
       productName={displayName}
       editors={collab.getEditors(overrideId)}
-      ariaLabel={`${label} for ${displayName}`}
+      ariaLabel={`${label} для ${displayName}`}
       columnKey={`param:${paramId}`}
       isLoading={loading}
       onEditingChange={(editing) => collab.setEditing(editing ? overrideId : null)}
@@ -329,7 +330,7 @@ const PricelistTableRow = ({
                       type="button"
                       onClick={onToggleExpand}
                       aria-expanded={isExpanded}
-                      aria-label={isExpanded ? `Collapse ${displayName}` : `Expand ${displayName}`}
+                      aria-label={isExpanded ? `Свернуть «${displayName}»` : `Развернуть «${displayName}»`}
                       className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                       <ChevronRight className={cn("size-4 transition-transform", isExpanded && "rotate-90")} />
@@ -360,7 +361,7 @@ const PricelistTableRow = ({
                   value={retailValue}
                   readOnly={isReadOnly}
                   editors={isReadOnly ? [] : collab.getEditors(retailCellId)}
-                  ariaLabel={`Retail status for ${displayName}`}
+                  ariaLabel={`Розничный статус для ${displayName}`}
                   onChange={isReadOnly ? undefined : (next) => collab.setRetailStatus(retailCellId, next)}
                   onEditingChange={
                     isReadOnly ? undefined : (editing) => collab.setEditing(editing ? retailCellId : null)
@@ -437,7 +438,7 @@ const PricelistTableRow = ({
                 editors={collab.getEditors(cellId)}
                 displayCurrency={displayCurrency}
                 onDisplayCurrencyChange={onDisplayCurrencyChange}
-                ariaLabel={`${column.label} for ${displayName}`}
+                ariaLabel={`${column.label} для ${displayName}`}
                 columnKey={`price:${field}`}
                 onEditingChange={(editing) => collab.setEditing(editing ? cellId : null)}
                 onChange={(next) => collab.setCell(cellId, next)}
@@ -769,7 +770,7 @@ export const PricelistsTable = forwardRef<PricelistsTableHandle, PricelistsTable
                       colSpan={allColumns.length + 1}
                       className="px-3 py-8 text-center text-sm text-muted-foreground"
                     >
-                      No products match the selected filters.
+                      Нет товаров, подходящих под выбранные фильтры.
                     </TableCell>
                   </TableRow>
                 ) : (

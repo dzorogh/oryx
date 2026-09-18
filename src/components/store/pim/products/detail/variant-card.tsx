@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import Image from "next/image";
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { CatalogBuyTooltip } from "../catalog/catalog-buy-tooltip";
 import {
   formatCatalogPrice,
+  formatCatalogStatus,
   formatPrice,
   getPurchaseBlockReason,
   statusBadgeClassMap,
@@ -32,7 +34,7 @@ const StatusPill = ({ label, status }: { label: string; status: DealerStatus | R
       )}
     >
       <span aria-hidden className="size-1.5 rounded-full bg-current opacity-80" />
-      {status}
+      {formatCatalogStatus(status)}
     </span>
   </div>
 );
@@ -48,8 +50,8 @@ export const VariantCard = ({ variant }: VariantCardProps) => {
   const blockReason = getPurchaseBlockReason(variant);
   const canBuy = blockReason === null;
   const buyLabel = canBuy
-    ? `Add "${variant.name}" to cart for ${formatPrice(variant.dealerPrice as number)}`
-    : `"${variant.name}" is unavailable for purchase: ${blockReason}`;
+    ? `Добавить «${variant.name}» в корзину за ${formatPrice(variant.dealerPrice as number)}`
+    : `«${variant.name}» недоступен для заказа: ${blockReason}`;
 
   return (
     <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0 !py-0">
@@ -59,7 +61,7 @@ export const VariantCard = ({ variant }: VariantCardProps) => {
             <div className="relative size-28 shrink-0 overflow-hidden rounded-xl border border-[var(--corportal-border-grey)] bg-white">
               {variant.isDefault ? (
                 <span className="absolute top-1.5 left-1.5 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                  Default
+                  Основной
                 </span>
               ) : null}
               <Image src={variant.imageSrc} alt={variant.imageAlt} fill sizes="128px" className="object-cover" />
@@ -71,16 +73,16 @@ export const VariantCard = ({ variant }: VariantCardProps) => {
                 <p className="text-xs text-muted-foreground">ID: {variant.id}</p>
               </div>
               <div className="flex flex-col gap-1.5">
-                <StatusPill label="Dealer" status={variant.dealerStatus} />
-                <StatusPill label="Retail" status={variant.retailStatus} />
+                <StatusPill label="Дилер" status={variant.dealerStatus} />
+                <StatusPill label="Розница" status={variant.retailStatus} />
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-[var(--corportal-border-grey)] pt-3">
-            <MetaItem label="SKU" value={variant.sku ?? "—"} />
-            <MetaItem label="Production site" value={variant.productionSite} />
-            <MetaItem label="Quantity per unit" value={`${variant.unitQuantity} pc`} />
+            <MetaItem label="Артикул" value={variant.sku ?? "—"} />
+            <MetaItem label="Площадка" value={variant.productionSite} />
+            <MetaItem label="Количество в упаковке" value={`${variant.unitQuantity} шт`} />
           </div>
 
           <div className="border-t border-[var(--corportal-border-grey)] pt-3">
@@ -90,7 +92,7 @@ export const VariantCard = ({ variant }: VariantCardProps) => {
 
         <aside className="flex flex-col gap-4 border-t border-[var(--corportal-border-grey)] bg-muted/20 p-4 lg:border-t-0 lg:border-l">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Dealer price</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Дилерская цена</p>
             <p className="text-2xl font-bold tabular-nums text-foreground">
               {formatCatalogPrice(variant.dealerPrice)}
             </p>
@@ -105,20 +107,20 @@ export const VariantCard = ({ variant }: VariantCardProps) => {
               onClick={(event) => event.stopPropagation()}
             >
               <ShoppingCart aria-hidden className="size-4" />
-              Add to cart
+              В корзину
             </Button>
           </CatalogBuyTooltip>
 
           <div className="border-t border-[var(--corportal-border-grey)] pt-3">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Retail price</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Розничная цена</p>
             <p className="text-lg font-semibold tabular-nums text-foreground">
               {formatCatalogPrice(variant.retailPrice)}
             </p>
           </div>
 
           <div className="border-t border-[var(--corportal-border-grey)] pt-3">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">In stock</p>
-            <p className="text-sm font-medium text-foreground">{variant.stock} pcs</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">На складе</p>
+            <p className="text-sm font-medium text-foreground">{variant.stock} шт</p>
           </div>
         </aside>
       </div>

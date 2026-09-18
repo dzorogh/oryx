@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
@@ -21,24 +22,24 @@ import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { cn } from "@/lib/utils";
 
 const PLACE_KIND: Record<LocationType, string> = {
-  warehouse: "Warehouse",
-  production_order_line: "Production order",
-  transfer: "In transit",
-  customer_order: "At customer",
+  warehouse: "Склад",
+  production_order_line: "Заказ на производство",
+  transfer: "В пути",
+  customer_order: "У клиента",
 };
 
 const HEADERS = [
-  "Product",
-  "Ordered",
-  "Reserved",
-  "Warehouse",
-  "Production orders",
-  "In transit",
-  "Shipped",
-  "To reserve",
-  "Free",
-  "Short",
-  "Actions",
+  "Товар",
+  "Заказано",
+  "Зарезервировано",
+  "Склад",
+  "Заказы на производство",
+  "В пути",
+  "Отгружено",
+  "К резерву",
+  "Свободно",
+  "Нехватка",
+  "Действия",
 ] as const;
 
 const Qty = ({
@@ -131,10 +132,10 @@ export const CustomerOrderLinesTable = ({
   }) => void;
 }) => (
   <LogisticsTableCard
-    title={lines.length > 0 ? `Products · ${lines.length}` : "Products"}
-    headers={canAct ? [...HEADERS] : HEADERS.filter((header) => header !== "Actions")}
+    title={lines.length > 0 ? `Товары · ${lines.length}` : "Товары"}
+    headers={canAct ? [...HEADERS] : HEADERS.filter((header) => header !== "Действия")}
     isEmpty={lines.length === 0}
-    empty="No products on this order."
+    empty="В этом заказе клиента нет товаров."
   >
     {lines.map((line) => {
       const product = productById(snapshot, line.productId);
@@ -179,12 +180,12 @@ export const CustomerOrderLinesTable = ({
               <div className="flex flex-col items-start gap-1">
                 {canReserve ? (
                   <Button type="button" size="sm" variant="outline" onClick={() => onReserve(line)}>
-                    Reserve
+                    Зарезервировать
                   </Button>
                 ) : null}
                 {canShip ? (
                   <Button type="button" size="sm" variant="outline" onClick={onShip}>
-                    Ship
+                    Отгрузить
                   </Button>
                 ) : null}
                 {reserved.map((place) => {
@@ -196,7 +197,7 @@ export const CustomerOrderLinesTable = ({
                       size="sm"
                       variant="ghost"
                       className="h-auto whitespace-normal px-2 text-left"
-                      aria-label={`Release ${PLACE_KIND[place.locationType]} ${identity.title}`}
+                      aria-label={`Снять ${PLACE_KIND[place.locationType]} ${identity.title}`}
                       onClick={() =>
                         onRelease({
                           line,
@@ -205,7 +206,7 @@ export const CustomerOrderLinesTable = ({
                         })
                       }
                     >
-                      Release {identity.title}
+                      Снять {identity.title}
                     </Button>
                   );
                 })}

@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useState, type ChangeEvent } from "react";
@@ -188,7 +189,7 @@ export const PricelistPriceDualCell = ({
           setDisplayFocused(false);
           onEditingChange(false);
         }}
-        aria-label={`${ariaLabel} in ${displayCurrency}`}
+        aria-label={`${ariaLabel} в ${displayCurrency}`}
         data-pricelist-col={columnKey ? `${columnKey}-display` : undefined}
         className={cn("rounded-r-lg text-left", INPUT_CLASS, PRICE_AMOUNT_TYPOGRAPHY)}
       />

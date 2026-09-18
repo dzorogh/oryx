@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { Info, RotateCcw } from "lucide-react";
@@ -117,7 +118,7 @@ export const PricelistParameterCell = ({
             : "border-input",
       )}
       style={activeEditor ? { boxShadow: `0 0 0 2px ${activeEditor.color}` } : undefined}
-      title={isOverridden ? `Overridden · base ${formatParameterValue(baseValue)}` : undefined}
+      title={isOverridden ? `Переопределено · база ${formatParameterValue(baseValue)}` : undefined}
     >
       {activeEditor ? (
         <span
@@ -163,8 +164,8 @@ export const PricelistParameterCell = ({
           <button
             type="button"
             onClick={handleReset}
-            aria-label={`Reset ${ariaLabel} to base value`}
-            title="Reset to base value"
+            aria-label={`Сбросить ${ariaLabel} к базовому значению`}
+            title="Сбросить к базовому значению"
             className="absolute inset-y-0 right-1 my-auto flex size-5 items-center justify-center rounded text-amber-600 opacity-0 transition-opacity group-hover/parameter:opacity-100 hover:bg-amber-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <RotateCcw className="size-3" aria-hidden />
@@ -174,8 +175,8 @@ export const PricelistParameterCell = ({
           <button
             type="button"
             onClick={() => setDebugOpen(true)}
-            aria-label={`Show how ${ariaLabel} was calculated`}
-            title="Value details"
+            aria-label={`Как рассчитано значение: ${ariaLabel}`}
+            title="Как рассчитано значение"
             className="absolute inset-y-0 right-1 my-auto flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover/parameter:opacity-100 hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <Info className="size-3" aria-hidden />

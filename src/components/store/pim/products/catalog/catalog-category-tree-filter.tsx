@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useMemo, useState } from "react";
@@ -61,7 +62,7 @@ const CategoryTreeRow = ({ node, depth, selectedId, expandedIds, onSelect, onTog
         <button
           type="button"
           className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label={isExpanded ? `Collapse ${node.label}` : `Expand ${node.label}`}
+          aria-label={isExpanded ? `Свернуть «${node.label}»` : `Развернуть «${node.label}»`}
           aria-expanded={isExpanded}
           onClick={() => onToggleExpand(node.id)}
         >

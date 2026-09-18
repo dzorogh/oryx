@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useState } from "react";
@@ -73,8 +74,8 @@ export const PricelistCurrencyPopover = ({
   };
 
   const tooltipText = allowPriceCurrency
-    ? `${priceCurrency} — price currency, ${displayCurrency} — display currency (all rows). Click to change.`
-    : `${priceCurrency} — price currency, ${displayCurrency} — display currency (all rows). Click to change the display currency.`;
+    ? `${priceCurrency} — валюта цены, ${displayCurrency} — валюта отображения (все строки). Нажмите, чтобы изменить.`
+    : `${priceCurrency} — валюта цены, ${displayCurrency} — валюта отображения (все строки). Нажмите, чтобы изменить валюту отображения.`;
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -85,7 +86,7 @@ export const PricelistCurrencyPopover = ({
               render={
                 <button
                   type="button"
-                  aria-label={`${ariaLabel}: choose price and display currency`}
+                  aria-label={`${ariaLabel}: выбрать валюту цены и отображения`}
                   className={cn(
                     "flex shrink-0 items-center gap-1 self-stretch bg-muted/40 px-1.5 text-sm transition-colors outline-none hover:bg-muted focus-visible:bg-muted data-[popup-open]:bg-muted",
                   )}
@@ -105,24 +106,24 @@ export const PricelistCurrencyPopover = ({
       <PopoverContent align="center" sideOffset={6} className="w-60 gap-3">
         {allowPriceCurrency ? (
           <section className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-foreground">Price currency</p>
+            <p className="text-xs font-medium text-foreground">Валюта цены</p>
             <CurrencyGrid
               selected={priceCurrency}
               onSelect={onPriceCurrencyChange}
-              ariaLabel="Price currency"
+              ariaLabel="Валюта цены"
             />
           </section>
         ) : null}
 
         <section className="flex flex-col gap-1.5">
           <p className="flex items-baseline gap-1.5 text-xs font-medium text-foreground">
-            Display currency
-            <span className="font-normal text-muted-foreground">· all rows</span>
+            Валюта отображения
+            <span className="font-normal text-muted-foreground">· все строки</span>
           </p>
           <CurrencyGrid
             selected={displayCurrency}
             onSelect={onDisplayCurrencyChange}
-            ariaLabel="Display currency"
+            ariaLabel="Валюта отображения"
           />
         </section>
       </PopoverContent>

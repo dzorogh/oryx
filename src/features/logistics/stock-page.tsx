@@ -39,7 +39,7 @@ import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const STATE_FILTERS: Array<{ id: "all" | StockState; label: string }> = [
-  { id: "all", label: "All" },
+  { id: "all", label: "Все" },
   { id: "free", label: STOCK_STATE_LABELS.free },
   { id: "reserved", label: STOCK_STATE_LABELS.reserved },
   { id: "shipped", label: STOCK_STATE_LABELS.shipped },
@@ -195,7 +195,7 @@ const StockPageContent = () => {
 
   const orderItems = useMemo(
     () => [
-      { value: "all", label: "Все заказы" },
+      { value: "all", label: "Все заказы клиента" },
       ...orderOptions.map((order) => ({ value: order.id, label: order.number })),
     ],
     [orderOptions],
@@ -213,7 +213,7 @@ const StockPageContent = () => {
         description="Сводка по товару: итог и количество по типу места. Места и документы — в фильтрах и карточке товара."
       >
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Stock state">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Состояние остатка">
             {STATE_FILTERS.map((item) => (
               <HomeFilterChip
                 key={item.id}
@@ -233,10 +233,10 @@ const StockPageContent = () => {
               size="sm"
               onClick={() => replaceFilters(defaultStockViewFilter())}
               className="ml-auto gap-1 text-muted-foreground"
-              aria-label="Clear filters"
+              aria-label="Сбросить фильтры"
             >
               <X aria-hidden className="size-3.5" />
-              Clear
+              Сбросить
             </Button>
           ) : null}
         </div>
@@ -295,12 +295,12 @@ const StockPageContent = () => {
               value={filters.orderId ?? "all"}
               onValueChange={(value) => updateFilters({ orderId: !value || value === "all" ? null : value })}
             >
-              <SelectTrigger size="sm" className="w-full bg-background sm:w-[10.5rem]" aria-label="Фильтр по заказу">
-                <SelectValue placeholder="Все заказы" />
+              <SelectTrigger size="sm" className="w-full bg-background sm:w-[10.5rem]" aria-label="Фильтр по заказу клиента">
+                <SelectValue placeholder="Все заказы клиента" />
               </SelectTrigger>
               <SelectContent align="start">
                 <SelectGroup>
-                  <SelectItem value="all">Все заказы</SelectItem>
+                  <SelectItem value="all">Все заказы клиента</SelectItem>
                   {orderOptions.map((order) => (
                     <SelectItem key={order.id} value={order.id}>
                       {order.number}

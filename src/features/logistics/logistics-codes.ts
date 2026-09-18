@@ -30,16 +30,16 @@ export const DOCUMENT_PREFIX_FIELDS: Array<{
   label: string;
   exampleId: string;
 }> = [
-  { kind: "customerOrder", label: "Customer orders", exampleId: "12" },
-  { kind: "productionOrder", label: "Production orders", exampleId: "1" },
-  { kind: "reservation", label: "Reservations", exampleId: "1" },
-  { kind: "transfer", label: "Transfers", exampleId: "1" },
-  { kind: "shipment", label: "Shipments", exampleId: "1" },
-  { kind: "output", label: "Outputs", exampleId: "1" },
-  { kind: "return", label: "Returns", exampleId: "1" },
-  { kind: "product", label: "Products", exampleId: "1" },
-  { kind: "manufacturer", label: "Plants", exampleId: "7" },
-  { kind: "warehouse", label: "Warehouses", exampleId: "1" },
+  { kind: "customerOrder", label: "Заказы клиента", exampleId: "12" },
+  { kind: "productionOrder", label: "Заказы на производство", exampleId: "1" },
+  { kind: "reservation", label: "Резервы", exampleId: "1" },
+  { kind: "transfer", label: "Перемещения", exampleId: "1" },
+  { kind: "shipment", label: "Отгрузки", exampleId: "1" },
+  { kind: "output", label: "Выпуски", exampleId: "1" },
+  { kind: "return", label: "Возвраты", exampleId: "1" },
+  { kind: "product", label: "Товары", exampleId: "1" },
+  { kind: "manufacturer", label: "Производители", exampleId: "7" },
+  { kind: "warehouse", label: "Склады", exampleId: "1" },
 ];
 
 const clonePrefixes = (prefixes: LogisticsCodePrefixes): LogisticsCodePrefixes => ({ ...prefixes });

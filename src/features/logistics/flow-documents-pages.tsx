@@ -98,7 +98,7 @@ export const ShipmentsPage = () => {
   return (
     <DocumentList
       title="Отгрузки"
-      description="Одна отгрузка — один заказ и один склад. В форму попадают все строки с бронью на складе."
+      description="Одна отгрузка — один заказ клиента и один склад. В форму попадают все строки с резервом на складе."
       crumbs="Отгрузки"
       actionLabel="Новая отгрузка"
       path="/store/logistics/shipments"
@@ -119,7 +119,7 @@ export const ShipmentsPage = () => {
         ),
         status: item.status,
       }))}
-      extraHeader="Заказ / склад"
+      extraHeader="Заказ клиента / склад"
       isLoading={isLoading}
       error={error}
       status={status}
@@ -171,7 +171,7 @@ export const ShipmentDetailPage = () => {
         }
         related={
           <>
-            {order ? <RelatedDocuments title="Заказ" items={[order]} /> : null}
+          {order ? <RelatedDocuments title="Заказ клиента" items={[order]} /> : null}
             <RelatedDocuments
               title="Возвраты"
               href="/store/logistics/returns"
@@ -294,7 +294,7 @@ export const ReturnDetailPage = () => {
               ]}
             />
           ) : null}
-          {order ? <RelatedDocuments title="Заказ" items={[order]} /> : null}
+          {order ? <RelatedDocuments title="Заказ клиента" items={[order]} /> : null}
         </>
       }
       lines={lines.map((line) => {
@@ -346,7 +346,7 @@ export const OutputsPage = () => {
 
   const create = async (complete: boolean) => {
     if (!orderId || !selectedLine || !isAllowedQuantity(quantity, remaining)) {
-      toast.error("Выберите строку производства и количество в пределах плана");
+      toast.error("Выберите строку заказа на производство и количество в пределах плана");
       return;
     }
     try {
@@ -414,7 +414,7 @@ export const OutputsPage = () => {
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
       {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Номер", "Production order", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
+        <LogisticsTableCard headers={["Номер", "Заказ на производство", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
           {rows.map((item) => (
             <TableRow key={item.id}>
               <TableCell className="px-3 py-2">
@@ -444,7 +444,7 @@ export const OutputsPage = () => {
       >
         <div className="flex flex-col gap-3">
           <FieldSelect
-            label="Production order"
+            label="Заказ на производство"
             value={orderId}
             items={snapshot.productionOrders
               .filter((item) => item.status !== "closed" && item.status !== "cancelled")
@@ -455,7 +455,7 @@ export const OutputsPage = () => {
             }}
           />
           <FieldSelect
-            label="Строка производства"
+            label="Строка заказа на производство"
             value={lineId}
             items={prodLines.map((line) => ({
               value: line.id,
@@ -472,7 +472,7 @@ export const OutputsPage = () => {
           ) : null}
           <QuantityField value={quantity} onChange={setQuantity} max={selectedLine ? remaining : undefined} />
           <FieldSelect
-            label="Забронировать под строку заказа"
+            label="Зарезервировать под строку заказа клиента"
             value={allocOrderLineId}
             items={[
               { value: "none", label: "Нет — оставить свободным" },
@@ -552,7 +552,7 @@ export const OutputDetailPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Выпуски", href: "/store/logistics/outputs" }, { label: doc.number }]}>
       <LogisticsToolbar
         title={doc.number}
-        description="Продукция переходит со строки производства на склад производителя. План можно завершить позже."
+        description="Продукция переходит со строки заказа на производство на склад производителя. План можно завершить позже."
         actions={
           <>
             {doc.status === "planned" ? (
@@ -601,7 +601,7 @@ export const OutputDetailPage = () => {
       </LogisticsToolbar>
       {production ? (
         <RelatedDocuments
-          title="Production order"
+          title="Заказ на производство"
           items={[
             {
               id: production.id,
@@ -612,7 +612,7 @@ export const OutputDetailPage = () => {
           ]}
         />
       ) : null}
-      <RelatedDocuments title="Под заказы" items={allocations} />
+      <RelatedDocuments title="Под заказы клиента" items={allocations} />
       <LogisticsTableCard headers={["Товар", "Количество", "Место", "Лимит"]} isEmpty={lines.length === 0}>
         {lines.map((line) => {
           const planned = store.snapshot.productionOrderLines.find((item) => item.id === line.productionOrderLineId);
@@ -631,7 +631,7 @@ export const OutputDetailPage = () => {
               <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
             </TableCell>
             <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(line.quantity)}</TableCell>
-            <TableCell className="px-3 py-2 text-sm">{production?.number ?? "Production order"}</TableCell>
+            <TableCell className="px-3 py-2 text-sm">{production?.number ?? "Заказ на производство"}</TableCell>
             <TableCell className="px-3 py-2 text-xs text-muted-foreground">{hint}</TableCell>
           </TableRow>
         ))}

@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,8 +16,8 @@ export const CatalogColumnsSheet = ({ open, onOpenChange, columns }: CatalogColu
   <Sheet open={open} onOpenChange={onOpenChange}>
     <SheetContent side="right" className="w-full sm:max-w-md">
       <SheetHeader>
-        <SheetTitle>Columns</SheetTitle>
-        <SheetDescription>Choose which columns appear in the catalog table.</SheetDescription>
+        <SheetTitle>Колонки</SheetTitle>
+        <SheetDescription>Выберите, какие колонки показывать в таблице каталога.</SheetDescription>
       </SheetHeader>
 
       <div className="grid gap-2 pb-4">
@@ -43,7 +44,7 @@ export const CatalogColumnsSheet = ({ open, onOpenChange, columns }: CatalogColu
                     columns.toggle(column.id);
                   }
                 }}
-                aria-label={`Toggle ${column.label} column`}
+                aria-label={`Показать колонку «${column.label}»`}
               />
               <span className="text-sm font-medium text-foreground">{column.label}</span>
             </label>
@@ -58,10 +59,10 @@ export const CatalogColumnsSheet = ({ open, onOpenChange, columns }: CatalogColu
           size="sm"
           onClick={columns.onReset}
           disabled={!columns.hasCustom}
-          aria-label="Reset catalog columns to default"
+          aria-label="Сбросить колонки каталога к значениям по умолчанию"
         >
           <X aria-hidden className="size-3.5" />
-          Reset columns
+          Сбросить колонки
         </Button>
       </SheetFooter>
     </SheetContent>

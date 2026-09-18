@@ -125,7 +125,7 @@ const resolveCellForColumn = (
     }
     case "statusSummary": {
       const available = countAvailableRegions(row, collab);
-      return stringCell(`Sold in ${available} of ${PRICELIST_REGIONS.length} regions`);
+      return stringCell(`Продаётся в ${available} из ${PRICELIST_REGIONS.length} регионов`);
     }
     case "usd": {
       // Synthetic conversion column: follows the view-wide display currency
@@ -237,7 +237,7 @@ export const exportPricelistToXlsx = async (args: ExportPricelistArgs): Promise<
 
   const { default: writeXlsxFile } = await import("write-excel-file/browser");
   await writeXlsxFile(data, {
-    sheet: "Pricelist",
+    sheet: "Прайс-лист",
     columns: buildColumnWidths(allColumns),
   }).toFile(buildExportFileName(scope, args.regionId));
 };

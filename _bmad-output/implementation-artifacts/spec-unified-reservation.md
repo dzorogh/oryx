@@ -2,9 +2,10 @@
 title: 'Единая модель Reservation'
 type: 'refactor'
 created: '2026-09-18'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
+baseline_commit: '4938ed21a5c4e6d5bae6a0164eb9055ae5eb95e8^'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/docs/conventions/backend/supabase.md'

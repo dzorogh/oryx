@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import {
@@ -20,13 +21,13 @@ export const StoreOrdersPage = () => (
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href="/store/catalog" aria-label="Open Store section" />}>
-                Store
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Orders</BreadcrumbPage>
+                <BreadcrumbLink render={<Link href="/store/catalog" aria-label="Открыть магазин" />}>
+                  Магазин
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Заказы</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -38,10 +39,10 @@ export const StoreOrdersPage = () => (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-9 px-3 text-xs">Order ID</TableHead>
-                  <TableHead className="h-9 px-3 text-xs">Name</TableHead>
-                  <TableHead className="h-9 px-3 text-xs">Items</TableHead>
-                  <TableHead className="h-9 px-3 text-xs text-right">Action</TableHead>
+                  <TableHead className="h-9 px-3 text-xs">Номер заказа</TableHead>
+                  <TableHead className="h-9 px-3 text-xs">Название</TableHead>
+                  <TableHead className="h-9 px-3 text-xs">Позиции</TableHead>
+                  <TableHead className="h-9 px-3 text-xs text-right">Действие</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -54,9 +55,9 @@ export const StoreOrdersPage = () => (
                       <Link
                         href={`/store/orders/${preset.orderId}`}
                         className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
-                        aria-label={`Open packing for order ${preset.orderId}`}
+                        aria-label={`Открыть упаковку заказа ${preset.orderId}`}
                       >
-                        Open packing
+                        Открыть упаковку
                         <ArrowUpRight aria-hidden className="size-3.5" />
                       </Link>
                     </TableCell>

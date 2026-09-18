@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import type { ReactNode } from "react";
@@ -38,22 +39,22 @@ export const PricelistParameterValueDialog = ({
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Value details</DialogTitle>
+        <DialogTitle>Детали значения</DialogTitle>
         <DialogDescription>
-          How this parameter value was resolved. Formula debugging will appear here when
-          expressions are enabled.
+          Как получилось это значение параметра. Отладка формулы появится здесь,
+          когда выражения будут включены.
         </DialogDescription>
       </DialogHeader>
 
       {info ? (
         <dl className="grid gap-2.5">
-          <DetailRow label="Parameter">{info.parameterLabel}</DetailRow>
-          <DetailRow label="Product">{info.productName}</DetailRow>
-          <DetailRow label="Resolved value">{formatParameterValue(info.value)}</DetailRow>
-          <DetailRow label="Column base">{formatParameterValue(info.baseValue)}</DetailRow>
-          <DetailRow label="Source">Inherited from column base</DetailRow>
-          <DetailRow label="Formula">
-            <span className="font-normal text-muted-foreground">Not configured</span>
+          <DetailRow label="Параметр">{info.parameterLabel}</DetailRow>
+          <DetailRow label="Товар">{info.productName}</DetailRow>
+          <DetailRow label="Итоговое значение">{formatParameterValue(info.value)}</DetailRow>
+          <DetailRow label="База колонки">{formatParameterValue(info.baseValue)}</DetailRow>
+          <DetailRow label="Источник">Наследовано от базы колонки</DetailRow>
+          <DetailRow label="Формула">
+            <span className="font-normal text-muted-foreground">Не задана</span>
           </DetailRow>
         </dl>
       ) : null}

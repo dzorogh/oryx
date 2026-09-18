@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import Link from "next/link";
@@ -30,7 +31,7 @@ import { loadDbCatalogItems } from "@/features/store/store-catalog-from-logistic
 import type { StoreCatalogItem } from "./store-catalog-demo-data";
 
 const StoreCatalogPageFallback = () => (
-  <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Loading catalog" />
+  <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Загрузка каталога" />
 );
 
 const StoreCatalogPageContent = () => {
@@ -148,9 +149,9 @@ const StoreCatalogPageContent = () => {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink
-                  render={<Link href={STORE_CATALOG_PAGE.storeLinkHref} aria-label="Open Store section" />}
+                  render={<Link href={STORE_CATALOG_PAGE.storeLinkHref} aria-label="Открыть магазин" />}
                 >
-                  Store
+                  Магазин
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />

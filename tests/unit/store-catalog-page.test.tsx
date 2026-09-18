@@ -35,7 +35,7 @@ vi.mock("next/navigation", () => ({
 const getCatalogMain = () => screen.getByRole("main");
 
 const getListingModeGroup = () =>
-  within(getCatalogMain()).getByRole("group", { name: "Catalog listing type" });
+  within(getCatalogMain()).getByRole("group", { name: "Тип списка каталога" });
 
 describe("StoreCatalogPage", () => {
   afterEach(() => {
@@ -46,15 +46,15 @@ describe("StoreCatalogPage", () => {
     navigationMock.reset();
     render(<StoreCatalogPage />);
 
-    expect(screen.getByRole("heading", { name: "Products" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Товары" })).toBeVisible();
 
     const listingGroup = getListingModeGroup();
-    expect(within(listingGroup).getByRole("button", { name: "Products" })).toHaveAttribute("aria-pressed", "true");
-    expect(within(listingGroup).getByRole("button", { name: "Variants" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByLabelText("Quick search by name or SKU")).toBeVisible();
-    expect(screen.getByLabelText("Quick filter by category")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Open catalog filters panel" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Open catalog columns panel" })).toBeVisible();
+    expect(within(listingGroup).getByRole("button", { name: "Товары" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(listingGroup).getByRole("button", { name: "Варианты" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByLabelText("Быстрый поиск по названию или артикулу")).toBeVisible();
+    expect(screen.getByLabelText("Быстрый фильтр по категории")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Открыть панель фильтров каталога" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Открыть панель колонок каталога" })).toBeVisible();
   });
 
   it("filters list by product name search", async () => {
@@ -62,7 +62,7 @@ describe("StoreCatalogPage", () => {
     render(<StoreCatalogPage />);
 
     const catalogMain = getCatalogMain();
-    const quickSearchInput = within(catalogMain).getByLabelText("Quick search by name or SKU");
+    const quickSearchInput = within(catalogMain).getByLabelText("Быстрый поиск по названию или артикулу");
 
     fireEvent.change(quickSearchInput, {
       target: { value: "Ace 1000" },
@@ -77,11 +77,11 @@ describe("StoreCatalogPage", () => {
     render(<StoreCatalogPage />);
 
     const [openFiltersButton] = screen.getAllByRole("button", {
-      name: "Open catalog filters panel",
+      name: "Открыть панель фильтров каталога",
     });
     fireEvent.click(openFiltersButton);
 
-    expect(screen.getByRole("heading", { name: "Filters" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Фильтры" })).toBeVisible();
   });
 
   it("opens columns panel and toggles optional columns", async () => {
@@ -90,18 +90,18 @@ describe("StoreCatalogPage", () => {
     render(<StoreCatalogPage />);
 
     const [openColumnsButton] = screen.getAllByRole("button", {
-      name: "Open catalog columns panel",
+      name: "Открыть панель колонок каталога",
     });
 
     await user.click(openColumnsButton);
-    expect(screen.getByRole("heading", { name: "Columns" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Reset catalog columns to default" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Колонки" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Сбросить колонки каталога к значениям по умолчанию" })).toBeVisible();
 
-    const nameCheckbox = screen.getByLabelText("Toggle Name column");
+    const nameCheckbox = screen.getByLabelText("Показать колонку «Название»");
     expect(nameCheckbox).toBeChecked();
     expect(nameCheckbox).toHaveAttribute("aria-disabled", "true");
 
-    const familyCheckbox = screen.getByLabelText("Toggle Family column");
+    const familyCheckbox = screen.getByLabelText("Показать колонку «Семейство»");
     expect(familyCheckbox).not.toBeChecked();
 
     await user.click(familyCheckbox);
@@ -110,7 +110,7 @@ describe("StoreCatalogPage", () => {
     await user.click(screen.getByRole("button", { name: "Close" }));
 
     const table = screen.getByRole("table");
-    expect(within(table).getByRole("columnheader", { name: "Family" })).toBeVisible();
+    expect(within(table).getByRole("columnheader", { name: "Семейство" })).toBeVisible();
   });
 
   it("shows product variants mode when listing query is set", async () => {
@@ -120,8 +120,8 @@ describe("StoreCatalogPage", () => {
 
     const catalogMain = getCatalogMain();
     const listingGroup = getListingModeGroup();
-    expect(within(listingGroup).getByRole("button", { name: "Variants" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByLabelText("Add a new variant to the catalog")).toBeVisible();
+    expect(within(listingGroup).getByRole("button", { name: "Варианты" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Добавить вариант в каталог")).toBeVisible();
     expect(await within(catalogMain).findByText("Force 1000 EFI Touring")).toBeVisible();
   });
 
@@ -134,7 +134,7 @@ describe("StoreCatalogPage", () => {
     render(<StoreCatalogPage />);
 
     const listingGroup = getListingModeGroup();
-    await user.click(within(listingGroup).getByRole("button", { name: "Variants" }));
+    await user.click(within(listingGroup).getByRole("button", { name: "Варианты" }));
 
     expect(new URLSearchParams(window.location.search).get("listing")).toBe("variants");
   });

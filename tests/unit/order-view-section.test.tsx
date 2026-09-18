@@ -32,7 +32,7 @@ describe("OrderViewSection", () => {
     );
 
     expect(screen.getByTestId("multi-container-scene-stub")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Placement errors: visualization unavailable")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Ошибки размещения: визуализация недоступна")).not.toBeInTheDocument();
   });
 
   it("при ошибках размещения не рендерит сцену и показывает сообщение об ошибке", () => {
@@ -60,8 +60,8 @@ describe("OrderViewSection", () => {
     );
 
     expect(screen.queryByTestId("multi-container-scene-stub")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Placement errors: visualization unavailable")).toBeInTheDocument();
-    expect(screen.getByText("Placement errors")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ошибки размещения: визуализация недоступна")).toBeInTheDocument();
+    expect(screen.getByText("Ошибки размещения")).toBeInTheDocument();
   });
 
   it("во время загрузки показывает спиннер, а не сцену", () => {
@@ -77,7 +77,7 @@ describe("OrderViewSection", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Packing calculation in progress")).toBeInTheDocument();
+    expect(screen.getByLabelText("Идёт расчёт упаковки")).toBeInTheDocument();
     expect(screen.queryByTestId("multi-container-scene-stub")).not.toBeInTheDocument();
   });
 });

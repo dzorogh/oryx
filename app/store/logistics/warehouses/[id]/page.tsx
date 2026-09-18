@@ -1,9 +1,10 @@
+// english-ui:ignore-file
 import type { Metadata } from "next";
 import { WarehouseDetailPage } from "@/features/logistics/catalog-pages";
 
 export const metadata: Metadata = {
-  title: "Warehouse | Store Logistics | Oryx BMS",
-  description: "Warehouse card",
+  title: "Склад | Логистика магазина | Oryx BMS",
+  description: "Карточка склада",
 };
 
 const Page = () => <WarehouseDetailPage />;

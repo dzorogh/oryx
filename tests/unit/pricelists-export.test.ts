@@ -93,7 +93,7 @@ describe("buildExportMatrix", () => {
     });
 
     const seed = getSeedCellValue(row, "purchase", region);
-    const cell = cellAt(matrix, 1, "Plant Price");
+    const cell = cellAt(matrix, 1, "Заводская цена");
     expect(cell?.type).toBe(Number);
     expect(cell?.value).toBe(seed.amount);
     expect(cell?.format).toBe(`#,##0" ${seed.currency}"`);
@@ -111,7 +111,7 @@ describe("buildExportMatrix", () => {
     });
 
     const seed = getSeedCellValue(row, "purchase", region);
-    const cell = cellAt(matrix, 1, "Plant Price (USD)");
+    const cell = cellAt(matrix, 1, "Заводская цена (USD)");
     expect(cell?.type).toBe(Number);
     expect(cell?.value).toBe(toUsd(seed.amount, seed.currency));
     expect(cell?.format).toBe("#,##0");
@@ -129,12 +129,12 @@ describe("buildExportMatrix", () => {
     });
 
     const seed = getSeedCellValue(row, "purchase", region);
-    const cell = cellAt(matrix, 1, "Plant Price (EUR)");
+    const cell = cellAt(matrix, 1, "Заводская цена (EUR)");
     expect(cell?.type).toBe(Number);
     expect(cell?.value).toBe(convertAmount(seed.amount, seed.currency, "EUR"));
     expect(cell?.format).toBe("#,##0");
     // The USD-labelled column no longer exists when the display currency is EUR.
-    expect(headerLabels(matrix)).not.toContain("Plant Price (USD)");
+    expect(headerLabels(matrix)).not.toContain("Заводская цена (USD)");
   });
 
   it("stores markup as a plain percent number with the unit in the header", () => {
@@ -155,7 +155,7 @@ describe("buildExportMatrix", () => {
       toUsd(dealerSeed.amount, dealerSeed.currency),
     );
 
-    const cell = cellAt(matrix, 1, "Global Markup");
+    const cell = cellAt(matrix, 1, "Глобальная наценка");
     expect(cell?.format).toBe("#,##0");
     expect(cell?.value).toBe(expectedPercent);
   });
@@ -175,7 +175,7 @@ describe("buildExportMatrix", () => {
       displayCurrency: "USD",
     });
 
-    const cell = cellAt(matrix, 1, "Plant Price");
+    const cell = cellAt(matrix, 1, "Заводская цена");
     expect(cell?.value).toBe(4242);
     expect(cell?.format).toBe(`#,##0" EUR"`);
   });
@@ -195,8 +195,8 @@ describe("buildExportMatrix", () => {
       displayCurrency: "USD",
     });
 
-    expect(cellAt(matrix, 1, "Plant Price")).toBeNull();
-    expect(cellAt(matrix, 1, "Plant Price (USD)")).toBeNull();
+    expect(cellAt(matrix, 1, "Заводская цена")).toBeNull();
+    expect(cellAt(matrix, 1, "Заводская цена (USD)")).toBeNull();
   });
 
   it("emits read-only source columns (Plant) as strings", () => {
@@ -210,7 +210,7 @@ describe("buildExportMatrix", () => {
       displayCurrency: "USD",
     });
 
-    const cell = cellAt(matrix, 1, "Plant");
+    const cell = cellAt(matrix, 1, "Завод");
     expect(cell?.type).toBe(String);
     expect(cell?.value).toBe(getInfoFieldValue(row, "plant"));
   });
@@ -226,7 +226,7 @@ describe("buildExportMatrix", () => {
       displayCurrency: "USD",
     });
 
-    const cell = cellAt(matrix, 1, "Retail Status");
+    const cell = cellAt(matrix, 1, "Розничный статус");
     expect(cell?.type).toBe(String);
     expect(cell?.value).toBe(formatRetailStatus(getSeedRetailStatus(row, DEFAULT_REGION_ID)));
   });
@@ -243,9 +243,9 @@ describe("buildExportMatrix", () => {
       displayCurrency: "USD",
     });
 
-    const cell = cellAt(matrix, 1, "Dealer Status");
+    const cell = cellAt(matrix, 1, "Статус дилера");
     expect(cell?.type).toBe(String);
-    expect(cell?.value).toMatch(/^Sold in \d+ of \d+ regions$/);
+    expect(cell?.value).toMatch(/^Продаётся в \d+ из \d+ регионов$/);
   });
 
   it("writes one data row per product", () => {

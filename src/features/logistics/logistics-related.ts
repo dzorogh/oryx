@@ -13,6 +13,10 @@ export type RelatedDocumentItem = {
   href: string;
   label: string;
   meta: string;
+  statusKey?: string;
+  expectedEndOn?: string | null;
+  operation?: "reserve" | "release";
+  coveragePercent?: number;
 };
 
 const statusMeta = (status: DocumentStatus | TransferStatus | string): string => status;
@@ -41,6 +45,8 @@ export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId
       href: `/store/logistics/reservations/${item.id}`,
       label: item.number,
       meta: `${item.operation} · ${statusMeta(item.status)}`,
+      statusKey: item.status,
+      operation: item.operation,
     }));
 
 export const relatedShipments = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
@@ -51,6 +57,7 @@ export const relatedShipments = (snapshot: LogisticsSnapshot, customerOrderId: s
       href: `/store/logistics/shipments/${item.id}`,
       label: item.number,
       meta: statusMeta(item.status),
+      statusKey: item.status,
     }));
 
 export const relatedReturnsForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
@@ -66,6 +73,7 @@ export const relatedReturnsForOrder = (snapshot: LogisticsSnapshot, customerOrde
         href: `/store/logistics/returns/${item.id}`,
         label: item.number,
         meta: `${statusMeta(item.status)}${shipment ? ` · ${shipment.number}` : ""}`,
+        statusKey: item.status,
       };
     });
 };
@@ -105,6 +113,8 @@ export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOr
       href: `/store/logistics/transfers/${item.id}`,
       label: item.number,
       meta: expectedEndMeta(item.status, item.expectedEndOn),
+      statusKey: item.status,
+      expectedEndOn: item.expectedEndOn,
     }));
 };
 
@@ -131,6 +141,8 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
       href: `/store/logistics/outputs/${item.id}`,
       label: item.number,
       meta: expectedEndMeta(item.status, item.expectedEndOn),
+      statusKey: item.status,
+      expectedEndOn: item.expectedEndOn,
     }));
 };
 
@@ -191,6 +203,8 @@ export const relatedProductionsForOrder = (
         href: `/store/logistics/production-orders/${item.id}`,
         label: item.number,
         meta: expectedEndMeta(item.status, item.expectedEndOn, extras),
+        statusKey: item.status,
+        expectedEndOn: item.expectedEndOn,
       };
     });
 };

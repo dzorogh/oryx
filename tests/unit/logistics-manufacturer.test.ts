@@ -143,10 +143,10 @@ describe("locationIdentity", () => {
 
 describe("locationHostLabel", () => {
   it("names the host entity kind plus its code", () => {
-    expect(locationHostLabel(snapshot, "warehouse", "2")).toBe("Warehouse WH-2");
-    expect(locationHostLabel(snapshot, "warehouse", "6")).toBe("Plant warehouse WH-6");
-    expect(locationHostLabel(snapshot, "production_order_line", "9")).toBe("Production order PO-8");
-    expect(locationHostLabel(snapshot, "transfer", "5")).toBe("Transfer TR-5");
-    expect(locationHostLabel(snapshot, "customer_order", "12")).toBe("Customer order OMS-12");
+    expect(locationHostLabel(snapshot, "warehouse", "2")).toBe("Склад WH-2");
+    expect(locationHostLabel(snapshot, "warehouse", "6")).toBe("Склад завода WH-6");
+    expect(locationHostLabel(snapshot, "production_order_line", "9")).toBe("Заказ на производство PO-8");
+    expect(locationHostLabel(snapshot, "transfer", "5")).toBe("Перемещение TR-5");
+    expect(locationHostLabel(snapshot, "customer_order", "12")).toBe("Заказ клиента OMS-12");
   });
 });

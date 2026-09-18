@@ -22,16 +22,16 @@ export type CatalogColumnDefinition = {
 };
 
 export const CATALOG_COLUMNS: CatalogColumnDefinition[] = [
-  { id: "name", label: "Name", defaultVisible: true, locked: true, widthClass: "w-[220px]" },
-  { id: "sku", label: "SKU", defaultVisible: false, widthClass: "w-[110px]" },
-  { id: "brand", label: "Brand", defaultVisible: true, widthClass: "w-[110px]" },
-  { id: "category", label: "Category", defaultVisible: true, widthClass: "w-[130px]" },
-  { id: "family", label: "Family", defaultVisible: false, widthClass: "w-[120px]" },
-  { id: "site", label: "Site", defaultVisible: true, widthClass: "w-[110px]" },
-  { id: "stock", label: "Stock", defaultVisible: false, widthClass: "w-[90px]" },
-  { id: "updatedAt", label: "Last updated", defaultVisible: false, widthClass: "w-[130px]" },
-  { id: "dealer", label: "Dealer", defaultVisible: true, widthClass: "w-[290px]" },
-  { id: "retail", label: "Retail", defaultVisible: true, widthClass: "w-[260px]" },
+  { id: "name", label: "Название", defaultVisible: true, locked: true, widthClass: "w-[220px]" },
+  { id: "sku", label: "Артикул", defaultVisible: false, widthClass: "w-[110px]" },
+  { id: "brand", label: "Бренд", defaultVisible: true, widthClass: "w-[110px]" },
+  { id: "category", label: "Категория", defaultVisible: true, widthClass: "w-[130px]" },
+  { id: "family", label: "Семейство", defaultVisible: false, widthClass: "w-[120px]" },
+  { id: "site", label: "Площадка", defaultVisible: true, widthClass: "w-[110px]" },
+  { id: "stock", label: "Остаток", defaultVisible: false, widthClass: "w-[90px]" },
+  { id: "updatedAt", label: "Обновлено", defaultVisible: false, widthClass: "w-[130px]" },
+  { id: "dealer", label: "Дилер", defaultVisible: true, widthClass: "w-[290px]" },
+  { id: "retail", label: "Розница", defaultVisible: true, widthClass: "w-[260px]" },
 ];
 
 export const ALL_COLUMN_IDS = CATALOG_COLUMNS.map((column) => column.id);

@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,22 +17,22 @@ export const OrderPageHeader = ({ orderId }: OrderPageHeaderProps) => (
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
-          <PimSecondaryText>Store</PimSecondaryText>
+          <PimSecondaryText>Магазин</PimSecondaryText>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <PimSecondaryText>Orders</PimSecondaryText>
+          <PimSecondaryText>Заказы</PimSecondaryText>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage className="text-[12px] font-normal text-[#3d4c6a]">Order #{orderId}</BreadcrumbPage>
+          <BreadcrumbPage className="text-[12px] font-normal text-[#3d4c6a]">Заказ #{orderId}</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
 
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0 space-y-1">
-        <h1 className="text-2xl font-bold leading-tight tracking-tight text-[#3d4c6a]">Order #{orderId}</h1>
+        <h1 className="text-2xl font-bold leading-tight tracking-tight text-[#3d4c6a]">Заказ #{orderId}</h1>
       </div>
     </div>
   </header>

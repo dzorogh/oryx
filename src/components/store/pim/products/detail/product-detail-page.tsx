@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import Link from "next/link";
@@ -32,13 +33,13 @@ export const ProductDetailPage = ({ productId }: ProductDetailPageProps) => {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink render={<Link href="/store/pim/products" aria-label="Open Store products" />}>
-                  Store
+                <BreadcrumbLink render={<Link href="/store/pim/products" aria-label="Открыть товары магазина" />}>
+                  Магазин
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink render={<Link href="/store/pim/products" />}>Products</BreadcrumbLink>
+                <BreadcrumbLink render={<Link href="/store/pim/products" />}>Товары</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>

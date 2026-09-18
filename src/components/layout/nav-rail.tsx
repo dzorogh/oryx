@@ -32,6 +32,7 @@ import { useSidebarAside } from "@/components/layout/sidebar-aside-context";
 import { ModuleSubnav, type ModuleSubnavItem } from "@/components/layout/module-subnav";
 import { RailFaviconIcon } from "@/components/layout/rail-favicon-icon";
 import { StoreAsideContent } from "@/components/store/store-aside-content";
+import { STORE_MODULE_TITLE } from "@/features/store/store-nav";
 import { TeamAsideContent } from "@/components/team/team-aside-content";
 import { LanguageFlag } from "@/components/layout/language-flag";
 import { TenantLogo } from "@/components/layout/tenant-logo";
@@ -121,8 +122,8 @@ export const RAIL_PRIMARY_ITEMS: RailSectionItem[] = [
     bgColor: "bg-amber-300",
   },
   {
-    label: "Store",
-    shortLabel: "Store",
+    label: STORE_MODULE_TITLE,
+    shortLabel: STORE_MODULE_TITLE,
     icon: ShoppingCart,
     href: "/store/pim/products",
     match: "/store",
@@ -866,7 +867,7 @@ export const NavRail = () => {
 
     if (matches("/store") || matches("/pim")) {
       return (
-        <MobileAsideSection title="Store">
+        <MobileAsideSection title={STORE_MODULE_TITLE}>
           <StoreAsideContent onItemClick={handleCloseMobileNav} />
         </MobileAsideSection>
       );

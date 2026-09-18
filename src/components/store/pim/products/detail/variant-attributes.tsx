@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useMemo, useState } from "react";
@@ -101,16 +102,16 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
     <div className="space-y-4">
       <div
         role="tablist"
-        aria-label="Specification sections"
+        aria-label="Разделы спецификации"
         className="flex gap-6 border-b border-[var(--corportal-border-grey)]"
       >
         <SectionTab
-          label="Attributes"
+          label="Характеристики"
           isActive={activeSection === "attributes"}
           onClick={() => handleSectionChange("attributes")}
         />
         <SectionTab
-          label="Logistics"
+          label="Логистика"
           isActive={activeSection === "logistics"}
           onClick={() => handleSectionChange("logistics")}
         />
@@ -123,8 +124,8 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
             value={activeGroupId}
             onValueChange={handleGroupChange}
           >
-            <SelectTrigger size="sm" className="w-[200px] bg-background" aria-label="Attribute category">
-              <SelectValue placeholder="Category" />
+            <SelectTrigger size="sm" className="w-[200px] bg-background" aria-label="Категория характеристик">
+              <SelectValue placeholder="Категория" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -141,8 +142,8 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
         <Input
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search"
-          aria-label="Search specifications"
+          placeholder="Поиск"
+          aria-label="Поиск в спецификации"
           className="h-8 max-w-xs flex-1"
         />
       </div>
@@ -150,7 +151,7 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
       <div>
         {activeSection === "attributes" ? (
           filteredRows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No attributes match your search.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">Нет характеристик по этому запросу.</p>
           ) : (
             <div className={ATTRIBUTE_LIST_CLASS}>
               {filteredRows.map((row) => (
@@ -159,7 +160,7 @@ export const VariantAttributes = ({ attributeGroups, logistics }: VariantAttribu
             </div>
           )
         ) : filteredLogistics.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No logistics fields match your search.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">Нет логистических полей по этому запросу.</p>
         ) : (
           <div className={ATTRIBUTE_LIST_CLASS}>
             {filteredLogistics.map((row) => (

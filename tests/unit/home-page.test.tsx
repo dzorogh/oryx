@@ -39,24 +39,24 @@ describe("Order packing (страница заказа)", () => {
     renderOrderPacking(DEFAULT_ORDER_ID);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: `Order #${DEFAULT_ORDER_ID}` })).toBeVisible();
+      expect(screen.getByRole("heading", { name: `Заказ #${DEFAULT_ORDER_ID}` })).toBeVisible();
     });
 
     await waitFor(() => {
       expect(screen.getByTestId("multi-container-scene-stub")).toBeInTheDocument();
     });
-    expect(screen.getByLabelText("Audit panel")).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "Orders" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Панель аудита")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Заказы" })).toBeInTheDocument();
   });
 
   it("ссылки в боковом меню ведут на /pim/orders/<id>", async () => {
     renderOrderPacking(DEFAULT_ORDER_ID);
 
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: `Open ${ORDER_PRESETS[1].label}` })).toBeVisible();
+      expect(screen.getByRole("link", { name: `Открыть ${ORDER_PRESETS[1].label}` })).toBeVisible();
     });
 
-    expect(screen.getByRole("link", { name: `Open ${ORDER_PRESETS[1].label}` })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: `Открыть ${ORDER_PRESETS[1].label}` })).toHaveAttribute(
       "href",
       `/pim/orders/${ORDER_PRESETS[1].orderId}`,
     );
@@ -71,32 +71,32 @@ describe("Order packing (страница заказа)", () => {
       renderOrderPacking(preset.orderId);
 
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: `Order #${preset.orderId}` })).toBeVisible();
+        expect(screen.getByRole("heading", { name: `Заказ #${preset.orderId}` })).toBeVisible();
       });
 
-      expect(screen.getByRole("heading", { name: "Ordered Products" })).toBeVisible();
-      const orderCard = screen.getByLabelText("Order composition");
+      expect(screen.getByRole("heading", { name: "Заказанные товары" })).toBeVisible();
+      const orderCard = screen.getByLabelText("Состав заказа");
       expect(within(orderCard).getAllByRole("row").length).toBe(expectedPositions + 1);
 
-      expect(screen.getByRole("link", { name: `Open ${preset.label}` })).toHaveAttribute(
+      expect(screen.getByRole("link", { name: `Открыть ${preset.label}` })).toHaveAttribute(
         "aria-current",
         "page",
       );
 
       const auditToggle = await waitFor(() =>
-        screen.getByRole("button", { name: "Result audit" }),
+        screen.getByRole("button", { name: "Аудит результата" }),
       );
       fireEvent.click(auditToggle);
 
       await waitFor(() => {
-        expect(screen.getByLabelText("Used container count")).toBeInTheDocument();
+        expect(screen.getByLabelText("Число использованных контейнеров")).toBeInTheDocument();
       });
 
-      expect(screen.getByLabelText("Used container count")).toHaveTextContent(
-        `Containers: ${expectedResult.usedContainerCount}`,
+      expect(screen.getByLabelText("Число использованных контейнеров")).toHaveTextContent(
+        `Контейнеры: ${expectedResult.usedContainerCount}`,
       );
-      expect(screen.getByLabelText("Placed unit count")).toHaveTextContent(
-        `Placed: ${expectedResult.summary.placedUnits} / ${expectedResult.summary.totalUnits}`,
+      expect(screen.getByLabelText("Число размещённых единиц")).toHaveTextContent(
+        `Размещено: ${expectedResult.summary.placedUnits} / ${expectedResult.summary.totalUnits}`,
       );
 
       if (isPackingPlacementValid(expectedResult.validation)) {
@@ -108,7 +108,7 @@ describe("Order packing (страница заказа)", () => {
       } else {
         await waitFor(() => {
           expect(
-            screen.getByLabelText("Placement errors: visualization unavailable"),
+            screen.getByLabelText("Ошибки размещения: визуализация недоступна"),
           ).toBeInTheDocument();
         });
         expect(screen.queryByTestId("multi-container-scene-stub")).not.toBeInTheDocument();

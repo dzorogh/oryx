@@ -23,11 +23,16 @@ const SEARCH_TARGETS: SearchTarget[] = [
   { id: "pulse", title: "Pulse", description: "Company news, ideas and polls", href: "/pulse/ideas" },
   { id: "tracker", title: "Tracker", description: "Tasks, projects and notes", href: "/tracker/tasks" },
   { id: "crm", title: "CRM", description: "Deals, leads and contacts", href: "/crm/deals" },
-  { id: "store", title: "Store", description: "Catalog, logistics, and orders", href: "/store/pim/products" },
-  { id: "store-orders", title: "Orders", description: "Store orders", href: "/store/orders" },
-  { id: "logistics", title: "Logistics", description: "Stock, customer orders, production, and transfers", href: "/store/logistics/stock" },
-  { id: "logistics-ledger", title: "Ledger", description: "Immutable stock ledger", href: "/store/logistics/ledger" },
-  { id: "logistics-orders", title: "Customer orders", description: "Demand and fulfillment", href: "/store/logistics/customer-orders" },
+  // english-ui:ignore
+  { id: "store", title: "Магазин", description: "Каталог, логистика и заказы клиента", href: "/store/pim/products" },
+  // english-ui:ignore
+  { id: "store-orders", title: "Заказы", description: "Заказы магазина", href: "/store/orders" },
+  // english-ui:ignore
+  { id: "logistics", title: "Логистика", description: "Остатки, заказы клиента, заказы на производство и перемещения", href: "/store/logistics/stock" },
+  // english-ui:ignore
+  { id: "logistics-ledger", title: "Журнал", description: "Журнал движений остатков", href: "/store/logistics/ledger" },
+  // english-ui:ignore
+  { id: "logistics-orders", title: "Заказы клиента", description: "Спрос и исполнение", href: "/store/logistics/customer-orders" },
   { id: "learning", title: "Learning", description: "Lessons and knowledge base", href: "/learning/lessons" },
   { id: "library", title: "Library", description: "Documents and files", href: "/library/documents" },
   { id: "approvals", title: "Approvals", description: "Invoice and payment approvals", href: "/pulse/approvals/invoices" },

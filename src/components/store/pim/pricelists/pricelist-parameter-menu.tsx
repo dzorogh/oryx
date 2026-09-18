@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import {
   DropdownMenuContent,
@@ -25,27 +26,27 @@ export const PricelistParameterMenu = ({
   <DropdownMenuContent align="end" className="w-44">
     <DropdownMenuItem onClick={onEdit}>
       <Pencil aria-hidden />
-      Edit parameter
+      Изменить параметр
     </DropdownMenuItem>
     <DropdownMenuItem onClick={onInsertBefore}>
       <Plus aria-hidden />
-      Insert left
+      Вставить слева
     </DropdownMenuItem>
     {!isSystem ? (
       <DropdownMenuItem onClick={onInsertAfter}>
         <Plus aria-hidden />
-        Insert right
+        Вставить справа
       </DropdownMenuItem>
     ) : null}
     <DropdownMenuSeparator />
     <DropdownMenuItem onClick={onResetAll}>
       <RotateCcw aria-hidden />
-      Reset all
+      Сбросить все
     </DropdownMenuItem>
     {!isSystem ? (
       <DropdownMenuItem variant="destructive" onClick={onDelete}>
         <Trash2 aria-hidden />
-        Delete
+        Удалить
       </DropdownMenuItem>
     ) : null}
   </DropdownMenuContent>

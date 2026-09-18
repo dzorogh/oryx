@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import { MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
@@ -94,7 +95,7 @@ export const PricelistsColumnsSheet = ({
               columns.toggle(column.id);
             }
           }}
-          aria-label={`Toggle ${column.label} column`}
+          aria-label={`Показать колонку «${column.label}»`}
         />
         <span className="text-sm font-medium text-foreground">{column.label}</span>
       </label>
@@ -207,8 +208,8 @@ export const PricelistsColumnsSheet = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>Columns</SheetTitle>
-          <SheetDescription>Choose which columns appear in the pricelist table.</SheetDescription>
+          <SheetTitle>Колонки</SheetTitle>
+          <SheetDescription>Выберите, какие колонки показывать в таблице прайс-листа.</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto pb-4">
@@ -219,7 +220,7 @@ export const PricelistsColumnsSheet = ({
           {parameters.enabled && parameters.defs.length > 0 ? (
             <div>
               <div className="my-2 flex items-center gap-2">
-                <span className="text-xs font-semibold text-muted-foreground">Parameters</span>
+                <span className="text-xs font-semibold text-muted-foreground">Параметры</span>
                 <span className="h-px flex-1 border-t border-dashed border-[var(--corportal-border-grey)]" />
               </div>
 
@@ -245,7 +246,7 @@ export const PricelistsColumnsSheet = ({
                         id={`pricelist-param-${def.id}`}
                         checked={parameters.isVisible(def.id)}
                         onCheckedChange={() => parameters.toggleVisibility(def.id)}
-                        aria-label={`Toggle ${def.label} parameter`}
+                        aria-label={`Показать параметр «${def.label}»`}
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => event.stopPropagation()}
                       />
@@ -258,7 +259,7 @@ export const PricelistsColumnsSheet = ({
                         <DropdownMenuTrigger
                           onPointerDown={(event) => event.stopPropagation()}
                           onClick={(event) => event.stopPropagation()}
-                          aria-label={`${def.label} parameter options`}
+                          aria-label={`Параметры «${def.label}»`}
                           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-all hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none group-hover/row:opacity-100"
                         >
                           <MoreHorizontal className="size-3.5" aria-hidden />
@@ -306,9 +307,9 @@ export const PricelistsColumnsSheet = ({
               parameters.resetVisibility();
             }}
             disabled={!columns.hasCustom && !parameters.hasHiddenParameters}
-            aria-label="Reset columns and parameter visibility to default"
+            aria-label="Сбросить колонки и видимость параметров"
           >
-            Reset columns
+            Сбросить колонки
           </Button>
         </SheetFooter>
       </SheetContent>

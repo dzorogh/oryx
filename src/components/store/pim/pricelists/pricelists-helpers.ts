@@ -55,13 +55,13 @@ export type PricelistCellValue = {
 export type DealerStatus = "available" | "unavailable";
 
 export const DEALER_STATUSES: { value: DealerStatus; label: string }[] = [
-  { value: "available", label: "Available" },
-  { value: "unavailable", label: "Unavailable" },
+  { value: "available", label: "Доступен" },
+  { value: "unavailable", label: "Недоступен" },
 ];
 
 export const DEALER_STATUS_LABELS: Record<DealerStatus, string> = {
-  available: "Available",
-  unavailable: "Unavailable",
+  available: "Доступен",
+  unavailable: "Недоступен",
 };
 
 export const isDealerStatus = (value: unknown): value is DealerStatus =>
@@ -84,15 +84,15 @@ export type RetailStatus =
   | "archived";
 
 export const RETAIL_STATUSES: { value: RetailStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "available", label: "Available for sale" },
-  { value: "preorder", label: "Pre-order only" },
-  { value: "temporarily_unavailable", label: "Temporarily unavailable" },
-  { value: "discontinued", label: "Discontinued" },
-  { value: "banned", label: "Banned" },
-  { value: "hidden", label: "Hidden" },
-  { value: "pending_approval", label: "Pending approval" },
-  { value: "archived", label: "Archived" },
+  { value: "draft", label: "Черновик" },
+  { value: "available", label: "В продаже" },
+  { value: "preorder", label: "Только предзаказ" },
+  { value: "temporarily_unavailable", label: "Временно недоступен" },
+  { value: "discontinued", label: "Снят с производства" },
+  { value: "banned", label: "Запрещён" },
+  { value: "hidden", label: "Скрыт" },
+  { value: "pending_approval", label: "На согласовании" },
+  { value: "archived", label: "В архиве" },
 ];
 
 export const DEFAULT_RETAIL_STATUS: RetailStatus = "draft";

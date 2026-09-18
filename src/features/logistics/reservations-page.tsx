@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useMemo, useState } from "react";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { getBalanceQuantity } from "@/features/logistics/logistics-balances";
 import { addReservationLine, postReservation } from "@/features/logistics/logistics-api";
-import { hrefForCustomerOrder, remainingToReserveForLine, reservationCap } from "@/features/logistics/logistics-availability";
+import { hrefForCustomerOrder, reservationCap } from "@/features/logistics/logistics-availability";
 import {
   emptyReservationLine,
   ReservationForm,
@@ -35,7 +36,7 @@ import { DocumentStatusBadge } from "@/features/logistics/ui/status-badge";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const OPERATION_FILTERS: Array<{ id: "all" | ReservationOperation; label: string }> = [
-  { id: "all", label: "All" },
+  { id: "all", label: "Все" },
   { id: "reserve", label: RESERVATION_OPERATION_LABELS.reserve },
   { id: "release", label: RESERVATION_OPERATION_LABELS.release },
 ];
@@ -62,14 +63,14 @@ export const ReservationsPage = () => {
   });
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Reservations" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Резервы" }]}>
       <LogisticsToolbar
-        title="Reservations"
-        description="Reserve moves free to reserved; release moves reserved to free. One document is one order, one place, one operation."
-        actionLabel="New reservation"
+        title="Резервы"
+        description="Резерв переводит свободное в зарезервированное; снятие — наоборот. Один документ — один заказ клиента, одно место, одна операция."
+        actionLabel="Новый резерв"
         onAction={() => setOpen(true)}
       >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Reservation operation">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Операция резерва">
           {OPERATION_FILTERS.map((item) => (
             <HomeFilterChip
               key={item.id}
@@ -82,7 +83,7 @@ export const ReservationsPage = () => {
             </HomeFilterChip>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Reservation status">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус резерва">
           {STATUS_FILTERS.map((item) => (
             <HomeFilterChip
               key={item.id}
@@ -101,7 +102,7 @@ export const ReservationsPage = () => {
       {!isLoading && !error ? (
         <ReservationHoldTable
           snapshot={snapshot}
-          placeHeader="Place"
+          placeHeader="Место"
           rows={rows.map((item) => ({
             id: item.id,
             number: item.number,
@@ -157,8 +158,8 @@ export const ReservationDetailPage = () => {
 
   if (isLoading || error || !doc) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Reservations", href: "/store/logistics/reservations" }, { label: "Reservation" }]}>
-        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Reservation not found."} />}
+      <LogisticsPageShell crumbs={[{ label: "Резервы", href: "/store/logistics/reservations" }, { label: "Резерв" }]}>
+        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Резерв не найден."} />}
       </LogisticsPageShell>
     );
   }
@@ -166,13 +167,13 @@ export const ReservationDetailPage = () => {
   const order = customerOrderById(snapshot, doc.customerOrderId);
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Reservations", href: "/store/logistics/reservations" }, { label: doc.number }]}>
+    <LogisticsPageShell crumbs={[{ label: "Резервы", href: "/store/logistics/reservations" }, { label: doc.number }]}>
       <LogisticsToolbar
         title={doc.number}
         description={
           doc.operation === "reserve"
-            ? "Move free stock into reserved for this order at one place. Posted documents are immutable."
-            : "Return reserved quantity to free stock at the same place. Posted documents are immutable."
+            ? "Переводит свободный остаток в зарезервированный для этого заказа клиента на одном месте. Проведённые документы нельзя менять."
+            : "Возвращает зарезервированное количество в свободный остаток на том же месте. Проведённые документы нельзя менять."
         }
         actions={
           doc.status === "draft" ? (
@@ -180,10 +181,10 @@ export const ReservationDetailPage = () => {
               type="button"
               size="sm"
               onClick={() => {
-                void runLogisticsAction(() => postReservation(doc.id), "Reservation posted", reload);
+                void runLogisticsAction(() => postReservation(doc.id), "Резерв проведён", reload);
               }}
             >
-              Post
+              Провести
             </Button>
           ) : null
         }
@@ -192,7 +193,7 @@ export const ReservationDetailPage = () => {
         <span className="text-sm text-muted-foreground">{RESERVATION_OPERATION_LABELS[doc.operation]}</span>
       </LogisticsToolbar>
       <RelatedDocuments
-        title="Order"
+        title="Заказ клиента"
         items={
           order
             ? [{ id: order.id, href: hrefForCustomerOrder(order.id), label: order.number, meta: order.status }]
@@ -200,18 +201,18 @@ export const ReservationDetailPage = () => {
         }
       />
       <LogisticsTableCard
-        title="Products"
+        title="Товары"
         action={
           doc.status === "draft" &&
           snapshot.customerOrderLines.some(
             (line) => line.orderId === doc.customerOrderId && !lines.some((item) => item.customerOrderLineId === line.id),
           ) ? (
             <Button type="button" size="sm" onClick={() => setLineOpen(true)}>
-              Add product
+              Добавить товар
             </Button>
           ) : undefined
         }
-        headers={["Product", "Quantity", "Place", doc.operation === "reserve" ? "Free now" : "Reserved now", "Note"]}
+        headers={["Товар", "Количество", "Место", doc.operation === "reserve" ? "Свободно сейчас" : "Зарезервировано сейчас", "Комментарий"]}
       >
         {lines.map((line, index) => {
           const orderLine = snapshot.customerOrderLines.find((item) => item.id === line.customerOrderLineId);
@@ -265,8 +266,8 @@ export const ReservationDetailPage = () => {
             setNewLine(emptyReservationLine());
           }
         }}
-        title="Add product"
-        description="Lines can be added while the reservation is still a draft."
+        title="Добавить товар"
+        description="Строки можно добавлять, пока резерв ещё черновик."
       >
         <div className="flex flex-col gap-3">
           <ReservationLineFields
@@ -286,11 +287,11 @@ export const ReservationDetailPage = () => {
             onClick={() => {
               const orderLine = snapshot.customerOrderLines.find((item) => item.id === newLine.customerOrderLineId);
               if (!orderLine) {
-                toast.error("Select a product and quantity");
+                toast.error("Выберите товар и количество");
                 return;
               }
               if (lines.some((line) => line.customerOrderLineId === orderLine.id)) {
-                toast.error("Each product can appear only once");
+                toast.error("Каждый товар может быть только один раз");
                 return;
               }
               const max =
@@ -305,7 +306,7 @@ export const ReservationDetailPage = () => {
                       customerOrderLineId: orderLine.id,
                     });
               if (!isAllowedQuantity(newLine.quantity, max)) {
-                toast.error("Quantity exceeds what is available");
+                toast.error("Количество больше доступного");
                 return;
               }
               const qty = Number(newLine.quantity);
@@ -315,7 +316,7 @@ export const ReservationDetailPage = () => {
                   assertCustomerCapacity(orderLine, balances, qty);
                 }
               } catch (caught) {
-                toast.error(caught instanceof Error ? caught.message : "Not enough stock");
+                toast.error(caught instanceof Error ? caught.message : "Недостаточно остатка");
                 return;
               }
               void runLogisticsAction(
@@ -325,7 +326,7 @@ export const ReservationDetailPage = () => {
                     customerOrderLineId: orderLine.id,
                     quantity: qty,
                   }),
-                "Product added",
+                "Товар добавлен",
                 reload,
               ).then((ok) => {
                 if (ok) {
@@ -335,7 +336,7 @@ export const ReservationDetailPage = () => {
               });
             }}
           >
-            Add
+            Добавить
           </Button>
         </div>
       </LogisticsDialog>

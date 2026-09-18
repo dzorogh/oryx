@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import Link from "next/link";
@@ -42,7 +43,7 @@ export const PimOrderNav = ({ activeOrderId: activeOrderIdProp, onItemClick }: P
                 onClick={onItemClick}
                 scroll={false}
                 role="link"
-                aria-label={`Open ${preset.label}`}
+                aria-label={`Открыть ${preset.label}`}
                 aria-current={active ? "page" : undefined}
                 className="inline-flex w-full items-center gap-2"
               />

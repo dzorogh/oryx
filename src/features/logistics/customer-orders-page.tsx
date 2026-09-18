@@ -33,6 +33,10 @@ import {
   relatedShipments,
   relatedTransfersForOrder,
 } from "@/features/logistics/logistics-related";
+import {
+  calculateOrderDocumentCoverage,
+  withOrderCoverage,
+} from "@/features/logistics/order-document-coverage";
 import type { CustomerOrderLine, CustomerOrderStatus, LocationType } from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
@@ -42,8 +46,8 @@ import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { LogisticsMetaField, LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
-import { RelatedDocuments, RelatedDocumentsBoard } from "@/features/logistics/ui/related-documents";
+import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
+import { OrderProgressTracker } from "@/features/logistics/ui/order-progress-tracker";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { CustomerOrderStatusBadge } from "@/features/logistics/ui/status-badge";
@@ -97,7 +101,7 @@ export const CustomerOrdersPage = () => {
           })),
         );
       },
-      "Заказ создан",
+      "Заказ клиента создан",
       reload,
     );
     if (ok) {
@@ -109,14 +113,14 @@ export const CustomerOrdersPage = () => {
   };
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Заказы" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Заказы клиента" }]}>
       <LogisticsToolbar
-        title="Заказы"
-        description="Только потребность. Товар становится занятым бронью; заказы на производство, выпуск, перемещение и отгрузка двигают уже занятое."
-        actionLabel="Новый заказ"
+        title="Заказы клиента"
+        description="Только потребность. Товар становится занятым резервом; заказы на производство, выпуск, перемещение и отгрузка двигают уже занятое."
+        actionLabel="Новый заказ клиента"
         onAction={() => setOpen(true)}
       >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус заказа">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус заказа клиента">
           {STATUS_FILTERS.map((item) => (
             <HomeFilterChip
               key={item.id}
@@ -136,7 +140,7 @@ export const CustomerOrdersPage = () => {
 
       {!isLoading && !error ? (
         <LogisticsTableCard
-          headers={["Номер", "Статус", "Ожидаемое окончание", "Товары", "Занято", "Отгружено", "Открыто к брони", "Создан"]}
+          headers={["Номер", "Статус", "Ожидаемое окончание", "Товары", "Занято", "Отгружено", "Открыто к резерву", "Создан"]}
           isEmpty={rows.length === 0}
         >
           {rows.map((order) => {
@@ -182,19 +186,19 @@ export const CustomerOrdersPage = () => {
       <LogisticsDialog
         open={open}
         onOpenChange={setOpen}
-        title="Новый заказ"
-        description="Создание заказа не двигает остатки. Свободный остаток показан, чтобы сразу видеть, хватит ли товара."
+        title="Новый заказ клиента"
+        description="Создание заказа клиента не двигает остатки. Свободный остаток показан, чтобы сразу видеть, хватит ли товара."
       >
         <div className="flex flex-col gap-3">
           <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
           <label className="space-y-1 text-sm">
-            <span className="font-medium">Description</span>
+            <span className="font-medium">Описание</span>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
               className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              placeholder="Optional ops note"
+              placeholder="Необязательный комментарий"
             />
           </label>
           {lines.map((line, index) => (
@@ -244,7 +248,7 @@ export const CustomerOrdersPage = () => {
             Добавить строку
           </Button>
           <Button type="button" onClick={() => void createOrder()}>
-            Создать заказ
+            Создать заказ клиента
           </Button>
         </div>
       </LogisticsDialog>
@@ -278,7 +282,7 @@ export const CustomerOrderDetailPage = () => {
 
   if (isLoading) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Заказы", href: "/store/logistics/customer-orders" }, { label: "Заказ" }]}>
+      <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: "Заказ клиента" }]}>
         <LogisticsLoading />
       </LogisticsPageShell>
     );
@@ -286,7 +290,7 @@ export const CustomerOrderDetailPage = () => {
 
   if (error) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Заказы", href: "/store/logistics/customer-orders" }, { label: "Заказ" }]}>
+      <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: "Заказ клиента" }]}>
         <LogisticsError message={error} />
       </LogisticsPageShell>
     );
@@ -294,115 +298,128 @@ export const CustomerOrderDetailPage = () => {
 
   if (!order) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Заказы", href: "/store/logistics/customer-orders" }, { label: "Нет заказа" }]}>
-        <LogisticsError message="Заказ не найден." />
+      <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: "Нет заказа клиента" }]}>
+        <LogisticsError message="Заказ клиента не найден." />
       </LogisticsPageShell>
     );
   }
 
   const canAct = order.status === "open";
+  const coverage = calculateOrderDocumentCoverage(snapshot, order.id);
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Заказы", href: "/store/logistics/customer-orders" }, { label: order.number }]}>
-      <LogisticsToolbar
-        title={order.number}
-        description="Reservations hold stock for this order. Later steps only move what is already reserved."
-        actions={
-          canAct ? (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                void runLogisticsAction(
-                  () => closeCustomerOrder(order.id),
-                  "Открытые брони сняты, заказ закрыт",
-                  reload,
-                );
-              }}
-            >
-              Закрыть заказ
-            </Button>
-          ) : undefined
-        }
-      >
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <LogisticsMetaField label="Статус">
-            <CustomerOrderStatusBadge status={order.status} />
-          </LogisticsMetaField>
-          <ExpectedEndField
-            layout="inline"
-            value={order.expectedEndOn ?? ""}
-            onChange={(value) => {
-              void runLogisticsAction(
-                () => updateExpectedEnd("store_customer_order", order.id, value || null),
-                "Срок заказа обновлён",
-                reload,
-              );
-            }}
-          />
-        </div>
-        {order.description ? (
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Description</p>
-            <p className="max-w-3xl text-sm text-foreground">{order.description}</p>
-          </div>
-        ) : null}
-      </LogisticsToolbar>
-
-      <RelatedDocumentsBoard>
-        <RelatedDocuments
-          title="Production orders"
-          href="/store/logistics/production-orders"
-          items={relatedProductionsForOrder(snapshot, order.id, balances)}
-          actions={
-            canAct
+    <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: order.number }]}>
+      <OrderProgressTracker
+        orderNumber={order.number}
+        status={order.status}
+        expectedEndOn={order.expectedEndOn}
+        description={order.description}
+        canAct={canAct}
+        onCloseOrder={() => {
+          void runLogisticsAction(
+            () => closeCustomerOrder(order.id),
+            "Открытые резервы сняты, заказ клиента закрыт",
+            reload,
+          );
+        }}
+        onExpectedEndChange={(value) => {
+          void runLogisticsAction(
+            () => updateExpectedEnd("store_customer_order", order.id, value || null),
+            "Срок заказа клиента обновлён",
+            reload,
+          );
+        }}
+        primaryStages={[
+          {
+            id: "production",
+            title: "Производство",
+            href: "/store/logistics/production-orders",
+            items: withOrderCoverage(
+              relatedProductionsForOrder(snapshot, order.id, balances),
+              coverage.production,
+            ),
+            doneStatuses: ["done", "closed"],
+            actions: canAct
               ? [
-                { label: "New production order", onClick: () => setProductionOpen(true) },
-                { label: "Reserve on production order", onClick: () => setReserveOnProductionOpen(true) },
-              ]
-              : undefined
-          }
-        />
-        <RelatedDocuments
-          title="Выпуски"
-          href="/store/logistics/outputs"
-          items={relatedOutputsForOrder(snapshot, order.id)}
-          onCreate={canAct ? () => setOutputOpen(true) : undefined}
-          createLabel="Выпустить"
-        />
-        <RelatedDocuments
-          title="Перемещения"
-          href="/store/logistics/transfers"
-          items={relatedTransfersForOrder(snapshot, order.id)}
-          actions={
-            canAct
+                  { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
+                  { label: "Зарезервировать в заказе на производство", onClick: () => setReserveOnProductionOpen(true) },
+                ]
+              : undefined,
+          },
+          {
+            id: "output",
+            title: "Выпуски",
+            href: "/store/logistics/outputs",
+            items: withOrderCoverage(
+              relatedOutputsForOrder(snapshot, order.id),
+              coverage.output,
+            ),
+            doneStatuses: ["done"],
+            actions: canAct
+              ? [{ label: "Выпустить", onClick: () => setOutputOpen(true) }]
+              : undefined,
+          },
+          {
+            id: "transfer",
+            title: "Перемещения",
+            href: "/store/logistics/transfers",
+            items: withOrderCoverage(
+              relatedTransfersForOrder(snapshot, order.id),
+              coverage.transfer,
+            ),
+            doneStatuses: ["delivered"],
+            actions: canAct
               ? [
-                { label: "Переместить занятое", onClick: () => setTransferOpen(true) },
-                { label: "Забронировать в пути", onClick: () => setReserveOnTransferOpen(true) },
-              ]
-              : undefined
-          }
-        />
-        <RelatedDocuments
-          title="Отгрузки"
-          href="/store/logistics/shipments"
-          items={relatedShipments(snapshot, order.id)}
-          onCreate={canAct ? () => setShipOpen(true) : undefined}
-          createLabel="Отгрузить"
-        />
-        <RelatedDocuments
-          title="Reservations"
-          href="/store/logistics/reservations"
-          items={relatedReservations(snapshot, order.id)}
-          onCreate={canAct ? () => { setReserveLine(null); setReserveOpen(true); } : undefined}
-          createLabel="Reserve"
-        />
-        <RelatedDocuments
-          title="Returns"
-          href="/store/logistics/returns"
-          items={relatedReturnsForOrder(snapshot, order.id)}
-        />
-      </RelatedDocumentsBoard>
+                  { label: "Переместить занятое", onClick: () => setTransferOpen(true) },
+                  { label: "Зарезервировать в пути", onClick: () => setReserveOnTransferOpen(true) },
+                ]
+              : undefined,
+          },
+          {
+            id: "shipment",
+            title: "Отгрузки",
+            href: "/store/logistics/shipments",
+            items: withOrderCoverage(relatedShipments(snapshot, order.id), coverage.shipment),
+            doneStatuses: ["posted"],
+            actions: canAct
+              ? [{ label: "Отгрузить", onClick: () => setShipOpen(true) }]
+              : undefined,
+          },
+        ]}
+        secondaryStages={[
+          {
+            id: "reservations",
+            title: "Резервы",
+            href: "/store/logistics/reservations",
+            items: withOrderCoverage(
+              relatedReservations(snapshot, order.id),
+              coverage.reservation,
+            ),
+            doneStatuses: ["posted"],
+            actions: canAct
+              ? [
+                  {
+                    label: "Зарезервировать",
+                    onClick: () => {
+                      setReserveLine(null);
+                      setReserveOpen(true);
+                    },
+                  },
+                ]
+              : undefined,
+          },
+          {
+            id: "returns",
+            title: "Возвраты",
+            href: "/store/logistics/returns",
+            items: withOrderCoverage(
+              relatedReturnsForOrder(snapshot, order.id),
+              coverage.return,
+            ),
+            doneStatuses: ["posted"],
+          },
+        ]}
+      />
 
       <CustomerOrderLinesTable
         snapshot={snapshot}
@@ -423,7 +440,7 @@ export const CustomerOrderDetailPage = () => {
       <DocumentLedger
         snapshot={snapshot}
         filter={(entry) => entry.customerOrderId === order.id}
-        title="Движения по заказу"
+        title="Движения по заказу клиента"
       />
 
       <ReservationForm

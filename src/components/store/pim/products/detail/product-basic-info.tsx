@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useState, type ReactNode } from "react";
@@ -43,9 +44,9 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
           <h1 className="truncate text-xl font-semibold text-foreground">{product.displayName}</h1>
           <p className="text-xs text-muted-foreground">ID: {product.id}</p>
         </div>
-        <Button type="button" size="sm" variant="default" aria-label={`Edit ${product.displayName}`}>
+        <Button type="button" size="sm" variant="default" aria-label={`Редактировать ${product.displayName}`}>
           <Pencil aria-hidden className="size-4" />
-          Edit
+          Изменить
         </Button>
       </div>
 
@@ -68,7 +69,7 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
                   key={`${typeof src === "string" ? src : src.src}-${index}`}
                   type="button"
                   onClick={() => setActiveImage(src)}
-                  aria-label={`Show image ${index + 1}`}
+                  aria-label={`Показать изображение ${index + 1}`}
                   aria-pressed={activeImage === src}
                   className={cn(
                     "relative aspect-square w-full shrink-0 overflow-hidden rounded-lg border-2 bg-white transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
@@ -86,15 +87,15 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
 
         <div className="space-y-5">
           <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <Field label="Product name">{product.displayName}</Field>
-            <Field label="SKU">{product.sku ?? "—"}</Field>
-            <Field label="Brand">
+            <Field label="Название">{product.displayName}</Field>
+            <Field label="Артикул">{product.sku ?? "—"}</Field>
+            <Field label="Бренд">
               <Link href="/store/pim/products" className="text-primary hover:underline">
                 {product.brand}
               </Link>
             </Field>
-            <Field label="Family">{product.family}</Field>
-            <Field label="Category">
+            <Field label="Семейство">{product.family}</Field>
+            <Field label="Категория">
               <Link
                 href={`/store/pim/products?category=${product.categoryId}`}
                 className="text-primary hover:underline"
@@ -102,12 +103,12 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
                 {product.category}
               </Link>
             </Field>
-            <Field label="Stock">{product.stock} pcs</Field>
+            <Field label="Остаток">{product.stock} шт</Field>
           </div>
 
           <div className="space-y-4 border-t border-[var(--corportal-border-grey)] pt-4">
-            <DescriptionBlock label="Description" text={product.description} />
-            <DescriptionBlock label="Short description" text={product.shortDescription} />
+            <DescriptionBlock label="Описание" text={product.description} />
+            <DescriptionBlock label="Краткое описание" text={product.shortDescription} />
           </div>
         </div>
       </div>

@@ -1,8 +1,9 @@
+// english-ui:ignore-file
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Release | Store Logistics | Oryx BMS",
-  description: "Redirects to unified Reservations",
+  title: "Снятие | Логистика магазина | Oryx BMS",
+  description: "Перенаправление в раздел «Резервы»",
 };
 
 const Page = () => {

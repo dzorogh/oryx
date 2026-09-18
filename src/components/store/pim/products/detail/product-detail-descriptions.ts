@@ -25,60 +25,60 @@ const hashProductId = (id: string): number => {
 const pick = <T>(items: readonly T[], seed: number): T => items[seed % items.length] as T;
 
 const CLOSING_LINES = [
-  "Shipped from regional hubs with full serial traceability and standard warranty coverage.",
-  "Configured for dealer channels with consistent lead times and replenishment visibility.",
-  "Supported by the Sharmax parts catalog and field service network in key markets.",
-  "Documented for container loading and compliant export packaging on request.",
+  "Отгрузка с региональных хабов с полной серийной прослеживаемостью и стандартной гарантией.",
+  "Настроен для дилерского канала: стабильные сроки поставки и видимость пополнения.",
+  "Поддержка каталогом запчастей Sharmax и сервисной сетью на ключевых рынках.",
+  "Документация под контейнерную погрузку и экспортную упаковку — по запросу.",
 ] as const;
 
 const PRODUCT_DESCRIPTION_OVERRIDES: Record<string, ProductDescriptions> = {
   "bike-001": {
     shortDescription:
-      "Flagship Force 1000 EFI ATV with electronic fuel injection, balanced for heavy loads and long trail days.",
+      "Флагманский квадроцикл Force 1000 EFI с электронным впрыском, рассчитанный на тяжёлые грузы и длинные маршруты.",
     description:
-      "The Force 1000 EFI anchors the Force family as a high-displacement utility ATV tuned for towing, cargo runs, and mixed terrain. Electronic fuel injection keeps throttle response predictable in heat and altitude, while the 4x4 driveline and reinforced frame suit farm, forestry, and adventure fleets. Produced at SH-53 with dealer-ready configuration and retail channel support.",
+      "Force 1000 EFI — старшая модель семейства Force: утилитарный квадроцикл большого объёма для буксировки, перевозки груза и смешанного рельефа. Электронный впрыск сохраняет предсказуемый отклик в жару и на высоте, а полный привод и усиленная рама подходят для ферм, леса и туристических парков. Производство SH-53, дилерская комплектация и поддержка розничного канала.",
   },
   "bike-002": {
     shortDescription:
-      "Touring-oriented Force 750 with comfort-focused ergonomics for all-day rides across varied surfaces.",
+      "Туристический Force 750 с эргономикой для долгих поездок по разным покрытиям.",
     description:
-      "Force 750 Touring targets operators who need a lighter footprint without giving up stability on gravel and light mud. The model emphasizes ride comfort, accessible service points, and predictable fuel use for rental and hospitality fleets. Made to order at SH-21 with configurable accessories for passenger and cargo setups.",
+      "Force 750 Touring — для тех, кому нужна более лёгкая машина без потери устойчивости на гравии и лёгкой грязи. Акцент на комфорт, удобный доступ к сервису и предсказуемый расход — для проката и гостиничных парков. Под заказ на SH-21, с опциями для пассажира и груза.",
   },
   "bike-003": {
     shortDescription:
-      "Cross 300 RX enduro platform aimed at technical trails, club events, and rider progression.",
+      "Эндуро Cross 300 RX для техничных трасс, клубных гонок и прогресса райдера.",
     description:
-      "Cross 300 RX delivers a nimble enduro package with suspension travel suited to roots, berms, and mixed single-track. The chassis is sized for intermediate riders moving from recreational use to organized events. Currently awaiting delivery from SH-53; dealer allocation follows regional launch windows.",
+      "Cross 300 RX — подвижная эндуро-платформа с ходами подвески под корни, бёрмы и смешанный синглтрек. Геометрия рассчитана на райдеров среднего уровня, которые переходят от любительской езды к стартам. Ожидает поставки с SH-53; дилерское распределение идёт по региональным окнам запуска.",
   },
   "bike-004": {
     shortDescription:
-      "Electric Cross E-250 for quiet urban mobility and light off-road training environments.",
+      "Электрический Cross E-250 для тихой городской мобильности и лёгкой внедорожной подготовки.",
     description:
-      "Cross E-250 introduces a battery-electric powertrain for campuses, resorts, and municipalities that require low-noise operation. Regenerative braking profiles and swappable battery logistics simplify fleet rotation. Built at SH-40 with retail availability and standard dealer margin structures.",
+      "Cross E-250 — батарея-электрический силовой агрегат для кампусов, курортов и муниципалитетов, где нужен низкий шум. Рекуперация и сменная батарея упрощают ротацию парка. Сборка на SH-40, розничная доступность и стандартная дилерская маржа.",
   },
   "bike-005": {
     shortDescription:
-      "Compact Urban 180 scooter for dense city routes, last-mile delivery, and student mobility.",
+      "Компактный скутер Urban 180 для плотного города, last-mile доставки и студенческой мобильности.",
     description:
-      "Urban 180 focuses on tight turning circles, upright seating, and low maintenance intervals for high-frequency urban use. Storage under the seat and optional top-case mounts support courier workflows. Archived in retail; hidden from dealer purchase while successor models roll out from SH-12.",
+      "Urban 180 — малый радиус разворота, прямая посадка и длинные межсервисные интервалы для частого городского использования. Багажник под сиденьем и опциональный кофр закрывают курьерские сценарии. В рознице в архиве, скрыт от дилерской закупки, пока с SH-12 выходят модели-преемники.",
   },
   "bike-006": {
     shortDescription:
-      "Sprint 200 ABS scooter with combined braking for confident stops in wet city traffic.",
+      "Скутер Sprint 200 ABS с комбинированным торможением для уверенных остановок в мокром городе.",
     description:
-      "Sprint 200 ABS pairs a responsive single-cylinder engine with an anti-lock braking package tuned for commuter safety. Lighting, mirrors, and tire specs meet everyday road use without oversized weight. Stocked at SH-53 for dealers needing fast-turn scooter inventory.",
+      "Sprint 200 ABS сочетает отзывчивый одноцилиндровый мотор с антиблокировкой, настроенной на повседневную безопасность. Свет, зеркала и шины — под обычную дорогу без лишнего веса. На складе SH-53 для дилеров, которым нужен быстрый оборот скутеров.",
   },
   "bike-009": {
     shortDescription:
-      "RST 520 snowmobile engineered for groomed trails, frozen lakes, and utility towing in winter.",
+      "Снегоход RST 520 для укатанных трасс, замёрзших озёр и зимней буксировки.",
     description:
-      "RST 520 balances track bite and ski stability for operators who split time between recreation and light work. Insulated ergonomics and a robust cooling strategy support long cold-weather sessions. SH-21 production with strong retail availability across northern territories.",
+      "RST 520 балансирует зацеп гусеницы и устойчивость лыж для тех, кто делит время между отдыхом и лёгкой работой. Утеплённая эргономика и устойчивое охлаждение держат длинные морозные сессии. Производство SH-21, сильная розничная доступность в северных регионах.",
   },
   "bike-011": {
     shortDescription:
-      "Ace 1000 side-by-side with dual-seat cabin, cargo bed, and work-grade towing capacity.",
+      "Багги Ace 1000 с двухместной кабиной, грузовой платформой и рабочей буксировкой.",
     description:
-      "Ace 1000 Side-by-Side is built for crews that need two-up transport, tool hauling, and predictable 4x4 traction on job sites. Roll-over protection, hitch points, and accessory rails integrate with the Ace ecosystem. Awaiting delivery from SH-53; configure variants for fleet paint and telematics.",
+      "Ace 1000 Side-by-Side — для бригад, которым нужна перевозка двоих, инструмент и предсказуемый полный привод на площадке. Защита от опрокидывания, фаркоп и рейлинги в экосистеме Ace. Ожидает поставки с SH-53; варианты окраски и телематики — под парк.",
   },
 };
 
@@ -86,63 +86,63 @@ type CategoryDescriptionBuilder = (context: DescriptionContext) => ProductDescri
 
 const buildAtvDescriptions: CategoryDescriptionBuilder = ({ displayName, family, productionSite, seed }) => {
   const useCase = pick(
-    ["farm operations", "trail maintenance", "hunting leases", "utility fleets"],
+    ["сельхозработы", "обслуживание трасс", "охотничьи угодья", "утилитарные парки"],
     seed,
   );
   const feature = pick(
-    ["independent suspension", "selectable 4x4 drive", "engine braking assist", "sealed electrical routing"],
+    ["независимую подвеску", "подключаемый полный привод", "помощь двигательным торможением", "герметичную электропроводку"],
     seed + 1,
   );
 
   return {
-    shortDescription: `${displayName} is a ${family} series ATV for ${useCase}, pairing ${feature} with dependable all-terrain control.`,
-    description: `${displayName} belongs to the ${family} ATV line and is spec'd for dealers who need a versatile platform across soil, gravel, and light mud. The model highlights ${feature}, reinforced racks, and service-friendly access to filters and driveline components. Manufactured at ${productionSite}. ${pick(CLOSING_LINES, seed + 2)}`,
+    shortDescription: `${displayName} — квадроцикл серии ${family} для ${useCase}: ${feature} и уверенное управление на любом грунте.`,
+    description: `${displayName} входит в линейку квадроциклов ${family} и рассчитан на дилеров, которым нужна универсальная платформа по почве, гравию и лёгкой грязи. Модель выделяет ${feature}, усиленные багажники и удобный доступ к фильтрам и трансмиссии. Производство: ${productionSite}. ${pick(CLOSING_LINES, seed + 2)}`,
   };
 };
 
 const buildEnduroDescriptions: CategoryDescriptionBuilder = ({ displayName, family, productionSite, seed }) => {
-  const terrain = pick(["single-track", "forest loops", "club enduro stages", "training circuits"], seed);
+  const terrain = pick(["синглтрек", "лесные петли", "клубные эндуро-спецучастки", "тренировочные круги"], seed);
 
   return {
-    shortDescription: `${displayName} — ${family} enduro bike tuned for ${terrain} with agile handling and progressive power delivery.`,
-    description: `${displayName} targets riders who want a ${family} chassis with suspension and braking tuned for ${terrain}. Weight distribution and ergonomics favor stand-up riding and quick direction changes without sacrificing stability on descents. Production site: ${productionSite}. ${pick(CLOSING_LINES, seed + 1)}`,
+    shortDescription: `${displayName} — эндуро ${family}, настроенный под ${terrain}: подвижная геометрия и прогрессивная тяга.`,
+    description: `${displayName} — для райдеров, которым нужна рама ${family} с подвеской и тормозами под ${terrain}. Развос масс и эргономика удобны для езды стоя и быстрых смен направления без потери стабильности на спусках. Площадка: ${productionSite}. ${pick(CLOSING_LINES, seed + 1)}`,
   };
 };
 
 const buildElectricDescriptions: CategoryDescriptionBuilder = ({ displayName, productionSite, seed }) => ({
-  shortDescription: `${displayName} is a battery-electric motorcycle for quiet campuses, resorts, and controlled off-road training.`,
-  description: `${displayName} uses a modular battery architecture with configurable charge windows for fleet operators. The powertrain is optimized for smooth torque at low speeds and minimal maintenance versus ICE counterparts. Built at ${productionSite}. ${pick(CLOSING_LINES, seed)}`,
+  shortDescription: `${displayName} — электромотоцикл для тихих кампусов, курортов и контролируемой внедорожной подготовки.`,
+  description: `${displayName} использует модульную батарею с настраиваемыми окнами зарядки для операторов парка. Силовой агрегат даёт плавный момент на малых скоростях и меньше обслуживания, чем ДВС. Сборка: ${productionSite}. ${pick(CLOSING_LINES, seed)}`,
 });
 
 const buildScooterDescriptions: CategoryDescriptionBuilder = ({ displayName, family, productionSite, seed }) => {
-  const focus = pick(["daily commuting", "delivery routes", "campus mobility", "rental pools"], seed);
+  const focus = pick(["ежедневных поездок", "доставочных маршрутов", "кампусной мобильности", "прокатных парков"], seed);
 
   return {
-    shortDescription: `${displayName} — ${family} scooter designed for ${focus} with compact dimensions and low running costs.`,
-    description: `${displayName} from the ${family} scooter family emphasizes uptime in ${focus}. Under-seat storage, approachable seat height, and straightforward service intervals keep operating costs predictable for dealers and fleet buyers. Assembled at ${productionSite}. ${pick(CLOSING_LINES, seed + 3)}`,
+    shortDescription: `${displayName} — скутер ${family} для ${focus}: компактные габариты и низкая стоимость владения.`,
+    description: `${displayName} из семейства скутеров ${family} делает ставку на доступность в сценарии ${focus}. Багажник под сиденьем, удобная высота посадки и понятные межсервисные интервалы держат расходы предсказуемыми для дилеров и парков. Сборка: ${productionSite}. ${pick(CLOSING_LINES, seed + 3)}`,
   };
 };
 
 const buildStreetBikeDescriptions: CategoryDescriptionBuilder = ({ displayName, family, productionSite, seed }) => {
-  const style = pick(["sport-touring", "urban sport", "long-distance touring", "weekend canyon rides"], seed);
+  const style = pick(["спорт-туризма", "городского спорта", "дальних поездок", "выходных серпантинов"], seed);
 
   return {
-    shortDescription: `${displayName} — ${family} street motorcycle configured for ${style} with balanced ergonomics and road-ready braking.`,
-    description: `${displayName} extends the ${family} road lineup for riders and dealers focused on ${style}. Frame rigidity, tire selection, and lighting packages align with mixed highway and city use. ${productionSite} handles final assembly and quality gates. ${pick(CLOSING_LINES, seed + 2)}`,
+    shortDescription: `${displayName} — дорожный мотоцикл ${family} для ${style}: сбалансированная посадка и дорожные тормоза.`,
+    description: `${displayName} расширяет дорожную линейку ${family} для райдеров и дилеров, которым важен ${style}. Жёсткость рамы, шины и свет рассчитаны на смешанную езду по трассе и городу. Финальная сборка и контроль качества — на ${productionSite}. ${pick(CLOSING_LINES, seed + 2)}`,
   };
 };
 
 const buildSnowmobileDescriptions: CategoryDescriptionBuilder = ({ displayName, family, productionSite, seed }) => ({
-  shortDescription: `${displayName} — ${family} snowmobile for groomed trails, utility towing, and cold-climate recreation.`,
-  description: `${displayName} delivers track stability, ski control, and thermal management for extended winter sessions. The ${family} series supports both recreational buyers and operators who need predictable performance below freezing. Produced at ${productionSite}. ${pick(CLOSING_LINES, seed + 1)}`,
+  shortDescription: `${displayName} — снегоход ${family} для укатанных трасс, утилитарной буксировки и зимнего отдыха.`,
+  description: `${displayName} даёт устойчивость гусеницы, контроль лыж и термоменеджмент для длинных зимних сессий. Серия ${family} подходит и любителям, и операторам, которым нужна предсказуемая работа ниже нуля. Производство: ${productionSite}. ${pick(CLOSING_LINES, seed + 1)}`,
 });
 
 const buildSideBySideDescriptions: CategoryDescriptionBuilder = ({ displayName, family, productionSite, seed }) => {
-  const role = pick(["work crews", "estate maintenance", "adventure tourism", "agricultural support"], seed);
+  const role = pick(["рабочих бригад", "обслуживания территории", "приключенческого туризма", "сельхозподдержки"], seed);
 
   return {
-    shortDescription: `${displayName} — ${family} side-by-side built for ${role} with two-up cabin comfort and cargo versatility.`,
-    description: `${displayName} is a ${family} UTV configured for ${role}, combining passenger protection, hitch capability, and 4x4 traction for mixed job-site terrain. Accessory rails and dealer-fit packages simplify fleet standardization. ${productionSite} production. ${pick(CLOSING_LINES, seed + 4)}`,
+    shortDescription: `${displayName} — багги ${family} для ${role}: двухместная кабина и универсальный кузов.`,
+    description: `${displayName} — UTV семейства ${family} для ${role}: защита пассажиров, фаркоп и полный привод на смешанном рельефе площадки. Рейлинги и дилерские пакеты упрощают стандартизацию парка. Производство: ${productionSite}. ${pick(CLOSING_LINES, seed + 4)}`,
   };
 };
 
@@ -157,8 +157,8 @@ const CATEGORY_DESCRIPTION_BUILDERS: Record<string, CategoryDescriptionBuilder> 
 };
 
 const buildFallbackDescriptions = (context: DescriptionContext): ProductDescriptions => ({
-  shortDescription: `${context.displayName} is a Sharmax ${context.category} product in the ${context.family} family, ready for dealer and retail channels.`,
-  description: `${context.displayName} is listed under ${context.category} with ${context.family} lineage and assembly at ${context.productionSite}. The SKU supports standard warranty, logistics data, and variant-level pricing in the store catalog. ${pick(CLOSING_LINES, context.seed)}`,
+  shortDescription: `${context.displayName} — продукт Sharmax категории «${context.category}» семейства ${context.family}, готов к дилерскому и розничному каналам.`,
+  description: `${context.displayName} числится в категории «${context.category}», семейство ${context.family}, сборка на ${context.productionSite}. Артикул поддерживает стандартную гарантию, логистические данные и цены вариантов в каталоге магазина. ${pick(CLOSING_LINES, context.seed)}`,
 });
 
 export const buildProductDescriptions = (item: StoreCatalogItem): ProductDescriptions => {

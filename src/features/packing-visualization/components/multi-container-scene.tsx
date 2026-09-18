@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -118,7 +119,7 @@ export const MultiContainerScene = ({
     <div
       ref={wrapperRef}
       className="relative h-[min(680px,70vh)] w-full overflow-hidden rounded-xl border"
-      aria-label="3D scene of all containers"
+      aria-label="3D-сцена всех контейнеров"
       onPointerLeave={() => setTooltip(null)}
     >
       {tooltip ? (
@@ -126,13 +127,13 @@ export const MultiContainerScene = ({
           className="pointer-events-none absolute z-50 rounded-md border border-slate-400 bg-slate-950/90 px-2 py-1 text-xs text-slate-100 shadow-lg"
           style={{ left: tooltip.x + 10, top: tooltip.y + 10 }}
           role="tooltip"
-          aria-label="Product tooltip"
+          aria-label="Подсказка по товару"
         >
           <div className="font-medium">{tooltip.payload.itemTypeName}</div>
           <div className="text-slate-300">
-            <div>Width: {Math.round(tooltip.payload.width)} mm</div>
-            <div>Height: {Math.round(tooltip.payload.height)} mm</div>
-            <div>Length: {Math.round(tooltip.payload.length)} mm</div>
+            <div>Ширина: {Math.round(tooltip.payload.width)} мм</div>
+            <div>Высота: {Math.round(tooltip.payload.height)} мм</div>
+            <div>Длина: {Math.round(tooltip.payload.length)} мм</div>
           </div>
         </div>
       ) : null}

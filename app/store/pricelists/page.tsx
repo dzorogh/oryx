@@ -1,9 +1,10 @@
+// english-ui:ignore-file
 import { StorePlaceholderPage } from "@/components/store/store-placeholder-page";
 
 const StorePricelistsRoute = () => (
   <StorePlaceholderPage
-    title="Pricelists"
-    description="Manage dealer and retail channel pricelists."
+    title="Прайс-листы"
+    description="Дилерские и розничные прайс-листы каналов."
   />
 );
 

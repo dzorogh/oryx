@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useState, type FormEvent } from "react";
@@ -104,10 +105,10 @@ export const PricelistParameterDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add parameter" : "Edit parameter"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? "Добавить параметр" : "Изменить параметр"}</DialogTitle>
           <DialogDescription>
-            A parameter adds a column computed from a formula. Reference other parameters and
-            product values by their slug.
+            Параметр добавляет колонку, которая считается по формуле. Ссылайтесь на другие
+            параметры и значения товара по slug.
           </DialogDescription>
         </DialogHeader>
 
@@ -116,7 +117,7 @@ export const PricelistParameterDialog = ({
             <div className="grid gap-3">
               <div className="grid gap-1.5">
                 <label htmlFor="parameter-name" className="text-xs font-medium text-foreground">
-                  Name
+                  Название
                 </label>
                 <Input
                   id="parameter-name"
@@ -127,13 +128,13 @@ export const PricelistParameterDialog = ({
                       setSlug(slugifyParameter(event.target.value));
                     }
                   }}
-                  placeholder="e.g. Delivery"
+                  placeholder="например, Доставка"
                   autoFocus={!lockIdentity}
                   disabled={lockIdentity}
                 />
                 {lockIdentity ? (
                   <p className="text-[11px] text-muted-foreground">
-                    This is a system column — its name and slug are fixed.
+                    Это системная колонка — название и slug зафиксированы.
                   </p>
                 ) : null}
               </div>
@@ -158,7 +159,7 @@ export const PricelistParameterDialog = ({
 
               <div className="grid gap-1.5">
                 <label htmlFor="parameter-formula" className="text-xs font-medium text-foreground">
-                  Formula
+                  Формула
                 </label>
                 <textarea
                   id="parameter-formula"
@@ -176,11 +177,11 @@ export const PricelistParameterDialog = ({
             </div>
 
             <section className="grid gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Reference</h3>
+              <h3 className="text-sm font-semibold text-foreground">Справочник</h3>
               <div className="flex flex-col gap-2">
                 <Collapsible className="group rounded-lg border border-border/60">
                   <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-foreground outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
-                    Parameters
+                    Параметры
                     <ChevronDown
                       className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[open]:rotate-180"
                       aria-hidden
@@ -208,10 +209,10 @@ export const PricelistParameterDialog = ({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              Отмена
             </Button>
             <Button type="submit" disabled={!isValid}>
-              {mode === "create" ? "Add parameter" : "Save changes"}
+              {mode === "create" ? "Добавить параметр" : "Сохранить"}
             </Button>
           </DialogFooter>
         </form>
