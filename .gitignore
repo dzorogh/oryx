@@ -28,3 +28,6 @@ __pycache__/
 
 # git worktrees (local agent/dev isolation)
 .worktrees/
+
+# leftover Superpowers local state (this repo uses BMAD only)
+.superpowers/

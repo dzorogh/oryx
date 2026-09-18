@@ -1,0 +1,10 @@
+---
+description: Use BMAD skills only; never Superpowers — see AGENTS.md Policy
+alwaysApply: true
+---
+
+# BMAD only, never Superpowers
+
+**Canonical:** [AGENTS.md](../../AGENTS.md) Policy section.
+
+Planning, design, and implementation use BMAD skills from `.agents/skills/` only. Never Superpowers (`superpowers:*`, `docs/superpowers/`, `.superpowers/`). Do not duplicate this rule here — edit the managed block in `AGENTS.md`.

@@ -1,7 +1,7 @@
 # Agent instructions (Oryx BMS)
 
 <!-- bmad:context -->
-<!-- Verified 2026-09-17 against 449bbfc1f698928b4c6f88924e04ea9c245798e2. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-09-18 against 4d28913ff0ce30895549e0280ea9a52a5308cdfe. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## Oryx BMS
 
@@ -14,10 +14,12 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 - After any diagnostic write to a live system (Oryx demo Supabase, APIs, UI), delete or revert it in the same session. Do not leave rows, users, files, or groups named TEST, dummy, DELETE ME, or similar. Prefer mocks and local fixtures.
 - Use only this project's Dokploy compose `supabase` (`oryx-supabase-bb1dnn`). Agent access is MCP `oryx-supabase`. Never Capacity, YNAPB, or cloud `user-supabase`. Browser uses the anon key, no login. Details: `docs/conventions/backend/supabase.md`.
 - User-facing page text must be in English. Do not regenerate `scripts/english-ui-baseline.json` unless intentionally allowing new Cyrillic.
+- Planning, design, and implementation workflows use BMAD skills from `.agents/skills/` only. Never Superpowers skills (`superpowers:*`), never write new `docs/superpowers/` plans or specs, never run `.superpowers/` sessions. Historical files under `docs/superpowers/` are leftovers; ignore their "use superpowers:*" headers.
 
 ## Where things are
 
 - Conventions (canonical): `docs/conventions/README.md`. Edit those files; keep `.cursor/rules/*.mdc` as pointers.
+- Agent workflows: BMAD skills in `.agents/skills/` only. Do not use Superpowers.
 - Feature behavior: `docs/features/README.md`.
 - List-page / toolbar reference: `src/components/store/pim/products/store-catalog-page.tsx`, `src/components/store/pim/products/catalog/catalog-toolbar.tsx`; Pulse Thanks: `src/features/pulse/thanks/thanks-page.tsx`, `src/features/pulse/thanks/thanks-toolbar.tsx`.
 - Logistics: `src/features/logistics/` — `docs/features/logistics.md`.
@@ -39,5 +41,6 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 ## Known pitfalls
 
 - Do not treat a working UI with local demo data as proof the Oryx demo backend is configured — `src/lib/supabase/client.ts` returns `null` when env is unset.
+- Do not follow leftover Superpowers plans/specs under `docs/superpowers/` or local `.superpowers/` state; those are inactive. Use BMAD instead.
 
 <!-- /bmad:context -->
