@@ -9,6 +9,7 @@ import type {
 export const ALLOCATION_ATLAS_EPSILON = 1e-9;
 
 export type LineLocationAllocation = {
+  inProduction: number;
   inTransit: number;
   byWarehouseId: Record<string, number>;
 };
@@ -22,6 +23,7 @@ export const lineLocationAllocations = (
   balances: StockBalance[],
   customerOrderLineId: string,
 ): LineLocationAllocation => {
+  let inProduction = 0;
   let inTransit = 0;
   const byWarehouseId: Record<string, number> = {};
 
@@ -30,6 +32,10 @@ export const lineLocationAllocations = (
       continue;
     }
     if (!isPositive(entry.quantity)) {
+      continue;
+    }
+    if (entry.locationType === "production_order_line") {
+      inProduction += entry.quantity;
       continue;
     }
     if (entry.locationType === "transfer") {
@@ -41,7 +47,7 @@ export const lineLocationAllocations = (
     }
   }
 
-  return { inTransit, byWarehouseId };
+  return { inProduction, inTransit, byWarehouseId };
 };
 
 export const warehouseIdsWithReservedForOrder = (

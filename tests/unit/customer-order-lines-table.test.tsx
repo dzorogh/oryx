@@ -196,25 +196,49 @@ describe("CustomerOrderLinesTable", () => {
     renderTable();
 
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent);
-    expect(headers).toEqual(["Product", "Ordered", "Produced", "In transit", "WH-2", "WH-10", "Shipped"]);
+    expect(headers).toEqual([
+      "Product",
+      "Ordered",
+      "In production",
+      "Produced",
+      "In transit",
+      "WH-2",
+      "WH-10",
+      "Shipped",
+    ]);
     expectShippedLast();
     expect(screen.queryByRole("columnheader", { name: "WH-1" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "WH-2" })).toHaveAttribute("href", "/store/logistics/warehouses/wh-2");
     expect(screen.getByRole("link", { name: "WH-10" })).toHaveAttribute("href", "/store/logistics/warehouses/wh-10");
-    expect(screen.getAllByText(/Produced is cumulative output for this order/).length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText(/In production is current WIP reserved for this order line/).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText(/Produced is cumulative completed output for this line/).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Do not add Produced to current location columns/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("columnheader", { name: "In production" })).toHaveAttribute(
+      "title",
+      "Current WIP reserved for this order line. Do not add to Produced.",
+    );
+    expect(screen.getByRole("columnheader", { name: "Produced" })).toHaveAttribute(
+      "title",
+      "Cumulative completed output for this line. Do not add to current location columns.",
+    );
     expect(screen.queryByText("Нехватка")).not.toBeInTheDocument();
     expect(screen.queryByText("To reserve")).not.toBeInTheDocument();
 
     const openRow = screen.getByRole("link", { name: "Cruiser 300 FJ" }).closest("tr");
     expect(openRow).not.toBeNull();
     const cells = within(openRow!).getAllByRole("cell");
-    expect(cells).toHaveLength(7);
+    expect(cells).toHaveLength(8);
     expect(cells[1]).toHaveTextContent("12");
-    expect(cells[2]).toHaveTextContent("7");
-    expect(cells[3]).toHaveTextContent("1");
-    expect(cells[4]).toHaveTextContent("2");
-    expect(cells[5]).toHaveTextContent("4");
-    expect(cells[6]).toHaveTextContent("—");
+    expect(cells[2]).toHaveTextContent("3");
+    expect(cells[3]).toHaveTextContent("7");
+    expect(cells[4]).toHaveTextContent("1");
+    expect(cells[5]).toHaveTextContent("2");
+    expect(cells[6]).toHaveTextContent("4");
+    expect(cells[7]).toHaveTextContent("—");
     expect(within(cells[0]).getByRole("button", { name: "Actions for Cruiser 300 FJ" })).toBeInTheDocument();
   });
 
@@ -281,11 +305,11 @@ describe("CustomerOrderLinesTable", () => {
     renderTable({ lines: [] });
 
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent);
-    expect(headers).toEqual(["Product", "Ordered", "Produced", "In transit", "Shipped"]);
+    expect(headers).toEqual(["Product", "Ordered", "In production", "Produced", "In transit", "Shipped"]);
     expectShippedLast();
     const empty = screen.getByText("This customer order has no products.");
     expect(empty).toBeInTheDocument();
-    expect(empty.closest("td")).toHaveAttribute("colspan", "5");
+    expect(empty.closest("td")).toHaveAttribute("colspan", "6");
     expect(screen.getByRole("heading", { name: "Products" })).toBeInTheDocument();
   });
 });

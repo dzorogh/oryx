@@ -314,18 +314,83 @@ describe("lineLocationAllocations", () => {
     },
   ];
 
-  it("counts only this line's reserved transfer and warehouse qty", () => {
+  it("counts only this line's reserved production, transfer, and warehouse qty", () => {
     expect(lineLocationAllocations(balances, "col-a")).toEqual({
+      inProduction: 4,
       inTransit: 2,
       byWarehouseId: { "wh-1": 3 },
     });
   });
 
-  it("ignores free stock, other orders, and production-order reservations", () => {
+  it("ignores free stock and other orders in warehouse columns", () => {
     const result = lineLocationAllocations(balances, "col-a");
     expect(result.byWarehouseId["wh-2"]).toBeUndefined();
     expect(result.byWarehouseId["wh-10"]).toBeUndefined();
     expect(Object.keys(result.byWarehouseId)).toEqual(["wh-1"]);
+  });
+
+  it("sums reserved production_order_line qty for this line and excludes free, other lines, zero, and negative", () => {
+    const mixed: StockBalance[] = [
+      ...balances,
+      {
+        productId: "p-a",
+        locationType: "production_order_line",
+        locationId: "pol-2",
+        stockState: "reserved",
+        customerOrderId: "co-1",
+        customerOrderLineId: "col-a",
+        quantity: 5,
+      },
+      {
+        productId: "p-a",
+        locationType: "production_order_line",
+        locationId: "pol-free",
+        stockState: "free",
+        customerOrderId: null,
+        customerOrderLineId: null,
+        quantity: 9,
+      },
+      {
+        productId: "p-a",
+        locationType: "production_order_line",
+        locationId: "pol-other",
+        stockState: "reserved",
+        customerOrderId: "co-other",
+        customerOrderLineId: "col-other",
+        quantity: 7,
+      },
+      {
+        productId: "p-a",
+        locationType: "production_order_line",
+        locationId: "pol-b",
+        stockState: "reserved",
+        customerOrderId: "co-1",
+        customerOrderLineId: "col-b",
+        quantity: 6,
+      },
+      {
+        productId: "p-a",
+        locationType: "production_order_line",
+        locationId: "pol-zero",
+        stockState: "reserved",
+        customerOrderId: "co-1",
+        customerOrderLineId: "col-a",
+        quantity: 0,
+      },
+      {
+        productId: "p-a",
+        locationType: "production_order_line",
+        locationId: "pol-neg",
+        stockState: "reserved",
+        customerOrderId: "co-1",
+        customerOrderLineId: "col-a",
+        quantity: -2,
+      },
+    ];
+
+    expect(lineLocationAllocations(mixed, "col-a").inProduction).toBe(9);
+    expect(lineLocationAllocations(mixed, "col-b").inProduction).toBe(6);
+    expect(lineLocationAllocations(mixed, "col-other").inProduction).toBe(7);
   });
 });
 

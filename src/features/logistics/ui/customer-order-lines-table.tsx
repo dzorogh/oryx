@@ -45,7 +45,12 @@ const Qty = ({ quantity, className }: { quantity: number; className?: string }) 
 };
 
 const ATLAS_HELP =
-  "Produced is cumulative output for this order. In transit and warehouse columns show current reserved quantity for this order.";
+  "In production is current WIP reserved for this order line. Produced is cumulative completed output for this line. Do not add Produced to current location columns; they use different bases and may overlap.";
+
+const IN_PRODUCTION_HELP =
+  "Current WIP reserved for this order line. Do not add to Produced.";
+const PRODUCED_HELP =
+  "Cumulative completed output for this line. Do not add to current location columns.";
 
 const CompactProduct = ({
   snapshot,
@@ -175,7 +180,16 @@ export const CustomerOrderLinesTable = ({
                 Product
               </TableHead>
               <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Ordered</TableHead>
-              <TableHead className={cn(headClass, "bg-muted/30 text-center text-muted-foreground")}>
+              <TableHead
+                title={IN_PRODUCTION_HELP}
+                className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}
+              >
+                In production
+              </TableHead>
+              <TableHead
+                title={PRODUCED_HELP}
+                className={cn(headClass, "bg-muted/30 text-center text-muted-foreground")}
+              >
                 Produced
               </TableHead>
               <TableHead className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}>
@@ -205,7 +219,7 @@ export const CustomerOrderLinesTable = ({
             {lines.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={5 + warehouseIds.length}
+                  colSpan={6 + warehouseIds.length}
                   className="px-3 py-8 text-center text-sm text-muted-foreground"
                 >
                   This customer order has no products.
@@ -266,6 +280,9 @@ export const CustomerOrderLinesTable = ({
                     </TableCell>
                     <TableCell className={cn(cellClass, bookendCell)}>
                       <Qty quantity={line.quantity} className="text-sm font-extrabold" />
+                    </TableCell>
+                    <TableCell className={cn(cellClass, locationCell)}>
+                      <Qty quantity={locations.inProduction} />
                     </TableCell>
                     <TableCell className={cn(cellClass, complete ? completeCell : "bg-muted/5")}>
                       <Qty quantity={producedQty} className="font-medium text-muted-foreground" />

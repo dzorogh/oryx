@@ -37,3 +37,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-products-allocation-atlas.md`
   summary: Уточнить в Implementation Notes формулировку расчёта Produced при сторно.
   evidence: Первая заметка говорит только о положительных production_output-транзакциях, тогда как реализация корректно суммирует и отрицательные сторно для получения накопительного net-значения; это документальное расхождение без влияния на код.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-products-in-production-column.md`
+  summary: Пометить базовую спецификацию Allocation Atlas как расширенную колонкой In production.
+  evidence: Завершённая базовая спецификация сохраняет прежний перечень колонок без In production; новая спецификация и код корректно расширяют его, но между документами нет явной связи supersedes.
