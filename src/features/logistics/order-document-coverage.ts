@@ -1,7 +1,11 @@
-import type {
-  CustomerOrderLine,
-  LogisticsSnapshot,
-  Reservation,
+import {
+  orderLineForProduct,
+  ownersEqual,
+  reservationDirection,
+  reservationTouchesOrder,
+  type CustomerOrderLine,
+  type LogisticsSnapshot,
+  type Reservation,
 } from "@/features/logistics/logistics-types";
 
 export const ORDER_DOCUMENT_KINDS = [
@@ -37,6 +41,21 @@ const addQuantity = (
   const lineQuantities = quantities.get(documentId) ?? new Map<string, number>();
   lineQuantities.set(orderLineId, (lineQuantities.get(orderLineId) ?? 0) + quantity);
   quantities.set(documentId, lineQuantities);
+};
+
+const addForProduct = (
+  quantities: DocumentLineQuantities,
+  documentId: string,
+  orderLines: CustomerOrderLine[],
+  orderId: string,
+  productId: string,
+  quantity: number,
+) => {
+  const orderLine = orderLineForProduct(orderLines, orderId, productId);
+  if (!orderLine) {
+    return;
+  }
+  addQuantity(quantities, documentId, orderLine.id, quantity);
 };
 
 export const withOrderCoverage = <T extends { id: string }>(
@@ -78,13 +97,10 @@ const coverageForKind = (
     ]),
   );
 
-const reservationById = (
-  snapshot: LogisticsSnapshot,
-  customerOrderId: string,
-): Map<string, Reservation> =>
+const reservationById = (snapshot: LogisticsSnapshot, customerOrderId: string): Map<string, Reservation> =>
   new Map(
     snapshot.reservations
-      .filter((reservation) => reservation.customerOrderId === customerOrderId)
+      .filter((reservation) => reservationTouchesOrder(reservation, snapshot.reservationLines, customerOrderId))
       .map((reservation) => [reservation.id, reservation]),
   );
 
@@ -92,10 +108,7 @@ export const calculateOrderDocumentCoverage = (
   snapshot: LogisticsSnapshot,
   customerOrderId: string,
 ): OrderDocumentCoverage => {
-  const orderLines = snapshot.customerOrderLines.filter(
-    (line) => line.orderId === customerOrderId,
-  );
-  const orderLineIds = new Set(orderLines.map((line) => line.id));
+  const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === customerOrderId);
   const quantities = createCoverageQuantities();
   const reservations = reservationById(snapshot, customerOrderId);
   const productionOrderByLine = new Map(
@@ -104,149 +117,129 @@ export const calculateOrderDocumentCoverage = (
 
   for (const line of snapshot.reservationLines) {
     const reservation = reservations.get(line.reservationId);
-    if (!reservation || !orderLineIds.has(line.customerOrderLineId)) {
+    if (!reservation) {
+      continue;
+    }
+    const orderLine = orderLineForProduct(orderLines, customerOrderId, line.productId);
+    if (!orderLine) {
       continue;
     }
 
-    addQuantity(
-      quantities.reservation,
-      reservation.id,
-      line.customerOrderLineId,
-      line.quantity,
-    );
+    addQuantity(quantities.reservation, reservation.id, orderLine.id, line.quantity);
 
-    if (
-      reservation.operation === "reserve" &&
-      reservation.locationType === "production_order_line"
-    ) {
+    const destinationIsOrder = ownersEqual(
+      reservation.toOwnerType,
+      reservation.toOwnerId,
+      "order",
+      customerOrderId,
+    );
+    const direction = reservationDirection(
+      reservation,
+      snapshot.reservationLines.filter((item) => item.reservationId === reservation.id),
+    );
+    const coversLocation = destinationIsOrder || direction === "reserve";
+
+    if (coversLocation && reservation.locationType === "production_order_line") {
       const productionOrderId = productionOrderByLine.get(reservation.locationId);
       if (productionOrderId) {
-        addQuantity(
-          quantities.production,
-          productionOrderId,
-          line.customerOrderLineId,
-          line.quantity,
-        );
+        addQuantity(quantities.production, productionOrderId, orderLine.id, line.quantity);
       }
     }
 
-    if (
-      reservation.operation === "reserve" &&
-      reservation.locationType === "transfer"
-    ) {
-      addQuantity(
-        quantities.transfer,
-        reservation.locationId,
-        line.customerOrderLineId,
-        line.quantity,
-      );
+    if (coversLocation && reservation.locationType === "transfer") {
+      addQuantity(quantities.transfer, reservation.locationId, orderLine.id, line.quantity);
     }
   }
 
-  const outputByLine = new Map(
-    snapshot.outputLines.map((line) => [line.id, line.outputId]),
-  );
+  const outputByLine = new Map(snapshot.outputLines.map((line) => [line.id, line]));
   const outputsWithAllocations = new Set<string>();
   for (const allocation of snapshot.outputAllocations) {
-    if (
-      allocation.customerOrderId !== customerOrderId ||
-      !orderLineIds.has(allocation.customerOrderLineId)
-    ) {
+    if (!ownersEqual(allocation.ownerType, allocation.ownerId, "order", customerOrderId)) {
       continue;
     }
-    const outputId = outputByLine.get(allocation.lineId);
-    if (outputId) {
-      outputsWithAllocations.add(outputId);
-      addQuantity(
-        quantities.output,
-        outputId,
-        allocation.customerOrderLineId,
-        allocation.quantity,
-      );
+    const outputLine = outputByLine.get(allocation.lineId);
+    if (!outputLine) {
+      continue;
     }
+    outputsWithAllocations.add(outputLine.outputId);
+    addForProduct(
+      quantities.output,
+      outputLine.outputId,
+      orderLines,
+      customerOrderId,
+      outputLine.productId,
+      allocation.quantity,
+    );
   }
 
   for (const transaction of snapshot.transactions) {
     if (
       transaction.sourceType !== "production_output" ||
-      transaction.customerOrderId !== customerOrderId ||
-      !transaction.customerOrderLineId ||
-      !orderLineIds.has(transaction.customerOrderLineId) ||
+      !ownersEqual(transaction.ownerType, transaction.ownerId, "order", customerOrderId) ||
       transaction.quantity <= 0 ||
       outputsWithAllocations.has(transaction.sourceId)
     ) {
       continue;
     }
-    addQuantity(
+    addForProduct(
       quantities.output,
       transaction.sourceId,
-      transaction.customerOrderLineId,
+      orderLines,
+      customerOrderId,
+      transaction.productId,
       transaction.quantity,
     );
   }
 
-  const transferByLine = new Map(
-    snapshot.transferLines.map((line) => [line.id, line.transferId]),
-  );
+  const transferByLine = new Map(snapshot.transferLines.map((line) => [line.id, line]));
   for (const allocation of snapshot.transferAllocations) {
-    if (
-      allocation.customerOrderId !== customerOrderId ||
-      !orderLineIds.has(allocation.customerOrderLineId)
-    ) {
+    if (!ownersEqual(allocation.ownerType, allocation.ownerId, "order", customerOrderId)) {
       continue;
     }
-    const transferId = transferByLine.get(allocation.lineId);
-    if (transferId) {
-      addQuantity(
-        quantities.transfer,
-        transferId,
-        allocation.customerOrderLineId,
-        allocation.quantity,
-      );
+    const transferLine = transferByLine.get(allocation.lineId);
+    if (!transferLine) {
+      continue;
     }
+    addForProduct(
+      quantities.transfer,
+      transferLine.transferId,
+      orderLines,
+      customerOrderId,
+      transferLine.productId,
+      allocation.quantity,
+    );
   }
 
   for (const line of snapshot.shipmentLines) {
     const shipment = snapshot.shipments.find(
       (item) => item.id === line.shipmentId && item.customerOrderId === customerOrderId,
     );
-    if (shipment && orderLineIds.has(line.customerOrderLineId)) {
-      addQuantity(
-        quantities.shipment,
-        shipment.id,
-        line.customerOrderLineId,
-        line.quantity,
-      );
+    if (!shipment) {
+      continue;
     }
+    addForProduct(quantities.shipment, shipment.id, orderLines, customerOrderId, line.productId, line.quantity);
   }
 
-  const shipmentLineById = new Map(
-    snapshot.shipmentLines.map((line) => [line.id, line]),
-  );
+  const shipmentLineById = new Map(snapshot.shipmentLines.map((line) => [line.id, line]));
   for (const line of snapshot.returnLines) {
     const returnedShipmentLine = shipmentLineById.get(line.shipmentLineId);
-    const returnedDocument = snapshot.returns.find(
-      (item) => item.id === line.returnId,
-    );
+    const returnedDocument = snapshot.returns.find((item) => item.id === line.returnId);
     const shipment = returnedDocument
       ? snapshot.shipments.find(
-          (item) =>
-            item.id === returnedDocument.shipmentId &&
-            item.customerOrderId === customerOrderId,
+          (item) => item.id === returnedDocument.shipmentId && item.customerOrderId === customerOrderId,
         )
       : undefined;
-    if (
-      shipment &&
-      returnedShipmentLine &&
-      orderLineIds.has(returnedShipmentLine.customerOrderLineId)
-    ) {
-      addQuantity(
-        quantities.return,
-        line.returnId,
-        returnedShipmentLine.customerOrderLineId,
-        line.quantity,
-      );
+    if (!shipment || !returnedShipmentLine) {
+      continue;
     }
+    addForProduct(
+      quantities.return,
+      line.returnId,
+      orderLines,
+      customerOrderId,
+      returnedShipmentLine.productId,
+      line.quantity,
+    );
   }
 
   return {

@@ -14,27 +14,34 @@ import {
 } from "@/features/logistics/logistics-api";
 import {
   freePlacesForProduct,
-  remainingToReserveForLine,
   remainingToReturnForLine,
   remainingToShipForLine,
-  reservationCap,
+  reservationCapForOwner,
+  reservedAtPlaceForOwner,
   reservedLinesAtWarehouse,
-  reservedPlacesForOrder,
   warehousesWithReservedForOrder,
 } from "@/features/logistics/logistics-availability";
-import { formatQuantity, RESERVATION_OPERATION_LABELS } from "@/features/logistics/logistics-labels";
-import { locationLabel, productById, productIdentityLabel, warehouseCode } from "@/features/logistics/logistics-lookups";
-import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { FREE_OWNER_LABEL, OWNER_TYPE_LABELS, RESERVATION_DIRECTION_LABELS, formatQuantity } from "@/features/logistics/logistics-labels";
 import {
-  assertCustomerCapacity,
-  assertEnoughStock,
-  assertShipmentCapacity,
-} from "@/features/logistics/logistics-rules";
-import type {
-  LogisticsSnapshot,
-  ReservationLocationType,
-  ReservationOperation,
-  StockBalance,
+  locationLabel,
+  ownerLabel,
+  ownerSelectItems,
+  productById,
+  productIdentityLabel,
+  warehouseCode,
+} from "@/features/logistics/logistics-lookups";
+import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { assertCustomerCapacity, assertEnoughStock, assertShipmentCapacity } from "@/features/logistics/logistics-rules";
+import {
+  isFreeOwner,
+  orderLineForProduct,
+  ownerKey,
+  ownersEqual,
+  reservationDirection,
+  type LogisticsSnapshot,
+  type OwnerType,
+  type ReservationLocationType,
+  type StockBalance,
 } from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
@@ -52,12 +59,11 @@ type SharedFormProps = {
   mode?: FormMode;
 };
 
-const placeKey = (type: string, id: string, lineId?: string) =>
-  lineId ? `${type}:${id}:${lineId}` : `${type}:${id}`;
+const placeKey = (type: string, id: string) => `${type}:${id}`;
 
-const parsePlaceKey = (value: string): { locationType: ReservationLocationType; locationId: string; lineId?: string } => {
-  const [locationType, locationId, lineId] = value.split(":");
-  return { locationType: locationType as ReservationLocationType, locationId, lineId };
+const parsePlaceKey = (value: string): { locationType: ReservationLocationType; locationId: string } => {
+  const [locationType, locationId] = value.split(":");
+  return { locationType: locationType as ReservationLocationType, locationId };
 };
 
 const FormActions = ({
@@ -65,8 +71,8 @@ const FormActions = ({
   onDraft,
   onPost,
   canSubmit,
-  draftLabel = "Сохранить черновик",
-  postLabel = "Провести",
+  draftLabel = "Save draft",
+  postLabel = "Post",
 }: {
   mode: FormMode;
   onDraft?: () => void;
@@ -87,128 +93,202 @@ const FormActions = ({
   </div>
 );
 
+type OwnerKind = "free" | OwnerType;
+
 type ReservationDraftLine = {
-  customerOrderLineId: string;
+  fromOwnerKind: OwnerKind;
+  fromOwnerId: string;
+  productId: string;
   quantity: string;
 };
 
-export const emptyReservationLine = (preset?: { customerOrderLineId?: string }): ReservationDraftLine => ({
-  customerOrderLineId: preset?.customerOrderLineId ?? "",
+export const emptyReservationLine = (preset?: {
+  fromOwnerType?: OwnerType | null;
+  fromOwnerId?: string | null;
+  productId?: string;
+}): ReservationDraftLine => ({
+  fromOwnerKind: isFreeOwner(preset?.fromOwnerType, preset?.fromOwnerId)
+    ? "free"
+    : (preset?.fromOwnerType ?? "free"),
+  fromOwnerId: preset?.fromOwnerId ?? "",
+  productId: preset?.productId ?? "",
   quantity: "1",
 });
 
-const reservedQtyForLineAtPlace = (
-  balances: StockBalance[],
-  customerOrderLineId: string,
-  locationType: ReservationLocationType,
-  locationId: string,
-): number =>
-  balances
-    .filter(
-      (entry) =>
-        entry.stockState === "reserved" &&
-        entry.customerOrderLineId === customerOrderLineId &&
-        entry.locationType === locationType &&
-        entry.locationId === locationId,
-    )
-    .reduce((sum, entry) => sum + entry.quantity, 0);
+const ownerFromKind = (
+  kind: OwnerKind,
+  id: string,
+): { fromOwnerType: OwnerType | null; fromOwnerId: string | null } =>
+  kind === "free" ? { fromOwnerType: null, fromOwnerId: null } : { fromOwnerType: kind, fromOwnerId: id || null };
+
+const destinationFromKind = (
+  kind: OwnerKind,
+  id: string,
+): { toOwnerType: OwnerType | null; toOwnerId: string | null } =>
+  kind === "free" ? { toOwnerType: null, toOwnerId: null } : { toOwnerType: kind, toOwnerId: id || null };
+
+const lineIdentity = (line: ReservationDraftLine): string => {
+  const source = ownerFromKind(line.fromOwnerKind, line.fromOwnerId);
+  return `${ownerKey(source.fromOwnerType, source.fromOwnerId)}:${line.productId}`;
+};
+
+const OWNER_KIND_ITEMS: Array<{ value: OwnerKind; label: string }> = [
+  { value: "free", label: FREE_OWNER_LABEL },
+  { value: "order", label: OWNER_TYPE_LABELS.order },
+  { value: "region", label: OWNER_TYPE_LABELS.region },
+];
 
 export const ReservationLineFields = ({
   snapshot,
   balances,
-  orderId,
-  operation,
+  destKind,
+  destOwnerId,
   locationType,
   locationId,
   lines,
   index,
-  excludeLineIds = [],
   onChange,
 }: {
   snapshot: LogisticsSnapshot;
   balances: StockBalance[];
-  orderId: string;
-  operation: ReservationOperation;
+  destKind: OwnerKind;
+  destOwnerId: string;
   locationType: ReservationLocationType | "";
   locationId: string;
   lines: ReservationDraftLine[];
   index: number;
-  excludeLineIds?: string[];
   onChange: (next: ReservationDraftLine) => void;
 }) => {
   const line = lines[index];
   if (!line) {
     return null;
   }
-  const usedLineIds = [...excludeLineIds, ...lines.map((item) => item.customerOrderLineId).filter(Boolean)];
-  const orderLine = snapshot.customerOrderLines.find((item) => item.id === line.customerOrderLineId);
+  const source = ownerFromKind(line.fromOwnerKind, line.fromOwnerId);
+  const dest = destinationFromKind(destKind, destOwnerId);
+  const orderLine =
+    destKind === "order" && destOwnerId
+      ? orderLineForProduct(snapshot.customerOrderLines, destOwnerId, line.productId)
+      : undefined;
   const max =
-    orderLine && locationType && locationId
-      ? operation === "reserve"
-        ? reservationCap(orderLine, balances, locationType, locationId)
-        : reservedQtyForLineAtPlace(balances, orderLine.id, locationType, locationId)
+    line.productId && locationType && locationId
+      ? reservationCapForOwner(
+          balances,
+          line.productId,
+          locationType,
+          locationId,
+          source.fromOwnerType,
+          source.fromOwnerId,
+          dest.toOwnerType,
+          dest.toOwnerId,
+          orderLine?.quantity,
+        )
       : 0;
-  const lineItems =
-    operation === "reserve"
-      ? snapshot.customerOrderLines
-          .filter((item) => item.orderId === orderId && (!usedLineIds.includes(item.id) || item.id === line.customerOrderLineId))
-          .map((item) => ({
-            value: item.id,
-            label: productIdentityLabel(
-              productById(snapshot, item.productId),
-              item.productId,
-              `открыто ${formatQuantity(remainingToReserveForLine(item, balances))}`,
-            ),
-          }))
-      : snapshot.customerOrderLines
-          .filter((item) => {
-            if (item.orderId !== orderId) {
-              return false;
-            }
-            if (usedLineIds.includes(item.id) && item.id !== line.customerOrderLineId) {
-              return false;
-            }
-            if (!locationType || !locationId) {
-              return true;
-            }
-            return reservedQtyForLineAtPlace(balances, item.id, locationType, locationId) > 0;
-          })
-          .map((item) => ({
-            value: item.id,
-            label: productIdentityLabel(
-              productById(snapshot, item.productId),
-              item.productId,
-              locationType && locationId
-                ? `зарезервировано ${formatQuantity(reservedQtyForLineAtPlace(balances, item.id, locationType, locationId))}`
-                : undefined,
-            ),
-          }));
+  const used = new Set(
+    lines.filter((_, itemIndex) => itemIndex !== index).map(lineIdentity).filter((key) => !key.endsWith(":")),
+  );
+  const productItems = snapshot.products
+    .filter((product) => {
+      const nextKey = `${ownerKey(source.fromOwnerType, source.fromOwnerId)}:${product.id}`;
+      if (used.has(nextKey) && product.id !== line.productId) {
+        return false;
+      }
+      if (!locationType || !locationId) {
+        return true;
+      }
+      if (line.fromOwnerKind === "free") {
+        return freePlacesForProduct(balances, product.id).some(
+          (place) => place.locationType === locationType && place.locationId === locationId,
+        );
+      }
+      if (!line.fromOwnerId) {
+        return true;
+      }
+      return reservedAtPlaceForOwner(balances, product.id, locationType, locationId, source.fromOwnerType, source.fromOwnerId) > 0;
+    })
+    .map((product) => ({
+      value: product.id,
+      label: productIdentityLabel(product, product.id),
+    }));
 
   return (
     <div className="space-y-2 rounded-md border p-3">
       <FieldSelect
-        label={`Товар ${index + 1}`}
-        value={line.customerOrderLineId}
-        items={lineItems}
-        onChange={(value) => {
-          const nextLine = snapshot.customerOrderLines.find((item) => item.id === value);
-          const nextMax =
-            nextLine && locationType && locationId
-              ? operation === "reserve"
-                ? reservationCap(nextLine, balances, locationType, locationId)
-                : reservedQtyForLineAtPlace(balances, nextLine.id, locationType, locationId)
-              : 0;
-          onChange({ customerOrderLineId: value, quantity: String(nextMax > 0 ? nextMax : 1) });
-        }}
-        placeholder={orderId ? "Выберите товар" : "Сначала выберите заказ клиента"}
-        disabled={!orderId || !locationType || !locationId}
+        label={`Source ${index + 1}`}
+        value={line.fromOwnerKind}
+        items={OWNER_KIND_ITEMS}
+        onChange={(value) => onChange({ ...line, fromOwnerKind: value as OwnerKind, fromOwnerId: "", productId: line.productId })}
       />
-      {orderLine ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={orderLine.productId} /> : null}
+      {line.fromOwnerKind === "free" ? null : (
+        <FieldSelect
+          label={line.fromOwnerKind === "order" ? "Source order" : "Source region"}
+          value={line.fromOwnerId}
+          items={(line.fromOwnerKind === "order" ? snapshot.customerOrders : snapshot.regions)
+            .map((item) => {
+              const qty =
+                line.productId && locationType && locationId
+                  ? reservedAtPlaceForOwner(
+                      balances,
+                      line.productId,
+                      locationType,
+                      locationId,
+                      line.fromOwnerKind === "free" ? null : line.fromOwnerKind,
+                      item.id,
+                    )
+                  : 0;
+              return {
+                value: item.id,
+                label:
+                  line.productId && locationType && locationId
+                    ? `${"number" in item ? item.number : `${item.code} · ${item.name}`} · ${formatQuantity(qty)}`
+                    : "number" in item
+                      ? item.number
+                      : `${item.code} · ${item.name}`,
+                quantity: qty,
+              };
+            })
+            .filter((item) => item.quantity > 0 || item.value === line.fromOwnerId)
+            .map(({ value, label }) => ({ value, label }))}
+          onChange={(value) => onChange({ ...line, fromOwnerId: value })}
+          placeholder="Select owner"
+          emptyLabel="No reserved quantity for this source"
+        />
+      )}
+      <FieldSelect
+        label={`Product ${index + 1}`}
+        value={line.productId}
+        items={productItems}
+        onChange={(value) => {
+          const nextMax =
+            locationType && locationId
+              ? reservationCapForOwner(
+                  balances,
+                  value,
+                  locationType,
+                  locationId,
+                  source.fromOwnerType,
+                  source.fromOwnerId,
+                  dest.toOwnerType,
+                  dest.toOwnerId,
+                  destKind === "order" && destOwnerId
+                    ? orderLineForProduct(snapshot.customerOrderLines, destOwnerId, value)?.quantity
+                    : undefined,
+                )
+              : 0;
+          onChange({ ...line, productId: value, quantity: String(nextMax > 0 ? nextMax : 1) });
+        }}
+        placeholder="Select product"
+        disabled={!locationType || !locationId}
+      />
+      {line.productId ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} /> : null}
       <QuantityField
+        label="Quantity"
+        emptyLabel="No available quantity"
+        availablePrefix="Available"
+        afterActionPrefix="after this action"
         value={line.quantity}
         onChange={(value) => onChange({ ...line, quantity: value })}
-        max={locationType && locationId ? max : undefined}
-        unit={orderLine ? productById(snapshot, orderLine.productId)?.unit : undefined}
+        max={locationType && locationId && line.productId ? max : undefined}
+        unit={line.productId ? productById(snapshot, line.productId)?.unit : undefined}
       />
     </div>
   );
@@ -224,168 +304,197 @@ export const ReservationForm = ({
   preset,
 }: SharedFormProps & {
   preset?: {
-    customerOrderId?: string;
-    customerOrderLineId?: string;
     locationType?: ReservationLocationType;
     locationId?: string;
-    operation?: ReservationOperation;
+    toOwnerType?: OwnerType | null;
+    toOwnerId?: string | null;
+    fromOwnerType?: OwnerType | null;
+    fromOwnerId?: string | null;
+    productId?: string;
   };
 }) => {
-  const [orderId, setOrderId] = useState(preset?.customerOrderId ?? "");
-  const [operation, setOperation] = useState<ReservationOperation>(preset?.operation ?? "reserve");
+  const presetDestKind: OwnerKind = isFreeOwner(preset?.toOwnerType, preset?.toOwnerId)
+    ? preset && "toOwnerType" in preset
+      ? "free"
+      : "order"
+    : (preset?.toOwnerType ?? "order");
+  const presetDestId = presetDestKind === "free" ? "" : (preset?.toOwnerId ?? "");
+  const [destKind, setDestKind] = useState<OwnerKind>(presetDestKind);
+  const [destOwnerId, setDestOwnerId] = useState(presetDestId);
   const [location, setLocation] = useState(
     preset?.locationType && preset.locationId ? placeKey(preset.locationType, preset.locationId) : "",
   );
   const [note, setNote] = useState("");
-  const [lines, setLines] = useState<ReservationDraftLine[]>([emptyReservationLine(preset)]);
+  const [lines, setLines] = useState<ReservationDraftLine[]>([
+    emptyReservationLine({
+      fromOwnerType: preset?.fromOwnerType,
+      fromOwnerId: preset?.fromOwnerId,
+      productId: preset?.productId,
+    }),
+  ]);
 
-  const selectedOrderId = preset?.customerOrderId ?? orderId;
   const selectedPlace = location ? parsePlaceKey(location) : null;
   const locationType = selectedPlace?.locationType ?? "";
   const locationId = selectedPlace?.locationId ?? "";
+  const dest = destinationFromKind(destKind, destOwnerId);
 
   const placeItems = useMemo(() => {
-    if (!selectedOrderId) {
-      return [];
-    }
-    if (operation === "reserve") {
-      const productIds = new Set(
-        snapshot.customerOrderLines.filter((line) => line.orderId === selectedOrderId).map((line) => line.productId),
-      );
-      const seen = new Set<string>();
-      const items: Array<{ value: string; label: string }> = [];
-      for (const productId of productIds) {
-        for (const place of freePlacesForProduct(balances, productId)) {
-          if (place.locationType === "customer_order") {
-            continue;
-          }
-          const key = placeKey(place.locationType, place.locationId);
-          if (seen.has(key)) {
-            continue;
-          }
-          seen.add(key);
-          items.push({
-            value: key,
-            label: `${locationLabel(snapshot, place.locationType, place.locationId)} · свободно ${formatQuantity(place.quantity)}`,
-          });
-        }
-      }
-      return items;
-    }
-    const places = reservedPlacesForOrder(balances, selectedOrderId);
     const seen = new Set<string>();
-    return places
-      .filter((place) => place.locationType !== "customer_order")
-      .flatMap((place) => {
-        const key = placeKey(place.locationType, place.locationId);
-        if (seen.has(key)) {
-          return [];
-        }
-        seen.add(key);
-        return [
-          {
-            value: key,
-            label: `${locationLabel(snapshot, place.locationType, place.locationId)} · зарезервировано ${formatQuantity(
-              places
-                .filter((item) => item.locationType === place.locationType && item.locationId === place.locationId)
-                .reduce((sum, item) => sum + item.quantity, 0),
-            )}`,
-          },
-        ];
+    const items: Array<{ value: string; label: string }> = [];
+    const addPlace = (locationType: ReservationLocationType, locationId: string, suffix: string) => {
+      const key = placeKey(locationType, locationId);
+      if (seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      items.push({
+        value: key,
+        label: `${locationLabel(snapshot, locationType, locationId)} · ${suffix}`,
       });
-  }, [balances, operation, selectedOrderId, snapshot]);
+    };
+    for (const entry of balances) {
+      if (
+        entry.quantity <= 1e-9 ||
+        (entry.locationType !== "warehouse" &&
+          entry.locationType !== "production_order_line" &&
+          entry.locationType !== "transfer")
+      ) {
+        continue;
+      }
+      if (destKind === "free") {
+        if (entry.stockState === "reserved") {
+          addPlace(entry.locationType, entry.locationId, `reserved ${formatQuantity(entry.quantity)}`);
+        }
+        continue;
+      }
+      if (entry.stockState === "free") {
+        addPlace(entry.locationType, entry.locationId, `free ${formatQuantity(entry.quantity)}`);
+        continue;
+      }
+      if (
+        entry.stockState === "reserved" &&
+        !ownersEqual(entry.ownerType, entry.ownerId, dest.toOwnerType, dest.toOwnerId)
+      ) {
+        addPlace(entry.locationType, entry.locationId, `reserved ${formatQuantity(entry.quantity)}`);
+      }
+    }
+    return items;
+  }, [balances, dest, destKind, snapshot]);
 
-  const usedLineIds = lines.map((line) => line.customerOrderLineId).filter(Boolean);
-  const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === selectedOrderId);
-  const unusedProductCount = orderLines.filter((line) => {
-    if (usedLineIds.includes(line.id)) {
-      return false;
-    }
-    if (!locationType || !locationId) {
-      return true;
-    }
-    return operation === "reserve"
-      ? reservationCap(line, balances, locationType, locationId) > 0
-      : reservedQtyForLineAtPlace(balances, line.id, locationType, locationId) > 0;
-  }).length;
-  const emptySlots = lines.filter((line) => !line.customerOrderLineId).length;
-  const canAddLine = unusedProductCount > emptySlots;
+  const derivedDirection = reservationDirection(
+    dest,
+    lines.map((line) => ownerFromKind(line.fromOwnerKind, line.fromOwnerId)),
+  );
 
   const validLines = lines.filter((line) => {
-    const orderLine = snapshot.customerOrderLines.find((item) => item.id === line.customerOrderLineId);
-    if (!orderLine || !locationType || !locationId) {
+    if (!line.productId || !locationType || !locationId) {
       return false;
     }
-    const max =
-      operation === "reserve"
-        ? reservationCap(orderLine, balances, locationType, locationId)
-        : reservedQtyForLineAtPlace(balances, orderLine.id, locationType, locationId);
+    if (line.fromOwnerKind !== "free" && !line.fromOwnerId) {
+      return false;
+    }
+    const source = ownerFromKind(line.fromOwnerKind, line.fromOwnerId);
+    if (ownersEqual(source.fromOwnerType, source.fromOwnerId, dest.toOwnerType, dest.toOwnerId)) {
+      return false;
+    }
+    const orderLine =
+      destKind === "order" && destOwnerId
+        ? orderLineForProduct(snapshot.customerOrderLines, destOwnerId, line.productId)
+        : undefined;
+    const max = reservationCapForOwner(
+      balances,
+      line.productId,
+      locationType,
+      locationId,
+      source.fromOwnerType,
+      source.fromOwnerId,
+      dest.toOwnerType,
+      dest.toOwnerId,
+      orderLine?.quantity,
+    );
     return isAllowedQuantity(line.quantity, max);
   });
-  const linesReady =
-    validLines.length > 0 &&
-    validLines.length === lines.filter((line) => line.customerOrderLineId).length &&
-    new Set(validLines.map((line) => line.customerOrderLineId)).size === validLines.length;
+  const filled = lines.filter((line) => line.productId);
+  const uniqueKeys = new Set(filled.map(lineIdentity));
+  const linesReady = validLines.length > 0 && validLines.length === filled.length && uniqueKeys.size === filled.length;
+  const destReady = destKind === "free" || Boolean(destOwnerId);
 
   const reset = () => {
-    setOrderId(preset?.customerOrderId ?? "");
-    setOperation(preset?.operation ?? "reserve");
+    setDestKind(presetDestKind);
+    setDestOwnerId(presetDestId);
     setLocation(preset?.locationType && preset.locationId ? placeKey(preset.locationType, preset.locationId) : "");
     setNote("");
-    setLines([emptyReservationLine(preset)]);
+    setLines([
+      emptyReservationLine({
+        fromOwnerType: preset?.fromOwnerType,
+        fromOwnerId: preset?.fromOwnerId,
+        productId: preset?.productId,
+      }),
+    ]);
   };
 
   const submit = async (post: boolean) => {
-    if (!selectedOrderId || !locationType || !locationId || validLines.length === 0) {
-      toast.error("Выберите заказ клиента, место и хотя бы одну строку товара");
+    if (!destReady || !locationType || !locationId || validLines.length === 0) {
+      toast.error("Choose a destination, place, and at least one product line");
       return;
     }
     const payloadLines = [];
     for (const line of lines) {
-      if (!line.customerOrderLineId) {
+      if (!line.productId) {
         continue;
       }
-      const orderLine = snapshot.customerOrderLines.find((item) => item.id === line.customerOrderLineId);
-      const max =
-        orderLine && locationType && locationId
-          ? operation === "reserve"
-            ? reservationCap(orderLine, balances, locationType, locationId)
-            : reservedQtyForLineAtPlace(balances, orderLine.id, locationType, locationId)
-          : 0;
-      if (!orderLine || !isAllowedQuantity(line.quantity, max)) {
-        toast.error("В каждой строке нужны товар и допустимое количество");
+      const source = ownerFromKind(line.fromOwnerKind, line.fromOwnerId);
+      if (ownersEqual(source.fromOwnerType, source.fromOwnerId, dest.toOwnerType, dest.toOwnerId)) {
+        toast.error("Source and destination owners must be different");
+        return;
+      }
+      const orderLine =
+        destKind === "order" && destOwnerId
+          ? orderLineForProduct(snapshot.customerOrderLines, destOwnerId, line.productId)
+          : undefined;
+      const max = reservationCapForOwner(
+        balances,
+        line.productId,
+        locationType,
+        locationId,
+        source.fromOwnerType,
+        source.fromOwnerId,
+        dest.toOwnerType,
+        dest.toOwnerId,
+        orderLine?.quantity,
+      );
+      if (!isAllowedQuantity(line.quantity, max)) {
+        toast.error("Each line needs a product and an allowed quantity");
         return;
       }
       const qty = Number(line.quantity);
       try {
-        assertEnoughStock(max, qty, operation === "reserve" ? "free" : "reserved");
-        if (operation === "reserve") {
+        assertEnoughStock(max, qty, isFreeOwner(source.fromOwnerType, source.fromOwnerId) ? "free" : "reserved");
+        if (orderLine && destKind === "order") {
           assertCustomerCapacity(orderLine, balances, qty);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Недостаточно остатка");
+        toast.error(error instanceof Error ? error.message : "Not enough stock");
         return;
       }
       payloadLines.push({
-        customerOrderLineId: orderLine.id,
+        productId: line.productId,
         quantity: qty,
+        fromOwnerType: source.fromOwnerType,
+        fromOwnerId: source.fromOwnerId,
       });
     }
     const payload = {
-      customerOrderId: selectedOrderId,
       locationType,
       locationId,
-      operation,
+      toOwnerType: dest.toOwnerType,
+      toOwnerId: dest.toOwnerId,
       note,
       lines: payloadLines,
     };
     const ok = await runLogisticsAction(
       () => (post ? createAndPostReservation(payload) : createReservationDraft(payload)),
-      post
-        ? operation === "reserve"
-          ? "Резерв проведён"
-          : "Снятие проведено"
-        : "Черновик резерва создан",
+      post ? `${RESERVATION_DIRECTION_LABELS[derivedDirection]} posted` : "Reservation draft created",
       reload,
     );
     if (ok) {
@@ -403,59 +512,58 @@ export const ReservationForm = ({
           reset();
         }
       }}
-      title="Резерв"
-      description="Один заказ клиента, одно место, одна операция. Количество всегда положительное; знак движения пишет журнал."
+      title="Reservation"
+      description="Destination is on the header. Source is on each line. Direction is derived: Reserve, Release, or Reassign."
       className="sm:max-w-lg"
     >
       <div className="flex flex-col gap-3">
-        {preset?.operation ? null : (
+        <p className="text-sm text-muted-foreground">
+          Direction: <span className="font-medium text-foreground">{RESERVATION_DIRECTION_LABELS[derivedDirection]}</span>
+        </p>
+        <FieldSelect
+          label="Destination"
+          value={destKind}
+          items={OWNER_KIND_ITEMS}
+          onChange={(value) => {
+            setDestKind(value as OwnerKind);
+            setDestOwnerId(value === destKind ? destOwnerId : "");
+            setLocation("");
+          }}
+        />
+        {destKind === "free" ? null : (
           <FieldSelect
-            label="Операция"
-            value={operation}
-            items={[
-              { value: "reserve", label: RESERVATION_OPERATION_LABELS.reserve },
-              { value: "release", label: RESERVATION_OPERATION_LABELS.release },
-            ]}
+            label={destKind === "order" ? "Order" : "Region"}
+            value={destOwnerId}
+            items={
+              destKind === "order"
+                ? snapshot.customerOrders
+                    .filter((item) => item.status === "open")
+                    .map((item) => ({ value: item.id, label: item.number }))
+                : ownerSelectItems(snapshot, destKind)
+            }
             onChange={(value) => {
-              setOperation(value as ReservationOperation);
+              setDestOwnerId(value);
               setLocation("");
-              setLines([emptyReservationLine()]);
             }}
-          />
-        )}
-        {preset?.customerOrderId ? null : (
-          <FieldSelect
-            label="Заказ клиента"
-            value={selectedOrderId}
-            items={snapshot.customerOrders
-              .filter((item) => (operation === "reserve" ? item.status === "open" : true))
-              .map((item) => ({ value: item.id, label: item.number }))}
-            onChange={(value) => {
-              setOrderId(value);
-              setLocation("");
-              setLines([emptyReservationLine()]);
-            }}
+            placeholder={destKind === "order" ? "Select order" : "Select region"}
           />
         )}
         <FieldSelect
-          label="Место"
+          label="Place"
           value={location}
           items={placeItems}
-          onChange={(value) => {
-            setLocation(value);
-            setLines([emptyReservationLine(preset)]);
-          }}
-          placeholder="Выберите место"
-          emptyLabel={operation === "reserve" ? "Нет свободного остатка" : "Нет зарезервированного остатка"}
-          disabled={!selectedOrderId}
+          onChange={setLocation}
+          placeholder="Select place"
+          emptyLabel="No matching stock at a place"
+          disabled={destKind !== "free" && !destOwnerId}
         />
         {lines.map((_, index) => (
           <ReservationLineFields
             key={`rsv-line-${index}`}
             snapshot={snapshot}
             balances={balances}
-            orderId={selectedOrderId}
-            operation={operation}
+            destKind={destKind}
+            destOwnerId={destOwnerId}
             locationType={locationType}
             locationId={locationId}
             lines={lines}
@@ -465,21 +573,19 @@ export const ReservationForm = ({
             }}
           />
         ))}
-        {canAddLine ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, emptyReservationLine()])}>
-            Добавить товар
-          </Button>
-        ) : null}
+        <Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, emptyReservationLine()])}>
+          Add line
+        </Button>
         <label className="space-y-1 text-sm">
-          <span className="font-medium">Комментарий</span>
-          <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Необязательно" />
+          <span className="font-medium">Note</span>
+          <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional" />
         </label>
         <FormActions
           mode={mode}
-          canSubmit={Boolean(selectedOrderId && location && linesReady)}
+          canSubmit={Boolean(destReady && location && linesReady)}
           onDraft={() => void submit(false)}
           onPost={() => void submit(true)}
-          postLabel={operation === "reserve" ? "Зарезервировать" : "Снять"}
+          postLabel={RESERVATION_DIRECTION_LABELS[derivedDirection]}
         />
       </div>
     </LogisticsDialog>
@@ -505,6 +611,25 @@ export const ShipmentForm = ({
   const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === selectedOrderId);
   const warehouses = warehousesWithReservedForOrder(balances, orderLines);
   const lines = warehouseId ? reservedLinesAtWarehouse(balances, warehouseId, orderLines) : [];
+  const regionRows = warehouseId
+    ? balances
+        .filter(
+          (entry) =>
+            entry.locationType === "warehouse" &&
+            entry.locationId === warehouseId &&
+            entry.stockState === "reserved" &&
+            entry.ownerType === "region" &&
+            entry.ownerId &&
+            entry.quantity > 1e-9 &&
+            orderLines.some((line) => line.productId === entry.productId),
+        )
+        .map((entry) => ({
+          key: `${entry.productId}:${entry.ownerId}`,
+          productId: entry.productId,
+          ownerId: entry.ownerId as string,
+          quantity: entry.quantity,
+        }))
+    : [];
 
   const reset = () => {
     setOrderId(preset?.customerOrderId ?? "");
@@ -515,7 +640,6 @@ export const ShipmentForm = ({
   const submit = async (post: boolean) => {
     const payload = lines
       .map((item) => ({
-        customerOrderLineId: item.line.id,
         productId: item.line.productId,
         quantity: Number(quantities[item.line.id] ?? item.reserved),
       }))
@@ -525,7 +649,7 @@ export const ShipmentForm = ({
       return;
     }
     for (const item of payload) {
-      const line = orderLines.find((entry) => entry.id === item.customerOrderLineId);
+      const line = orderLines.find((entry) => entry.productId === item.productId);
       if (!line) {
         continue;
       }
@@ -596,9 +720,7 @@ export const ShipmentForm = ({
           onChange={(value) => {
             setWarehouseId(value);
             const nextLines = reservedLinesAtWarehouse(balances, value, orderLines);
-            setQuantities(
-              Object.fromEntries(nextLines.map((item) => [item.line.id, String(item.reserved)])),
-            );
+            setQuantities(Object.fromEntries(nextLines.map((item) => [item.line.id, String(item.reserved)])));
           }}
           placeholder="Выберите склад"
           emptyLabel="Нет резерва на складах"
@@ -618,6 +740,15 @@ export const ShipmentForm = ({
             </div>
           );
         })}
+        {regionRows.map((item) => (
+          <div key={item.key} className="space-y-1 rounded-md border border-dashed p-3 opacity-70">
+            <ProductIdentity snapshot={snapshot} productId={item.productId} nameAs="text" />
+            <p className="text-sm text-muted-foreground">
+              {ownerLabel(snapshot, "region", item.ownerId)} · {formatQuantity(item.quantity)} · Reassign to this
+              order first
+            </p>
+          </div>
+        ))}
         <FormActions
           mode={mode}
           canSubmit={canSubmit}

@@ -76,7 +76,7 @@ describe("order progress helpers", () => {
     expect(parseTrackerMeta("reserve · posted")).toEqual({
       statusKey: "posted",
       statusLabel: "Проведён",
-      extra: "Резерв",
+      extra: "Reserve",
     });
   });
 

@@ -12,13 +12,20 @@ import {
   productActivity,
   relatedOutputsForOrder,
   relatedProductionsForOrder,
+  relatedReservationsForRegion,
   relatedTransfersForOrder,
 } from "@/features/logistics/logistics-related";
 import { mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
 import type { LogisticsSnapshot, StockTransaction } from "@/features/logistics/logistics-types";
 
+type TxInput = Partial<StockTransaction> &
+  Pick<StockTransaction, "quantity" | "stockState"> & {
+    customerOrderId?: string | null;
+    customerOrderLineId?: string | null;
+  };
+
 const tx = (
-  partial: Partial<StockTransaction> & Pick<StockTransaction, "quantity" | "stockState">,
+  partial: TxInput,
 ): StockTransaction => ({
   transactionId: partial.transactionId ?? `tx-${Math.random()}`,
   occurredAt: "2026-09-17T10:00:00.000Z",
@@ -29,8 +36,8 @@ const tx = (
   locationType: partial.locationType ?? "warehouse",
   locationId: partial.locationId ?? "wh-nordic",
   stockState: partial.stockState,
-  customerOrderId: partial.customerOrderId ?? null,
-  customerOrderLineId: partial.customerOrderLineId ?? null,
+  ownerType: partial.ownerType ?? (partial.customerOrderId || partial.ownerId ? "order" : null),
+  ownerId: partial.ownerId ?? partial.customerOrderId ?? null,
   sourceType: partial.sourceType ?? "reservation",
   sourceId: partial.sourceId ?? "rsv-1",
   sourceLineId: null,
@@ -44,6 +51,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot>): LogisticsSnapshot =>
     products: [],
     manufacturers: [],
     warehouses: [],
+    regions: [],
     settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
     customerOrders: [{ id: "co-101", number: "CO-101", status: "open", createdAt: "", closedAt: null, expectedEndOn: "2026-10-15", description: "" }],
     customerOrderLines: [{ id: "col-101-chair", orderId: "co-101", productId: "p-chair", quantity: 10 }],
@@ -74,10 +82,10 @@ describe("related productions and movements", () => {
         {
           id: "rsv-1",
           number: "RSV-1",
-          customerOrderId: "co-101",
           locationType: "production_order_line",
           locationId: "pol-100-chair",
-          operation: "reserve",
+          toOwnerType: "order",
+          toOwnerId: "co-101",
           status: "posted",
           origin: "manual",
           note: "",
@@ -89,8 +97,10 @@ describe("related productions and movements", () => {
         {
           id: "rsvl-1",
           reservationId: "rsv-1",
-          customerOrderLineId: "col-101-chair",
+          productId: "p-chair",
           quantity: 6,
+          fromOwnerType: null,
+          fromOwnerId: null,
         },
       ],
       outputs: [
@@ -112,10 +122,10 @@ describe("related productions and movements", () => {
 
     expect(relatedProductionsForOrder(data, "co-101").map((item) => item.label)).toEqual(["PO-100"]);
     expect(relatedProductionsForOrder(data, "co-101")[0]?.meta).toContain("выпущено 6");
-    expect(relatedProductionsForOrder(data, "co-101")[0]?.meta).toContain("Sep");
+    expect(relatedProductionsForOrder(data, "co-101")[0]?.meta).toContain("2026");
     expect(relatedOutputsForOrder(data, "co-101").map((item) => item.label)).toEqual(["OUT-1"]);
     expect(relatedOutputsForOrder(data, "co-101")[0]?.meta).toContain("done");
-    expect(relatedOutputsForOrder(data, "co-101")[0]?.meta).toContain("Sep");
+    expect(relatedOutputsForOrder(data, "co-101")[0]?.meta).toContain("2026");
   });
 
   it("links a transfer after an in-transit reservation", () => {
@@ -137,10 +147,10 @@ describe("related productions and movements", () => {
         {
           id: "rsv-sea",
           number: "RSV-SEA",
-          customerOrderId: "co-101",
           locationType: "transfer",
           locationId: "tr-3",
-          operation: "reserve",
+          toOwnerType: "order",
+          toOwnerId: "co-101",
           status: "posted",
           origin: "manual",
           note: "",
@@ -152,15 +162,72 @@ describe("related productions and movements", () => {
         {
           id: "rsvl-sea",
           reservationId: "rsv-sea",
-          customerOrderLineId: "col-101-chair",
+          productId: "p-chair",
           quantity: 2,
+          fromOwnerType: null,
+          fromOwnerId: null,
         },
       ],
     });
 
     expect(relatedTransfersForOrder(data, "co-101").map((item) => item.label)).toEqual(["TR-3"]);
     expect(relatedTransfersForOrder(data, "co-101")[0]?.meta).toContain("sent");
-    expect(relatedTransfersForOrder(data, "co-101")[0]?.meta).toContain("Sep");
+    expect(relatedTransfersForOrder(data, "co-101")[0]?.meta).toContain("2026");
+  });
+
+  it("links reservations that destination or source a region", () => {
+    const data = snapshot({
+      reservations: [
+        {
+          id: "rsv-reg",
+          number: "RSV-REG",
+          locationType: "warehouse",
+          locationId: "wh-nordic",
+          toOwnerType: "region",
+          toOwnerId: "reg-1",
+          status: "posted",
+          origin: "manual",
+          note: "",
+          createdAt: "",
+          postedAt: "",
+        },
+        {
+          id: "rsv-out",
+          number: "RSV-OUT",
+          locationType: "warehouse",
+          locationId: "wh-nordic",
+          toOwnerType: "order",
+          toOwnerId: "co-101",
+          status: "posted",
+          origin: "manual",
+          note: "",
+          createdAt: "",
+          postedAt: "",
+        },
+      ],
+      reservationLines: [
+        {
+          id: "rsvl-reg",
+          reservationId: "rsv-reg",
+          productId: "p-chair",
+          quantity: 2,
+          fromOwnerType: null,
+          fromOwnerId: null,
+        },
+        {
+          id: "rsvl-out",
+          reservationId: "rsv-out",
+          productId: "p-chair",
+          quantity: 1,
+          fromOwnerType: "region",
+          fromOwnerId: "reg-1",
+        },
+      ],
+    });
+
+    expect(relatedReservationsForRegion(data, "reg-1").map((item) => item.label)).toEqual(["RSV-REG", "RSV-OUT"]);
+    expect(relatedReservationsForRegion(data, "reg-1")[0]?.operation).toBe("reserve");
+    expect(relatedReservationsForRegion(data, "reg-1")[1]?.operation).toBe("reassign");
   });
 });
 
@@ -216,8 +283,8 @@ describe("productionLineReservationBreakdown", () => {
     expect(productionLineReservationBreakdown(line, balances)).toEqual({
       free: 4,
       reserved: [
-        { customerOrderId: "co-101", customerOrderLineId: "col-101-chair", quantity: 6 },
-        { customerOrderId: "co-205", customerOrderLineId: "col-205-chair", quantity: 3 },
+        { ownerType: "order", ownerId: "co-101", quantity: 6 },
+        { ownerType: "order", ownerId: "co-205", quantity: 3 },
       ],
     });
   });
@@ -254,7 +321,7 @@ describe("productionLineReservationBreakdown", () => {
 
     expect(productionLineReservationBreakdown(line, balances)).toEqual({
       free: 0,
-      reserved: [{ customerOrderId: "co-101", customerOrderLineId: "col-101-chair", quantity: 10 }],
+      reserved: [{ ownerType: "order", ownerId: "co-101", quantity: 10 }],
     });
   });
 });
@@ -291,13 +358,13 @@ describe("placeStockBreakdown", () => {
 
     expect(placeStockBreakdown(balances, "p-chair", "warehouse", "wh-nordic")).toEqual({
       free: 2,
-      reserved: [{ customerOrderId: "co-101", customerOrderLineId: "col-101-chair", quantity: 5 }],
+      reserved: [{ ownerType: "order", ownerId: "co-101", quantity: 5 }],
       shipped: [],
     });
     expect(placeStockBreakdown(balances, "p-chair", "customer_order", "co-101")).toEqual({
       free: 0,
       reserved: [],
-      shipped: [{ customerOrderId: "co-101", customerOrderLineId: "col-101-chair", quantity: 7 }],
+      shipped: [{ ownerType: "order", ownerId: "co-101", quantity: 7 }],
     });
   });
 });
@@ -337,10 +404,10 @@ describe("sourceLabel", () => {
         {
           id: "rsv-uuid",
           number: "RSV-104",
-          customerOrderId: "co-101",
           locationType: "warehouse",
           locationId: "wh-nordic",
-          operation: "reserve",
+          toOwnerType: "order",
+          toOwnerId: "co-101",
           status: "posted",
           origin: "manual",
           note: "",

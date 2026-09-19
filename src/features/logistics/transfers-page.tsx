@@ -27,10 +27,11 @@ import {
   updateExpectedEnd,
   updateRow,
 } from "@/features/logistics/logistics-api";
-import { freeAtPlace, hrefForCustomerOrder, reservedOrderLinesAtWarehouse } from "@/features/logistics/logistics-availability";
+import { freeAtPlace, hrefForCustomerOrder, hrefForOwner, reservedOrderLinesAtWarehouse } from "@/features/logistics/logistics-availability";
 import { formatExpectedEnd, formatQuantity } from "@/features/logistics/logistics-labels";
 import {
   customerOrderById,
+  ownerLabel,
   productById,
   productIdentityLabel,
   warehouseCode,
@@ -128,14 +129,23 @@ const validateTransferLines = (
 };
 
 const draftFromSavedLine = (
+  snapshot: LogisticsSnapshot,
   line: TransferLine,
-  allocation?: { customerOrderLineId: string; quantity: number },
-): TransferDraftLine => ({
-  productId: line.productId,
-  quantity: String(line.quantity),
-  allocLineId: allocation?.customerOrderLineId ?? "none",
-  allocQty: allocation ? String(allocation.quantity) : "0",
-});
+  allocation?: { ownerType: string; ownerId: string; quantity: number },
+): TransferDraftLine => {
+  const orderLine =
+    allocation?.ownerType === "order"
+      ? snapshot.customerOrderLines.find(
+          (item) => item.orderId === allocation.ownerId && item.productId === line.productId,
+        )
+      : undefined;
+  return {
+    productId: line.productId,
+    quantity: String(line.quantity),
+    allocLineId: orderLine?.id ?? "none",
+    allocQty: allocation ? String(allocation.quantity) : "0",
+  };
+};
 
 const allocationInsert = (
   snapshot: LogisticsSnapshot,
@@ -151,8 +161,8 @@ const allocationInsert = (
   }
   return {
     line_id: lineId,
-    customer_order_id: orderLine.orderId,
-    customer_order_line_id: orderLine.id,
+    owner_type: "order",
+    owner_id: orderLine.orderId,
     quantity: Number(line.allocQty),
   };
 };
@@ -364,7 +374,7 @@ export const TransferDetailPage = () => {
   const openEditLine = (line: TransferLine) => {
     const allocation = allocations.find((item) => item.lineId === line.id);
     setEditingLineId(line.id);
-    setFormLine(draftFromSavedLine(line, allocation));
+    setFormLine(draftFromSavedLine(snapshot, line, allocation));
     setLineOpen(true);
   };
 
@@ -546,13 +556,13 @@ export const TransferDetailPage = () => {
           {allocations.map((item) => {
             const line = lines.find((line) => line.id === item.lineId);
             const product = line ? productById(snapshot, line.productId) : undefined;
-            const order = customerOrderById(snapshot, item.customerOrderId);
+            const order = item.ownerType === "order" ? customerOrderById(snapshot, item.ownerId) : undefined;
             return (
               <TableRow key={item.id}>
                 <TableCell className="px-3 py-2">
                   <LogisticsCodeBadge
-                    code={order?.number ?? item.customerOrderId}
-                    href={hrefForCustomerOrder(item.customerOrderId)}
+                    code={ownerLabel(snapshot, item.ownerType, item.ownerId)}
+                    href={hrefForOwner(item.ownerType, item.ownerId) ?? undefined}
                   />
                 </TableCell>
                 <TableCell className="px-3 py-2">

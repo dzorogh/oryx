@@ -17,6 +17,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
       { id: "wh-2", code: "WH-2", name: "Two", manufacturerId: null },
       { id: "wh-1", code: "WH-1", name: "One", manufacturerId: null },
     ],
+    regions: [],
     settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
     customerOrders: [
       {
@@ -51,27 +52,38 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
     ...partial,
   }) as LogisticsSnapshot;
 
-const tx = (
-  partial: Partial<StockTransaction> & Pick<StockTransaction, "quantity" | "stockState">,
-): StockTransaction => ({
-  transactionId: partial.transactionId ?? `tx-${Math.random()}`,
-  occurredAt: "2026-09-16T10:00:00.000Z",
-  postedAt: "2026-09-16T10:00:00.000Z",
-  productId: partial.productId ?? "p-a",
-  unit: "pcs",
-  quantity: partial.quantity,
-  locationType: partial.locationType ?? "warehouse",
-  locationId: partial.locationId ?? "wh-1",
-  stockState: partial.stockState,
-  customerOrderId: partial.customerOrderId === undefined ? "co-1" : partial.customerOrderId,
-  customerOrderLineId: partial.customerOrderLineId === undefined ? "col-a" : partial.customerOrderLineId,
-  sourceType: partial.sourceType ?? "production_output",
-  sourceId: partial.sourceId ?? "out-1",
-  sourceLineId: partial.sourceLineId ?? "outl-1",
-  operationId: "op",
-  idempotencyKey: partial.idempotencyKey ?? `key-${Math.random()}`,
-  reversesTransactionId: partial.reversesTransactionId ?? null,
-});
+type TxInput = Partial<StockTransaction> &
+  Pick<StockTransaction, "quantity" | "stockState"> & {
+    customerOrderId?: string | null;
+    customerOrderLineId?: string | null;
+  };
+
+const LINE_A = { id: "col-a", orderId: "co-1", productId: "p-a" };
+const LINE_B = { id: "col-b", orderId: "co-1", productId: "p-b" };
+const LINE_OTHER = { id: "col-other", orderId: "co-other", productId: "p-a" };
+
+const tx = (partial: TxInput): StockTransaction => {
+  const orderId = partial.ownerId ?? (partial.customerOrderId === undefined ? "co-1" : partial.customerOrderId);
+  return {
+    transactionId: partial.transactionId ?? `tx-${Math.random()}`,
+    occurredAt: "2026-09-16T10:00:00.000Z",
+    postedAt: "2026-09-16T10:00:00.000Z",
+    productId: partial.productId ?? (partial.customerOrderLineId === "col-b" ? "p-b" : "p-a"),
+    unit: "pcs",
+    quantity: partial.quantity,
+    locationType: partial.locationType ?? "warehouse",
+    locationId: partial.locationId ?? "wh-1",
+    stockState: partial.stockState,
+    ownerType: partial.ownerType ?? (orderId ? "order" : null),
+    ownerId: orderId,
+    sourceType: partial.sourceType ?? "production_output",
+    sourceId: partial.sourceId ?? "out-1",
+    sourceLineId: partial.sourceLineId ?? "outl-1",
+    operationId: "op",
+    idempotencyKey: partial.idempotencyKey ?? `key-${Math.random()}`,
+    reversesTransactionId: partial.reversesTransactionId ?? null,
+  };
+};
 
 describe("sumProducedForLine", () => {
   it("sums positive warehouse production_output ledger rows for this line", () => {
@@ -95,8 +107,8 @@ describe("sumProducedForLine", () => {
       ],
     });
 
-    expect(sumProducedForLine(data, "col-a")).toBe(8);
-    expect(sumProducedForLine(data, "col-b")).toBe(4);
+    expect(sumProducedForLine(data, LINE_A)).toBe(8);
+    expect(sumProducedForLine(data, LINE_B)).toBe(4);
   });
 
   it("ignores free-state warehouse production_output even when tagged to the same line", () => {
@@ -107,7 +119,7 @@ describe("sumProducedForLine", () => {
       ],
     });
 
-    expect(sumProducedForLine(data, "col-a")).toBe(8);
+    expect(sumProducedForLine(data, LINE_A)).toBe(8);
   });
 
   it("does not let a zero-quantity ledger row block a done legacy allocation fallback", () => {
@@ -128,12 +140,12 @@ describe("sumProducedForLine", () => {
         { id: "outl-legacy", outputId: "out-legacy", productionOrderLineId: "pol-1", productId: "p-a", quantity: 6 },
       ],
       outputAllocations: [
-        { id: "oua-1", lineId: "outl-legacy", customerOrderId: "co-1", customerOrderLineId: "col-a", quantity: 6 },
+        { id: "oua-1", lineId: "outl-legacy", ownerType: "order", ownerId: "co-1", quantity: 6 },
       ],
       transactions: [tx({ quantity: 0, stockState: "reserved", sourceId: "out-legacy" })],
     });
 
-    expect(sumProducedForLine(data, "col-a")).toBe(6);
+    expect(sumProducedForLine(data, LINE_A)).toBe(6);
   });
 
   it("falls back to legacy output allocations when the ledger has no warehouse rows for that output", () => {
@@ -152,11 +164,11 @@ describe("sumProducedForLine", () => {
       ],
       outputLines: [{ id: "outl-legacy", outputId: "out-legacy", productionOrderLineId: "pol-1", productId: "p-a", quantity: 6 }],
       outputAllocations: [
-        { id: "oua-1", lineId: "outl-legacy", customerOrderId: "co-1", customerOrderLineId: "col-a", quantity: 6 },
+        { id: "oua-1", lineId: "outl-legacy", ownerType: "order", ownerId: "co-1", quantity: 6 },
       ],
     });
 
-    expect(sumProducedForLine(data, "col-a")).toBe(6);
+    expect(sumProducedForLine(data, LINE_A)).toBe(6);
   });
 
   it("does not treat planned output allocations as produced", () => {
@@ -180,14 +192,14 @@ describe("sumProducedForLine", () => {
         {
           id: "oua-planned",
           lineId: "outl-planned",
-          customerOrderId: "co-1",
-          customerOrderLineId: "col-a",
+          ownerType: "order",
+          ownerId: "co-1",
           quantity: 4,
         },
       ],
     });
 
-    expect(sumProducedForLine(data, "col-a")).toBe(0);
+    expect(sumProducedForLine(data, LINE_A)).toBe(0);
   });
 
   it("does not double-count ledger warehouse output and the matching allocation", () => {
@@ -206,12 +218,12 @@ describe("sumProducedForLine", () => {
       ],
       outputLines: [{ id: "outl-1", outputId: "out-1", productionOrderLineId: "pol-1", productId: "p-a", quantity: 8 }],
       outputAllocations: [
-        { id: "oua-1", lineId: "outl-1", customerOrderId: "co-1", customerOrderLineId: "col-a", quantity: 8 },
+        { id: "oua-1", lineId: "outl-1", ownerType: "order", ownerId: "co-1", quantity: 8 },
       ],
       transactions: [tx({ quantity: 8, stockState: "reserved", sourceId: "out-1", sourceLineId: "outl-1" })],
     });
 
-    expect(sumProducedForLine(data, "col-a")).toBe(8);
+    expect(sumProducedForLine(data, LINE_A)).toBe(8);
   });
 
   it("nets warehouse reversals and still uses allocation fallback for a different output", () => {
@@ -243,8 +255,8 @@ describe("sumProducedForLine", () => {
         { id: "outl-legacy", outputId: "out-legacy", productionOrderLineId: "pol-1", productId: "p-a", quantity: 2 },
       ],
       outputAllocations: [
-        { id: "oua-1", lineId: "outl-1", customerOrderId: "co-1", customerOrderLineId: "col-a", quantity: 5 },
-        { id: "oua-2", lineId: "outl-legacy", customerOrderId: "co-1", customerOrderLineId: "col-a", quantity: 2 },
+        { id: "oua-1", lineId: "outl-1", ownerType: "order", ownerId: "co-1", quantity: 5 },
+        { id: "oua-2", lineId: "outl-legacy", ownerType: "order", ownerId: "co-1", quantity: 2 },
       ],
       transactions: [
         tx({ quantity: 5, stockState: "reserved", sourceId: "out-1" }),
@@ -252,7 +264,7 @@ describe("sumProducedForLine", () => {
       ],
     });
 
-    expect(sumProducedForLine(data, "col-a")).toBe(2);
+    expect(sumProducedForLine(data, LINE_A)).toBe(2);
   });
 });
 
@@ -263,8 +275,8 @@ describe("lineLocationAllocations", () => {
       locationType: "warehouse",
       locationId: "wh-1",
       stockState: "reserved",
-      customerOrderId: "co-1",
-      customerOrderLineId: "col-a",
+      ownerType: "order",
+      ownerId: "co-1",
       quantity: 3,
     },
     {
@@ -272,8 +284,8 @@ describe("lineLocationAllocations", () => {
       locationType: "warehouse",
       locationId: "wh-1",
       stockState: "free",
-      customerOrderId: null,
-      customerOrderLineId: null,
+      ownerType: null,
+      ownerId: null,
       quantity: 40,
     },
     {
@@ -281,8 +293,8 @@ describe("lineLocationAllocations", () => {
       locationType: "warehouse",
       locationId: "wh-2",
       stockState: "reserved",
-      customerOrderId: "co-other",
-      customerOrderLineId: "col-other",
+      ownerType: "order",
+      ownerId: "co-other",
       quantity: 9,
     },
     {
@@ -290,8 +302,8 @@ describe("lineLocationAllocations", () => {
       locationType: "transfer",
       locationId: "tr-1",
       stockState: "reserved",
-      customerOrderId: "co-1",
-      customerOrderLineId: "col-a",
+      ownerType: "order",
+      ownerId: "co-1",
       quantity: 2,
     },
     {
@@ -299,23 +311,23 @@ describe("lineLocationAllocations", () => {
       locationType: "production_order_line",
       locationId: "pol-1",
       stockState: "reserved",
-      customerOrderId: "co-1",
-      customerOrderLineId: "col-a",
+      ownerType: "order",
+      ownerId: "co-1",
       quantity: 4,
     },
     {
-      productId: "p-a",
+      productId: "p-b",
       locationType: "warehouse",
       locationId: "wh-10",
       stockState: "reserved",
-      customerOrderId: "co-1",
-      customerOrderLineId: "col-b",
+      ownerType: "order",
+      ownerId: "co-1",
       quantity: 1,
     },
   ];
 
   it("counts only this line's reserved production, transfer, and warehouse qty", () => {
-    expect(lineLocationAllocations(balances, "col-a")).toEqual({
+    expect(lineLocationAllocations(balances, LINE_A)).toEqual({
       inProduction: 4,
       inTransit: 2,
       byWarehouseId: { "wh-1": 3 },
@@ -323,7 +335,7 @@ describe("lineLocationAllocations", () => {
   });
 
   it("ignores free stock and other orders in warehouse columns", () => {
-    const result = lineLocationAllocations(balances, "col-a");
+    const result = lineLocationAllocations(balances, LINE_A);
     expect(result.byWarehouseId["wh-2"]).toBeUndefined();
     expect(result.byWarehouseId["wh-10"]).toBeUndefined();
     expect(Object.keys(result.byWarehouseId)).toEqual(["wh-1"]);
@@ -337,8 +349,8 @@ describe("lineLocationAllocations", () => {
         locationType: "production_order_line",
         locationId: "pol-2",
         stockState: "reserved",
-        customerOrderId: "co-1",
-        customerOrderLineId: "col-a",
+        ownerType: "order",
+        ownerId: "co-1",
         quantity: 5,
       },
       {
@@ -346,8 +358,8 @@ describe("lineLocationAllocations", () => {
         locationType: "production_order_line",
         locationId: "pol-free",
         stockState: "free",
-        customerOrderId: null,
-        customerOrderLineId: null,
+        ownerType: null,
+        ownerId: null,
         quantity: 9,
       },
       {
@@ -355,17 +367,17 @@ describe("lineLocationAllocations", () => {
         locationType: "production_order_line",
         locationId: "pol-other",
         stockState: "reserved",
-        customerOrderId: "co-other",
-        customerOrderLineId: "col-other",
+        ownerType: "order",
+        ownerId: "co-other",
         quantity: 7,
       },
       {
-        productId: "p-a",
+        productId: "p-b",
         locationType: "production_order_line",
         locationId: "pol-b",
         stockState: "reserved",
-        customerOrderId: "co-1",
-        customerOrderLineId: "col-b",
+        ownerType: "order",
+        ownerId: "co-1",
         quantity: 6,
       },
       {
@@ -373,8 +385,8 @@ describe("lineLocationAllocations", () => {
         locationType: "production_order_line",
         locationId: "pol-zero",
         stockState: "reserved",
-        customerOrderId: "co-1",
-        customerOrderLineId: "col-a",
+        ownerType: "order",
+        ownerId: "co-1",
         quantity: 0,
       },
       {
@@ -382,15 +394,15 @@ describe("lineLocationAllocations", () => {
         locationType: "production_order_line",
         locationId: "pol-neg",
         stockState: "reserved",
-        customerOrderId: "co-1",
-        customerOrderLineId: "col-a",
+        ownerType: "order",
+        ownerId: "co-1",
         quantity: -2,
       },
     ];
 
-    expect(lineLocationAllocations(mixed, "col-a").inProduction).toBe(9);
-    expect(lineLocationAllocations(mixed, "col-b").inProduction).toBe(6);
-    expect(lineLocationAllocations(mixed, "col-other").inProduction).toBe(7);
+    expect(lineLocationAllocations(mixed, LINE_A).inProduction).toBe(9);
+    expect(lineLocationAllocations(mixed, LINE_B).inProduction).toBe(6);
+    expect(lineLocationAllocations(mixed, LINE_OTHER).inProduction).toBe(7);
   });
 });
 
@@ -402,17 +414,17 @@ describe("warehouseIdsWithReservedForOrder", () => {
         locationType: "warehouse",
         locationId: "wh-10",
         stockState: "reserved",
-        customerOrderId: "co-1",
-        customerOrderLineId: "col-a",
+        ownerType: "order",
+        ownerId: "co-1",
         quantity: 1,
       },
       {
-        productId: "p-a",
+        productId: "p-b",
         locationType: "warehouse",
         locationId: "wh-2",
         stockState: "reserved",
-        customerOrderId: "co-1",
-        customerOrderLineId: "col-b",
+        ownerType: "order",
+        ownerId: "co-1",
         quantity: 2,
       },
       {
@@ -420,8 +432,8 @@ describe("warehouseIdsWithReservedForOrder", () => {
         locationType: "warehouse",
         locationId: "wh-1",
         stockState: "free",
-        customerOrderId: null,
-        customerOrderLineId: null,
+        ownerType: null,
+        ownerId: null,
         quantity: 50,
       },
       {
@@ -429,8 +441,8 @@ describe("warehouseIdsWithReservedForOrder", () => {
         locationType: "warehouse",
         locationId: "wh-1",
         stockState: "reserved",
-        customerOrderId: "co-other",
-        customerOrderLineId: "col-other",
+        ownerType: "order",
+        ownerId: "co-other",
         quantity: 7,
       },
     ];

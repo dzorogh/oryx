@@ -48,7 +48,12 @@ import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
-import type { CustomerOrderLine, LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
+import {
+  ownersEqual,
+  type CustomerOrderLine,
+  type LogisticsSnapshot,
+  type StockBalance,
+} from "@/features/logistics/logistics-types";
 
 type ActionFormProps = {
   snapshot: LogisticsSnapshot;
@@ -203,7 +208,6 @@ export const ProductionFromOrderForm = ({
 
   const payload = plantLines
     .map((line) => ({
-      customerOrderLineId: line.id,
       productId: line.productId,
       quantity: Number(quantities[line.id] ?? remainingToReserveForLine(line, balances)),
     }))
@@ -305,8 +309,8 @@ export const ProductionFromOrderForm = ({
                 {plantLines.map((line) => {
                   const product = productById(snapshot, line.productId);
                   const max = remainingToReserveForLine(line, balances);
-                  const reserved = sumReservedForLine(balances, line.id);
-                  const inProduction = reservedPlacesForLine(balances, line.id)
+                  const reserved = sumReservedForLine(balances, line);
+                  const inProduction = reservedPlacesForLine(balances, line)
                     .filter((place) => place.locationType === "production_order_line")
                     .reduce((sum, place) => sum + place.quantity, 0);
                   const rawQuantity = quantities[line.id] ?? String(max);
@@ -440,14 +444,16 @@ export const ReserveOnProductionForm = ({
     const ok = await runLogisticsAction(
       () =>
         createAndPostReservation({
-          customerOrderId,
           locationType: "production_order_line",
           locationId: selected.locationId,
-          operation: "reserve",
+          toOwnerType: "order",
+          toOwnerId: customerOrderId,
           lines: [
             {
-              customerOrderLineId: orderLine.id,
+              productId: orderLine.productId,
               quantity: Number(quantity),
+              fromOwnerType: null,
+              fromOwnerId: null,
             },
           ],
         }),
@@ -546,7 +552,8 @@ export const OutputFromOrderForm = ({
               entry.locationType === "production_order_line" &&
               entry.locationId === line.id &&
               entry.stockState === "reserved" &&
-              entry.customerOrderLineId === orderLine.id,
+              ownersEqual(entry.ownerType, entry.ownerId, "order", orderLine.orderId) &&
+              entry.productId === orderLine.productId,
           )
           .reduce((sum, entry) => sum + entry.quantity, 0);
         const freeHere = balances
@@ -601,8 +608,9 @@ export const OutputFromOrderForm = ({
           allocation:
             needReserve > 0
               ? {
-                customerOrderId,
-                customerOrderLineId: orderLine.id,
+                ownerType: "order",
+                ownerId: customerOrderId,
+                productId: orderLine.productId,
                 quantity: needReserve,
               }
               : undefined,
@@ -707,8 +715,8 @@ export const TransferReservedForm = ({
           lines: reservedLines.map((item) => ({
             productId: item.line.productId,
             quantity: item.reserved,
-            customerOrderId,
-            customerOrderLineId: item.line.id,
+            ownerType: "order",
+            ownerId: customerOrderId,
             allocated: item.reserved,
           })),
         }),
@@ -809,14 +817,16 @@ export const ReserveOnTransferForm = ({
     const ok = await runLogisticsAction(
       () =>
         createAndPostReservation({
-          customerOrderId,
           locationType: "transfer",
           locationId: selected.locationId,
-          operation: "reserve",
+          toOwnerType: "order",
+          toOwnerId: customerOrderId,
           lines: [
             {
-              customerOrderLineId: orderLine.id,
+              productId: orderLine.productId,
               quantity: Number(quantity),
+              fromOwnerType: null,
+              fromOwnerId: null,
             },
           ],
         }),

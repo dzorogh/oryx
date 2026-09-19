@@ -229,11 +229,11 @@ export const CustomerOrderLinesTable = ({
               lines.map((line) => {
                 const product = productById(snapshot, line.productId);
                 const productName = product?.name ?? line.productId;
-                const reserved = reservedPlacesForLine(balances, line.id);
+                const reserved = reservedPlacesForLine(balances, line);
                 const freePlaces = freePlacesForProduct(balances, line.productId);
-                const shippedQty = sumShippedForLine(balances, line.id);
-                const producedQty = sumProducedForLine(snapshot, line.id);
-                const locations = lineLocationAllocations(balances, line.id);
+                const shippedQty = sumShippedForLine(balances, line);
+                const producedQty = sumProducedForLine(snapshot, line);
+                const locations = lineLocationAllocations(balances, line);
                 const toReserve = remainingToReserveForLine(line, balances);
                 const warehouseReserved = reserved.filter((place) => place.locationType === "warehouse");
                 const canReserve = canAct && toReserve > 0 && freePlaces.length > 0;

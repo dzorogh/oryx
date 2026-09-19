@@ -12,6 +12,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot>): LogisticsSnapshot =>
     products: [],
     manufacturers: [],
     warehouses: [],
+    regions: [],
     settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
     customerOrders: [
       {
@@ -93,10 +94,10 @@ describe("calculateOrderDocumentCoverage", () => {
         {
           id: "rsv-1",
           number: "RSV-1",
-          customerOrderId: "co-1",
           locationType: "production_order_line",
           locationId: "pol-1",
-          operation: "reserve",
+          toOwnerType: "order",
+          toOwnerId: "co-1",
           status: "posted",
           origin: "manual",
           note: "",
@@ -104,7 +105,7 @@ describe("calculateOrderDocumentCoverage", () => {
           postedAt: "",
         },
       ],
-      reservationLines: [{ id: "rsvl-1", reservationId: "rsv-1", customerOrderLineId: "col-a", quantity: 8 }],
+      reservationLines: [{ id: "rsvl-1", reservationId: "rsv-1", productId: "p-a", quantity: 8, fromOwnerType: null, fromOwnerId: null }],
       shipments: [
         {
           id: "shp-1",
@@ -118,7 +119,7 @@ describe("calculateOrderDocumentCoverage", () => {
         },
       ],
       shipmentLines: [
-        { id: "shl-1", shipmentId: "shp-1", customerOrderLineId: "col-b", productId: "p-b", quantity: 1 },
+        { id: "shl-1", shipmentId: "shp-1", productId: "p-b", quantity: 1 },
       ],
     });
 

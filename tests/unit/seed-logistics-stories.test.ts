@@ -104,17 +104,17 @@ describe("OMS-906 mixed demo seed", () => {
     const outputLineIds = inserts
       .filter((call) => call.table === "store_output_line")
       .map((call) => call.row.id);
-    const reservationColIds = inserts
+    const reservationProductIds = inserts
       .filter((call) => call.table === "store_reservation_line")
-      .map((call) => call.row.customer_order_line_id);
+      .map((call) => call.row.product_id);
     const leftoverOutputProducts = inserts
       .filter((call) => call.table === "store_output_line" && (call.row.id === 913 || call.row.id === 918))
       .map((call) => call.row.product_id);
 
     expect(outputLineIds).toEqual(expect.arrayContaining([913, 918]));
-    expect(reservationColIds).not.toContain(913);
-    expect(reservationColIds).not.toContain(918);
-    expect(reservationColIds).toHaveLength(18);
+    expect(reservationProductIds).not.toContain(44);
+    expect(reservationProductIds).not.toContain(50);
+    expect(reservationProductIds).toHaveLength(18);
     expect(leftoverOutputProducts.sort((a, b) => Number(a) - Number(b))).toEqual([44, 50]);
   });
 
@@ -129,6 +129,11 @@ describe("OMS-906 mixed demo seed", () => {
     expect(stories).toContain("id=lte.${STORY_HI}");
     expect(stories).not.toContain("id=lte.905");
     expect(stories).toContain("seedMixedDemoOrder");
+    expect(stories).toContain('toOwnerType: "region"');
+    expect(stories).toContain("to_owner_type");
+    expect(stories).toContain("from_owner_type");
+    expect(stories).toContain("product_id");
+    expect(stories).not.toMatch(/store_reservation_line[\s\S]*customer_order_line_id/);
     expect(stories).not.toMatch(/insert\("store_stock_transaction"/);
     expect(seed).toContain("story_orders=${stories.orders}");
     expect(seed).not.toMatch(/id<=905|id=lte\.905/);

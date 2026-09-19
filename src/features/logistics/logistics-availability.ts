@@ -1,12 +1,22 @@
-import { getBalanceQuantity, remainingToReserve, sumShippedForLine } from "@/features/logistics/logistics-balances";
+import {
+  getBalanceQuantity,
+  remainingToReserve,
+  remainingToReserveForOrderProduct,
+  sumShippedForLine,
+  sumShippedForOrderProduct,
+} from "@/features/logistics/logistics-balances";
 import { hrefForStoreProduct, logisticsPath } from "@/features/logistics/logistics-paths";
-import type {
-  CustomerOrderLine,
-  LocationType,
-  LogisticsSnapshot,
-  SourceType,
-  StockBalance,
-  StockState,
+import {
+  isFreeOwner,
+  isOrderOwner,
+  ownersEqual,
+  type CustomerOrderLine,
+  type LocationType,
+  type LogisticsSnapshot,
+  type OwnerType,
+  type SourceType,
+  type StockBalance,
+  type StockState,
 } from "@/features/logistics/logistics-types";
 
 export type StockPlaceQty = {
@@ -14,8 +24,8 @@ export type StockPlaceQty = {
   locationId: string;
   productId: string;
   quantity: number;
-  customerOrderId: string | null;
-  customerOrderLineId: string | null;
+  ownerType: OwnerType | null;
+  ownerId: string | null;
 };
 
 export type LocationStateSplit = {
@@ -28,8 +38,8 @@ export type LocationStateSplit = {
 };
 
 export type ProductionLineReservation = {
-  customerOrderId: string;
-  customerOrderLineId: string | null;
+  ownerType: OwnerType;
+  ownerId: string;
   quantity: number;
 };
 
@@ -46,6 +56,15 @@ export type PlaceStockBreakdown = {
 
 const positive = (quantity: number): boolean => quantity > 1e-9;
 
+const toPlace = (entry: StockBalance): StockPlaceQty => ({
+  locationType: entry.locationType,
+  locationId: entry.locationId,
+  productId: entry.productId,
+  quantity: entry.quantity,
+  ownerType: entry.ownerType,
+  ownerId: entry.ownerId,
+});
+
 export const sumFreeForProduct = (balances: StockBalance[], productId: string): number =>
   balances
     .filter((entry) => entry.productId === productId && entry.stockState === "free")
@@ -58,37 +77,39 @@ export const freePlacesForProduct = (balances: StockBalance[], productId: string
         entry.productId === productId &&
         entry.stockState === "free" &&
         positive(entry.quantity) &&
+        isFreeOwner(entry.ownerType, entry.ownerId) &&
         (entry.locationType === "warehouse" ||
           entry.locationType === "production_order_line" ||
           entry.locationType === "transfer"),
     )
-    .map((entry) => ({
-      locationType: entry.locationType,
-      locationId: entry.locationId,
-      productId: entry.productId,
-      quantity: entry.quantity,
-      customerOrderId: entry.customerOrderId,
-      customerOrderLineId: entry.customerOrderLineId,
-    }))
+    .map(toPlace)
     .sort((left, right) => right.quantity - left.quantity);
 
-export const reservedPlacesForLine = (balances: StockBalance[], customerOrderLineId: string): StockPlaceQty[] =>
+export const reservedPlacesForOwner = (
+  balances: StockBalance[],
+  ownerType: OwnerType,
+  ownerId: string,
+  productId?: string,
+): StockPlaceQty[] =>
   balances
     .filter(
       (entry) =>
         entry.stockState === "reserved" &&
-        entry.customerOrderLineId === customerOrderLineId &&
+        ownersEqual(entry.ownerType, entry.ownerId, ownerType, ownerId) &&
+        (productId == null || entry.productId === productId) &&
         positive(entry.quantity),
     )
-    .map((entry) => ({
-      locationType: entry.locationType,
-      locationId: entry.locationId,
-      productId: entry.productId,
-      quantity: entry.quantity,
-      customerOrderId: entry.customerOrderId,
-      customerOrderLineId: entry.customerOrderLineId,
-    }))
+    .map(toPlace)
     .sort((left, right) => right.quantity - left.quantity);
+
+export const reservedPlacesForLine = (balances: StockBalance[], line: CustomerOrderLine): StockPlaceQty[] =>
+  reservedPlacesForOwner(balances, "order", line.orderId, line.productId);
+
+export const reservedPlacesForOrderProduct = (
+  balances: StockBalance[],
+  orderId: string,
+  productId: string,
+): StockPlaceQty[] => reservedPlacesForOwner(balances, "order", orderId, productId);
 
 export const freeTransfersForProduct = (balances: StockBalance[], productId: string): StockPlaceQty[] =>
   freePlacesForProduct(balances, productId).filter((place) => place.locationType === "transfer");
@@ -122,8 +143,8 @@ export const freeProductionLinesForProduct = (
       locationId: entry.locationId,
       productId,
       quantity: entry.quantity,
-      customerOrderId: entry.customerOrderId,
-      customerOrderLineId: entry.customerOrderLineId,
+      ownerType: entry.ownerType,
+      ownerId: entry.ownerId,
     });
   }
 
@@ -131,22 +152,7 @@ export const freeProductionLinesForProduct = (
 };
 
 export const reservedPlacesForOrder = (balances: StockBalance[], customerOrderId: string): StockPlaceQty[] =>
-  balances
-    .filter(
-      (entry) =>
-        entry.stockState === "reserved" &&
-        entry.customerOrderId === customerOrderId &&
-        positive(entry.quantity),
-    )
-    .map((entry) => ({
-      locationType: entry.locationType,
-      locationId: entry.locationId,
-      productId: entry.productId,
-      quantity: entry.quantity,
-      customerOrderId: entry.customerOrderId,
-      customerOrderLineId: entry.customerOrderLineId,
-    }))
-    .sort((left, right) => right.quantity - left.quantity);
+  reservedPlacesForOwner(balances, "order", customerOrderId);
 
 export const freeAtPlace = (
   balances: StockBalance[],
@@ -159,42 +165,51 @@ export const freeAtPlace = (
     locationType,
     locationId,
     stockState: "free",
-    customerOrderId: null,
-    customerOrderLineId: null,
+    ownerType: null,
+    ownerId: null,
+  });
+
+export const reservedAtPlaceForOwner = (
+  balances: StockBalance[],
+  productId: string,
+  locationType: LocationType,
+  locationId: string,
+  ownerType: OwnerType | null,
+  ownerId: string | null,
+): number =>
+  getBalanceQuantity(balances, {
+    productId,
+    locationType,
+    locationId,
+    stockState: "reserved",
+    ownerType,
+    ownerId,
   });
 
 export const reservedAtWarehouseForLine = (
   balances: StockBalance[],
   line: CustomerOrderLine,
   warehouseId: string,
-): number =>
-  getBalanceQuantity(balances, {
-    productId: line.productId,
-    locationType: "warehouse",
-    locationId: warehouseId,
-    stockState: "reserved",
-    customerOrderId: line.orderId,
-    customerOrderLineId: line.id,
-  });
+): number => reservedAtPlaceForOwner(balances, line.productId, "warehouse", warehouseId, "order", line.orderId);
 
 export const warehousesWithReservedForOrder = (
   balances: StockBalance[],
   lines: CustomerOrderLine[],
 ): Array<{ warehouseId: string; quantity: number }> => {
-  const lineIds = new Set(lines.map((line) => line.id));
   const orderIds = new Set(lines.map((line) => line.orderId));
+  const productIds = new Set(lines.map((line) => line.productId));
   const totals = new Map<string, number>();
   for (const entry of balances) {
     if (
       entry.stockState !== "reserved" ||
       entry.locationType !== "warehouse" ||
-      !positive(entry.quantity)
+      !positive(entry.quantity) ||
+      !isOrderOwner(entry.ownerType, entry.ownerId) ||
+      !orderIds.has(entry.ownerId ?? "")
     ) {
       continue;
     }
-    const matchesLine = entry.customerOrderLineId != null && lineIds.has(entry.customerOrderLineId);
-    const matchesOrder = entry.customerOrderId != null && orderIds.has(entry.customerOrderId);
-    if (!matchesLine && !matchesOrder) {
+    if (productIds.size > 0 && !productIds.has(entry.productId)) {
       continue;
     }
     totals.set(entry.locationId, (totals.get(entry.locationId) ?? 0) + entry.quantity);
@@ -221,15 +236,15 @@ export const remainingToShipForLine = (
   balances: StockBalance[],
   warehouseId?: string,
 ): number => {
-  const remainingOrdered = line.quantity - sumShippedForLine(balances, line.id);
+  const remainingOrdered = line.quantity - sumShippedForOrderProduct(balances, line.orderId, line.productId);
   const reserved = warehouseId
     ? reservedAtWarehouseForLine(balances, line, warehouseId)
-    : reservedPlacesForLine(balances, line.id).reduce((sum, place) => sum + place.quantity, 0);
+    : reservedPlacesForLine(balances, line).reduce((sum, place) => sum + place.quantity, 0);
   return Math.max(0, Math.min(remainingOrdered, reserved));
 };
 
 export const remainingToReserveForLine = (line: CustomerOrderLine, balances: StockBalance[]): number =>
-  Math.max(0, remainingToReserve(line.quantity, balances, line.id));
+  Math.max(0, remainingToReserveForOrderProduct(line.quantity, balances, line.orderId, line.productId));
 
 export const openOrderLinesForProduct = (
   snapshot: LogisticsSnapshot,
@@ -254,6 +269,29 @@ export const reservationCap = (
   return Math.max(0, Math.min(free, remainingToReserveForLine(line, balances)));
 };
 
+export const reservationCapForOwner = (
+  balances: StockBalance[],
+  productId: string,
+  locationType: LocationType,
+  locationId: string,
+  fromOwnerType: OwnerType | null,
+  fromOwnerId: string | null,
+  toOwnerType: OwnerType | null,
+  toOwnerId: string | null,
+  orderedQuantity?: number,
+): number => {
+  const sourceQty = isFreeOwner(fromOwnerType, fromOwnerId)
+    ? freeAtPlace(balances, productId, locationType, locationId)
+    : reservedAtPlaceForOwner(balances, productId, locationType, locationId, fromOwnerType, fromOwnerId);
+  if (toOwnerType === "order" && toOwnerId && orderedQuantity != null) {
+    return Math.max(
+      0,
+      Math.min(sourceQty, remainingToReserveForOrderProduct(orderedQuantity, balances, toOwnerId, productId)),
+    );
+  }
+  return Math.max(0, sourceQty);
+};
+
 export const returnedForShipmentLine = (snapshot: LogisticsSnapshot, shipmentLineId: string): number =>
   snapshot.returnLines
     .filter((line) => {
@@ -271,22 +309,22 @@ export const remainingToReturnForLine = (
   shippedQuantity: number,
 ): number => Math.max(0, shippedQuantity - returnedForShipmentLine(snapshot, shipmentLineId));
 
-const groupBalancesByOrder = (entries: StockBalance[]): ProductionLineReservation[] => {
-  const reservedByOrderLine = new Map<string, ProductionLineReservation>();
+const groupBalancesByOwner = (entries: StockBalance[]): ProductionLineReservation[] => {
+  const reservedByOwner = new Map<string, ProductionLineReservation>();
   for (const entry of entries) {
-    if (!entry.customerOrderId) {
+    if (!entry.ownerType || !entry.ownerId) {
       continue;
     }
-    const key = `${entry.customerOrderId}|${entry.customerOrderLineId ?? ""}`;
-    const current = reservedByOrderLine.get(key);
-    reservedByOrderLine.set(key, {
-      customerOrderId: entry.customerOrderId,
-      customerOrderLineId: entry.customerOrderLineId ?? current?.customerOrderLineId ?? null,
+    const key = `${entry.ownerType}|${entry.ownerId}`;
+    const current = reservedByOwner.get(key);
+    reservedByOwner.set(key, {
+      ownerType: entry.ownerType,
+      ownerId: entry.ownerId,
       quantity: (current?.quantity ?? 0) + entry.quantity,
     });
   }
-  return [...reservedByOrderLine.values()].sort((left, right) =>
-    left.customerOrderId.localeCompare(right.customerOrderId),
+  return [...reservedByOwner.values()].sort((left, right) =>
+    `${left.ownerType}:${left.ownerId}`.localeCompare(`${right.ownerType}:${right.ownerId}`),
   );
 };
 
@@ -324,8 +362,8 @@ export const placeStockBreakdown = (
 
   return {
     free,
-    reserved: groupBalancesByOrder(reserved),
-    shipped: groupBalancesByOrder(shipped),
+    reserved: groupBalancesByOwner(reserved),
+    shipped: groupBalancesByOwner(shipped),
   };
 };
 
@@ -417,9 +455,26 @@ export const hrefForSource = (sourceType: SourceType, sourceId: string): string 
 export const hrefForCustomerOrder = (id: string): string => logisticsPath("customer-orders", id);
 export const hrefForProduct = (id: string): string => hrefForStoreProduct(id);
 export const hrefForWarehouse = (id: string): string => logisticsPath("warehouses", id);
+export const hrefForRegion = (id: string): string => logisticsPath("regions", id);
 export const hrefForManufacturer = (id: string): string => logisticsPath("manufacturers", id);
 export const hrefForTransfer = (id: string): string => logisticsPath("transfers", id);
 export const hrefForProductionOrder = (id: string): string => logisticsPath("production-orders", id);
+
+export const hrefForOwner = (
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): string | null => {
+  if (!ownerId) {
+    return null;
+  }
+  if (ownerType === "order") {
+    return hrefForCustomerOrder(ownerId);
+  }
+  if (ownerType === "region") {
+    return hrefForRegion(ownerId);
+  }
+  return null;
+};
 
 export const hrefForLocation = (
   snapshot: LogisticsSnapshot,
@@ -440,3 +495,5 @@ export const hrefForLocation = (
 };
 
 export const stateQty = (split: LocationStateSplit, state: StockState): number => split[state];
+
+export { remainingToReserve, sumShippedForLine };

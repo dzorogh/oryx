@@ -37,6 +37,6 @@ describe("production order close releases reserved holds", () => {
   });
 
   it("documents close as release then free write-off", () => {
-    expect(docs).toMatch(/release-Reservation[\s\S]*свободный остаток/);
+    expect(docs).toMatch(/Reservation в Free[\s\S]*свободный остаток/);
   });
 });

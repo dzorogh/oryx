@@ -2,6 +2,7 @@ export const LOGISTICS_CODE_PREFIXES = {
   product: "PRD",
   manufacturer: "PLT",
   warehouse: "WH",
+  region: "REG",
   customerOrder: "OMS",
   productionOrder: "PO",
   reservation: "RSV",
@@ -40,6 +41,7 @@ export const DOCUMENT_PREFIX_FIELDS: Array<{
   { kind: "product", label: "Товары", exampleId: "1" },
   { kind: "manufacturer", label: "Производители", exampleId: "7" },
   { kind: "warehouse", label: "Склады", exampleId: "1" },
+  { kind: "region", label: "Regions", exampleId: "1" },
 ];
 
 const clonePrefixes = (prefixes: LogisticsCodePrefixes): LogisticsCodePrefixes => ({ ...prefixes });

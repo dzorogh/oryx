@@ -6,7 +6,16 @@ import {
 import { manufacturerCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
 import { expectedEndMeta, formatQuantity } from "@/features/logistics/logistics-labels";
-import type { DocumentStatus, LogisticsSnapshot, StockBalance, TransferStatus } from "@/features/logistics/logistics-types";
+import {
+  ownersEqual,
+  reservationDirection,
+  reservationTouchesOrder,
+  type DocumentStatus,
+  type LogisticsSnapshot,
+  type ReservationDirection,
+  type StockBalance,
+  type TransferStatus,
+} from "@/features/logistics/logistics-types";
 
 export type RelatedDocumentItem = {
   id: string;
@@ -15,7 +24,7 @@ export type RelatedDocumentItem = {
   meta: string;
   statusKey?: string;
   expectedEndOn?: string | null;
-  operation?: "reserve" | "release";
+  operation?: ReservationDirection;
   coveragePercent?: number;
 };
 
@@ -39,15 +48,19 @@ const activeReservation = (snapshot: LogisticsSnapshot, reservationId: string): 
 
 export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
   snapshot.reservations
-    .filter((item) => item.customerOrderId === customerOrderId)
-    .map((item) => ({
-      id: item.id,
-      href: `/store/logistics/reservations/${item.id}`,
-      label: item.number,
-      meta: `${item.operation} · ${statusMeta(item.status)}`,
-      statusKey: item.status,
-      operation: item.operation,
-    }));
+    .filter((item) => reservationTouchesOrder(item, snapshot.reservationLines, customerOrderId))
+    .map((item) => {
+      const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
+      const direction = reservationDirection(item, lines);
+      return {
+        id: item.id,
+        href: `/store/logistics/reservations/${item.id}`,
+        label: item.number,
+        meta: `${direction} · ${statusMeta(item.status)}`,
+        statusKey: item.status,
+        operation: direction,
+      };
+    });
 
 export const relatedShipments = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
   snapshot.shipments
@@ -81,7 +94,7 @@ export const relatedReturnsForOrder = (snapshot: LogisticsSnapshot, customerOrde
 export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
   const transferIds = new Set<string>();
   for (const allocation of snapshot.transferAllocations) {
-    if (allocation.customerOrderId !== customerOrderId) {
+    if (!ownersEqual(allocation.ownerType, allocation.ownerId, "order", customerOrderId)) {
       continue;
     }
     const transferId = snapshot.transferLines.find((line) => line.id === allocation.lineId)?.transferId;
@@ -93,14 +106,14 @@ export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOr
     if (reservation.locationType !== "transfer" || !activeReservation(snapshot, reservation.id)) {
       continue;
     }
-    if (reservation.customerOrderId === customerOrderId) {
+    if (reservationTouchesOrder(reservation, snapshot.reservationLines, customerOrderId)) {
       transferIds.add(reservation.locationId);
     }
   }
   for (const entry of snapshot.transactions) {
     if (
       entry.locationType === "transfer" &&
-      entry.customerOrderId === customerOrderId &&
+      ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
       Math.abs(entry.quantity) > 1e-9
     ) {
       transferIds.add(entry.locationId);
@@ -121,12 +134,15 @@ export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOr
 export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
   const outputIds = new Set<string>();
   for (const entry of snapshot.transactions) {
-    if (entry.sourceType === "production_output" && entry.customerOrderId === customerOrderId) {
+    if (
+      entry.sourceType === "production_output" &&
+      ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId)
+    ) {
       outputIds.add(entry.sourceId);
     }
   }
   for (const allocation of snapshot.outputAllocations) {
-    if (allocation.customerOrderId !== customerOrderId) {
+    if (!ownersEqual(allocation.ownerType, allocation.ownerId, "order", customerOrderId)) {
       continue;
     }
     const outputId = snapshot.outputLines.find((line) => line.id === allocation.lineId)?.outputId;
@@ -157,7 +173,7 @@ export const relatedProductionsForOrder = (
     if (
       reservation.locationType !== "production_order_line" ||
       !activeReservation(snapshot, reservation.id) ||
-      reservation.customerOrderId !== customerOrderId
+      !reservationTouchesOrder(reservation, snapshot.reservationLines, customerOrderId)
     ) {
       continue;
     }
@@ -176,7 +192,7 @@ export const relatedProductionsForOrder = (
         .filter(
           (entry) =>
             entry.stockState === "reserved" &&
-            entry.customerOrderId === customerOrderId &&
+            ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
             entry.locationType === "production_order_line" &&
             lineIds.includes(entry.locationId),
         )
@@ -185,7 +201,7 @@ export const relatedProductionsForOrder = (
         .filter(
           (entry) =>
             entry.sourceType === "production_output" &&
-            entry.customerOrderId === customerOrderId &&
+            ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
             entry.quantity > 0 &&
             entry.locationType === "warehouse",
         )
@@ -218,16 +234,21 @@ export const relatedOrdersForOutput = (
       (entry) =>
         entry.sourceType === "production_output" &&
         entry.sourceId === outputId &&
-        entry.customerOrderId &&
+        entry.ownerType === "order" &&
+        entry.ownerId &&
         entry.quantity > 0,
     )
     .map((entry) => ({
-      orderId: entry.customerOrderId as string,
+      orderId: entry.ownerId as string,
       quantity: entry.quantity,
     }));
   const fromAllocations = snapshot.outputAllocations
-    .filter((item) => snapshot.outputLines.some((line) => line.id === item.lineId && line.outputId === outputId))
-    .map((item) => ({ orderId: item.customerOrderId, quantity: item.quantity }));
+    .filter(
+      (item) =>
+        item.ownerType === "order" &&
+        snapshot.outputLines.some((line) => line.id === item.lineId && line.outputId === outputId),
+    )
+    .map((item) => ({ orderId: item.ownerId, quantity: item.quantity }));
   const totals = new Map<string, number>();
   for (const item of [...fromLedger, ...fromAllocations]) {
     totals.set(item.orderId, (totals.get(item.orderId) ?? 0) + item.quantity);
@@ -245,6 +266,33 @@ export const relatedOrdersForOutput = (
   );
 };
 
+export const relatedReservationsForRegion = (
+  snapshot: LogisticsSnapshot,
+  regionId: string,
+): RelatedDocumentItem[] =>
+  snapshot.reservations
+    .filter((item) => {
+      if (ownersEqual(item.toOwnerType, item.toOwnerId, "region", regionId)) {
+        return true;
+      }
+      return snapshot.reservationLines.some(
+        (line) =>
+          line.reservationId === item.id && ownersEqual(line.fromOwnerType, line.fromOwnerId, "region", regionId),
+      );
+    })
+    .map((item) => {
+      const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
+      const direction = reservationDirection(item, lines);
+      return {
+        id: item.id,
+        href: `/store/logistics/reservations/${item.id}`,
+        label: item.number,
+        meta: `${direction} · ${statusMeta(item.status)}`,
+        statusKey: item.status,
+        operation: direction,
+      };
+    });
+
 export const relatedReservationsForProduction = (
   snapshot: LogisticsSnapshot,
   productionOrderId: string,
@@ -259,12 +307,18 @@ export const relatedReservationsForProduction = (
   );
   return snapshot.reservations
     .filter((item) => reservationIds.has(item.id))
-    .map((item) => ({
-      id: item.id,
-      href: `/store/logistics/reservations/${item.id}`,
-      label: item.number,
-      meta: statusMeta(item.status),
-    }));
+    .map((item) => {
+      const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
+      const direction = reservationDirection(item, lines);
+      return {
+        id: item.id,
+        href: `/store/logistics/reservations/${item.id}`,
+        label: item.number,
+        meta: `${direction} · ${statusMeta(item.status)}`,
+        statusKey: item.status,
+        operation: direction,
+      };
+    });
 };
 
 export const relatedReturnsForShipment = (snapshot: LogisticsSnapshot, shipmentId: string): RelatedDocumentItem[] =>

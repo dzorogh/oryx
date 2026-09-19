@@ -28,6 +28,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
       { id: "m-12", code: "SH-12", name: "Zhejiang Long Legal Name Co", warehouseId: "wh-12" },
     ],
     warehouses: [{ id: "wh-12", code: "WH-12", name: "Plant warehouse", manufacturerId: "m-12" }],
+    regions: [],
     settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
     customerOrders: [
       {
@@ -65,8 +66,8 @@ const reservedBalances: StockBalance[] = [
     locationType: "warehouse",
     locationId: "wh-12",
     stockState: "reserved",
-    customerOrderId: "co-1",
-    customerOrderLineId: "col-1",
+    ownerType: "order",
+    ownerId: "co-1",
     quantity: 5,
   },
 ];
@@ -142,8 +143,8 @@ describe("ProductionFromOrderForm", () => {
         locationType: "warehouse",
         locationId: "wh-12",
         stockState: "reserved",
-        customerOrderId: "co-1",
-        customerOrderLineId: "col-1",
+        ownerType: "order",
+        ownerId: "co-1",
         quantity: 8,
       },
     ];

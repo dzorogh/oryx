@@ -1,6 +1,19 @@
+import { hrefForCustomerOrder, hrefForRegion } from "@/features/logistics/logistics-availability";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
-import { LOCATION_LABELS, locationKindLabel } from "@/features/logistics/logistics-labels";
-import type { LogisticsSnapshot, LocationType, SourceType, StockBalance } from "@/features/logistics/logistics-types";
+import {
+  FREE_OWNER_LABEL,
+  LOCATION_LABELS,
+  OWNER_TYPE_LABELS,
+  locationKindLabel,
+} from "@/features/logistics/logistics-labels";
+import {
+  isFreeOwner,
+  type LogisticsSnapshot,
+  type LocationType,
+  type OwnerType,
+  type SourceType,
+  type StockBalance,
+} from "@/features/logistics/logistics-types";
 
 export const productById = (snapshot: LogisticsSnapshot, id: string) =>
   snapshot.products.find((item) => item.id === id);
@@ -92,8 +105,78 @@ export const warehouseCode = (snapshot: LogisticsSnapshot, id: string): string =
 export const warehouseSelectItems = (snapshot: LogisticsSnapshot) =>
   snapshot.warehouses.map((item) => ({ value: item.id, label: item.code }));
 
+export const regionById = (snapshot: LogisticsSnapshot, id: string) =>
+  snapshot.regions.find((item) => item.id === id);
+
+export const regionCode = (snapshot: LogisticsSnapshot, id: string): string =>
+  regionById(snapshot, id)?.code || formatLogisticsCode("region", id);
+
+export const regionSelectItems = (snapshot: LogisticsSnapshot) =>
+  snapshot.regions.map((item) => ({ value: item.id, label: `${item.code} · ${item.name}` }));
+
 export const customerOrderById = (snapshot: LogisticsSnapshot, id: string) =>
   snapshot.customerOrders.find((item) => item.id === id);
+
+export const ownerCode = (
+  snapshot: LogisticsSnapshot,
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): string => {
+  if (isFreeOwner(ownerType, ownerId) || !ownerId) {
+    return FREE_OWNER_LABEL;
+  }
+  if (ownerType === "order") {
+    return customerOrderById(snapshot, ownerId)?.number ?? formatLogisticsCode("customerOrder", ownerId);
+  }
+  return regionCode(snapshot, ownerId);
+};
+
+export const ownerHref = (
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): string | null => {
+  if (!ownerId) {
+    return null;
+  }
+  if (ownerType === "order") {
+    return hrefForCustomerOrder(ownerId);
+  }
+  if (ownerType === "region") {
+    return hrefForRegion(ownerId);
+  }
+  return null;
+};
+
+export const ownerKindLabel = (ownerType: OwnerType | null | undefined): string =>
+  ownerType ? OWNER_TYPE_LABELS[ownerType] : FREE_OWNER_LABEL;
+
+export const ownerLabel = (
+  snapshot: LogisticsSnapshot,
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): string => {
+  if (isFreeOwner(ownerType, ownerId)) {
+    return FREE_OWNER_LABEL;
+  }
+  if (ownerType === "order" && ownerId) {
+    return customerOrderById(snapshot, ownerId)?.number ?? ownerId;
+  }
+  if (ownerType === "region" && ownerId) {
+    const region = regionById(snapshot, ownerId);
+    return region ? region.code : formatLogisticsCode("region", ownerId);
+  }
+  return ownerId ?? FREE_OWNER_LABEL;
+};
+
+export const ownerSelectItems = (snapshot: LogisticsSnapshot, ownerType: OwnerType | "free" | "") => {
+  if (ownerType === "order") {
+    return snapshot.customerOrders.map((item) => ({ value: item.id, label: item.number }));
+  }
+  if (ownerType === "region") {
+    return regionSelectItems(snapshot);
+  }
+  return [];
+};
 
 export const productionOrderById = (snapshot: LogisticsSnapshot, id: string) =>
   snapshot.productionOrders.find((item) => item.id === id);

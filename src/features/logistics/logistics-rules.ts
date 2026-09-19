@@ -1,17 +1,28 @@
-import { computeStockBalances, remainingToReserve, sumShippedForLine } from "@/features/logistics/logistics-balances";
+import {
+  remainingToReserve,
+  remainingToReserveForOrderProduct,
+  sumShippedForLine,
+  sumShippedForOrderProduct,
+} from "@/features/logistics/logistics-balances";
 import type {
   CustomerOrderLine,
+  OwnerType,
   ProductionOrderLine,
   StockBalance,
   StockTransaction,
   TransferAllocation,
   TransferLine,
 } from "@/features/logistics/logistics-types";
+import { isOrderOwner } from "@/features/logistics/logistics-types";
+import { computeStockBalances } from "@/features/logistics/logistics-balances";
 
 export const IRREVERSIBLE_DOCUMENT_KINDS = ["reservation", "reservation_release"] as const;
 
 export const RESERVATION_CANCEL_FORBIDDEN =
-  "Posted reservations cannot be cancelled. Create a Reservation with operation=release instead.";
+  "Posted reservations cannot be cancelled. Create a Reservation that releases to Free instead.";
+
+export const SHIPMENT_OWNER_MUST_BE_ORDER =
+  "Shipment can only consume stock reserved for a customer order.";
 
 export const isIrreversibleDocumentKind = (kind: string): boolean =>
   IRREVERSIBLE_DOCUMENT_KINDS.includes(kind as (typeof IRREVERSIBLE_DOCUMENT_KINDS)[number]);
@@ -46,12 +57,26 @@ export const assertEnoughStock = (available: number, needed: number, label: stri
   }
 };
 
+export const assertShipmentOwnerIsOrder = (
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): void => {
+  if (!isOrderOwner(ownerType, ownerId)) {
+    throw new Error(SHIPMENT_OWNER_MUST_BE_ORDER);
+  }
+};
+
+export const canShipReservedOwner = (
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): boolean => isOrderOwner(ownerType, ownerId);
+
 export const assertCustomerCapacity = (
   line: CustomerOrderLine,
   balances: StockBalance[],
   extraReserved: number,
 ): void => {
-  const remaining = remainingToReserve(line.quantity, balances, line.id);
+  const remaining = remainingToReserveForOrderProduct(line.quantity, balances, line.orderId, line.productId);
   if (extraReserved - remaining > 1e-9) {
     throw new Error("Cannot reserve more than the open customer order quantity");
   }
@@ -62,7 +87,7 @@ export const assertShipmentCapacity = (
   balances: StockBalance[],
   extraShipped: number,
 ): void => {
-  const shipped = sumShippedForLine(balances, line.id);
+  const shipped = sumShippedForOrderProduct(balances, line.orderId, line.productId);
   if (shipped + extraShipped - line.quantity > 1e-9) {
     throw new Error("Cannot ship more than the ordered quantity");
   }
@@ -88,3 +113,5 @@ export const transferFreeQuantity = (line: TransferLine, allocations: TransferAl
 
 export const balancesFromTransactions = (transactions: StockTransaction[]): StockBalance[] =>
   computeStockBalances(transactions);
+
+export { remainingToReserve, sumShippedForLine };

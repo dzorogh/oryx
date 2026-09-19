@@ -97,7 +97,7 @@ export const parseTrackerMeta = (
   const first = parts[0];
   const second = parts[1];
 
-  if ((first === "reserve" || first === "release") && second && second in STATUS_LABELS) {
+  if ((first === "reserve" || first === "release" || first === "reassign") && second && second in STATUS_LABELS) {
     return {
       statusKey: second,
       statusLabel: STATUS_LABELS[second],

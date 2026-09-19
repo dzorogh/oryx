@@ -4,25 +4,27 @@ import {
   IRREVERSIBLE_DOCUMENT_KINDS,
   RESERVATION_CANCEL_FORBIDDEN,
 } from "@/features/logistics/logistics-rules";
-import { RESERVATION_OPERATION_LABELS } from "@/features/logistics/logistics-labels";
+import { RESERVATION_DIRECTION_LABELS } from "@/features/logistics/logistics-labels";
 import { LOGISTICS_CODE_PREFIXES, formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { LOGISTICS_PATHS, redirectLegacyLogisticsPath } from "@/features/logistics/logistics-paths";
 import {
+  RESERVATION_DIRECTIONS,
   RESERVATION_LOCATION_TYPES,
-  RESERVATION_OPERATIONS,
   RESERVATION_ORIGINS,
   RESERVATION_STATUSES,
+  reservationDirection,
   type Reservation,
   type ReservationLine,
 } from "@/features/logistics/logistics-types";
 
 describe("unified reservation model", () => {
-  it("keeps a single RSV prefix and English operation labels", () => {
+  it("keeps a single RSV prefix and English direction labels", () => {
     expect(LOGISTICS_CODE_PREFIXES.reservation).toBe("RSV");
     expect(formatLogisticsCode("reservation", 8)).toBe("RSV-8");
-    expect(RESERVATION_OPERATION_LABELS.reserve).toBe("Reserve");
-    expect(RESERVATION_OPERATION_LABELS.release).toBe("Release");
-    expect([...RESERVATION_OPERATIONS]).toEqual(["reserve", "release"]);
+    expect(RESERVATION_DIRECTION_LABELS.reserve).toBe("Reserve");
+    expect(RESERVATION_DIRECTION_LABELS.release).toBe("Release");
+    expect(RESERVATION_DIRECTION_LABELS.reassign).toBe("Reassign");
+    expect([...RESERVATION_DIRECTIONS]).toEqual(["reserve", "release", "reassign"]);
     expect([...RESERVATION_STATUSES]).toEqual(["draft", "posted"]);
     expect([...RESERVATION_ORIGINS]).toEqual(["manual", "order_close"]);
     expect([...RESERVATION_LOCATION_TYPES]).toEqual(["warehouse", "production_order_line", "transfer"]);
@@ -35,16 +37,19 @@ describe("unified reservation model", () => {
     expect(IRREVERSIBLE_DOCUMENT_KINDS).toContain("reservation_release");
     expect(() => assertDocumentCanBeCancelled("reservation")).toThrow(RESERVATION_CANCEL_FORBIDDEN);
     expect(() => assertDocumentCanBeCancelled("reservation_release")).toThrow(RESERVATION_CANCEL_FORBIDDEN);
+    expect(RESERVATION_CANCEL_FORBIDDEN).toBe(
+      "Posted reservations cannot be cancelled. Create a Reservation that releases to Free instead.",
+    );
   });
 
-  it("keeps location and operation on the header; lines have no productId", () => {
+  it("keeps destination on the header and source plus product on the line", () => {
     const header = {
       id: "1",
       number: "RSV-1",
-      customerOrderId: "10",
       locationType: "warehouse",
       locationId: "2",
-      operation: "release",
+      toOwnerType: null,
+      toOwnerId: null,
       status: "posted",
       origin: "order_close",
       note: "",
@@ -55,16 +60,19 @@ describe("unified reservation model", () => {
     const line = {
       id: "1",
       reservationId: "1",
-      customerOrderLineId: "100",
+      productId: "22",
       quantity: 3,
+      fromOwnerType: "order",
+      fromOwnerId: "10",
     } satisfies ReservationLine;
 
-    expect(header.operation).toBe("release");
-    expect(header.locationType).toBe("warehouse");
-    expect(line).not.toHaveProperty("productId");
+    expect(header).not.toHaveProperty("operation");
+    expect(header).not.toHaveProperty("customerOrderId");
+    expect(line).toHaveProperty("productId");
+    expect(line).not.toHaveProperty("customerOrderLineId");
     expect(line).not.toHaveProperty("locationType");
-    expect(line).not.toHaveProperty("operation");
     expect(line.quantity).toBeGreaterThan(0);
+    expect(reservationDirection(header, [line])).toBe("release");
   });
 
   it("redirects legacy releases URLs to the release filter", () => {

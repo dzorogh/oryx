@@ -134,8 +134,8 @@ const StockPageContent = () => {
   const orderOptions = useMemo(() => {
     const ids = new Set(
       balances
-        .filter((entry) => entry.customerOrderId && Math.abs(entry.quantity) > 1e-9)
-        .map((entry) => entry.customerOrderId as string),
+        .filter((entry) => entry.ownerType === "order" && entry.ownerId && Math.abs(entry.quantity) > 1e-9)
+        .map((entry) => entry.ownerId as string),
     );
     if (filters.orderId) {
       ids.add(filters.orderId);

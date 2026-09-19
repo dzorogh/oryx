@@ -22,6 +22,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { remainingToReserve, sumLocationState } from "@/features/logistics/logistics-balances";
 import {
   hrefForCustomerOrder,
+  hrefForOwner,
   openOrderLinesForProduct,
   productionLineReservationBreakdown,
   remainingToReserveForLine,
@@ -41,6 +42,7 @@ import {
 import { formatExpectedEnd, formatQuantity, PRODUCTION_STATUS_LABELS } from "@/features/logistics/logistics-labels";
 import {
   customerOrderById,
+  ownerLabel,
   manufacturerIdsForProducts,
   manufacturerSelectItems,
   orderNumber,
@@ -389,8 +391,9 @@ export const ProductionOrderDetailPage = () => {
           allocation:
             allocLine && Number(outputAllocQty) > 0
               ? {
-                customerOrderId: allocLine.orderId,
-                customerOrderLineId: allocLine.id,
+                ownerType: "order" as const,
+                ownerId: allocLine.orderId,
+                productId: allocLine.productId,
                 quantity: Number(outputAllocQty),
               }
               : undefined,
@@ -525,16 +528,16 @@ export const ProductionOrderDetailPage = () => {
                 ...breakdown.reserved
                   .slice()
                   .sort((left, right) =>
-                    orderNumber(snapshot, left.customerOrderId).localeCompare(
-                      orderNumber(snapshot, right.customerOrderId),
+                    ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(
+                      ownerLabel(snapshot, right.ownerType, right.ownerId),
                     ),
                   )
                   .map((item) => ({
-                    key: `${line.id}:${item.customerOrderId}:${item.customerOrderLineId ?? "line"}`,
+                    key: `${line.id}:${item.ownerType}:${item.ownerId}`,
                     label: (
                       <LogisticsCodeBadge
-                        code={orderNumber(snapshot, item.customerOrderId)}
-                        href={hrefForCustomerOrder(item.customerOrderId)}
+                        code={ownerLabel(snapshot, item.ownerType, item.ownerId)}
+                        href={hrefForOwner(item.ownerType, item.ownerId) ?? undefined}
                       />
                     ),
                     free: null as number | null,
@@ -808,21 +811,23 @@ export const ProductionOrderDetailPage = () => {
                 toast.error("Нельзя зарезервировать больше свободного количества");
                 return;
               }
-              if (Number(reserveQuantity) > remainingToReserve(orderLine.quantity, balances, orderLine.id)) {
+              if (Number(reserveQuantity) > remainingToReserve(orderLine.quantity, balances, orderLine)) {
                 toast.error("Нельзя зарезервировать больше открытого количества заказа клиента");
                 return;
               }
               void runLogisticsAction(
                 () =>
                   createAndPostReservation({
-                    customerOrderId: orderLine.orderId,
                     locationType: "production_order_line",
                     locationId: reserveLine.id,
-                    operation: "reserve",
+                    toOwnerType: "order",
+                    toOwnerId: orderLine.orderId,
                     lines: [
                       {
-                        customerOrderLineId: orderLine.id,
+                        productId: orderLine.productId,
                         quantity: Number(reserveQuantity),
+                        fromOwnerType: null,
+                        fromOwnerId: null,
                       },
                     ],
                   }),

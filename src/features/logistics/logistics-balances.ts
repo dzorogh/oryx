@@ -1,6 +1,10 @@
 import {
   LOCATION_TYPES,
+  isFreeOwner,
+  ownersEqual,
+  type CustomerOrderLine,
   type LocationType,
+  type OwnerType,
   type StockBalance,
   type StockState,
   type StockTransaction,
@@ -46,8 +50,8 @@ const balanceKey = (entry: Omit<StockBalance, "quantity">): string =>
     entry.locationType,
     entry.locationId,
     entry.stockState,
-    entry.customerOrderId ?? "",
-    entry.customerOrderLineId ?? "",
+    entry.ownerType ?? "",
+    entry.ownerId ?? "",
   ].join("|");
 
 export const computeStockBalances = (transactions: StockTransaction[]): StockBalance[] => {
@@ -65,8 +69,8 @@ export const computeStockBalances = (transactions: StockTransaction[]): StockBal
       locationType: tx.locationType,
       locationId: tx.locationId,
       stockState: tx.stockState,
-      customerOrderId: tx.customerOrderId,
-      customerOrderLineId: tx.customerOrderLineId,
+      ownerType: tx.ownerType,
+      ownerId: tx.ownerId,
       quantity: tx.quantity,
     });
   }
@@ -96,39 +100,71 @@ export const getBalanceQuantity = (
       entry.locationType === match.locationType &&
       entry.locationId === match.locationId &&
       entry.stockState === match.stockState &&
-      entry.customerOrderId === match.customerOrderId &&
-      entry.customerOrderLineId === match.customerOrderLineId,
+      ownersEqual(entry.ownerType, entry.ownerId, match.ownerType, match.ownerId),
   );
   return found?.quantity ?? 0;
 };
 
-export const sumReservedForLine = (balances: StockBalance[], customerOrderLineId: string): number =>
+export const sumReservedForOwner = (
+  balances: StockBalance[],
+  ownerType: OwnerType | null,
+  ownerId: string | null,
+  productId?: string,
+): number => {
+  if (isFreeOwner(ownerType, ownerId)) {
+    return 0;
+  }
+  return balances
+    .filter(
+      (entry) =>
+        entry.stockState === "reserved" &&
+        ownersEqual(entry.ownerType, entry.ownerId, ownerType, ownerId) &&
+        (productId == null || entry.productId === productId),
+    )
+    .reduce((sum, entry) => sum + entry.quantity, 0);
+};
+
+export const sumShippedForOrderProduct = (
+  balances: StockBalance[],
+  orderId: string,
+  productId: string,
+): number =>
   balances
     .filter(
-      (entry) => entry.stockState === "reserved" && entry.customerOrderLineId === customerOrderLineId,
+      (entry) =>
+        entry.stockState === "shipped" &&
+        entry.productId === productId &&
+        ownersEqual(entry.ownerType, entry.ownerId, "order", orderId),
     )
     .reduce((sum, entry) => sum + entry.quantity, 0);
 
-export const sumShippedForLine = (balances: StockBalance[], customerOrderLineId: string): number =>
-  balances
-    .filter(
-      (entry) => entry.stockState === "shipped" && entry.customerOrderLineId === customerOrderLineId,
-    )
-    .reduce((sum, entry) => sum + entry.quantity, 0);
+export const remainingToReserveForOrderProduct = (
+  ordered: number,
+  balances: StockBalance[],
+  orderId: string,
+  productId: string,
+): number =>
+  ordered -
+  sumShippedForOrderProduct(balances, orderId, productId) -
+  sumReservedForOwner(balances, "order", orderId, productId);
+
+export const sumReservedForLine = (balances: StockBalance[], line: CustomerOrderLine): number =>
+  sumReservedForOwner(balances, "order", line.orderId, line.productId);
+
+export const sumShippedForLine = (balances: StockBalance[], line: CustomerOrderLine): number =>
+  sumShippedForOrderProduct(balances, line.orderId, line.productId);
 
 export const openQuantityForLine = (
   ordered: number,
   balances: StockBalance[],
-  customerOrderLineId: string,
-): number => ordered - sumShippedForLine(balances, customerOrderLineId);
+  line: CustomerOrderLine,
+): number => ordered - sumShippedForLine(balances, line);
 
 export const remainingToReserve = (
   ordered: number,
   balances: StockBalance[],
-  customerOrderLineId: string,
-): number =>
-  openQuantityForLine(ordered, balances, customerOrderLineId) -
-  sumReservedForLine(balances, customerOrderLineId);
+  line: CustomerOrderLine,
+): number => remainingToReserveForOrderProduct(ordered, balances, line.orderId, line.productId);
 
 export const sumLocationState = (
   balances: StockBalance[],
@@ -150,12 +186,16 @@ export const summarizeProductStock = (
     place: StockPlaceFilter;
     stockState: StockState | "all";
     customerOrderId?: string | null;
+    ownerType?: OwnerType | null;
+    ownerId?: string | null;
   } = {
     place: { kind: "all" },
     stockState: "all",
   },
 ): ProductStockSummary[] => {
   const grouped = new Map<string, ProductStockSummary>();
+  const ownerType = filter.ownerType ?? (filter.customerOrderId ? "order" : undefined);
+  const ownerId = filter.ownerId ?? filter.customerOrderId ?? undefined;
 
   for (const entry of balances) {
     if (filter.stockState !== "all" && entry.stockState !== filter.stockState) {
@@ -164,8 +204,10 @@ export const summarizeProductStock = (
     if (!matchesPlace(entry, filter.place)) {
       continue;
     }
-    if (filter.customerOrderId && entry.customerOrderId !== filter.customerOrderId) {
-      continue;
+    if (ownerType !== undefined && ownerId !== undefined) {
+      if (!ownersEqual(entry.ownerType, entry.ownerId, ownerType, ownerId)) {
+        continue;
+      }
     }
 
     const current = grouped.get(entry.productId) ?? {

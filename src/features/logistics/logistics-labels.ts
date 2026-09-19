@@ -3,7 +3,9 @@ import type {
   DocumentStatus,
   LocationType,
   OutputStatus,
+  OwnerType,
   ProductionStatus,
+  ReservationDirection,
   SourceType,
   StockState,
   TransferStatus,
@@ -72,10 +74,20 @@ export const OUTPUT_STATUS_LABELS: Record<OutputStatus, string> = {
   cancelled: "Отменён",
 };
 
-export const RESERVATION_OPERATION_LABELS: Record<"reserve" | "release", string> = {
-  reserve: "Резерв",
-  release: "Снятие",
+export const OWNER_TYPE_LABELS: Record<OwnerType, string> = {
+  order: "Order",
+  region: "Region",
 };
+
+export const FREE_OWNER_LABEL = "Free";
+
+export const RESERVATION_DIRECTION_LABELS: Record<ReservationDirection, string> = {
+  reserve: "Reserve",
+  release: "Release",
+  reassign: "Reassign",
+};
+
+export const RESERVATION_OPERATION_LABELS = RESERVATION_DIRECTION_LABELS;
 
 export const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
   reservation: "Резерв",

@@ -21,8 +21,15 @@ export type TransferStatus = (typeof TRANSFER_STATUSES)[number];
 export const OUTPUT_STATUSES = ["planned", "done", "cancelled"] as const;
 export type OutputStatus = (typeof OUTPUT_STATUSES)[number];
 
-export const RESERVATION_OPERATIONS = ["reserve", "release"] as const;
-export type ReservationOperation = (typeof RESERVATION_OPERATIONS)[number];
+export const OWNER_TYPES = ["order", "region"] as const;
+export type OwnerType = (typeof OWNER_TYPES)[number];
+
+export const RESERVATION_DIRECTIONS = ["reserve", "release", "reassign"] as const;
+export type ReservationDirection = (typeof RESERVATION_DIRECTIONS)[number];
+
+/** Derived list-filter values. `?operation=release` still means the release direction. */
+export const RESERVATION_OPERATIONS = RESERVATION_DIRECTIONS;
+export type ReservationOperation = ReservationDirection;
 
 export const RESERVATION_ORIGINS = ["manual", "order_close"] as const;
 export type ReservationOrigin = (typeof RESERVATION_ORIGINS)[number];
@@ -69,6 +76,12 @@ export type LogisticsWarehouse = {
   manufacturerId: string | null;
 };
 
+export type LogisticsRegion = {
+  id: string;
+  code: string;
+  name: string;
+};
+
 export type LogisticsSetting = {
   id: string;
   codePrefixes: LogisticsCodePrefixes;
@@ -112,10 +125,10 @@ export type ProductionOrderLine = {
 export type Reservation = {
   id: string;
   number: string;
-  customerOrderId: string;
   locationType: ReservationLocationType;
   locationId: string;
-  operation: ReservationOperation;
+  toOwnerType: OwnerType | null;
+  toOwnerId: string | null;
   status: ReservationStatus;
   origin: ReservationOrigin;
   note: string;
@@ -126,8 +139,10 @@ export type Reservation = {
 export type ReservationLine = {
   id: string;
   reservationId: string;
-  customerOrderLineId: string;
+  productId: string;
   quantity: number;
+  fromOwnerType: OwnerType | null;
+  fromOwnerId: string | null;
 };
 
 export type Transfer = {
@@ -152,8 +167,8 @@ export type TransferLine = {
 export type TransferAllocation = {
   id: string;
   lineId: string;
-  customerOrderId: string;
-  customerOrderLineId: string;
+  ownerType: OwnerType;
+  ownerId: string;
   quantity: number;
 };
 
@@ -171,7 +186,6 @@ export type Shipment = {
 export type ShipmentLine = {
   id: string;
   shipmentId: string;
-  customerOrderLineId: string;
   productId: string;
   quantity: number;
 };
@@ -198,8 +212,8 @@ export type ProductionOutputLine = {
 export type ProductionOutputAllocation = {
   id: string;
   lineId: string;
-  customerOrderId: string;
-  customerOrderLineId: string;
+  ownerType: OwnerType;
+  ownerId: string;
   quantity: number;
 };
 
@@ -230,8 +244,8 @@ export type StockTransaction = {
   locationType: LocationType;
   locationId: string;
   stockState: StockState;
-  customerOrderId: string | null;
-  customerOrderLineId: string | null;
+  ownerType: OwnerType | null;
+  ownerId: string | null;
   sourceType: SourceType;
   sourceId: string;
   sourceLineId: string | null;
@@ -245,8 +259,8 @@ export type StockBalance = {
   locationType: LocationType;
   locationId: string;
   stockState: StockState;
-  customerOrderId: string | null;
-  customerOrderLineId: string | null;
+  ownerType: OwnerType | null;
+  ownerId: string | null;
   quantity: number;
 };
 
@@ -254,6 +268,7 @@ export type LogisticsSnapshot = {
   products: LogisticsProduct[];
   manufacturers: LogisticsManufacturer[];
   warehouses: LogisticsWarehouse[];
+  regions: LogisticsRegion[];
   settings: LogisticsSetting;
   customerOrders: CustomerOrder[];
   customerOrderLines: CustomerOrderLine[];
@@ -273,3 +288,73 @@ export type LogisticsSnapshot = {
   returnLines: ShipmentReturnLine[];
   transactions: StockTransaction[];
 };
+
+export type OwnerRef = {
+  ownerType: OwnerType | null;
+  ownerId: string | null;
+};
+
+const emptyId = (id: string | null | undefined): boolean => id == null || id === "";
+
+export const isFreeOwner = (
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): boolean => ownerType == null && emptyId(ownerId);
+
+export const ownersEqual = (
+  aType: OwnerType | null | undefined,
+  aId: string | null | undefined,
+  bType: OwnerType | null | undefined,
+  bId: string | null | undefined,
+): boolean => {
+  const aFree = isFreeOwner(aType, aId);
+  const bFree = isFreeOwner(bType, bId);
+  if (aFree || bFree) {
+    return aFree && bFree;
+  }
+  return aType === bType && String(aId) === String(bId);
+};
+
+export const ownerKey = (
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): string => (isFreeOwner(ownerType, ownerId) ? "free" : `${ownerType}:${ownerId}`);
+
+export const reservationDirection = (
+  doc: Pick<Reservation, "toOwnerType" | "toOwnerId">,
+  lines: Array<Pick<ReservationLine, "fromOwnerType" | "fromOwnerId">>,
+): ReservationDirection => {
+  if (isFreeOwner(doc.toOwnerType, doc.toOwnerId)) {
+    return "release";
+  }
+  if (lines.length > 0 && lines.every((line) => isFreeOwner(line.fromOwnerType, line.fromOwnerId))) {
+    return "reserve";
+  }
+  return "reassign";
+};
+
+export const reservationTouchesOrder = (
+  doc: Pick<Reservation, "id" | "toOwnerType" | "toOwnerId">,
+  lines: Array<Pick<ReservationLine, "reservationId" | "fromOwnerType" | "fromOwnerId">>,
+  orderId: string,
+): boolean => {
+  if (ownersEqual(doc.toOwnerType, doc.toOwnerId, "order", orderId)) {
+    return true;
+  }
+  return lines.some(
+    (line) =>
+      line.reservationId === doc.id && ownersEqual(line.fromOwnerType, line.fromOwnerId, "order", orderId),
+  );
+};
+
+export const orderLineForProduct = (
+  lines: CustomerOrderLine[],
+  orderId: string,
+  productId: string,
+): CustomerOrderLine | undefined =>
+  lines.find((line) => line.orderId === orderId && line.productId === productId);
+
+export const isOrderOwner = (
+  ownerType: OwnerType | null | undefined,
+  ownerId: string | null | undefined,
+): ownerType is "order" => ownerType === "order" && !emptyId(ownerId);

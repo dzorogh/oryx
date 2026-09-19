@@ -26,7 +26,13 @@ import {
 } from "@/features/logistics/logistics-rules";
 import type { StockTransaction } from "@/features/logistics/logistics-types";
 
-const tx = (partial: Partial<StockTransaction> & Pick<StockTransaction, "quantity" | "stockState">): StockTransaction => ({
+type TxInput = Partial<StockTransaction> &
+  Pick<StockTransaction, "quantity" | "stockState"> & {
+    customerOrderId?: string | null;
+    customerOrderLineId?: string | null;
+  };
+
+const tx = (partial: TxInput): StockTransaction => ({
   transactionId: partial.transactionId ?? `tx-${Math.random()}`,
   occurredAt: "2026-09-16T10:00:00.000Z",
   postedAt: "2026-09-16T10:00:00.000Z",
@@ -36,8 +42,8 @@ const tx = (partial: Partial<StockTransaction> & Pick<StockTransaction, "quantit
   locationType: partial.locationType ?? "warehouse",
   locationId: partial.locationId ?? "wh-nordic",
   stockState: partial.stockState,
-  customerOrderId: partial.customerOrderId ?? null,
-  customerOrderLineId: partial.customerOrderLineId ?? null,
+  ownerType: partial.ownerType ?? (partial.customerOrderId || partial.ownerId ? "order" : null),
+  ownerId: partial.ownerId ?? partial.customerOrderId ?? null,
   sourceType: partial.sourceType ?? "reservation",
   sourceId: partial.sourceId ?? "rsv-1",
   sourceLineId: null,
@@ -62,7 +68,7 @@ describe("logistics balances", () => {
     expect(balances).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ stockState: "free", quantity: 8 }),
-        expect.objectContaining({ stockState: "reserved", quantity: 4, customerOrderId: "co-205" }),
+        expect.objectContaining({ stockState: "reserved", quantity: 4, ownerType: "order", ownerId: "co-205" }),
       ]),
     );
   });
@@ -85,9 +91,9 @@ describe("logistics balances", () => {
       }),
     ]);
 
-    expect(sumReservedForLine(balances, "col-101-chair")).toBe(6);
-    expect(sumShippedForLine(balances, "col-101-chair")).toBe(3);
-    expect(remainingToReserve(10, balances, "col-101-chair")).toBe(1);
+    expect(sumReservedForLine(balances, { id: "col-101-chair", orderId: "co-101", productId: "p-chair", quantity: 10 })).toBe(6);
+    expect(sumShippedForLine(balances, { id: "col-101-chair", orderId: "co-101", productId: "p-chair", quantity: 10 })).toBe(3);
+    expect(remainingToReserve(10, balances, { id: "col-101-chair", orderId: "co-101", productId: "p-chair", quantity: 10 })).toBe(1);
   });
 
   it("sums reserved stock on a production line across customer orders", () => {
@@ -284,7 +290,7 @@ describe("logistics availability", () => {
       "tr-3",
       "pol-100-chair",
     ]);
-    expect(reservedPlacesForLine(balances, "col-101-chair")).toEqual([
+    expect(reservedPlacesForLine(balances, { id: "col-101-chair", orderId: "co-101", productId: "p-chair", quantity: 10 })).toEqual([
       expect.objectContaining({ locationId: "wh-central", quantity: 3 }),
     ]);
     expect(reservationCap(line, balances, "warehouse", "wh-nordic")).toBe(7);

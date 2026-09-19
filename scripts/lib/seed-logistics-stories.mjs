@@ -215,14 +215,34 @@ const completeOutput = async (client, { id, productionOrderId, productId, quanti
   await client.rpc("store_complete_output", { p_id: id });
 };
 
-const postReservation = async (client, { id, orderId, productId, quantity, locationType, locationId, createdAt, operation = "reserve", note = "", lines }) => {
-  const resolvedLines = lines ?? [{ id, customerOrderLineId: orderId, quantity }];
+const postReservation = async (client, {
+  id,
+  orderId,
+  productId,
+  quantity,
+  locationType,
+  locationId,
+  createdAt,
+  operation = "reserve",
+  toOwnerType,
+  toOwnerId,
+  fromOwnerType,
+  fromOwnerId,
+  note = "",
+  lines,
+}) => {
+  const isRelease = operation === "release";
+  const destType = toOwnerType !== undefined ? toOwnerType : isRelease ? null : "order";
+  const destId = toOwnerId !== undefined ? toOwnerId : isRelease ? null : orderId;
+  const sourceType = fromOwnerType !== undefined ? fromOwnerType : isRelease ? "order" : null;
+  const sourceId = fromOwnerId !== undefined ? fromOwnerId : isRelease ? orderId : null;
+  const resolvedLines = lines ?? [{ id, productId, quantity, fromOwnerType: sourceType, fromOwnerId: sourceId }];
   await client.insert("store_reservation", {
     id,
-    customer_order_id: orderId,
     location_type: locationType,
     location_id: locationId,
-    operation,
+    to_owner_type: destType,
+    to_owner_id: destId,
     origin: "manual",
     note,
     status: "draft",
@@ -232,8 +252,10 @@ const postReservation = async (client, { id, orderId, productId, quantity, locat
     await client.insert("store_reservation_line", {
       id: line.id,
       reservation_id: id,
-      customer_order_line_id: line.customerOrderLineId,
+      product_id: line.productId ?? productId,
       quantity: line.quantity,
+      from_owner_type: line.fromOwnerType !== undefined ? line.fromOwnerType : sourceType,
+      from_owner_id: line.fromOwnerId !== undefined ? line.fromOwnerId : sourceId,
     });
   }
   await client.rpc("store_post_reservation", { p_id: id });
@@ -271,8 +293,8 @@ const deliverTransfer = async (client, { id, fromWarehouseId, toWarehouseId, ord
   await client.insert("store_transfer_allocation", {
     id,
     line_id: id,
-    customer_order_id: orderId,
-    customer_order_line_id: orderId,
+    owner_type: "order",
+    owner_id: orderId,
     quantity,
   });
   await client.rpc("store_send_transfer", { p_id: id });
@@ -290,7 +312,6 @@ const postShipment = async (client, { id, orderId, warehouseId, productId, quant
   await client.insert("store_shipment_line", {
     id,
     shipment_id: id,
-    customer_order_line_id: orderId,
     product_id: productId,
     quantity,
   });
@@ -607,7 +628,7 @@ export const seedMixedDemoOrder = async (client) => {
       createdAt: "2026-09-18T16:30:00+00:00",
       lines: reserved.map((line) => ({
         id: line.id,
-        customerOrderLineId: line.id,
+        productId: line.productId,
         quantity: line.quantity,
       })),
     });
@@ -623,6 +644,19 @@ export const seedLogisticsStories = async ({ url, anon }) => {
   await seedReleaseHeavy(client);
   await seedReturnHeavy(client);
   await seedMixedDemoOrder(client);
+  await postReservation(client, {
+    id: 930,
+    productId: PRODUCT.enduro250,
+    quantity: 2,
+    locationType: "warehouse",
+    locationId: PLANT.shineray.warehouseId,
+    createdAt: "2026-09-18T18:00:00+00:00",
+    toOwnerType: "region",
+    toOwnerId: 1,
+    fromOwnerType: null,
+    fromOwnerId: null,
+    note: "Regional pool for reassign demos",
+  });
   const orders = await client.get(
     `store_customer_order?id=gte.${STORY_LO}&id=lte.${STORY_HI}&select=id&order=id.asc`,
   );

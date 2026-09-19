@@ -9,6 +9,7 @@ const emptySnapshot = (): LogisticsSnapshot => ({
   products: [],
   manufacturers: [],
   warehouses: [],
+  regions: [],
   settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
   customerOrders: [],
   customerOrderLines: [],

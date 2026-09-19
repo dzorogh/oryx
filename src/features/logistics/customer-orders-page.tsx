@@ -149,8 +149,8 @@ export const CustomerOrdersPage = () => {
         >
           {rows.map((order) => {
             const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === order.id);
-            const reserved = orderLines.reduce((sum, line) => sum + sumReservedForLine(balances, line.id), 0);
-            const shipped = orderLines.reduce((sum, line) => sum + sumShippedForLine(balances, line.id), 0);
+            const reserved = orderLines.reduce((sum, line) => sum + sumReservedForLine(balances, line), 0);
+            const shipped = orderLines.reduce((sum, line) => sum + sumShippedForLine(balances, line), 0);
             const openQty = orderLines.reduce((sum, line) => sum + remainingToReserveForLine(line, balances), 0);
             const products = orderLines
               .map((line) => productById(snapshot, line.productId)?.name ?? line.productId)
@@ -443,7 +443,7 @@ export const CustomerOrderDetailPage = () => {
 
       <DocumentLedger
         snapshot={snapshot}
-        filter={(entry) => entry.customerOrderId === order.id}
+        filter={(entry) => entry.ownerType === "order" && entry.ownerId === order.id}
         title="Движения по заказу клиента"
       />
 
@@ -455,9 +455,9 @@ export const CustomerOrderDetailPage = () => {
         reload={reload}
         mode="hub"
         preset={{
-          customerOrderId: order.id,
-          customerOrderLineId: reserveLine?.id,
-          operation: "reserve",
+          toOwnerType: "order",
+          toOwnerId: order.id,
+          productId: reserveLine?.productId,
         }}
       />
       <ShipmentForm
@@ -477,11 +477,13 @@ export const CustomerOrderDetailPage = () => {
         reload={reload}
         mode="hub"
         preset={{
-          customerOrderId: order.id,
-          customerOrderLineId: releasePlace?.line.id,
+          toOwnerType: null,
+          toOwnerId: null,
+          fromOwnerType: "order",
+          fromOwnerId: order.id,
+          productId: releasePlace?.line.productId,
           locationType: releasePlace?.locationType === "customer_order" ? undefined : releasePlace?.locationType as "warehouse" | "production_order_line" | "transfer" | undefined,
           locationId: releasePlace?.locationId,
-          operation: "release",
         }}
       />
       <ProductionFromOrderForm

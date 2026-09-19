@@ -19,6 +19,7 @@ export const LOGISTICS_PATHS = {
   reservations: logisticsPath("reservations"),
   ledger: logisticsPath("ledger"),
   warehouses: logisticsPath("warehouses"),
+  regions: logisticsPath("regions"),
   manufacturers: logisticsPath("manufacturers"),
   products: STORE_PRODUCTS_PATH,
 } as const;

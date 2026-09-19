@@ -4,14 +4,15 @@
 import { useMemo, useState } from "react";
 import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { hrefForCustomerOrder } from "@/features/logistics/logistics-availability";
+import { hrefForOwner } from "@/features/logistics/logistics-availability";
 import {
   formatSignedQuantity,
   formatTimestamp,
   LOCATION_LABELS,
   SOURCE_TYPE_LABELS,
 } from "@/features/logistics/logistics-labels";
-import { orderNumber, productById } from "@/features/logistics/logistics-lookups";
+import { ownerLabel, productById } from "@/features/logistics/logistics-lookups";
+import { isFreeOwner } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import type { SourceType } from "@/features/logistics/logistics-types";
@@ -104,10 +105,10 @@ export const LedgerPage = () => {
                   <StockStateBadge state={entry.stockState} />
                 </TableCell>
                 <TableCell className="px-3 py-2 text-sm">
-                  {entry.customerOrderId ? (
+                  {!isFreeOwner(entry.ownerType, entry.ownerId) ? (
                     <LogisticsCodeBadge
-                      code={orderNumber(snapshot, entry.customerOrderId)}
-                      href={hrefForCustomerOrder(entry.customerOrderId)}
+                      code={ownerLabel(snapshot, entry.ownerType, entry.ownerId)}
+                      href={hrefForOwner(entry.ownerType, entry.ownerId) ?? undefined}
                     />
                   ) : (
                     "—"

@@ -13,6 +13,9 @@ type QuantityFieldProps = {
   unit?: string;
   disabled?: boolean;
   id?: string;
+  emptyLabel?: string;
+  availablePrefix?: string;
+  afterActionPrefix?: string;
 };
 
 export const isAllowedQuantity = (value: string, max?: number): boolean => {
@@ -35,6 +38,9 @@ export const QuantityField = ({
   unit,
   disabled,
   id,
+  emptyLabel = "Нет доступного количества",
+  availablePrefix = "Доступно",
+  afterActionPrefix = "после действия",
 }: QuantityFieldProps) => {
   const numeric = Number(value);
   const hasMax = max != null && Number.isFinite(max);
@@ -77,9 +83,9 @@ export const QuantityField = ({
       {hasMax ? (
         <p className={`text-xs ${none ? "text-destructive" : "text-muted-foreground"}`}>
           {none
-            ? "Нет доступного количества"
-            : `Доступно ${formatQuantity(max, unit)}${
-                remaining != null && remaining >= 0 ? ` · после действия ${formatQuantity(remaining, unit)}` : ""
+            ? emptyLabel
+            : `${availablePrefix} ${formatQuantity(max, unit)}${
+                remaining != null && remaining >= 0 ? ` · ${afterActionPrefix} ${formatQuantity(remaining, unit)}` : ""
               }`}
         </p>
       ) : null}

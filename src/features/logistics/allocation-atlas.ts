@@ -1,4 +1,5 @@
 import { warehouseCode } from "@/features/logistics/logistics-lookups";
+import { ownersEqual } from "@/features/logistics/logistics-types";
 import type {
   CustomerOrderLine,
   LogisticsSnapshot,
@@ -16,19 +17,25 @@ export type LineLocationAllocation = {
 
 const isPositive = (quantity: number): boolean => quantity > ALLOCATION_ATLAS_EPSILON;
 
+const matchesOrderProduct = (
+  entry: Pick<StockBalance, "ownerType" | "ownerId" | "productId">,
+  line: Pick<CustomerOrderLine, "orderId" | "productId">,
+): boolean =>
+  ownersEqual(entry.ownerType, entry.ownerId, "order", line.orderId) && entry.productId === line.productId;
+
 export const isLineFullyShipped = (ordered: number, shipped: number): boolean =>
   shipped + ALLOCATION_ATLAS_EPSILON >= ordered;
 
 export const lineLocationAllocations = (
   balances: StockBalance[],
-  customerOrderLineId: string,
+  line: Pick<CustomerOrderLine, "orderId" | "productId">,
 ): LineLocationAllocation => {
   let inProduction = 0;
   let inTransit = 0;
   const byWarehouseId: Record<string, number> = {};
 
   for (const entry of balances) {
-    if (entry.stockState !== "reserved" || entry.customerOrderLineId !== customerOrderLineId) {
+    if (entry.stockState !== "reserved" || !matchesOrderProduct(entry, line)) {
       continue;
     }
     if (!isPositive(entry.quantity)) {
@@ -55,15 +62,18 @@ export const warehouseIdsWithReservedForOrder = (
   balances: StockBalance[],
   lines: CustomerOrderLine[],
 ): string[] => {
-  const lineIds = new Set(lines.map((line) => line.id));
+  const orderIds = new Set(lines.map((line) => line.orderId));
+  const productIds = new Set(lines.map((line) => line.productId));
   const warehouseIds = new Set<string>();
 
   for (const entry of balances) {
     if (
       entry.stockState !== "reserved" ||
       entry.locationType !== "warehouse" ||
-      entry.customerOrderLineId == null ||
-      !lineIds.has(entry.customerOrderLineId) ||
+      entry.ownerType !== "order" ||
+      entry.ownerId == null ||
+      !orderIds.has(entry.ownerId) ||
+      !productIds.has(entry.productId) ||
       !isPositive(entry.quantity)
     ) {
       continue;
@@ -78,43 +88,48 @@ export const warehouseIdsWithReservedForOrder = (
   );
 };
 
-const isReservedWarehouseOutputForLine = (
+const isReservedWarehouseOutputForOrderProduct = (
   transaction: StockTransaction,
-  customerOrderLineId: string,
+  line: Pick<CustomerOrderLine, "orderId" | "productId">,
 ): boolean =>
   transaction.sourceType === "production_output" &&
-  transaction.customerOrderLineId === customerOrderLineId &&
+  matchesOrderProduct(transaction, line) &&
   transaction.locationType === "warehouse" &&
   transaction.stockState === "reserved" &&
   Math.abs(transaction.quantity) > ALLOCATION_ATLAS_EPSILON;
 
-export const sumProducedForLine = (
+export const sumProducedForOrderProduct = (
   snapshot: LogisticsSnapshot,
-  customerOrderLineId: string,
+  orderId: string,
+  productId: string,
 ): number => {
+  const line = { orderId, productId };
   const ledgerOutputIds = new Set<string>();
   let produced = 0;
 
   for (const transaction of snapshot.transactions) {
-    if (!isReservedWarehouseOutputForLine(transaction, customerOrderLineId)) {
+    if (!isReservedWarehouseOutputForOrderProduct(transaction, line)) {
       continue;
     }
     produced += transaction.quantity;
     ledgerOutputIds.add(transaction.sourceId);
   }
 
-  const outputByLineId = new Map(snapshot.outputLines.map((line) => [line.id, line.outputId]));
+  const outputByLineId = new Map(snapshot.outputLines.map((item) => [item.id, item]));
   const outputStatusById = new Map(snapshot.outputs.map((output) => [output.id, output.status]));
 
   for (const allocation of snapshot.outputAllocations) {
-    if (allocation.customerOrderLineId !== customerOrderLineId) {
+    if (!ownersEqual(allocation.ownerType, allocation.ownerId, "order", orderId)) {
       continue;
     }
-    const outputId = outputByLineId.get(allocation.lineId);
-    if (!outputId || ledgerOutputIds.has(outputId)) {
+    const outputLine = outputByLineId.get(allocation.lineId);
+    if (!outputLine || outputLine.productId !== productId) {
       continue;
     }
-    const status = outputStatusById.get(outputId);
+    if (ledgerOutputIds.has(outputLine.outputId)) {
+      continue;
+    }
+    const status = outputStatusById.get(outputLine.outputId);
     if (status != null && status !== "done") {
       continue;
     }
@@ -123,3 +138,8 @@ export const sumProducedForLine = (
 
   return produced < 0 && produced > -ALLOCATION_ATLAS_EPSILON ? 0 : produced;
 };
+
+export const sumProducedForLine = (
+  snapshot: LogisticsSnapshot,
+  line: Pick<CustomerOrderLine, "orderId" | "productId">,
+): number => sumProducedForOrderProduct(snapshot, line.orderId, line.productId);

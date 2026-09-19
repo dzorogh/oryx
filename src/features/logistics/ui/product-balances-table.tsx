@@ -5,13 +5,13 @@ import { Fragment, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
-  hrefForCustomerOrder,
   hrefForLocation,
+  hrefForOwner,
   placeStockBreakdown,
   productPlacesByState,
 } from "@/features/logistics/logistics-availability";
 import { formatQuantity, locationKindLabel } from "@/features/logistics/logistics-labels";
-import { locationIdentity, orderNumber } from "@/features/logistics/logistics-lookups";
+import { locationIdentity, ownerLabel } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
@@ -87,18 +87,18 @@ export const ProductBalancesTable = ({
               ...breakdown.reserved
                 .slice()
                 .sort((left, right) =>
-                  orderNumber(snapshot, left.customerOrderId).localeCompare(
-                    orderNumber(snapshot, right.customerOrderId),
+                  ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(
+                    ownerLabel(snapshot, right.ownerType, right.ownerId),
                   ),
                 )
                 .map((item) => ({
-                  key: `${key}:reserved:${item.customerOrderId}:${item.customerOrderLineId ?? "line"}`,
+                  key: `${key}:reserved:${item.ownerType}:${item.ownerId}`,
                   label: (
                     <span className="inline-flex flex-wrap items-center gap-1.5">
                       Зарезервировано для
                       <LogisticsCodeBadge
-                        code={orderNumber(snapshot, item.customerOrderId)}
-                        href={hrefForCustomerOrder(item.customerOrderId)}
+                        code={ownerLabel(snapshot, item.ownerType, item.ownerId)}
+                        href={hrefForOwner(item.ownerType, item.ownerId) ?? undefined}
                       />
                     </span>
                   ),
@@ -111,18 +111,18 @@ export const ProductBalancesTable = ({
                 : breakdown.shipped
                     .slice()
                     .sort((left, right) =>
-                      orderNumber(snapshot, left.customerOrderId).localeCompare(
-                        orderNumber(snapshot, right.customerOrderId),
+                      ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(
+                        ownerLabel(snapshot, right.ownerType, right.ownerId),
                       ),
                     )
                     .map((item) => ({
-                      key: `${key}:shipped:${item.customerOrderId}:${item.customerOrderLineId ?? "line"}`,
+                      key: `${key}:shipped:${item.ownerType}:${item.ownerId}`,
                       label: (
                         <span className="inline-flex flex-wrap items-center gap-1.5">
                           Отгружено по
                           <LogisticsCodeBadge
-                            code={orderNumber(snapshot, item.customerOrderId)}
-                            href={hrefForCustomerOrder(item.customerOrderId)}
+                            code={ownerLabel(snapshot, item.ownerType, item.ownerId)}
+                            href={hrefForOwner(item.ownerType, item.ownerId) ?? undefined}
                           />
                         </span>
                       ),

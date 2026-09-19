@@ -182,7 +182,9 @@ export const ShipmentDetailPage = () => {
           </>
         }
         lines={lines.map((line) => {
-          const orderLine = store.snapshot.customerOrderLines.find((item) => item.id === line.customerOrderLineId);
+          const orderLine = store.snapshot.customerOrderLines.find(
+            (item) => item.orderId === doc?.customerOrderId && item.productId === line.productId,
+          );
           const remaining = orderLine
             ? remainingToShipForLine(orderLine, store.balances, doc?.warehouseId)
             : 0;
@@ -374,8 +376,9 @@ export const OutputsPage = () => {
           allocation:
             allocLine && Number(allocQty) > 0
               ? {
-                customerOrderId: allocLine.orderId,
-                customerOrderLineId: allocLine.id,
+                ownerType: "order" as const,
+                ownerId: allocLine.orderId,
+                productId: allocLine.productId,
                 quantity: Number(allocQty),
               }
               : undefined,

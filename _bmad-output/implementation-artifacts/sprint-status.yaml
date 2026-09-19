@@ -1,0 +1,56 @@
+# generated: 2026-09-19
+# source: _bmad-output/planning-artifacts/epics-order-and-region-reservations/epics.md
+# gate: PASS (headless; planning artifacts complete)
+
+generated: 2026-09-19
+project: oryx
+sprint: order-and-region-reservations
+source_epics: ../planning-artifacts/epics-order-and-region-reservations/epics.md
+spec: ../specs/spec-order-and-region-reservations/SPEC.md
+status: done
+
+stories:
+  - key: 1.1
+    epic: 1
+    title: store_region и owner constraints
+    status: done
+  - key: 1.2
+    epic: 1
+    title: Reservation и ledger без line claims
+    status: done
+  - key: 1.3
+    epic: 1
+    title: Posting, close, ship, move
+    status: done
+  - key: 2.1
+    epic: 2
+    title: Types, snapshot, API
+    status: done
+  - key: 2.2
+    epic: 2
+    title: Balances, availability, rules
+    status: done
+  - key: 3.1
+    epic: 3
+    title: Форма и список Reservation
+    status: done
+  - key: 3.2
+    epic: 3
+    title: Regions catalog
+    status: done
+  - key: 4.1
+    epic: 4
+    title: Stock, ledger, product/warehouse cards
+    status: done
+  - key: 4.2
+    epic: 4
+    title: Orders, shipments, transfers, production
+    status: done
+  - key: 5.1
+    epic: 5
+    title: Seed и документация
+    status: done
+  - key: 5.2
+    epic: 5
+    title: Live apply и проверки
+    status: done
