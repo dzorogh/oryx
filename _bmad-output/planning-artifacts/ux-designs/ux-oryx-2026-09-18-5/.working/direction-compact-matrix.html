@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compact Matrix — Oryx Stock</title>
+  <style>
+    /*
+      Compact Matrix palette:
+      canvas #eceef0; paper #ffffff; ink #17191c; secondary ink #626870;
+      hairline #d8dce0; soft hairline #e8eaec; band #f4f5f6;
+      stronger band #e7e9eb; selected #24282d; selected text #ffffff;
+      panel fill #f8f9f9; focus/selection #eef2f5.
+
+      Governing visual spine sections:
+      DESIGN.md §Brand & Style, §Colors, §Typography, §Layout & Spacing,
+      §Components, and §Do's and Don'ts.
+      Governing behavior/content spine sections:
+      EXPERIENCE.md §Foundation, §Information Architecture, §Products,
+      §State Patterns, and §Accessibility Floor.
+    */
+    :root {
+      color-scheme: light;
+      --canvas: #eceef0;
+      --paper: #ffffff;
+      --ink: #17191c;
+      --secondary: #626870;
+      --hairline: #d8dce0;
+      --hairline-soft: #e8eaec;
+      --band: #f4f5f6;
+      --band-strong: #e7e9eb;
+      --selected: #24282d;
+      --selected-text: #ffffff;
+      --panel: #f8f9f9;
+      --selection: #eef2f5;
+      --shadow: 0 12px 36px rgba(23, 25, 28, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    html { background: var(--canvas); }
+
+    body {
+      min-width: 1180px;
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.35;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input,
+    select { font: inherit; }
+
+    .direction-intro {
+      width: min(1540px, calc(100% - 48px));
+      margin: 24px auto 14px;
+    }
+
+    .direction-kicker {
+      margin: 0 0 4px;
+      color: var(--secondary);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .direction-intro h1 {
+      margin: 0 0 5px;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: -.025em;
+    }
+
+    .direction-intro p {
+      max-width: 1040px;
+      margin: 0;
+      color: #4f555c;
+      font-size: 12px;
+    }
+
+    .direction-intro p + p { margin-top: 2px; }
+
+    .application-frame {
+      width: min(1540px, calc(100% - 48px));
+      margin: 0 auto 30px;
+      overflow: hidden;
+      border: 1px solid #cbd0d5;
+      border-radius: 9px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .window-bar {
+      display: grid;
+      grid-template-columns: 120px 1fr 120px;
+      align-items: center;
+      height: 32px;
+      padding: 0 11px;
+      border-bottom: 1px solid var(--hairline);
+      background: #f7f8f8;
+    }
+
+    .window-dots { display: flex; gap: 6px; }
+
+    .window-dots span {
+      width: 8px;
+      height: 8px;
+      border: 1px solid #bfc4c9;
+      border-radius: 50%;
+      background: #e5e7e9;
+    }
+
+    .window-title {
+      color: #6a7077;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 164px minmax(0, 1fr);
+      min-height: 784px;
+      background: var(--paper);
+    }
+
+    .side-nav {
+      border-right: 1px solid var(--hairline);
+      background: #f7f8f8;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      height: 45px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--hairline);
+      font-size: 14px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+
+    .brand-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      border-radius: 4px;
+      color: #ffffff;
+      background: var(--selected);
+      font-size: 10px;
+    }
+
+    .nav-section {
+      padding: 13px 8px 4px;
+      color: #858a90;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      min-height: 28px;
+      margin: 1px 6px;
+      padding: 0 8px;
+      border-radius: 4px;
+      color: #52575d;
+      text-decoration: none;
+    }
+
+    .nav-item::before {
+      content: "";
+      width: 11px;
+      height: 11px;
+      margin-right: 8px;
+      border: 1px solid #aeb3b8;
+      border-radius: 2px;
+      background: #ffffff;
+    }
+
+    .nav-item.active {
+      color: var(--ink);
+      background: #e9ecee;
+      font-weight: 650;
+    }
+
+    .nav-item.active::before {
+      border-color: #5f656b;
+      background: #5f656b;
+      box-shadow: inset 0 0 0 3px #e9ecee;
+    }
+
+    .page {
+      min-width: 0;
+      background: #f5f6f7;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 45px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--hairline);
+      background: var(--paper);
+    }
+
+    .crumbs {
+      color: var(--secondary);
+      font-size: 10px;
+    }
+
+    .crumbs strong { color: var(--ink); font-weight: 600; }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--secondary);
+      font-size: 10px;
+    }
+
+    .avatar {
+      display: inline-grid;
+      place-items: center;
+      width: 23px;
+      height: 23px;
+      border: 1px solid #cbd0d5;
+      border-radius: 50%;
+      color: #44494f;
+      background: #f3f4f5;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .page-body { padding: 13px 14px 16px; }
+
+    .page-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 9px;
+    }
+
+    .page-heading h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+      letter-spacing: -.018em;
+    }
+
+    .page-heading p {
+      margin: 2px 0 0;
+      color: var(--secondary);
+      font-size: 10px;
+    }
+
+    .snapshot {
+      color: var(--secondary);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stock-workspace { position: relative; }
+
+    .toolbar {
+      border: 1px solid var(--hairline);
+      background: var(--paper);
+    }
+
+    .tabs {
+      display: flex;
+      align-items: flex-end;
+      min-height: 34px;
+      margin: 0;
+      padding: 0 9px;
+      border: 0;
+      border-bottom: 1px solid var(--hairline);
+      min-inline-size: 0;
+    }
+
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 11px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      color: #626870;
+      background: transparent;
+      font-size: 10.5px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    #group-products:checked ~ .toolbar .tab[for="group-products"],
+    #group-warehouses:checked ~ .toolbar .tab[for="group-warehouses"],
+    #group-regions:checked ~ .toolbar .tab[for="group-regions"] {
+      border-bottom-color: var(--selected);
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    #group-products:focus-visible ~ .toolbar .tab[for="group-products"],
+    #group-warehouses:focus-visible ~ .toolbar .tab[for="group-warehouses"],
+    #group-regions:focus-visible ~ .toolbar .tab[for="group-regions"] {
+      box-shadow: inset 0 0 0 2px #24282d;
+    }
+
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 39px;
+      padding: 5px 8px;
+    }
+
+    .search {
+      width: 280px;
+      height: 27px;
+      padding: 0 9px;
+      border: 1px solid #cfd3d7;
+      border-radius: 3px;
+      color: var(--ink);
+      background: #ffffff;
+      outline: none;
+    }
+
+    .search::placeholder { color: #9a9fa4; }
+
+    .filters-toggle,
+    .filter-close,
+    .panel-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cfd3d7;
+      border-radius: 3px;
+      background: #ffffff;
+      color: #3f454b;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .filters-toggle {
+      height: 27px;
+      padding: 0 8px;
+      font-size: 10.5px;
+      font-weight: 650;
+    }
+
+    #filters-open:checked ~ .toolbar .filters-toggle {
+      border-color: #aeb4ba;
+      background: var(--selection);
+    }
+
+    .filters-toggle:focus-visible,
+    .filter-close:focus-visible,
+    #filters-open:focus-visible ~ .toolbar .filters-toggle {
+      outline: 2px solid #24282d;
+      outline-offset: 2px;
+    }
+
+    .workspace-body {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      min-width: 0;
+    }
+
+    #filters-open:checked ~ .workspace-body {
+      grid-template-columns: minmax(0, 1fr) 280px;
+    }
+
+    .table-stack { min-width: 0; }
+
+    .view-panel { display: none; }
+
+    #group-products:checked ~ .workspace-body #panel-products,
+    #group-warehouses:checked ~ .workspace-body #panel-warehouses,
+    #group-regions:checked ~ .workspace-body #panel-regions {
+      display: block;
+    }
+
+    .matrix-card {
+      margin-top: 9px;
+      min-width: 0;
+      border: 1px solid var(--hairline);
+      background: var(--paper);
+    }
+
+    .matrix-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 34px;
+      padding: 0 9px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .matrix-meta strong { font-size: 11px; }
+
+    .count {
+      margin-left: 6px;
+      color: var(--secondary);
+      font-size: 9.5px;
+      font-weight: 400;
+    }
+
+    .axis-note {
+      color: var(--secondary);
+      font-size: 9px;
+    }
+
+    .axis-note b {
+      color: #454b51;
+      font-weight: 650;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-spacing: 0;
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .products-table,
+    .grouped-table { min-width: 860px; }
+
+    th,
+    td {
+      height: 32px;
+      padding: 5px 8px;
+      border-right: 1px solid var(--hairline-soft);
+      border-bottom: 1px solid var(--hairline-soft);
+      background: #ffffff;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th:last-child,
+    td:last-child { border-right: 0; }
+
+    tbody tr:last-child th,
+    tbody tr:last-child td { border-bottom: 0; }
+
+    tbody tr:hover th,
+    tbody tr:hover td { background: #fafbfb; }
+
+    thead th {
+      height: 29px;
+      color: #4d5359;
+      background: #f7f8f8;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    thead .group-row th {
+      height: 25px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+      border-bottom-color: #cfd3d7;
+      color: #3f454b;
+      background: var(--band-strong);
+      text-align: center;
+      font-size: 8.5px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    thead .group-row .identity { text-align: left; }
+
+    .section-row th {
+      height: 24px;
+      padding-top: 6px;
+      color: #3f454b;
+      background: var(--band-strong);
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    tbody tr.section-row:hover th { background: var(--band-strong); }
+
+    .sticky-product {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      width: 188px;
+      min-width: 188px;
+      box-shadow: 1px 0 0 #cfd3d7;
+    }
+
+    thead .sticky-product { z-index: 3; background: #f7f8f8; }
+    thead .group-row .sticky-product { background: var(--band-strong); }
+    tbody .section-row .sticky-product { background: var(--band-strong); }
+
+    .product {
+      color: var(--ink);
+      font-weight: 650;
+    }
+
+    .sub {
+      display: block;
+      margin-top: 1px;
+      color: #7a8086;
+      font-size: 8.5px;
+      font-weight: 400;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 9px;
+    }
+
+    .num {
+      min-width: 72px;
+      text-align: right;
+    }
+
+    .num strong { font-weight: 750; }
+    .uom { margin-left: 2px; color: #81878d; font-size: 8px; }
+
+    .group-start { border-left: 2px solid #aeb4ba !important; }
+
+    .sort::after {
+      content: " ↑";
+      color: #70767c;
+      font-weight: 700;
+    }
+
+    .table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 31px;
+      padding: 0 9px;
+      border-top: 1px solid var(--hairline);
+      color: var(--secondary);
+      background: #fafbfb;
+      font-size: 9px;
+    }
+
+    .pager {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .page-button {
+      display: inline-grid;
+      place-items: center;
+      min-width: 22px;
+      height: 21px;
+      border: 1px solid #cfd3d7;
+      border-radius: 2px;
+      color: #4f555b;
+      background: #ffffff;
+    }
+
+    .page-button.active {
+      border-color: var(--selected);
+      color: var(--selected-text);
+      background: var(--selected);
+    }
+
+    .filter-panel {
+      display: none;
+      flex-direction: column;
+      min-width: 0;
+      margin-top: 9px;
+      border: 1px solid #aeb4ba;
+      border-left-width: 2px;
+      background: #ffffff;
+      box-shadow: -8px 0 18px rgba(23, 25, 28, .06);
+    }
+
+    #filters-open:checked ~ .workspace-body .filter-panel { display: flex; }
+
+    .filter-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 40px;
+      padding: 0 10px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .filter-head h3 {
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: -.01em;
+    }
+
+    .filter-close {
+      height: 22px;
+      padding: 0 7px;
+      font-size: 8.5px;
+      font-weight: 650;
+    }
+
+    .filter-body {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      padding: 12px 10px;
+    }
+
+    .filter-set {
+      display: none;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    #group-products:checked ~ .workspace-body .filter-set-products,
+    #group-warehouses:checked ~ .workspace-body .filter-set-warehouses,
+    #group-regions:checked ~ .workspace-body .filter-set-regions {
+      display: flex;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-field span {
+      color: #4f555b;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .select {
+      height: 27px;
+      padding: 0 24px 0 8px;
+      border: 1px solid #cfd3d7;
+      border-radius: 3px;
+      color: #444a50;
+      background: #ffffff;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: auto;
+      padding: 10px;
+      border-top: 1px solid var(--hairline);
+      background: #fafbfb;
+    }
+
+    .panel-action {
+      min-height: 25px;
+      padding: 0 9px;
+      font-size: 9px;
+    }
+
+    .panel-action.primary {
+      border-color: var(--selected);
+      color: #ffffff;
+      background: var(--selected);
+    }
+
+    @media (max-width: 1100px) {
+      #filters-open:checked ~ .workspace-body {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .filter-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        width: min(280px, 100%);
+        margin-top: 9px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="direction-intro">
+    <div class="direction-kicker">Design direction 01</div>
+    <h1>Compact Matrix</h1>
+    <p>Compact Matrix treats Stock as a calm operational worksheet: thin rules, short controls, fixed numeric columns, and strong two-level headers make dense comparison feel deliberate rather than crowded.</p>
+    <p>Three grouping modes rearrange the same on-hand balances: by product, by warehouse, and by region-owned reserve. Owner and location type remain two cuts of one quantity and must not be added across groups.</p>
+  </header>
+
+  <div class="application-frame">
+    <div class="window-bar" aria-hidden="true">
+      <div class="window-dots"><span></span><span></span><span></span></div>
+      <div class="window-title">Oryx · Stock</div>
+      <div></div>
+    </div>
+
+    <div class="app-shell">
+      <aside class="side-nav" aria-label="Primary navigation">
+        <div class="brand"><span class="brand-mark">O</span>Oryx</div>
+        <div class="nav-section">Workspace</div>
+        <a class="nav-item" href="#">Home</a>
+        <a class="nav-item" href="#">Pulse</a>
+        <div class="nav-section">Store</div>
+        <a class="nav-item" href="#">Catalog</a>
+        <a class="nav-item" href="#">Orders</a>
+        <a class="nav-item active" href="#">Logistics</a>
+        <a class="nav-item" href="#">Documents</a>
+        <div class="nav-section">Manage</div>
+        <a class="nav-item" href="#">Teams</a>
+        <a class="nav-item" href="#">Settings</a>
+      </aside>
+
+      <main class="page">
+        <div class="topbar">
+          <div class="crumbs">Store&nbsp;&nbsp;/&nbsp;&nbsp;Logistics&nbsp;&nbsp;/&nbsp;&nbsp;<strong>Stock</strong></div>
+          <div class="top-actions"><span>Internal operations</span><span class="avatar">AM</span></div>
+        </div>
+
+        <div class="page-body">
+          <div class="page-heading">
+            <div>
+              <h2>Stock</h2>
+              <p>On-hand balances grouped by product, warehouse, or region.</p>
+            </div>
+            <div class="snapshot">Snapshot · Sep 19, 2026 · 15:42</div>
+          </div>
+
+          <div class="stock-workspace">
+            <input class="visually-hidden" type="checkbox" id="filters-open" tabindex="-1">
+            <input class="visually-hidden" type="radio" name="stock-group" id="group-products" checked>
+            <input class="visually-hidden" type="radio" name="stock-group" id="group-warehouses">
+            <input class="visually-hidden" type="radio" name="stock-group" id="group-regions">
+
+            <section class="toolbar" aria-label="Stock controls">
+              <fieldset class="tabs">
+                <legend class="visually-hidden">Balance grouping</legend>
+                <label class="tab" for="group-products">Products</label>
+                <label class="tab" for="group-warehouses">Warehouses</label>
+                <label class="tab" for="group-regions">Regions</label>
+              </fieldset>
+              <div class="toolbar-row">
+                <input class="search" type="search" placeholder="Search products, warehouses, or regions" aria-label="Search products, warehouses, or regions">
+                <label class="filters-toggle" for="filters-open" role="button" tabindex="0">Filters</label>
+              </div>
+            </section>
+
+            <div class="workspace-body">
+              <div class="table-stack">
+                <section class="view-panel matrix-card" id="panel-products" aria-labelledby="products-title">
+                  <div class="matrix-meta">
+                    <div><strong id="products-title">Products</strong><span class="count">8 products</span></div>
+                    <div class="axis-note"><b>Two independent quantity views:</b> owner and location type describe the same on-hand quantity — do not add across groups.</div>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="products-table">
+                      <thead>
+                        <tr class="group-row">
+                          <th class="sticky-product identity" scope="col" rowspan="2"><span class="sort">Product</span></th>
+                          <th scope="colgroup" colspan="3">Owner</th>
+                          <th class="group-start" scope="colgroup" colspan="3">Location type</th>
+                        </tr>
+                        <tr>
+                          <th class="num" scope="col">Free</th>
+                          <th class="num" scope="col">Region reserve</th>
+                          <th class="num" scope="col">Order reserve</th>
+                          <th class="num group-start" scope="col">Warehouses</th>
+                          <th class="num" scope="col">Production</th>
+                          <th class="num" scope="col">Transfers</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">CR 125</span><span class="sub mono">PRD-108</span></th>
+                          <td class="num"><strong>22</strong><span class="uom">pcs</span></td>
+                          <td class="num">10<span class="uom">pcs</span></td>
+                          <td class="num">12<span class="uom">pcs</span></td>
+                          <td class="num group-start">22<span class="uom">pcs</span></td>
+                          <td class="num">22<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Cross 180 RX</span><span class="sub mono">PRD-17</span></th>
+                          <td class="num"><strong>4</strong><span class="uom">pcs</span></td>
+                          <td class="num">8<span class="uom">pcs</span></td>
+                          <td class="num">3<span class="uom">pcs</span></td>
+                          <td class="num group-start">14<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">1<span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Cruiser 300 FJ</span><span class="sub mono">PRD-36</span></th>
+                          <td class="num"><strong>2</strong><span class="uom">pcs</span></td>
+                          <td class="num">4<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num group-start">6<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Enduro 125</span><span class="sub mono">PRD-75</span></th>
+                          <td class="num"><strong>2</strong><span class="uom">pcs</span></td>
+                          <td class="num">20<span class="uom">pcs</span></td>
+                          <td class="num">23<span class="uom">pcs</span></td>
+                          <td class="num group-start">0<span class="uom">pcs</span></td>
+                          <td class="num">45<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Enduro 250</span><span class="sub mono">PRD-22</span></th>
+                          <td class="num"><strong>8</strong><span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num group-start">8<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Force 1000 Ranger</span><span class="sub mono">PRD-117</span></th>
+                          <td class="num"><strong>1</strong><span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num group-start">0<span class="uom">pcs</span></td>
+                          <td class="num">1<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Force 1100 EFI</span><span class="sub mono">PRD-1</span></th>
+                          <td class="num"><strong>0</strong><span class="uom">pcs</span></td>
+                          <td class="num">6<span class="uom">pcs</span></td>
+                          <td class="num">2<span class="uom">pcs</span></td>
+                          <td class="num group-start">8<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Hummer 320 RX LTD</span><span class="sub mono">PRD-46</span></th>
+                          <td class="num"><strong>3</strong><span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">1<span class="uom">pcs</span></td>
+                          <td class="num group-start">3<span class="uom">pcs</span></td>
+                          <td class="num">1<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-footer">
+                    <span>Showing 8 of 8 products · Each quantity includes its measure inline · 0 is shown</span>
+                    <span class="pager"><span class="page-button active">1</span></span>
+                  </div>
+                </section>
+
+                <section class="view-panel matrix-card" id="panel-warehouses" aria-labelledby="warehouses-title">
+                  <div class="matrix-meta">
+                    <div><strong id="warehouses-title">Warehouse groups</strong><span class="count">7 rows</span></div>
+                    <div class="axis-note">Grouped by warehouse; each row remains one product and unit.</div>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="grouped-table">
+                      <thead>
+                        <tr>
+                          <th class="sticky-product" scope="col">Product</th>
+                          <th class="num" scope="col">Free</th>
+                          <th class="num" scope="col">Region reserve</th>
+                          <th class="num" scope="col">Order reserve</th>
+                          <th class="num" scope="col">On hand</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="section-row"><th class="sticky-product" scope="colgroup" colspan="5">WH-2 · Dubai Hub</th></tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">CR 125</span><span class="sub mono">PRD-108</span></th>
+                          <td class="num">12<span class="uom">pcs</span></td>
+                          <td class="num">4<span class="uom">pcs</span></td>
+                          <td class="num">6<span class="uom">pcs</span></td>
+                          <td class="num"><strong>22</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Cross 180 RX</span><span class="sub mono">PRD-17</span></th>
+                          <td class="num">2<span class="uom">pcs</span></td>
+                          <td class="num">8<span class="uom">pcs</span></td>
+                          <td class="num">2<span class="uom">pcs</span></td>
+                          <td class="num"><strong>12</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Cruiser 300 FJ</span><span class="sub mono">PRD-36</span></th>
+                          <td class="num">2<span class="uom">pcs</span></td>
+                          <td class="num">4<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>6</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Hummer 320 RX LTD</span><span class="sub mono">PRD-46</span></th>
+                          <td class="num">3<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">1<span class="uom">pcs</span></td>
+                          <td class="num"><strong>4</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr class="section-row"><th class="sticky-product" scope="colgroup" colspan="5">WH-6 · Central warehouse</th></tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Cross 180 RX</span><span class="sub mono">PRD-17</span></th>
+                          <td class="num">2<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>2</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Enduro 250</span><span class="sub mono">PRD-22</span></th>
+                          <td class="num">8<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>8</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr class="section-row"><th class="sticky-product" scope="colgroup" colspan="5">WH-1 · Factory gate</th></tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Force 1100 EFI</span><span class="sub mono">PRD-1</span></th>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">6<span class="uom">pcs</span></td>
+                          <td class="num">2<span class="uom">pcs</span></td>
+                          <td class="num"><strong>8</strong><span class="uom">pcs</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-footer">
+                    <span>Showing 7 of 7 rows · On hand is the owner sum for that product at that warehouse</span>
+                    <span class="pager"><span class="page-button active">1</span></span>
+                  </div>
+                </section>
+
+                <section class="view-panel matrix-card" id="panel-regions" aria-labelledby="regions-title">
+                  <div class="matrix-meta">
+                    <div><strong id="regions-title">Region groups</strong><span class="count">8 rows</span></div>
+                    <div class="axis-note">Grouped by region; only region-owned reserve is included.</div>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="grouped-table">
+                      <thead>
+                        <tr>
+                          <th class="sticky-product" scope="col">Product</th>
+                          <th class="num" scope="col">Warehouses</th>
+                          <th class="num" scope="col">Production</th>
+                          <th class="num" scope="col">Transfers</th>
+                          <th class="num" scope="col">Region reserve</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="section-row"><th class="sticky-product" scope="colgroup" colspan="5">REG-1 · United Arab Emirates</th></tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Cross 180 RX</span><span class="sub mono">PRD-17</span></th>
+                          <td class="num">8<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>8</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Cruiser 300 FJ</span><span class="sub mono">PRD-36</span></th>
+                          <td class="num">4<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>4</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">CR 125</span><span class="sub mono">PRD-108</span></th>
+                          <td class="num">4<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>4</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Enduro 125</span><span class="sub mono">PRD-75</span></th>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">4<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>4</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr class="section-row"><th class="sticky-product" scope="colgroup" colspan="5">REG-2 · Russia</th></tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Force 1100 EFI</span><span class="sub mono">PRD-1</span></th>
+                          <td class="num">6<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>6</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Enduro 125</span><span class="sub mono">PRD-75</span></th>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">8<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>8</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">CR 125</span><span class="sub mono">PRD-108</span></th>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">6<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>6</strong><span class="uom">pcs</span></td>
+                        </tr>
+                        <tr class="section-row"><th class="sticky-product" scope="colgroup" colspan="5">REG-3 · Kazakhstan</th></tr>
+                        <tr>
+                          <th class="sticky-product" scope="row"><span class="product">Enduro 125</span><span class="sub mono">PRD-75</span></th>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num">8<span class="uom">pcs</span></td>
+                          <td class="num">0<span class="uom">pcs</span></td>
+                          <td class="num"><strong>8</strong><span class="uom">pcs</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-footer">
+                    <span>Showing 8 of 8 rows · Region reserve is the location sum for that product in that region</span>
+                    <span class="pager"><span class="page-button active">1</span></span>
+                  </div>
+                </section>
+              </div>
+
+              <aside class="filter-panel" aria-labelledby="filters-title">
+                <div class="filter-head">
+                  <h3 id="filters-title">Filters</h3>
+                  <label class="filter-close" for="filters-open" role="button" tabindex="0">Close</label>
+                </div>
+                <div class="filter-body">
+                  <div class="filter-set filter-set-products">
+                    <label class="filter-field">
+                      <span>Owner class</span>
+                      <select class="select" aria-label="Owner class">
+                        <option>All owner classes</option>
+                        <option>Free</option>
+                        <option>Region reserve</option>
+                        <option>Order reserve</option>
+                      </select>
+                    </label>
+                    <label class="filter-field">
+                      <span>Location type</span>
+                      <select class="select" aria-label="Location type">
+                        <option>All location types</option>
+                        <option>Warehouses</option>
+                        <option>Production</option>
+                        <option>Transfers</option>
+                      </select>
+                    </label>
+                    <label class="filter-field">
+                      <span>Region</span>
+                      <select class="select" aria-label="Region">
+                        <option>All regions</option>
+                        <option>REG-1 United Arab Emirates</option>
+                        <option>REG-2 Russia</option>
+                        <option>REG-3 Kazakhstan</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="filter-set filter-set-warehouses">
+                    <label class="filter-field">
+                      <span>Warehouse</span>
+                      <select class="select" aria-label="Warehouse">
+                        <option>All warehouses</option>
+                        <option>WH-2 Dubai Hub</option>
+                        <option>WH-6 Central warehouse</option>
+                        <option>WH-1 Factory gate</option>
+                      </select>
+                    </label>
+                    <label class="filter-field">
+                      <span>Owner class</span>
+                      <select class="select" aria-label="Owner class">
+                        <option>All owner classes</option>
+                        <option>Free</option>
+                        <option>Region reserve</option>
+                        <option>Order reserve</option>
+                      </select>
+                    </label>
+                    <label class="filter-field">
+                      <span>Region</span>
+                      <select class="select" aria-label="Region">
+                        <option>All regions</option>
+                        <option>REG-1 United Arab Emirates</option>
+                        <option>REG-2 Russia</option>
+                        <option>REG-3 Kazakhstan</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="filter-set filter-set-regions">
+                    <label class="filter-field">
+                      <span>Region</span>
+                      <select class="select" aria-label="Region">
+                        <option>All regions</option>
+                        <option>REG-1 United Arab Emirates</option>
+                        <option>REG-2 Russia</option>
+                        <option>REG-3 Kazakhstan</option>
+                      </select>
+                    </label>
+                    <label class="filter-field">
+                      <span>Location type</span>
+                      <select class="select" aria-label="Location type">
+                        <option>All location types</option>
+                        <option>Warehouses</option>
+                        <option>Production</option>
+                        <option>Transfers</option>
+                      </select>
+                    </label>
+                    <label class="filter-field">
+                      <span>Warehouse</span>
+                      <select class="select" aria-label="Warehouse">
+                        <option>All warehouses</option>
+                        <option>WH-2 Dubai Hub</option>
+                        <option>WH-6 Central warehouse</option>
+                        <option>WH-1 Factory gate</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <div class="filter-actions">
+                  <button class="panel-action" type="button">Reset</button>
+                  <button class="panel-action primary" type="button">Apply filters</button>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

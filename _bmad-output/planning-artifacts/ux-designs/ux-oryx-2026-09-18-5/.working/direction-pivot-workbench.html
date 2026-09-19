@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oryx Stock — Pivot Workbench</title>
+  <style>
+    /*
+      Pivot Workbench palette (hex):
+      canvas #f3f4f6, surface #ffffff, ink #17181b, muted ink #676b73,
+      line #d8dae0, soft line #e9eaed, quiet fill #f7f7f8,
+      selected #25272b, selected ink #ffffff, focus #8b9099,
+      negative #b42318, negative wash #fff8f7, dimension tint #f0f2f5.
+    */
+
+    /* Spine · Foundation — system type, Oryx neutrals, full-width desktop work surface. */
+    :root {
+      color-scheme: light;
+      --canvas: #f3f4f6;
+      --surface: #ffffff;
+      --ink: #17181b;
+      --muted-ink: #676b73;
+      --line: #d8dae0;
+      --soft-line: #e9eaed;
+      --quiet: #f7f7f8;
+      --selected: #25272b;
+      --selected-ink: #ffffff;
+      --focus: #8b9099;
+      --negative: #b42318;
+      --negative-wash: #fff8f7;
+      --dimension: #f0f2f5;
+      --radius: 10px;
+      --shadow: 0 1px 2px rgba(23, 24, 27, .045);
+      --panel-shadow: -12px 0 30px rgba(23, 24, 27, .10);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; }
+    a { color: inherit; }
+
+    /* Spine · Information Architecture — five CSS-only views, Locations selected by default. */
+    .view-radio,
+    .panel-toggle {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .direction-note {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 11px 16px;
+      border-bottom: 1px solid #d8dae0;
+      background: #ffffff;
+    }
+    .direction-note strong {
+      flex: none;
+      font-size: 12px;
+      letter-spacing: -.01em;
+    }
+    .direction-note p {
+      max-width: 980px;
+      margin: 0;
+      color: var(--muted-ink);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .app {
+      width: 100%;
+      min-height: calc(100vh - 48px);
+      padding: 16px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 22px;
+      margin: 0 2px 10px;
+      color: var(--muted-ink);
+      font-size: 12px;
+    }
+    .breadcrumb a { text-decoration: none; }
+    .breadcrumb a:hover { color: var(--ink); }
+    .breadcrumb .chevron { color: #a0a3aa; font-size: 15px; }
+    .breadcrumb [aria-current="page"] { color: var(--ink); }
+
+    .toolbar,
+    .workbench {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar { overflow: hidden; }
+    .toolbar-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 15px 16px 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      margin: 0 0 3px;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 660;
+      letter-spacing: -.018em;
+    }
+    .toolbar-heading p {
+      margin: 0;
+      color: var(--muted-ink);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .snapshot {
+      flex: none;
+      padding-top: 3px;
+      color: var(--muted-ink);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    .toolbar-body { padding: 13px 16px 14px; }
+    .tab-scroll,
+    .filter-scroll,
+    .dimension-scroll,
+    .table-scroll {
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #d4d6db transparent;
+    }
+    .tabs {
+      display: flex;
+      width: max-content;
+      min-width: 100%;
+      gap: 4px;
+    }
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      min-height: 31px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: #50535a;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 560;
+    }
+    .tab:hover { background: var(--quiet); color: var(--ink); }
+    #view-products:checked ~ .app label[for="view-products"],
+    #view-locations:checked ~ .app label[for="view-locations"],
+    #view-demand:checked ~ .app label[for="view-demand"],
+    #view-processes:checked ~ .app label[for="view-processes"],
+    #view-ledger:checked ~ .app label[for="view-ledger"] {
+      border-color: var(--selected);
+      background: var(--selected);
+      color: var(--selected-ink);
+    }
+
+    /* Spine · Component Patterns — one adaptable filter row per view. */
+    .filters {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      width: max-content;
+      min-width: 100%;
+      padding-top: 9px;
+    }
+    #view-products:checked ~ .app .filters-products,
+    #view-locations:checked ~ .app .filters-locations,
+    #view-demand:checked ~ .app .filters-demand,
+    #view-processes:checked ~ .app .filters-processes,
+    #view-ledger:checked ~ .app .filters-ledger { display: flex; }
+
+    .search-wrap {
+      position: relative;
+      flex: 1 1 330px;
+      min-width: 285px;
+      max-width: 430px;
+    }
+    .search-wrap::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 9px;
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid #92959d;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .search-wrap::after {
+      content: "";
+      position: absolute;
+      left: 20px;
+      top: 19px;
+      width: 5px;
+      height: 1.5px;
+      background: #92959d;
+      transform: rotate(45deg);
+      transform-origin: left center;
+      pointer-events: none;
+    }
+    .search,
+    .control {
+      height: 33px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: #292b30;
+      background: #ffffff;
+      outline: none;
+    }
+    .search {
+      width: 100%;
+      padding: 0 11px 0 31px;
+    }
+    .search::placeholder { color: #989ba2; }
+    .control {
+      min-width: 138px;
+      padding: 0 28px 0 10px;
+    }
+    .search:focus,
+    .control:focus {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 2px rgba(139, 144, 153, .18);
+    }
+    .filter-chip,
+    .fact {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #4e5158;
+      background: #ffffff;
+      white-space: nowrap;
+    }
+    .filter-chip {
+      min-height: 31px;
+      gap: 6px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+    .filter-chip::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border: 1px solid #93969d;
+      border-radius: 50%;
+    }
+    .reset {
+      padding: 0 6px;
+      border: 0;
+      color: var(--muted-ink);
+      background: transparent;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+
+    .workspace { margin-top: 16px; }
+    .view { display: none; }
+    #view-products:checked ~ .app .view-products,
+    #view-locations:checked ~ .app .view-locations,
+    #view-demand:checked ~ .app .view-demand,
+    #view-processes:checked ~ .app .view-processes,
+    #view-ledger:checked ~ .app .view-ledger { display: block; }
+
+    /* Spine · Locations — dimension strip exposes row grain before the grouped table. */
+    .workbench { overflow: hidden; }
+    .dimension-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 50px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--dimension);
+    }
+    .dimension-set {
+      display: flex;
+      align-items: center;
+      width: max-content;
+      gap: 7px;
+    }
+    .dimension {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border: 1px solid #d2d5db;
+      border-radius: 7px;
+      background: #ffffff;
+      box-shadow: 0 1px 1px rgba(23, 24, 27, .03);
+      color: #33363b;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+    .dimension b {
+      margin-right: 5px;
+      color: #70747b;
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: .025em;
+      text-transform: uppercase;
+    }
+    .dimension-arrow { color: #8b8e95; }
+    .grain-note {
+      flex: none;
+      color: var(--muted-ink);
+      font-size: 10.5px;
+      white-space: nowrap;
+    }
+
+    .workbench-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 365px;
+      min-height: 570px;
+    }
+    .table-pane { min-width: 0; }
+    .table-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 47px;
+      gap: 16px;
+      padding: 9px 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    .table-title {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 660;
+    }
+    .row-count {
+      color: var(--muted-ink);
+      font-weight: 450;
+    }
+    .grain-caption {
+      color: var(--muted-ink);
+      font-size: 10.5px;
+      text-align: right;
+    }
+
+    table {
+      width: 100%;
+      min-width: 940px;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 12px;
+    }
+    .products-table { min-width: 1240px; }
+    th, td {
+      height: 45px;
+      padding: 9px 13px;
+      border-bottom: 1px solid var(--soft-line);
+      background: #ffffff;
+      vertical-align: middle;
+      text-align: left;
+      white-space: nowrap;
+    }
+    thead th {
+      height: 38px;
+      color: #565a61;
+      background: #fafafa;
+      font-size: 10.5px;
+      font-weight: 650;
+      letter-spacing: .01em;
+    }
+    thead .group-head th {
+      height: 29px;
+      padding-top: 6px;
+      padding-bottom: 4px;
+      color: #72767d;
+      background: #f6f6f7;
+      text-align: center;
+      font-size: 9.5px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    tbody tr:hover th,
+    tbody tr:hover td { background: #fafafa; }
+    .sticky {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      min-width: 205px;
+      box-shadow: 1px 0 0 var(--line), 8px 0 12px -14px rgba(23, 24, 27, .65);
+    }
+    thead .sticky { z-index: 4; background: #fafafa; }
+    thead .group-head .sticky { background: #f6f6f7; }
+    .location-group th {
+      position: static;
+      height: 38px;
+      padding: 8px 13px;
+      border-bottom: 1px solid #dde0e5;
+      background: #f7f7f8;
+      box-shadow: none;
+    }
+    .group-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .group-name {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      font-weight: 650;
+    }
+    .group-type {
+      color: var(--muted-ink);
+      font-size: 10px;
+      font-weight: 520;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .group-meta {
+      color: var(--muted-ink);
+      font-size: 10.5px;
+      font-weight: 450;
+    }
+    .selected-row th,
+    .selected-row td {
+      background: #f8f8f9;
+      box-shadow: inset 0 1px 0 #d8dae0, inset 0 -1px 0 #d8dae0;
+    }
+    .selected-row .sticky {
+      box-shadow: inset 3px 0 0 #25272b, inset 0 1px 0 #d8dae0, inset 0 -1px 0 #d8dae0, 1px 0 0 var(--line);
+    }
+    .primary {
+      display: block;
+      color: var(--ink);
+      font-weight: 610;
+      text-decoration: none;
+    }
+    .secondary {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted-ink);
+      font-size: 10.5px;
+      font-weight: 430;
+    }
+    .code {
+      display: inline-flex;
+      align-items: center;
+      min-height: 19px;
+      padding: 0 6px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: #464950;
+      background: #fafafa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10px;
+    }
+    .number {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    .number strong { font-weight: 680; }
+    .unit { color: var(--muted-ink); font-size: 10px; }
+    .muted { color: var(--muted-ink); }
+    .negative { color: var(--negative); font-weight: 670; }
+    .divider-left { border-left: 2px solid #c9ccd2 !important; }
+    .condition-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-width: 250px;
+      white-space: normal;
+    }
+    .fact {
+      min-height: 22px;
+      padding: 2px 7px;
+      background: #fafafa;
+      font-size: 10px;
+      line-height: 1.3;
+    }
+    .fact-negative {
+      border-color: #e4c1bd;
+      color: var(--negative);
+      background: var(--negative-wash);
+    }
+    .sort {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sort::after { content: "↑"; color: #777b82; font-size: 11px; }
+
+    /* Spine · Right Detail Panel — compact, non-modal, table remains visible. */
+    .detail-panel {
+      display: none;
+      min-width: 0;
+      border-left: 1px solid var(--line);
+      background: #ffffff;
+      box-shadow: var(--panel-shadow);
+    }
+    #panel-open:checked ~ .app .view-locations .detail-panel { display: block; }
+    #panel-open:not(:checked) ~ .app .view-locations .workbench-layout { grid-template-columns: minmax(0, 1fr); }
+    .detail-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 15px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      margin-bottom: 4px;
+      color: var(--muted-ink);
+      font-size: 9.5px;
+      font-weight: 680;
+      letter-spacing: .065em;
+      text-transform: uppercase;
+    }
+    .detail-header h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 670;
+    }
+    .detail-subtitle {
+      margin-top: 3px;
+      color: var(--muted-ink);
+      font-size: 10.5px;
+    }
+    .close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: #55585f;
+      background: #ffffff;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .detail-body { padding: 14px 15px 18px; }
+    .panel-facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 13px;
+    }
+    .state-set {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .state-item {
+      padding: 9px 7px;
+      border-right: 1px solid var(--line);
+      text-align: right;
+    }
+    .state-item:last-child { border-right: 0; }
+    .state-item span {
+      display: block;
+      color: var(--muted-ink);
+      font-size: 9.5px;
+      text-align: left;
+    }
+    .state-item strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .section-heading {
+      margin: 16px 0 7px;
+      font-size: 10.5px;
+      font-weight: 680;
+    }
+    .definition-list {
+      margin: 0;
+      border-top: 1px solid var(--soft-line);
+    }
+    .definition-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--soft-line);
+    }
+    .definition-row dt { color: var(--muted-ink); }
+    .definition-row dd {
+      margin: 0;
+      font-weight: 580;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .source-row {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--soft-line);
+    }
+    .source-row strong { display: block; font-size: 11px; }
+    .source-row span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted-ink);
+      font-size: 10.5px;
+    }
+    .panel-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 17px;
+    }
+    .panel-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+      text-decoration: none;
+      font-size: 10.5px;
+      font-weight: 560;
+    }
+    .panel-link:first-child {
+      border-color: var(--selected);
+      background: var(--selected);
+      color: var(--selected-ink);
+    }
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 43px;
+      padding: 7px 13px;
+      border-top: 1px solid var(--line);
+      color: var(--muted-ink);
+      font-size: 10.5px;
+    }
+    .pagination { display: flex; gap: 5px; }
+    .page {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 27px;
+      height: 27px;
+      padding: 0 7px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+    }
+    .page.current {
+      border-color: var(--selected);
+      background: var(--selected);
+      color: var(--selected-ink);
+    }
+
+    /* Spine · Secondary Views — Products is fully composed; remaining tabs preserve the IA. */
+    .secondary-state {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+    }
+    .placeholder {
+      display: grid;
+      min-height: 320px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted-ink);
+      background: #ffffff;
+      text-align: center;
+    }
+    .placeholder strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    /* Spine · Responsive & Accessibility — horizontal continuity, no card reinterpretation. */
+    @media (max-width: 1279px) {
+      .workbench-layout { position: relative; grid-template-columns: minmax(0, 1fr); }
+      .detail-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(365px, 44vw);
+        z-index: 8;
+      }
+      .grain-note { display: none; }
+    }
+    @media (max-width: 767px) {
+      .direction-note { display: block; }
+      .direction-note p { margin-top: 5px; }
+      .app { padding: 10px 8px 16px; }
+      .toolbar-heading { padding: 12px; }
+      .snapshot { display: none; }
+      .toolbar-body { padding: 9px; }
+      .dimension-strip { display: block; }
+      .dimension-scroll { width: 100%; }
+      .detail-panel {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        z-index: 20;
+      }
+    }
+  </style>
+</head>
+<body>
+  <input class="view-radio" type="radio" name="stock-view" id="view-products">
+  <input class="view-radio" type="radio" name="stock-view" id="view-locations" checked>
+  <input class="view-radio" type="radio" name="stock-view" id="view-demand">
+  <input class="view-radio" type="radio" name="stock-view" id="view-processes">
+  <input class="view-radio" type="radio" name="stock-view" id="view-ledger">
+  <input class="panel-toggle" type="checkbox" id="panel-open" checked>
+
+  <header class="direction-note">
+    <strong>Pivot Workbench</strong>
+    <p>The visible dimension strip makes the current row grain, measures, and scope explicit before the manager reads a number. Grouping rows by concrete location creates a calm investigation workbench that is roomier than a compact matrix while remaining a table, not a chart.</p>
+  </header>
+
+  <main class="app">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="#">Store</a><span class="chevron" aria-hidden="true">›</span>
+      <a href="#">Logistics</a><span class="chevron" aria-hidden="true">›</span>
+      <span aria-current="page">Stock</span>
+    </nav>
+
+    <section class="toolbar" aria-labelledby="stock-title">
+      <div class="toolbar-heading">
+        <div>
+          <h1 id="stock-title">Stock</h1>
+          <p>Trace product quantities by location, stock state, demand, process, and ledger movement.</p>
+        </div>
+        <div class="snapshot">Snapshot · Sep 18, 2026 · 15:42</div>
+      </div>
+      <div class="toolbar-body">
+        <div class="tab-scroll">
+          <div class="tabs" role="tablist" aria-label="Stock views">
+            <label class="tab" for="view-products" role="tab">Products</label>
+            <label class="tab" for="view-locations" role="tab">Locations</label>
+            <label class="tab" for="view-demand" role="tab">Customer demand</label>
+            <label class="tab" for="view-processes" role="tab">Production &amp; transfers</label>
+            <label class="tab" for="view-ledger" role="tab">Ledger</label>
+          </div>
+        </div>
+
+        <div class="filter-scroll">
+          <form class="filters filters-products" aria-label="Product filters">
+            <label class="search-wrap">
+              <span hidden>Search products</span>
+              <input class="search" type="search" placeholder="Search products or SKU">
+            </label>
+            <select class="control" aria-label="Plant"><option>All plants</option></select>
+            <select class="control" aria-label="Stock state"><option>All stock states</option></select>
+            <select class="control" aria-label="Location type"><option>All location types</option></select>
+            <button class="reset" type="reset">Reset filters</button>
+          </form>
+          <form class="filters filters-locations" aria-label="Location filters">
+            <label class="search-wrap">
+              <span hidden>Search locations</span>
+              <input class="search" type="search" placeholder="Search location, product, or code">
+            </label>
+            <select class="control" aria-label="Location type"><option>All location types</option><option>Warehouse</option><option>Production</option><option>Transfer</option><option>Customer order</option></select>
+            <select class="control" aria-label="Stock state"><option>All stock states</option><option>Free</option><option>Reserved</option><option>Shipped</option></select>
+            <select class="control" aria-label="Product"><option>All products</option><option>Cross 180 RX</option><option>Cruiser 300 FJ</option></select>
+            <span class="filter-chip">Negative balance</span>
+            <button class="reset" type="reset">Reset filters</button>
+          </form>
+          <form class="filters filters-demand" aria-label="Customer demand filters">
+            <label class="search-wrap"><span hidden>Search demand</span><input class="search" type="search" placeholder="Search order, product, or code"></label>
+            <select class="control" aria-label="Order status"><option>All order statuses</option></select>
+            <span class="filter-chip">Uncovered demand</span>
+            <span class="filter-chip">No expected date</span>
+            <button class="reset" type="reset">Reset filters</button>
+          </form>
+          <form class="filters filters-processes" aria-label="Process filters">
+            <label class="search-wrap"><span hidden>Search processes</span><input class="search" type="search" placeholder="Search document, product, or code"></label>
+            <select class="control" aria-label="Process type"><option>All process types</option></select>
+            <select class="control" aria-label="Status"><option>All statuses</option></select>
+            <button class="reset" type="reset">Reset filters</button>
+          </form>
+          <form class="filters filters-ledger" aria-label="Ledger filters">
+            <label class="search-wrap"><span hidden>Search ledger</span><input class="search" type="search" placeholder="Search transaction, source, or product"></label>
+            <input class="control" type="date" value="2026-09-01" aria-label="Date from">
+            <input class="control" type="date" value="2026-09-18" aria-label="Date to">
+            <button class="reset" type="reset">Reset filters</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <section class="view view-locations" aria-label="Locations stock view">
+        <div class="workbench">
+          <div class="dimension-strip" aria-label="Current dimensions">
+            <div class="dimension-scroll">
+              <div class="dimension-set">
+                <span class="dimension"><b>Rows</b>Location <span class="dimension-arrow">&nbsp;→&nbsp;</span> Product</span>
+                <span class="dimension"><b>Values</b>Free · Reserved · Shipped</span>
+                <span class="dimension"><b>Scope</b>All locations</span>
+              </div>
+            </div>
+            <span class="grain-note">Each data row is one product × one concrete location.</span>
+          </div>
+
+          <div class="workbench-layout">
+            <div class="table-pane">
+              <div class="table-topline">
+                <div class="table-title">Locations <span class="row-count">8 product × location rows</span></div>
+                <div class="grain-caption">Values never combine different products or units.</div>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="sticky" scope="col"><span class="sort">Product</span></th>
+                      <th scope="col">SKU</th>
+                      <th scope="col">Unit</th>
+                      <th class="number" scope="col">Free</th>
+                      <th class="number" scope="col">Reserved</th>
+                      <th class="number" scope="col">Shipped</th>
+                      <th class="number" scope="col">Total</th>
+                      <th scope="col">Factual conditions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="location-group">
+                      <th colspan="8" scope="rowgroup">
+                        <div class="group-line">
+                          <span class="group-name">WH-2 · Dubai Hub <span class="group-type">Warehouse</span></span>
+                          <span class="group-meta">3 product rows</span>
+                        </div>
+                      </th>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">CR 125</a><span class="secondary"><span class="code">PRD-108</span></span></th>
+                      <td>CR-125</td><td>pcs</td>
+                      <td class="number">12 <span class="unit">pcs</span></td>
+                      <td class="number">10 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>22</strong> <span class="unit">pcs</span></td>
+                      <td><span class="muted">None</span></td>
+                    </tr>
+                    <tr class="selected-row">
+                      <th class="sticky" scope="row"><label class="primary" for="panel-open">Cruiser 300 FJ</label><span class="secondary"><span class="code">PRD-36</span> · selected</span></th>
+                      <td>CR300-FJ</td><td>pcs</td>
+                      <td class="number">3 <span class="unit">pcs</span></td>
+                      <td class="number negative">−1 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>2</strong> <span class="unit">pcs</span></td>
+                      <td><div class="condition-list"><span class="fact fact-negative">Negative balance · Reserved −1 pcs</span></div></td>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Hummer 320 RX LTD</a><span class="secondary"><span class="code">PRD-46</span></span></th>
+                      <td>H320-RX-LTD</td><td>pcs</td>
+                      <td class="number">2 <span class="unit">pcs</span></td>
+                      <td class="number">1 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>3</strong> <span class="unit">pcs</span></td>
+                      <td><span class="muted">None</span></td>
+                    </tr>
+
+                    <tr class="location-group">
+                      <th colspan="8" scope="rowgroup">
+                        <div class="group-line">
+                          <span class="group-name">WH-6 · Plant warehouse <span class="group-type">Warehouse · PLT-4</span></span>
+                          <span class="group-meta">2 product rows</span>
+                        </div>
+                      </th>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Cross 180 RX</a><span class="secondary"><span class="code">PRD-17</span></span></th>
+                      <td>CROSS-180-RX</td><td>pcs</td>
+                      <td class="number">4 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>4</strong> <span class="unit">pcs</span></td>
+                      <td><span class="muted">None</span></td>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Enduro 250</a><span class="secondary"><span class="code">PRD-22</span></span></th>
+                      <td>ENDURO-250</td><td>pcs</td>
+                      <td class="number">8 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>8</strong> <span class="unit">pcs</span></td>
+                      <td><span class="muted">None</span></td>
+                    </tr>
+
+                    <tr class="location-group">
+                      <th colspan="8" scope="rowgroup">
+                        <div class="group-line">
+                          <span class="group-name">TR-5 · WH-6 → WH-2 <span class="group-type">Transfer</span></span>
+                          <span class="group-meta">1 product row</span>
+                        </div>
+                      </th>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Enduro 250</a><span class="secondary"><span class="code">PRD-22</span></span></th>
+                      <td>ENDURO-250</td><td>pcs</td>
+                      <td class="number">1 <span class="unit">pcs</span></td>
+                      <td class="number">3 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>4</strong> <span class="unit">pcs</span></td>
+                      <td><div class="condition-list"><span class="fact">Transfer still in transit · 4 pcs sent Sep 17, 2026</span></div></td>
+                    </tr>
+
+                    <tr class="location-group">
+                      <th colspan="8" scope="rowgroup">
+                        <div class="group-line">
+                          <span class="group-name">PO-11 · Production line <span class="group-type">Production · PLT-1</span></span>
+                          <span class="group-meta">1 product row</span>
+                        </div>
+                      </th>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Force 1000 Ranger</a><span class="secondary"><span class="code">PRD-117</span></span></th>
+                      <td>FORCE-1000-R</td><td>pcs</td>
+                      <td class="number">1 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>1</strong> <span class="unit">pcs</span></td>
+                      <td><div class="condition-list"><span class="fact">Production not fully activated · 1 pc = 1 − 0</span><span class="fact">No expected date</span></div></td>
+                    </tr>
+
+                    <tr class="location-group">
+                      <th colspan="8" scope="rowgroup">
+                        <div class="group-line">
+                          <span class="group-name">OMS-208 <span class="group-type">Customer order</span></span>
+                          <span class="group-meta">1 product row</span>
+                        </div>
+                      </th>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Force 1100 EFI</a><span class="secondary"><span class="code">PRD-1</span></span></th>
+                      <td>FORCE-1100-EFI</td><td>pcs</td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number">3 <span class="unit">pcs</span></td>
+                      <td class="number"><strong>3</strong> <span class="unit">pcs</span></td>
+                      <td><div class="condition-list"><span class="fact">Zero free with open demand · Free 0 pcs · Open 2 pcs</span></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="footer-row">
+                <span>Showing 8 of 10 product × location rows</span>
+                <div class="pagination"><span class="page current">1</span><span class="page">2</span><span class="page">Next</span></div>
+              </div>
+            </div>
+
+            <aside class="detail-panel" aria-labelledby="location-detail-title">
+              <div class="detail-header">
+                <div>
+                  <div class="eyebrow">Location balance detail</div>
+                  <h2 id="location-detail-title">WH-2 · Cruiser 300 FJ</h2>
+                  <div class="detail-subtitle"><span class="code">PRD-36</span> · CR300-FJ · pcs</div>
+                </div>
+                <label class="close" for="panel-open" aria-label="Close detail panel">×</label>
+              </div>
+              <div class="detail-body">
+                <div class="panel-facts">
+                  <span class="fact fact-negative">Negative balance · Reserved −1 pcs</span>
+                </div>
+
+                <div class="state-set" aria-label="Stock state quantities">
+                  <div class="state-item"><span>Free</span><strong>3 pcs</strong></div>
+                  <div class="state-item"><span>Reserved</span><strong class="negative">−1 pcs</strong></div>
+                  <div class="state-item"><span>Shipped</span><strong>0 pcs</strong></div>
+                  <div class="state-item"><span>Total</span><strong>2 pcs</strong></div>
+                </div>
+
+                <h3 class="section-heading">Dimension key</h3>
+                <dl class="definition-list">
+                  <div class="definition-row"><dt>Location type</dt><dd>Warehouse</dd></div>
+                  <div class="definition-row"><dt>Location</dt><dd>WH-2</dd></div>
+                  <div class="definition-row"><dt>Product</dt><dd>PRD-36</dd></div>
+                  <div class="definition-row"><dt>Unit</dt><dd>pcs</dd></div>
+                </dl>
+
+                <h3 class="section-heading">Negative source balance</h3>
+                <div class="source-row">
+                  <strong>Reserved −1 pcs</strong>
+                  <span>Order OMS-184 · line 1 · warehouse WH-2</span>
+                </div>
+                <div class="source-row">
+                  <strong>Last movement: +1 pc</strong>
+                  <span>TX-455 · Sep 16, 2026 · 15:31</span>
+                </div>
+
+                <div class="panel-links">
+                  <a class="panel-link" href="#">Open in Ledger</a>
+                  <a class="panel-link" href="#">Open location</a>
+                  <a class="panel-link" href="#">Open product</a>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="view view-products" aria-label="Products stock view">
+        <div class="secondary-state">
+          <div class="dimension-strip">
+            <div class="dimension-set">
+              <span class="dimension"><b>Rows</b>Product</span>
+              <span class="dimension"><b>Values</b>Stock state · Location type</span>
+              <span class="dimension"><b>Scope</b>All products</span>
+            </div>
+            <span class="grain-note">Stock state and location type are independent views of the same quantity.</span>
+          </div>
+          <div class="table-topline">
+            <div class="table-title">Products <span class="row-count">5 products</span></div>
+            <div class="grain-caption">Do not add quantities across the two column groups.</div>
+          </div>
+          <div class="table-scroll">
+            <table class="products-table">
+              <thead>
+                <tr class="group-head">
+                  <th class="sticky" scope="col" rowspan="2"><span class="sort">Product</span></th>
+                  <th scope="col" rowspan="2">SKU</th>
+                  <th scope="col" rowspan="2">Unit</th>
+                  <th scope="col" rowspan="2">Plant</th>
+                  <th scope="colgroup" colspan="3">Stock state</th>
+                  <th class="divider-left" scope="colgroup" colspan="4">Location type</th>
+                  <th scope="col" rowspan="2">Factual conditions</th>
+                </tr>
+                <tr>
+                  <th class="number" scope="col">Free</th>
+                  <th class="number" scope="col">Reserved</th>
+                  <th class="number" scope="col">Shipped</th>
+                  <th class="number divider-left" scope="col">Warehouses</th>
+                  <th class="number" scope="col">Production</th>
+                  <th class="number" scope="col">Transfers</th>
+                  <th class="number" scope="col">Customer</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th class="sticky" scope="row"><a class="primary" href="#">CR 125</a><span class="secondary"><span class="code">PRD-108</span></span></th>
+                  <td>CR-125</td><td>pcs</td><td><span class="code">PLT-4</span></td>
+                  <td class="number">22 <span class="unit">pcs</span></td><td class="number">22 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                  <td class="number divider-left">22 <span class="unit">pcs</span></td><td class="number">22 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                  <td><span class="fact">No expected date</span></td>
+                </tr>
+                <tr>
+                  <th class="sticky" scope="row"><a class="primary" href="#">Cross 180 RX</a><span class="secondary"><span class="code">PRD-17</span></span></th>
+                  <td>CROSS-180-RX</td><td>pcs</td><td><span class="code">PLT-4</span></td>
+                  <td class="number">4 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">6 <span class="unit">pcs</span></td>
+                  <td class="number divider-left">4 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">6 <span class="unit">pcs</span></td>
+                  <td><span class="fact">Uncovered demand · 12 pcs = 20 − 5 − 3</span></td>
+                </tr>
+                <tr>
+                  <th class="sticky" scope="row"><a class="primary" href="#">Enduro 125</a><span class="secondary"><span class="code">PRD-75</span></span></th>
+                  <td>EN125-GR</td><td>pcs</td><td><span class="code">PLT-4</span></td>
+                  <td class="number">2 <span class="unit">pcs</span></td><td class="number">43 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                  <td class="number divider-left">0 <span class="unit">pcs</span></td><td class="number">45 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                  <td><span class="fact">Production not fully activated · 2 pcs = 45 − 43</span></td>
+                </tr>
+                <tr>
+                  <th class="sticky" scope="row"><a class="primary" href="#">Force 1100 EFI</a><span class="secondary"><span class="code">PRD-1</span></span></th>
+                  <td>FORCE-1100-EFI</td><td>pcs</td><td><span class="code">PLT-1</span></td>
+                  <td class="number"><strong>0</strong> <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">3 <span class="unit">pcs</span></td>
+                  <td class="number divider-left">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">3 <span class="unit">pcs</span></td>
+                  <td><span class="fact">Zero free with open demand · Free 0 pcs · Open 2 pcs</span></td>
+                </tr>
+                <tr>
+                  <th class="sticky" scope="row"><a class="primary" href="#">Hummer 320 RX LTD</a><span class="secondary"><span class="code">PRD-46</span></span></th>
+                  <td>H320-RX-LTD</td><td>pcs</td><td><span class="code">PLT-4</span></td>
+                  <td class="number">3 <span class="unit">pcs</span></td><td class="number">1 <span class="unit">pcs</span></td><td class="number">5 <span class="unit">pcs</span></td>
+                  <td class="number divider-left">3 <span class="unit">pcs</span></td><td class="number">1 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">5 <span class="unit">pcs</span></td>
+                  <td><span class="fact">Expected date passed · Sep 12, 2026</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="footer-row"><span>Showing 5 of 8 products</span><div class="pagination"><span class="page current">1</span><span class="page">2</span></div></div>
+        </div>
+      </section>
+
+      <section class="view view-demand" aria-label="Customer demand view">
+        <div class="placeholder"><div><strong>Customer demand</strong>One row per customer order line · Expected end uses the document date.</div></div>
+      </section>
+      <section class="view view-processes" aria-label="Production and transfers view">
+        <div class="placeholder"><div><strong>Production &amp; transfers</strong>Production order, Output, and Transfer remain separate process types.</div></div>
+      </section>
+      <section class="view view-ledger" aria-label="Ledger view">
+        <div class="placeholder"><div><strong>Ledger</strong>One immutable stock transaction per row · Newest movement first.</div></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

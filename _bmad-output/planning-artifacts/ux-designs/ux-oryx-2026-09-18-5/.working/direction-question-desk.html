@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Question Desk — Oryx Stock design direction</title>
+  <style>
+    /*
+      QUESTION DESK — HEX COLOR NOTES
+      Direction canvas: #e9eaec
+      Oryx page background: #f4f4f5
+      Card / table surface: #ffffff
+      Foreground: #18181b
+      Secondary foreground: #71717a
+      Strong neutral: #27272a
+      Border: #d9d9df
+      Soft border: #e7e7eb
+      Quiet surface: #fafafa
+      Selected question: #eef1f4
+      Destructive fact text only: #b91c1c
+      Focus ring: #a1a1aa
+
+      DESIGN SPINE
+      1. Direction rationale
+      2. Desktop browser frame
+      3. Oryx breadcrumb and Stock toolbar
+      4. Five canonical views
+      5. Start with a question presets
+      6. View-specific filters
+      7. Table-first workspace
+      8. Secondary Ledger investigation
+    */
+
+    :root {
+      color-scheme: light;
+      --canvas: #e9eaec;
+      --background: #f4f4f5;
+      --card: #ffffff;
+      --foreground: #18181b;
+      --muted-foreground: #71717a;
+      --strong: #27272a;
+      --border: #d9d9df;
+      --border-soft: #e7e7eb;
+      --quiet: #fafafa;
+      --question: #eef1f4;
+      --destructive: #b91c1c;
+      --ring: #a1a1aa;
+      --radius: 11px;
+      --shadow: 0 1px 2px rgba(24, 24, 27, .045);
+      --frame-shadow: 0 22px 70px rgba(24, 24, 27, .13);
+      --panel-shadow: -12px 0 34px rgba(24, 24, 27, .10);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      color: var(--foreground);
+      background: var(--canvas);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select { font: inherit; }
+    a { color: inherit; }
+
+    .direction {
+      width: 100%;
+      padding: 30px;
+    }
+
+    .direction-intro {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 780px);
+      gap: 28px;
+      align-items: start;
+      width: min(100%, 1490px);
+      margin: 0 auto 18px;
+    }
+
+    .direction-label {
+      color: #52525b;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .075em;
+      text-transform: uppercase;
+    }
+
+    .direction-copy h1 {
+      margin: -4px 0 6px;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 680;
+      letter-spacing: -.025em;
+    }
+
+    .rationale {
+      margin: 0;
+      color: #52525b;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .browser {
+      width: min(100%, 1490px);
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid #c9c9cf;
+      border-radius: 15px;
+      background: var(--background);
+      box-shadow: var(--frame-shadow);
+    }
+
+    .browser-chrome {
+      display: grid;
+      grid-template-columns: 150px minmax(260px, 620px) 150px;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 42px;
+      padding: 0 13px;
+      border-bottom: 1px solid #d4d4d8;
+      background: #f7f7f8;
+    }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .window-dot {
+      width: 10px;
+      height: 10px;
+      border: 1px solid #b7b7be;
+      border-radius: 50%;
+      background: #e4e4e7;
+    }
+
+    .address {
+      min-height: 26px;
+      padding: 5px 13px;
+      overflow: hidden;
+      border: 1px solid #d4d4d8;
+      border-radius: 7px;
+      color: #71717a;
+      background: #ffffff;
+      font-size: 11px;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chrome-meta {
+      color: #8b8b93;
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .state-radio {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 850px;
+      padding: 16px;
+      background: var(--background);
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 22px;
+      margin: 0 2px 10px;
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+
+    .breadcrumb a { text-decoration: none; }
+    .breadcrumb .chevron { color: #a1a1aa; font-size: 15px; }
+    .breadcrumb [aria-current="page"] { color: var(--foreground); }
+
+    .toolbar,
+    .table-card,
+    .investigation-shell {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar { overflow: hidden; }
+
+    .toolbar-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .toolbar-heading h2 {
+      margin: 0 0 3px;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 660;
+      letter-spacing: -.015em;
+    }
+
+    .toolbar-heading p {
+      margin: 0;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .snapshot {
+      flex: none;
+      padding-top: 2px;
+      color: var(--muted-foreground);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toolbar-body { padding: 11px 16px 12px; }
+
+    .scroll-row {
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .tabs {
+      display: flex;
+      width: max-content;
+      min-width: 100%;
+      gap: 4px;
+      padding: 1px;
+    }
+
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 11px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: #52525b;
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 560;
+    }
+
+    .tab:hover { color: var(--foreground); background: #f4f4f5; }
+
+    #state-products:checked ~ .direction .tab-products,
+    #state-locations:checked ~ .direction .tab-locations,
+    #state-demand:checked ~ .direction .tab-demand,
+    #state-processes:checked ~ .direction .tab-processes,
+    #state-dates:checked ~ .direction .tab-processes,
+    #state-ledger:checked ~ .direction .tab-ledger {
+      color: #ffffff;
+      border-color: var(--strong);
+      background: var(--strong);
+    }
+
+    .question-desk {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .question-heading {
+      flex: none;
+      width: 132px;
+    }
+
+    .question-heading strong {
+      display: block;
+      margin-bottom: 1px;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .question-heading span {
+      color: var(--muted-foreground);
+      font-size: 9.5px;
+    }
+
+    .question-options {
+      display: flex;
+      gap: 6px;
+      width: max-content;
+    }
+
+    .question {
+      display: grid;
+      gap: 1px;
+      min-height: 38px;
+      padding: 5px 9px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: #3f3f46;
+      background: #ffffff;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .question:hover { border-color: #b9b9c0; background: #fafafa; }
+    .question .ask { font-size: 10.5px; font-weight: 620; }
+    .question .effect { color: var(--muted-foreground); font-size: 9px; }
+
+    #state-locations:checked ~ .direction .question-locations,
+    #state-demand:checked ~ .direction .question-demand,
+    #state-dates:checked ~ .direction .question-dates,
+    #state-ledger:checked ~ .direction .question-ledger {
+      border-color: #a9a9b1;
+      background: var(--question);
+      box-shadow: inset 0 0 0 1px #ffffff;
+    }
+
+    .preset-note {
+      flex: none;
+      margin-left: auto;
+      color: var(--muted-foreground);
+      font-size: 9.5px;
+      line-height: 1.35;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .filters {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      width: max-content;
+      min-width: 100%;
+      padding-top: 10px;
+    }
+
+    #state-products:checked ~ .direction .filters-products,
+    #state-locations:checked ~ .direction .filters-locations,
+    #state-demand:checked ~ .direction .filters-demand,
+    #state-processes:checked ~ .direction .filters-processes,
+    #state-dates:checked ~ .direction .filters-processes,
+    #state-ledger:checked ~ .direction .filters-ledger { display: flex; }
+
+    .search-wrap {
+      position: relative;
+      flex: 1 1 310px;
+      min-width: 280px;
+      max-width: 390px;
+    }
+
+    .search-wrap::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid #a1a1aa;
+      border-radius: 50%;
+      transform: translateY(-57%);
+      pointer-events: none;
+    }
+
+    .search-wrap::after {
+      content: "";
+      position: absolute;
+      left: 19px;
+      top: 18px;
+      width: 5px;
+      height: 1.5px;
+      background: #a1a1aa;
+      transform: rotate(45deg);
+      transform-origin: left center;
+      pointer-events: none;
+    }
+
+    .search,
+    .control {
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: #27272a;
+      background: #ffffff;
+      outline: none;
+    }
+
+    .search { width: 100%; padding: 0 11px 0 31px; }
+    .search::placeholder { color: #a1a1aa; }
+    .control { min-width: 130px; padding: 0 28px 0 9px; }
+
+    .search:focus,
+    .control:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 2px rgba(161, 161, 170, .2);
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: #3f3f46;
+      background: #ffffff;
+      white-space: nowrap;
+      font-size: 10.5px;
+    }
+
+    .filter-chip::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border: 1px solid #a1a1aa;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .filter-chip.active { border-color: #c8c8ce; background: #f4f4f5; }
+    .filter-chip.active::before { border-color: #52525b; background: #52525b; }
+    .dates-preset-chip { display: none; }
+    #state-dates:checked ~ .direction .dates-preset-chip { display: inline-flex; }
+
+    .reset {
+      padding: 0 5px;
+      border: 0;
+      color: var(--muted-foreground);
+      background: transparent;
+      white-space: nowrap;
+      font-size: 10.5px;
+    }
+
+    .workspace { margin-top: 16px; }
+    .view { display: none; }
+
+    #state-products:checked ~ .direction .view-products,
+    #state-locations:checked ~ .direction .view-locations,
+    #state-demand:checked ~ .direction .view-demand,
+    #state-processes:checked ~ .direction .view-processes,
+    #state-dates:checked ~ .direction .view-processes,
+    #state-ledger:checked ~ .direction .view-ledger { display: block; }
+
+    .table-card { overflow: hidden; }
+
+    .card-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      gap: 14px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 660;
+    }
+
+    .row-count { color: var(--muted-foreground); font-weight: 450; }
+    .date-count { display: none; }
+    #state-dates:checked ~ .direction .process-count { display: none; }
+    #state-dates:checked ~ .direction .date-count { display: inline; }
+
+    .legend {
+      color: var(--muted-foreground);
+      font-size: 10.5px;
+      line-height: 1.35;
+      text-align: right;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      scrollbar-color: #d4d4d8 transparent;
+      scrollbar-width: thin;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1120px;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 11.5px;
+    }
+
+    .table-processes { min-width: 1470px; }
+    .table-products { min-width: 1320px; }
+    .table-locations { min-width: 1180px; }
+    .table-demand { min-width: 1310px; }
+    .table-ledger { min-width: 1420px; }
+
+    th, td {
+      height: 41px;
+      padding: 7px 11px;
+      border-bottom: 1px solid var(--border-soft);
+      color: #27272a;
+      background: #ffffff;
+      vertical-align: middle;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    thead th {
+      height: 35px;
+      color: #52525b;
+      background: #fafafa;
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: .01em;
+    }
+
+    tbody tr:last-child th,
+    tbody tr:last-child td { border-bottom: 0; }
+
+    tbody tr:hover th,
+    tbody tr:hover td { background: #fafafa; }
+
+    .sticky {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      min-width: 175px;
+      box-shadow: 1px 0 0 var(--border), 8px 0 12px -14px rgba(24, 24, 27, .65);
+    }
+
+    thead .sticky { z-index: 4; background: #fafafa; }
+
+    .group-row th {
+      height: 28px;
+      padding-top: 6px;
+      padding-bottom: 4px;
+      color: #71717a;
+      background: #f7f7f8;
+      font-size: 9.5px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .process-group th {
+      height: 28px;
+      padding: 5px 11px;
+      border-top: 1px solid #d4d4d8;
+      border-bottom: 1px solid #dedee3;
+      color: #52525b;
+      background: #f7f7f8;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .065em;
+      text-transform: uppercase;
+    }
+
+    .process-group:first-child th { border-top: 0; }
+
+    .group-explanation {
+      margin-left: 8px;
+      color: #8b8b93;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    #state-dates:checked ~ .direction .not-passed { display: none; }
+
+    .primary {
+      display: block;
+      color: #18181b;
+      font-weight: 610;
+      text-decoration: none;
+    }
+
+    .primary:hover,
+    .link:hover { text-decoration: underline; }
+
+    .secondary {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted-foreground);
+      font-size: 10px;
+      font-weight: 430;
+    }
+
+    .code {
+      display: inline-flex;
+      align-items: center;
+      min-height: 18px;
+      padding: 0 6px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: #3f3f46;
+      background: #fafafa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 9.5px;
+      line-height: 1;
+    }
+
+    .status,
+    .fact,
+    .type {
+      display: inline-flex;
+      align-items: center;
+      min-height: 21px;
+      padding: 2px 7px;
+      border: 1px solid #d4d4d8;
+      border-radius: 999px;
+      color: #52525b;
+      background: #fafafa;
+      font-size: 9.5px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .type {
+      border-radius: 5px;
+      font-weight: 630;
+    }
+
+    .condition-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-width: 230px;
+      white-space: normal;
+    }
+
+    .muted { color: var(--muted-foreground); }
+    .negative { color: var(--destructive); font-weight: 650; }
+    .number {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+      text-align: right;
+    }
+    .number strong { font-weight: 670; }
+    .unit { color: var(--muted-foreground); font-size: 9.5px; }
+    .center { text-align: center; }
+    .divider-left { border-left: 2px solid #c7c7ce !important; }
+
+    .sort {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sort::after { content: "↑"; color: #71717a; font-size: 11px; }
+    .sort.desc::after { content: "↓"; }
+
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 41px;
+      padding: 7px 12px;
+      border-top: 1px solid var(--border);
+      color: var(--muted-foreground);
+      background: #ffffff;
+      font-size: 10.5px;
+    }
+
+    .footer-process-dates { display: none; }
+    #state-dates:checked ~ .direction .footer-process-default { display: none; }
+    #state-dates:checked ~ .direction .footer-process-dates { display: inline; }
+
+    .pagination { display: flex; gap: 5px; }
+    .page {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 27px;
+      height: 27px;
+      padding: 0 7px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #52525b;
+      background: #ffffff;
+    }
+    .page.current { color: #ffffff; border-color: #27272a; background: #27272a; }
+
+    .investigation-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 405px;
+      min-height: 530px;
+      overflow: hidden;
+    }
+
+    .investigation-shell .table-card {
+      min-width: 0;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .selected-row th,
+    .selected-row td { background: #f4f4f5 !important; }
+
+    .detail-panel {
+      min-width: 0;
+      border-left: 1px solid var(--border);
+      background: #ffffff;
+      box-shadow: var(--panel-shadow);
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 17px 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      margin-bottom: 4px;
+      color: var(--muted-foreground);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .065em;
+      text-transform: uppercase;
+    }
+
+    .detail-header h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 670;
+    }
+
+    .detail-subtitle {
+      margin-top: 3px;
+      color: var(--muted-foreground);
+      font-size: 10.5px;
+    }
+
+    .close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: #52525b;
+      background: #ffffff;
+      font-size: 11px;
+    }
+
+    .detail-body { padding: 15px 17px 18px; }
+
+    .detail-note {
+      margin: 0 0 13px;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #52525b;
+      background: #fafafa;
+      font-size: 10.5px;
+      line-height: 1.45;
+    }
+
+    .detail-section {
+      margin: 17px 0 7px;
+      font-size: 10.5px;
+      font-weight: 680;
+    }
+
+    .definition-list {
+      margin: 0;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .definition-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .definition-row dt { color: var(--muted-foreground); }
+    .definition-row dd {
+      margin: 0;
+      font-weight: 580;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .dimension {
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #3f3f46;
+      background: #fafafa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 9.5px;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .panel-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 17px;
+    }
+
+    .panel-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 9px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: #27272a;
+      background: #ffffff;
+      text-decoration: none;
+      font-size: 10.5px;
+      font-weight: 570;
+    }
+    .panel-link:first-child { color: #ffffff; border-color: #27272a; background: #27272a; }
+
+    @media (max-width: 1279px) {
+      .direction { padding: 18px; }
+      .direction-intro { grid-template-columns: 160px minmax(0, 1fr); }
+      .snapshot { display: none; }
+      .preset-note { display: none; }
+      .investigation-shell { position: relative; grid-template-columns: 1fr; }
+      .detail-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(405px, 48vw);
+      }
+    }
+
+    @media (max-width: 767px) {
+      .direction { padding: 10px; }
+      .direction-intro { display: block; margin-bottom: 12px; }
+      .direction-label { margin-bottom: 8px; }
+      .direction-copy h1 { font-size: 21px; }
+      .browser-chrome { grid-template-columns: 80px minmax(150px, 1fr) 50px; }
+      .chrome-meta { display: none; }
+      .app { padding: 9px 8px 16px; }
+      .toolbar-heading { padding: 12px; }
+      .toolbar-body { padding: 8px; }
+      .question-desk { align-items: flex-start; }
+      .question-heading { width: 112px; padding-top: 4px; }
+      .search-wrap { min-width: 235px; }
+      .card-topline { align-items: flex-start; flex-direction: column; }
+      .legend { text-align: left; }
+      .sticky { min-width: 165px; }
+      .detail-panel {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        z-index: 20;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- CSS-only states: each question exposes the exact canonical view and factual filter it selects. -->
+  <input class="state-radio" type="radio" name="desk-state" id="state-products">
+  <input class="state-radio" type="radio" name="desk-state" id="state-locations">
+  <input class="state-radio" type="radio" name="desk-state" id="state-demand">
+  <input class="state-radio" type="radio" name="desk-state" id="state-processes" checked>
+  <input class="state-radio" type="radio" name="desk-state" id="state-dates">
+  <input class="state-radio" type="radio" name="desk-state" id="state-ledger">
+
+  <div class="direction">
+    <!-- SPINE 1: Direction rationale — exactly two sentences. -->
+    <header class="direction-intro">
+      <div class="direction-label">Design direction · 04</div>
+      <div class="direction-copy">
+        <h1>Question Desk</h1>
+        <p class="rationale">Question Desk keeps the five canonical Stock views intact, then adds a compact row of plain-language entry points that disclose the view and factual filter they set. It helps an operator begin an investigation while keeping the underlying tables and source facts visible.</p>
+      </div>
+    </header>
+
+    <!-- SPINE 2: Near-1:1 desktop browser frame. -->
+    <section class="browser" aria-label="Question Desk desktop mockup">
+      <div class="browser-chrome" aria-hidden="true">
+        <div class="window-controls"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+        <div class="address">oryx.local/store/logistics/stock</div>
+        <div class="chrome-meta">Desktop · 1490 px</div>
+      </div>
+
+      <main class="app">
+        <!-- SPINE 3: Oryx list-page breadcrumb and compact white toolbar. -->
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="#">Store</a><span class="chevron" aria-hidden="true">›</span>
+          <a href="#">Logistics</a><span class="chevron" aria-hidden="true">›</span>
+          <span aria-current="page">Stock</span>
+        </nav>
+
+        <section class="toolbar" aria-labelledby="stock-title">
+          <div class="toolbar-heading">
+            <div>
+              <h2 id="stock-title">Stock</h2>
+              <p>Trace exact quantities through locations, demand, production, transfers, and ledger movements.</p>
+            </div>
+            <div class="snapshot">Snapshot · Sep 18, 2026 · 15:42</div>
+          </div>
+
+          <div class="toolbar-body">
+            <!-- SPINE 4: The five canonical views remain the primary navigation. -->
+            <div class="scroll-row">
+              <div class="tabs" role="tablist" aria-label="Stock views">
+                <label class="tab tab-products" for="state-products" role="tab">Products</label>
+                <label class="tab tab-locations" for="state-locations" role="tab">Locations</label>
+                <label class="tab tab-demand" for="state-demand" role="tab">Customer demand</label>
+                <label class="tab tab-processes" for="state-processes" role="tab">Production &amp; transfers</label>
+                <label class="tab tab-ledger" for="state-ledger" role="tab">Ledger</label>
+              </div>
+            </div>
+
+            <!-- SPINE 5: Transparent question presets mapped to views and filters. -->
+            <div class="question-desk">
+              <div class="question-heading">
+                <strong>Start with a question</strong>
+                <span>Optional shortcuts</span>
+              </div>
+              <div class="scroll-row">
+                <div class="question-options">
+                  <label class="question question-locations" for="state-locations">
+                    <span class="ask">Where is stock?</span>
+                    <span class="effect">View: Locations · Filter: none</span>
+                  </label>
+                  <label class="question question-demand" for="state-demand">
+                    <span class="ask">What demand is uncovered?</span>
+                    <span class="effect">View: Customer demand · Filter: Uncovered demand</span>
+                  </label>
+                  <label class="question question-dates" for="state-dates">
+                    <span class="ask">Which expected dates passed?</span>
+                    <span class="effect">View: Production &amp; transfers · Filter: Expected date passed</span>
+                  </label>
+                  <label class="question question-ledger" for="state-ledger">
+                    <span class="ask">What changed?</span>
+                    <span class="effect">View: Ledger · Sort: Posted at, newest first</span>
+                  </label>
+                </div>
+              </div>
+              <div class="preset-note">Presets only set a view, filter, or sort.</div>
+            </div>
+
+            <!-- SPINE 6: Conventional Oryx filters remain visible and editable. -->
+            <div class="scroll-row">
+              <form class="filters filters-products" aria-label="Product filters">
+                <label class="search-wrap"><span hidden>Search products</span><input class="search" type="search" placeholder="Search products or SKU"></label>
+                <select class="control" aria-label="Plant"><option>All plants</option><option>PLT-4</option><option>PLT-1</option></select>
+                <select class="control" aria-label="Stock state"><option>All stock states</option><option>Free</option><option>Reserved</option><option>Shipped</option></select>
+                <select class="control" aria-label="Location type"><option>All location types</option><option>Warehouse</option><option>Production</option><option>Transfer</option><option>Customer order</option></select>
+                <span class="filter-chip">Zero free with open demand</span>
+                <button class="reset" type="reset">Reset filters</button>
+              </form>
+
+              <form class="filters filters-locations" aria-label="Location filters">
+                <label class="search-wrap"><span hidden>Search locations</span><input class="search" type="search" placeholder="Search location, product, or code"></label>
+                <select class="control" aria-label="Location type"><option>All location types</option><option>Warehouse</option><option>Production</option><option>Transfer</option><option>Customer order</option></select>
+                <select class="control" aria-label="Location"><option>All locations</option><option>WH-2</option><option>WH-6</option><option>PO-8</option><option>TR-5</option></select>
+                <select class="control" aria-label="Stock state"><option>All stock states</option><option>Free</option><option>Reserved</option><option>Shipped</option></select>
+                <span class="filter-chip">Negative balance</span>
+                <button class="reset" type="reset">Reset filters</button>
+              </form>
+
+              <form class="filters filters-demand" aria-label="Customer demand filters">
+                <label class="search-wrap"><span hidden>Search demand</span><input class="search" type="search" placeholder="Search order, product, or code"></label>
+                <select class="control" aria-label="Customer order"><option>All customer orders</option><option>OMS-42</option><option>OMS-184</option><option>OMS-208</option></select>
+                <select class="control" aria-label="Order status"><option>All order statuses</option><option>Open</option><option>Closed</option></select>
+                <span class="filter-chip active">Uncovered demand</span>
+                <span class="filter-chip">Expected date passed</span>
+                <span class="filter-chip">No expected date</span>
+                <button class="reset" type="reset">Reset filters</button>
+              </form>
+
+              <form class="filters filters-processes" aria-label="Production, output, and transfer filters">
+                <label class="search-wrap"><span hidden>Search processes</span><input class="search" type="search" placeholder="Search document, product, or code"></label>
+                <select class="control" aria-label="Process type"><option>All process types</option><option>Production order</option><option>Output</option><option>Transfer</option></select>
+                <select class="control" aria-label="Status"><option>All statuses</option><option>Draft</option><option>Planned</option><option>In progress</option><option>Done</option><option>Sent</option><option>Delivered</option></select>
+                <select class="control" aria-label="Plant"><option>All plants</option><option>PLT-4</option><option>PLT-1</option></select>
+                <span class="filter-chip">Production not fully activated</span>
+                <span class="filter-chip">Transfer still in transit</span>
+                <span class="filter-chip dates-preset-chip active">Expected date passed</span>
+                <button class="reset" type="reset">Reset filters</button>
+              </form>
+
+              <form class="filters filters-ledger" aria-label="Ledger filters">
+                <label class="search-wrap"><span hidden>Search ledger</span><input class="search" type="search" placeholder="Search transaction, source, or product"></label>
+                <input class="control" type="date" value="2026-09-01" aria-label="Date from">
+                <input class="control" type="date" value="2026-09-18" aria-label="Date to">
+                <select class="control" aria-label="Operation"><option>All operations</option><option>Output</option><option>Reservation</option><option>Shipment</option><option>Transfer sent</option><option>Reversal</option></select>
+                <select class="control" aria-label="Stock state"><option>All stock states</option><option>Free</option><option>Reserved</option><option>Shipped</option></select>
+                <span class="filter-chip">Reversal only</span>
+                <button class="reset" type="reset">Reset filters</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- SPINE 7: Table-first workspace. Default hero is Production & transfers. -->
+        <div class="workspace">
+          <section class="view view-products" aria-label="Products view">
+            <div class="table-card">
+              <div class="card-topline">
+                <div class="card-title">Products <span class="row-count">4 products</span></div>
+                <div class="legend">Stock state and location type are independent views of the same quantity; do not add across groups.</div>
+              </div>
+              <div class="table-scroll">
+                <table class="table-products">
+                  <thead>
+                    <tr class="group-row">
+                      <th class="sticky" scope="col" rowspan="2"><span class="sort">Product</span></th><th scope="col" rowspan="2">SKU</th><th scope="col" rowspan="2">Unit</th><th scope="col" rowspan="2">Plant</th>
+                      <th scope="colgroup" colspan="3">Stock state</th><th class="divider-left" scope="colgroup" colspan="4">Location type</th><th scope="col" rowspan="2">Factual conditions</th>
+                    </tr>
+                    <tr>
+                      <th class="number" scope="col">Free</th><th class="number" scope="col">Reserved</th><th class="number" scope="col">Shipped</th>
+                      <th class="number divider-left" scope="col">Warehouses</th><th class="number" scope="col">Production</th><th class="number" scope="col">Transfers</th><th class="number" scope="col">Customer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">CR 125</a><span class="secondary"><span class="code">PRD-108</span></span></th><td>CR-125</td><td>pcs</td><td><span class="code">PLT-4</span></td>
+                      <td class="number"><strong>22</strong> <span class="unit">pcs</span></td><td class="number">22 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number divider-left">22 <span class="unit">pcs</span></td><td class="number">22 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                      <td><span class="fact">No expected date</span></td>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Cross 180 RX</a><span class="secondary"><span class="code">PRD-17</span></span></th><td>CROSS-180-RX</td><td>pcs</td><td><span class="code">PLT-4</span></td>
+                      <td class="number"><strong>4</strong> <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">6 <span class="unit">pcs</span></td>
+                      <td class="number divider-left">4 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">6 <span class="unit">pcs</span></td>
+                      <td><span class="fact">Uncovered demand: 12 pcs</span></td>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Enduro 125</a><span class="secondary"><span class="code">PRD-75</span></span></th><td>EN125-GR</td><td>pcs</td><td><span class="code">PLT-4</span></td>
+                      <td class="number"><strong>2</strong> <span class="unit">pcs</span></td><td class="number">43 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                      <td class="number divider-left">0 <span class="unit">pcs</span></td><td class="number">45 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td>
+                      <td><span class="fact">Production not fully activated: 2 pcs</span></td>
+                    </tr>
+                    <tr>
+                      <th class="sticky" scope="row"><a class="primary" href="#">Force 1100 EFI</a><span class="secondary"><span class="code">PRD-1</span></span></th><td>FORCE-1100-EFI</td><td>pcs</td><td><span class="code">PLT-1</span></td>
+                      <td class="number"><strong>0</strong> <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">3 <span class="unit">pcs</span></td>
+                      <td class="number divider-left">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">3 <span class="unit">pcs</span></td>
+                      <td><div class="condition-list"><span class="fact">Zero free with open demand</span><span class="fact">Uncovered demand: 2 pcs</span></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="footer-row"><span>Showing 4 of 8 products</span><div class="pagination"><span class="page current">1</span><span class="page">2</span></div></div>
+            </div>
+          </section>
+
+          <section class="view view-locations" aria-label="Locations view">
+            <div class="table-card">
+              <div class="card-topline">
+                <div class="card-title">Locations <span class="row-count">6 product × location rows</span></div>
+                <div class="legend">One row is one product at one concrete location. Total is valid only within that row and unit.</div>
+              </div>
+              <div class="table-scroll">
+                <table class="table-locations">
+                  <thead><tr><th scope="col">Location type</th><th class="sticky" scope="col">Location</th><th scope="col">Product</th><th scope="col">SKU</th><th scope="col">Unit</th><th class="number" scope="col">Free</th><th class="number" scope="col">Reserved</th><th class="number" scope="col">Shipped</th><th class="number" scope="col">Total</th><th scope="col">Factual conditions</th></tr></thead>
+                  <tbody>
+                    <tr><td>Warehouse</td><th class="sticky" scope="row"><a class="primary" href="#">WH-2</a><span class="secondary">Dubai Hub</span></th><td>CR 125</td><td>CR-125</td><td>pcs</td><td class="number">12 <span class="unit">pcs</span></td><td class="number">10 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number"><strong>22</strong> <span class="unit">pcs</span></td><td><span class="muted">None</span></td></tr>
+                    <tr><td>Warehouse</td><th class="sticky" scope="row"><a class="primary" href="#">WH-2</a><span class="secondary">Dubai Hub</span></th><td>Cruiser 300 FJ</td><td>CR300-FJ</td><td>pcs</td><td class="number">3 <span class="unit">pcs</span></td><td class="number negative">−1 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number"><strong>2</strong> <span class="unit">pcs</span></td><td><span class="fact">Negative balance: −1 pcs</span></td></tr>
+                    <tr><td>Production</td><th class="sticky" scope="row"><a class="primary" href="#">PO-8</a><span class="secondary">Production line · PLT-4</span></th><td>Enduro 125</td><td>EN125-GR</td><td>pcs</td><td class="number">2 <span class="unit">pcs</span></td><td class="number">43 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number"><strong>45</strong> <span class="unit">pcs</span></td><td><span class="fact">Production not fully activated: 2 pcs</span></td></tr>
+                    <tr><td>Transfer</td><th class="sticky" scope="row"><a class="primary" href="#">TR-5</a><span class="secondary">WH-6 → WH-2</span></th><td>Enduro 250</td><td>ENDURO-250</td><td>pcs</td><td class="number">1 <span class="unit">pcs</span></td><td class="number">3 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number"><strong>4</strong> <span class="unit">pcs</span></td><td><span class="fact">Transfer still in transit</span></td></tr>
+                    <tr><td>Customer order</td><th class="sticky" scope="row"><a class="primary" href="#">OMS-42</a><span class="secondary">Customer order</span></th><td>Cross 180 RX</td><td>CROSS-180-RX</td><td>pcs</td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">6 <span class="unit">pcs</span></td><td class="number"><strong>6</strong> <span class="unit">pcs</span></td><td><span class="muted">None</span></td></tr>
+                    <tr><td>Production</td><th class="sticky" scope="row"><a class="primary" href="#">PO-11</a><span class="secondary">Production line · PLT-1</span></th><td>Force 1000 Ranger</td><td>FORCE-1000-R</td><td>pcs</td><td class="number">1 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number"><strong>1</strong> <span class="unit">pcs</span></td><td><span class="fact">No expected date</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="footer-row"><span>Showing 6 of 10 location rows</span><div class="pagination"><span class="page current">1</span><span class="page">2</span></div></div>
+            </div>
+          </section>
+
+          <section class="view view-demand" aria-label="Customer demand view">
+            <div class="table-card">
+              <div class="card-topline">
+                <div class="card-title">Customer demand <span class="row-count">4 order lines</span></div>
+                <div class="legend">Preset applied: Uncovered demand. Expected end is the document date; line-level due dates are not available.</div>
+              </div>
+              <div class="table-scroll">
+                <table class="table-demand">
+                  <thead><tr><th class="sticky" scope="col">Customer order</th><th scope="col">Status</th><th scope="col"><span class="sort">Expected end</span></th><th scope="col">Product</th><th scope="col">SKU</th><th scope="col">Unit</th><th class="number" scope="col">Ordered</th><th class="number" scope="col">Reserved</th><th class="number" scope="col">Shipped</th><th class="number" scope="col">Open</th><th class="number" scope="col">Uncovered</th><th class="number" scope="col">Free now</th><th scope="col">Factual conditions</th></tr></thead>
+                  <tbody>
+                    <tr><th class="sticky" scope="row"><a class="primary" href="#">OMS-42 · line 3</a></th><td><span class="status">Open</span></td><td>Sep 12, 2026<span class="secondary">Document date</span></td><td>Cross 180 RX</td><td>CROSS-180-RX</td><td>pcs</td><td class="number">20 <span class="unit">pcs</span></td><td class="number">3 <span class="unit">pcs</span></td><td class="number">5 <span class="unit">pcs</span></td><td class="number">15 <span class="unit">pcs</span></td><td class="number"><strong>12</strong> <span class="unit">pcs</span></td><td class="number">4 <span class="unit">pcs</span></td><td><div class="condition-list"><span class="fact">Uncovered demand: 12 pcs</span><span class="fact">Expected date passed: Sep 12, 2026</span></div></td></tr>
+                    <tr><th class="sticky" scope="row"><a class="primary" href="#">OMS-184 · line 1</a></th><td><span class="status">Open</span></td><td>No expected date</td><td>Cruiser 300 FJ</td><td>CR300-FJ</td><td>pcs</td><td class="number">12 <span class="unit">pcs</span></td><td class="number">6 <span class="unit">pcs</span></td><td class="number">4 <span class="unit">pcs</span></td><td class="number">8 <span class="unit">pcs</span></td><td class="number"><strong>2</strong> <span class="unit">pcs</span></td><td class="number">2 <span class="unit">pcs</span></td><td><div class="condition-list"><span class="fact">Uncovered demand: 2 pcs</span><span class="fact">No expected date</span></div></td></tr>
+                    <tr><th class="sticky" scope="row"><a class="primary" href="#">OMS-184 · line 2</a></th><td><span class="status">Open</span></td><td>No expected date</td><td>Enduro 125</td><td>EN125-GR</td><td>pcs</td><td class="number">45 <span class="unit">pcs</span></td><td class="number">43 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">45 <span class="unit">pcs</span></td><td class="number"><strong>2</strong> <span class="unit">pcs</span></td><td class="number">2 <span class="unit">pcs</span></td><td><div class="condition-list"><span class="fact">Uncovered demand: 2 pcs</span><span class="fact">No expected date</span></div></td></tr>
+                    <tr><th class="sticky" scope="row"><a class="primary" href="#">OMS-208 · line 1</a></th><td><span class="status">Open</span></td><td>Sep 24, 2026</td><td>Force 1100 EFI</td><td>FORCE-1100-EFI</td><td>pcs</td><td class="number">5 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">3 <span class="unit">pcs</span></td><td class="number">2 <span class="unit">pcs</span></td><td class="number"><strong>2</strong> <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td><div class="condition-list"><span class="fact">Zero free with open demand</span><span class="fact">Uncovered demand: 2 pcs</span></div></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="footer-row"><span>Showing 4 of 4 matching demand lines</span><div class="pagination"><span class="page current">1</span></div></div>
+            </div>
+          </section>
+
+          <section class="view view-processes" aria-label="Production, outputs, and transfers view">
+            <div class="table-card">
+              <div class="card-topline">
+                <div class="card-title">Production &amp; transfers <span class="row-count process-count">9 process lines</span><span class="row-count date-count">3 matching process lines</span></div>
+                <div class="legend">Rows stay separate by process type. Grouping is not ranking; dates sort ascending inside each group.</div>
+              </div>
+              <div class="table-scroll">
+                <table class="table-processes">
+                  <thead>
+                    <tr>
+                      <th scope="col">Process type</th><th class="sticky" scope="col">Document</th><th scope="col">Status</th><th scope="col"><span class="sort">Expected end</span></th><th scope="col">Plant</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Product</th><th scope="col">SKU</th><th scope="col">Unit</th><th class="number" scope="col">Quantity</th><th class="number" scope="col">Done quantity</th><th class="number" scope="col">Activated</th><th class="number" scope="col">Remaining activation</th><th scope="col">Factual conditions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="process-group"><th colspan="15">Production orders <span class="group-explanation">ProductionOrderLine · activation and completed output remain explicit</span></th></tr>
+                    <tr>
+                      <td><span class="type">Production order</span></td><th class="sticky" scope="row"><a class="primary" href="#">PO-8 · line 1</a></th><td><span class="status">In progress</span></td><td>Sep 12, 2026</td><td><span class="code">PLT-4</span></td><td class="muted" aria-label="Not applicable">—</td><td>WH-6</td><td>Enduro 125</td><td>EN125-GR</td><td>pcs</td><td class="number">45 <span class="unit">pcs</span></td><td class="number">45 <span class="unit">pcs</span></td><td class="number">43 <span class="unit">pcs</span></td><td class="number"><strong>2</strong> <span class="unit">pcs</span></td><td><div class="condition-list"><span class="fact">Production not fully activated: 2 pcs</span><span class="fact">Expected date passed: Sep 12, 2026</span></div></td>
+                    </tr>
+                    <tr class="not-passed">
+                      <td><span class="type">Production order</span></td><th class="sticky" scope="row"><a class="primary" href="#">PO-11 · line 1</a></th><td><span class="status">Planned</span></td><td>No expected date</td><td><span class="code">PLT-1</span></td><td class="muted" aria-label="Not applicable">—</td><td>WH-3</td><td>Force 1000 Ranger</td><td>FORCE-1000-R</td><td>pcs</td><td class="number">1 <span class="unit">pc</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number"><strong>1</strong> <span class="unit">pc</span></td><td><div class="condition-list"><span class="fact">Production not fully activated: 1 pc</span><span class="fact">No expected date</span></div></td>
+                    </tr>
+                    <tr class="not-passed">
+                      <td><span class="type">Production order</span></td><th class="sticky" scope="row"><a class="primary" href="#">PO-14 · line 1</a></th><td><span class="status">Planned</span></td><td>Oct 02, 2026</td><td><span class="code">PLT-1</span></td><td class="muted" aria-label="Not applicable">—</td><td>WH-3</td><td>Force 1100 EFI</td><td>FORCE-1100-EFI</td><td>pcs</td><td class="number">6 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="number"><strong>6</strong> <span class="unit">pcs</span></td><td><span class="fact">Production not fully activated: 6 pcs</span></td>
+                    </tr>
+
+                    <tr class="process-group"><th colspan="15">Outputs <span class="group-explanation">ProductionOutputLine · planned quantity is not actual receipt</span></th></tr>
+                    <tr>
+                      <td><span class="type">Output</span></td><th class="sticky" scope="row"><a class="primary" href="#">OUT-17 · line 1</a><span class="secondary">Production order PO-8</span></th><td><span class="status">Planned</span></td><td>Sep 11, 2026</td><td class="muted" aria-label="Not applicable">—</td><td class="muted" aria-label="Not applicable">—</td><td>WH-6</td><td>Enduro 125</td><td>EN125-GR</td><td>pcs</td><td class="number">45 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td><span class="fact">Expected date passed: Sep 11, 2026</span></td>
+                    </tr>
+                    <tr class="not-passed">
+                      <td><span class="type">Output</span></td><th class="sticky" scope="row"><a class="primary" href="#">OUT-21 · line 1</a><span class="secondary">Production order PO-18</span></th><td><span class="status">Planned</span></td><td>No expected date</td><td class="muted" aria-label="Not applicable">—</td><td class="muted" aria-label="Not applicable">—</td><td>WH-6</td><td>CR 125</td><td>CR-125</td><td>pcs</td><td class="number">6 <span class="unit">pcs</span></td><td class="number">0 <span class="unit">pcs</span></td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td><span class="fact">No expected date</span></td>
+                    </tr>
+                    <tr class="not-passed">
+                      <td><span class="type">Output</span></td><th class="sticky" scope="row"><a class="primary" href="#">OUT-24 · line 2</a><span class="secondary">Production order PO-16</span></th><td><span class="status">Done</span></td><td>No expected date</td><td class="muted" aria-label="Not applicable">—</td><td class="muted" aria-label="Not applicable">—</td><td>WH-6</td><td>Cruiser 300 FJ</td><td>CR300-FJ</td><td>pcs</td><td class="number">8 <span class="unit">pcs</span></td><td class="number">8 <span class="unit">pcs</span></td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td><span class="muted">None</span></td>
+                    </tr>
+
+                    <tr class="process-group"><th colspan="15">Transfers <span class="group-explanation">TransferLine · route and in-transit fact remain explicit</span></th></tr>
+                    <tr>
+                      <td><span class="type">Transfer</span></td><th class="sticky" scope="row"><a class="primary" href="#">TR-5 · line 1</a></th><td><span class="status">Sent</span></td><td>Sep 17, 2026</td><td class="muted" aria-label="Not applicable">—</td><td>WH-6</td><td>WH-2</td><td>Enduro 250</td><td>ENDURO-250</td><td>pcs</td><td class="number">4 <span class="unit">pcs</span></td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td><div class="condition-list"><span class="fact">Transfer still in transit: 4 pcs</span><span class="fact">Expected date passed: Sep 17, 2026</span></div></td>
+                    </tr>
+                    <tr class="not-passed">
+                      <td><span class="type">Transfer</span></td><th class="sticky" scope="row"><a class="primary" href="#">TR-9 · line 1</a></th><td><span class="status">Sent</span></td><td>Sep 26, 2026</td><td class="muted" aria-label="Not applicable">—</td><td>WH-3</td><td>WH-2</td><td>Hummer 320 RX LTD</td><td>H320-RX-LTD</td><td>pcs</td><td class="number">1 <span class="unit">pc</span></td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td><span class="fact">Transfer still in transit: 1 pc</span></td>
+                    </tr>
+                    <tr class="not-passed">
+                      <td><span class="type">Transfer</span></td><th class="sticky" scope="row"><a class="primary" href="#">TR-12 · line 2</a></th><td><span class="status">Draft</span></td><td>No expected date</td><td class="muted" aria-label="Not applicable">—</td><td>WH-6</td><td>WH-2</td><td>Cross 180 RX</td><td>CROSS-180-RX</td><td>pcs</td><td class="number">2 <span class="unit">pcs</span></td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td class="center muted" aria-label="Not applicable">—</td><td><span class="fact">No expected date</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="footer-row">
+                <span class="footer-process-default">Showing 9 of 9 process lines · grouped by process type</span>
+                <span class="footer-process-dates">Showing 3 of 3 process lines with Expected date passed</span>
+                <div class="pagination"><span class="page current">1</span></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SPINE 8: Secondary state — Ledger investigation with source and reversal evidence. -->
+          <section class="view view-ledger" aria-label="Ledger investigation view">
+            <div class="investigation-shell">
+              <div class="table-card">
+                <div class="card-topline">
+                  <div class="card-title">Ledger <span class="row-count">6 immutable transactions</span></div>
+                  <div class="legend">Preset applied: Posted at, newest first. The selected transaction opens beside the table.</div>
+                </div>
+                <div class="table-scroll">
+                  <table class="table-ledger">
+                    <thead><tr><th class="sticky" scope="col"><span class="sort desc">Posted at</span></th><th scope="col">Transaction</th><th scope="col">Operation</th><th scope="col">Product</th><th scope="col">SKU</th><th scope="col">Unit</th><th class="number" scope="col">Quantity</th><th scope="col">Location type</th><th scope="col">Location</th><th scope="col">Stock state</th><th scope="col">Customer order</th><th scope="col">Source</th><th scope="col">Reverses transaction</th></tr></thead>
+                    <tbody>
+                      <tr><th class="sticky" scope="row"><span class="primary">Sep 18, 2026 · 14:26</span><span class="secondary">UTC+3</span></th><td><span class="code">TX-481</span></td><td>Transfer sent</td><td>Enduro 250</td><td>ENDURO-250</td><td>pcs</td><td class="number">+4 <span class="unit">pcs</span></td><td>Transfer</td><td><a class="link" href="#">TR-5</a></td><td>Reserved</td><td><a class="link" href="#">OMS-184</a></td><td><a class="link" href="#">TR-5</a></td><td class="muted" aria-label="Not applicable">—</td></tr>
+                      <tr><th class="sticky" scope="row"><span class="primary">Sep 18, 2026 · 14:26</span><span class="secondary">UTC+3</span></th><td><span class="code">TX-480</span></td><td>Transfer sent</td><td>Enduro 250</td><td>ENDURO-250</td><td>pcs</td><td class="number">−4 <span class="unit">pcs</span></td><td>Warehouse</td><td><a class="link" href="#">WH-6</a></td><td>Reserved</td><td><a class="link" href="#">OMS-184</a></td><td><a class="link" href="#">TR-5</a></td><td class="muted" aria-label="Not applicable">—</td></tr>
+                      <tr><th class="sticky" scope="row"><span class="primary">Sep 18, 2026 · 11:08</span><span class="secondary">UTC+3</span></th><td><span class="code">TX-476</span></td><td>Reservation</td><td>Cross 180 RX</td><td>CROSS-180-RX</td><td>pcs</td><td class="number">+2 <span class="unit">pcs</span></td><td>Warehouse</td><td><a class="link" href="#">WH-2</a></td><td>Reserved</td><td><a class="link" href="#">OMS-42</a></td><td><a class="link" href="#">RSV-83</a></td><td class="muted" aria-label="Not applicable">—</td></tr>
+                      <tr class="selected-row"><th class="sticky" scope="row"><span class="primary">Sep 16, 2026 · 15:31</span><span class="secondary">UTC+3 · selected</span></th><td><span class="code">TX-455</span></td><td>Reversal</td><td>Cruiser 300 FJ</td><td>CR300-FJ</td><td>pcs</td><td class="number">+1 <span class="unit">pc</span></td><td>Warehouse</td><td><a class="link" href="#">WH-2</a></td><td>Reserved</td><td><a class="link" href="#">OMS-184</a></td><td><a class="link" href="#">REV-14</a></td><td><a class="link" href="#">TX-451</a></td></tr>
+                      <tr><th class="sticky" scope="row"><span class="primary">Sep 16, 2026 · 15:18</span><span class="secondary">UTC+3</span></th><td><span class="code">TX-451</span></td><td>Reservation release</td><td>Cruiser 300 FJ</td><td>CR300-FJ</td><td>pcs</td><td class="number">−1 <span class="unit">pc</span></td><td>Warehouse</td><td><a class="link" href="#">WH-2</a></td><td>Reserved</td><td><a class="link" href="#">OMS-184</a></td><td><a class="link" href="#">RSV-79</a></td><td class="muted" aria-label="Not applicable">—</td></tr>
+                      <tr><th class="sticky" scope="row"><span class="primary">Sep 15, 2026 · 10:03</span><span class="secondary">UTC+3</span></th><td><span class="code">TX-438</span></td><td>Output</td><td>Enduro 125</td><td>EN125-GR</td><td>pcs</td><td class="number">+45 <span class="unit">pcs</span></td><td>Production</td><td><a class="link" href="#">PO-8</a></td><td>Reserved</td><td><a class="link" href="#">OMS-184</a></td><td><a class="link" href="#">OUT-17</a></td><td class="muted" aria-label="Not applicable">—</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="footer-row"><span>Showing 6 of 486 transactions</span><div class="pagination"><span class="page current">1</span><span class="page">2</span><span class="page">3</span><span class="page">Next</span></div></div>
+              </div>
+
+              <aside class="detail-panel" aria-labelledby="ledger-detail-title">
+                <div class="detail-header">
+                  <div>
+                    <div class="eyebrow">Ledger transaction</div>
+                    <h3 id="ledger-detail-title">TX-455 · Reversal</h3>
+                    <div class="detail-subtitle">Sep 16, 2026 · 15:31 UTC+3</div>
+                  </div>
+                  <span class="close" aria-label="Close detail panel">Close</span>
+                </div>
+                <div class="detail-body">
+                  <p class="detail-note">This transaction adds 1 pc to Reserved at WH-2 and reverses TX-451. The ledger shows the recorded relationship only.</p>
+
+                  <h4 class="detail-section">Transaction facts</h4>
+                  <dl class="definition-list">
+                    <div class="definition-row"><dt>Quantity</dt><dd>+1 pc</dd></div>
+                    <div class="definition-row"><dt>Product</dt><dd>Cruiser 300 FJ</dd></div>
+                    <div class="definition-row"><dt>Stock state</dt><dd>Reserved</dd></div>
+                    <div class="definition-row"><dt>Location</dt><dd>WH-2</dd></div>
+                    <div class="definition-row"><dt>Customer order</dt><dd>OMS-184</dd></div>
+                    <div class="definition-row"><dt>Source</dt><dd>REV-14</dd></div>
+                    <div class="definition-row"><dt>Reverses transaction</dt><dd>TX-451</dd></div>
+                  </dl>
+
+                  <h4 class="detail-section">Full dimension key</h4>
+                  <div class="dimension">product=PRD-36<br>location_type=warehouse<br>location=WH-2<br>state=reserved<br>customer_order=OMS-184<br>order_line=1</div>
+
+                  <h4 class="detail-section">Operation identifiers</h4>
+                  <dl class="definition-list">
+                    <div class="definition-row"><dt>Operation ID</dt><dd>OP-REV-14</dd></div>
+                    <div class="definition-row"><dt>Idempotency key</dt><dd>REV-14:TX-451</dd></div>
+                  </dl>
+
+                  <div class="panel-links">
+                    <a class="panel-link" href="#">Open source</a>
+                    <a class="panel-link" href="#">Open product</a>
+                    <a class="panel-link" href="#">Open location</a>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </section>
+        </div>
+      </main>
+    </section>
+  </div>
+</body>
+</html>
