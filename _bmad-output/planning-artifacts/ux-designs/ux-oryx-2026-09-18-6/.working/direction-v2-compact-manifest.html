@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TR-901 — Compact Manifest</title>
+  <style>
+    /* Hex colors: page #F4F5F7, surface #FFFFFF, ink #18181B, muted #71717A,
+       border #E4E4E7, border-strong #D4D4D8, active #EEF0F3, blue #1D4ED8,
+       amber-bg #FEF3C7, amber-ink #92400E, browser #F8F8F9. */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      padding: 16px;
+      background: #E9EAED;
+      color: #18181B;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+    .rationale { width: min(1400px, 100%); margin: 0 auto 8px; color: #52525B; font-size: 12px; }
+    .browser {
+      width: min(1400px, 100%);
+      min-height: 860px;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid #C8CBD0;
+      border-radius: 12px;
+      background: #FFFFFF;
+      box-shadow: 0 14px 36px rgba(24, 24, 27, .10);
+    }
+    .browser-bar {
+      height: 38px;
+      display: grid;
+      grid-template-columns: 74px 1fr 74px;
+      align-items: center;
+      padding: 0 13px;
+      border-bottom: 1px solid #E4E4E7;
+      background: #F8F8F9;
+    }
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dot:nth-child(1) { background: #FF5F57; }
+    .dot:nth-child(2) { background: #FEBC2E; }
+    .dot:nth-child(3) { background: #28C840; }
+    .address { width: min(570px, 100%); justify-self: center; padding: 4px 10px; border: 1px solid #E4E4E7; border-radius: 6px; background: #FFFFFF; color: #71717A; font-size: 10px; text-align: center; }
+    .app { display: grid; grid-template-columns: 178px minmax(0, 1fr); min-height: 822px; }
+    aside { padding: 14px 10px; border-right: 1px solid #E4E4E7; background: #FFFFFF; }
+    .brand { display: flex; align-items: center; gap: 8px; padding: 0 7px 14px; font-size: 14px; font-weight: 750; }
+    .mark { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 6px; background: #18181B; color: #FFFFFF; font-size: 9px; }
+    .group { padding: 11px 8px 4px; color: #A1A1AA; font-size: 8px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .nav { display: flex; align-items: center; gap: 8px; min-height: 29px; padding: 5px 8px; border-radius: 5px; color: #52525B; font-size: 11px; }
+    .nav.active { background: #EEF0F3; color: #18181B; font-weight: 700; }
+    .nav i { width: 13px; color: #71717A; font-style: normal; text-align: center; }
+    main { min-width: 0; padding: 14px 18px 24px; background: #F4F5F7; }
+    .crumbs { margin-bottom: 8px; color: #71717A; font-size: 10px; }
+    .crumbs span { margin: 0 5px; color: #A1A1AA; }
+    .document-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 54px;
+      padding: 10px 12px;
+      border: 1px solid #D4D4D8;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+    .title-row { display: flex; align-items: baseline; gap: 10px; }
+    h1 { margin: 0; font-size: 18px; line-height: 1; letter-spacing: -.02em; }
+    .doc-type { color: #71717A; font-size: 10px; }
+    .manifest-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 0; margin-top: 6px; color: #52525B; font-size: 11px; }
+    .manifest-meta > span + span::before { margin: 0 7px; color: #A1A1AA; content: "·"; }
+    .current { color: #1D4ED8; font-weight: 700; }
+    .status { display: inline-flex; padding: 2px 6px; border-radius: 999px; background: #FEF3C7; color: #92400E; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+    button { height: 31px; padding: 0 11px; border: 1px solid #18181B; border-radius: 6px; background: #18181B; color: #FFFFFF; font: inherit; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .table-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 1px 6px; }
+    h2 { margin: 0; font-size: 12px; }
+    .count { color: #71717A; font-size: 10px; }
+    .table-wrap { overflow: hidden; border: 1px solid #D4D4D8; border-radius: 8px; background: #FFFFFF; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th {
+      height: 30px;
+      padding: 6px 10px;
+      border-bottom: 1px solid #D4D4D8;
+      background: #FAFAFA;
+      color: #52525B;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .045em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    th.num, td.num { text-align: right; }
+    td { height: 42px; padding: 5px 10px; border-bottom: 1px solid #E4E4E7; color: #3F3F46; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #FAFAFA; }
+    .product { color: #18181B; font-size: 11px; font-weight: 700; }
+    .sku { margin-top: 1px; color: #71717A; font-size: 9px; }
+    .qty { color: #18181B; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .orders { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 14px; }
+    .allocation { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+    .order { color: #1D4ED8; font-size: 10px; font-weight: 750; }
+    .order-qty { color: #3F3F46; font-size: 10px; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .none { color: #A1A1AA; }
+    .available { color: #18181B; font-size: 12px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .zero { color: #A1A1AA; }
+    @media (max-width: 960px) {
+      body { padding: 6px; }
+      .app { grid-template-columns: 1fr; }
+      aside { display: none; }
+      .document-head { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="rationale">Ultra-compact manifest: document identity, route, current transfer location, status, and due date share one line so the table owns the page.</div>
+  <section class="browser" aria-label="Compact manifest mockup">
+    <div class="browser-bar">
+      <div class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="address">oryx.local/store/logistics/transfers/TR-901</div>
+      <div></div>
+    </div>
+    <div class="app">
+      <aside>
+        <div class="brand"><span class="mark">OX</span> Oryx BMS</div>
+        <div class="nav"><i>⌂</i> Overview</div>
+        <div class="group">Store</div>
+        <div class="nav"><i>□</i> Products</div>
+        <div class="nav"><i>◎</i> Customer orders</div>
+        <div class="group">Logistics</div>
+        <div class="nav"><i>▦</i> Inventory</div>
+        <div class="nav active"><i>⇄</i> Transfers</div>
+        <div class="nav"><i>⌁</i> Reservations</div>
+      </aside>
+      <main>
+        <div class="crumbs">Store <span>›</span> Logistics <span>›</span> Transfers <span>›</span> TR-901</div>
+        <header class="document-head">
+          <div>
+            <div class="title-row"><h1>TR-901</h1><span class="doc-type">Transfer document</span></div>
+            <div class="manifest-meta">
+              <span>WH-7 → <b class="current">Transfer TR-901 (current)</b> → WH-11</span>
+              <span class="status">In transit</span>
+              <span>Expected Sep 8, 2026</span>
+            </div>
+          </div>
+          <button>Reserve in transit</button>
+        </header>
+
+        <div class="table-head"><h2>Transfer manifest</h2><span class="count">15 product lines</span></div>
+        <div class="table-wrap">
+          <table>
+            <colgroup><col style="width:30%"><col style="width:16%"><col style="width:39%"><col style="width:15%"></colgroup>
+            <thead><tr><th>Product</th><th class="num">Quantity in transfer</th><th>Customer-order allocation</th><th class="num">Available to reserve</th></tr></thead>
+            <tbody>
+              <tr><td><div class="product">Enduro 250</div><div class="sku">PRD-22</div></td><td class="num qty">4</td><td><div class="orders"><span class="allocation"><b class="order">OMS-901</b><span class="order-qty">4</span></span></div></td><td class="num available zero">0</td></tr>
+              <tr><td><div class="product">Force 1100 EFI</div><div class="sku">FORCE-1100-EFI</div></td><td class="num qty">12</td><td><div class="orders"><span class="allocation"><b class="order">OMS-912</b><span class="order-qty">8</span></span></div></td><td class="num available">4</td></tr>
+              <tr><td><div class="product">Cross 180 RX</div><div class="sku">CROSS-180-RX</div></td><td class="num qty">9</td><td class="none">—</td><td class="num available">9</td></tr>
+              <tr><td><div class="product">Activator 280 RX</div><div class="sku">ACTIVATOR-280-RX</div></td><td class="num qty">15</td><td><div class="orders"><span class="allocation"><b class="order">OMS-918</b><span class="order-qty">6</span></span><span class="allocation"><b class="order">OMS-923</b><span class="order-qty">5</span></span></div></td><td class="num available">4</td></tr>
+              <tr><td><div class="product">Cruiser 300 FJ</div><div class="sku">CRUISER-300-FJ</div></td><td class="num qty">7</td><td><div class="orders"><span class="allocation"><b class="order">OMS-930</b><span class="order-qty">7</span></span></div></td><td class="num available zero">0</td></tr>
+              <tr><td><div class="product">Hummer 320 RX LTD</div><div class="sku">HUMMER-320-RX-LTD</div></td><td class="num qty">10</td><td><div class="orders"><span class="allocation"><b class="order">OMS-934</b><span class="order-qty">2</span></span></div></td><td class="num available">8</td></tr>
+              <tr><td><div class="product">Force 650</div><div class="sku">FORCE-650</div></td><td class="num qty">6</td><td class="none">—</td><td class="num available">6</td></tr>
+              <tr><td><div class="product">Cross E-200</div><div class="sku">CROSS-E-200</div></td><td class="num qty">14</td><td><div class="orders"><span class="allocation"><b class="order">OMS-940</b><span class="order-qty">4</span></span><span class="allocation"><b class="order">OMS-941</b><span class="order-qty">3</span></span><span class="allocation"><b class="order">OMS-947</b><span class="order-qty">2</span></span></div></td><td class="num available">5</td></tr>
+              <tr><td><div class="product">Cruiser Race 350 GX</div><div class="sku">CRUISER-RACE-350-GX</div></td><td class="num qty">8</td><td><div class="orders"><span class="allocation"><b class="order">OMS-951</b><span class="order-qty">8</span></span></div></td><td class="num available zero">0</td></tr>
+              <tr><td><div class="product">Junior 200</div><div class="sku">JUNIOR-200</div></td><td class="num qty">11</td><td><div class="orders"><span class="allocation"><b class="order">OMS-955</b><span class="order-qty">5</span></span></div></td><td class="num available">6</td></tr>
+              <tr><td><div class="product">Predator 420 2 seater</div><div class="sku">PREDATOR-420-2-SEATER</div></td><td class="num qty">5</td><td class="none">—</td><td class="num available">5</td></tr>
+              <tr><td><div class="product">Sport 250</div><div class="sku">SPORT-250</div></td><td class="num qty">16</td><td><div class="orders"><span class="allocation"><b class="order">OMS-960</b><span class="order-qty">10</span></span><span class="allocation"><b class="order">OMS-962</b><span class="order-qty">4</span></span></div></td><td class="num available">2</td></tr>
+              <tr><td><div class="product">Power Max 250</div><div class="sku">POWER-MAX-250</div></td><td class="num qty">13</td><td><div class="orders"><span class="allocation"><b class="order">OMS-965</b><span class="order-qty">3</span></span></div></td><td class="num available">10</td></tr>
+              <tr><td><div class="product">Expert Pro 450</div><div class="sku">EXPERT-PRO-450</div></td><td class="num qty">9</td><td><div class="orders"><span class="allocation"><b class="order">OMS-970</b><span class="order-qty">3</span></span><span class="allocation"><b class="order">OMS-972</b><span class="order-qty">3</span></span><span class="allocation"><b class="order">OMS-973</b><span class="order-qty">1</span></span></div></td><td class="num available">2</td></tr>
+              <tr><td><div class="product">Tour Enduro 300 Ultra</div><div class="sku">TOUR-ENDURO-300-ULTRA</div></td><td class="num qty">18</td><td class="none">—</td><td class="num available">18</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </section>
+</body>
+</html>

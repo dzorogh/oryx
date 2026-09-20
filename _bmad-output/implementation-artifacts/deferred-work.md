@@ -49,3 +49,31 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-transfer-direct-send.md`
   summary: Анон по-прежнему может вставить transfer как draft и удалить строку idempotency key.
   evidence: Новая `store_transfer_request` и старая `store_transfer` остаются с open RLS / GRANT ALL, как остальные демо-таблицы `store_*`. UI больше не пишет draft, но сырой клиент может. Закрыло бы: CHECK/trigger на публичный status и revoke INSERT/DELETE у anon.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
+  summary: Закрыть анонимные UPDATE/DELETE для `store_transfer_request`.
+  evidence: Open RLS позволяет менять или удалять idempotency key; проблема находится в ранее созданной direct-send миграции, исключённой из scope карточки.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
+  summary: Отделить seed-параметры `p_id` и `p_created_at` от публичного create-and-send RPC.
+  evidence: Анонимный caller может выбирать id и created_at; исправление требует изменения direct-send API и миграции.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
+  summary: Сделать idempotent replay успешным после delivery или cancellation.
+  evidence: RPC возвращает текущий terminal status, а клиент принимает только `sent`; это контракт direct-send вне текущего detail redesign.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
+  summary: Блокировать повторный Send на время create-and-send запроса.
+  evidence: Обе create forms допускают быстрый повторный RPC; list/dialog были явным non-goal текущей работы.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
+  summary: Исправить owner-aware cancellation после резервирования товара в пути.
+  evidence: Reverse исходного `transfer_send` после Free→reserved может оставить отрицательный Free и положительный reserved на cancelled Transfer; требуется backend/domain изменение.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
+  summary: Перевести transfer list/dialog и общие status/error labels на английский.
+  evidence: Эти поверхности остаются русскими под `english-ui:ignore-file`; текущая спецификация ограничена Transfer detail.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
+  summary: Добавить исполняемый Postgres contract test для direct-send RPC.
+  evidence: Atomicity, rollback и same-key replay сейчас проверяются mock/source-text тестами; нужен реальный database harness для миграции.

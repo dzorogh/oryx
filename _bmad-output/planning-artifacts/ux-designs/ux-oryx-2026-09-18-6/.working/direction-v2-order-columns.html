@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TR-901 — Order Columns</title>
+  <style>
+    /* Hex colors: canvas #F5F5F5, surface #FFFFFF, ink #171717, muted #737373,
+       border #E5E5E5, border-strong #D4D4D4, sidebar #FAFAFA, active #EDEDED,
+       blue #1D4ED8, blue-bg #EFF6FF, amber-bg #FEF3C7, amber-ink #92400E,
+       browser #F7F7F7. */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { padding: 16px; background: #E8E8E8; color: #171717; font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; line-height: 1.3; }
+    .rationale { width: min(1400px, 100%); margin: 0 auto 8px; color: #525252; font-size: 12px; }
+    .browser { width: min(1400px, 100%); min-height: 860px; margin: 0 auto; overflow: hidden; border: 1px solid #C5C5C5; border-radius: 12px; background: #FFFFFF; box-shadow: 0 14px 36px rgba(23, 23, 23, .10); }
+    .browser-bar { height: 38px; display: grid; grid-template-columns: 74px 1fr 74px; align-items: center; padding: 0 13px; border-bottom: 1px solid #E5E5E5; background: #F7F7F7; }
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dot:nth-child(1) { background: #FF5F57; }
+    .dot:nth-child(2) { background: #FEBC2E; }
+    .dot:nth-child(3) { background: #28C840; }
+    .address { width: min(570px, 100%); justify-self: center; padding: 4px 10px; border: 1px solid #E5E5E5; border-radius: 6px; background: #FFFFFF; color: #737373; font-size: 10px; text-align: center; }
+    .app { display: grid; grid-template-columns: 168px minmax(0, 1fr); min-height: 822px; }
+    aside { padding: 14px 10px; border-right: 1px solid #E5E5E5; background: #FAFAFA; }
+    .brand { display: flex; align-items: center; gap: 8px; padding: 0 7px 14px; font-size: 14px; font-weight: 750; }
+    .mark { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 6px; background: #171717; color: #FFFFFF; font-size: 9px; }
+    .group { padding: 11px 8px 4px; color: #A3A3A3; font-size: 8px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .nav { display: flex; align-items: center; gap: 8px; min-height: 29px; padding: 5px 8px; border-radius: 5px; color: #525252; font-size: 11px; }
+    .nav.active { background: #EDEDED; color: #171717; font-weight: 700; }
+    .nav i { width: 13px; color: #737373; font-style: normal; text-align: center; }
+    main { min-width: 0; padding: 14px 18px 24px; background: #F5F5F5; }
+    .crumbs { color: #737373; font-size: 10px; }
+    .heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 8px 0; }
+    .heading-title { display: flex; align-items: baseline; gap: 9px; }
+    h1 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+    .type { color: #737373; font-size: 10px; }
+    button { height: 31px; padding: 0 11px; border: 1px solid #171717; border-radius: 6px; background: #171717; color: #FFFFFF; font: inherit; font-size: 11px; font-weight: 700; }
+    .route-line { display: flex; align-items: center; gap: 9px; min-height: 36px; padding: 7px 10px; border: 1px solid #D4D4D4; border-radius: 6px; background: #FFFFFF; color: #404040; font-size: 11px; }
+    .route-label { color: #737373; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .node { font-weight: 700; }
+    .arrow { color: #A3A3A3; }
+    .current { padding: 3px 7px; border-radius: 4px; background: #EFF6FF; color: #1D4ED8; font-weight: 750; }
+    .separator { height: 15px; margin: 0 2px; border-left: 1px solid #D4D4D4; }
+    .status { padding: 2px 6px; border-radius: 999px; background: #FEF3C7; color: #92400E; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+    .expected { color: #525252; }
+    .expected b { color: #171717; }
+    .list-title { display: flex; align-items: center; justify-content: space-between; margin: 10px 1px 6px; }
+    h2 { margin: 0; font-size: 12px; }
+    .list-title span { color: #737373; font-size: 10px; }
+    .product-list { overflow: hidden; border: 1px solid #D4D4D4; border-radius: 7px; background: #FFFFFF; }
+    .list-header { display: grid; grid-template-columns: minmax(0, 1fr) 120px; align-items: center; min-height: 28px; padding: 5px 12px 5px 38px; border-bottom: 1px solid #D4D4D4; background: #FAFAFA; color: #525252; font-size: 8px; font-weight: 800; letter-spacing: .045em; text-transform: uppercase; }
+    .list-header span:last-child { text-align: right; }
+    details { border-bottom: 1px solid #E5E5E5; }
+    details:last-child { border-bottom: 0; }
+    summary { display: grid; grid-template-columns: 18px minmax(0, 1fr) 120px; align-items: center; min-height: 39px; padding: 4px 12px; cursor: pointer; list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { background: #FAFAFA; }
+    summary:focus-visible { outline: 2px solid #2563EB; outline-offset: -2px; }
+    .chevron { color: #737373; font-size: 15px; line-height: 1; transition: transform .12s ease; }
+    .chevron::before { content: "›"; }
+    details[open] .chevron { transform: rotate(90deg); }
+    .product { color: #171717; font-size: 11px; font-weight: 700; }
+    .sku { display: block; margin-top: 1px; color: #A3A3A3; font-size: 9px; }
+    .total { color: #171717; font-size: 12px; font-weight: 750; font-variant-numeric: tabular-nums; text-align: right; }
+    .breakdown { padding: 2px 12px 6px 38px; background: #FAFAFA; }
+    .breakdown-row { display: grid; grid-template-columns: minmax(0, 1fr) 120px; align-items: center; min-height: 24px; border-top: 1px solid #EEEEEE; color: #525252; font-size: 10px; }
+    .breakdown-row:first-child { border-top: 0; }
+    .breakdown-row .order-code { color: #1D4ED8; font-weight: 750; }
+    .breakdown-qty { color: #262626; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+    @media (max-width: 980px) {
+      body { padding: 6px; }
+      .app { grid-template-columns: 1fr; }
+      aside { display: none; }
+      .route-line { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="rationale">Expandable manifest: compact product totals stay scannable while each row reveals its exact Free and customer-order quantity breakdown.</div>
+  <section class="browser" aria-label="Order-column transfer mockup">
+    <div class="browser-bar">
+      <div class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="address">oryx.local/store/logistics/transfers/TR-901</div>
+      <div></div>
+    </div>
+    <div class="app">
+      <aside>
+        <div class="brand"><span class="mark">OX</span> Oryx BMS</div>
+        <div class="nav"><i>⌂</i> Overview</div>
+        <div class="group">Store</div>
+        <div class="nav"><i>□</i> Products</div>
+        <div class="nav"><i>◎</i> Customer orders</div>
+        <div class="group">Logistics</div>
+        <div class="nav"><i>▦</i> Inventory</div>
+        <div class="nav active"><i>⇄</i> Transfers</div>
+        <div class="nav"><i>⌁</i> Reservations</div>
+      </aside>
+      <main>
+        <div class="crumbs">Store / Logistics / Transfers / TR-901</div>
+        <header class="heading">
+          <div class="heading-title"><h1>TR-901</h1><span class="type">Transfer document</span></div>
+          <button>Reserve in transit</button>
+        </header>
+        <div class="route-line" aria-label="Transfer route and current state">
+          <span class="route-label">Route</span>
+          <span class="node">WH-7</span><span class="arrow">→</span>
+          <span class="current">Transfer TR-901 · current location</span><span class="arrow">→</span>
+          <span class="node">WH-11</span>
+          <span class="separator"></span>
+          <span class="status">In transit</span>
+          <span class="expected">Expected <b>Sep 8, 2026</b></span>
+        </div>
+
+        <div class="list-title"><h2>Products</h2><span>15 lines</span></div>
+        <div class="product-list">
+          <div class="list-header"><span>Product</span><span>Quantity</span></div>
+
+          <details open>
+            <summary><span class="chevron"></span><span><span class="product">Enduro 250</span><span class="sku">PRD-22</span></span><span class="total">4</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">0</span></div><div class="breakdown-row"><span class="order-code">OMS-901</span><span class="breakdown-qty">4</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Force 1100 EFI</span><span class="sku">FORCE-1100-EFI</span></span><span class="total">12</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">4</span></div><div class="breakdown-row"><span class="order-code">OMS-912</span><span class="breakdown-qty">8</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Cross 180 RX</span><span class="sku">CROSS-180-RX</span></span><span class="total">9</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">9</span></div></div>
+          </details>
+          <details open>
+            <summary><span class="chevron"></span><span><span class="product">Activator 280 RX</span><span class="sku">ACTIVATOR-280-RX</span></span><span class="total">15</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">4</span></div><div class="breakdown-row"><span class="order-code">OMS-918</span><span class="breakdown-qty">6</span></div><div class="breakdown-row"><span class="order-code">OMS-923</span><span class="breakdown-qty">5</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Cruiser 300 FJ</span><span class="sku">CRUISER-300-FJ</span></span><span class="total">7</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">0</span></div><div class="breakdown-row"><span class="order-code">OMS-930</span><span class="breakdown-qty">7</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Hummer 320 RX LTD</span><span class="sku">HUMMER-320-RX-LTD</span></span><span class="total">10</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">8</span></div><div class="breakdown-row"><span class="order-code">OMS-934</span><span class="breakdown-qty">2</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Force 650</span><span class="sku">FORCE-650</span></span><span class="total">6</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">6</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Cross E-200</span><span class="sku">CROSS-E-200</span></span><span class="total">14</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">5</span></div><div class="breakdown-row"><span class="order-code">OMS-940</span><span class="breakdown-qty">4</span></div><div class="breakdown-row"><span class="order-code">OMS-941</span><span class="breakdown-qty">3</span></div><div class="breakdown-row"><span class="order-code">OMS-947</span><span class="breakdown-qty">2</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Cruiser Race 350 GX</span><span class="sku">CRUISER-RACE-350-GX</span></span><span class="total">8</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">0</span></div><div class="breakdown-row"><span class="order-code">OMS-951</span><span class="breakdown-qty">8</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Junior 200</span><span class="sku">JUNIOR-200</span></span><span class="total">11</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">6</span></div><div class="breakdown-row"><span class="order-code">OMS-955</span><span class="breakdown-qty">5</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Predator 420 2 seater</span><span class="sku">PREDATOR-420-2-SEATER</span></span><span class="total">5</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">5</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Sport 250</span><span class="sku">SPORT-250</span></span><span class="total">16</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">2</span></div><div class="breakdown-row"><span class="order-code">OMS-960</span><span class="breakdown-qty">10</span></div><div class="breakdown-row"><span class="order-code">OMS-962</span><span class="breakdown-qty">4</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Power Max 250</span><span class="sku">POWER-MAX-250</span></span><span class="total">13</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">10</span></div><div class="breakdown-row"><span class="order-code">OMS-965</span><span class="breakdown-qty">3</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Expert Pro 450</span><span class="sku">EXPERT-PRO-450</span></span><span class="total">9</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">2</span></div><div class="breakdown-row"><span class="order-code">OMS-970</span><span class="breakdown-qty">3</span></div><div class="breakdown-row"><span class="order-code">OMS-972</span><span class="breakdown-qty">3</span></div><div class="breakdown-row"><span class="order-code">OMS-973</span><span class="breakdown-qty">1</span></div></div>
+          </details>
+          <details>
+            <summary><span class="chevron"></span><span><span class="product">Tour Enduro 300 Ultra</span><span class="sku">TOUR-ENDURO-300-ULTRA</span></span><span class="total">18</span></summary>
+            <div class="breakdown"><div class="breakdown-row"><span>Free</span><span class="breakdown-qty">18</span></div></div>
+          </details>
+        </div>
+      </main>
+    </div>
+  </section>
+</body>
+</html>

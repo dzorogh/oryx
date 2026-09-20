@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oryx Transfer Detail — Operational Table</title>
+  <style>
+    /* Hex palette: app #F6F7F8, surface #FFFFFF, ink #111827, muted #6B7280,
+       line #DDE1E6, line-soft #ECEEF1, graphite #262A30, blue #1D4ED8,
+       blue-soft #EFF6FF, amber #A16207, amber-soft #FEFCE8, green #166534,
+       green-soft #F0FDF4, browser #F3F4F6. */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      padding: 22px;
+      background: #E7E9EC;
+      color: #111827;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .rationale {
+      max-width: 1220px;
+      margin: 0 auto 16px;
+      color: #4B5563;
+      font-size: 14px;
+    }
+    .rationale strong { color: #111827; }
+    .browser {
+      width: min(1540px, 100%);
+      min-height: 900px;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid #BEC3CB;
+      border-radius: 12px;
+      background: #FFFFFF;
+      box-shadow: 0 18px 48px rgba(17, 24, 39, .13);
+    }
+    .browser-bar {
+      height: 44px;
+      display: grid;
+      grid-template-columns: 92px 1fr 92px;
+      align-items: center;
+      padding: 0 14px;
+      background: #F3F4F6;
+      border-bottom: 1px solid #DDE1E6;
+    }
+    .dots { display: flex; gap: 7px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot:nth-child(1) { background: #FF5F57; }
+    .dot:nth-child(2) { background: #FEBC2E; }
+    .dot:nth-child(3) { background: #28C840; }
+    .address {
+      width: min(650px, 100%);
+      justify-self: center;
+      padding: 5px 12px;
+      border: 1px solid #DDE1E6;
+      border-radius: 6px;
+      background: #FFFFFF;
+      color: #6B7280;
+      font-size: 11px;
+      text-align: center;
+    }
+    .app { display: grid; grid-template-columns: 190px minmax(0, 1fr); min-height: 856px; }
+    .sidebar {
+      position: relative;
+      padding: 17px 12px;
+      border-right: 1px solid #DDE1E6;
+      background: #FFFFFF;
+    }
+    .brand { display: flex; align-items: center; gap: 9px; padding: 0 7px 18px; font-size: 15px; font-weight: 760; }
+    .brand-mark { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 6px; background: #262A30; color: #FFFFFF; font-size: 10px; }
+    .nav-label { padding: 12px 8px 4px; color: #9CA3AF; font-size: 9px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .nav-item { display: flex; gap: 8px; align-items: center; min-height: 32px; padding: 6px 8px; border-radius: 5px; color: #4B5563; font-size: 12px; }
+    .nav-item.active { background: #F0F1F3; color: #111827; font-weight: 700; }
+    .nav-icon { width: 15px; color: #6B7280; text-align: center; }
+    .user { position: absolute; right: 12px; bottom: 15px; left: 12px; padding: 10px; border-top: 1px solid #ECEEF1; color: #6B7280; font-size: 11px; }
+    main { min-width: 0; padding: 18px 22px 32px; background: #F6F7F8; }
+    .breadcrumbs { margin-bottom: 10px; color: #6B7280; font-size: 11px; }
+    .breadcrumbs b { color: #374151; font-weight: 600; }
+    .toast {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 10px;
+      padding: 9px 12px;
+      border: 1px solid #BBF7D0;
+      border-radius: 7px;
+      background: #F0FDF4;
+      color: #166534;
+      font-size: 12px;
+    }
+    .check { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: #166534; color: #FFFFFF; font-size: 11px; font-weight: 800; }
+    .toast strong { color: #14532D; }
+    .toast-time { color: #15803D; font-size: 11px; }
+    .toolbar {
+      padding: 14px 16px 12px;
+      border: 1px solid #DDE1E6;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+    .toolbar-main { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .title-line { display: flex; align-items: center; gap: 10px; }
+    h1 { margin: 0; font-size: 19px; line-height: 1.2; letter-spacing: -.025em; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #FEFCE8;
+      color: #854D0E;
+      font-size: 10px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .status i { width: 6px; height: 6px; border-radius: 50%; background: #CA8A04; }
+    .subtitle { margin-top: 3px; color: #6B7280; font-size: 11px; }
+    .actions { display: flex; gap: 7px; }
+    button { height: 32px; padding: 0 11px; border: 1px solid #D1D5DB; border-radius: 5px; background: #FFFFFF; color: #1F2937; font: inherit; font-size: 11px; font-weight: 700; }
+    button.primary { border-color: #262A30; background: #262A30; color: #FFFFFF; }
+    .meta-strip { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #ECEEF1; }
+    .meta { min-width: 110px; }
+    .meta-label { color: #9CA3AF; font-size: 9px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .meta-value { margin-top: 2px; color: #374151; font-size: 11px; font-weight: 650; }
+    .route-strip {
+      display: grid;
+      grid-template-columns: minmax(130px, .7fr) 34px minmax(300px, 1.5fr) 34px minmax(130px, .7fr);
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 12px 14px;
+      border: 1px solid #BFDBFE;
+      border-radius: 8px;
+      background: #EFF6FF;
+    }
+    .route-node { min-width: 0; }
+    .route-label { color: #64748B; font-size: 9px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .route-value { margin-top: 1px; color: #1E3A8A; font-size: 14px; font-weight: 760; }
+    .route-sub { color: #64748B; font-size: 10px; }
+    .route-arrow { color: #60A5FA; font-size: 18px; text-align: center; }
+    .route-current { padding: 7px 11px; border: 1px solid #60A5FA; border-radius: 6px; background: #FFFFFF; }
+    .route-current .route-label { color: #1D4ED8; }
+    .location-warning { color: #1E40AF; font-size: 10px; font-weight: 650; }
+    .section-line { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 7px; }
+    h2 { margin: 0; font-size: 13px; }
+    .section-meta { color: #6B7280; font-size: 10px; }
+    .table-card { overflow: hidden; border: 1px solid #DDE1E6; border-radius: 8px; background: #FFFFFF; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th {
+      padding: 8px 10px;
+      border-bottom: 1px solid #DDE1E6;
+      background: #FAFAFB;
+      color: #6B7280;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .055em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    td { padding: 11px 10px; border-bottom: 1px solid #ECEEF1; color: #374151; vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    .product { color: #111827; font-weight: 700; }
+    .sku { margin-top: 2px; color: #6B7280; font-size: 10px; }
+    .number { color: #111827; font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .unit { color: #9CA3AF; font-size: 10px; }
+    .allocation-stack { display: grid; gap: 6px; }
+    .allocation-line { display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 8px; }
+    .code { color: #1D4ED8; font-weight: 750; }
+    .allocation-type { color: #6B7280; font-size: 10px; }
+    .alloc-qty { color: #111827; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .document-tag { display: inline-flex; margin-left: 5px; padding: 1px 5px; border: 1px solid #BBF7D0; border-radius: 4px; background: #F0FDF4; color: #166534; font-size: 9px; font-weight: 700; }
+    .available { color: #374151; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .available.zero { color: #9CA3AF; }
+    .location-cell { font-size: 11px; font-weight: 650; }
+    .location-cell span { display: block; margin-top: 2px; color: #1D4ED8; font-size: 10px; font-weight: 600; }
+    .total-row { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; padding: 9px 10px; border-top: 1px solid #DDE1E6; background: #FAFAFB; color: #6B7280; font-size: 10px; }
+    .total-row strong { color: #111827; }
+    .lower-grid { display: grid; grid-template-columns: 1fr .82fr; gap: 10px; margin-top: 10px; }
+    .panel { overflow: hidden; border: 1px solid #DDE1E6; border-radius: 8px; background: #FFFFFF; }
+    .panel-head { display: flex; justify-content: space-between; padding: 9px 11px; border-bottom: 1px solid #ECEEF1; background: #FAFAFB; font-size: 11px; font-weight: 700; }
+    .ledger { display: grid; grid-template-columns: 100px 105px 1fr auto; gap: 9px; padding: 9px 11px; border-bottom: 1px solid #ECEEF1; color: #4B5563; font-size: 10px; }
+    .ledger:last-child { border-bottom: 0; }
+    .ledger .type { color: #111827; font-weight: 650; }
+    .reservation-detail { padding: 11px; }
+    .reservation-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .reservation-title { color: #111827; font-weight: 700; }
+    .reservation-id { color: #166534; font-size: 10px; font-weight: 700; }
+    .reservation-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+    .reservation-field { padding: 8px; border-radius: 5px; background: #F6F7F8; }
+    .reservation-field span { display: block; color: #9CA3AF; font-size: 9px; text-transform: uppercase; }
+    .reservation-field strong { display: block; margin-top: 2px; color: #374151; font-size: 10px; }
+    @media (max-width: 1020px) {
+      body { padding: 8px; }
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .route-strip { grid-template-columns: 1fr; }
+      .route-arrow { transform: rotate(90deg); }
+      .lower-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="rationale"><strong>Direction 2 — Operational Table.</strong> A compact, scan-first workspace puts every transfer quantity beside the customer order or Reservation document that claims it. The visible confirmation state demonstrates that reserving in-transit stock creates an auditable document at the transfer location.</div>
+  <section class="browser" aria-label="Browser mockup showing dense transfer operations table">
+    <div class="browser-bar">
+      <div class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="address">oryx.local/store/logistics/transfers/TR-901</div>
+      <div></div>
+    </div>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">OX</span> Oryx</div>
+        <div class="nav-item"><span class="nav-icon">⌂</span> Overview</div>
+        <div class="nav-label">Store</div>
+        <div class="nav-item"><span class="nav-icon">□</span> Products</div>
+        <div class="nav-item"><span class="nav-icon">◎</span> Customer orders</div>
+        <div class="nav-label">Logistics</div>
+        <div class="nav-item"><span class="nav-icon">▦</span> Stock</div>
+        <div class="nav-item active"><span class="nav-icon">⇄</span> Transfers</div>
+        <div class="nav-item"><span class="nav-icon">⌁</span> Reservations</div>
+        <div class="nav-item"><span class="nav-icon">≡</span> Ledger</div>
+        <div class="user">Logistics manager<br><strong>Central operations</strong></div>
+      </aside>
+      <main>
+        <div class="breadcrumbs">Store / Logistics / Transfers / <b>TR-901</b></div>
+
+        <div class="toast" role="status">
+          <span class="check">✓</span>
+          <span><strong>Reservation RSV-1206 created.</strong> 2 Trail Helmet units are reserved for OMS-927 at location Transfer TR-901.</span>
+          <span class="toast-time">Just now</span>
+        </div>
+
+        <section class="toolbar">
+          <div class="toolbar-main">
+            <div>
+              <div class="title-line">
+                <h1>Transfer TR-901</h1>
+                <span class="status"><i></i> In transit</span>
+              </div>
+              <div class="subtitle">Warehouse transfer document · inventory currently held in transit</div>
+            </div>
+            <div class="actions">
+              <button>Export</button>
+              <button>More actions</button>
+              <button class="primary">Reserve in transit</button>
+            </div>
+          </div>
+          <div class="meta-strip">
+            <div class="meta"><div class="meta-label">Expected</div><div class="meta-value">Sep 8, 2026</div></div>
+            <div class="meta"><div class="meta-label">Product lines</div><div class="meta-value">2</div></div>
+            <div class="meta"><div class="meta-label">Units moving</div><div class="meta-value">10</div></div>
+            <div class="meta"><div class="meta-label">Available to reserve</div><div class="meta-value">0 after reservation</div></div>
+          </div>
+        </section>
+
+        <section class="route-strip" aria-label="Transfer route and current location">
+          <div class="route-node">
+            <div class="route-label">Origin</div>
+            <div class="route-value">WH-7</div>
+            <div class="route-sub">Departed Sep 6</div>
+          </div>
+          <div class="route-arrow">→</div>
+          <div class="route-node route-current">
+            <div class="route-label">Current physical location</div>
+            <div class="route-value">Transfer TR-901 · In transit</div>
+            <div class="location-warning">Not at WH-7 or WH-11</div>
+          </div>
+          <div class="route-arrow">→</div>
+          <div class="route-node">
+            <div class="route-label">Destination</div>
+            <div class="route-value">WH-11</div>
+            <div class="route-sub">Awaiting receipt</div>
+          </div>
+        </section>
+
+        <div class="section-line">
+          <h2>Products and order allocation</h2>
+          <div class="section-meta">Post-reservation state · quantities at Transfer TR-901</div>
+        </div>
+        <section class="table-card">
+          <table>
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:10%">
+              <col style="width:35%">
+              <col style="width:14%">
+              <col style="width:21%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>In transit</th>
+                <th>Customer-order allocation</th>
+                <th>Available to reserve</th>
+                <th>Physical location</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="product">Enduro 250</div><div class="sku">PRD-22</div></td>
+                <td><span class="number">4</span> <span class="unit">units</span></td>
+                <td>
+                  <div class="allocation-stack">
+                    <div class="allocation-line">
+                      <span class="code">OMS-901</span>
+                      <span class="allocation-type">Transfer allocation</span>
+                      <span class="alloc-qty">4 units</span>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="available zero">0 units</span></td>
+                <td><div class="location-cell">Transfer TR-901<span>In transit</span></div></td>
+              </tr>
+              <tr>
+                <td><div class="product">Trail Helmet</div><div class="sku">PRD-31</div></td>
+                <td><span class="number">6</span> <span class="unit">units</span></td>
+                <td>
+                  <div class="allocation-stack">
+                    <div class="allocation-line">
+                      <span class="code">OMS-914</span>
+                      <span class="allocation-type">Transfer allocation</span>
+                      <span class="alloc-qty">4 units</span>
+                    </div>
+                    <div class="allocation-line">
+                      <span class="code">OMS-927</span>
+                      <span class="allocation-type">Reservation <span class="document-tag">RSV-1206</span></span>
+                      <span class="alloc-qty">2 units</span>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="available zero">0 units</span></td>
+                <td><div class="location-cell">Transfer TR-901<span>In transit</span></div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="total-row"><span><strong>10 units</strong> across 2 products</span><span><strong>10 allocated or reserved</strong></span><span>0 available</span></div>
+        </section>
+
+        <section class="lower-grid">
+          <div class="panel">
+            <div class="panel-head"><span>Inventory ledger</span><span class="section-meta">Latest first</span></div>
+            <div class="ledger"><span>Sep 6 · 10:18</span><span class="type">Reserved</span><span>Trail Helmet · 2 units · Transfer TR-901</span><span class="code">RSV-1206</span></div>
+            <div class="ledger"><span>Sep 6 · 09:42</span><span class="type">Moved out</span><span>Enduro 250 · 4 units · WH-7 → Transfer TR-901</span><span class="code">TR-901</span></div>
+            <div class="ledger"><span>Sep 6 · 09:42</span><span class="type">Moved out</span><span>Trail Helmet · 6 units · WH-7 → Transfer TR-901</span><span class="code">TR-901</span></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><span>Latest reservation</span><span class="reservation-id">Confirmed</span></div>
+            <div class="reservation-detail">
+              <div class="reservation-summary">
+                <div class="reservation-title">RSV-1206</div>
+                <div class="reservation-id">Auditable document</div>
+              </div>
+              <div class="reservation-grid">
+                <div class="reservation-field"><span>Order</span><strong>OMS-927</strong></div>
+                <div class="reservation-field"><span>Quantity</span><strong>2 units</strong></div>
+                <div class="reservation-field"><span>Location</span><strong>Transfer TR-901</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+</body>
+</html>

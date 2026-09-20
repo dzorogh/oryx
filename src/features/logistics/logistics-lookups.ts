@@ -102,8 +102,10 @@ export const linkedManufacturersForProduct = (snapshot: LogisticsSnapshot, produ
 export const warehouseCode = (snapshot: LogisticsSnapshot, id: string): string =>
   warehouseById(snapshot, id)?.code ?? id;
 
-export const warehouseSelectItems = (snapshot: LogisticsSnapshot) =>
-  snapshot.warehouses.map((item) => ({ value: item.id, label: item.code }));
+export const warehouseSelectItems = (snapshot: LogisticsSnapshot, excludeId?: string) =>
+  snapshot.warehouses
+    .filter((item) => item.id !== excludeId)
+    .map((item) => ({ value: item.id, label: item.code }));
 
 export const regionById = (snapshot: LogisticsSnapshot, id: string) =>
   snapshot.regions.find((item) => item.id === id);

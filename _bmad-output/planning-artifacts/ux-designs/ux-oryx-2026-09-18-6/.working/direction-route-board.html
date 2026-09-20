@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oryx Transfer Detail — Route Board</title>
+  <style>
+    /* Hex palette: canvas #F4F5F7, surface #FFFFFF, ink #18181B, muted #71717A,
+       line #E4E4E7, strong line #D4D4D8, blue #2563EB, blue-soft #EFF6FF,
+       amber #B45309, amber-soft #FFFBEB, green #15803D, green-soft #F0FDF4,
+       sidebar #FAFAFA, browser-bar #F7F7F8. */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #E9EAED;
+      color: #18181B;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+      padding: 22px;
+    }
+    .rationale {
+      max-width: 1120px;
+      margin: 0 auto 16px;
+      color: #52525B;
+      font-size: 14px;
+    }
+    .rationale strong { color: #18181B; }
+    .browser {
+      width: min(1500px, 100%);
+      min-height: 900px;
+      margin: 0 auto;
+      overflow: hidden;
+      background: #FFFFFF;
+      border: 1px solid #C8CAD0;
+      border-radius: 14px;
+      box-shadow: 0 18px 50px rgba(24, 24, 27, .12);
+    }
+    .browser-bar {
+      height: 46px;
+      display: grid;
+      grid-template-columns: 92px 1fr 92px;
+      align-items: center;
+      gap: 14px;
+      padding: 0 16px;
+      background: #F7F7F8;
+      border-bottom: 1px solid #E4E4E7;
+    }
+    .dots { display: flex; gap: 7px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; background: #D4D4D8; }
+    .dot:nth-child(1) { background: #FF5F57; }
+    .dot:nth-child(2) { background: #FEBC2E; }
+    .dot:nth-child(3) { background: #28C840; }
+    .address {
+      width: min(660px, 100%);
+      justify-self: center;
+      padding: 6px 14px;
+      border: 1px solid #E4E4E7;
+      border-radius: 8px;
+      background: #FFFFFF;
+      color: #71717A;
+      font-size: 12px;
+      text-align: center;
+    }
+    .app { display: grid; grid-template-columns: 212px minmax(0, 1fr); min-height: 854px; }
+    .sidebar {
+      padding: 20px 14px;
+      background: #FAFAFA;
+      border-right: 1px solid #E4E4E7;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px 22px;
+      font-size: 16px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .brand-mark {
+      display: grid;
+      width: 29px;
+      height: 29px;
+      place-items: center;
+      border-radius: 8px;
+      background: #18181B;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .nav-group { margin: 14px 0 6px; padding: 0 10px; color: #A1A1AA; font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 36px;
+      margin: 2px 0;
+      padding: 8px 10px;
+      border-radius: 7px;
+      color: #52525B;
+      font-size: 13px;
+    }
+    .nav-item.active { background: #EDEEF1; color: #18181B; font-weight: 650; }
+    .nav-icon { width: 17px; color: #71717A; text-align: center; }
+    main {
+      min-width: 0;
+      padding: 22px 28px 36px;
+      background: #F4F5F7;
+    }
+    .breadcrumbs { margin-bottom: 13px; color: #71717A; font-size: 12px; }
+    .breadcrumbs span { margin: 0 7px; color: #A1A1AA; }
+    .page-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      margin-bottom: 4px;
+      color: #71717A;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: -.035em; }
+    .head-meta { margin-top: 6px; color: #71717A; font-size: 13px; }
+    .actions { display: flex; gap: 8px; }
+    button {
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid #D4D4D8;
+      border-radius: 7px;
+      background: #FFFFFF;
+      color: #27272A;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    button.primary { border-color: #18181B; background: #18181B; color: #FFFFFF; }
+    .route-board {
+      position: relative;
+      overflow: hidden;
+      padding: 22px 24px 20px;
+      background: #FFFFFF;
+      border: 1px solid #D4D4D8;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(24, 24, 27, .04);
+    }
+    .route-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #FFFBEB;
+      color: #92400E;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pulse { width: 7px; height: 7px; border-radius: 50%; background: #D97706; box-shadow: 0 0 0 3px #FEF3C7; }
+    .due { color: #52525B; font-size: 12px; }
+    .due strong { color: #18181B; }
+    .route {
+      display: grid;
+      grid-template-columns: minmax(170px, 1fr) minmax(280px, 1.35fr) minmax(170px, 1fr);
+      align-items: center;
+      gap: 16px;
+    }
+    .place { padding: 16px; border: 1px solid #E4E4E7; border-radius: 10px; background: #FAFAFA; }
+    .place-label { color: #71717A; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .warehouse { margin-top: 5px; font-size: 22px; font-weight: 750; letter-spacing: -.025em; }
+    .place-note { margin-top: 4px; color: #71717A; font-size: 12px; }
+    .in-transit {
+      position: relative;
+      z-index: 1;
+      padding: 17px 20px;
+      border: 1px solid #93C5FD;
+      border-radius: 12px;
+      background: #EFF6FF;
+      text-align: center;
+    }
+    .in-transit::before, .in-transit::after {
+      position: absolute;
+      top: 50%;
+      z-index: -1;
+      width: 34px;
+      height: 2px;
+      background: #93C5FD;
+      content: "";
+    }
+    .in-transit::before { right: 100%; }
+    .in-transit::after { left: 100%; }
+    .location-label { color: #1D4ED8; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .location-title { margin-top: 3px; font-size: 18px; font-weight: 760; }
+    .location-note { margin-top: 4px; color: #1E40AF; font-size: 12px; }
+    .route-caption {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 17px;
+      padding-top: 14px;
+      border-top: 1px solid #E4E4E7;
+      color: #52525B;
+      font-size: 12px;
+    }
+    .route-caption strong { color: #18181B; }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 22px 0 10px;
+    }
+    h2 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+    .section-note { color: #71717A; font-size: 12px; }
+    .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .product-card { padding: 17px; border: 1px solid #D4D4D8; border-radius: 10px; background: #FFFFFF; }
+    .product-top { display: flex; justify-content: space-between; gap: 16px; }
+    .product-name { font-weight: 720; }
+    .sku { margin-top: 3px; color: #71717A; font-size: 12px; }
+    .qty { text-align: right; }
+    .qty strong { display: block; font-size: 22px; line-height: 1; }
+    .qty span { color: #71717A; font-size: 11px; }
+    .allocation {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      margin-top: 15px;
+      padding: 12px 13px;
+      border-radius: 8px;
+      background: #F4F5F7;
+    }
+    .alloc-title { font-size: 12px; font-weight: 650; }
+    .order-link { color: #1D4ED8; font-weight: 750; }
+    .alloc-sub { margin-top: 2px; color: #71717A; font-size: 11px; }
+    .alloc-value { align-self: center; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .split-bar { display: flex; gap: 3px; height: 6px; margin-top: 12px; }
+    .allocated-bar { border-radius: 999px; background: #2563EB; }
+    .free-bar { border-radius: 999px; background: #F59E0B; }
+    .legend { display: flex; gap: 14px; margin-top: 8px; color: #71717A; font-size: 11px; }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .key { width: 7px; height: 7px; border-radius: 2px; }
+    .key.blue { background: #2563EB; }
+    .key.amber { background: #F59E0B; }
+    .variant {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: #FFFBEB;
+      color: #92400E;
+      font-size: 11px;
+      font-weight: 650;
+    }
+    .bottom-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 12px; margin-top: 12px; }
+    .panel { border: 1px solid #D4D4D8; border-radius: 10px; background: #FFFFFF; }
+    .panel-title { padding: 13px 16px 11px; border-bottom: 1px solid #E4E4E7; font-size: 13px; font-weight: 700; }
+    .ledger-row { display: grid; grid-template-columns: 105px 1fr auto; gap: 12px; padding: 12px 16px; color: #52525B; font-size: 12px; }
+    .ledger-row + .ledger-row { border-top: 1px solid #F1F1F3; }
+    .ledger-time { color: #71717A; font-variant-numeric: tabular-nums; }
+    .doc { color: #1D4ED8; font-weight: 650; }
+    .reserve-note { padding: 15px 16px; color: #52525B; font-size: 12px; }
+    .reserve-note strong { display: block; margin-bottom: 5px; color: #18181B; }
+    @media (max-width: 980px) {
+      body { padding: 8px; }
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .route { grid-template-columns: 1fr; }
+      .in-transit::before, .in-transit::after { display: none; }
+      .product-grid, .bottom-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="rationale"><strong>Direction 1 — Route Board.</strong> The physical journey is the hero, with the transfer itself treated as the active inventory location between two warehouses. Product quantities are shown as allocation stories rather than abstract stock columns, while a second line demonstrates reservable in-transit stock.</div>
+  <section class="browser" aria-label="Browser mockup showing transfer TR-901">
+    <div class="browser-bar">
+      <div class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="address">oryx.local/store/logistics/transfers/TR-901</div>
+      <div></div>
+    </div>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">OX</span> Oryx BMS</div>
+        <div class="nav-item"><span class="nav-icon">⌂</span> Overview</div>
+        <div class="nav-group">Store</div>
+        <div class="nav-item"><span class="nav-icon">□</span> Catalog</div>
+        <div class="nav-item"><span class="nav-icon">◎</span> Orders</div>
+        <div class="nav-group">Logistics</div>
+        <div class="nav-item"><span class="nav-icon">▦</span> Inventory</div>
+        <div class="nav-item active"><span class="nav-icon">⇄</span> Transfers</div>
+        <div class="nav-item"><span class="nav-icon">⌁</span> Reservations</div>
+        <div class="nav-group">Operations</div>
+        <div class="nav-item"><span class="nav-icon">◷</span> Activity</div>
+      </aside>
+      <main>
+        <div class="breadcrumbs">Store <span>›</span> Logistics <span>›</span> Transfers <span>›</span> TR-901</div>
+        <header class="page-head">
+          <div>
+            <div class="eyebrow">Transfer document</div>
+            <h1>TR-901</h1>
+            <div class="head-meta">Created Sep 6, 2026 · 2 product lines · 10 units</div>
+          </div>
+          <div class="actions">
+            <button>More</button>
+            <button class="primary">Reserve in transit</button>
+          </div>
+        </header>
+
+        <section class="route-board">
+          <div class="route-top">
+            <div class="status"><span class="pulse"></span> In transit</div>
+            <div class="due">Expected <strong>Sep 8, 2026</strong></div>
+          </div>
+          <div class="route">
+            <div class="place">
+              <div class="place-label">Departed from</div>
+              <div class="warehouse">WH-7</div>
+              <div class="place-note">Stock released Sep 6, 09:42</div>
+            </div>
+            <div class="in-transit">
+              <div class="location-label">Current physical location</div>
+              <div class="location-title">Transfer TR-901</div>
+              <div class="location-note">Inventory is moving between warehouses</div>
+            </div>
+            <div class="place">
+              <div class="place-label">Destination</div>
+              <div class="warehouse">WH-11</div>
+              <div class="place-note">Not received at destination</div>
+            </div>
+          </div>
+          <div class="route-caption">
+            <strong>Inventory location:</strong> Transfer TR-901
+            <span>•</span>
+            Units are not available at WH-7 or WH-11 until the transfer is received.
+          </div>
+        </section>
+
+        <div class="section-head">
+          <div>
+            <h2>Products in transit</h2>
+            <div class="section-note">Each quantity is paired with its customer-order allocation.</div>
+          </div>
+          <div class="section-note">10 units total</div>
+        </div>
+        <section class="product-grid">
+          <article class="product-card">
+            <div class="product-top">
+              <div>
+                <div class="product-name">Enduro 250</div>
+                <div class="sku">PRD-22</div>
+              </div>
+              <div class="qty"><strong>4</strong><span>units in transit</span></div>
+            </div>
+            <div class="allocation">
+              <div>
+                <div class="alloc-title">Allocated to <span class="order-link">OMS-901</span></div>
+                <div class="alloc-sub">Customer order · travels with this transfer</div>
+              </div>
+              <div class="alloc-value">4 units</div>
+            </div>
+            <div class="split-bar" aria-label="4 allocated, 0 available"><span class="allocated-bar" style="width:100%"></span></div>
+            <div class="legend">
+              <span><i class="key blue"></i> Allocated 4</span>
+              <span><i class="key amber"></i> Available 0</span>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <div class="product-top">
+              <div>
+                <div class="product-name">Trail Helmet</div>
+                <div class="sku">PRD-31</div>
+              </div>
+              <div class="qty"><strong>6</strong><span>units in transit</span></div>
+            </div>
+            <div class="allocation">
+              <div>
+                <div class="alloc-title">Allocated to <span class="order-link">OMS-914</span></div>
+                <div class="alloc-sub">Customer order · travels with this transfer</div>
+              </div>
+              <div class="alloc-value">4 units</div>
+            </div>
+            <div class="split-bar" aria-label="4 allocated, 2 available">
+              <span class="allocated-bar" style="width:66.67%"></span>
+              <span class="free-bar" style="width:33.33%"></span>
+            </div>
+            <div class="legend">
+              <span><i class="key blue"></i> Allocated 4</span>
+              <span><i class="key amber"></i> Available 2</span>
+            </div>
+            <div class="variant">2 units can be reserved in transit</div>
+          </article>
+        </section>
+
+        <section class="bottom-grid">
+          <div class="panel">
+            <div class="panel-title">Document activity</div>
+            <div class="ledger-row"><span class="ledger-time">Sep 6 · 09:42</span><span>Stock moved from WH-7 to transfer location</span><span class="doc">TR-901</span></div>
+            <div class="ledger-row"><span class="ledger-time">Sep 6 · 09:41</span><span>4 Enduro 250 units linked to customer order</span><span class="doc">OMS-901</span></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">Reservation model</div>
+            <div class="reserve-note">
+              <strong>Auditable by design</strong>
+              Reserving available units creates a Reservation document at location Transfer TR-901. The transfer line itself is not silently changed.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+</body>
+</html>

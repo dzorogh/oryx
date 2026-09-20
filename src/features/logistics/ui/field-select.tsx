@@ -23,6 +23,8 @@ export const FieldSelect = ({
   placeholder = "Выберите",
   emptyLabel,
   disabled,
+  autoFocus,
+  labelClassName,
 }: {
   label: string;
   value: string;
@@ -31,11 +33,13 @@ export const FieldSelect = ({
   placeholder?: string;
   emptyLabel?: string;
   disabled?: boolean;
+  autoFocus?: boolean;
+  labelClassName?: string;
 }) => {
   if (items.length === 0) {
     return (
       <label className="space-y-1 text-sm">
-        <span className="font-medium">{label}</span>
+        <span className={labelClassName ?? "font-medium"}>{label}</span>
         <div
           className="flex h-8 w-full items-center rounded-lg border border-input bg-muted/40 px-2.5 text-sm text-muted-foreground"
           aria-disabled="true"
@@ -49,14 +53,14 @@ export const FieldSelect = ({
 
   return (
     <label className="space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+      <span className={labelClassName ?? "font-medium"}>{label}</span>
       <Select
         items={items}
         value={value || null}
         onValueChange={(next) => onChange(next ?? "")}
         disabled={disabled}
       >
-        <SelectTrigger className="w-full bg-background" aria-label={label}>
+        <SelectTrigger className="w-full bg-background" aria-label={label} autoFocus={autoFocus}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

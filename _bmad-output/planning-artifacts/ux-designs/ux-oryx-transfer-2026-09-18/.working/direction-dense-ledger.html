@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oryx Transfer — Dense Ledger</title>
+  <style>
+    /*
+      Hex map: #ffffff background/card, #fafafa canvas, #f8fafc subtle surface,
+      #f4f4f5 muted, #e4e4e7 border, #d4d4d8 strong border, #a1a1aa quiet text,
+      #71717a muted text, #3f3f46 secondary text, #18181b primary text,
+      #09090b primary action, #fef2f2 error surface, #fecaca error border,
+      #b91c1c error text, #f0fdf4 success surface, #166534 success text.
+      All values map to inherited shadcn neutral tokens and restrained status semantics.
+    */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #18181b;
+      background: #fafafa;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    button, input { font: inherit; }
+    .page { max-width: 1460px; margin: 0 auto; padding: 28px; }
+    .rationale {
+      display: flex; align-items: baseline; gap: 10px; margin: 0 0 18px;
+      color: #3f3f46; font-size: 13px;
+    }
+    .rationale strong { color: #18181b; font-size: 14px; }
+    .frames { display: grid; grid-template-columns: minmax(820px, 1fr) 390px; gap: 24px; align-items: start; }
+    .label {
+      margin: 0 0 8px; color: #71717a; font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .browser {
+      position: relative; min-height: 810px; overflow: hidden; border: 1px solid #d4d4d8;
+      border-radius: 14px; background: #f4f4f5; box-shadow: 0 18px 45px rgba(24,24,27,.09);
+    }
+    .browserbar {
+      height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 12px;
+      border-bottom: 1px solid #e4e4e7; background: #ffffff;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d8; }
+    .url { width: 42%; height: 17px; margin-left: 10px; border-radius: 4px; background: #f4f4f5; }
+    .app { padding: 18px 22px; opacity: .52; }
+    .crumb { margin-bottom: 10px; color: #71717a; font-size: 12px; }
+    .toolbar { padding: 14px; border: 1px solid #e4e4e7; border-radius: 9px; background: #ffffff; }
+    .toolbar-row { display: flex; align-items: center; justify-content: space-between; }
+    .toolbar h2 { margin: 0; font-size: 18px; }
+    .toolbar p { margin: 3px 0 0; color: #71717a; font-size: 12px; }
+    .ghost-button { padding: 7px 10px; border-radius: 6px; color: #ffffff; background: #09090b; font-size: 12px; }
+    .tabs { display: flex; gap: 7px; margin-top: 12px; }
+    .tab { padding: 5px 10px; border: 1px solid #e4e4e7; border-radius: 99px; background: #ffffff; font-size: 11px; }
+    .tab.active { border-color: #18181b; }
+    .behind-table { margin-top: 14px; border: 1px solid #e4e4e7; border-radius: 9px; background: #ffffff; }
+    .behind-row { display: grid; grid-template-columns: 110px 1fr 1fr 1.5fr 100px; padding: 10px 12px; border-bottom: 1px solid #e4e4e7; font-size: 12px; }
+    .behind-row:last-child { border-bottom: 0; }
+    .overlay { position: absolute; inset: 34px 0 0; display: grid; place-items: center; padding: 26px; background: rgba(24,24,27,.42); }
+    .dialog {
+      width: min(920px, 96%); overflow: hidden; border: 1px solid #d4d4d8; border-radius: 12px;
+      background: #ffffff; box-shadow: 0 24px 70px rgba(24,24,27,.22);
+    }
+    .dialog-head { display: flex; justify-content: space-between; padding: 18px 20px 13px; border-bottom: 1px solid #e4e4e7; }
+    .dialog-head h1 { margin: 0; font-size: 19px; line-height: 1.2; letter-spacing: -.01em; }
+    .dialog-head p { margin: 4px 0 0; color: #71717a; font-size: 12px; }
+    .close { color: #71717a; font-size: 20px; line-height: 1; }
+    .dialog-body { padding: 14px 20px 16px; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 32px 1fr 1.1fr; gap: 10px; align-items: end; }
+    .field label { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 650; }
+    .control {
+      height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
+      border: 1px solid #d4d4d8; border-radius: 6px; background: #ffffff; font-size: 13px;
+    }
+    .control small { color: #71717a; }
+    .arrow { align-self: center; padding-bottom: 8px; color: #71717a; text-align: center; }
+    .mode-note {
+      display: flex; align-items: center; gap: 7px; margin: 10px 0 12px; padding: 7px 9px;
+      border-radius: 6px; background: #f4f4f5; color: #3f3f46; font-size: 11px;
+    }
+    .mode-note b { color: #18181b; }
+    .ledger { overflow: hidden; border: 1px solid #d4d4d8; border-radius: 8px; }
+    .ledger-row {
+      display: grid; grid-template-columns: minmax(250px, 1.8fr) 92px 92px 118px 34px;
+      min-height: 58px; border-bottom: 1px solid #e4e4e7; align-items: center;
+    }
+    .ledger-row:last-child { border-bottom: 0; }
+    .ledger-row.header { min-height: 31px; background: #f8fafc; color: #71717a; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .cell { min-width: 0; padding: 7px 10px; text-align: right; }
+    .cell:first-child { text-align: left; }
+    .product-name { overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .sku { margin-top: 2px; color: #71717a; font-size: 10px; }
+    .number { font-size: 12px; font-variant-numeric: tabular-nums; }
+    .number span { display: block; color: #71717a; font-size: 10px; }
+    .qty {
+      width: 78px; height: 31px; padding: 0 8px; border: 1px solid #d4d4d8; border-radius: 5px;
+      color: #18181b; background: #ffffff; text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .remove { color: #a1a1aa; text-align: center; }
+    .error-row { min-height: 76px; background: #fef2f2; }
+    .error-row .qty { border-color: #b91c1c; outline: 2px solid #fecaca; }
+    .error-text { margin-top: 3px; color: #b91c1c; font-size: 10px; font-weight: 650; }
+    .available-bad { color: #b91c1c; font-weight: 700; }
+    .table-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+    .outline {
+      height: 32px; padding: 0 11px; border: 1px solid #d4d4d8; border-radius: 6px;
+      color: #18181b; background: #ffffff; font-weight: 600; font-size: 12px;
+    }
+    .stock-key { color: #71717a; font-size: 11px; }
+    .dialog-foot {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 13px 20px; border-top: 1px solid #e4e4e7; background: #fafafa;
+    }
+    .summary strong { display: block; font-size: 13px; }
+    .summary span { color: #71717a; font-size: 11px; }
+    .buttons { display: flex; gap: 8px; }
+    .primary { height: 34px; padding: 0 13px; border: 0; border-radius: 6px; color: #ffffff; background: #09090b; font-weight: 650; font-size: 12px; }
+    .primary.disabled { background: #a1a1aa; }
+    .phone {
+      position: relative; width: 390px; height: 810px; overflow: hidden; border: 7px solid #18181b;
+      border-radius: 34px; background: #ffffff; box-shadow: 0 18px 45px rgba(24,24,27,.15);
+    }
+    .phone-top { height: 28px; display: flex; justify-content: space-between; padding: 8px 16px 0; font-size: 9px; font-weight: 700; }
+    .mobile-app { height: 95px; padding: 12px 16px; border-bottom: 1px solid #e4e4e7; background: #f4f4f5; opacity: .55; }
+    .mobile-app .back { color: #71717a; font-size: 11px; }
+    .mobile-app h3 { margin: 8px 0 0; font-size: 16px; }
+    .sheet { position: absolute; inset: 59px 0 0; display: flex; flex-direction: column; border-radius: 20px 20px 0 0; background: #ffffff; box-shadow: 0 -8px 28px rgba(24,24,27,.16); }
+    .handle { width: 36px; height: 4px; margin: 7px auto 3px; border-radius: 9px; background: #d4d4d8; }
+    .sheet-head { padding: 10px 15px 11px; border-bottom: 1px solid #e4e4e7; }
+    .eyebrow { color: #71717a; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .sheet-head h1 { margin: 3px 0 2px; font-size: 18px; letter-spacing: -.02em; }
+    .sheet-head p { margin: 0; color: #71717a; font-size: 11px; }
+    .route-compact { display: grid; grid-template-columns: 1fr 22px 1fr; gap: 5px; margin-top: 10px; align-items: center; }
+    .route-box { padding: 7px 8px; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 11px; }
+    .route-box b, .route-box span { display: block; }
+    .route-box span { color: #71717a; font-size: 9px; }
+    .sheet-body { flex: 1; overflow: hidden; padding: 10px 15px; }
+    .allocation-note { padding: 7px 8px; border-radius: 6px; background: #f0fdf4; color: #166534; font-size: 10px; font-weight: 600; }
+    .mobile-row { display: grid; grid-template-columns: 22px 1fr 66px; gap: 7px; align-items: center; padding: 9px 0; border-bottom: 1px solid #e4e4e7; }
+    .check { width: 16px; height: 16px; display: grid; place-items: center; border-radius: 4px; color: #ffffff; background: #18181b; font-size: 10px; }
+    .m-product b { display: block; font-size: 11px; }
+    .m-product span { color: #71717a; font-size: 9px; }
+    .m-qty { width: 64px; height: 29px; border: 1px solid #d4d4d8; border-radius: 5px; text-align: center; }
+    .mobile-row.error { margin: 0 -6px; padding: 8px 6px 18px; background: #fef2f2; }
+    .mobile-row.error .m-qty { border-color: #b91c1c; }
+    .m-error { position: absolute; margin-top: 31px; color: #b91c1c; font-size: 9px; font-weight: 650; }
+    .sheet-foot { padding: 10px 15px 15px; border-top: 1px solid #e4e4e7; background: #fafafa; }
+    .mobile-summary { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; }
+    .mobile-summary span { color: #71717a; }
+    .mobile-buttons { display: grid; grid-template-columns: 92px 1fr; gap: 8px; }
+    .mobile-buttons button { height: 38px; }
+    @media (max-width: 1100px) {
+      .frames { grid-template-columns: 1fr; }
+      .phone { margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="rationale"><strong>Dense Ledger / «Плотный реестр».</strong> Максимум строк и проверок в одном взгляде; компромисс — интерфейс требует внимательного чтения чисел.</p>
+    <div class="frames">
+      <section>
+        <p class="label">Desktop · generic entry from Transfers</p>
+        <div class="browser">
+          <div class="browserbar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="url"></span></div>
+          <div class="app">
+            <div class="crumb">Store / Logistics / Transfers</div>
+            <div class="toolbar">
+              <div class="toolbar-row"><div><h2>Transfers</h2><p>Warehouse-to-warehouse stock movements</p></div><span class="ghost-button">New transfer</span></div>
+              <div class="tabs"><span class="tab active">All</span><span class="tab">Draft</span><span class="tab">Sent</span><span class="tab">Delivered</span></div>
+            </div>
+            <div class="behind-table">
+              <div class="behind-row"><b>TR-0187</b><span>WH-1</span><span>WH-3</span><span>4 products</span><span>Sent</span></div>
+              <div class="behind-row"><b>TR-0186</b><span>WH-2</span><span>WH-1</span><span>7 products</span><span>Draft</span></div>
+            </div>
+          </div>
+          <div class="overlay">
+            <article class="dialog">
+              <header class="dialog-head">
+                <div><h1>Create transfer</h1><p>Move free stock between warehouses and save it as a Draft.</p></div><span class="close">×</span>
+              </header>
+              <div class="dialog-body">
+                <div class="meta-grid">
+                  <div class="field"><label>From warehouse</label><div class="control"><b>WH-1</b><small>Central warehouse⌄</small></div></div>
+                  <div class="arrow">→</div>
+                  <div class="field"><label>To warehouse</label><div class="control"><b>WH-2</b><small>North hub⌄</small></div></div>
+                  <div class="field"><label>Expected end</label><div class="control"><span>Sep 25, 2026</span><small>calendar</small></div></div>
+                </div>
+                <div class="mode-note"><b>Free stock only</b><span>Customer-order reserved stock is excluded from availability.</span></div>
+                <div class="ledger">
+                  <div class="ledger-row header"><div class="cell">Product</div><div class="cell">On hand</div><div class="cell">Available</div><div class="cell">Move</div><div></div></div>
+                  <div class="ledger-row"><div class="cell"><div class="product-name">Industrial Nitrile Gloves, M</div><div class="sku">SKU PPE-GLV-M</div></div><div class="cell number">480<span>pcs</span></div><div class="cell number"><b>320</b><span>free</span></div><div class="cell"><input class="qty" value="120 pcs" readonly></div><div class="remove">×</div></div>
+                  <div class="ledger-row"><div class="cell"><div class="product-name">Protective Safety Glasses</div><div class="sku">SKU PPE-EYE-01</div></div><div class="cell number">136<span>pcs</span></div><div class="cell number"><b>96</b><span>free</span></div><div class="cell"><input class="qty" value="24 pcs" readonly></div><div class="remove">×</div></div>
+                  <div class="ledger-row error-row"><div class="cell"><div class="product-name">Heavy-duty Packing Tape 48 mm</div><div class="sku">SKU PKG-TAPE-48</div></div><div class="cell number">40<span>rolls</span></div><div class="cell number"><b class="available-bad">18</b><span>free</span></div><div class="cell"><input class="qty" value="24 rolls" readonly><div class="error-text">6 over available</div></div><div class="remove">×</div></div>
+                  <div class="ledger-row"><div class="cell"><div class="product-name">Stretch Film 500 mm</div><div class="sku">SKU PKG-FILM-50</div></div><div class="cell number">85<span>rolls</span></div><div class="cell number"><b>61</b><span>free</span></div><div class="cell"><input class="qty" value="16 rolls" readonly></div><div class="remove">×</div></div>
+                  <div class="ledger-row"><div class="cell"><div class="product-name">Euro Container 600 × 400</div><div class="sku">SKU BIN-EU-64</div></div><div class="cell number">52<span>pcs</span></div><div class="cell number"><b>34</b><span>free</span></div><div class="cell"><input class="qty" value="12 pcs" readonly></div><div class="remove">×</div></div>
+                </div>
+                <div class="table-actions"><button class="outline">＋ Add product</button><span class="stock-key">Availability shown at WH-1 before quantity entry</span></div>
+              </div>
+              <footer class="dialog-foot">
+                <div class="summary"><strong>5 products · 196 units</strong><span>WH-1 → WH-2 · Expected Sep 25, 2026 · 1 line needs attention</span></div>
+                <div class="buttons"><button class="outline">Cancel</button><button class="primary disabled">Create draft transfer</button></div>
+              </footer>
+            </article>
+          </div>
+        </div>
+      </section>
+      <section>
+        <p class="label">Mobile · entry from customer order OMS-120</p>
+        <div class="phone">
+          <div class="phone-top"><span>9:41</span><span>● ●●</span></div>
+          <div class="mobile-app"><span class="back">‹ Customer orders</span><h3>OMS-120</h3></div>
+          <article class="sheet">
+            <div class="handle"></div>
+            <header class="sheet-head">
+              <span class="eyebrow">Customer order OMS-120</span>
+              <h1>Create transfer</h1>
+              <p>Select order lines and quantities. The transfer will be saved as a Draft.</p>
+              <div class="route-compact">
+                <div class="route-box"><span>From</span><b>WH-1</b></div><div class="arrow">→</div>
+                <div class="route-box"><span>To</span><b>WH-2</b></div>
+              </div>
+              <div class="route-compact" style="grid-template-columns:1fr">
+                <div class="route-box"><span>Expected end</span><b>Sep 25, 2026</b></div>
+              </div>
+            </header>
+            <div class="sheet-body">
+              <div class="allocation-note">✓ Selected stock stays allocated to OMS-120 during transfer.</div>
+              <div class="mobile-row"><span class="check">✓</span><div class="m-product"><b>Industrial Nitrile Gloves, M</b><span>PPE-GLV-M · Available 72 of 80 pcs</span></div><input class="m-qty" value="60" readonly></div>
+              <div class="mobile-row"><span class="check">✓</span><div class="m-product"><b>Protective Safety Glasses</b><span>PPE-EYE-01 · Available 24 of 24 pcs</span></div><input class="m-qty" value="24" readonly></div>
+              <div class="mobile-row error"><span class="check">✓</span><div class="m-product"><b>Packing Tape 48 mm</b><span>PKG-TAPE-48 · Available 18 of 20 rolls</span></div><div><input class="m-qty" value="20" readonly><small class="m-error">2 over available</small></div></div>
+              <div class="mobile-row"><span class="check">✓</span><div class="m-product"><b>Stretch Film 500 mm</b><span>PKG-FILM-50 · Available 16 of 16 rolls</span></div><input class="m-qty" value="12" readonly></div>
+              <div class="mobile-row"><span class="check">✓</span><div class="m-product"><b>Euro Container 600 × 400</b><span>BIN-EU-64 · Available 12 of 12 pcs</span></div><input class="m-qty" value="10" readonly></div>
+            </div>
+            <footer class="sheet-foot">
+              <div class="mobile-summary"><b>5 order lines · 126 units</b><span>1 issue</span></div>
+              <div class="mobile-buttons"><button class="outline">Cancel</button><button class="primary disabled">Create draft for OMS-120</button></div>
+            </footer>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<!--
+  UX Design Validation Report — consolidated synthesis.
+
+  Visual rules preserved from the BMAD UX validation report template:
+    - The container width, color tokens, and typography are unchanged.
+    - One dimension = one collapsible <section class="dimension">.
+    - Verdict and severity classes match their judgments.
+    - Extra reviewers have their own collapsed sections.
+    - The footer records artifact paths and timestamp.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UX Design Validation: Oryx Transfer Dialog</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="report-header">
+      <div class="title">
+        <h1>Oryx Transfer Dialog — UX Design Validation Report</h1>
+        <div class="subtitle">/Users/dzorogh/Develop/oryx/_bmad-output/planning-artifacts/ux-designs/ux-oryx-transfer-2026-09-18</div>
+      </div>
+    </header>
+
+    <div class="synthesis">
+      <p><strong>Thin.</strong> The pair is mechanically sound: frontmatter parses, token references resolve, custom component vocabulary aligns, both entry contexts close through named journeys, and selected artifacts are linked with an explicit spine-wins rule. It is not yet a clean implementation contract because several load-bearing behaviors and domain contracts remain uncommitted or contradict the selected mobile reference.</p>
+      <p>The accessibility review finds a useful WCAG-oriented foundation, but unresolved data-loss, focus, discoverability, target-size, reflow, and mobile overflow behavior prevents WCAG 2.2 AA implementation sign-off. The feasibility review confirms that Dense Ledger is structurally buildable on the current domain, but its current create path cannot satisfy the specified transaction, result, availability, allocation, integrity, or navigation behavior.</p>
+      <p><strong>These documents are not ready for final status until the atomic Draft creation/API result contract, Draft availability semantics, On hand/Available formulas, dirty-close policy, and mobile reference contradictions are resolved.</strong></p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card"><div class="dim-name">Flow coverage</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Token completeness</div><div class="dim-verdict" style="color: var(--verdict-strong)">strong</div></div>
+      <div class="dim-card"><div class="dim-name">Component coverage</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div>
+      <div class="dim-card"><div class="dim-name">State coverage</div><div class="dim-verdict" style="color: var(--verdict-thin)">thin</div></div>
+      <div class="dim-card"><div class="dim-name">Visual reference coverage</div><div class="dim-verdict" style="color: var(--verdict-thin)">thin</div></div>
+      <div class="dim-card"><div class="dim-name">Bloat &amp; overspecification</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div>
+      <div class="dim-card"><div class="dim-name">Inheritance discipline</div><div class="dim-verdict" style="color: var(--verdict-thin)">thin</div></div>
+      <div class="dim-card"><div class="dim-name">Shape fit</div><div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div></div>
+    </div>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Flow coverage</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The two entry contexts are mapped to numbered Marina journeys with a climax and applicable failure path. The out-of-scope Transfer detail closes the post-create journey without expanding scope.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Token completeness</h2><span class="verdict-pill verdict-strong">strong</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>All referenced tokens resolve, color values are valid, and the two load-bearing foreground/background pairs exceed WCAG AA normal-text contrast.</p>
+        </div></div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Component coverage</h2><span class="verdict-pill verdict-adequate">adequate</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>All ten custom components have aligned visual and behavioral entries. Inherited primitive behavior remains slightly implicit.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">Inherited chooser and toast behavior is implicit</h3><span class="finding-location">EXPERIENCE.md:32,89</span></header>
+            <div class="finding-note">Popover/Select keyboard behavior and inherited error/toast lifetime and placement lack a precise behavioral reference.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add concise inherited-primitive rows or point to an existing Oryx behavior contract.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details open>
+        <summary><h2>State coverage</h2><span class="verdict-pill verdict-thin">thin</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Core loading, empty, validation, submission, request-error, success, offline, and responsive states are present, but the load-bearing close state is explicitly uncommitted.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Dirty-close behavior can silently discard substantial work</h3><span class="finding-location">EXPERIENCE.md:66,98,123-126</span></header>
+            <div class="finding-note">Cancel, close, backdrop, and Esc have no single policy for a 4–10-line form. This is the same blocker as accessibility finding A11Y-R01.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Commit one policy for every close channel, including dirty detection, backdrop behavior, confirmation focus, safe default, destructive action, and restoration.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details open>
+        <summary><h2>Visual reference coverage</h2><span class="verdict-pill verdict-thin">thin</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The import and selected working direction are linked and subordinate to the spines, but the mobile composition contradicts several load-bearing rules.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Mobile overflow content is unreachable</h3><span class="finding-location">direction-dense-ledger.html:138; EXPERIENCE.md:74,119</span></header>
+            <div class="finding-note">The contract requires a scrollable body for 4–10 lines, errors, zoom, and the keyboard, but the reference uses overflow: hidden. Accessibility finding A11Y-R02 raises this rubric issue to high.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Use a bounded vertical scroller with focus scroll margins and test ten lines plus errors with the software keyboard open.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Mobile selection model contradicts the ledger contract</h3><span class="finding-location">EXPERIENCE.md:41,69-72,119; direction-dense-ledger.html:199,228-234</span></header>
+            <div class="finding-note">The reference shows preselected checkbox rows, no mobile Add product or remove action, and only Available, while the spine requires add-row editing, removal, On hand, and Available.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Align the mobile composition or mark the checkbox version rejected and non-contractual.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Allocation note visually signals success</h3><span class="finding-location">DESIGN.md:86; EXPERIENCE.md:56,68; direction-dense-ledger.html:13-15,139,229</span></header>
+            <div class="finding-note">Green success treatment and a checkmark contradict the contract's informational meaning.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Remove success semantics and iconography, or explicitly change the contract.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Bloat &amp; overspecification</h2><span class="verdict-pill verdict-adequate">adequate</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>The documents are compact and extractable, but some behavior has two authorities.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Behavioral ownership is duplicated across both spines</h3><span class="finding-location">DESIGN.md:101-103,119-123; EXPERIENCE.md:69,74,118-120</span></header>
+            <div class="finding-note">Scroll ownership, control structure, reading order, and horizontal-scroll rules can drift between documents.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Keep anatomy and density in DESIGN; keep interaction, order, scrolling, and retention in EXPERIENCE, with one-way cross-references.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details open>
+        <summary><h2>Inheritance discipline</h2><span class="verdict-pill verdict-thin">thin</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Names and token references align, but source provenance carries stale vocabulary and unconfirmed assumptions.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Architecture provenance is stale and overbroad</h3><span class="finding-location">ARCHITECTURE-SPINE.md:23-30,53-65; docs/features/logistics.md:44,64,70</span></header>
+            <div class="finding-note">The listed architecture source describes older reservation fields that conflict with the current owner-based model.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Replace it with a current transfer source or narrowly identify the inherited invariant.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Assumptions are promoted without traceability</h3><span class="finding-location">.memlog.md:20-21; DESIGN.md:78; EXPERIENCE.md:89,104-112</span></header>
+            <div class="finding-note">Accessibility inheritance, light-theme posture, and offline behavior become unconditional rules without confirmation.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Confirm each upstream or preserve explicit assumption/open-item markers.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary><h2>Shape fit</h2><span class="verdict-pill verdict-adequate">adequate</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p>Canonical section order and required defaults are present; one applicable compact section is missing.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Applicable Inspiration &amp; Anti-patterns section is absent</h3><span class="finding-location">.memlog.md:10,22; DESIGN.md:76-78; EXPERIENCE.md:16-18</span></header>
+            <div class="finding-note">The source names a structural reference and selected/rejected directions, triggering this section under the rubric.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Record only the sourced lift and rejects with their reasons.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary><h2>Accessibility &amp; responsive review</h2><span class="reviewer-source">review-accessibility-responsive.md</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p><strong>NEEDS REVISION.</strong> The accessibility floor is promising, but the contract is not implementation-ready for WCAG 2.2 AA or fully usable phone creation. Dirty-close and mobile-overflow blockers are consolidated under State coverage and Visual reference coverage above; this section preserves the reviewer's remaining adversarial findings.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Route errors are excluded from the error-focus contract</h3><span class="finding-location">EXPERIENCE.md:81-89,93-113</span></header>
+            <div class="finding-note">Equal-warehouse errors can block creation, but focus and programmatic association are defined only for quantities.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define one DOM-order validation sequence and require stable error ids, aria-invalid, aria-describedby, and first-invalid focus for every field.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Disabled actions conceal why progress is blocked</h3><span class="finding-location">EXPERIENCE.md:69-75,81-89; direction-dense-ledger.html:199-203,235-238</span></header>
+            <div class="finding-note">Native disabled controls are not focusable, while the reference provides no persistent reason or path to completion.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Expose and politely announce a visible, associated blocking reason, including eligible-product exhaustion.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Row removal can move focus to a disabled control</h3><span class="finding-location">EXPERIENCE.md:73-74,93-101</span></header>
+            <div class="finding-note">The last-row fallback primary action cannot receive focus when disabled.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Use only adjacent controls, enabled Add product, or a focusable ledger heading/status as fallbacks.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Ledger semantics and repeated-control names are incomplete</h3><span class="finding-location">EXPERIENCE.md:103-113; direction-dense-ledger.html:191-199,229-234</span></header>
+            <div class="finding-note">Desktop and mobile rules do not fully bind product identity, unit, maxima, and errors to repeated quantity/remove controls. This consolidates A11Y-R06 and A11Y-R07.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Require a labeled native table on desktop and named list/groups on mobile with product-specific control names and described-by relationships.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Reference target sizes contradict the 44×44 floor</h3><span class="finding-location">EXPERIENCE.md:103-113; direction-dense-ledger.html:90-119,140-152</span></header>
+            <div class="finding-note">Inputs, buttons, remove, and close affordances are too small or undefined.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Guarantee a 44×44 CSS px hit area for every interactive target.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Breakpoint changes preserve values but not focus identity</h3><span class="finding-location">EXPERIENCE.md:115-122</span></header>
+            <div class="finding-note">A table/list remount can lose the active control or chooser focus.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Key controls by stable line id and define active-field and popover focus restoration during reflow.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Zoom and reflow lack measurable acceptance criteria</h3><span class="finding-location">DESIGN.md:100-105; EXPERIENCE.md:115-122</span></header>
+            <div class="finding-note">320 CSS px, 400% browser zoom, 200% text zoom, long names, and footer wrapping are untested contractually.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add those cases and prohibit clipped required content and two-dimensional scrolling.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Interactive and focus-indicator contrast is not locked down</h3><span class="finding-location">DESIGN.md:78-87; direction-dense-ledger.html:90-103</span></header>
+            <div class="finding-note">Special text pairs pass, but controls and focus rings are unspecified; the reference remove glyph misses 3:1.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Record or test computed contrast for supported states and surfaces.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Live regions can produce duplicate, noisy announcements</h3><span class="finding-location">EXPERIENCE.md:66-75,103-113</span></header>
+            <div class="finding-note">Source changes can announce every row plus the issue summary.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Debounce one atomic summary, announce validity transitions, and suppress duplicates.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-low">low</span><h3 class="finding-title">The visual direction can be mistaken for implementation markup</h3><span class="finding-location">direction-dense-ledger.html:179-203,214-239</span></header>
+            <div class="finding-note">Generic elements, unnamed inputs, and non-button affordances can invite inaccessible copying.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Mark the artifact visual-only and require native shadcn primitives plus spine semantics.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary><h2>Implementation feasibility review</h2><span class="reviewer-source">review-implementation-feasibility.md</span></summary>
+        <div class="dim-body"><div class="dim-judgment">
+          <p><strong>CONDITIONAL GO — not implementation-ready.</strong> Dense Ledger is buildable on current surfaces, but coding should not begin before the command, availability, allocation, integrity, and result contracts are explicit. F-04 is consolidated into the atomic API finding; F-12 is consolidated into Draft availability semantics.</p>
+        </div></div>
+        <div class="findings-list">
+          <article class="finding">
+            <header><span class="badge badge-sev-critical">critical</span><h3 class="finding-title">Atomic Draft creation and API result contract is missing</h3><span class="finding-location">transfers-page.tsx:208-233; logistics-api.ts:705-744; run-action.ts:47-63</span></header>
+            <div class="finding-note">Separate browser writes cannot roll back, retries can duplicate partial Drafts, and the action path discards the id needed for detail navigation. This consolidates F-01 and F-04.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define one transactional, idempotent create-Draft command returning a typed transfer-id result, then navigate only after commit.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-critical">critical</span><h3 class="finding-title">Draft availability semantics and line-error contract are unresolved</h3><span class="finding-location">EXPERIENCE.md:142-153; docs/features/logistics.md:50-64</span></header>
+            <div class="finding-note">Draft creation does not claim stock, Send is authoritative, and the current generic error cannot identify affected rows. This consolidates F-02 and F-12.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Choose no check or advisory create-time validation, state that Draft does not reserve stock, and define structured per-line errors if validation remains.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Order entry still sends all reserved stock immediately</h3><span class="finding-location">order-action-forms.tsx:695-724; logistics-api.ts:705-744</span></header>
+            <div class="finding-note">The current controller contradicts subset selection, editable quantities, and Draft-only creation.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Replace it with an order-context Draft controller using the atomic command.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">“Order-line allocation” is not a persisted identity</h3><span class="finding-location">EXPERIENCE.md:39,70-72,144-153; migration:116-123,180-193</span></header>
+            <div class="finding-note">Persistence records owner plus product, not an immutable order-line id; the wording depends on product uniqueness within an order.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State the UI-key versus persisted-identity boundary and document the order+product uniqueness dependency.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">Duplicate-product integrity is guarded only in the client</h3><span class="finding-location">transfers-page.tsx:105-112,181-188; migration:896-899</span></header>
+            <div class="finding-note">Direct, retry, or concurrent requests can create duplicates while completion selects an arbitrary matching line.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Validate in the RPC and add a unique (transfer_id, product_id) constraint unless duplicates are intentional.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-high">high</span><h3 class="finding-title">On hand and Available have no executable formulas</h3><span class="finding-location">DESIGN.md:99-128; EXPERIENCE.md:70-72; docs/features/logistics.md:34-47</span></header>
+            <div class="finding-note">Physical, free, and owner-specific balances can yield several plausible implementations.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define On hand across all physical source balances, generic Available as free/null-owner, order Available as current-order reserved, and state that Drafts reduce neither.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Eligibility and source-change row policy is underspecified</h3><span class="finding-location">EXPERIENCE.md:66,70,81-86; transfers-page.tsx:180-181,665-678</span></header>
+            <div class="finding-note">Pre-source choices, now-ineligible rows, and Add product exhaustion are not deterministic.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Gate choice on source, filter eligible products, preserve and invalidate stale rows inline, and derive Add product from remaining choices.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Shared presentation risks shared inventory logic</h3><span class="finding-location">EXPERIENCE.md:15-29; transfers-page.tsx:76-93,637-715</span></header>
+            <div class="finding-note">Generic free stock and order-owned reserved stock have incompatible rules.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Share presentation primitives but use separate context adapters mapped to one command.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Pending-state guard is absent</h3><span class="finding-location">EXPERIENCE.md:74,88; transfers-page.tsx:333-335; run-action.ts:47-63</span></header>
+            <div class="finding-note">Double click or Enter-plus-click can submit concurrently; server retry idempotency belongs to the critical command contract.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a synchronous controller guard and visible pending state.</div>
+          </article>
+          <article class="finding">
+            <header><span class="badge badge-sev-medium">medium</span><h3 class="finding-title">Entry eligibility contradicts loading and empty-state rules</h3><span class="finding-location">EXPERIENCE.md:80-82; transfers-page.tsx:170-178,237-260; customer-orders-page.tsx:367-379</span></header>
+            <div class="finding-note">Launchers can open while data is unavailable or no eligible order-owned stock exists.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Gate the list launcher on load state and derive order eligibility before opening, with an explanation at the launcher.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li>Both YAML frontmatters parse and remain consistently draft.</li>
+        <li>All listed source paths and all token references resolve; all custom color values are valid hex.</li>
+        <li>No malformed component token objects or Mermaid syntax were found.</li>
+        <li>Unique findings after deduplication: 2 critical, 8 high, 17 medium, 2 low.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>DESIGN: /Users/dzorogh/Develop/oryx/_bmad-output/planning-artifacts/ux-designs/ux-oryx-transfer-2026-09-18/DESIGN.md</span>
+        <span>EXPERIENCE: /Users/dzorogh/Develop/oryx/_bmad-output/planning-artifacts/ux-designs/ux-oryx-transfer-2026-09-18/EXPERIENCE.md</span>
+        <span>Rubric: /Users/dzorogh/Develop/oryx/_bmad-output/planning-artifacts/ux-designs/ux-oryx-transfer-2026-09-18/review-rubric.md</span>
+        <span>Reviewers: review-accessibility-responsive.md; review-implementation-feasibility.md</span>
+        <span>Generated: 2026-09-20T15:12:00+03:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

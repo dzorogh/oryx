@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oryx Transfer — Guided Table</title>
+  <style>
+    /*
+      Hex map: #ffffff background/card, #fafafa canvas, #f8fafc quiet surface,
+      #f4f4f5 muted surface, #e4e4e7 border, #d4d4d8 strong border,
+      #a1a1aa disabled, #71717a muted text, #3f3f46 secondary text,
+      #18181b primary text, #09090b primary action, #fef2f2 error surface,
+      #fecaca error border, #b91c1c error text, #f0fdf4 success surface,
+      #bbf7d0 success border, #166534 success text.
+      All colors map to inherited shadcn neutral and status semantics.
+    */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; color: #18181b; background: #fafafa;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px; line-height: 1.4;
+    }
+    button, input { font: inherit; }
+    .page { max-width: 1460px; margin: auto; padding: 28px; }
+    .rationale { display: flex; gap: 10px; margin: 0 0 18px; color: #3f3f46; font-size: 13px; }
+    .rationale strong { color: #18181b; }
+    .frames { display: grid; grid-template-columns: minmax(820px, 1fr) 390px; gap: 24px; align-items: start; }
+    .caption { margin: 0 0 8px; color: #71717a; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .browser {
+      position: relative; min-height: 810px; overflow: hidden; border: 1px solid #d4d4d8;
+      border-radius: 14px; background: #f4f4f5; box-shadow: 0 18px 45px rgba(24,24,27,.09);
+    }
+    .browserbar { height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 1px solid #e4e4e7; background: #ffffff; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d8; }
+    .url { width: 42%; height: 17px; margin-left: 10px; border-radius: 4px; background: #f4f4f5; }
+    .app { padding: 18px 22px; opacity: .52; }
+    .crumb { color: #71717a; font-size: 12px; }
+    .toolbar { margin-top: 10px; padding: 14px; border: 1px solid #e4e4e7; border-radius: 9px; background: #ffffff; }
+    .toolbar-row { display: flex; justify-content: space-between; align-items: center; }
+    .toolbar h2 { margin: 0; font-size: 18px; }
+    .toolbar p { margin: 3px 0 0; color: #71717a; font-size: 12px; }
+    .new { padding: 7px 10px; border-radius: 6px; color: #ffffff; background: #09090b; font-size: 12px; }
+    .fake-table { margin-top: 14px; border: 1px solid #e4e4e7; border-radius: 9px; background: #ffffff; }
+    .fake-row { display: grid; grid-template-columns: 100px 1fr 1fr 1.5fr 90px; padding: 10px 12px; border-bottom: 1px solid #e4e4e7; font-size: 12px; }
+    .fake-row:last-child { border-bottom: 0; }
+    .overlay { position: absolute; inset: 34px 0 0; display: grid; place-items: center; padding: 24px; background: rgba(24,24,27,.42); }
+    .dialog { width: min(900px, 96%); overflow: hidden; border: 1px solid #d4d4d8; border-radius: 13px; background: #ffffff; box-shadow: 0 24px 70px rgba(24,24,27,.24); }
+    .head { display: flex; justify-content: space-between; padding: 18px 20px 13px; border-bottom: 1px solid #e4e4e7; }
+    .head h1 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
+    .head p { margin: 4px 0 0; color: #71717a; font-size: 12px; }
+    .close { color: #71717a; font-size: 20px; }
+    .body { padding: 14px 20px 16px; }
+    .step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; }
+    .step + .step { margin-top: 13px; }
+    .step-number { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: #ffffff; background: #18181b; font-size: 11px; font-weight: 700; }
+    .step-content h2 { margin: 2px 0 7px; font-size: 13px; }
+    .fields { display: grid; grid-template-columns: 1fr 28px 1fr 1fr; gap: 8px; align-items: end; }
+    .field label { display: block; margin-bottom: 4px; font-size: 10px; font-weight: 650; }
+    .control { height: 33px; display: flex; align-items: center; justify-content: space-between; padding: 0 9px; border: 1px solid #d4d4d8; border-radius: 6px; background: #ffffff; font-size: 12px; }
+    .control small { color: #71717a; }
+    .arrow { padding-bottom: 8px; color: #71717a; text-align: center; }
+    .helper { margin: 7px 0 0; color: #71717a; font-size: 10px; }
+    .table-wrap { overflow: hidden; border: 1px solid #d4d4d8; border-radius: 8px; }
+    .row { display: grid; grid-template-columns: minmax(240px, 1.6fr) 145px 108px 32px; align-items: center; min-height: 57px; border-bottom: 1px solid #e4e4e7; }
+    .row:last-child { border-bottom: 0; }
+    .row.header { min-height: 31px; color: #71717a; background: #f8fafc; font-size: 10px; font-weight: 700; }
+    .cell { padding: 7px 10px; }
+    .row.header .cell:nth-child(n+2) { text-align: right; }
+    .product b { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .product span { color: #71717a; font-size: 10px; }
+    .availability { text-align: right; }
+    .availability b { display: block; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .availability span { color: #71717a; font-size: 9px; }
+    .qty { width: 92px; height: 31px; padding: 0 8px; border: 1px solid #d4d4d8; border-radius: 5px; text-align: right; }
+    .quantity { text-align: right; }
+    .remove { color: #a1a1aa; text-align: center; }
+    .row.error { min-height: 73px; background: #fef2f2; }
+    .row.error .qty { border-color: #b91c1c; outline: 2px solid #fecaca; }
+    .row.error .availability b, .error-msg { color: #b91c1c; }
+    .error-msg { margin-top: 3px; font-size: 9px; font-weight: 650; }
+    .add { margin-top: 8px; }
+    .outline { height: 32px; padding: 0 11px; border: 1px solid #d4d4d8; border-radius: 6px; color: #18181b; background: #ffffff; font-size: 12px; font-weight: 650; }
+    .review {
+      display: flex; align-items: center; justify-content: space-between; padding: 10px 12px;
+      border: 1px solid #e4e4e7; border-radius: 8px; background: #f8fafc;
+    }
+    .review b { display: block; font-size: 12px; }
+    .review span { color: #71717a; font-size: 10px; }
+    .issue { color: #b91c1c !important; font-weight: 700; }
+    .foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid #e4e4e7; background: #fafafa; }
+    .primary { height: 34px; padding: 0 14px; border: 0; border-radius: 6px; color: #ffffff; background: #09090b; font-size: 12px; font-weight: 650; }
+    .primary.disabled { background: #a1a1aa; }
+    .phone {
+      position: relative; width: 390px; height: 810px; overflow: hidden; border: 7px solid #18181b;
+      border-radius: 34px; background: #ffffff; box-shadow: 0 18px 45px rgba(24,24,27,.15);
+    }
+    .status { height: 28px; display: flex; justify-content: space-between; padding: 8px 16px 0; font-size: 9px; font-weight: 700; }
+    .order-page { height: 104px; padding: 13px 16px; background: #f4f4f5; opacity: .55; }
+    .order-page span { color: #71717a; font-size: 10px; }
+    .order-page h3 { margin: 7px 0 0; font-size: 17px; }
+    .sheet { position: absolute; inset: 60px 0 0; display: flex; flex-direction: column; border-radius: 20px 20px 0 0; background: #ffffff; box-shadow: 0 -8px 28px rgba(24,24,27,.16); }
+    .handle { width: 36px; height: 4px; margin: 7px auto 4px; border-radius: 99px; background: #d4d4d8; }
+    .m-head { padding: 8px 15px 9px; border-bottom: 1px solid #e4e4e7; }
+    .m-head small { color: #71717a; font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .m-head h1 { margin: 2px 0; font-size: 18px; letter-spacing: -.02em; }
+    .m-head p { margin: 0; color: #71717a; font-size: 10px; }
+    .m-body { flex: 1; overflow: hidden; padding: 9px 15px; }
+    .m-step { display: grid; grid-template-columns: 22px 1fr; gap: 7px; }
+    .m-step + .m-step { margin-top: 9px; }
+    .m-num { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; color: #ffffff; background: #18181b; font-size: 9px; font-weight: 700; }
+    .m-content h2 { margin: 2px 0 5px; font-size: 11px; }
+    .m-route { display: grid; grid-template-columns: 1fr 20px 1fr; align-items: center; gap: 5px; }
+    .m-field { padding: 6px 7px; border: 1px solid #d4d4d8; border-radius: 5px; }
+    .m-field span, .m-date span { display: block; color: #71717a; font-size: 8px; }
+    .m-field b, .m-date b { font-size: 10px; }
+    .m-date { display: flex; justify-content: space-between; margin-top: 5px; padding: 6px 7px; border: 1px solid #d4d4d8; border-radius: 5px; }
+    .preserve { margin-bottom: 5px; padding: 6px 7px; border: 1px solid #bbf7d0; border-radius: 5px; color: #166534; background: #f0fdf4; font-size: 9px; font-weight: 650; }
+    .m-line { display: grid; grid-template-columns: 18px 1fr 56px; gap: 6px; align-items: center; padding: 7px 0; border-top: 1px solid #e4e4e7; }
+    .check { width: 15px; height: 15px; display: grid; place-items: center; border-radius: 3px; color: #ffffff; background: #18181b; font-size: 8px; }
+    .m-line b { display: block; overflow: hidden; font-size: 9.5px; text-overflow: ellipsis; white-space: nowrap; }
+    .m-line span { color: #71717a; font-size: 8px; }
+    .m-line input { width: 55px; height: 27px; border: 1px solid #d4d4d8; border-radius: 5px; text-align: center; }
+    .m-line.bad { margin: 0 -5px; padding: 7px 5px 17px; background: #fef2f2; }
+    .m-line.bad input { border-color: #b91c1c; }
+    .m-line.bad em { position: absolute; margin-top: 27px; color: #b91c1c; font-size: 8px; font-style: normal; font-weight: 700; }
+    .m-review { display: flex; justify-content: space-between; padding: 7px; border-radius: 6px; background: #f8fafc; font-size: 9px; }
+    .m-review span { color: #b91c1c; font-weight: 700; }
+    .m-foot { padding: 9px 15px 14px; border-top: 1px solid #e4e4e7; background: #fafafa; }
+    .m-buttons { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
+    .m-buttons button { height: 38px; }
+    @media (max-width: 1100px) { .frames { grid-template-columns: 1fr; } .phone { margin: auto; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="rationale"><strong>Guided Table / «Пошаговая таблица».</strong> Один экран, но решение разбито на три проверяемых шага; компромисс — немного больше вертикального ритма ради уверенности.</p>
+    <div class="frames">
+      <section>
+        <p class="caption">Desktop · generic entry from Transfers</p>
+        <div class="browser">
+          <div class="browserbar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="url"></span></div>
+          <div class="app">
+            <div class="crumb">Store / Logistics / Transfers</div>
+            <div class="toolbar"><div class="toolbar-row"><div><h2>Transfers</h2><p>Warehouse-to-warehouse stock movements</p></div><span class="new">New transfer</span></div></div>
+            <div class="fake-table"><div class="fake-row"><b>TR-0187</b><span>WH-1</span><span>WH-3</span><span>4 products</span><span>Sent</span></div><div class="fake-row"><b>TR-0186</b><span>WH-2</span><span>WH-1</span><span>7 products</span><span>Draft</span></div></div>
+          </div>
+          <div class="overlay">
+            <article class="dialog">
+              <header class="head"><div><h1>Create transfer</h1><p>Move free stock between warehouses. The result is saved as a Draft.</p></div><span class="close">×</span></header>
+              <div class="body">
+                <section class="step">
+                  <span class="step-number">1</span>
+                  <div class="step-content">
+                    <h2>Set route and timing</h2>
+                    <div class="fields">
+                      <div class="field"><label>From warehouse</label><div class="control"><b>WH-1</b><small>Central⌄</small></div></div><div class="arrow">→</div>
+                      <div class="field"><label>To warehouse</label><div class="control"><b>WH-2</b><small>North hub⌄</small></div></div>
+                      <div class="field"><label>Expected end</label><div class="control"><span>Sep 25, 2026</span><small>calendar</small></div></div>
+                    </div>
+                    <p class="helper">Generic transfers use free stock only; reserved stock is not included below.</p>
+                  </div>
+                </section>
+                <section class="step">
+                  <span class="step-number">2</span>
+                  <div class="step-content">
+                    <h2>Add products and quantities</h2>
+                    <div class="table-wrap">
+                      <div class="row header"><div class="cell">Product</div><div class="cell">Available at WH-1</div><div class="cell">Quantity</div><div></div></div>
+                      <div class="row"><div class="cell product"><b>Industrial Nitrile Gloves, M</b><span>SKU PPE-GLV-M</span></div><div class="cell availability"><b>320 pcs</b><span>free before entry</span></div><div class="cell quantity"><input class="qty" value="120 pcs" readonly></div><div class="remove">×</div></div>
+                      <div class="row"><div class="cell product"><b>Protective Safety Glasses</b><span>SKU PPE-EYE-01</span></div><div class="cell availability"><b>96 pcs</b><span>free before entry</span></div><div class="cell quantity"><input class="qty" value="24 pcs" readonly></div><div class="remove">×</div></div>
+                      <div class="row error"><div class="cell product"><b>Heavy-duty Packing Tape 48 mm</b><span>SKU PKG-TAPE-48</span></div><div class="cell availability"><b>18 rolls</b><span>free before entry</span></div><div class="cell quantity"><input class="qty" value="24 rolls" readonly><div class="error-msg">Enter 18 or less</div></div><div class="remove">×</div></div>
+                      <div class="row"><div class="cell product"><b>Stretch Film 500 mm</b><span>SKU PKG-FILM-50</span></div><div class="cell availability"><b>61 rolls</b><span>free before entry</span></div><div class="cell quantity"><input class="qty" value="16 rolls" readonly></div><div class="remove">×</div></div>
+                      <div class="row"><div class="cell product"><b>Euro Container 600 × 400</b><span>SKU BIN-EU-64</span></div><div class="cell availability"><b>34 pcs</b><span>free before entry</span></div><div class="cell quantity"><input class="qty" value="12 pcs" readonly></div><div class="remove">×</div></div>
+                    </div>
+                    <button class="outline add">＋ Add product</button>
+                  </div>
+                </section>
+                <section class="step">
+                  <span class="step-number">3</span>
+                  <div class="step-content"><h2>Review Draft</h2><div class="review"><div><b>WH-1 → WH-2 · 5 products · 196 units</b><span>Expected Sep 25, 2026</span></div><span class="issue">1 quantity exceeds availability</span></div></div>
+                </section>
+              </div>
+              <footer class="foot"><button class="outline">Cancel</button><button class="primary disabled">Create draft transfer</button></footer>
+            </article>
+          </div>
+        </div>
+      </section>
+      <section>
+        <p class="caption">Mobile · entry from customer order OMS-120</p>
+        <div class="phone">
+          <div class="status"><span>9:41</span><span>● ●●</span></div>
+          <div class="order-page"><span>‹ Customer orders</span><h3>OMS-120</h3></div>
+          <article class="sheet">
+            <div class="handle"></div>
+            <header class="m-head"><small>Customer order OMS-120</small><h1>Create transfer</h1><p>Select order lines. Allocation is preserved; save as Draft.</p></header>
+            <div class="m-body">
+              <section class="m-step">
+                <span class="m-num">1</span>
+                <div class="m-content"><h2>Route</h2><div class="m-route"><div class="m-field"><span>From</span><b>WH-1</b></div><div class="arrow">→</div><div class="m-field"><span>To</span><b>WH-2</b></div></div><div class="m-date"><span>Expected end</span><b>Sep 25, 2026</b></div></div>
+              </section>
+              <section class="m-step">
+                <span class="m-num">2</span>
+                <div class="m-content">
+                  <h2>Select order lines and quantities</h2>
+                  <div class="preserve">✓ Selected stock stays allocated to OMS-120.</div>
+                  <div class="m-line"><i class="check">✓</i><div><b>Industrial Nitrile Gloves, M</b><span>PPE-GLV-M · Available 72 of 80 pcs</span></div><input value="60" readonly></div>
+                  <div class="m-line"><i class="check">✓</i><div><b>Protective Safety Glasses</b><span>PPE-EYE-01 · Available 24 of 24 pcs</span></div><input value="24" readonly></div>
+                  <div class="m-line bad"><i class="check">✓</i><div><b>Packing Tape 48 mm</b><span>PKG-TAPE-48 · Available 18 of 20 rolls</span></div><div><input value="20" readonly><em>Enter 18 or less</em></div></div>
+                  <div class="m-line"><i class="check">✓</i><div><b>Stretch Film 500 mm</b><span>PKG-FILM-50 · Available 16 of 16 rolls</span></div><input value="12" readonly></div>
+                  <div class="m-line"><i class="check">✓</i><div><b>Euro Container 600 × 400</b><span>BIN-EU-64 · Available 12 of 12 pcs</span></div><input value="10" readonly></div>
+                </div>
+              </section>
+              <section class="m-step"><span class="m-num">3</span><div class="m-content"><h2>Review Draft</h2><div class="m-review"><b>5 lines · 126 units</b><span>1 issue</span></div></div></section>
+            </div>
+            <footer class="m-foot"><div class="m-buttons"><button class="outline">Cancel</button><button class="primary disabled">Create OMS-120 draft</button></div></footer>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -309,11 +309,18 @@ describe("TransfersPage", () => {
     expect(screen.queryByRole("tab", { name: "Draft" })).toBeNull();
     expect(screen.getByRole("tab", { name: "Отправлено" })).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Новое перемещение" }));
-    await chooseOption(user, "Склад отправления", "WH-7");
-    await chooseOption(user, "Склад назначения", "WH-11");
-    await chooseOption(user, "Товар", /Enduro 250/);
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(screen.getByRole("button", { name: "New transfer" }));
+    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
+    expect(screen.getAllByText("On hand").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Available").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Move").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Free stock only/)).toBeTruthy();
+    await chooseOption(user, "From warehouse", /WH-7/);
+    expect(screen.getByRole("combobox", { name: "From warehouse" })).toHaveTextContent("WH-7");
+    expect(screen.getByRole("combobox", { name: "From warehouse" })).not.toHaveTextContent("Plant");
+    await chooseOption(user, "To warehouse", /WH-11/);
+    await chooseOption(user, "Product", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Create and send transfer" }));
 
     expect(supabaseMock.rpc).toHaveBeenCalledWith(
       "store_create_and_send_transfer",
@@ -334,21 +341,40 @@ describe("TransfersPage", () => {
       .mockResolvedValueOnce({ data: { id: 42, status: "sent" }, error: null });
 
     render(<TransfersPage />);
-    await user.click(screen.getByRole("button", { name: "Новое перемещение" }));
-    await chooseOption(user, "Склад отправления", "WH-7");
-    await chooseOption(user, "Склад назначения", "WH-11");
-    await chooseOption(user, "Товар", /Enduro 250/);
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(screen.getByRole("button", { name: "New transfer" }));
+    await chooseOption(user, "From warehouse", /WH-7/);
+    await chooseOption(user, "To warehouse", /WH-11/);
+    await chooseOption(user, "Product", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Create and send transfer" }));
 
-    expect(screen.getByRole("heading", { name: "Новое перемещение" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Склад отправления" })).toHaveTextContent("WH-7");
+    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "From warehouse" })).toHaveTextContent("WH-7");
     expect(routerMock.push).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(screen.getByRole("button", { name: "Create and send transfer" }));
     expect(supabaseMock.rpc.mock.calls[0]?.[1].p_request_key).toBe(
       supabaseMock.rpc.mock.calls[1]?.[1].p_request_key,
     );
     expect(routerMock.push).toHaveBeenCalledWith("/store/logistics/transfers/42");
+  });
+
+  it("blocks send when Move exceeds available and shows the surplus inline", async () => {
+    const user = userEvent.setup();
+    storeMock.use(snapshot(), freeBalances);
+
+    render(<TransfersPage />);
+    await user.click(screen.getByRole("button", { name: "New transfer" }));
+    await chooseOption(user, "From warehouse", /WH-7/);
+    await chooseOption(user, "To warehouse", /WH-11/);
+    await chooseOption(user, "Product", /Enduro 250/);
+
+    const move = screen.getByRole("spinbutton", { name: "Move Enduro 250" });
+    await user.clear(move);
+    await user.type(move, "99");
+
+    expect(screen.getByText(/over available/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Create and send transfer" })).toBeDisabled();
+    expect(supabaseMock.rpc).not.toHaveBeenCalled();
   });
 });
 
@@ -363,7 +389,7 @@ describe("TransferDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Добавить товар" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Изменить" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Доставлено" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mark delivered" })).toBeTruthy();
   });
 });
 
@@ -386,9 +412,12 @@ describe("TransferReservedForm", () => {
       />,
     );
 
-    await chooseOption(user, "Откуда", /WH-7/);
-    await chooseOption(user, "Куда", /WH-11|Hub/);
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
+    expect(screen.getByText(/Customer order OMS-901/)).toBeTruthy();
+    await chooseOption(user, "From warehouse", /WH-7/);
+    await chooseOption(user, "To warehouse", /WH-11|Hub/);
+    await chooseOption(user, "Product", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Create and send for OMS-901" }));
 
     expect(supabaseMock.rpc).toHaveBeenCalledWith(
       "store_create_and_send_transfer",
@@ -421,15 +450,16 @@ describe("TransferReservedForm", () => {
       />,
     );
 
-    await chooseOption(user, "Откуда", /WH-7/);
-    await chooseOption(user, "Куда", /WH-11|Hub/);
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    await chooseOption(user, "From warehouse", /WH-7/);
+    await chooseOption(user, "To warehouse", /WH-11|Hub/);
+    await chooseOption(user, "Product", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Create and send for OMS-901" }));
 
-    expect(screen.getByRole("heading", { name: "Переместить занятое" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Откуда" })).toHaveTextContent("WH-7");
+    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "From warehouse" })).toHaveTextContent("WH-7");
     expect(routerMock.push).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(screen.getByRole("button", { name: "Create and send for OMS-901" }));
     expect(supabaseMock.rpc.mock.calls[0]?.[1].p_request_key).toBe(
       supabaseMock.rpc.mock.calls[1]?.[1].p_request_key,
     );

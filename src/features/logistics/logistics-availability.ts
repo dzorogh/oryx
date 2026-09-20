@@ -169,6 +169,22 @@ export const freeAtPlace = (
     ownerId: null,
   });
 
+export const onHandAtPlace = (
+  balances: StockBalance[],
+  productId: string,
+  locationType: LocationType,
+  locationId: string,
+): number =>
+  balances
+    .filter(
+      (entry) =>
+        entry.productId === productId &&
+        entry.locationType === locationType &&
+        entry.locationId === locationId &&
+        entry.stockState !== "shipped",
+    )
+    .reduce((sum, entry) => sum + entry.quantity, 0);
+
 export const reservedAtPlaceForOwner = (
   balances: StockBalance[],
   productId: string,

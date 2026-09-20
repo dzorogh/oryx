@@ -32,9 +32,8 @@ import {
   remainingToOutputForLine,
   remainingToReserveForLine,
   reservedPlacesForLine,
-  reservedLinesAtWarehouse,
-  warehousesWithReservedForOrder,
 } from "@/features/logistics/logistics-availability";
+import { TransferCreateDialog } from "@/features/logistics/ui/transfer-create-dialog";
 import { sumReservedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
@@ -696,98 +695,39 @@ export const TransferReservedForm = ({
   lines,
 }: ActionFormProps) => {
   const router = useRouter();
-  const [fromId, setFromId] = useState("");
-  const [toId, setToId] = useState("");
-  const [expectedEndOn, setExpectedEndOn] = useState("");
   const [requestKey, setRequestKey] = useState(newTransferRequestKey);
-  const warehouses = warehousesWithReservedForOrder(balances, lines);
-  const reservedLines = fromId ? reservedLinesAtWarehouse(balances, fromId, lines) : [];
-
-  const reset = () => {
-    setFromId("");
-    setToId("");
-    setExpectedEndOn("");
-    setRequestKey(newTransferRequestKey());
-  };
-
-  const submit = async () => {
-    if (!fromId || !toId || fromId === toId || reservedLines.length === 0) {
-      toast.error("Выберите склады и занятый остаток");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      async () => {
-        const created = await createAndSendTransfer(
-          orderOwnedTransferPayload({
-            requestKey,
-            fromWarehouseId: fromId,
-            toWarehouseId: toId,
-            expectedEndOn: expectedEndOn || null,
-            customerOrderId,
-            lines: reservedLines.map((item) => ({
-              productId: item.line.productId,
-              quantity: item.reserved,
-            })),
-          }),
-        );
-        openSentTransfer(created, (href) => router.push(href));
-      },
-      "Transfer sent",
-      reload,
-    );
-    if (ok) {
-      onOpenChange(false);
-    }
-  };
 
   return (
-    <LogisticsDialog
+    <TransferCreateDialog
       open={open}
-      onOpenChange={(next) => {
-        onOpenChange(next);
-        if (next) {
-          reset();
+      onOpenChange={onOpenChange}
+      snapshot={snapshot}
+      balances={balances}
+      context={{ kind: "order", customerOrderId, orderLines: lines }}
+      onSubmit={async (value) => {
+        const ok = await runLogisticsAction(
+          async () => {
+            const created = await createAndSendTransfer(
+              orderOwnedTransferPayload({
+                requestKey,
+                fromWarehouseId: value.fromWarehouseId,
+                toWarehouseId: value.toWarehouseId,
+                expectedEndOn: value.expectedEndOn,
+                customerOrderId,
+                lines: value.lines,
+              }),
+            );
+            openSentTransfer(created, (href) => router.push(href));
+          },
+          "Transfer sent",
+          reload,
+        );
+        if (ok) {
+          setRequestKey(newTransferRequestKey());
         }
+        return ok;
       }}
-      title="Переместить занятое"
-      description="Уедет только уже занятый этим заказом клиента остаток. Свободное на складе не трогаем."
-    >
-      <div className="flex flex-col gap-3">
-        <FieldSelect
-          label="Откуда"
-          value={fromId}
-          items={warehouses.map((item) => ({
-            value: item.warehouseId,
-            label: `${warehouseCode(snapshot, item.warehouseId)} · зарезервировано ${formatQuantity(item.quantity)}`,
-          }))}
-          onChange={setFromId}
-          placeholder="Склад отправления"
-          emptyLabel="Нет резерва на складах"
-        />
-        <FieldSelect
-          label="Куда"
-          value={toId}
-          items={snapshot.warehouses
-            .filter((item) => item.id !== fromId)
-            .map((item) => ({ value: item.id, label: item.name }))}
-          onChange={setToId}
-        />
-        {reservedLines.length > 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {reservedLines
-              .map(
-                (item) =>
-                  `${productIdentityLabel(productById(snapshot, item.line.productId), item.line.productId)} · ${formatQuantity(item.reserved)}`,
-              )
-              .join(", ")}
-          </p>
-        ) : null}
-        <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
-        <Button type="button" disabled={!fromId || !toId || fromId === toId} onClick={() => void submit()}>
-          Send
-        </Button>
-      </div>
-    </LogisticsDialog>
+    />
   );
 };
 
