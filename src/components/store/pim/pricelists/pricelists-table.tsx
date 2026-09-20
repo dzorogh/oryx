@@ -15,7 +15,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getCatalogItemDetailHref, getDisplayProductName, SKELETON_ROW_COUNT } from "../products/catalog/catalog-helpers";
 import { ColumnHeaderLabel } from "./pricelist-column-header";
@@ -34,7 +34,6 @@ import {
 import type { PricelistColumnDefinition } from "./pricelists-columns";
 import {
   getInfoFieldValue,
-  getPlantFullName,
   getRegionById,
   getSeedCellValue,
   getSeedDealerStatus,
@@ -98,40 +97,22 @@ const ProductNameCell = ({ row }: { row: PricelistRow }) => {
   );
 };
 
-// Read-only source columns (Plant Model Name, Plant, Dimension, …). The Plant
-// column shows a short code; its full plant name is revealed in a tooltip only
-// in the global and supplier scopes — dealers must not see plant names.
+// Read-only source columns (Plant Model Name, Plant, Dimension, …). Plant is a
+// code only — full factory names stay on the manufacturer catalog.
 const InfoCell = ({
   row,
   column,
-  scope,
 }: {
   row: PricelistRow;
   column: PricelistColumnDefinition;
-  scope: PricelistScope;
 }) => {
   if (!column.infoField) {
     return null;
   }
   const text = getInfoFieldValue(row, column.infoField);
 
-  if (column.infoField === "plant" && scope !== "dealer" && text) {
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={<span className="inline-block max-w-full cursor-default truncate align-middle text-sm text-foreground" />}
-        >
-          {text}
-        </TooltipTrigger>
-        <TooltipContent side="bottom" align="start">
-          {getPlantFullName(text)}
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
   return (
-    <span className="block truncate text-sm text-foreground" title={text}>
+    <span className="block truncate text-sm text-foreground">
       {text || "—"}
     </span>
   );
@@ -347,7 +328,7 @@ const PricelistTableRow = ({
           if (column.kind === "info") {
             return (
               <TableCell key={column.id} className={getCellClassName(column)}>
-                <InfoCell row={row} column={column} scope={scope} />
+                <InfoCell row={row} column={column} />
               </TableCell>
             );
           }

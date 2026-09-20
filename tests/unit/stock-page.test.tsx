@@ -136,9 +136,10 @@ describe("stock page", () => {
     render(<StockPage />);
 
     expect(screen.getByText("Oak Desk")).toBeInTheDocument();
-    expect(screen.getByText("WH-3 · City warehouse")).toBeInTheDocument();
+    expect(screen.getByText("WH-3")).toBeInTheDocument();
+    expect(screen.queryByText("City warehouse")).not.toBeInTheDocument();
     expect(screen.queryByText("Nordic Chair")).not.toBeInTheDocument();
-    expect(screen.queryByText("WH-2 · Plant warehouse")).not.toBeInTheDocument();
+    expect(screen.queryByText("Plant warehouse")).not.toBeInTheDocument();
   });
 
   it("disables Filters until stock data is available", () => {

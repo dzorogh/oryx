@@ -27,7 +27,7 @@ import {
 } from "@/features/logistics/logistics-availability";
 import { sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
-import { locationIdentity, productById, warehouseById, warehouseCode } from "@/features/logistics/logistics-lookups";
+import { locationIdentity, productById, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type {
   CustomerOrderLine,
   LocationType,
@@ -195,23 +195,19 @@ export const CustomerOrderLinesTable = ({
               <TableHead className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}>
                 In transit
               </TableHead>
-              {warehouseIds.map((warehouseId) => {
-                const warehouse = warehouseById(snapshot, warehouseId);
-                return (
-                  <TableHead
-                    key={warehouseId}
-                    className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}
+              {warehouseIds.map((warehouseId) => (
+                <TableHead
+                  key={warehouseId}
+                  className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}
+                >
+                  <Link
+                    href={hrefForWarehouse(warehouseId)}
+                    className="whitespace-nowrap font-semibold text-muted-foreground hover:underline"
                   >
-                    <Link
-                      href={hrefForWarehouse(warehouseId)}
-                      title={warehouse?.name}
-                      className="whitespace-nowrap font-semibold text-muted-foreground hover:underline"
-                    >
-                      {warehouseCode(snapshot, warehouseId)}
-                    </Link>
-                  </TableHead>
-                );
-              })}
+                    {warehouseCode(snapshot, warehouseId)}
+                  </Link>
+                </TableHead>
+              ))}
               <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Shipped</TableHead>
             </TableRow>
           </TableHeader>

@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { productById, regionById, regionCode, warehouseById, warehouseCode } from "@/features/logistics/logistics-lookups";
+import { productById, regionById, regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import type { StockGroup } from "@/features/logistics/stock-filters";
 import type {
@@ -178,10 +178,7 @@ const WarehousesMatrixTable = ({
         <MatrixEmpty colSpan={5} message={empty} />
       ) : (
         sections.map((section) => {
-          const warehouse = warehouseById(snapshot, section.warehouseId);
-          const label = warehouse
-            ? `${warehouse.code} · ${warehouse.name}`
-            : warehouseCode(snapshot, section.warehouseId);
+          const label = warehouseCode(snapshot, section.warehouseId);
           return (
             <Fragment key={section.warehouseId}>
               <SectionRow label={label} colSpan={5} />

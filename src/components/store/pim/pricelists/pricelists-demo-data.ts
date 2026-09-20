@@ -222,17 +222,6 @@ export type PricelistInfoField =
   | "cbmPerUnit"
   | "capacityPerContainer";
 
-/** Short plant code → full plant name, shown in a tooltip (global/supplier only). */
-const PLANT_FULL_NAMES: Record<string, string> = {
-  "SH-21": "Shanghai Assembly Plant 21",
-  "SH-33": "Shenzhen Assembly Plant 33",
-  "SH-40": "Shenyang Assembly Plant 40",
-  "SH-53": "Shanghai Assembly Plant 53",
-};
-
-/** Full plant name for the short code's tooltip; falls back to a generic label. */
-export const getPlantFullName = (code: string): string => PLANT_FULL_NAMES[code] ?? `Plant ${code}`;
-
 /** Deterministic package dimensions (in metres) derived from the row id. */
 const getSeedDimensions = (row: PricelistRow): { length: number; width: number; height: number } => {
   const n = row.numericId;

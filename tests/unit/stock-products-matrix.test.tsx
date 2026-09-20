@@ -169,7 +169,8 @@ describe("stock products matrix", () => {
       />,
     );
 
-    expect(screen.getByText("WH-2 · Plant warehouse")).toBeInTheDocument();
+    expect(screen.getByText("WH-2")).toBeInTheDocument();
+    expect(screen.queryByText("Plant warehouse")).not.toBeInTheDocument();
     expect(headerTexts()).toEqual(["Product", "Free", "Region reserve", "Order reserve", "On hand"]);
 
     rerender(
@@ -251,9 +252,11 @@ describe("stock products matrix", () => {
     );
 
     expect(screen.getByText("Oak Desk")).toBeInTheDocument();
-    expect(screen.getByText("WH-3 · City warehouse")).toBeInTheDocument();
+    expect(screen.getByText("WH-3")).toBeInTheDocument();
+    expect(screen.queryByText("City warehouse")).not.toBeInTheDocument();
     expect(screen.queryByText("Nordic Chair")).not.toBeInTheDocument();
-    expect(screen.queryByText("WH-2 · Plant warehouse")).not.toBeInTheDocument();
+    expect(screen.queryByText("WH-2")).not.toBeInTheDocument();
+    expect(screen.queryByText("Plant warehouse")).not.toBeInTheDocument();
   });
 });
 
