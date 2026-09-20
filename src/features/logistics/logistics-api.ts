@@ -34,6 +34,11 @@ import {
   type LogisticsCodePrefixes,
 } from "@/features/logistics/logistics-codes";
 import { assertDocumentCanBeCancelled } from "@/features/logistics/logistics-rules";
+import {
+  transferCreateRpcArgs,
+  type TransferCreateAndSendInput,
+  type TransferCreateAndSendResult,
+} from "@/features/logistics/transfer-direct-send";
 import { preferKorportalMediaConversion } from "@/lib/korportal-media-url";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -702,44 +707,17 @@ export const createProductionForOrder = async (args: {
   return created.id;
 };
 
-export const createAndSendReservedTransfer = async (args: {
-  fromWarehouseId: string;
-  toWarehouseId: string;
-  lines: Array<{
-    productId: string;
-    quantity: number;
-    ownerType?: OwnerType | null;
-    ownerId?: string | null;
-    allocated: number;
-  }>;
-  expectedEndOn?: string | null;
-  send?: boolean;
-}) => {
-  const id = await insertReturningId("store_transfer", {
-    from_warehouse_id: args.fromWarehouseId,
-    to_warehouse_id: args.toWarehouseId,
-    status: "draft",
-    expected_end_on: args.expectedEndOn || null,
-  });
-  for (const line of args.lines) {
-    const lineId = await insertReturningId("store_transfer_line", {
-      transfer_id: id,
-      product_id: line.productId,
-      quantity: line.quantity,
-    });
-    if (line.allocated > 0 && line.ownerType && line.ownerId) {
-      await insertRows("store_transfer_allocation", {
-        line_id: lineId,
-        owner_type: line.ownerType,
-        owner_id: line.ownerId,
-        quantity: line.allocated,
-      });
-    }
+export const createAndSendTransfer = async (
+  input: TransferCreateAndSendInput,
+): Promise<TransferCreateAndSendResult> => {
+  const created = await rpcJson<{ id: number | string; status: string }>(
+    "store_create_and_send_transfer",
+    transferCreateRpcArgs(input),
+  );
+  if (created.status !== "sent") {
+    throw new Error(`Expected sent transfer, received ${String(created.status)}`);
   }
-  if (args.send !== false) {
-    await sendTransfer(id);
-  }
-  return id;
+  return { id: String(created.id), status: "sent" };
 };
 export const sendTransfer = (id: string) => rpc("store_send_transfer", { p_id: id });
 export const completeTransfer = (id: string) => rpc("store_complete_transfer", { p_id: id });

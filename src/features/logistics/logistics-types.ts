@@ -15,7 +15,7 @@ export type CustomerOrderStatus = (typeof CUSTOMER_ORDER_STATUSES)[number];
 export const PRODUCTION_STATUSES = ["draft", "planned", "in_progress", "done", "closed", "cancelled"] as const;
 export type ProductionStatus = (typeof PRODUCTION_STATUSES)[number];
 
-export const TRANSFER_STATUSES = ["draft", "sent", "delivered", "cancelled"] as const;
+export const TRANSFER_STATUSES = ["sent", "delivered", "cancelled"] as const;
 export type TransferStatus = (typeof TRANSFER_STATUSES)[number];
 
 export const OUTPUT_STATUSES = ["planned", "done", "cancelled"] as const;

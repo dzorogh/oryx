@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
@@ -16,10 +17,15 @@ import {
 } from "@/components/ui/table";
 import {
   createAndPostReservation,
-  createAndSendReservedTransfer,
+  createAndSendTransfer,
   createProductionForOrder,
   createProductionOutput,
 } from "@/features/logistics/logistics-api";
+import {
+  newTransferRequestKey,
+  openSentTransfer,
+  orderOwnedTransferPayload,
+} from "@/features/logistics/transfer-direct-send";
 import {
   freeProductionLinesForProduct,
   freeTransfersForProduct,
@@ -689,9 +695,11 @@ export const TransferReservedForm = ({
   customerOrderId,
   lines,
 }: ActionFormProps) => {
+  const router = useRouter();
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
   const [expectedEndOn, setExpectedEndOn] = useState("");
+  const [requestKey, setRequestKey] = useState(newTransferRequestKey);
   const warehouses = warehousesWithReservedForOrder(balances, lines);
   const reservedLines = fromId ? reservedLinesAtWarehouse(balances, fromId, lines) : [];
 
@@ -699,6 +707,7 @@ export const TransferReservedForm = ({
     setFromId("");
     setToId("");
     setExpectedEndOn("");
+    setRequestKey(newTransferRequestKey());
   };
 
   const submit = async () => {
@@ -707,20 +716,23 @@ export const TransferReservedForm = ({
       return;
     }
     const ok = await runLogisticsAction(
-      () =>
-        createAndSendReservedTransfer({
-          fromWarehouseId: fromId,
-          toWarehouseId: toId,
-          expectedEndOn: expectedEndOn || null,
-          lines: reservedLines.map((item) => ({
-            productId: item.line.productId,
-            quantity: item.reserved,
-            ownerType: "order",
-            ownerId: customerOrderId,
-            allocated: item.reserved,
-          })),
-        }),
-      "Занятое отправлено в перемещение",
+      async () => {
+        const created = await createAndSendTransfer(
+          orderOwnedTransferPayload({
+            requestKey,
+            fromWarehouseId: fromId,
+            toWarehouseId: toId,
+            expectedEndOn: expectedEndOn || null,
+            customerOrderId,
+            lines: reservedLines.map((item) => ({
+              productId: item.line.productId,
+              quantity: item.reserved,
+            })),
+          }),
+        );
+        openSentTransfer(created, (href) => router.push(href));
+      },
+      "Transfer sent",
       reload,
     );
     if (ok) {
@@ -772,7 +784,7 @@ export const TransferReservedForm = ({
         ) : null}
         <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
         <Button type="button" disabled={!fromId || !toId || fromId === toId} onClick={() => void submit()}>
-          Отправить
+          Send
         </Button>
       </div>
     </LogisticsDialog>

@@ -276,28 +276,22 @@ const postRelease = async (client, { id, orderId, productId, quantity, locationT
 };
 
 const deliverTransfer = async (client, { id, fromWarehouseId, toWarehouseId, orderId, productId, quantity, createdAt, expectedEndOn }) => {
-  await client.insert("store_transfer", {
-    id,
-    from_warehouse_id: fromWarehouseId,
-    to_warehouse_id: toWarehouseId,
-    status: "draft",
-    created_at: createdAt,
-    expected_end_on: expectedEndOn,
+  await client.rpc("store_create_and_send_transfer", {
+    p_request_key: `seed:transfer:${id}`,
+    p_from_warehouse_id: fromWarehouseId,
+    p_to_warehouse_id: toWarehouseId,
+    p_expected_end_on: expectedEndOn,
+    p_id: id,
+    p_created_at: createdAt,
+    p_lines: [
+      {
+        product_id: productId,
+        quantity,
+        owner_type: "order",
+        owner_id: orderId,
+      },
+    ],
   });
-  await client.insert("store_transfer_line", {
-    id,
-    transfer_id: id,
-    product_id: productId,
-    quantity,
-  });
-  await client.insert("store_transfer_allocation", {
-    id,
-    line_id: id,
-    owner_type: "order",
-    owner_id: orderId,
-    quantity,
-  });
-  await client.rpc("store_send_transfer", { p_id: id });
   await client.rpc("store_complete_transfer", { p_id: id });
 };
 

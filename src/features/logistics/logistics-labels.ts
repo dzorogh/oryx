@@ -62,7 +62,6 @@ export const PRODUCTION_STATUS_LABELS: Record<ProductionStatus, string> = {
 };
 
 export const TRANSFER_STATUS_LABELS: Record<TransferStatus, string> = {
-  draft: "Черновик",
   sent: "Отправлен",
   delivered: "Доставлен",
   cancelled: "Отменён",

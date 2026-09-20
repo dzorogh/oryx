@@ -45,3 +45,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-orders-newest-mixed-demo.md`
   summary: Vitest не исполняет SQL `store_reset_logistics_stories` и не доказывает, что posted RSV 906 реально удаляются до p_hi=999.
   evidence: Тест читает только JS-строки RPC; в репозитории нет Postgres-харнесса. Live повторный `npm run seed:logistics` уже оставил 70 снимковых OMS и 6 историй, включая открытый OMS-906. Закрыло бы: SQL-тест функции или явная проверка, что DELETE reservation/journal идёт по `p_hi`, а не 905.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-transfer-direct-send.md`
+  summary: Анон по-прежнему может вставить transfer как draft и удалить строку idempotency key.
+  evidence: Новая `store_transfer_request` и старая `store_transfer` остаются с open RLS / GRANT ALL, как остальные демо-таблицы `store_*`. UI больше не пишет draft, но сырой клиент может. Закрыло бы: CHECK/trigger на публичный status и revoke INSERT/DELETE у anon.
