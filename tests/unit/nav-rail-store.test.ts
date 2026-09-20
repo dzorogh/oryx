@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RAIL_PRIMARY_ITEMS } from "@/components/layout/nav-rail";
+import { STORE_PRIMARY_NAV_ITEMS } from "@/features/store/store-nav";
 
 describe("NavRail Store section", () => {
   it("содержит единый верхнеуровневый раздел Store", () => {
@@ -17,5 +18,12 @@ describe("NavRail Store section", () => {
   it("does not keep Logistics as a top-level rail section", () => {
     expect(RAIL_PRIMARY_ITEMS.some((item) => item.match === "/logistics")).toBe(false);
     expect(RAIL_PRIMARY_ITEMS.some((item) => item.label === "Logistics")).toBe(false);
+  });
+
+  it("shows customer orders directly below stock in the store overview", () => {
+    const stockIndex = STORE_PRIMARY_NAV_ITEMS.findIndex((item) => item.label === "Остатки");
+
+    expect(stockIndex).toBeGreaterThanOrEqual(0);
+    expect(STORE_PRIMARY_NAV_ITEMS[stockIndex + 1]?.label).toBe("Заказы клиента");
   });
 });

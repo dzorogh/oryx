@@ -2,8 +2,8 @@ import type { ModuleSubnavItem } from "@/components/layout/module-subnav";
 import { LOGISTICS_PATHS } from "@/features/logistics/logistics-paths";
 
 export const LOGISTICS_OVERVIEW_NAV_ITEMS: ModuleSubnavItem[] = [
-  { href: LOGISTICS_PATHS.customerOrders, label: "Заказы клиента" },
   { href: LOGISTICS_PATHS.stock, label: "Остатки" },
+  { href: LOGISTICS_PATHS.customerOrders, label: "Заказы клиента" },
 ];
 
 export const LOGISTICS_FLOW_NAV_ITEMS: ModuleSubnavItem[] = [
