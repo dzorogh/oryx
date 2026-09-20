@@ -2,7 +2,7 @@
 title: 'Transfer detail: owner-grouped manifest'
 type: 'feature'
 created: '2026-09-20'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'af14dde695cda85471623f1e2d14c8f12e14e26c'
@@ -78,7 +78,7 @@ context:
 - Live transfer-location balances are authoritative; terminal views reconstruct the pre-completion owner snapshot from immutable transfer-location transactions, then use document lines/allocations only as a defensive fallback.
 - The current direct-send work remained intact; no Draft behavior was restored.
 - Matrix rows are covered by the new projection/page tests and the existing direct-send suite.
-- Full typecheck, 434 tests, English UI, static-image checks, and focused ESLint passed. Full ESLint remains blocked by pre-existing errors outside this implementation.
+- Full typecheck, 440 tests, English UI, static-image checks, and focused ESLint passed. Full ESLint remains blocked by pre-existing errors outside this implementation.
 
 ## Spec Change Log
 
