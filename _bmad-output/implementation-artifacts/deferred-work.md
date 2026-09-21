@@ -117,3 +117,43 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-stock-adjustments.md`
   summary: После появления `npm run test` обновить фразу в AGENTS.md, что у приложения нет автотестов.
   evidence: Правка попала бы в agent-context / управляемый блок и не является частью этой складской истории.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: `npm test` не исполняет `store_create_and_post_adjustment` и `store_cancel_document`.
+  evidence: Раннер — только unit TS; SQL-harness нет. Закрыло бы: Postgres contract test, что write-off пишет отрицательный факт и draft-cancel меняет только статус.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: Обратная корректировка не ссылается на исходный ADJ и не различает write_off/decrease.
+  evidence: `ADJUSTMENT_SOURCE_DOCUMENT_TYPES` и SQL check не знают `adjustment`; `oppositeAdjustmentOperation` всегда ведёт increase↔decrease. Это модель `spec-stock-adjustments`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: `store_cancel_document` не пишет снимок в `store_document_history`.
+  evidence: Документация требует снимок на каждую смену статуса; дыра была в RPC до кнопки «Отменить».
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: После появления `npm run test` обновить фразу в AGENTS.md, что автотестов нет.
+  evidence: Правка agent-context не входит в эту историю.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: Список корректировок показывает draft/cancelled, нет seed ADJ и related-блоков.
+  evidence: Зависимость `spec-stock-adjustments`; ADJ проводится без черновика, seed и related не входили в помощник отмены.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: `npm test` не исполняет `store_create_and_post_adjustment` и `store_cancel_document`.
+  evidence: Раннер — только unit TS; SQL-harness нет. Закрыло бы: Postgres contract test, что write-off пишет отрицательный факт и draft-cancel меняет только статус.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: Обратная корректировка не ссылается на исходный ADJ и не различает write_off/decrease.
+  evidence: `ADJUSTMENT_SOURCE_DOCUMENT_TYPES` и SQL check не знают `adjustment`; `oppositeAdjustmentOperation` всегда ведёт increase↔decrease. Это модель `spec-stock-adjustments`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: `store_cancel_document` не пишет снимок в `store_document_history`.
+  evidence: Документация требует снимок на каждую смену статуса; дыра была в RPC до кнопки «Отменить».
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: После появления `npm run test` обновить фразу в AGENTS.md, что автотестов нет.
+  evidence: Правка agent-context не входит в эту историю.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
+  summary: Список корректировок показывает draft/cancelled, нет seed ADJ и related-блоков.
+  evidence: Зависимость `spec-stock-adjustments`; ADJ проводится без черновика, seed и related не входили в помощник отмены.

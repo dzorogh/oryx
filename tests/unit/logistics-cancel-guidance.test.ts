@@ -78,6 +78,22 @@ const freeBalance = (productId: string, warehouseId: string, quantity: number): 
   quantity,
 });
 
+const shippedBalance = (
+  productId: string,
+  orderId: string,
+  quantity: number,
+): StockBalance => ({
+  productId,
+  locationType: "customer_order",
+  locationId: orderId,
+  assignedToType: "order",
+  assignedToId: orderId,
+  stockState: "shipped",
+  ownerType: "order",
+  ownerId: orderId,
+  quantity,
+});
+
 const reservedBalance = (
   productId: string,
   warehouseId: string,
@@ -415,5 +431,161 @@ describe("помощник отмены складских документов"
     const adjustment = projectDocumentCancelGuidance({ type: "adjustment", id: "a1" }, snapshot, balances);
     assert.equal(adjustment.adjustmentPreset?.operation, "increase");
     assert.equal(adjustment.adjustmentPreset?.warehouseId, "w1");
+  });
+
+  it("через снимок блокирует недоступный откат и скрывает закрытые заказы", () => {
+    const snapshot = emptySnapshot();
+    snapshot.reservations = [
+      {
+        id: "r-shipped",
+        number: "RSV-2",
+        locationType: "warehouse",
+        locationId: "w1",
+        toOwnerType: "order",
+        toOwnerId: "12",
+        status: "posted",
+        origin: "manual",
+        note: "",
+        createdAt: "",
+        createdBy: "1",
+      },
+    ];
+    snapshot.reservationLines = [
+      {
+        id: "rl-empty",
+        reservationId: "r-shipped",
+        productId: "7",
+        quantity: 8,
+        fromOwnerType: null,
+        fromOwnerId: null,
+      },
+      {
+        id: "rl-left",
+        reservationId: "r-shipped",
+        productId: "8",
+        quantity: 3,
+        fromOwnerType: null,
+        fromOwnerId: null,
+      },
+    ];
+    snapshot.shipments = [
+      {
+        id: "s-empty",
+        number: "SHP-2",
+        customerOrderId: "12",
+        warehouseId: "w1",
+        status: "posted",
+        createdAt: "",
+        createdBy: "1",
+      },
+    ];
+    snapshot.shipmentLines = [{ id: "sl-empty", shipmentId: "s-empty", productId: "7", quantity: 4 }];
+    snapshot.returns = [
+      { id: "ret-full", number: "RET-2", shipmentId: "s-empty", status: "posted", createdAt: "", createdBy: "1" },
+    ];
+    snapshot.returnLines = [{ id: "retl-full", returnId: "ret-full", shipmentLineId: "sl-empty", quantity: 4 }];
+    snapshot.transfers = [
+      {
+        id: "t-reserved",
+        number: "TR-2",
+        fromWarehouseId: "w1",
+        toWarehouseId: "w2",
+        status: "delivered",
+        createdAt: "",
+        createdBy: "1",
+        expectedEndOn: null,
+      },
+    ];
+    snapshot.warehouses.push({ id: "w2", code: "WH-2", name: "Другой", manufacturerId: null });
+    snapshot.transferLines = [{ id: "tl-reserved", transferId: "t-reserved", productId: "7", quantity: 8 }];
+    snapshot.customerOrders = [
+      {
+        id: "c-open",
+        number: "OMS-1",
+        status: "open",
+        createdAt: "",
+        createdBy: "1",
+        expectedEndOn: null,
+        description: "",
+      },
+      {
+        id: "c-closed",
+        number: "OMS-2",
+        status: "closed",
+        createdAt: "",
+        createdBy: "1",
+        expectedEndOn: null,
+        description: "",
+      },
+    ];
+    snapshot.productionOrders = [
+      {
+        id: "p-open",
+        number: "PO-2",
+        manufacturerId: "m1",
+        status: "in_progress",
+        createdAt: "",
+        createdBy: "1",
+        expectedEndOn: null,
+      },
+      {
+        id: "p-closed",
+        number: "PO-3",
+        manufacturerId: "m1",
+        status: "closed",
+        createdAt: "",
+        createdBy: "1",
+        expectedEndOn: null,
+      },
+    ];
+
+    const shippedReservation = projectDocumentCancelGuidance(
+      { type: "reservation", id: "r-shipped" },
+      snapshot,
+      [shippedBalance("7", "12", 8), reservedBalance("8", "w1", 3)],
+    );
+    assert.equal(shippedReservation.mode, "guidance");
+    assert.equal(shippedReservation.actions[0]?.enabled, true);
+    assert.equal(shippedReservation.reservationPreset?.productId, "8");
+
+    const fullyShippedReservation = projectDocumentCancelGuidance(
+      { type: "reservation", id: "r-shipped" },
+      snapshot,
+      [shippedBalance("7", "12", 8), shippedBalance("8", "12", 3)],
+    );
+    assert.equal(fullyShippedReservation.actions[0]?.enabled, false);
+    assert.equal(fullyShippedReservation.actions[0]?.blockedReason, CANCEL_GUIDANCE_BLOCKED.needReturn);
+
+    const emptyShipment = projectDocumentCancelGuidance({ type: "shipment", id: "s-empty" }, snapshot, []);
+    assert.equal(emptyShipment.actions[0]?.enabled, false);
+    assert.equal(emptyShipment.actions[0]?.blockedReason, CANCEL_GUIDANCE_BLOCKED.nothingToReturn);
+
+    const reservedTransfer = projectDocumentCancelGuidance(
+      { type: "transfer", id: "t-reserved" },
+      snapshot,
+      [reservedBalance("7", "w2", 8)],
+    );
+    assert.equal(reservedTransfer.actions[0]?.enabled, false);
+    assert.equal(reservedTransfer.actions[0]?.blockedReason, CANCEL_GUIDANCE_BLOCKED.needFreeAtDest);
+
+    const openCustomer = projectDocumentCancelGuidance({ type: "customer_order", id: "c-open" }, snapshot, []);
+    assert.equal(openCustomer.mode, "guidance");
+    assert.equal(openCustomer.actions[0]?.id, "close-customer-order");
+    assert.equal(openCustomer.closeEffects, CANCEL_GUIDANCE_CUSTOMER_CLOSE);
+
+    assert.equal(
+      projectDocumentCancelGuidance({ type: "customer_order", id: "c-closed" }, snapshot, []).mode,
+      "hidden",
+    );
+
+    const openProduction = projectDocumentCancelGuidance({ type: "production_order", id: "p-open" }, snapshot, []);
+    assert.equal(openProduction.mode, "guidance");
+    assert.equal(openProduction.actions[0]?.id, "close-production-order");
+    assert.equal(openProduction.closeEffects, CANCEL_GUIDANCE_PRODUCTION_CLOSE);
+
+    assert.equal(
+      projectDocumentCancelGuidance({ type: "production_order", id: "p-closed" }, snapshot, []).mode,
+      "hidden",
+    );
   });
 });

@@ -424,15 +424,17 @@ export const AdjustmentDetailPage = () => {
         hint: doc?.explanation,
       }))}
     />
-    <AdjustmentForm
-      snapshot={store.snapshot}
-      balances={store.balances}
-      open={adjustOpen}
-      onOpenChange={setAdjustOpen}
-      reload={store.reload}
-      mode="hub"
-      preset={adjustPreset}
-    />
+    {adjustOpen ? (
+      <AdjustmentForm
+        snapshot={store.snapshot}
+        balances={store.balances}
+        open
+        onOpenChange={setAdjustOpen}
+        reload={store.reload}
+        mode="hub"
+        preset={adjustPreset}
+      />
+    ) : null}
     </>
   );
 };
@@ -501,15 +503,17 @@ export const ReturnDetailPage = () => {
         };
       })}
     />
-    <ReservationForm
-      snapshot={store.snapshot}
-      balances={store.balances}
-      open={reserveOpen}
-      onOpenChange={setReserveOpen}
-      reload={store.reload}
-      mode="hub"
-      preset={reservePreset}
-    />
+    {reserveOpen ? (
+      <ReservationForm
+        snapshot={store.snapshot}
+        balances={store.balances}
+        open
+        onOpenChange={setReserveOpen}
+        reload={store.reload}
+        mode="hub"
+        preset={reservePreset}
+      />
+    ) : null}
     </>
   );
 };
@@ -846,15 +850,17 @@ export const OutputDetailPage = () => {
         hide="document"
         filter={(entry) => entry.documentType === "output" && entry.documentId === doc.id}
       />
-      <AdjustmentForm
-        snapshot={store.snapshot}
-        balances={store.balances}
-        open={adjustOpen}
-        onOpenChange={setAdjustOpen}
-        reload={store.reload}
-        mode="hub"
-        preset={adjustPreset}
-      />
+      {adjustOpen ? (
+        <AdjustmentForm
+          snapshot={store.snapshot}
+          balances={store.balances}
+          open
+          onOpenChange={setAdjustOpen}
+          reload={store.reload}
+          mode="hub"
+          preset={adjustPreset}
+        />
+      ) : null}
     </LogisticsPageShell>
   );
 };

@@ -1,7 +1,7 @@
 // english-ui:ignore-file
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cancelDocument } from "@/features/logistics/logistics-api";
 import {
@@ -42,29 +42,49 @@ export const DocumentCancelDialog = ({
   onFollowUp: (action: CancelGuidanceAction, guidance: CancelGuidance) => void;
 }) => {
   const [pending, setPending] = useState(false);
+  const startedRef = useRef(false);
   const primary = guidance.actions[0];
 
-  const closeDialog = () => onOpenChange(false);
+  const setOpen = (next: boolean) => {
+    if (next) {
+      startedRef.current = false;
+      setPending(false);
+    }
+    onOpenChange(next);
+  };
+
+  const closeDialog = () => setOpen(false);
 
   const runPrimary = async () => {
-    if (!primary?.enabled || pending) {
+    if (!primary?.enabled || pending || startedRef.current) {
       return;
     }
     if (primary.id === "confirm-cancel") {
       if (!guidance.cancelRpcKind) {
         return;
       }
+      startedRef.current = true;
       setPending(true);
       const ok = await runLogisticsAction(
         () => cancelDocument(guidance.cancelRpcKind!, guidance.documentId, guidance.cancelStatus),
         "Документ отменён",
         reload,
       );
-      setPending(false);
-      if (ok) {
-        closeDialog();
+      if (!ok) {
+        startedRef.current = false;
+        setPending(false);
+        return;
       }
+      closeDialog();
       return;
+    }
+    if (
+      primary.id === "mark-delivered" ||
+      primary.id === "close-customer-order" ||
+      primary.id === "close-production-order"
+    ) {
+      startedRef.current = true;
+      setPending(true);
     }
     closeDialog();
     onFollowUp(primary, guidance);
@@ -77,7 +97,7 @@ export const DocumentCancelDialog = ({
   return (
     <LogisticsDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={setOpen}
       title={guidance.title}
       className="sm:max-w-lg"
     >

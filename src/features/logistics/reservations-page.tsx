@@ -364,15 +364,17 @@ export const ReservationDetailPage = () => {
           </Button>
         </div>
       </LogisticsDialog>
-      <ReservationForm
-        snapshot={snapshot}
-        balances={balances}
-        open={followUpOpen}
-        onOpenChange={setFollowUpOpen}
-        reload={reload}
-        mode="hub"
-        preset={cancelGuidance.reservationPreset}
-      />
+      {followUpOpen ? (
+        <ReservationForm
+          snapshot={snapshot}
+          balances={balances}
+          open
+          onOpenChange={setFollowUpOpen}
+          reload={reload}
+          mode="hub"
+          preset={cancelGuidance.reservationPreset}
+        />
+      ) : null}
     </LogisticsPageShell>
   );
 };

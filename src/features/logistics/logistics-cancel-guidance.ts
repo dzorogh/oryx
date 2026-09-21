@@ -698,6 +698,9 @@ const outputStockPlace = (
   return null;
 };
 
+const firstAvailable = <T,>(items: T[], hasQty: (item: T) => boolean): T | undefined =>
+  items.find(hasQty) ?? items[0];
+
 const attachPresets = (
   guidance: CancelGuidance,
   subject: CancelGuidanceSubject,
@@ -711,12 +714,27 @@ const attachPresets = (
   if (subject.type === "reservation") {
     const doc = snapshot.reservations.find((item) => item.id === subject.id);
     const lines = snapshot.reservationLines.filter((line) => line.reservationId === subject.id);
-    const first = lines[0];
-    if (!doc || !first) {
+    if (!doc || lines.length === 0) {
       return guidance;
     }
     const direction = reservationDirection(doc, lines);
-    const reverse = reverseReservationOwners(direction, doc, first);
+    const chosen =
+      firstAvailable(lines, (line) => {
+        const reverse = reverseReservationOwners(direction, doc, line);
+        return (
+          reservationCapForOwner(
+            balances,
+            line.productId,
+            doc.locationType,
+            doc.locationId,
+            reverse.fromOwnerType,
+            reverse.fromOwnerId,
+            reverse.toOwnerType,
+            reverse.toOwnerId,
+          ) > 0
+        );
+      }) ?? lines[0];
+    const reverse = reverseReservationOwners(direction, doc, chosen);
     return {
       ...guidance,
       reservationPreset: {
@@ -726,7 +744,7 @@ const attachPresets = (
         toOwnerId: reverse.toOwnerId,
         fromOwnerType: reverse.fromOwnerType,
         fromOwnerId: reverse.fromOwnerId,
-        productId: first.productId,
+        productId: chosen.productId,
       },
     };
   }
@@ -734,9 +752,17 @@ const attachPresets = (
   if (subject.type === "return") {
     const doc = snapshot.returns.find((item) => item.id === subject.id);
     const shipment = doc ? snapshot.shipments.find((item) => item.id === doc.shipmentId) : undefined;
-    const firstLine = snapshot.returnLines.find((line) => line.returnId === subject.id);
-    const shipmentLine = firstLine
-      ? snapshot.shipmentLines.find((item) => item.id === firstLine.shipmentLineId)
+    const returnLines = snapshot.returnLines.filter((line) => line.returnId === subject.id);
+    const chosenLine = firstAvailable(returnLines, (line) => {
+      const shipmentLine = snapshot.shipmentLines.find((item) => item.id === line.shipmentLineId);
+      return Boolean(
+        shipment &&
+          shipmentLine &&
+          freeWarehouseQuantity(balances, shipmentLine.productId, shipment.warehouseId) > 0,
+      );
+    });
+    const shipmentLine = chosenLine
+      ? snapshot.shipmentLines.find((item) => item.id === chosenLine.shipmentLineId)
       : undefined;
     if (!shipment || !shipmentLine) {
       return guidance;
@@ -761,16 +787,22 @@ const attachPresets = (
 
   if (subject.type === "output") {
     const doc = snapshot.outputs.find((item) => item.id === subject.id);
-    const first = snapshot.outputLines.find((line) => line.outputId === subject.id);
+    const outputLines = snapshot.outputLines.filter((line) => line.outputId === subject.id);
     const place = doc ? outputStockPlace(snapshot, doc.id, doc.productionOrderId) : null;
-    if (!doc || !first || !place || place.locationType !== "warehouse") {
+    const chosen = place
+      ? firstAvailable(
+          outputLines,
+          (line) => freeAtPlace(balances, line.productId, place.locationType, place.locationId) > 0,
+        )
+      : outputLines[0];
+    if (!doc || !chosen || !place || place.locationType !== "warehouse") {
       return {
         ...guidance,
         adjustmentPreset: {
           operation: "decrease",
           sourceDocumentType: "output",
           sourceDocumentId: subject.id,
-          productId: first?.productId,
+          productId: chosen?.productId,
         },
       };
     }
@@ -781,23 +813,31 @@ const attachPresets = (
         warehouseId: place.locationId,
         sourceDocumentType: "output",
         sourceDocumentId: doc.id,
-        productId: first.productId,
+        productId: chosen.productId,
       },
     };
   }
 
   if (subject.type === "adjustment") {
     const doc = snapshot.adjustments.find((item) => item.id === subject.id);
-    const first = snapshot.adjustmentLines.find((line) => line.adjustmentId === subject.id);
+    const adjustmentLines = snapshot.adjustmentLines.filter((line) => line.adjustmentId === subject.id);
     if (!doc) {
       return guidance;
     }
+    const opposite = oppositeAdjustmentOperation(doc.operation);
+    const chosen =
+      opposite === "increase"
+        ? adjustmentLines[0]
+        : firstAvailable(
+            adjustmentLines,
+            (line) => freeWarehouseQuantity(balances, line.productId, doc.warehouseId) > 0,
+          );
     return {
       ...guidance,
       adjustmentPreset: {
-        operation: oppositeAdjustmentOperation(doc.operation),
+        operation: opposite,
         warehouseId: doc.warehouseId,
-        productId: first?.productId,
+        productId: chosen?.productId,
       },
     };
   }
