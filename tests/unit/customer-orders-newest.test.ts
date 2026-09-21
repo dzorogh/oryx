@@ -14,7 +14,7 @@ const order = (
   number: `OMS-${id}`,
   status,
   createdAt,
-  closedAt: status === "closed" ? createdAt : null,
+  createdBy: "1",
   expectedEndOn: null,
   description: "",
 });

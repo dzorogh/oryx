@@ -316,7 +316,7 @@ export const ProductionFromOrderForm = ({
                   const max = remainingToReserveForLine(line, balances);
                   const reserved = sumReservedForLine(balances, line);
                   const inProduction = reservedPlacesForLine(balances, line)
-                    .filter((place) => place.locationType === "production_order_line")
+                    .filter((place) => place.locationType === "production_order")
                     .reduce((sum, place) => sum + place.quantity, 0);
                   const rawQuantity = quantities[line.id] ?? String(max);
                   const numericQuantity = Number(rawQuantity);
@@ -449,7 +449,7 @@ export const ReserveOnProductionForm = ({
     const ok = await runLogisticsAction(
       () =>
         createAndPostReservation({
-          locationType: "production_order_line",
+          locationType: "production_order",
           locationId: selected.locationId,
           toOwnerType: "order",
           toOwnerId: customerOrderId,
@@ -554,8 +554,8 @@ export const OutputFromOrderForm = ({
         const reservedHere = balances
           .filter(
             (entry) =>
-              entry.locationType === "production_order_line" &&
-              entry.locationId === line.id &&
+              entry.locationType === "production_order" &&
+              entry.locationId === line.orderId &&
               entry.stockState === "reserved" &&
               ownersEqual(entry.ownerType, entry.ownerId, "order", orderLine.orderId) &&
               entry.productId === orderLine.productId,
@@ -564,8 +564,8 @@ export const OutputFromOrderForm = ({
         const freeHere = balances
           .filter(
             (entry) =>
-              entry.locationType === "production_order_line" &&
-              entry.locationId === line.id &&
+              entry.locationType === "production_order" &&
+              entry.locationId === line.orderId &&
               entry.stockState === "free" &&
               entry.productId === line.productId,
           )
@@ -658,7 +658,7 @@ export const OutputFromOrderForm = ({
           value={productionLineId}
           items={candidates.map((item) => ({
             value: item.line.id,
-            label: `${locationLabel(snapshot, "production_order_line", item.line.id)} · занято ${formatQuantity(item.reservedHere)} · свободно ${formatQuantity(item.freeHere)}`,
+            label: `${locationLabel(snapshot, "production_order", item.line.orderId)} · занято ${formatQuantity(item.reservedHere)} · свободно ${formatQuantity(item.freeHere)}`,
           }))}
           onChange={(value) => {
             setProductionLineId(value);

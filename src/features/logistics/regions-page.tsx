@@ -12,6 +12,7 @@ import { createRegion, updateRegion } from "@/features/logistics/logistics-api";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { productById } from "@/features/logistics/logistics-lookups";
 import { relatedReservationsForRegion } from "@/features/logistics/logistics-related";
+import { documentKey, documentKeysForAssignedEntity } from "@/features/logistics/logistics-types";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -178,7 +179,12 @@ export const RegionDetailPage = () => {
       <RelatedDocuments title="Reservations" href="/store/logistics/reservations" items={reservations} />
       <DocumentLedger
         snapshot={snapshot}
-        filter={(entry) => entry.ownerType === "region" && entry.ownerId === region.id}
+        hide="assignedTo"
+        filter={(entry) =>
+          documentKeysForAssignedEntity(snapshot.transactions, "region", region.id).has(
+            documentKey(entry.documentType, entry.documentId),
+          )
+        }
       />
 
       <LogisticsDialog

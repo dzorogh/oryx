@@ -77,3 +77,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-transfer-detail-reservation-groups.md`
   summary: Добавить исполняемый Postgres contract test для direct-send RPC.
   evidence: Atomicity, rollback и same-key replay сейчас проверяются mock/source-text тестами; нужен реальный database harness для миграции.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-universal-entity-movement-table.md`
+  summary: Тест `parseStockPlace` для `production_order` и legacy `production_order_line`.
+  evidence: serialize уже пишет `production_order`; старые bookmark URL без теста молча сбрасываются в all.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-universal-entity-movement-table.md`
+  summary: Убрать дублирующую пару `ownerType`/`ownerId` с `StockBalance` после cutover.
+  evidence: читатели ещё могут суммировать по старой паре, пока aliases остаются обязательными.

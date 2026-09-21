@@ -44,33 +44,43 @@ const matchesPlace = (entry: StockBalance, place: StockPlaceFilter): boolean => 
   return entry.locationType === place.locationType;
 };
 
-const balanceKey = (entry: Omit<StockBalance, "quantity">): string =>
+const balanceKey = (entry: Pick<StockBalance, "productId" | "locationType" | "locationId" | "assignedToType" | "assignedToId">): string =>
   [
     entry.productId,
     entry.locationType,
     entry.locationId,
-    entry.stockState,
-    entry.ownerType ?? "",
-    entry.ownerId ?? "",
+    entry.assignedToType ?? "",
+    entry.assignedToId ?? "",
   ].join("|");
 
 export const computeStockBalances = (transactions: StockTransaction[]): StockBalance[] => {
   const totals = new Map<string, StockBalance>();
 
   for (const tx of transactions) {
-    const key = balanceKey(tx);
+    const assignedToType = tx.assignedToType ?? tx.ownerType ?? null;
+    const assignedToId = tx.assignedToId ?? tx.ownerId ?? null;
+    const key = balanceKey({
+      productId: tx.productId,
+      locationType: tx.locationType,
+      locationId: tx.locationId,
+      assignedToType,
+      assignedToId,
+    });
     const current = totals.get(key);
     if (current) {
       current.quantity += tx.quantity;
       continue;
     }
+    const stockState = tx.stockState;
     totals.set(key, {
       productId: tx.productId,
       locationType: tx.locationType,
       locationId: tx.locationId,
-      stockState: tx.stockState,
-      ownerType: tx.ownerType,
-      ownerId: tx.ownerId,
+      assignedToType,
+      assignedToId,
+      stockState,
+      ownerType: assignedToType,
+      ownerId: assignedToId,
       quantity: tx.quantity,
     });
   }
@@ -86,7 +96,7 @@ export const computeStockBalances = (transactions: StockTransaction[]): StockBal
       if (location !== 0) {
         return location;
       }
-      return left.stockState.localeCompare(right.stockState);
+      return (left.assignedToId ?? "").localeCompare(right.assignedToId ?? "");
     });
 };
 

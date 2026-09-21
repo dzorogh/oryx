@@ -20,8 +20,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot>): LogisticsSnapshot =>
         number: "OMS-1",
         status: "open",
         createdAt: "",
-        closedAt: null,
-        expectedEndOn: null,
+        createdBy: "1",
+      expectedEndOn: null,
         description: "",
       },
     ],
@@ -83,8 +83,8 @@ describe("calculateOrderDocumentCoverage", () => {
           manufacturerId: "m-1",
           status: "in_progress",
           createdAt: "",
-          closedAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
       productionOrderLines: [
@@ -94,7 +94,7 @@ describe("calculateOrderDocumentCoverage", () => {
         {
           id: "rsv-1",
           number: "RSV-1",
-          locationType: "production_order_line",
+          locationType: "production_order",
           locationId: "pol-1",
           toOwnerType: "order",
           toOwnerId: "co-1",
@@ -102,8 +102,8 @@ describe("calculateOrderDocumentCoverage", () => {
           origin: "manual",
           note: "",
           createdAt: "",
-          postedAt: "",
-        },
+        createdBy: "1",
+      },
       ],
       reservationLines: [{ id: "rsvl-1", reservationId: "rsv-1", productId: "p-a", quantity: 8, fromOwnerType: null, fromOwnerId: null }],
       shipments: [
@@ -114,9 +114,8 @@ describe("calculateOrderDocumentCoverage", () => {
           warehouseId: "wh-1",
           status: "posted",
           createdAt: "",
-          postedAt: "",
-          cancelledAt: null,
-        },
+        createdBy: "1",
+      },
       ],
       shipmentLines: [
         { id: "shl-1", shipmentId: "shp-1", productId: "p-b", quantity: 1 },
@@ -127,6 +126,56 @@ describe("calculateOrderDocumentCoverage", () => {
     expect(coverage.production.get("po-1")).toBe(40);
     expect(coverage.reservation.get("rsv-1")).toBe(40);
     expect(coverage.shipment.get("shp-1")).toBe(10);
+  });
+
+  it("covers production from a reservation on the production order id", () => {
+    const data = snapshot({
+      productionOrders: [
+        {
+          id: "po-1",
+          number: "PO-1",
+          manufacturerId: "m-1",
+          status: "in_progress",
+          createdAt: "",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+        {
+          id: "po-other",
+          number: "PO-OTHER",
+          manufacturerId: "m-1",
+          status: "in_progress",
+          createdAt: "",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+      ],
+      productionOrderLines: [
+        { id: "po-1", orderId: "po-other", productId: "p-a", quantity: 10, activatedQuantity: 10 },
+      ],
+      reservations: [
+        {
+          id: "rsv-1",
+          number: "RSV-1",
+          locationType: "production_order",
+          locationId: "po-1",
+          toOwnerType: "order",
+          toOwnerId: "co-1",
+          status: "posted",
+          origin: "manual",
+          note: "",
+          createdAt: "",
+          createdBy: "1",
+        },
+      ],
+      reservationLines: [
+        { id: "rsvl-1", reservationId: "rsv-1", productId: "p-a", quantity: 8, fromOwnerType: null, fromOwnerId: null },
+      ],
+    });
+
+    const coverage = calculateOrderDocumentCoverage(data, "co-1");
+    expect(coverage.production.get("po-1")).toBe(40);
+    expect(coverage.production.has("po-other")).toBe(false);
   });
 });
 

@@ -61,6 +61,8 @@ const storeMock = vi.hoisted(() => {
     returns: [],
     returnLines: [],
     transactions: [],
+    users: [],
+    documentHistory: [],
   };
 
   const balances: StockBalance[] = [

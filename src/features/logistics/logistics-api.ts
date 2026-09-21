@@ -1,6 +1,9 @@
 import type {
   CustomerOrder,
   CustomerOrderLine,
+  DocumentHistoryEntry,
+  DocumentType,
+  HistoryDocumentType,
   LogisticsManufacturer,
   LogisticsProduct,
   LogisticsRegion,
@@ -23,10 +26,12 @@ import type {
   ShipmentReturn,
   ShipmentReturnLine,
   StockTransaction,
+  StoreUser,
   Transfer,
   TransferAllocation,
   TransferLine,
 } from "@/features/logistics/logistics-types";
+import { derivedStockState, STORE_CURRENT_USER_ID } from "@/features/logistics/logistics-types";
 import {
   formatLogisticsCode,
   mergeLogisticsCodePrefixes,
@@ -129,7 +134,7 @@ const mapCustomerOrder = (row: Record<string, unknown>): CustomerOrder => {
     number: formatLogisticsCode("customerOrder", id),
     status: row.status as CustomerOrder["status"],
     createdAt: String(row.created_at),
-    closedAt: row.closed_at ? String(row.closed_at) : null,
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
     description: row.description ? String(row.description) : "",
   };
@@ -150,7 +155,7 @@ const mapProductionOrder = (row: Record<string, unknown>): ProductionOrder => {
     manufacturerId: String(row.manufacturer_id),
     status: row.status as ProductionOrder["status"],
     createdAt: String(row.created_at),
-    closedAt: row.closed_at ? String(row.closed_at) : null,
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
   };
 };
@@ -176,7 +181,7 @@ const mapReservation = (row: Record<string, unknown>): Reservation => {
     origin: row.origin as Reservation["origin"],
     note: row.note ? String(row.note) : "",
     createdAt: String(row.created_at),
-    postedAt: row.posted_at ? String(row.posted_at) : null,
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
   };
 };
 
@@ -198,8 +203,7 @@ const mapTransfer = (row: Record<string, unknown>): Transfer => {
     toWarehouseId: String(row.to_warehouse_id),
     status: row.status as Transfer["status"],
     createdAt: String(row.created_at),
-    sentAt: row.sent_at ? String(row.sent_at) : null,
-    cancelledAt: row.cancelled_at ? String(row.cancelled_at) : null,
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
   };
 };
@@ -228,8 +232,7 @@ const mapShipment = (row: Record<string, unknown>): Shipment => {
     warehouseId: String(row.warehouse_id),
     status: row.status as Shipment["status"],
     createdAt: String(row.created_at),
-    postedAt: row.posted_at ? String(row.posted_at) : null,
-    cancelledAt: row.cancelled_at ? String(row.cancelled_at) : null,
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
   };
 };
 
@@ -248,8 +251,7 @@ const mapOutput = (row: Record<string, unknown>): ProductionOutput => {
     productionOrderId: String(row.production_order_id),
     status: row.status as ProductionOutput["status"],
     createdAt: String(row.created_at),
-    doneAt: dateOrNull(row.done_at),
-    cancelledAt: row.cancelled_at ? String(row.cancelled_at) : null,
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
   };
 };
@@ -278,8 +280,7 @@ const mapReturn = (row: Record<string, unknown>): ShipmentReturn => {
     shipmentId: String(row.shipment_id),
     status: row.status as ShipmentReturn["status"],
     createdAt: String(row.created_at),
-    postedAt: row.posted_at ? String(row.posted_at) : null,
-    cancelledAt: row.cancelled_at ? String(row.cancelled_at) : null,
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
   };
 };
 
@@ -290,24 +291,41 @@ const mapReturnLine = (row: Record<string, unknown>): ShipmentReturnLine => ({
   quantity: Number(row.quantity),
 });
 
-const mapTransaction = (row: Record<string, unknown>): StockTransaction => ({
-  transactionId: String(row.transaction_id),
-  occurredAt: String(row.occurred_at),
-  postedAt: String(row.posted_at),
-  productId: String(row.product_id),
-  unit: String(row.unit),
-  quantity: Number(row.quantity),
-  locationType: row.location_type as StockTransaction["locationType"],
-  locationId: String(row.location_id),
-  stockState: row.stock_state as StockTransaction["stockState"],
-  ownerType: mapOwnerType(row.owner_type),
-  ownerId: mapOwnerId(row.owner_id),
-  sourceType: row.source_type as StockTransaction["sourceType"],
-  sourceId: String(row.source_id),
-  sourceLineId: row.source_line_id ? String(row.source_line_id) : null,
-  operationId: String(row.operation_id),
-  idempotencyKey: String(row.idempotency_key),
-  reversesTransactionId: row.reverses_transaction_id ? String(row.reverses_transaction_id) : null,
+export const mapTransaction = (row: Record<string, unknown>): StockTransaction => {
+  const locationType = row.location_type as StockTransaction["locationType"];
+  const assignedToType = mapOwnerType(row.assigned_to_type);
+  const assignedToId = mapOwnerId(row.assigned_to_id);
+  return {
+    id: String(row.id),
+    createdAt: String(row.created_at),
+    productId: String(row.product_id),
+    quantity: Number(row.quantity),
+    locationType,
+    locationId: String(row.location_id),
+    assignedToType,
+    assignedToId,
+    documentType: row.document_type as DocumentType,
+    documentId: String(row.document_id),
+    stockState: derivedStockState(locationType, assignedToType, assignedToId),
+    ownerType: assignedToType,
+    ownerId: assignedToId,
+  };
+};
+
+const mapUser = (row: Record<string, unknown>): StoreUser => ({
+  id: String(row.id),
+  name: String(row.name),
+});
+
+const mapDocumentHistory = (row: Record<string, unknown>): DocumentHistoryEntry => ({
+  id: String(row.id),
+  documentType: row.document_type as HistoryDocumentType,
+  documentId: String(row.document_id),
+  eventType: row.event_type as DocumentHistoryEntry["eventType"],
+  status: String(row.status),
+  expectedEndOn: dateOrNull(row.expected_end_on),
+  createdAt: String(row.created_at),
+  createdBy: String(row.created_by),
 });
 
 const selectAll = async <T>(
@@ -372,16 +390,18 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     returns,
     returnLines,
     transactions,
+    users,
+    documentHistory,
   ] = await Promise.all([
     selectAll("store_product", "id,sku,name,unit,image_url,manufacturer_id", mapProduct, "id"),
     selectAll("store_warehouse", "id,name,manufacturer_id", mapWarehouse, "id"),
     selectAll("store_manufacturer", "id,name,warehouse_id", mapManufacturer, "id"),
     selectAll("store_region", "id,name", mapRegion, "id"),
-    selectAll("store_customer_order", "id,status,created_at,closed_at,expected_end_on,description", mapCustomerOrder, "id"),
+    selectAll("store_customer_order", "id,status,created_at,created_by,expected_end_on,description", mapCustomerOrder, "id"),
     selectAll("store_customer_order_line", "id,order_id,product_id,quantity", mapCustomerOrderLine, "id"),
     selectAll(
       "store_production_order",
-      "id,manufacturer_id,status,created_at,closed_at,expected_end_on",
+      "id,manufacturer_id,status,created_at,created_by,expected_end_on",
       mapProductionOrder,
       "id",
     ),
@@ -393,7 +413,7 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
     selectAll(
       "store_reservation",
-      "id,location_type,location_id,to_owner_type,to_owner_id,status,origin,note,created_at,posted_at",
+      "id,location_type,location_id,to_owner_type,to_owner_id,status,origin,note,created_at,created_by",
       mapReservation,
       "id",
     ),
@@ -405,7 +425,7 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
     selectAll(
       "store_transfer",
-      "id,from_warehouse_id,to_warehouse_id,status,created_at,sent_at,cancelled_at,expected_end_on",
+      "id,from_warehouse_id,to_warehouse_id,status,created_at,created_by,expected_end_on",
       mapTransfer,
       "id",
     ),
@@ -418,7 +438,7 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
     selectAll(
       "store_shipment",
-      "id,customer_order_id,warehouse_id,status,created_at,posted_at,cancelled_at",
+      "id,customer_order_id,warehouse_id,status,created_at,created_by",
       mapShipment,
       "id",
     ),
@@ -430,7 +450,7 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
     selectAll(
       "store_output",
-      "id,production_order_id,status,created_at,done_at,cancelled_at,expected_end_on",
+      "id,production_order_id,status,created_at,created_by,expected_end_on",
       mapOutput,
       "id",
     ),
@@ -448,16 +468,23 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
     selectAll(
       "store_return",
-      "id,shipment_id,status,created_at,posted_at,cancelled_at",
+      "id,shipment_id,status,created_at,created_by",
       mapReturn,
       "id",
     ),
     selectAll("store_return_line", "id,return_id,shipment_line_id,quantity", mapReturnLine, "id"),
     selectAll(
       "store_stock_transaction",
-      "transaction_id,occurred_at,posted_at,product_id,unit,quantity,location_type,location_id,stock_state,owner_type,owner_id,source_type,source_id,source_line_id,operation_id,idempotency_key,reverses_transaction_id",
+      "id,created_at,product_id,quantity,location_type,location_id,assigned_to_type,assigned_to_id,document_type,document_id",
       mapTransaction,
-      "posted_at",
+      "created_at",
+    ),
+    selectAll("store_user", "id,name", mapUser, "id"),
+    selectAll(
+      "store_document_history",
+      "id,document_type,document_id,event_type,status,expected_end_on,created_at,created_by",
+      mapDocumentHistory,
+      "id",
     ),
   ]);
 
@@ -484,6 +511,8 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     returns,
     returnLines,
     transactions,
+    users,
+    documentHistory,
   };
 };
 
@@ -637,8 +666,8 @@ export const createProductionOutput = async (args: {
 }) => {
   if (args.allocation && args.allocation.quantity > 0) {
     await createAndPostReservation({
-      locationType: "production_order_line",
-      locationId: args.lineId,
+      locationType: "production_order",
+      locationId: args.orderId,
       toOwnerType: args.allocation.ownerType,
       toOwnerId: args.allocation.ownerId,
       lines: [
@@ -682,28 +711,18 @@ export const createProductionForOrder = async (args: {
       quantity: line.quantity,
     })),
   });
-  const lineIdByProduct = new Map(created.lines.map((line) => [String(line.product_id), String(line.id)]));
-  const linesByLocation = new Map<string, ReservationLineInput[]>();
-  for (const line of args.lines) {
-    const locationId = lineIdByProduct.get(line.productId) ?? "";
-    const bucket = linesByLocation.get(locationId) ?? [];
-    bucket.push({
+  await createAndPostReservation({
+    locationType: "production_order",
+    locationId: String(created.id),
+    toOwnerType: "order",
+    toOwnerId: args.customerOrderId,
+    lines: args.lines.map((line) => ({
       productId: line.productId,
       quantity: line.quantity,
       fromOwnerType: null,
       fromOwnerId: null,
-    });
-    linesByLocation.set(locationId, bucket);
-  }
-  for (const [locationId, lines] of linesByLocation) {
-    await createAndPostReservation({
-      locationType: "production_order_line",
-      locationId,
-      toOwnerType: "order",
-      toOwnerId: args.customerOrderId,
-      lines,
-    });
-  }
+    })),
+  });
   return created.id;
 };
 
@@ -753,8 +772,8 @@ export const addProductionLine = (args: { orderId: string; productId: string; qu
     p_quantity: args.quantity,
   });
 export const syncProductionStock = (id: string) => rpc("store_sync_production_activation", { p_id: id });
-export const cancelDocument = (kind: string, id: string) => {
-  assertDocumentCanBeCancelled(kind);
+export const cancelDocument = (kind: string, id: string, status?: string | null) => {
+  assertDocumentCanBeCancelled(kind, status);
   return rpc("store_cancel_document", { p_kind: kind, p_id: id });
 };
 

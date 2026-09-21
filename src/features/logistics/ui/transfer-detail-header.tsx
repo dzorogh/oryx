@@ -24,7 +24,7 @@ const statusTone = (status: TransferStatus): "secondary" | "default" | "destruct
   return "secondary";
 };
 
-export type TransferDetailPendingAction = "reserve" | "deliver" | "cancel" | "expected" | null;
+export type TransferDetailPendingAction = "reserve" | "deliver" | "expected" | null;
 
 const RouteNode = ({
   snapshot,
@@ -66,7 +66,6 @@ export const TransferDetailHeader = ({
   actionError,
   onReserveInTransit,
   onMarkDelivered,
-  onCancel,
   onExpectedEndChange,
 }: {
   snapshot: LogisticsSnapshot;
@@ -77,7 +76,6 @@ export const TransferDetailHeader = ({
   actionError: string | null;
   onReserveInTransit: () => void;
   onMarkDelivered: () => void;
-  onCancel: () => void;
   onExpectedEndChange: (value: string) => void;
 }) => {
   const busy = pendingAction != null;
@@ -109,17 +107,6 @@ export const TransferDetailHeader = ({
           onClick={onMarkDelivered}
         >
           Mark delivered
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="destructive"
-          className="h-11 min-w-11 md:h-8"
-          disabled={busy}
-          aria-busy={pendingAction === "cancel"}
-          onClick={onCancel}
-        >
-          Cancel transfer
         </Button>
       </div>
     );

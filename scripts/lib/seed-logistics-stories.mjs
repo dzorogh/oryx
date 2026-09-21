@@ -395,7 +395,7 @@ const seedOrderThenProduce = async (client) => {
     orderId: 902,
     productId: PRODUCT.force1100,
     quantity: 3,
-    locationType: "production_order_line",
+    locationType: "production_order",
     locationId: 902,
     createdAt: "2026-09-02T06:25:00+00:00",
   });
@@ -545,7 +545,7 @@ const seedReturnHeavy = async (client) => {
     orderId: 905,
     productId: PRODUCT.cruiser300,
     quantity: 6,
-    locationType: "production_order_line",
+    locationType: "production_order",
     locationId: 905,
     createdAt: "2026-08-21T06:10:00+00:00",
   });

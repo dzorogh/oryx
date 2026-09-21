@@ -135,10 +135,10 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
   const outputIds = new Set<string>();
   for (const entry of snapshot.transactions) {
     if (
-      entry.sourceType === "production_output" &&
+      entry.documentType === "output" &&
       ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId)
     ) {
-      outputIds.add(entry.sourceId);
+      outputIds.add(entry.documentId);
     }
   }
   for (const allocation of snapshot.outputAllocations) {
@@ -171,15 +171,18 @@ export const relatedProductionsForOrder = (
   const productionIds = new Set<string>();
   for (const reservation of snapshot.reservations) {
     if (
-      reservation.locationType !== "production_order_line" ||
+      reservation.locationType !== "production_order" ||
       !activeReservation(snapshot, reservation.id) ||
       !reservationTouchesOrder(reservation, snapshot.reservationLines, customerOrderId)
     ) {
       continue;
     }
-    const productionLine = snapshot.productionOrderLines.find((item) => item.id === reservation.locationId);
-    if (productionLine) {
-      productionIds.add(productionLine.orderId);
+    const orderId =
+      snapshot.productionOrders.some((item) => item.id === reservation.locationId)
+        ? reservation.locationId
+        : snapshot.productionOrderLines.find((line) => line.id === reservation.locationId)?.orderId;
+    if (orderId) {
+      productionIds.add(orderId);
     }
   }
   return snapshot.productionOrders
@@ -193,20 +196,20 @@ export const relatedProductionsForOrder = (
           (entry) =>
             entry.stockState === "reserved" &&
             ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
-            entry.locationType === "production_order_line" &&
-            lineIds.includes(entry.locationId),
+            entry.locationType === "production_order" &&
+            (entry.locationId === item.id || lineIds.includes(entry.locationId)),
         )
         .reduce((sum, entry) => sum + entry.quantity, 0);
       const outputted = snapshot.transactions
         .filter(
           (entry) =>
-            entry.sourceType === "production_output" &&
+            entry.documentType === "output" &&
             ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
             entry.quantity > 0 &&
             entry.locationType === "warehouse",
         )
         .filter((entry) => {
-          const output = snapshot.outputs.find((doc) => doc.id === entry.sourceId);
+          const output = snapshot.outputs.find((doc) => doc.id === entry.documentId);
           return output?.productionOrderId === item.id;
         })
         .reduce((sum, entry) => sum + entry.quantity, 0);
@@ -232,8 +235,8 @@ export const relatedOrdersForOutput = (
   const fromLedger = snapshot.transactions
     .filter(
       (entry) =>
-        entry.sourceType === "production_output" &&
-        entry.sourceId === outputId &&
+        entry.documentType === "output" &&
+        entry.documentId === outputId &&
         entry.ownerType === "order" &&
         entry.ownerId &&
         entry.quantity > 0,
@@ -302,7 +305,7 @@ export const relatedReservationsForProduction = (
   );
   const reservationIds = new Set(
     snapshot.reservations
-      .filter((item) => item.locationType === "production_order_line" && lineIds.has(item.locationId))
+      .filter((item) => item.locationType === "production_order" && item.locationId === productionOrderId)
       .map((item) => item.id),
   );
   return snapshot.reservations

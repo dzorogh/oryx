@@ -68,7 +68,7 @@ describe("stock filters", () => {
     expect(stockHref({ place: { kind: "warehouse", warehouseId: "wh-nordic" } })).toBe(
       "/store/logistics/stock?group=warehouses&warehouse=wh-nordic",
     );
-    expect(stockHref({ place: { kind: "locationType", locationType: "production_order_line" } })).toBe(
+    expect(stockHref({ place: { kind: "locationType", locationType: "production_order" } })).toBe(
       "/store/logistics/stock?location=production",
     );
     expect(stockHref({ place: { kind: "locationType", locationType: "customer_order" } })).toBe(
@@ -217,7 +217,14 @@ describe("location hrefs", () => {
     expect(hrefForLocation(snapshot, "warehouse", "wh-1")).toBe("/store/logistics/warehouses/wh-1");
     expect(hrefForLocation(snapshot, "transfer", "tr-1")).toBe("/store/logistics/transfers/tr-1");
     expect(hrefForLocation(snapshot, "customer_order", "co-1")).toBe("/store/logistics/customer-orders/co-1");
-    expect(hrefForLocation(snapshot, "production_order_line", "pol-1")).toBe("/store/logistics/production-orders/po-9");
-    expect(hrefForLocation(snapshot, "production_order_line", "missing")).toBeNull();
+    expect(hrefForLocation(snapshot, "production_order", "pol-1")).toBe("/store/logistics/production-orders/po-9");
+    expect(
+      hrefForLocation(
+        { ...snapshot, productionOrders: [{ id: "po-9" }] } as LogisticsSnapshot,
+        "production_order",
+        "po-9",
+      ),
+    ).toBe("/store/logistics/production-orders/po-9");
+    expect(hrefForLocation(snapshot, "production_order", "missing")).toBeNull();
   });
 });

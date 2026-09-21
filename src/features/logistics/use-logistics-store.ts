@@ -29,6 +29,8 @@ export const EMPTY_SNAPSHOT: LogisticsSnapshot = {
   returns: [],
   returnLines: [],
   transactions: [],
+  users: [],
+  documentHistory: [],
 };
 
 export const useLogisticsStore = () => {

@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
 import { TransferDetailPage } from "@/features/logistics/transfers-page";
-import type { LogisticsSnapshot, StockBalance, StockTransaction } from "@/features/logistics/logistics-types";
+import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
+import { tx as fixtureTx } from "./logistics-test-fixtures";
 
 const paramsMock = vi.hoisted(() => ({ id: "tr-1" }));
 
@@ -76,23 +77,16 @@ vi.mock("@/features/logistics/logistics-api", async () => {
 });
 
 const tx = (
-  partial: Partial<StockTransaction> & Pick<StockTransaction, "transactionId" | "productId" | "quantity" | "stockState">,
-): StockTransaction => ({
-  occurredAt: "2026-09-06T09:42:00Z",
-  postedAt: "2026-09-06T09:42:00Z",
-  unit: "pcs",
-  locationType: "transfer",
-  locationId: "tr-1",
-  ownerType: null,
-  ownerId: null,
-  sourceType: "transfer_send",
-  sourceId: "tr-1",
-  sourceLineId: null,
-  operationId: `op-${partial.transactionId}`,
-  idempotencyKey: partial.transactionId,
-  reversesTransactionId: null,
-  ...partial,
-});
+  partial: Parameters<typeof fixtureTx>[0] & { transactionId?: string; sourceType?: string; sourceId?: string },
+) =>
+  fixtureTx({
+    locationType: "transfer",
+    locationId: "tr-1",
+    createdAt: "2026-09-06T09:42:00Z",
+    documentType: partial.documentType ?? (partial.sourceType ? undefined : "transfer"),
+    documentId: partial.documentId ?? partial.sourceId ?? "tr-1",
+    ...partial,
+  });
 
 const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
   ({
@@ -127,8 +121,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         number: "OMS-901",
         status: "open",
         createdAt: "",
-        closedAt: null,
-        expectedEndOn: null,
+        createdBy: "1",
+      expectedEndOn: null,
         description: "",
       },
     ],
@@ -147,7 +141,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         origin: "manual",
         note: "",
         createdAt: "2026-09-06T09:43:00Z",
-        postedAt: "2026-09-06T09:43:00Z",
+      createdBy: "1",
       },
     ],
     reservationLines: [
@@ -161,9 +155,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         toWarehouseId: "11",
         status: "sent",
         createdAt: "2026-09-06T09:42:00Z",
-        sentAt: "2026-09-06T09:42:00Z",
-        cancelledAt: null,
-        expectedEndOn: "2026-09-08",
+        createdBy: "1",
+      expectedEndOn: "2026-09-08",
       },
     ],
     transferLines: [
@@ -178,6 +171,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
     outputAllocations: [],
     returns: [],
     returnLines: [],
+    users: [],
+    documentHistory: [],
     transactions: [
       tx({ transactionId: "tx-send-22", productId: "22", quantity: 4, stockState: "free" }),
       tx({ transactionId: "tx-send-30", productId: "30", quantity: 8, stockState: "free" }),
@@ -188,7 +183,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         stockState: "free",
         sourceType: "reservation",
         sourceId: "rsv-1",
-        postedAt: "2026-09-06T09:43:00Z",
+        createdAt: "2026-09-06T09:43:00Z",
       }),
       tx({
         transactionId: "tx-rsv-in",
@@ -199,7 +194,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         ownerId: "901",
         sourceType: "reservation",
         sourceId: "rsv-1",
-        postedAt: "2026-09-06T09:43:00Z",
+        createdAt: "2026-09-06T09:43:00Z",
       }),
     ],
     ...partial,
@@ -286,8 +281,8 @@ describe("TransferDetailPage manifest", () => {
     expect(screen.getByRole("rowheader", { name: /Order OMS-901/ })).toBeTruthy();
     expect(screen.getAllByText("8").length).toBeGreaterThan(0);
     expect(screen.getAllByText("4").length).toBeGreaterThan(0);
-    expect(screen.getByText("Enduro 250")).toBeTruthy();
-    expect(screen.getByText("Force 1100 EFI")).toBeTruthy();
+    expect(screen.getAllByText("Enduro 250").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Force 1100 EFI").length).toBeGreaterThan(0);
   });
 
   it("reveals Free, order number, and region labels in an ungrouped disclosure whose quantities sum to the total", async () => {
@@ -451,63 +446,31 @@ describe("TransferDetailPage actions", () => {
     await user.click(screen.getByRole("button", { name: "Mark delivered" }));
     expect(apiMock.completeTransfer).toHaveBeenCalledWith("tr-1");
     expect(screen.getByRole("button", { name: "Mark delivered" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Cancel transfer" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Cancel transfer" })).toBeNull();
     expect(storeMock.reload).not.toHaveBeenCalled();
     finish?.();
     await waitFor(() => expect(storeMock.reload).toHaveBeenCalledTimes(1));
   });
 
-  it("delivers, cancels, and updates expected date with the transfer id then reloads", async () => {
+  it("delivers and updates expected date with the transfer id then reloads", async () => {
     const user = userEvent.setup();
     storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
+    expect(screen.queryByRole("button", { name: "Cancel transfer" })).toBeNull();
+
     await user.click(screen.getByRole("button", { name: "Mark delivered" }));
     expect(apiMock.completeTransfer).toHaveBeenCalledWith("tr-1");
     await waitFor(() => expect(storeMock.reload).toHaveBeenCalledTimes(1));
-
-    await user.click(screen.getByRole("button", { name: "Cancel transfer" }));
-    expect(apiMock.cancelDocument).toHaveBeenCalledWith("transfer", "tr-1");
-    await waitFor(() => expect(storeMock.reload).toHaveBeenCalledTimes(2));
+    expect(apiMock.cancelDocument).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText("Expected"), { target: { value: "2026-09-12" } });
     expect(apiMock.updateExpectedEnd).toHaveBeenCalledWith("store_transfer", "tr-1", "2026-09-12");
-    await waitFor(() => expect(storeMock.reload).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(storeMock.reload).toHaveBeenCalledTimes(2));
   });
 
-  it("lists chronological activity links and a cancellation event from reversals", () => {
-    storeMock.use(
-      snapshot({
-        transfers: [
-          {
-            ...snapshot().transfers[0]!,
-            status: "cancelled",
-          },
-        ],
-        transactions: [
-          ...snapshot().transactions,
-          tx({
-            transactionId: "tx-cancel-22",
-            productId: "22",
-            quantity: -4,
-            stockState: "reserved",
-            ownerType: "order",
-            ownerId: "901",
-            reversesTransactionId: "tx-rsv-in",
-            postedAt: "2026-09-07T08:00:00Z",
-          }),
-          tx({
-            transactionId: "tx-cancel-30",
-            productId: "30",
-            quantity: -8,
-            stockState: "free",
-            reversesTransactionId: "tx-send-30",
-            postedAt: "2026-09-07T08:00:00Z",
-          }),
-        ],
-      }),
-      [],
-    );
+  it("lists chronological activity links without a cancellation event", () => {
+    storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
     const activity = screen.getByRole("heading", { name: "Document activity" }).closest("section");
@@ -515,11 +478,10 @@ describe("TransferDetailPage actions", () => {
     const titles = within(activity as HTMLElement)
       .getAllByRole("listitem")
       .map((item) => item.querySelector("p")?.textContent);
-    expect(titles).toEqual(["Transfer sent", "Order reservation created", "Transfer cancelled"]);
+    expect(titles).toEqual(["Transfer sent", "Order reservation created"]);
     const transferLinks = within(activity as HTMLElement).getAllByRole("link", { name: "TR-901" });
-    expect(transferLinks).toHaveLength(2);
+    expect(transferLinks).toHaveLength(1);
     expect(transferLinks[0]).toHaveAttribute("href", "/store/logistics/transfers/tr-1");
-    expect(transferLinks[1]).toHaveAttribute("href", "/store/logistics/transfers/tr-1");
     expect(within(activity as HTMLElement).getByRole("link", { name: "RSV-1" })).toHaveAttribute(
       "href",
       "/store/logistics/reservations/rsv-1",

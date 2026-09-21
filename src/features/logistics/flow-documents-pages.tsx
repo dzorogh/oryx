@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
-  cancelDocument,
   completeOutput,
   createProductionOutput,
   postReturn,
@@ -43,7 +42,7 @@ import {
   assertEnoughStock,
   assertProductionOutputCapacity,
 } from "@/features/logistics/logistics-rules";
-import { OUTPUT_STATUSES, type DocumentStatus, type OutputStatus } from "@/features/logistics/logistics-types";
+import { OUTPUT_STATUSES, type DocumentStatus, type DocumentType, type OutputStatus } from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
@@ -159,9 +158,9 @@ export const ShipmentDetailPage = () => {
             : ""
         }
         status={doc?.status}
+        documentType="shipment"
         sourceId={doc?.id}
         onPost={doc ? () => postShipment(doc.id) : undefined}
-        onCancel={doc ? () => cancelDocument("shipment", doc.id) : undefined}
         extraActions={
           doc?.status === "posted" ? (
             <Button type="button" size="sm" variant="outline" onClick={() => setReturnOpen(true)}>
@@ -278,9 +277,9 @@ export const ReturnDetailPage = () => {
       crumbs={[{ label: "Возвраты", href: "/store/logistics/returns" }, { label: doc?.number ?? "Возврат" }]}
       description="Возвращённый товар становится свободным на исходном складе."
       status={doc?.status}
+      documentType="return"
       sourceId={doc?.id}
       onPost={doc ? () => postReturn(doc.id) : undefined}
-      onCancel={doc ? () => cancelDocument("shipment_return", doc.id) : undefined}
       related={
         <>
           {shipment ? (
@@ -569,21 +568,6 @@ export const OutputDetailPage = () => {
                 Завершить
               </Button>
             ) : null}
-            {doc.status === "done" ? (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  void runLogisticsAction(
-                    () => cancelDocument("production_output", doc.id),
-                    "Выпуск сторнирован",
-                    store.reload,
-                  );
-                }}
-              >
-                Отменить
-              </Button>
-            ) : null}
           </>
         }
       >
@@ -642,7 +626,11 @@ export const OutputDetailPage = () => {
       {lines[0]?.productId ? (
         <AvailabilityPanel snapshot={store.snapshot} balances={store.balances} productId={lines[0].productId} />
       ) : null}
-      <DocumentLedger snapshot={store.snapshot} filter={(entry) => entry.sourceId === doc.id} />
+      <DocumentLedger
+        snapshot={store.snapshot}
+        hide="document"
+        filter={(entry) => entry.documentType === "output" && entry.documentId === doc.id}
+      />
     </LogisticsPageShell>
   );
 };
@@ -721,6 +709,7 @@ const DocumentDetail = ({
   crumbs,
   description,
   status,
+  documentType,
   sourceId,
   onPost,
   onCancel,
@@ -733,6 +722,7 @@ const DocumentDetail = ({
   crumbs: Array<{ label: string; href?: string }>;
   description: string;
   status?: DocumentStatus;
+  documentType?: DocumentType;
   sourceId?: string;
   onPost?: () => Promise<unknown>;
   onCancel?: () => Promise<unknown>;
@@ -743,8 +733,8 @@ const DocumentDetail = ({
   const action =
     status === "draft" && onPost
       ? () => runLogisticsAction(onPost, "Документ проведён", store.reload)
-      : status === "posted" && onCancel
-        ? () => runLogisticsAction(onCancel, "Документ сторнирован", store.reload)
+      : status === "draft" && onCancel
+        ? () => runLogisticsAction(onCancel, "Document cancelled", store.reload)
         : undefined;
 
   if (store.isLoading || store.error || !status) {
@@ -768,9 +758,9 @@ const DocumentDetail = ({
                 Провести
               </Button>
             ) : null}
-            {status === "posted" && action ? (
+            {status === "draft" && onCancel && action ? (
               <Button type="button" size="sm" onClick={() => void action()}>
-                Отменить
+                Cancel
               </Button>
             ) : null}
           </>
@@ -794,8 +784,12 @@ const DocumentDetail = ({
       {lines[0]?.productId ? (
         <AvailabilityPanel snapshot={store.snapshot} balances={store.balances} productId={lines[0].productId} />
       ) : null}
-      {sourceId ? (
-        <DocumentLedger snapshot={store.snapshot} filter={(entry) => entry.sourceId === sourceId} />
+      {sourceId && documentType ? (
+        <DocumentLedger
+          snapshot={store.snapshot}
+          hide="document"
+          filter={(entry) => entry.documentType === documentType && entry.documentId === sourceId}
+        />
       ) : null}
     </LogisticsPageShell>
   );

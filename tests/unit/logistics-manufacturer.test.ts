@@ -38,9 +38,11 @@ const snapshot = {
     { id: "6", code: formatLogisticsCode("warehouse", 6), name: "ZHEJIANG TAOTAO VEHICLES CO.,LTD", manufacturerId: "4" },
     { id: "2", code: formatLogisticsCode("warehouse", 2), name: "Dubai Hub", manufacturerId: null },
   ],
-  customerOrders: [{ id: "12", number: formatLogisticsCode("customerOrder", 12), status: "open", createdAt: "", closedAt: null, expectedEndOn: null, description: "" }],
+  customerOrders: [{ id: "12", number: formatLogisticsCode("customerOrder", 12), status: "open", createdAt: "", createdBy: "1",
+      expectedEndOn: null, description: "" }],
   productionOrders: [
-    { id: "8", number: formatLogisticsCode("productionOrder", 8), manufacturerId: "4", status: "in_progress", createdAt: "", closedAt: null, expectedEndOn: null },
+    { id: "8", number: formatLogisticsCode("productionOrder", 8), manufacturerId: "4", status: "in_progress", createdAt: "", createdBy: "1",
+      expectedEndOn: null },
   ],
   productionOrderLines: [{ id: "9", orderId: "8", productId: "3", quantity: 44, activatedQuantity: 44 }],
   transfers: [
@@ -51,12 +53,11 @@ const snapshot = {
       toWarehouseId: "2",
       status: "sent",
       createdAt: "",
-      sentAt: "",
-      cancelledAt: null,
+      createdBy: "1",
       expectedEndOn: null,
     },
   ],
-} as LogisticsSnapshot;
+} as unknown as LogisticsSnapshot;
 
 describe("manufacturer display", () => {
   it("keeps a single plant on the product itself instead of a junction", () => {
@@ -110,7 +111,13 @@ describe("warehouse display", () => {
 
 describe("locationIdentity", () => {
   it("types a production line as a document plus plant, not a bare place code", () => {
-    expect(locationIdentity(snapshot, "production_order_line", "9")).toEqual({
+    expect(locationIdentity(snapshot, "production_order", "9")).toEqual({
+      title: "PO-8",
+      hint: "PLT-4",
+      manufacturerId: "4",
+      isPlantWarehouse: false,
+    });
+    expect(locationIdentity(snapshot, "production_order", "8")).toEqual({
       title: "PO-8",
       hint: "PLT-4",
       manufacturerId: "4",
@@ -145,7 +152,7 @@ describe("locationHostLabel", () => {
   it("names the host entity kind plus its code", () => {
     expect(locationHostLabel(snapshot, "warehouse", "2")).toBe("Склад WH-2");
     expect(locationHostLabel(snapshot, "warehouse", "6")).toBe("Склад завода WH-6");
-    expect(locationHostLabel(snapshot, "production_order_line", "9")).toBe("Заказ на производство PO-8");
+    expect(locationHostLabel(snapshot, "production_order", "9")).toBe("Заказ на производство PO-8");
     expect(locationHostLabel(snapshot, "transfer", "5")).toBe("Перемещение TR-5");
     expect(locationHostLabel(snapshot, "customer_order", "12")).toBe("Заказ клиента OMS-12");
   });

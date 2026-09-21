@@ -41,7 +41,7 @@ export const lineLocationAllocations = (
     if (!isPositive(entry.quantity)) {
       continue;
     }
-    if (entry.locationType === "production_order_line") {
+    if (entry.locationType === "production_order") {
       inProduction += entry.quantity;
       continue;
     }
@@ -92,7 +92,7 @@ const isReservedWarehouseOutputForOrderProduct = (
   transaction: StockTransaction,
   line: Pick<CustomerOrderLine, "orderId" | "productId">,
 ): boolean =>
-  transaction.sourceType === "production_output" &&
+  transaction.documentType === "output" &&
   matchesOrderProduct(transaction, line) &&
   transaction.locationType === "warehouse" &&
   transaction.stockState === "reserved" &&
@@ -112,7 +112,7 @@ export const sumProducedForOrderProduct = (
       continue;
     }
     produced += transaction.quantity;
-    ledgerOutputIds.add(transaction.sourceId);
+    ledgerOutputIds.add(transaction.documentId);
   }
 
   const outputByLineId = new Map(snapshot.outputLines.map((item) => [item.id, item]));

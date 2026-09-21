@@ -1,6 +1,6 @@
 import { isFreeOwner, type StockBalance } from "@/features/logistics/logistics-types";
 
-export const ON_HAND_LOCATION_TYPES = ["warehouse", "production_order_line", "transfer"] as const;
+export const ON_HAND_LOCATION_TYPES = ["warehouse", "production_order", "transfer"] as const;
 
 export type StockMatrixOwnerFilter = "all" | "free" | "region" | "order";
 export type StockMatrixLocationFilter = "all" | "warehouse" | "production" | "transfer";
@@ -84,7 +84,7 @@ export const locationBucket = (entry: StockBalance): keyof StockLocationQuantiti
   if (entry.locationType === "warehouse") {
     return "warehouses";
   }
-  if (entry.locationType === "production_order_line") {
+  if (entry.locationType === "production_order") {
     return "production";
   }
   if (entry.locationType === "transfer") {
@@ -111,7 +111,7 @@ const matchesLocationFilter = (entry: StockBalance, location: StockMatrixLocatio
     return entry.locationType === "warehouse";
   }
   if (location === "production") {
-    return entry.locationType === "production_order_line";
+    return entry.locationType === "production_order";
   }
   return entry.locationType === "transfer";
 };

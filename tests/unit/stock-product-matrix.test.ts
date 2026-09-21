@@ -33,7 +33,7 @@ const matrixFixture = (): StockBalance[] => [
   balance({
     quantity: 2,
     stockState: "free",
-    locationType: "production_order_line",
+    locationType: "production_order",
     locationId: "pol-1",
   }),
   balance({
@@ -101,7 +101,7 @@ describe("stock product matrix", () => {
       balance({ productId: "p-a", locationId: "wh-1", quantity: 10, stockState: "free" }),
       balance({
         productId: "p-a",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-1",
         quantity: 8,
         stockState: "free",
@@ -133,7 +133,7 @@ describe("stock product matrix", () => {
       balance({
         quantity: 4,
         stockState: "reserved",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-1",
         ownerType: "region",
         ownerId: "1",
@@ -205,7 +205,7 @@ describe("stock product matrix", () => {
       balance({
         quantity: 4,
         stockState: "reserved",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-1",
         ownerType: "region",
         ownerId: "3",

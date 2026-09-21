@@ -324,8 +324,8 @@ export const ProductionOrderDetailPage = () => {
   const reserveLine = lines.find((line) => line.id === reserveLineId);
   const reserveFree = reserveLine
     ? sumLocationState(balances, {
-      locationType: "production_order_line",
-      locationId: reserveLine.id,
+      locationType: "production_order",
+      locationId: params.orderId,
       stockState: "free",
       productId: reserveLine.productId,
     })
@@ -678,11 +678,11 @@ export const ProductionOrderDetailPage = () => {
       <DocumentLedger
         snapshot={snapshot}
         filter={(entry) =>
-          entry.sourceId === order.id ||
-          outputs.some((item) => item.id === entry.sourceId) ||
-          (entry.locationType === "production_order_line" && lines.some((line) => line.id === entry.locationId))
+          (entry.documentType === "production_order" && entry.documentId === order.id) ||
+          (entry.documentType === "output" && outputs.some((item) => item.id === entry.documentId)) ||
+          (entry.locationType === "production_order" && entry.locationId === order.id)
         }
-        title="Движения заказа на производство"
+        title="Movements"
       />
 
       <LogisticsDialog
@@ -818,8 +818,8 @@ export const ProductionOrderDetailPage = () => {
               void runLogisticsAction(
                 () =>
                   createAndPostReservation({
-                    locationType: "production_order_line",
-                    locationId: reserveLine.id,
+                    locationType: "production_order",
+                    locationId: params.orderId,
                     toOwnerType: "order",
                     toOwnerId: orderLine.orderId,
                     lines: [

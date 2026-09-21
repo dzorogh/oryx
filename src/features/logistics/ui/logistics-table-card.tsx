@@ -1,4 +1,3 @@
-// english-ui:ignore-file
 import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,9 +10,18 @@ type LogisticsTableCardProps = {
   isEmpty?: boolean;
   title?: string;
   action?: ReactNode;
+  footer?: ReactNode;
 };
 
-export const LogisticsTableCard = ({ headers, children, empty, isEmpty, title, action }: LogisticsTableCardProps) => (
+export const LogisticsTableCard = ({
+  headers,
+  children,
+  empty,
+  isEmpty,
+  title,
+  action,
+  footer,
+}: LogisticsTableCardProps) => (
   <Card size="sm" className={logisticsCardClass}>
     {title || action ? (
       <div className="flex items-center justify-between gap-2 px-3">
@@ -36,7 +44,7 @@ export const LogisticsTableCard = ({ headers, children, empty, isEmpty, title, a
           {isEmpty ? (
             <TableRow>
               <TableCell colSpan={headers.length} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                {empty ?? "Пока нет записей."}
+                {empty ?? "No records yet."}
               </TableCell>
             </TableRow>
           ) : (
@@ -44,6 +52,7 @@ export const LogisticsTableCard = ({ headers, children, empty, isEmpty, title, a
           )}
         </TableBody>
       </Table>
+      {footer}
     </CardContent>
   </Card>
 );

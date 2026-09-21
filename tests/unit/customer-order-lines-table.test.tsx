@@ -2,8 +2,9 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
-import type { CustomerOrderLine, LogisticsSnapshot, StockBalance, StockTransaction } from "@/features/logistics/logistics-types";
+import type { CustomerOrderLine, LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
+import { tx } from "./logistics-test-fixtures";
 
 afterEach(() => {
   cleanup();
@@ -43,8 +44,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         number: "OMS-184",
         status: "open",
         createdAt: "",
-        closedAt: null,
-        expectedEndOn: null,
+        createdBy: "1",
+      expectedEndOn: null,
         description: "",
       },
     ],
@@ -59,8 +60,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         manufacturerId: "m-1",
         status: "in_progress",
         createdAt: "",
-        closedAt: null,
-        expectedEndOn: null,
+        createdBy: "1",
+      expectedEndOn: null,
       },
     ],
     productionOrderLines: [
@@ -68,7 +69,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
     ],
     reservations: [],
     reservationLines: [],
-    transfers: [{ id: "tr-1", number: "TR-1", fromWarehouseId: "wh-1", toWarehouseId: "wh-2", status: "sent", createdAt: "", sentAt: "", cancelledAt: null, expectedEndOn: null }],
+    transfers: [{ id: "tr-1", number: "TR-1", fromWarehouseId: "wh-1", toWarehouseId: "wh-2", status: "sent", createdAt: "", createdBy: "1", expectedEndOn: null }],
     transferLines: [],
     transferAllocations: [],
     shipments: [],
@@ -78,13 +79,12 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
     outputAllocations: [],
     returns: [],
     returnLines: [],
+    users: [],
+    documentHistory: [],
     transactions: [
-      {
+      tx({
         transactionId: "tx-out-open",
-        occurredAt: "2026-09-16T10:00:00.000Z",
-        postedAt: "2026-09-16T10:00:00.000Z",
         productId: "p-cruiser",
-        unit: "pcs",
         quantity: 7,
         locationType: "warehouse",
         locationId: "wh-2",
@@ -93,11 +93,7 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         ownerId: "co-1",
         sourceType: "production_output",
         sourceId: "out-1",
-        sourceLineId: "outl-1",
-        operationId: "op",
-        idempotencyKey: "key-out-open",
-        reversesTransactionId: null,
-      } satisfies StockTransaction,
+      }),
     ],
     ...partial,
   }) as LogisticsSnapshot;
@@ -141,7 +137,7 @@ const balances: StockBalance[] = [
   },
   {
     productId: "p-cruiser",
-    locationType: "production_order_line",
+    locationType: "production_order",
     locationId: "pol-1",
     stockState: "reserved",
     ownerType: "order",
@@ -291,7 +287,7 @@ describe("CustomerOrderLinesTable", () => {
     await user.click(screen.getByRole("menuitem", { name: "Release PO-1 · 3 · PLT-1" }));
     expect(onRelease).toHaveBeenCalledWith({
       line: expect.objectContaining({ id: "col-open" }),
-      locationType: "production_order_line",
+      locationType: "production_order",
       locationId: "pol-1",
     });
   });

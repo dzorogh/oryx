@@ -259,7 +259,11 @@ export const ReservationDetailPage = () => {
       {productIds.map((productId) => (
         <AvailabilityPanel key={productId} snapshot={snapshot} balances={balances} productId={productId} />
       ))}
-      <DocumentLedger snapshot={snapshot} filter={(entry) => entry.sourceId === doc.id && entry.sourceType === "reservation"} />
+      <DocumentLedger
+        snapshot={snapshot}
+        hide="document"
+        filter={(entry) => entry.documentType === "reservation" && entry.documentId === doc.id}
+      />
       <LogisticsDialog
         open={lineOpen}
         onOpenChange={(next) => {

@@ -15,14 +15,14 @@ import {
   type LogisticsSnapshot,
   type OwnerType,
   type ReservationDirection,
-  type SourceType,
   type StockBalance,
   type StockTransaction,
   type Transfer,
 } from "@/features/logistics/logistics-types";
 
 const POSITIVE = 1e-9;
-const TRANSFER_LIFECYCLE_SOURCE_TYPES = new Set<SourceType>(["transfer_send", "transfer_complete"]);
+const isTransferDocument = (entry: StockTransaction, transferId: string): boolean =>
+  entry.documentType === "transfer" && entry.documentId === transferId;
 
 export type TransferOwnerKind = "free" | "order" | "region";
 export type TransferProjectionSource = "live" | "history" | "document";
@@ -224,8 +224,7 @@ const usableTransferTransactions = (
     (entry) =>
       entry.locationType === "transfer" &&
       entry.locationId === transferId &&
-      entry.sourceType !== "transfer_complete" &&
-      !entry.reversesTransactionId,
+      !(entry.documentType === "transfer" && entry.quantity < 0),
   );
 
 const quantitiesFromBalances = (entries: StockBalance[]): OwnerQuantity[] => {
@@ -482,26 +481,32 @@ const projectRoute = (
   };
 };
 
-const firstPostedAt = (entries: StockTransaction[]): string | undefined =>
-  [...entries].sort((left, right) => left.postedAt.localeCompare(right.postedAt))[0]?.postedAt;
+const firstCreatedAt = (entries: StockTransaction[]): string | undefined =>
+  [...entries].sort((left, right) => left.createdAt.localeCompare(right.createdAt))[0]?.createdAt;
+
+const transferPhaseKey = (entry: StockTransaction, transferId: string): string | null => {
+  if (isTransferDocument(entry, transferId)) {
+    if (entry.locationType === "transfer" && entry.quantity > 0) {
+      return `transfer:${transferId}:send`;
+    }
+    if (entry.locationType === "transfer" && entry.quantity < 0) {
+      return `transfer:${transferId}:complete`;
+    }
+    return null;
+  }
+  if (entry.documentType === "reservation" && entry.locationType === "transfer" && entry.locationId === transferId) {
+    return `reservation:${entry.documentId}`;
+  }
+  return null;
+};
 
 const projectActivity = (snapshot: LogisticsSnapshot, transfer: Transfer): TransferActivityEvent[] => {
-  const relevant = snapshot.transactions.filter((entry) => {
-    const lifecycleOfThisTransfer =
-      TRANSFER_LIFECYCLE_SOURCE_TYPES.has(entry.sourceType) && entry.sourceId === transfer.id;
-    const reservationAtThisTransfer =
-      entry.sourceType === "reservation" &&
-      entry.locationType === "transfer" &&
-      entry.locationId === transfer.id;
-    return lifecycleOfThisTransfer || reservationAtThisTransfer;
-  });
-
   const groups = new Map<string, StockTransaction[]>();
-  for (const entry of relevant) {
-    const cancelledSend = entry.sourceType === "transfer_send" && Boolean(entry.reversesTransactionId);
-    const key = cancelledSend
-      ? `${entry.sourceType}:${entry.sourceId}:cancel`
-      : `${entry.sourceType}:${entry.sourceId}`;
+  for (const entry of snapshot.transactions) {
+    const key = transferPhaseKey(entry, transfer.id);
+    if (!key) {
+      continue;
+    }
     const current = groups.get(key);
     if (current) {
       current.push(entry);
@@ -512,54 +517,38 @@ const projectActivity = (snapshot: LogisticsSnapshot, transfer: Transfer): Trans
 
   const events: TransferActivityEvent[] = [];
   for (const [id, entries] of groups) {
-    const [sourceType, sourceId] = id.split(":") as [StockTransaction["sourceType"], string];
-    const occurredAt = firstPostedAt(entries);
+    const occurredAt = firstCreatedAt(entries);
     if (!occurredAt) {
       continue;
     }
 
-    if (sourceType === "transfer_send" && id.endsWith(":cancel")) {
-      events.push({
-        id,
-        occurredAt,
-        title: "Transfer cancelled",
-        detail: `Transfer ${transfer.number} → ${warehouseCode(snapshot, transfer.fromWarehouseId)}`,
-        refLabel: transfer.number,
-        href: hrefForSource(sourceType, sourceId),
-      });
-      continue;
-    }
-
-    if (sourceType === "transfer_send") {
+    if (id.endsWith(":send")) {
       events.push({
         id,
         occurredAt,
         title: "Transfer sent",
         detail: `${warehouseCode(snapshot, transfer.fromWarehouseId)} → Transfer ${transfer.number}`,
         refLabel: transfer.number,
-        href: hrefForSource(sourceType, sourceId),
+        href: hrefForSource("transfer", transfer.id),
       });
       continue;
     }
 
-    if (sourceType === "transfer_complete") {
+    if (id.endsWith(":complete")) {
       events.push({
         id,
         occurredAt,
         title: "Transfer delivered",
         detail: `Transfer ${transfer.number} → ${warehouseCode(snapshot, transfer.toWarehouseId)}`,
         refLabel: transfer.number,
-        href: hrefForSource(sourceType, sourceId),
+        href: hrefForSource("transfer", transfer.id),
       });
       continue;
     }
 
-    if (sourceType !== "reservation") {
-      continue;
-    }
-
-    const reservation = snapshot.reservations.find((item) => item.id === sourceId);
-    const reservationLines = snapshot.reservationLines.filter((line) => line.reservationId === sourceId);
+    const documentId = id.slice("reservation:".length);
+    const reservation = snapshot.reservations.find((item) => item.id === documentId);
+    const reservationLines = snapshot.reservationLines.filter((line) => line.reservationId === documentId);
     const direction = reservation ? reservationDirection(reservation, reservationLines) : "reserve";
     const firstLine = reservationLines[0];
     const product = firstLine ? productById(snapshot, firstLine.productId) : undefined;
@@ -577,8 +566,8 @@ const projectActivity = (snapshot: LogisticsSnapshot, transfer: Transfer): Trans
       occurredAt,
       title: reservationTitle(direction, reservation?.toOwnerType ?? null),
       detail,
-      refLabel: reservation?.number ?? sourceId,
-      href: hrefForSource(sourceType, sourceId),
+      refLabel: reservation?.number ?? documentId,
+      href: hrefForSource("reservation", documentId),
     });
   }
 

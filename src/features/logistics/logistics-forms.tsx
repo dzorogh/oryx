@@ -356,7 +356,7 @@ export const ReservationForm = ({
       if (
         entry.quantity <= 1e-9 ||
         (entry.locationType !== "warehouse" &&
-          entry.locationType !== "production_order_line" &&
+          entry.locationType !== "production_order" &&
           entry.locationType !== "transfer")
       ) {
         continue;

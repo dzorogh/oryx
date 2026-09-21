@@ -251,7 +251,7 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
         unit={product.unit}
         onCreateProduction={openProduction}
       />
-      <DocumentLedger snapshot={snapshot} filter={(entry) => entry.productId === product.id} />
+      <DocumentLedger snapshot={snapshot} hide="product" filter={(entry) => entry.productId === product.id} />
 
       <LogisticsDialog
         open={productionOpen}
@@ -485,6 +485,7 @@ export const WarehouseDetailPage = () => {
       </RelatedDocumentsBoard>
       <DocumentLedger
         snapshot={snapshot}
+        hide="location"
         filter={(entry) => entry.locationType === "warehouse" && entry.locationId === warehouse.id}
       />
 
@@ -692,6 +693,7 @@ export const ManufacturerDetailPage = () => {
       {warehouse ? (
         <DocumentLedger
           snapshot={snapshot}
+          hide="location"
           filter={(entry) => entry.locationType === "warehouse" && entry.locationId === warehouse.id}
         />
       ) : null}

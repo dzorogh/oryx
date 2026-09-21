@@ -169,7 +169,7 @@ export const ProductBalancesTable = ({
                     <p className="text-sm font-medium">
                       {title}
                       {identity.manufacturerId &&
-                      (place.locationType === "production_order_line" || identity.hint) ? (
+                      (place.locationType === "production_order" || identity.hint) ? (
                         <>
                           <span className="font-normal text-muted-foreground"> · </span>
                           <ManufacturerLink

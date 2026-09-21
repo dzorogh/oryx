@@ -28,6 +28,8 @@ const emptySnapshot = (): LogisticsSnapshot => ({
   returns: [],
   returnLines: [],
   transactions: [],
+  users: [],
+  documentHistory: [],
 });
 
 const storeMock = vi.hoisted(() => {
@@ -73,7 +75,7 @@ const order = (
   number: `OMS-${id}`,
   status,
   createdAt,
-  closedAt: status === "closed" ? createdAt : null,
+  createdBy: "1",
   expectedEndOn: null,
   description: "",
 });
@@ -120,6 +122,6 @@ describe("CustomerOrdersPage newest-first list", () => {
   it("shows the empty table copy when there are no orders", () => {
     storeMock.use(emptySnapshot());
     render(<CustomerOrdersPage />);
-    expect(screen.getByText("Пока нет записей.")).toBeVisible();
+    expect(screen.getByText("No records yet.")).toBeVisible();
   });
 });

@@ -8,7 +8,8 @@ import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { cancelDocument, completeTransfer, createAndSendTransfer, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { completeTransfer, createAndSendTransfer, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { hrefForTransfer } from "@/features/logistics/logistics-availability";
 import { ReservationForm } from "@/features/logistics/logistics-forms";
 import { formatExpectedEnd } from "@/features/logistics/logistics-labels";
@@ -246,9 +247,6 @@ export const TransferDetailPage = () => {
           onMarkDelivered={() => {
             void runDetailAction("deliver", () => completeTransfer(doc.id), "Transfer marked delivered");
           }}
-          onCancel={() => {
-            void runDetailAction("cancel", () => cancelDocument("transfer", doc.id), "Transfer cancelled");
-          }}
           onExpectedEndChange={(value) => {
             void runDetailAction(
               "expected",
@@ -261,6 +259,11 @@ export const TransferDetailPage = () => {
           <TransferProductManifest snapshot={snapshot} groups={projection.groups} products={projection.products} />
           <TransferActivity events={projection.activity} />
         </div>
+        <DocumentLedger
+          snapshot={snapshot}
+          hide="document"
+          filter={(entry) => entry.documentType === "transfer" && entry.documentId === doc.id}
+        />
       </div>
       <ReservationForm
         snapshot={snapshot}

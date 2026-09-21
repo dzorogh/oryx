@@ -183,6 +183,14 @@ export const ownerSelectItems = (snapshot: LogisticsSnapshot, ownerType: OwnerTy
 export const productionOrderById = (snapshot: LogisticsSnapshot, id: string) =>
   snapshot.productionOrders.find((item) => item.id === id);
 
+/** Journal location is the production order. Leftover line ids still resolve to the parent. */
+export const productionOrderIdForLocation = (snapshot: LogisticsSnapshot, locationId: string): string | null => {
+  if (productionOrderById(snapshot, locationId)) {
+    return locationId;
+  }
+  return snapshot.productionOrderLines.find((line) => line.id === locationId)?.orderId ?? null;
+};
+
 export type LocationIdentity = {
   title: string;
   hint: string | null;
@@ -219,9 +227,8 @@ export const locationIdentity = (
       isPlantWarehouse: false,
     };
   }
-  if (type === "production_order_line") {
-    const line = snapshot.productionOrderLines.find((item) => item.id === id);
-    const order = line ? productionOrderById(snapshot, line.orderId) : undefined;
+  if (type === "production_order") {
+    const order = productionOrderById(snapshot, productionOrderIdForLocation(snapshot, id) ?? id);
     return {
       title: order?.number ?? id,
       hint: order ? manufacturerCode(snapshot, order.manufacturerId) : null,
@@ -248,7 +255,7 @@ export const locationLabel = (snapshot: LogisticsSnapshot, type: LocationType, i
     const transfer = snapshot.transfers.find((item) => item.id === id);
     return transfer ? `Перемещение ${transfer.number}` : id;
   }
-  if (type === "production_order_line") {
+  if (type === "production_order") {
     return locationIdentity(snapshot, type, id).title;
   }
   if (type === "customer_order") {
@@ -273,30 +280,30 @@ export const orderNumber = (snapshot: LogisticsSnapshot, orderId: string | null)
   return customerOrderById(snapshot, orderId)?.number ?? orderId;
 };
 
-export const sourceLabel = (
+export const documentLabel = (
   snapshot: LogisticsSnapshot,
-  sourceType: SourceType,
-  sourceId: string,
+  documentType: SourceType,
+  documentId: string,
 ): string => {
-  switch (sourceType) {
+  switch (documentType) {
     case "reservation":
-      return snapshot.reservations.find((item) => item.id === sourceId)?.number ?? sourceId;
+      return snapshot.reservations.find((item) => item.id === documentId)?.number ?? documentId;
     case "shipment":
-      return snapshot.shipments.find((item) => item.id === sourceId)?.number ?? sourceId;
-    case "shipment_return":
-      return snapshot.returns.find((item) => item.id === sourceId)?.number ?? sourceId;
-    case "production_output":
-      return snapshot.outputs.find((item) => item.id === sourceId)?.number ?? sourceId;
-    case "production_activation":
-    case "production_close":
-      return productionOrderById(snapshot, sourceId)?.number ?? sourceId;
-    case "transfer_send":
-    case "transfer_complete":
-      return snapshot.transfers.find((item) => item.id === sourceId)?.number ?? sourceId;
+      return snapshot.shipments.find((item) => item.id === documentId)?.number ?? documentId;
+    case "return":
+      return snapshot.returns.find((item) => item.id === documentId)?.number ?? documentId;
+    case "output":
+      return snapshot.outputs.find((item) => item.id === documentId)?.number ?? documentId;
+    case "production_order":
+      return productionOrderById(snapshot, documentId)?.number ?? documentId;
+    case "transfer":
+      return snapshot.transfers.find((item) => item.id === documentId)?.number ?? documentId;
     default:
-      return sourceId;
+      return documentId;
   }
 };
+
+export const sourceLabel = documentLabel;
 
 export const balancesForProduct = (balances: StockBalance[], productId: string) =>
   balances.filter((entry) => entry.productId === productId);

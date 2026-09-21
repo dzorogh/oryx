@@ -31,7 +31,7 @@ describe("locationKindLabel", () => {
   it("names the host entity, not the stock-place phrasing", () => {
     expect(locationKindLabel("warehouse")).toBe("Склад");
     expect(locationKindLabel("warehouse", true)).toBe("Склад завода");
-    expect(locationKindLabel("production_order_line")).toBe("Заказ на производство");
+    expect(locationKindLabel("production_order")).toBe("Заказ на производство");
     expect(locationKindLabel("transfer")).toBe("Перемещение");
     expect(locationKindLabel("customer_order")).toBe("Заказ клиента");
   });

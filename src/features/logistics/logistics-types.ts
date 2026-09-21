@@ -1,6 +1,6 @@
 import type { LogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
 
-export const LOCATION_TYPES = ["warehouse", "production_order_line", "transfer", "customer_order"] as const;
+export const LOCATION_TYPES = ["warehouse", "production_order", "transfer", "customer_order"] as const;
 export type LocationType = (typeof LOCATION_TYPES)[number];
 
 export const STOCK_STATES = ["free", "reserved", "shipped"] as const;
@@ -37,20 +37,54 @@ export type ReservationOrigin = (typeof RESERVATION_ORIGINS)[number];
 export const RESERVATION_STATUSES = ["draft", "posted"] as const;
 export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
 
-export const RESERVATION_LOCATION_TYPES = ["warehouse", "production_order_line", "transfer"] as const;
+export const RESERVATION_LOCATION_TYPES = ["warehouse", "production_order", "transfer"] as const;
 export type ReservationLocationType = (typeof RESERVATION_LOCATION_TYPES)[number];
 
-export const SOURCE_TYPES = [
+export const DOCUMENT_TYPES = [
   "reservation",
   "shipment",
-  "shipment_return",
-  "production_activation",
-  "production_output",
-  "production_close",
-  "transfer_send",
-  "transfer_complete",
+  "return",
+  "transfer",
+  "production_order",
+  "output",
 ] as const;
-export type SourceType = (typeof SOURCE_TYPES)[number];
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+
+/** @deprecated Use DocumentType. Kept so leftover source filters compile during the cutover. */
+export const SOURCE_TYPES = DOCUMENT_TYPES;
+export type SourceType = DocumentType;
+
+export const HISTORY_DOCUMENT_TYPES = [
+  "reservation",
+  "shipment",
+  "return",
+  "transfer",
+  "production_order",
+  "output",
+  "customer_order",
+] as const;
+export type HistoryDocumentType = (typeof HISTORY_DOCUMENT_TYPES)[number];
+
+export const DOCUMENT_HISTORY_EVENT_TYPES = ["created", "status_changed", "expected_end_changed"] as const;
+export type DocumentHistoryEventType = (typeof DOCUMENT_HISTORY_EVENT_TYPES)[number];
+
+export const STORE_CURRENT_USER_ID = "1";
+
+export type StoreUser = {
+  id: string;
+  name: string;
+};
+
+export type DocumentHistoryEntry = {
+  id: string;
+  documentType: HistoryDocumentType;
+  documentId: string;
+  eventType: DocumentHistoryEventType;
+  status: string;
+  expectedEndOn: string | null;
+  createdAt: string;
+  createdBy: string;
+};
 
 export type LogisticsProduct = {
   id: string;
@@ -92,7 +126,7 @@ export type CustomerOrder = {
   number: string;
   status: CustomerOrderStatus;
   createdAt: string;
-  closedAt: string | null;
+  createdBy: string;
   expectedEndOn: string | null;
   description: string;
 };
@@ -110,7 +144,7 @@ export type ProductionOrder = {
   manufacturerId: string;
   status: ProductionStatus;
   createdAt: string;
-  closedAt: string | null;
+  createdBy: string;
   expectedEndOn: string | null;
 };
 
@@ -133,7 +167,7 @@ export type Reservation = {
   origin: ReservationOrigin;
   note: string;
   createdAt: string;
-  postedAt: string | null;
+  createdBy: string;
 };
 
 export type ReservationLine = {
@@ -152,8 +186,7 @@ export type Transfer = {
   toWarehouseId: string;
   status: TransferStatus;
   createdAt: string;
-  sentAt: string | null;
-  cancelledAt: string | null;
+  createdBy: string;
   expectedEndOn: string | null;
 };
 
@@ -179,8 +212,7 @@ export type Shipment = {
   warehouseId: string;
   status: DocumentStatus;
   createdAt: string;
-  postedAt: string | null;
-  cancelledAt: string | null;
+  createdBy: string;
 };
 
 export type ShipmentLine = {
@@ -196,8 +228,7 @@ export type ProductionOutput = {
   productionOrderId: string;
   status: OutputStatus;
   createdAt: string;
-  doneAt: string | null;
-  cancelledAt: string | null;
+  createdBy: string;
   expectedEndOn: string | null;
 };
 
@@ -223,8 +254,7 @@ export type ShipmentReturn = {
   shipmentId: string;
   status: DocumentStatus;
   createdAt: string;
-  postedAt: string | null;
-  cancelledAt: string | null;
+  createdBy: string;
 };
 
 export type ShipmentReturnLine = {
@@ -235,29 +265,27 @@ export type ShipmentReturnLine = {
 };
 
 export type StockTransaction = {
-  transactionId: string;
-  occurredAt: string;
-  postedAt: string;
+  id: string;
+  createdAt: string;
   productId: string;
-  unit: string;
   quantity: number;
   locationType: LocationType;
   locationId: string;
+  assignedToType: OwnerType | null;
+  assignedToId: string | null;
+  documentType: DocumentType;
+  documentId: string;
   stockState: StockState;
   ownerType: OwnerType | null;
   ownerId: string | null;
-  sourceType: SourceType;
-  sourceId: string;
-  sourceLineId: string | null;
-  operationId: string;
-  idempotencyKey: string;
-  reversesTransactionId: string | null;
 };
 
 export type StockBalance = {
   productId: string;
   locationType: LocationType;
   locationId: string;
+  assignedToType?: OwnerType | null;
+  assignedToId?: string | null;
   stockState: StockState;
   ownerType: OwnerType | null;
   ownerId: string | null;
@@ -287,6 +315,8 @@ export type LogisticsSnapshot = {
   returns: ShipmentReturn[];
   returnLines: ShipmentReturnLine[];
   transactions: StockTransaction[];
+  users: StoreUser[];
+  documentHistory: DocumentHistoryEntry[];
 };
 
 export type OwnerRef = {
@@ -358,3 +388,31 @@ export const isOrderOwner = (
   ownerType: OwnerType | null | undefined,
   ownerId: string | null | undefined,
 ): ownerType is "order" => ownerType === "order" && !emptyId(ownerId);
+
+export const derivedStockState = (
+  locationType: LocationType,
+  assignedToType: OwnerType | null | undefined,
+  assignedToId?: string | null,
+): StockState => {
+  if (locationType === "customer_order") {
+    return "shipped";
+  }
+  if (isFreeOwner(assignedToType, assignedToId)) {
+    return "free";
+  }
+  return "reserved";
+};
+
+export const documentKey = (documentType: DocumentType, documentId: string): string =>
+  `${documentType}:${documentId}`;
+
+export const documentKeysForAssignedEntity = (
+  transactions: Array<Pick<StockTransaction, "assignedToType" | "assignedToId" | "documentType" | "documentId">>,
+  assignedToType: OwnerType,
+  assignedToId: string,
+): Set<string> =>
+  new Set(
+    transactions
+      .filter((entry) => ownersEqual(entry.assignedToType, entry.assignedToId, assignedToType, assignedToId))
+      .map((entry) => documentKey(entry.documentType, entry.documentId)),
+  );

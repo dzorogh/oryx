@@ -16,10 +16,20 @@ import type {
 import { isOrderOwner } from "@/features/logistics/logistics-types";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
 
-export const IRREVERSIBLE_DOCUMENT_KINDS = ["reservation", "reservation_release"] as const;
+export const IRREVERSIBLE_DOCUMENT_KINDS = [
+  "reservation",
+  "reservation_release",
+  "shipment",
+  "shipment_return",
+  "production_output",
+  "transfer",
+] as const;
 
 export const RESERVATION_CANCEL_FORBIDDEN =
   "Posted reservations cannot be cancelled. Create a Reservation that releases to Free instead.";
+
+export const POSTED_DOCUMENT_CANCEL_FORBIDDEN =
+  "Posted warehouse documents cannot be cancelled. Create a new business document instead.";
 
 export const SHIPMENT_OWNER_MUST_BE_ORDER =
   "Shipment can only consume stock reserved for a customer order.";
@@ -27,9 +37,16 @@ export const SHIPMENT_OWNER_MUST_BE_ORDER =
 export const isIrreversibleDocumentKind = (kind: string): boolean =>
   IRREVERSIBLE_DOCUMENT_KINDS.includes(kind as (typeof IRREVERSIBLE_DOCUMENT_KINDS)[number]);
 
-export const assertDocumentCanBeCancelled = (kind: string): void => {
-  if (isIrreversibleDocumentKind(kind)) {
+export const assertDocumentCanBeCancelled = (kind: string, status?: string | null): void => {
+  if (kind === "reservation" || kind === "reservation_release") {
     throw new Error(RESERVATION_CANCEL_FORBIDDEN);
+  }
+  const posted =
+    ((kind === "shipment" || kind === "shipment_return" || kind === "return") && status === "posted") ||
+    ((kind === "production_output" || kind === "output") && status === "done") ||
+    (kind === "transfer" && (status === "sent" || status === "delivered"));
+  if (posted) {
+    throw new Error(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
   }
 };
 

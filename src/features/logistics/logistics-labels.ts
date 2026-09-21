@@ -1,6 +1,7 @@
 import type {
   CustomerOrderStatus,
   DocumentStatus,
+  DocumentType,
   LocationType,
   OutputStatus,
   OwnerType,
@@ -12,10 +13,10 @@ import type {
 } from "@/features/logistics/logistics-types";
 
 export const LOCATION_LABELS: Record<LocationType, string> = {
-  warehouse: "Склад",
-  production_order_line: "В заказе на производство",
-  transfer: "В перемещении",
-  customer_order: "У клиента",
+  warehouse: "Warehouse",
+  production_order: "Production order",
+  transfer: "Transfer",
+  customer_order: "Customer order",
 };
 
 /** Host entity that holds stock or a reservation — not the stock-place phrasing. */
@@ -23,7 +24,7 @@ export const locationKindLabel = (type: LocationType, isPlantWarehouse = false):
   if (type === "warehouse") {
     return isPlantWarehouse ? "Склад завода" : "Склад";
   }
-  if (type === "production_order_line") {
+  if (type === "production_order") {
     return "Заказ на производство";
   }
   if (type === "transfer") {
@@ -88,16 +89,16 @@ export const RESERVATION_DIRECTION_LABELS: Record<ReservationDirection, string> 
 
 export const RESERVATION_OPERATION_LABELS = RESERVATION_DIRECTION_LABELS;
 
-export const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
-  reservation: "Резерв",
-  shipment: "Отгрузка",
-  shipment_return: "Возврат",
-  production_activation: "Остаток заказа на производство",
-  production_output: "Выпуск",
-  production_close: "Закрытие заказа на производство",
-  transfer_send: "Отправка перемещения",
-  transfer_complete: "Завершение перемещения",
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  reservation: "Reservation",
+  shipment: "Shipment",
+  return: "Return",
+  transfer: "Transfer",
+  production_order: "Production order",
+  output: "Output",
 };
+
+export const SOURCE_TYPE_LABELS: Record<SourceType, string> = DOCUMENT_TYPE_LABELS;
 
 const MINUS_SIGN = "\u2212";
 
@@ -127,7 +128,7 @@ export const formatTimestamp = (value: string | null): string => {
   if (!value) {
     return "—";
   }
-    return new Date(value).toLocaleString("ru-RU", {
+    return new Date(value).toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",

@@ -6,7 +6,8 @@ import {
   warehouseIdsWithReservedForOrder,
 } from "@/features/logistics/allocation-atlas";
 import { mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
-import type { LogisticsSnapshot, StockBalance, StockTransaction } from "@/features/logistics/logistics-types";
+import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
+import { tx as fixtureTx } from "./logistics-test-fixtures";
 
 const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
   ({
@@ -25,8 +26,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         number: "OMS-1",
         status: "open",
         createdAt: "",
-        closedAt: null,
-        expectedEndOn: null,
+        createdBy: "1",
+      expectedEndOn: null,
         description: "",
       },
     ],
@@ -49,40 +50,28 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
     returns: [],
     returnLines: [],
     transactions: [],
+    users: [],
+    documentHistory: [],
     ...partial,
   }) as LogisticsSnapshot;
-
-type TxInput = Partial<StockTransaction> &
-  Pick<StockTransaction, "quantity" | "stockState"> & {
-    customerOrderId?: string | null;
-    customerOrderLineId?: string | null;
-  };
 
 const LINE_A = { id: "col-a", orderId: "co-1", productId: "p-a" };
 const LINE_B = { id: "col-b", orderId: "co-1", productId: "p-b" };
 const LINE_OTHER = { id: "col-other", orderId: "co-other", productId: "p-a" };
 
-const tx = (partial: TxInput): StockTransaction => {
+const tx = (
+  partial: Parameters<typeof fixtureTx>[0] & { customerOrderLineId?: string | null; customerOrderId?: string | null },
+) => {
   const orderId = partial.ownerId ?? (partial.customerOrderId === undefined ? "co-1" : partial.customerOrderId);
-  return {
-    transactionId: partial.transactionId ?? `tx-${Math.random()}`,
-    occurredAt: "2026-09-16T10:00:00.000Z",
-    postedAt: "2026-09-16T10:00:00.000Z",
+  return fixtureTx({
+    ...partial,
     productId: partial.productId ?? (partial.customerOrderLineId === "col-b" ? "p-b" : "p-a"),
-    unit: "pcs",
-    quantity: partial.quantity,
-    locationType: partial.locationType ?? "warehouse",
     locationId: partial.locationId ?? "wh-1",
-    stockState: partial.stockState,
-    ownerType: partial.ownerType ?? (orderId ? "order" : null),
-    ownerId: orderId,
     sourceType: partial.sourceType ?? "production_output",
     sourceId: partial.sourceId ?? "out-1",
-    sourceLineId: partial.sourceLineId ?? "outl-1",
-    operationId: "op",
-    idempotencyKey: partial.idempotencyKey ?? `key-${Math.random()}`,
-    reversesTransactionId: partial.reversesTransactionId ?? null,
-  };
+    ownerType: partial.ownerType ?? (orderId ? "order" : null),
+    ownerId: orderId,
+  });
 };
 
 describe("sumProducedForLine", () => {
@@ -93,7 +82,7 @@ describe("sumProducedForLine", () => {
         tx({
           quantity: -8,
           stockState: "reserved",
-          locationType: "production_order_line",
+          locationType: "production_order",
           locationId: "pol-1",
           sourceId: "out-1",
         }),
@@ -131,9 +120,8 @@ describe("sumProducedForLine", () => {
           productionOrderId: "po-1",
           status: "done",
           createdAt: "",
-          doneAt: "",
-          cancelledAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
       outputLines: [
@@ -157,9 +145,8 @@ describe("sumProducedForLine", () => {
           productionOrderId: "po-1",
           status: "done",
           createdAt: "",
-          doneAt: "",
-          cancelledAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
       outputLines: [{ id: "outl-legacy", outputId: "out-legacy", productionOrderLineId: "pol-1", productId: "p-a", quantity: 6 }],
@@ -180,9 +167,8 @@ describe("sumProducedForLine", () => {
           productionOrderId: "po-1",
           status: "planned",
           createdAt: "",
-          doneAt: null,
-          cancelledAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
       outputLines: [
@@ -211,16 +197,15 @@ describe("sumProducedForLine", () => {
           productionOrderId: "po-1",
           status: "done",
           createdAt: "",
-          doneAt: "",
-          cancelledAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
       outputLines: [{ id: "outl-1", outputId: "out-1", productionOrderLineId: "pol-1", productId: "p-a", quantity: 8 }],
       outputAllocations: [
         { id: "oua-1", lineId: "outl-1", ownerType: "order", ownerId: "co-1", quantity: 8 },
       ],
-      transactions: [tx({ quantity: 8, stockState: "reserved", sourceId: "out-1", sourceLineId: "outl-1" })],
+      transactions: [tx({ quantity: 8, stockState: "reserved", sourceId: "out-1" })],
     });
 
     expect(sumProducedForLine(data, LINE_A)).toBe(8);
@@ -235,9 +220,8 @@ describe("sumProducedForLine", () => {
           productionOrderId: "po-1",
           status: "cancelled",
           createdAt: "",
-          doneAt: "",
-          cancelledAt: "",
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
         {
           id: "out-legacy",
@@ -245,9 +229,8 @@ describe("sumProducedForLine", () => {
           productionOrderId: "po-1",
           status: "done",
           createdAt: "",
-          doneAt: "",
-          cancelledAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
       outputLines: [
@@ -308,7 +291,7 @@ describe("lineLocationAllocations", () => {
     },
     {
       productId: "p-a",
-      locationType: "production_order_line",
+      locationType: "production_order",
       locationId: "pol-1",
       stockState: "reserved",
       ownerType: "order",
@@ -346,7 +329,7 @@ describe("lineLocationAllocations", () => {
       ...balances,
       {
         productId: "p-a",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-2",
         stockState: "reserved",
         ownerType: "order",
@@ -355,7 +338,7 @@ describe("lineLocationAllocations", () => {
       },
       {
         productId: "p-a",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-free",
         stockState: "free",
         ownerType: null,
@@ -364,7 +347,7 @@ describe("lineLocationAllocations", () => {
       },
       {
         productId: "p-a",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-other",
         stockState: "reserved",
         ownerType: "order",
@@ -373,7 +356,7 @@ describe("lineLocationAllocations", () => {
       },
       {
         productId: "p-b",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-b",
         stockState: "reserved",
         ownerType: "order",
@@ -382,7 +365,7 @@ describe("lineLocationAllocations", () => {
       },
       {
         productId: "p-a",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-zero",
         stockState: "reserved",
         ownerType: "order",
@@ -391,7 +374,7 @@ describe("lineLocationAllocations", () => {
       },
       {
         productId: "p-a",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-neg",
         stockState: "reserved",
         ownerType: "order",

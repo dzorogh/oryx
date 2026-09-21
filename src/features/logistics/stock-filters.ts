@@ -49,8 +49,11 @@ export const parseStockPlace = (raw: string | null): StockPlaceFilter => {
   if (!raw || raw === "all") {
     return { kind: "all" };
   }
-  if (raw === "warehouse" || raw === "production_order_line" || raw === "transfer" || raw === "customer_order") {
+  if (raw === "warehouse" || raw === "production_order" || raw === "transfer" || raw === "customer_order") {
     return { kind: "locationType", locationType: raw };
+  }
+  if (raw === "production_order_line") {
+    return { kind: "locationType", locationType: "production_order" };
   }
   if (raw.startsWith("warehouse:")) {
     const warehouseId = raw.slice("warehouse:".length);
@@ -73,7 +76,7 @@ const locationFromPlaceType = (locationType: LocationType): StockLocationFilter 
   if (locationType === "warehouse") {
     return "warehouse";
   }
-  if (locationType === "production_order_line") {
+  if (locationType === "production_order") {
     return "production";
   }
   if (locationType === "transfer") {

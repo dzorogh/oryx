@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertDocumentCanBeCancelled,
   IRREVERSIBLE_DOCUMENT_KINDS,
+  POSTED_DOCUMENT_CANCEL_FORBIDDEN,
   RESERVATION_CANCEL_FORBIDDEN,
 } from "@/features/logistics/logistics-rules";
 import { RESERVATION_DIRECTION_LABELS } from "@/features/logistics/logistics-labels";
@@ -27,7 +28,7 @@ describe("unified reservation model", () => {
     expect([...RESERVATION_DIRECTIONS]).toEqual(["reserve", "release", "reassign"]);
     expect([...RESERVATION_STATUSES]).toEqual(["draft", "posted"]);
     expect([...RESERVATION_ORIGINS]).toEqual(["manual", "order_close"]);
-    expect([...RESERVATION_LOCATION_TYPES]).toEqual(["warehouse", "production_order_line", "transfer"]);
+    expect([...RESERVATION_LOCATION_TYPES]).toEqual(["warehouse", "production_order", "transfer"]);
     expect("reservationRelease" in LOGISTICS_CODE_PREFIXES).toBe(false);
     expect((Object.values(LOGISTICS_CODE_PREFIXES) as string[]).includes("REL")).toBe(false);
   });
@@ -40,6 +41,11 @@ describe("unified reservation model", () => {
     expect(RESERVATION_CANCEL_FORBIDDEN).toBe(
       "Posted reservations cannot be cancelled. Create a Reservation that releases to Free instead.",
     );
+    expect(IRREVERSIBLE_DOCUMENT_KINDS).toEqual(
+      expect.arrayContaining(["shipment", "shipment_return", "production_output", "transfer"]),
+    );
+    expect(() => assertDocumentCanBeCancelled("shipment", "posted")).toThrow(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
+    expect(() => assertDocumentCanBeCancelled("transfer", "sent")).toThrow(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
   });
 
   it("keeps destination on the header and source plus product on the line", () => {
@@ -54,8 +60,8 @@ describe("unified reservation model", () => {
       origin: "order_close",
       note: "",
       createdAt: "2026-09-18T00:00:00Z",
-      postedAt: "2026-09-18T00:00:00Z",
-    } satisfies Reservation;
+    createdBy: "1",
+      } satisfies Reservation;
 
     const line = {
       id: "1",

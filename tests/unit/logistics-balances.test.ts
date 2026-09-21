@@ -22,35 +22,10 @@ import {
   assertDocumentCanBeCancelled,
   assertEnoughStock,
   assertShipmentCapacity,
+  POSTED_DOCUMENT_CANCEL_FORBIDDEN,
   RESERVATION_CANCEL_FORBIDDEN,
 } from "@/features/logistics/logistics-rules";
-import type { StockTransaction } from "@/features/logistics/logistics-types";
-
-type TxInput = Partial<StockTransaction> &
-  Pick<StockTransaction, "quantity" | "stockState"> & {
-    customerOrderId?: string | null;
-    customerOrderLineId?: string | null;
-  };
-
-const tx = (partial: TxInput): StockTransaction => ({
-  transactionId: partial.transactionId ?? `tx-${Math.random()}`,
-  occurredAt: "2026-09-16T10:00:00.000Z",
-  postedAt: "2026-09-16T10:00:00.000Z",
-  productId: partial.productId ?? "p-chair",
-  unit: "pcs",
-  quantity: partial.quantity,
-  locationType: partial.locationType ?? "warehouse",
-  locationId: partial.locationId ?? "wh-nordic",
-  stockState: partial.stockState,
-  ownerType: partial.ownerType ?? (partial.customerOrderId || partial.ownerId ? "order" : null),
-  ownerId: partial.ownerId ?? partial.customerOrderId ?? null,
-  sourceType: partial.sourceType ?? "reservation",
-  sourceId: partial.sourceId ?? "rsv-1",
-  sourceLineId: null,
-  operationId: "op",
-  idempotencyKey: partial.idempotencyKey ?? `key-${Math.random()}`,
-  reversesTransactionId: partial.reversesTransactionId ?? null,
-});
+import { tx } from "./logistics-test-fixtures";
 
 describe("logistics balances", () => {
   it("nets signed ledger rows into place and state totals", () => {
@@ -101,13 +76,13 @@ describe("logistics balances", () => {
       tx({
         quantity: 5,
         stockState: "free",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
       }),
       tx({
         quantity: 3,
         stockState: "reserved",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
         customerOrderId: "co-101",
         customerOrderLineId: "col-101-chair",
@@ -115,7 +90,7 @@ describe("logistics balances", () => {
       tx({
         quantity: 2,
         stockState: "reserved",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
         customerOrderId: "co-205",
         customerOrderLineId: "col-205-chair",
@@ -124,14 +99,14 @@ describe("logistics balances", () => {
 
     expect(
       sumLocationState(balances, {
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
         stockState: "reserved",
       }),
     ).toBe(5);
     expect(
       sumLocationState(balances, {
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
         stockState: "free",
       }),
@@ -151,7 +126,7 @@ describe("logistics balances", () => {
       tx({
         quantity: 5,
         stockState: "free",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
       }),
       tx({
@@ -171,7 +146,7 @@ describe("logistics balances", () => {
 
     expect(chair?.total).toBe(21);
     expect(chair?.byType.warehouse).toBe(16);
-    expect(chair?.byType.production_order_line).toBe(5);
+    expect(chair?.byType.production_order).toBe(5);
     expect(chair?.locations.map((item) => item.locationId)).toEqual(["wh-nordic", "pol-100-chair", "wh-central"]);
     expect(chair?.locations.find((item) => item.locationId === "wh-nordic")).toEqual(
       expect.objectContaining({ free: 12, reserved: 0, shipped: 0 }),
@@ -259,7 +234,7 @@ describe("logistics availability", () => {
       tx({
         quantity: 2,
         stockState: "free",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
       }),
     ]);
@@ -274,7 +249,7 @@ describe("logistics availability", () => {
         tx({
           quantity: 2,
           stockState: "free",
-          locationType: "production_order_line",
+          locationType: "production_order",
           locationId: "pol-100-chair",
         }),
       ],
@@ -304,7 +279,7 @@ describe("logistics availability", () => {
         productId: "108",
         quantity: 12,
         stockState: "free",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-enduro",
       }),
     ]);
@@ -347,10 +322,17 @@ describe("logistics availability", () => {
     expect(remaining).toBe(4);
   });
 
-  it("forbids cancelling reservation documents", () => {
+  it("forbids cancelling posted warehouse documents", () => {
     expect(() => assertDocumentCanBeCancelled("reservation")).toThrow(RESERVATION_CANCEL_FORBIDDEN);
     expect(() => assertDocumentCanBeCancelled("reservation_release")).toThrow(RESERVATION_CANCEL_FORBIDDEN);
     expect(() => assertDocumentCanBeCancelled("shipment")).not.toThrow();
-    expect(() => assertDocumentCanBeCancelled("transfer")).not.toThrow();
+    expect(() => assertDocumentCanBeCancelled("shipment_return")).not.toThrow();
+    expect(() => assertDocumentCanBeCancelled("return")).not.toThrow();
+    expect(() => assertDocumentCanBeCancelled("output")).not.toThrow();
+    expect(() => assertDocumentCanBeCancelled("return", "posted")).toThrow(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
+    expect(() => assertDocumentCanBeCancelled("output", "done")).toThrow(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
+    expect(() => assertDocumentCanBeCancelled("production_output", "done")).toThrow(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
+    expect(() => assertDocumentCanBeCancelled("transfer", "sent")).toThrow(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
+    expect(() => assertDocumentCanBeCancelled("shipment", "draft")).not.toThrow();
   });
 });

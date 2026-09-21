@@ -13,6 +13,7 @@ import type {
   TransferAllocation,
   TransferLine,
 } from "@/features/logistics/logistics-types";
+import { tx as fixtureTx } from "./logistics-test-fixtures";
 
 const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
   ({
@@ -47,8 +48,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         number: "OMS-901",
         status: "open",
         createdAt: "",
-        closedAt: null,
-        expectedEndOn: null,
+        createdBy: "1",
+      expectedEndOn: null,
         description: "",
       },
     ],
@@ -65,9 +66,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
         toWarehouseId: "11",
         status: "sent",
         createdAt: "2026-09-06T09:42:00Z",
-        sentAt: "2026-09-06T09:42:00Z",
-        cancelledAt: null,
-        expectedEndOn: "2026-09-08",
+        createdBy: "1",
+      expectedEndOn: "2026-09-08",
       },
     ],
     transferLines: [
@@ -83,6 +83,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =
     returns: [],
     returnLines: [],
     transactions: [],
+    users: [],
+    documentHistory: [],
     ...partial,
   }) as LogisticsSnapshot;
 
@@ -92,23 +94,16 @@ const transferOf = (data: LogisticsSnapshot, status: Transfer["status"] = "sent"
 });
 
 const tx = (
-  partial: Partial<StockTransaction> & Pick<StockTransaction, "transactionId" | "productId" | "quantity" | "stockState">,
-): StockTransaction => ({
-  occurredAt: "2026-09-06T09:42:00Z",
-  postedAt: "2026-09-06T09:42:00Z",
-  unit: "pcs",
-  locationType: "transfer",
-  locationId: "tr-1",
-  ownerType: null,
-  ownerId: null,
-  sourceType: "transfer_send",
-  sourceId: "tr-1",
-  sourceLineId: null,
-  operationId: `op-${partial.transactionId}`,
-  idempotencyKey: partial.transactionId,
-  reversesTransactionId: null,
-  ...partial,
-});
+  partial: Parameters<typeof fixtureTx>[0] & { transactionId?: string; sourceType?: string; sourceId?: string },
+) =>
+  fixtureTx({
+    locationType: "transfer",
+    locationId: "tr-1",
+    createdAt: "2026-09-06T09:42:00Z",
+    documentType: partial.documentType ?? (partial.sourceType ? undefined : "transfer"),
+    documentId: partial.documentId ?? partial.sourceId ?? "tr-1",
+    ...partial,
+  });
 
 const liveBalances = (): StockBalance[] => [
   {
@@ -241,7 +236,7 @@ describe("projectTransferDetail terminal history", () => {
       stockState: "free",
       sourceType: "reservation",
       sourceId: "rsv-1",
-      postedAt: "2026-09-06T09:43:00Z",
+      createdAt: "2026-09-06T09:43:00Z",
     }),
     tx({
       transactionId: "tx-rsv-22-in",
@@ -252,7 +247,7 @@ describe("projectTransferDetail terminal history", () => {
       ownerId: "901",
       sourceType: "reservation",
       sourceId: "rsv-1",
-      postedAt: "2026-09-06T09:43:00Z",
+      createdAt: "2026-09-06T09:43:00Z",
     }),
     tx({
       transactionId: "tx-rsv-30-out",
@@ -261,7 +256,7 @@ describe("projectTransferDetail terminal history", () => {
       stockState: "free",
       sourceType: "reservation",
       sourceId: "rsv-2",
-      postedAt: "2026-09-06T10:12:00Z",
+      createdAt: "2026-09-06T10:12:00Z",
     }),
     tx({
       transactionId: "tx-rsv-30-in",
@@ -272,7 +267,7 @@ describe("projectTransferDetail terminal history", () => {
       ownerId: "1",
       sourceType: "reservation",
       sourceId: "rsv-2",
-      postedAt: "2026-09-06T10:12:00Z",
+      createdAt: "2026-09-06T10:12:00Z",
     }),
     tx({
       transactionId: "tx-complete-22",
@@ -282,7 +277,7 @@ describe("projectTransferDetail terminal history", () => {
       ownerType: "order",
       ownerId: "901",
       sourceType: "transfer_complete",
-      postedAt: "2026-09-08T12:00:00Z",
+      createdAt: "2026-09-07T08:00:00Z",
     }),
     tx({
       transactionId: "tx-complete-30-free",
@@ -290,7 +285,7 @@ describe("projectTransferDetail terminal history", () => {
       quantity: -8,
       stockState: "free",
       sourceType: "transfer_complete",
-      postedAt: "2026-09-08T12:00:00Z",
+      createdAt: "2026-09-07T08:00:00Z",
     }),
     tx({
       transactionId: "tx-complete-30-region",
@@ -300,7 +295,7 @@ describe("projectTransferDetail terminal history", () => {
       ownerType: "region",
       ownerId: "1",
       sourceType: "transfer_complete",
-      postedAt: "2026-09-08T12:00:00Z",
+      createdAt: "2026-09-07T08:00:00Z",
     }),
   ];
 
@@ -318,8 +313,8 @@ describe("projectTransferDetail terminal history", () => {
           origin: "manual",
           note: "",
           createdAt: "2026-09-06T09:43:00Z",
-          postedAt: "2026-09-06T09:43:00Z",
-        },
+        createdBy: "1",
+      },
         {
           id: "rsv-2",
           number: "RSV-2",
@@ -331,8 +326,8 @@ describe("projectTransferDetail terminal history", () => {
           origin: "manual",
           note: "",
           createdAt: "2026-09-06T10:12:00Z",
-          postedAt: "2026-09-06T10:12:00Z",
-        },
+        createdBy: "1",
+      },
       ],
       reservationLines: [
         { id: "rsvl-1", reservationId: "rsv-1", productId: "22", quantity: 4, fromOwnerType: null, fromOwnerId: null },
@@ -374,11 +369,7 @@ describe("projectTransferDetail terminal history", () => {
 
   it("uses residual cancelled live balances instead of reconstructed history", () => {
     const data = snapshot({
-      transactions: historyTransactions().map((entry) =>
-        entry.sourceType === "transfer_complete"
-          ? { ...entry, sourceType: "transfer_send", reversesTransactionId: `rev-${entry.transactionId}` }
-          : entry,
-      ),
+      transactions: historyTransactions().filter((entry) => entry.documentType !== "transfer" || entry.quantity > 0),
     });
     const residual: StockBalance[] = [
       {
@@ -403,27 +394,9 @@ describe("projectTransferDetail terminal history", () => {
 
   it("reconstructs cancelled history and points current location at origin when no residual remains", () => {
     const data = snapshot({
-      transactions: [
-        ...historyTransactions().filter((entry) => entry.sourceType !== "transfer_complete"),
-        tx({
-          transactionId: "tx-cancel-22",
-          productId: "22",
-          quantity: -4,
-          stockState: "reserved",
-          ownerType: "order",
-          ownerId: "901",
-          reversesTransactionId: "tx-rsv-22-in",
-          postedAt: "2026-09-07T08:00:00Z",
-        }),
-        tx({
-          transactionId: "tx-cancel-30",
-          productId: "30",
-          quantity: -12,
-          stockState: "free",
-          reversesTransactionId: "tx-send-30",
-          postedAt: "2026-09-07T08:00:00Z",
-        }),
-      ],
+      transactions: historyTransactions().filter(
+        (entry) => entry.documentType !== "transfer" || entry.quantity > 0,
+      ),
     });
     const projected = projectTransferDetail(data, [], transferOf(data, "cancelled"));
     expect(projected.source).toBe("history");
@@ -438,13 +411,8 @@ describe("projectTransferDetail terminal history", () => {
       "Transfer sent",
       "Reservation posted",
       "Reservation posted",
-      "Transfer cancelled",
     ]);
-    expect(projected.activity.at(-1)).toMatchObject({
-      title: "Transfer cancelled",
-      occurredAt: "2026-09-07T08:00:00Z",
-      href: "/store/logistics/transfers/tr-1",
-    });
+    expect(projected.activity.some((event) => /cancel/i.test(event.title))).toBe(false);
   });
 
   it("does not treat an unrelated same-id reservation as transfer activity", () => {
@@ -462,7 +430,6 @@ describe("projectTransferDetail terminal history", () => {
           sourceId: "tr-1",
           ownerType: "order",
           ownerId: "901",
-          postedAt: "2026-09-06T11:00:00Z",
         }),
       ],
     });
@@ -488,7 +455,7 @@ describe("projectTransferDetail document fallback", () => {
         tx({
           transactionId: "tx-unusable",
           productId: "22",
-          quantity: 4,
+          quantity: -4,
           stockState: "free",
           sourceType: "transfer_complete",
         }),

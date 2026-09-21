@@ -16,35 +16,8 @@ import {
   relatedTransfersForOrder,
 } from "@/features/logistics/logistics-related";
 import { mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
-import type { LogisticsSnapshot, StockTransaction } from "@/features/logistics/logistics-types";
-
-type TxInput = Partial<StockTransaction> &
-  Pick<StockTransaction, "quantity" | "stockState"> & {
-    customerOrderId?: string | null;
-    customerOrderLineId?: string | null;
-  };
-
-const tx = (
-  partial: TxInput,
-): StockTransaction => ({
-  transactionId: partial.transactionId ?? `tx-${Math.random()}`,
-  occurredAt: "2026-09-17T10:00:00.000Z",
-  postedAt: "2026-09-17T10:00:00.000Z",
-  productId: partial.productId ?? "p-chair",
-  unit: "pcs",
-  quantity: partial.quantity,
-  locationType: partial.locationType ?? "warehouse",
-  locationId: partial.locationId ?? "wh-nordic",
-  stockState: partial.stockState,
-  ownerType: partial.ownerType ?? (partial.customerOrderId || partial.ownerId ? "order" : null),
-  ownerId: partial.ownerId ?? partial.customerOrderId ?? null,
-  sourceType: partial.sourceType ?? "reservation",
-  sourceId: partial.sourceId ?? "rsv-1",
-  sourceLineId: null,
-  operationId: "op",
-  idempotencyKey: partial.idempotencyKey ?? `key-${Math.random()}`,
-  reversesTransactionId: partial.reversesTransactionId ?? null,
-});
+import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
+import { tx } from "./logistics-test-fixtures";
 
 const snapshot = (partial: Partial<LogisticsSnapshot>): LogisticsSnapshot =>
   ({
@@ -53,10 +26,12 @@ const snapshot = (partial: Partial<LogisticsSnapshot>): LogisticsSnapshot =>
     warehouses: [],
     regions: [],
     settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
-    customerOrders: [{ id: "co-101", number: "CO-101", status: "open", createdAt: "", closedAt: null, expectedEndOn: "2026-10-15", description: "" }],
+    customerOrders: [{ id: "co-101", number: "CO-101", status: "open", createdAt: "", createdBy: "1",
+      expectedEndOn: "2026-10-15", description: "" }],
     customerOrderLines: [{ id: "col-101-chair", orderId: "co-101", productId: "p-chair", quantity: 10 }],
     productionOrders: [
-      { id: "po-100", number: "PO-100", manufacturerId: "m-1", status: "in_progress", createdAt: "", closedAt: null, expectedEndOn: "2026-09-25" },
+      { id: "po-100", number: "PO-100", manufacturerId: "m-1", status: "in_progress", createdAt: "", createdBy: "1",
+      expectedEndOn: "2026-09-25" },
     ],
     productionOrderLines: [{ id: "pol-100-chair", orderId: "po-100", productId: "p-chair", quantity: 20, activatedQuantity: 20 }],
     reservations: [],
@@ -71,6 +46,8 @@ const snapshot = (partial: Partial<LogisticsSnapshot>): LogisticsSnapshot =>
     outputAllocations: [],
     returns: [],
     returnLines: [],
+    users: [],
+    documentHistory: [],
     transactions: [],
     ...partial,
   }) as LogisticsSnapshot;
@@ -82,7 +59,7 @@ describe("related productions and movements", () => {
         {
           id: "rsv-1",
           number: "RSV-1",
-          locationType: "production_order_line",
+          locationType: "production_order",
           locationId: "pol-100-chair",
           toOwnerType: "order",
           toOwnerId: "co-101",
@@ -90,8 +67,8 @@ describe("related productions and movements", () => {
           origin: "manual",
           note: "",
           createdAt: "",
-          postedAt: "",
-        },
+        createdBy: "1",
+      },
       ],
       reservationLines: [
         {
@@ -104,7 +81,8 @@ describe("related productions and movements", () => {
         },
       ],
       outputs: [
-        { id: "out-1", number: "OUT-1", productionOrderId: "po-100", status: "done", createdAt: "", doneAt: "", cancelledAt: null, expectedEndOn: "2026-09-20" },
+        { id: "out-1", number: "OUT-1", productionOrderId: "po-100", status: "done", createdAt: "", createdBy: "1",
+      expectedEndOn: "2026-09-20" },
       ],
       transactions: [
         tx({
@@ -128,6 +106,38 @@ describe("related productions and movements", () => {
     expect(relatedOutputsForOrder(data, "co-101")[0]?.meta).toContain("2026");
   });
 
+  it("links a production from a reservation on the production order id", () => {
+    const data = snapshot({
+      reservations: [
+        {
+          id: "rsv-po",
+          number: "RSV-PO",
+          locationType: "production_order",
+          locationId: "po-100",
+          toOwnerType: "order",
+          toOwnerId: "co-101",
+          status: "posted",
+          origin: "manual",
+          note: "",
+          createdAt: "",
+          createdBy: "1",
+        },
+      ],
+      reservationLines: [
+        {
+          id: "rsvl-po",
+          reservationId: "rsv-po",
+          productId: "p-chair",
+          quantity: 6,
+          fromOwnerType: null,
+          fromOwnerId: null,
+        },
+      ],
+    });
+
+    expect(relatedProductionsForOrder(data, "co-101").map((item) => item.label)).toEqual(["PO-100"]);
+  });
+
   it("links a transfer after an in-transit reservation", () => {
     const data = snapshot({
       transfers: [
@@ -138,9 +148,8 @@ describe("related productions and movements", () => {
           toWarehouseId: "wh-retail",
           status: "sent",
           createdAt: "",
-          sentAt: "",
-          cancelledAt: null,
-          expectedEndOn: "2026-09-28",
+          createdBy: "1",
+      expectedEndOn: "2026-09-28",
         },
       ],
       reservations: [
@@ -155,8 +164,8 @@ describe("related productions and movements", () => {
           origin: "manual",
           note: "",
           createdAt: "",
-          postedAt: "",
-        },
+        createdBy: "1",
+      },
       ],
       reservationLines: [
         {
@@ -189,8 +198,8 @@ describe("related productions and movements", () => {
           origin: "manual",
           note: "",
           createdAt: "",
-          postedAt: "",
-        },
+        createdBy: "1",
+      },
         {
           id: "rsv-out",
           number: "RSV-OUT",
@@ -202,8 +211,8 @@ describe("related productions and movements", () => {
           origin: "manual",
           note: "",
           createdAt: "",
-          postedAt: "",
-        },
+        createdBy: "1",
+      },
       ],
       reservationLines: [
         {
@@ -257,7 +266,7 @@ describe("productionLineReservationBreakdown", () => {
         productId: "p-chair",
         quantity: 6,
         stockState: "reserved",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
         customerOrderId: "co-101",
         customerOrderLineId: "col-101-chair",
@@ -266,7 +275,7 @@ describe("productionLineReservationBreakdown", () => {
         productId: "p-chair",
         quantity: 3,
         stockState: "reserved",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
         customerOrderId: "co-205",
         customerOrderLineId: "col-205-chair",
@@ -275,7 +284,7 @@ describe("productionLineReservationBreakdown", () => {
         productId: "p-chair",
         quantity: 4,
         stockState: "free",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
       }),
     ]);
@@ -295,7 +304,7 @@ describe("productionLineReservationBreakdown", () => {
         productId: "p-chair",
         quantity: 8,
         stockState: "free",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
       }),
     ]);
@@ -312,7 +321,7 @@ describe("productionLineReservationBreakdown", () => {
         productId: "p-chair",
         quantity: 10,
         stockState: "reserved",
-        locationType: "production_order_line",
+        locationType: "production_order",
         locationId: "pol-100-chair",
         customerOrderId: "co-101",
         customerOrderLineId: "col-101-chair",
@@ -373,9 +382,12 @@ describe("openOrderLinesForProduct", () => {
   it("hides fully reserved lines and keeps open remaining demand", () => {
     const data = snapshot({
       customerOrders: [
-        { id: "co-101", number: "CO-101", status: "open", createdAt: "", closedAt: null, expectedEndOn: null, description: "" },
-        { id: "co-205", number: "CO-205", status: "open", createdAt: "", closedAt: null, expectedEndOn: null, description: "" },
-        { id: "co-300", number: "CO-300", status: "closed", createdAt: "", closedAt: "", expectedEndOn: null, description: "" },
+        { id: "co-101", number: "CO-101", status: "open", createdAt: "", createdBy: "1",
+      expectedEndOn: null, description: "" },
+        { id: "co-205", number: "CO-205", status: "open", createdAt: "", createdBy: "1",
+      expectedEndOn: null, description: "" },
+        { id: "co-300", number: "CO-300", status: "closed", createdAt: "", createdBy: "1",
+      expectedEndOn: null, description: "" },
       ],
       customerOrderLines: [
         { id: "col-101-desk", orderId: "co-101", productId: "p-desk", quantity: 2 },
@@ -412,8 +424,8 @@ describe("sourceLabel", () => {
           origin: "manual",
           note: "",
           createdAt: "",
-          postedAt: "",
-        },
+        createdBy: "1",
+      },
       ],
       outputs: [
         {
@@ -422,9 +434,8 @@ describe("sourceLabel", () => {
           productionOrderId: "po-100",
           status: "done",
           createdAt: "",
-          doneAt: "",
-          cancelledAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
       productionOrders: [
@@ -434,15 +445,15 @@ describe("sourceLabel", () => {
           manufacturerId: "m-1",
           status: "in_progress",
           createdAt: "",
-          closedAt: null,
-          expectedEndOn: null,
+          createdBy: "1",
+      expectedEndOn: null,
         },
       ],
     });
 
     expect(sourceLabel(data, "reservation", "rsv-uuid")).toBe("RSV-104");
-    expect(sourceLabel(data, "production_output", "out-uuid")).toBe("OUT-2");
-    expect(sourceLabel(data, "production_activation", "po-100")).toBe("PO-100");
+    expect(sourceLabel(data, "output", "out-uuid")).toBe("OUT-2");
+    expect(sourceLabel(data, "production_order", "po-100")).toBe("PO-100");
     expect(sourceLabel(data, "reservation", "missing")).toBe("missing");
   });
 });
@@ -452,7 +463,8 @@ describe("productActivity", () => {
     const data = snapshot({
       manufacturers: [{ id: "m-1", code: "SH-12", name: "Plant", warehouseId: "wh-1" }],
       customerOrders: [
-        { id: "co-120", number: "OMS-120", status: "open", createdAt: "", closedAt: null, expectedEndOn: null, description: "" },
+        { id: "co-120", number: "OMS-120", status: "open", createdAt: "", createdBy: "1",
+      expectedEndOn: null, description: "" },
       ],
       customerOrderLines: [{ id: "col-120", orderId: "co-120", productId: "p-6365", quantity: 44 }],
       productionOrders: [
@@ -462,8 +474,8 @@ describe("productActivity", () => {
           manufacturerId: "m-1",
           status: "draft",
           createdAt: "",
-          closedAt: null,
-          expectedEndOn: "2026-09-19",
+          createdBy: "1",
+      expectedEndOn: "2026-09-19",
         },
       ],
       productionOrderLines: [{ id: "pol-101", orderId: "po-101", productId: "p-6365", quantity: 44, activatedQuantity: 44 }],

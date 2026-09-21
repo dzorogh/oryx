@@ -79,7 +79,7 @@ export const freePlacesForProduct = (balances: StockBalance[], productId: string
         positive(entry.quantity) &&
         isFreeOwner(entry.ownerType, entry.ownerId) &&
         (entry.locationType === "warehouse" ||
-          entry.locationType === "production_order_line" ||
+          entry.locationType === "production_order" ||
           entry.locationType === "transfer"),
     )
     .map(toPlace)
@@ -124,7 +124,7 @@ export const freeProductionLinesForProduct = (
 
   for (const entry of balances) {
     if (
-      entry.locationType !== "production_order_line" ||
+      entry.locationType !== "production_order" ||
       entry.stockState !== "free" ||
       !positive(entry.quantity)
     ) {
@@ -384,10 +384,15 @@ export const placeStockBreakdown = (
 };
 
 export const productionLineReservationBreakdown = (
-  line: { id: string; productId: string },
+  line: { id: string; productId: string; orderId?: string },
   balances: StockBalance[],
 ): ProductionLineReservationBreakdown => {
-  const breakdown = placeStockBreakdown(balances, line.productId, "production_order_line", line.id);
+  const breakdown = placeStockBreakdown(
+    balances,
+    line.productId,
+    "production_order",
+    line.orderId ?? line.id,
+  );
   return { free: breakdown.free, reserved: breakdown.reserved };
 };
 
@@ -447,26 +452,26 @@ export const reservedOrderLinesAtWarehouse = (
     }))
     .filter((item) => positive(item.reserved));
 
-export const hrefForSource = (sourceType: SourceType, sourceId: string): string | null => {
-  switch (sourceType) {
+export const hrefForDocument = (documentType: SourceType, documentId: string): string | null => {
+  switch (documentType) {
     case "reservation":
-      return logisticsPath("reservations", sourceId);
+      return logisticsPath("reservations", documentId);
     case "shipment":
-      return logisticsPath("shipments", sourceId);
-    case "shipment_return":
-      return logisticsPath("returns", sourceId);
-    case "production_output":
-      return logisticsPath("outputs", sourceId);
-    case "production_activation":
-    case "production_close":
-      return logisticsPath("production-orders", sourceId);
-    case "transfer_send":
-    case "transfer_complete":
-      return logisticsPath("transfers", sourceId);
+      return logisticsPath("shipments", documentId);
+    case "return":
+      return logisticsPath("returns", documentId);
+    case "output":
+      return logisticsPath("outputs", documentId);
+    case "production_order":
+      return logisticsPath("production-orders", documentId);
+    case "transfer":
+      return logisticsPath("transfers", documentId);
     default:
       return null;
   }
 };
+
+export const hrefForSource = hrefForDocument;
 
 export const hrefForCustomerOrder = (id: string): string => logisticsPath("customer-orders", id);
 export const hrefForProduct = (id: string): string => hrefForStoreProduct(id);
@@ -506,8 +511,13 @@ export const hrefForLocation = (
   if (locationType === "customer_order") {
     return hrefForCustomerOrder(locationId);
   }
-  const line = snapshot.productionOrderLines.find((item) => item.id === locationId);
-  return line ? hrefForProductionOrder(line.orderId) : null;
+  if (locationType === "production_order") {
+    const orderId = snapshot.productionOrders?.some((item) => item.id === locationId)
+      ? locationId
+      : snapshot.productionOrderLines?.find((item) => item.id === locationId)?.orderId;
+    return orderId ? hrefForProductionOrder(orderId) : null;
+  }
+  return null;
 };
 
 export const stateQty = (split: LocationStateSplit, state: StockState): number => split[state];

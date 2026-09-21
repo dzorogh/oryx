@@ -139,11 +139,11 @@ export const calculateOrderDocumentCoverage = (
     );
     const coversLocation = destinationIsOrder || direction === "reserve";
 
-    if (coversLocation && reservation.locationType === "production_order_line") {
-      const productionOrderId = productionOrderByLine.get(reservation.locationId);
-      if (productionOrderId) {
-        addQuantity(quantities.production, productionOrderId, orderLine.id, line.quantity);
-      }
+    if (coversLocation && reservation.locationType === "production_order") {
+      const productionId = snapshot.productionOrders.some((item) => item.id === reservation.locationId)
+        ? reservation.locationId
+        : (productionOrderByLine.get(reservation.locationId) ?? reservation.locationId);
+      addQuantity(quantities.production, productionId, orderLine.id, line.quantity);
     }
 
     if (coversLocation && reservation.locationType === "transfer") {
@@ -174,16 +174,16 @@ export const calculateOrderDocumentCoverage = (
 
   for (const transaction of snapshot.transactions) {
     if (
-      transaction.sourceType !== "production_output" ||
+      transaction.documentType !== "output" ||
       !ownersEqual(transaction.ownerType, transaction.ownerId, "order", customerOrderId) ||
       transaction.quantity <= 0 ||
-      outputsWithAllocations.has(transaction.sourceId)
+      outputsWithAllocations.has(transaction.documentId)
     ) {
       continue;
     }
     addForProduct(
       quantities.output,
-      transaction.sourceId,
+      transaction.documentId,
       orderLines,
       customerOrderId,
       transaction.productId,

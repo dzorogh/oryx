@@ -37,7 +37,13 @@ import {
   calculateOrderDocumentCoverage,
   withOrderCoverage,
 } from "@/features/logistics/order-document-coverage";
-import type { CustomerOrderLine, CustomerOrderStatus, LocationType } from "@/features/logistics/logistics-types";
+import {
+  documentKey,
+  documentKeysForAssignedEntity,
+  type CustomerOrderLine,
+  type CustomerOrderStatus,
+  type LocationType,
+} from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -443,8 +449,13 @@ export const CustomerOrderDetailPage = () => {
 
       <DocumentLedger
         snapshot={snapshot}
-        filter={(entry) => entry.ownerType === "order" && entry.ownerId === order.id}
-        title="Движения по заказу клиента"
+        hide="assignedTo"
+        filter={(entry) =>
+          documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
+            documentKey(entry.documentType, entry.documentId),
+          )
+        }
+        title="Movements"
       />
 
       <ReservationForm
@@ -482,7 +493,7 @@ export const CustomerOrderDetailPage = () => {
           fromOwnerType: "order",
           fromOwnerId: order.id,
           productId: releasePlace?.line.productId,
-          locationType: releasePlace?.locationType === "customer_order" ? undefined : releasePlace?.locationType as "warehouse" | "production_order_line" | "transfer" | undefined,
+          locationType: releasePlace?.locationType === "customer_order" ? undefined : releasePlace?.locationType as "warehouse" | "production_order" | "transfer" | undefined,
           locationId: releasePlace?.locationId,
         }}
       />
