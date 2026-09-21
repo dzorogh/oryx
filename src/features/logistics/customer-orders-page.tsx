@@ -24,7 +24,8 @@ import {
   TransferReservedForm,
 } from "@/features/logistics/order-action-forms";
 import { formatExpectedEnd, formatQuantity } from "@/features/logistics/logistics-labels";
-import { productById, productIdentityLabel } from "@/features/logistics/logistics-lookups";
+import { productIdentityLabel } from "@/features/logistics/logistics-lookups";
+import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import {
   relatedOutputsForOrder,
   relatedProductionsForOrder,
@@ -126,7 +127,6 @@ export const CustomerOrdersPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Заказы клиента" }]}>
       <LogisticsToolbar
         title="Заказы клиента"
-        description="Только потребность. Товар становится занятым резервом; заказы на производство, выпуск, перемещение и отгрузка двигают уже занятое."
         actionLabel="Новый заказ клиента"
         onAction={() => setOpen(true)}
       >
@@ -158,33 +158,27 @@ export const CustomerOrdersPage = () => {
             const reserved = orderLines.reduce((sum, line) => sum + sumReservedForLine(balances, line), 0);
             const shipped = orderLines.reduce((sum, line) => sum + sumShippedForLine(balances, line), 0);
             const openQty = orderLines.reduce((sum, line) => sum + remainingToReserveForLine(line, balances), 0);
-            const products = orderLines
-              .map((line) => productById(snapshot, line.productId)?.name ?? line.productId)
-              .join(", ");
             return (
               <TableRow key={order.id}>
-                <TableCell className="px-3 py-2 text-sm font-medium">
+                <TableCell className="px-3 py-2 align-top text-sm font-medium">
                   <LogisticsCodeBadge
                     code={order.number}
                     href={`/store/logistics/customer-orders/${order.id}`}
                   />
-                  {order.description ? (
-                    <p className="mt-0.5 max-w-md truncate text-xs font-normal text-muted-foreground">
-                      {order.description}
-                    </p>
-                  ) : null}
                 </TableCell>
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 align-top">
                   <CustomerOrderStatusBadge status={order.status} />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm tabular-nums">
+                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
                   {formatExpectedEnd(order.expectedEndOn)}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm">{products || "—"}</TableCell>
-                <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(reserved)}</TableCell>
-                <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(shipped)}</TableCell>
-                <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(openQty)}</TableCell>
-                <TableCell className="px-3 py-2 text-xs text-muted-foreground">
+                <TableCell className="px-3 py-2 align-top">
+                  <DocumentProductLines snapshot={snapshot} lines={orderLines} />
+                </TableCell>
+                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">{formatQuantity(reserved)}</TableCell>
+                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">{formatQuantity(shipped)}</TableCell>
+                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">{formatQuantity(openQty)}</TableCell>
+                <TableCell className="px-3 py-2 align-top text-xs text-muted-foreground">
                   {new Date(order.createdAt).toLocaleDateString("ru-RU")}
                 </TableCell>
               </TableRow>
@@ -197,7 +191,6 @@ export const CustomerOrdersPage = () => {
         open={open}
         onOpenChange={setOpen}
         title="Новый заказ клиента"
-        description="Создание заказа клиента не двигает остатки. Свободный остаток показан, чтобы сразу видеть, хватит ли товара."
       >
         <div className="flex flex-col gap-3">
           <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
