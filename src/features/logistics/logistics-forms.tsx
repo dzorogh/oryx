@@ -1,17 +1,29 @@
 // english-ui:ignore-file
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import {
+  createAndPostAdjustment,
   createAndPostReservation,
   createAndPostReturn,
   createAndPostShipment,
   createReservationDraft,
 } from "@/features/logistics/logistics-api";
+import {
+  ADJUSTMENT_EXPLANATION_REQUIRED,
+  ADJUSTMENT_LINES_REQUIRED,
+  ADJUSTMENT_OPERATIONS,
+  ADJUSTMENT_WAREHOUSE_REQUIRED,
+  assertAdjustmentExplanation,
+  buildAdjustmentFacts,
+  freeWarehouseQuantity,
+  type AdjustmentOperation,
+  type AdjustmentSourceDocumentType,
+} from "@/features/logistics/logistics-adjustments";
 import {
   freePlacesForProduct,
   remainingToReturnForLine,
@@ -21,7 +33,14 @@ import {
   reservedLinesAtWarehouse,
   warehousesWithReservedForOrder,
 } from "@/features/logistics/logistics-availability";
-import { FREE_OWNER_LABEL, OWNER_TYPE_LABELS, RESERVATION_DIRECTION_LABELS, formatQuantity } from "@/features/logistics/logistics-labels";
+import {
+  ADJUSTMENT_OPERATION_LABELS,
+  DOCUMENT_TYPE_LABELS,
+  FREE_OWNER_LABEL,
+  OWNER_TYPE_LABELS,
+  RESERVATION_DIRECTION_LABELS,
+  formatQuantity,
+} from "@/features/logistics/logistics-labels";
 import {
   locationLabel,
   ownerLabel,
@@ -865,6 +884,289 @@ export const ReturnForm = ({
           onDraft={() => void submit(false)}
           onPost={() => void submit(true)}
           postLabel="Вернуть"
+        />
+      </div>
+    </LogisticsDialog>
+  );
+};
+
+type AdjustmentDraftLine = {
+  productId: string;
+  quantity: string;
+};
+
+const emptyAdjustmentLine = (productId = ""): AdjustmentDraftLine => ({
+  productId,
+  quantity: "1",
+});
+
+const ADJUSTMENT_SOURCE_ITEMS: Array<{ value: AdjustmentSourceDocumentType; label: string }> = [
+  { value: "output", label: DOCUMENT_TYPE_LABELS.output },
+  { value: "transfer", label: DOCUMENT_TYPE_LABELS.transfer },
+  { value: "reservation", label: DOCUMENT_TYPE_LABELS.reservation },
+  { value: "shipment", label: DOCUMENT_TYPE_LABELS.shipment },
+  { value: "return", label: DOCUMENT_TYPE_LABELS.return },
+  { value: "production_order", label: DOCUMENT_TYPE_LABELS.production_order },
+];
+
+export const AdjustmentForm = ({
+  snapshot,
+  balances,
+  open,
+  onOpenChange,
+  reload,
+  preset,
+}: SharedFormProps & {
+  preset?: {
+    operation?: AdjustmentOperation;
+    warehouseId?: string;
+    explanation?: string;
+    sourceDocumentType?: AdjustmentSourceDocumentType | "";
+    sourceDocumentId?: string;
+    productId?: string;
+  };
+}) => {
+  const [operation, setOperation] = useState<AdjustmentOperation>(preset?.operation ?? "write_off");
+  const [warehouseId, setWarehouseId] = useState(preset?.warehouseId ?? "");
+  const [explanation, setExplanation] = useState(preset?.explanation ?? "");
+  const [sourceType, setSourceType] = useState<"" | AdjustmentSourceDocumentType>(preset?.sourceDocumentType ?? "");
+  const [sourceId, setSourceId] = useState(preset?.sourceDocumentId ?? "");
+  const [lines, setLines] = useState<AdjustmentDraftLine[]>([emptyAdjustmentLine(preset?.productId ?? "")]);
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+
+  const sourceDocuments = useMemo(() => {
+    if (sourceType === "output") {
+      return snapshot.outputs.map((item) => ({ value: item.id, label: item.number }));
+    }
+    if (sourceType === "transfer") {
+      return snapshot.transfers.map((item) => ({ value: item.id, label: item.number }));
+    }
+    if (sourceType === "reservation") {
+      return snapshot.reservations.map((item) => ({ value: item.id, label: item.number }));
+    }
+    if (sourceType === "shipment") {
+      return snapshot.shipments.map((item) => ({ value: item.id, label: item.number }));
+    }
+    if (sourceType === "return") {
+      return snapshot.returns.map((item) => ({ value: item.id, label: item.number }));
+    }
+    if (sourceType === "production_order") {
+      return snapshot.productionOrders.map((item) => ({ value: item.id, label: item.number }));
+    }
+    return [];
+  }, [snapshot, sourceType]);
+
+  const usedProducts = new Set(lines.map((line) => line.productId).filter(Boolean));
+  const decreases = operation !== "increase";
+
+  const reset = () => {
+    setOperation(preset?.operation ?? "write_off");
+    setWarehouseId(preset?.warehouseId ?? "");
+    setExplanation(preset?.explanation ?? "");
+    setSourceType(preset?.sourceDocumentType ?? "");
+    setSourceId(preset?.sourceDocumentId ?? "");
+    setLines([emptyAdjustmentLine(preset?.productId ?? "")]);
+  };
+
+  const validLines = lines.filter((line) => {
+    if (!line.productId || !warehouseId) {
+      return false;
+    }
+    const max = decreases ? freeWarehouseQuantity(balances, line.productId, warehouseId) : undefined;
+    return isAllowedQuantity(line.quantity, max);
+  });
+  const filled = lines.filter((line) => line.productId);
+  const unique = new Set(filled.map((line) => line.productId));
+  const linesReady = validLines.length > 0 && validLines.length === filled.length && unique.size === filled.length;
+  const explanationReady = explanation.trim().length > 0;
+  const canSubmit = Boolean(warehouseId && explanationReady && linesReady && !submitting);
+
+  const submit = async () => {
+    if (submittingRef.current) {
+      return;
+    }
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      if (!warehouseId) {
+        toast.error(ADJUSTMENT_WAREHOUSE_REQUIRED);
+        return;
+      }
+      try {
+        assertAdjustmentExplanation(explanation);
+      } catch (caught: unknown) {
+        toast.error(caught instanceof Error ? caught.message : ADJUSTMENT_EXPLANATION_REQUIRED);
+        return;
+      }
+      if (validLines.length === 0) {
+        toast.error(ADJUSTMENT_LINES_REQUIRED);
+        return;
+      }
+      const draft = {
+        operation,
+        warehouseId,
+        explanation,
+        sourceDocumentType: sourceType || null,
+        sourceDocumentId: sourceType && sourceId ? sourceId : null,
+        lines: validLines.map((line) => ({
+          productId: line.productId,
+          quantity: Number(line.quantity),
+        })),
+      };
+      try {
+        buildAdjustmentFacts(draft, balances);
+      } catch (caught: unknown) {
+        toast.error(caught instanceof Error ? caught.message : "Проверьте строки корректировки");
+        return;
+      }
+      const ok = await runLogisticsAction(
+        () => createAndPostAdjustment(draft, balances),
+        "Корректировка проведена",
+        reload,
+      );
+      if (ok) {
+        onOpenChange(false);
+        reset();
+      }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <LogisticsDialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (next) {
+          reset();
+        }
+      }}
+      title="Новая корректировка"
+      description="Документ проводится сразу. Проведённую корректировку нельзя отменить."
+    >
+      <div className="flex flex-col gap-3">
+        <FieldSelect
+          label="Операция"
+          value={operation}
+          items={ADJUSTMENT_OPERATIONS.map((item) => ({
+            value: item,
+            label: ADJUSTMENT_OPERATION_LABELS[item],
+          }))}
+          onChange={(value) => setOperation(value as AdjustmentOperation)}
+        />
+        <FieldSelect
+          label="Склад"
+          value={warehouseId}
+          items={snapshot.warehouses.map((item) => ({
+            value: item.id,
+            label: item.code,
+          }))}
+          onChange={setWarehouseId}
+          placeholder="Выберите склад"
+          emptyLabel="Нет складов"
+        />
+        {lines.map((line, index) => {
+          const available = line.productId && warehouseId
+            ? freeWarehouseQuantity(balances, line.productId, warehouseId)
+            : 0;
+          const productItems = snapshot.products
+            .filter((product) => {
+              if (usedProducts.has(product.id) && product.id !== line.productId) {
+                return false;
+              }
+              if (!decreases || !warehouseId) {
+                return true;
+              }
+              return freeWarehouseQuantity(balances, product.id, warehouseId) > 0 || product.id === line.productId;
+            })
+            .map((product) => ({
+              value: product.id,
+              label: productIdentityLabel(product, product.id),
+            }));
+          return (
+            <div key={`adj-line-${index}`} className="space-y-2 rounded-md border p-3">
+              <FieldSelect
+                label={`Товар ${index + 1}`}
+                value={line.productId}
+                items={productItems}
+                onChange={(value) => {
+                  const nextMax = warehouseId ? freeWarehouseQuantity(balances, value, warehouseId) : 0;
+                  setLines((current) =>
+                    current.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? {
+                            productId: value,
+                            quantity: String(decreases && nextMax > 0 ? nextMax : 1),
+                          }
+                        : item,
+                    ),
+                  );
+                }}
+                placeholder="Выберите товар"
+                disabled={!warehouseId}
+              />
+              {line.productId ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} /> : null}
+              <QuantityField
+                value={line.quantity}
+                onChange={(value) =>
+                  setLines((current) =>
+                    current.map((item, itemIndex) => (itemIndex === index ? { ...item, quantity: value } : item)),
+                  )
+                }
+                max={decreases && warehouseId && line.productId ? available : undefined}
+                unit={line.productId ? productById(snapshot, line.productId)?.unit : undefined}
+              />
+            </div>
+          );
+        })}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setLines((current) => [...current, emptyAdjustmentLine()])}
+        >
+          Добавить строку
+        </Button>
+        <FieldSelect
+          label="Исходный документ"
+          value={sourceType || "none"}
+          items={[{ value: "none", label: "Нет" }, ...ADJUSTMENT_SOURCE_ITEMS]}
+          onChange={(value) => {
+            setSourceType(value === "none" ? "" : (value as AdjustmentSourceDocumentType));
+            setSourceId("");
+          }}
+        />
+        {sourceType ? (
+          <FieldSelect
+            label="Документ"
+            value={sourceId}
+            items={sourceDocuments}
+            onChange={setSourceId}
+            placeholder="Выберите документ"
+            emptyLabel="Нет документов этого типа"
+          />
+        ) : null}
+        <label className="space-y-1 text-sm">
+          <span className="font-medium">Объяснение</span>
+          <textarea
+            value={explanation}
+            onChange={(event) => setExplanation(event.target.value)}
+            placeholder="Почему меняется свободный остаток"
+            required
+            aria-required="true"
+            aria-label="Объяснение"
+            rows={3}
+            className="min-h-16 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </label>
+        <FormActions
+          mode="hub"
+          canSubmit={canSubmit}
+          onPost={() => void submit()}
+          postLabel="Провести"
         />
       </div>
     </LogisticsDialog>

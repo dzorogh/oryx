@@ -1,4 +1,6 @@
 import type {
+  AdjustmentOperation,
+  AdjustmentStatus,
   CustomerOrder,
   CustomerOrderLine,
   DocumentHistoryEntry,
@@ -25,12 +27,20 @@ import type {
   ShipmentLine,
   ShipmentReturn,
   ShipmentReturnLine,
+  StockAdjustment,
+  StockAdjustmentLine,
+  StockBalance,
   StockTransaction,
   StoreUser,
   Transfer,
   TransferAllocation,
   TransferLine,
 } from "@/features/logistics/logistics-types";
+import {
+  assertAdjustmentExplanation,
+  assertAdjustmentLines,
+  type AdjustmentDraft,
+} from "@/features/logistics/logistics-adjustments";
 import { derivedStockState, STORE_CURRENT_USER_ID } from "@/features/logistics/logistics-types";
 import {
   formatLogisticsCode,
@@ -291,6 +301,29 @@ const mapReturnLine = (row: Record<string, unknown>): ShipmentReturnLine => ({
   quantity: Number(row.quantity),
 });
 
+const mapAdjustment = (row: Record<string, unknown>): StockAdjustment => {
+  const id = String(row.id);
+  return {
+    id,
+    number: formatLogisticsCode("adjustment", id),
+    operation: row.operation as AdjustmentOperation,
+    warehouseId: String(row.warehouse_id),
+    explanation: row.explanation ? String(row.explanation) : "",
+    sourceDocumentType: (row.source_document_type as DocumentType | null) ?? null,
+    sourceDocumentId: row.source_document_id ? String(row.source_document_id) : null,
+    status: row.status as AdjustmentStatus,
+    createdAt: String(row.created_at),
+    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+  };
+};
+
+const mapAdjustmentLine = (row: Record<string, unknown>): StockAdjustmentLine => ({
+  id: String(row.id),
+  adjustmentId: String(row.adjustment_id),
+  productId: String(row.product_id),
+  quantity: Number(row.quantity),
+});
+
 export const mapTransaction = (row: Record<string, unknown>): StockTransaction => {
   const locationType = row.location_type as StockTransaction["locationType"];
   const assignedToType = mapOwnerType(row.assigned_to_type);
@@ -389,6 +422,8 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     outputAllocations,
     returns,
     returnLines,
+    adjustments,
+    adjustmentLines,
     transactions,
     users,
     documentHistory,
@@ -474,6 +509,18 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
     selectAll("store_return_line", "id,return_id,shipment_line_id,quantity", mapReturnLine, "id"),
     selectAll(
+      "store_adjustment",
+      "id,operation,warehouse_id,explanation,source_document_type,source_document_id,status,created_at,created_by",
+      mapAdjustment,
+      "id",
+    ),
+    selectAll(
+      "store_adjustment_line",
+      "id,adjustment_id,product_id,quantity",
+      mapAdjustmentLine,
+      "id",
+    ),
+    selectAll(
       "store_stock_transaction",
       "id,created_at,product_id,quantity,location_type,location_id,assigned_to_type,assigned_to_id,document_type,document_id",
       mapTransaction,
@@ -510,6 +557,8 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     outputAllocations,
     returns,
     returnLines,
+    adjustments,
+    adjustmentLines,
     transactions,
     users,
     documentHistory,
@@ -726,6 +775,37 @@ export const createProductionForOrder = async (args: {
   return created.id;
 };
 
+export type AdjustmentCreateResult = {
+  id: string;
+  status: "posted";
+};
+
+export const createAndPostAdjustment = async (
+  draft: AdjustmentDraft,
+  balances: StockBalance[],
+): Promise<AdjustmentCreateResult> => {
+  const explanation = assertAdjustmentExplanation(draft.explanation);
+  const lines = assertAdjustmentLines(draft, balances);
+  const created = await rpcJson<{ id: number | string; status: string }>(
+    "store_create_and_post_adjustment",
+    {
+      p_operation: draft.operation,
+      p_warehouse_id: Number(draft.warehouseId),
+      p_explanation: explanation,
+      p_source_document_type: draft.sourceDocumentType ?? null,
+      p_source_document_id: draft.sourceDocumentId ? Number(draft.sourceDocumentId) : null,
+      p_lines: lines.map((line) => ({
+        product_id: Number(line.productId),
+        quantity: line.quantity,
+      })),
+    },
+  );
+  if (created.status !== "posted") {
+    throw new Error("Ожидалась проведённая корректировка");
+  }
+  return { id: String(created.id), status: "posted" };
+};
+
 export const createAndSendTransfer = async (
   input: TransferCreateAndSendInput,
 ): Promise<TransferCreateAndSendResult> => {
@@ -772,6 +852,7 @@ export const addProductionLine = (args: { orderId: string; productId: string; qu
     p_quantity: args.quantity,
   });
 export const syncProductionStock = (id: string) => rpc("store_sync_production_activation", { p_id: id });
+/** Status-only cancel for unposted drafts already supported by the domain. Posted documents use the cancel helper. */
 export const cancelDocument = (kind: string, id: string, status?: string | null) => {
   assertDocumentCanBeCancelled(kind, status);
   return rpc("store_cancel_document", { p_kind: kind, p_id: id });

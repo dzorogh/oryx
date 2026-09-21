@@ -11,6 +11,8 @@ import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { closeCustomerOrder, insertRows, insertReturningId, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
+import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import {
   remainingToReserveForLine,
   sumFreeForProduct,
@@ -309,6 +311,7 @@ export const CustomerOrderDetailPage = () => {
 
   const canAct = order.status === "open";
   const coverage = calculateOrderDocumentCoverage(snapshot, order.id);
+  const cancelGuidance = projectDocumentCancelGuidance({ type: "customer_order", id: order.id }, snapshot, balances);
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: order.number }]}>
@@ -318,6 +321,21 @@ export const CustomerOrderDetailPage = () => {
         expectedEndOn={order.expectedEndOn}
         description={order.description}
         canAct={canAct}
+        toolbarExtra={
+          <DocumentCancelControl
+            guidance={cancelGuidance}
+            reload={reload}
+            onFollowUp={(action) => {
+              if (action.id === "close-customer-order") {
+                void runLogisticsAction(
+                  () => closeCustomerOrder(order.id),
+                  "Открытые резервы сняты, заказ клиента закрыт",
+                  reload,
+                );
+              }
+            }}
+          />
+        }
         onCloseOrder={() => {
           void runLogisticsAction(
             () => closeCustomerOrder(order.id),

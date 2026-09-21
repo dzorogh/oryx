@@ -21,6 +21,12 @@ export type TransferStatus = (typeof TRANSFER_STATUSES)[number];
 export const OUTPUT_STATUSES = ["planned", "done", "cancelled"] as const;
 export type OutputStatus = (typeof OUTPUT_STATUSES)[number];
 
+export const ADJUSTMENT_OPERATIONS = ["write_off", "decrease", "increase"] as const;
+export type AdjustmentOperation = (typeof ADJUSTMENT_OPERATIONS)[number];
+
+export const ADJUSTMENT_STATUSES = ["posted"] as const;
+export type AdjustmentStatus = (typeof ADJUSTMENT_STATUSES)[number];
+
 export const OWNER_TYPES = ["order", "region"] as const;
 export type OwnerType = (typeof OWNER_TYPES)[number];
 
@@ -47,6 +53,7 @@ export const DOCUMENT_TYPES = [
   "transfer",
   "production_order",
   "output",
+  "adjustment",
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
@@ -61,6 +68,7 @@ export const HISTORY_DOCUMENT_TYPES = [
   "transfer",
   "production_order",
   "output",
+  "adjustment",
   "customer_order",
 ] as const;
 export type HistoryDocumentType = (typeof HISTORY_DOCUMENT_TYPES)[number];
@@ -264,6 +272,26 @@ export type ShipmentReturnLine = {
   quantity: number;
 };
 
+export type StockAdjustment = {
+  id: string;
+  number: string;
+  operation: AdjustmentOperation;
+  warehouseId: string;
+  explanation: string;
+  sourceDocumentType: DocumentType | null;
+  sourceDocumentId: string | null;
+  status: AdjustmentStatus;
+  createdAt: string;
+  createdBy: string;
+};
+
+export type StockAdjustmentLine = {
+  id: string;
+  adjustmentId: string;
+  productId: string;
+  quantity: number;
+};
+
 export type StockTransaction = {
   id: string;
   createdAt: string;
@@ -314,6 +342,8 @@ export type LogisticsSnapshot = {
   outputAllocations: ProductionOutputAllocation[];
   returns: ShipmentReturn[];
   returnLines: ShipmentReturnLine[];
+  adjustments: StockAdjustment[];
+  adjustmentLines: StockAdjustmentLine[];
   transactions: StockTransaction[];
   users: StoreUser[];
   documentHistory: DocumentHistoryEntry[];

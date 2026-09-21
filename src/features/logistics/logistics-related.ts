@@ -364,6 +364,19 @@ export const relatedShipmentsForWarehouse = (
       meta: statusMeta(item.status),
     }));
 
+export const relatedAdjustmentsForWarehouse = (
+  snapshot: LogisticsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] =>
+  snapshot.adjustments
+    .filter((item) => item.warehouseId === warehouseId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/adjustments/${item.id}`,
+      label: item.number,
+      meta: statusMeta(item.status),
+    }));
+
 export const relatedProductionsForManufacturer = (
   snapshot: LogisticsSnapshot,
   manufacturerId: string,

@@ -10,6 +10,7 @@ export const LOGISTICS_CODE_PREFIXES = {
   shipment: "SHP",
   output: "OUT",
   return: "RET",
+  adjustment: "ADJ",
   customerOrderLine: "COL",
   productionOrderLine: "POL",
   reservationLine: "RSVL",
@@ -19,6 +20,7 @@ export const LOGISTICS_CODE_PREFIXES = {
   outputLine: "OUTL",
   outputAllocation: "OUA",
   returnLine: "RETL",
+  adjustmentLine: "ADJL",
   stockTransaction: "TXN",
   setting: "SET",
 } as const;
@@ -38,6 +40,7 @@ export const DOCUMENT_PREFIX_FIELDS: Array<{
   { kind: "shipment", label: "Отгрузки", exampleId: "1" },
   { kind: "output", label: "Выпуски", exampleId: "1" },
   { kind: "return", label: "Возвраты", exampleId: "1" },
+  { kind: "adjustment", label: "Корректировки", exampleId: "1" },
   { kind: "product", label: "Товары", exampleId: "1" },
   { kind: "manufacturer", label: "Производители", exampleId: "7" },
   { kind: "warehouse", label: "Склады", exampleId: "1" },

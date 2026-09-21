@@ -28,6 +28,8 @@ export const EMPTY_SNAPSHOT: LogisticsSnapshot = {
   outputAllocations: [],
   returns: [],
   returnLines: [],
+  adjustments: [],
+  adjustmentLines: [],
   transactions: [],
   users: [],
   documentHistory: [],

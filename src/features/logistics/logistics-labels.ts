@@ -1,4 +1,5 @@
 import type {
+  AdjustmentOperation,
   CustomerOrderStatus,
   DocumentStatus,
   DocumentType,
@@ -96,6 +97,7 @@ export const LEDGER_DOCUMENT_KIND_LABELS: Record<DocumentType, string> = {
   transfer: "Перемещение",
   production_order: "Заказ на производство",
   output: "Выпуск",
+  adjustment: "Корректировка",
 };
 
 export const RESERVATION_DIRECTION_LABELS: Record<ReservationDirection, string> = {
@@ -113,6 +115,13 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   transfer: "Перемещение",
   production_order: "Заказ на производство",
   output: "Выпуск",
+  adjustment: "Корректировка",
+};
+
+export const ADJUSTMENT_OPERATION_LABELS: Record<AdjustmentOperation, string> = {
+  write_off: "Списание",
+  decrease: "Корректировка −",
+  increase: "Корректировка +",
 };
 
 export const SOURCE_TYPE_LABELS: Record<SourceType, string> = DOCUMENT_TYPE_LABELS;

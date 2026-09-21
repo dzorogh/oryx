@@ -298,6 +298,8 @@ export const documentLabel = (
       return productionOrderById(snapshot, documentId)?.number ?? documentId;
     case "transfer":
       return snapshot.transfers.find((item) => item.id === documentId)?.number ?? documentId;
+    case "adjustment":
+      return snapshot.adjustments.find((item) => item.id === documentId)?.number ?? documentId;
     default:
       return documentId;
   }

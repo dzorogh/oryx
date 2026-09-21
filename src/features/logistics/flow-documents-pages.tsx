@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { HomeFilterChip } from "@/components/home/home-filter-chip";
@@ -17,15 +16,31 @@ import {
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
 import {
+  projectDocumentCancelGuidance,
+  type CancelGuidance,
+  type CancelGuidanceAction,
+} from "@/features/logistics/logistics-cancel-guidance";
+import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
+import {
   hrefForCustomerOrder,
+  hrefForDocument,
   hrefForWarehouse,
   remainingToOutputForLine,
   remainingToReserveForLine,
   remainingToReturnForLine,
   remainingToShipForLine,
 } from "@/features/logistics/logistics-availability";
-import { ReturnForm, ShipmentForm } from "@/features/logistics/logistics-forms";
-import { expectedEndMeta, formatExpectedEnd, formatQuantity, OUTPUT_STATUS_LABELS } from "@/features/logistics/logistics-labels";
+import { AdjustmentForm, ReservationForm, ReturnForm, ShipmentForm } from "@/features/logistics/logistics-forms";
+import {
+  ADJUSTMENT_OPERATION_LABELS,
+  DOCUMENT_TYPE_LABELS,
+  expectedEndMeta,
+  formatExpectedEnd,
+  formatQuantity,
+  formatSignedQuantity,
+  OUTPUT_STATUS_LABELS,
+} from "@/features/logistics/logistics-labels";
+import { adjustmentSignedQuantity } from "@/features/logistics/logistics-adjustments";
 import {
   customerOrderById,
   productById,
@@ -33,6 +48,7 @@ import {
   productionOrderById,
   warehouseById,
   warehouseCode,
+  documentLabel,
 } from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { LocationLink } from "@/features/logistics/ui/location-link";
@@ -164,6 +180,12 @@ export const ShipmentDetailPage = () => {
         documentType="shipment"
         sourceId={doc?.id}
         onPost={doc ? () => postShipment(doc.id) : undefined}
+        cancelSubject={doc ? { type: "shipment", id: doc.id } : undefined}
+        onCancelFollowUp={(action) => {
+          if (action.id === "open-return") {
+            setReturnOpen(true);
+          }
+        }}
         extraActions={
           doc?.status === "posted" ? (
             <Button type="button" size="sm" variant="outline" onClick={() => setReturnOpen(true)}>
@@ -270,9 +292,156 @@ export const ReturnsPage = () => {
   );
 };
 
+export const AdjustmentsPage = () => {
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
+  const [open, setOpen] = useState(false);
+  const rows = snapshot.adjustments.filter((item) => status === "all" || item.status === status);
+
+  return (
+    <DocumentList
+      title="Корректировки"
+      crumbs="Корректировки"
+      actionLabel="Новая корректировка"
+      snapshot={snapshot}
+      path="/store/logistics/adjustments"
+      rows={rows.map((item) => ({
+        id: item.id,
+        number: item.number,
+        extra: (
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span>{ADJUSTMENT_OPERATION_LABELS[item.operation]}</span>
+            <LogisticsCodeBadge
+              code={warehouseCode(snapshot, item.warehouseId)}
+              href={hrefForWarehouse(item.warehouseId)}
+            />
+          </span>
+        ),
+        products: snapshot.adjustmentLines
+          .filter((line) => line.adjustmentId === item.id)
+          .map((line) => ({
+            productId: line.productId,
+            quantity: line.quantity,
+          })),
+        status: item.status,
+      }))}
+      extraHeader="Операция / склад"
+      isLoading={isLoading}
+      error={error}
+      status={status}
+      onStatus={setStatus}
+      onCreate={() => setOpen(true)}
+    >
+      <AdjustmentForm
+        snapshot={snapshot}
+        balances={balances}
+        open={open}
+        onOpenChange={setOpen}
+        reload={reload}
+        mode="hub"
+      />
+    </DocumentList>
+  );
+};
+
+export const AdjustmentDetailPage = () => {
+  const params = useParams<{ id: string }>();
+  const store = useLogisticsStore();
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
+  const doc = store.snapshot.adjustments.find((item) => item.id === params.id);
+  const lines = store.snapshot.adjustmentLines.filter((line) => line.adjustmentId === params.id);
+  const warehouse = doc ? warehouseById(store.snapshot, doc.warehouseId) : undefined;
+  const sourceHref =
+    doc?.sourceDocumentType && doc.sourceDocumentId
+      ? hrefForDocument(doc.sourceDocumentType, doc.sourceDocumentId)
+      : null;
+  const sourceLabel =
+    doc?.sourceDocumentType && doc.sourceDocumentId
+      ? documentLabel(store.snapshot, doc.sourceDocumentType, doc.sourceDocumentId)
+      : null;
+
+  return (
+    <>
+    <DocumentDetail
+      store={store}
+      title={doc?.number ?? "Корректировка"}
+      crumbs={[{ label: "Корректировки", href: "/store/logistics/adjustments" }, { label: doc?.number ?? "Корректировка" }]}
+      status={doc?.status}
+      documentType="adjustment"
+      sourceId={doc?.id}
+      description={doc?.explanation}
+      cancelSubject={doc ? { type: "adjustment", id: doc.id } : undefined}
+      onCancelFollowUp={(action, guidance) => {
+        if (action.id === "open-adjustment") {
+          setAdjustPreset(guidance.adjustmentPreset);
+          setAdjustOpen(true);
+        }
+      }}
+      related={
+        <>
+          {warehouse ? (
+            <RelatedDocuments
+              title="Склад"
+              items={[
+                {
+                  id: warehouse.id,
+                  href: hrefForWarehouse(warehouse.id),
+                  label: warehouse.code,
+                  meta: doc ? ADJUSTMENT_OPERATION_LABELS[doc.operation] : "",
+                },
+              ]}
+            />
+          ) : null}
+          {doc && sourceHref && sourceLabel && doc.sourceDocumentId ? (
+            <RelatedDocuments
+              title="Исходный документ"
+              items={[
+                {
+                  id: doc.sourceDocumentId,
+                  href: sourceHref,
+                  label: sourceLabel,
+                  meta: doc.sourceDocumentType ? DOCUMENT_TYPE_LABELS[doc.sourceDocumentType] : "",
+                },
+              ]}
+            />
+          ) : null}
+        </>
+      }
+      lines={lines.map((line) => ({
+        id: line.id,
+        productId: line.productId,
+        quantity: line.quantity,
+        quantityLabel: formatSignedQuantity(
+          doc ? adjustmentSignedQuantity(doc.operation, line.quantity) : line.quantity,
+          productById(store.snapshot, line.productId)?.unit,
+        ),
+        place: warehouse ? (
+          <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
+        ) : (
+          "Склад"
+        ),
+        hint: doc?.explanation,
+      }))}
+    />
+    <AdjustmentForm
+      snapshot={store.snapshot}
+      balances={store.balances}
+      open={adjustOpen}
+      onOpenChange={setAdjustOpen}
+      reload={store.reload}
+      mode="hub"
+      preset={adjustPreset}
+    />
+    </>
+  );
+};
+
 export const ReturnDetailPage = () => {
   const params = useParams<{ id: string }>();
   const store = useLogisticsStore();
+  const [reserveOpen, setReserveOpen] = useState(false);
+  const [reservePreset, setReservePreset] = useState<CancelGuidance["reservationPreset"]>();
   const doc = store.snapshot.returns.find((item) => item.id === params.id);
   const lines = store.snapshot.returnLines.filter((line) => line.returnId === params.id);
   const shipment = doc ? store.snapshot.shipments.find((item) => item.id === doc.shipmentId) : undefined;
@@ -280,6 +449,7 @@ export const ReturnDetailPage = () => {
   const warehouse = shipment ? warehouseById(store.snapshot, shipment.warehouseId) : undefined;
 
   return (
+    <>
     <DocumentDetail
       store={store}
       title={doc?.number ?? "Возврат"}
@@ -288,6 +458,13 @@ export const ReturnDetailPage = () => {
       documentType="return"
       sourceId={doc?.id}
       onPost={doc ? () => postReturn(doc.id) : undefined}
+      cancelSubject={doc ? { type: "return", id: doc.id } : undefined}
+      onCancelFollowUp={(action, guidance) => {
+        if (action.id === "open-reservation") {
+          setReservePreset(guidance.reservationPreset);
+          setReserveOpen(true);
+        }
+      }}
       related={
         <>
           {shipment ? (
@@ -324,6 +501,16 @@ export const ReturnDetailPage = () => {
         };
       })}
     />
+    <ReservationForm
+      snapshot={store.snapshot}
+      balances={store.balances}
+      open={reserveOpen}
+      onOpenChange={setReserveOpen}
+      reload={store.reload}
+      mode="hub"
+      preset={reservePreset}
+    />
+    </>
   );
 };
 
@@ -549,10 +736,15 @@ const outputtedAlready = (
 export const OutputDetailPage = () => {
   const params = useParams<{ id: string }>();
   const store = useLogisticsStore();
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
   const doc = store.snapshot.outputs.find((item) => item.id === params.id);
   const lines = store.snapshot.outputLines.filter((line) => line.outputId === params.id);
   const production = doc ? productionOrderById(store.snapshot, doc.productionOrderId) : undefined;
   const allocations = doc ? relatedOrdersForOutput(store.snapshot, doc.id) : [];
+  const cancelGuidance = doc
+    ? projectDocumentCancelGuidance({ type: "output", id: doc.id }, store.snapshot, store.balances)
+    : null;
 
   if (store.isLoading || store.error || !doc) {
     return (
@@ -578,6 +770,18 @@ export const OutputDetailPage = () => {
               >
                 Завершить
               </Button>
+            ) : null}
+            {cancelGuidance ? (
+              <DocumentCancelControl
+                guidance={cancelGuidance}
+                reload={store.reload}
+                onFollowUp={(action, guidance) => {
+                  if (action.id === "open-adjustment") {
+                    setAdjustPreset(guidance.adjustmentPreset);
+                    setAdjustOpen(true);
+                  }
+                }}
+              />
             ) : null}
           </>
         }
@@ -641,6 +845,15 @@ export const OutputDetailPage = () => {
         snapshot={store.snapshot}
         hide="document"
         filter={(entry) => entry.documentType === "output" && entry.documentId === doc.id}
+      />
+      <AdjustmentForm
+        snapshot={store.snapshot}
+        balances={store.balances}
+        open={adjustOpen}
+        onOpenChange={setAdjustOpen}
+        reload={store.reload}
+        mode="hub"
+        preset={adjustPreset}
       />
     </LogisticsPageShell>
   );
@@ -725,8 +938,10 @@ const DocumentDetail = ({
   status,
   documentType,
   sourceId,
+  description,
   onPost,
-  onCancel,
+  cancelSubject,
+  onCancelFollowUp,
   extraActions,
   related,
   lines,
@@ -737,18 +952,28 @@ const DocumentDetail = ({
   status?: DocumentStatus;
   documentType?: DocumentType;
   sourceId?: string;
+  description?: string;
   onPost?: () => Promise<unknown>;
-  onCancel?: () => Promise<unknown>;
+  cancelSubject?: { type: "shipment" | "return" | "adjustment"; id: string };
+  onCancelFollowUp?: (action: CancelGuidanceAction, guidance: CancelGuidance) => void;
   extraActions?: React.ReactNode;
   related?: React.ReactNode;
-  lines: Array<{ id: string; productId: string; quantity: number; place: React.ReactNode; hint?: string }>;
+  lines: Array<{
+    id: string;
+    productId: string;
+    quantity: number;
+    quantityLabel?: string;
+    place: React.ReactNode;
+    hint?: string;
+  }>;
 }) => {
-  const action =
+  const postAction =
     status === "draft" && onPost
       ? () => runLogisticsAction(onPost, "Документ проведён", store.reload)
-      : status === "draft" && onCancel
-        ? () => runLogisticsAction(onCancel, "Document cancelled", store.reload)
-        : undefined;
+      : undefined;
+  const cancelGuidance = cancelSubject
+    ? projectDocumentCancelGuidance(cancelSubject, store.snapshot, store.balances)
+    : null;
 
   if (store.isLoading || store.error || !status) {
     return (
@@ -762,18 +987,21 @@ const DocumentDetail = ({
     <LogisticsPageShell crumbs={crumbs}>
       <LogisticsToolbar
         title={title}
+        description={description}
         actions={
           <>
             {extraActions}
-            {status === "draft" && action ? (
-              <Button type="button" size="sm" onClick={() => void action()}>
+            {postAction ? (
+              <Button type="button" size="sm" onClick={() => void postAction()}>
                 Провести
               </Button>
             ) : null}
-            {status === "draft" && onCancel && action ? (
-              <Button type="button" size="sm" onClick={() => void action()}>
-                Cancel
-              </Button>
+            {cancelGuidance ? (
+              <DocumentCancelControl
+                guidance={cancelGuidance}
+                reload={store.reload}
+                onFollowUp={onCancelFollowUp ?? (() => undefined)}
+              />
             ) : null}
           </>
         }
@@ -787,7 +1015,9 @@ const DocumentDetail = ({
             <TableCell className="px-3 py-2">
               <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
             </TableCell>
-            <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(line.quantity)}</TableCell>
+            <TableCell className="px-3 py-2 text-sm tabular-nums">
+              {line.quantityLabel ?? formatQuantity(line.quantity)}
+            </TableCell>
             <TableCell className="px-3 py-2 text-sm">{line.place}</TableCell>
             <TableCell className="px-3 py-2 text-xs text-muted-foreground">{line.hint ?? "—"}</TableCell>
           </TableRow>

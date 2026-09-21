@@ -37,6 +37,12 @@ export type TransferCreateContext =
   | { kind: "free" }
   | { kind: "order"; customerOrderId: string; orderLines: CustomerOrderLine[] };
 
+export type TransferCreatePreset = {
+  fromWarehouseId?: string;
+  toWarehouseId?: string;
+  lines?: Array<{ productId: string; quantity: number }>;
+};
+
 type TransferCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,6 +50,7 @@ type TransferCreateDialogProps = {
   balances: StockBalance[];
   context: TransferCreateContext;
   onSubmit: (value: TransferCreateSubmitValue) => Promise<boolean>;
+  preset?: TransferCreatePreset;
 };
 
 const emptyLine = (): TransferCreateLineDraft => ({
@@ -66,6 +73,17 @@ const formatExpectedSummary = (value: string): string =>
 
 const lineQuantity = (line: TransferCreateLineDraft): number => Number(line.quantity);
 
+const linesFromPreset = (preset?: TransferCreatePreset): TransferCreateLineDraft[] => {
+  if (!preset?.lines?.length) {
+    return [emptyLine()];
+  }
+  return preset.lines.map((line) => ({
+    key: `line-${line.productId}-${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`,
+    productId: line.productId,
+    quantity: String(line.quantity),
+  }));
+};
+
 export const TransferCreateDialog = ({
   open,
   onOpenChange,
@@ -73,6 +91,7 @@ export const TransferCreateDialog = ({
   balances,
   context,
   onSubmit,
+  preset,
 }: TransferCreateDialogProps) => {
   const liveId = useId();
   const [fromId, setFromId] = useState("");
@@ -85,18 +104,23 @@ export const TransferCreateDialog = ({
   const order = context.kind === "order" ? customerOrderById(snapshot, context.customerOrderId) : undefined;
   const orderNumber = order?.number ?? (context.kind === "order" ? context.customerOrderId : "");
   const contextKey = context.kind === "order" ? `order:${context.customerOrderId}` : "free";
+  const presetKey = [
+    preset?.fromWarehouseId ?? "",
+    preset?.toWarehouseId ?? "",
+    (preset?.lines ?? []).map((line) => `${line.productId}:${line.quantity}`).join(","),
+  ].join("|");
 
   useEffect(() => {
     if (!open) {
       return;
     }
-    setFromId("");
-    setToId("");
+    setFromId(preset?.fromWarehouseId ?? "");
+    setToId(preset?.toWarehouseId ?? "");
     setExpectedEndOn("");
-    setLines([emptyLine()]);
+    setLines(linesFromPreset(preset));
     setFocusKey(null);
     setSubmitting(false);
-  }, [open, contextKey]);
+  }, [open, contextKey, preset, presetKey]);
 
   const availableFor = (productId: string): number => {
     if (!productId || !fromId) {

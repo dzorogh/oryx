@@ -466,6 +466,8 @@ export const hrefForDocument = (documentType: SourceType, documentId: string): s
       return logisticsPath("production-orders", documentId);
     case "transfer":
       return logisticsPath("transfers", documentId);
+    case "adjustment":
+      return logisticsPath("adjustments", documentId);
     default:
       return null;
   }

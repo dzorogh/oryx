@@ -62,6 +62,7 @@ export const TransferDetailHeader = ({
   onReserveInTransit,
   onMarkDelivered,
   onExpectedEndChange,
+  extraActions,
 }: {
   snapshot: LogisticsSnapshot;
   transfer: Transfer;
@@ -72,15 +73,17 @@ export const TransferDetailHeader = ({
   onReserveInTransit: () => void;
   onMarkDelivered: () => void;
   onExpectedEndChange: (value: string) => void;
+  extraActions?: ReactNode;
 }) => {
   const busy = pendingAction != null;
   const showLifecycle = transfer.status === "sent";
 
-  let actions: ReactNode = null;
-  if (showLifecycle) {
+  let actions: ReactNode = extraActions ?? null;
+  if (showLifecycle || extraActions) {
     actions = (
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {canReserveInTransit ? (
+        {extraActions}
+        {showLifecycle && canReserveInTransit ? (
           <Button
             type="button"
             size="sm"
@@ -92,17 +95,19 @@ export const TransferDetailHeader = ({
             Зарезервировать в пути
           </Button>
         ) : null}
-        <Button
-          type="button"
-          size="sm"
-          variant={canReserveInTransit ? "outline" : "default"}
-          className="h-11 min-w-11 md:h-8"
-          disabled={busy}
-          aria-busy={pendingAction === "deliver"}
-          onClick={onMarkDelivered}
-        >
-          Отметить доставленным
-        </Button>
+        {showLifecycle ? (
+          <Button
+            type="button"
+            size="sm"
+            variant={canReserveInTransit ? "outline" : "default"}
+            className="h-11 min-w-11 md:h-8"
+            disabled={busy}
+            aria-busy={pendingAction === "deliver"}
+            onClick={onMarkDelivered}
+          >
+            Отметить доставленным
+          </Button>
+        ) : null}
       </div>
     );
   }

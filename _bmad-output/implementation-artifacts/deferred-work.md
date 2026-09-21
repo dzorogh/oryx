@@ -101,3 +101,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-remove-application-tests.md`
   summary: Зафиксировать допустимый уровень ручной регрессионной проверки критичных потоков после удаления test suite.
   evidence: У Thanks mapping, меню, packing overrides, Reservation direction и других logistics/pricelist потоков больше нет исполняемой регрессионной защиты; это принято prototype-first intent, но риск остаётся явным.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-stock-adjustments.md`
+  summary: Закрыть UPDATE/DELETE у `store_adjustment` / `store_adjustment_line` для anon, не ломая общий open-RLS прототипа.
+  evidence: Новые таблицы повторяют GRANT+RLS остальных `store_*`; иммутабельность сейчас только в RPC/UI.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-stock-adjustments.md`
+  summary: Сериализовать проверку свободного остатка при параллельных списаниях.
+  evidence: `store_qty` читается без `FOR UPDATE`, как у соседних `store_post_*`; два уменьшения могут уйти в минус.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-stock-adjustments.md`
+  summary: Добавить Postgres-проверку `store_create_and_post_adjustment`.
+  evidence: `npm test` гоняет только `buildAdjustmentFacts`; форма пишет через RPC, harness для SQL в раннере нет.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-stock-adjustments.md`
+  summary: После появления `npm run test` обновить фразу в AGENTS.md, что у приложения нет автотестов.
+  evidence: Правка попала бы в agent-context / управляемый блок и не является частью этой складской истории.

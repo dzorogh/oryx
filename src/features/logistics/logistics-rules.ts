@@ -23,6 +23,7 @@ export const IRREVERSIBLE_DOCUMENT_KINDS = [
   "shipment_return",
   "production_output",
   "transfer",
+  "adjustment",
 ] as const;
 
 export const RESERVATION_CANCEL_FORBIDDEN =
@@ -30,6 +31,9 @@ export const RESERVATION_CANCEL_FORBIDDEN =
 
 export const POSTED_DOCUMENT_CANCEL_FORBIDDEN =
   "Проведённый складской документ нельзя отменить. Создайте новый документ.";
+
+export const ADJUSTMENT_CANCEL_FORBIDDEN =
+  "Проведённую корректировку нельзя отменить. Создайте новый документ.";
 
 export const SHIPMENT_OWNER_MUST_BE_ORDER =
   "Отгрузка может списать только резерв заказа клиента.";
@@ -40,6 +44,9 @@ export const isIrreversibleDocumentKind = (kind: string): boolean =>
 export const assertDocumentCanBeCancelled = (kind: string, status?: string | null): void => {
   if (kind === "reservation" || kind === "reservation_release") {
     throw new Error(RESERVATION_CANCEL_FORBIDDEN);
+  }
+  if (kind === "adjustment") {
+    throw new Error(ADJUSTMENT_CANCEL_FORBIDDEN);
   }
   const posted =
     ((kind === "shipment" || kind === "shipment_return" || kind === "return") && status === "posted") ||

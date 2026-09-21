@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { completeTransfer, createAndSendTransfer, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
+import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { hrefForTransfer } from "@/features/logistics/logistics-availability";
 import { ReservationForm } from "@/features/logistics/logistics-forms";
@@ -180,8 +182,12 @@ export const TransferDetailPage = () => {
     [balances, doc, snapshot],
   );
   const [reserveOpen, setReserveOpen] = useState(false);
+  const [reverseOpen, setReverseOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<TransferDetailPendingAction>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const cancelGuidance = doc
+    ? projectDocumentCancelGuidance({ type: "transfer", id: doc.id }, snapshot, balances)
+    : null;
 
   const runDetailAction = async (key: Exclude<TransferDetailPendingAction, null>, action: () => Promise<unknown>, success: string) => {
     if (pendingAction) {
@@ -240,6 +246,22 @@ export const TransferDetailPage = () => {
           canReserveInTransit={projection.canReserveInTransit}
           pendingAction={pendingAction}
           actionError={actionError}
+          extraActions={
+            cancelGuidance ? (
+              <DocumentCancelControl
+                guidance={cancelGuidance}
+                reload={reload}
+                onFollowUp={(action) => {
+                  if (action.id === "mark-delivered") {
+                    void runDetailAction("deliver", () => completeTransfer(doc.id), "Перемещение отмечено доставленным");
+                  }
+                  if (action.id === "open-reverse-transfer") {
+                    setReverseOpen(true);
+                  }
+                }}
+              />
+            ) : null
+          }
           onReserveInTransit={() => setReserveOpen(true)}
           onMarkDelivered={() => {
             void runDetailAction("deliver", () => completeTransfer(doc.id), "Перемещение отмечено доставленным");
@@ -269,6 +291,31 @@ export const TransferDetailPage = () => {
         onOpenChange={setReserveOpen}
         reload={reload}
         preset={{ locationType: "transfer", locationId: doc.id }}
+      />
+      <TransferCreateDialog
+        open={reverseOpen}
+        onOpenChange={setReverseOpen}
+        snapshot={snapshot}
+        balances={balances}
+        context={{ kind: "free" }}
+        preset={cancelGuidance?.transferPreset}
+        onSubmit={async (value) => {
+          const ok = await runLogisticsAction(
+            () =>
+              createAndSendTransfer(
+                freeTransferPayload({
+                  requestKey: newTransferRequestKey(),
+                  fromWarehouseId: value.fromWarehouseId,
+                  toWarehouseId: value.toWarehouseId,
+                  expectedEndOn: value.expectedEndOn,
+                  lines: value.lines,
+                }),
+              ),
+            "Обратное перемещение отправлено",
+            reload,
+          );
+          return ok;
+        }}
       />
     </LogisticsPageShell>
   );

@@ -1,6 +1,7 @@
 // english-ui:ignore-file
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Check, ChevronDown, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -383,6 +384,7 @@ type OrderProgressTrackerProps = {
   onExpectedEndChange: (value: string) => void;
   primaryStages: OrderProgressStage[];
   secondaryStages: OrderProgressStage[];
+  toolbarExtra?: ReactNode;
 };
 
 export const OrderProgressTracker = ({
@@ -395,6 +397,7 @@ export const OrderProgressTracker = ({
   onExpectedEndChange,
   primaryStages,
   secondaryStages,
+  toolbarExtra,
 }: OrderProgressTrackerProps) => {
   const primaryMarkers = resolveStageMarkers(primaryStages);
   const secondaryMarkers = resolveStageMarkers(secondaryStages);
@@ -423,6 +426,7 @@ export const OrderProgressTracker = ({
                 Не задано
               </span>
             ) : null}
+            {toolbarExtra}
             {canAct ? (
               <Button type="button" size="sm" onClick={onCloseOrder} className="shrink-0">
                 Закрыть заказ клиента

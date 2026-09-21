@@ -17,6 +17,7 @@ export const LOGISTICS_PATHS = {
   shipments: logisticsPath("shipments"),
   returns: logisticsPath("returns"),
   reservations: logisticsPath("reservations"),
+  adjustments: logisticsPath("adjustments"),
   ledger: logisticsPath("ledger"),
   warehouses: logisticsPath("warehouses"),
   regions: logisticsPath("regions"),

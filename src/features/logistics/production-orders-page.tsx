@@ -39,6 +39,8 @@ import {
   setProductionStatus,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
+import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
+import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { formatExpectedEnd, formatQuantity, PRODUCTION_STATUS_LABELS } from "@/features/logistics/logistics-labels";
 import {
   customerOrderById,
@@ -416,22 +418,43 @@ export const ProductionOrderDetailPage = () => {
   }
 
   const canEditStatus = order.status !== "closed" && order.status !== "cancelled";
+  const cancelGuidance = projectDocumentCancelGuidance({ type: "production_order", id: order.id }, snapshot, balances);
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы на производство", href: "/store/logistics/production-orders" }, { label: order.number }]}>
       <LogisticsToolbar
         title={order.number}
-        actionLabel={order.status !== "closed" ? "Закрыть заказ на производство" : undefined}
-        onAction={
-          order.status !== "closed"
-            ? () => {
-              void runLogisticsAction(
-                () => closeProductionOrder(order.id),
-                "Резервы сняты, заказ на производство закрыт",
-                reload,
-              );
-            }
-            : undefined
+        actions={
+          <>
+            <DocumentCancelControl
+              guidance={cancelGuidance}
+              reload={reload}
+              onFollowUp={(action) => {
+                if (action.id === "close-production-order") {
+                  void runLogisticsAction(
+                    () => closeProductionOrder(order.id),
+                    "Резервы сняты, заказ на производство закрыт",
+                    reload,
+                  );
+                }
+              }}
+            />
+            {order.status !== "closed" && order.status !== "cancelled" ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  void runLogisticsAction(
+                    () => closeProductionOrder(order.id),
+                    "Резервы сняты, заказ на производство закрыт",
+                    reload,
+                  );
+                }}
+              >
+                Закрыть заказ на производство
+              </Button>
+            ) : null}
+          </>
         }
       >
         <LogisticsMetaField label="Производитель">

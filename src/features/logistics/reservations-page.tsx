@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { getBalanceQuantity } from "@/features/logistics/logistics-balances";
 import { addReservationLine, postReservation } from "@/features/logistics/logistics-api";
+import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
+import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { hrefForOwner, reservationCapForOwner } from "@/features/logistics/logistics-availability";
 import { emptyReservationLine, ReservationForm, ReservationLineFields } from "@/features/logistics/logistics-forms";
 import { FREE_OWNER_LABEL, RESERVATION_DIRECTION_LABELS, formatQuantity } from "@/features/logistics/logistics-labels";
@@ -156,6 +158,7 @@ export const ReservationDetailPage = () => {
   const params = useParams<{ id: string }>();
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
   const [lineOpen, setLineOpen] = useState(false);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
   const [newLine, setNewLine] = useState(emptyReservationLine());
   const doc = snapshot.reservations.find((item) => item.id === params.id);
   const lines = useMemo(
@@ -175,23 +178,35 @@ export const ReservationDetailPage = () => {
 
   const destLabel = ownerLabel(snapshot, doc.toOwnerType, doc.toOwnerId);
   const destHref = hrefForOwner(doc.toOwnerType, doc.toOwnerId);
+  const cancelGuidance = projectDocumentCancelGuidance({ type: "reservation", id: doc.id }, snapshot, balances);
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Резервы", href: "/store/logistics/reservations" }, { label: doc.number }]}>
       <LogisticsToolbar
         title={doc.number}
         actions={
-          doc.status === "draft" ? (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                void runLogisticsAction(() => postReservation(doc.id), "Резерв проведён", reload);
+          <>
+            {doc.status === "draft" ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  void runLogisticsAction(() => postReservation(doc.id), "Резерв проведён", reload);
+                }}
+              >
+                Провести
+              </Button>
+            ) : null}
+            <DocumentCancelControl
+              guidance={cancelGuidance}
+              reload={reload}
+              onFollowUp={(action) => {
+                if (action.id === "open-reservation") {
+                  setFollowUpOpen(true);
+                }
               }}
-            >
-              Провести
-            </Button>
-          ) : null
+            />
+          </>
         }
       >
         <DocumentStatusBadge status={doc.status as ReservationStatus} />
@@ -349,6 +364,15 @@ export const ReservationDetailPage = () => {
           </Button>
         </div>
       </LogisticsDialog>
+      <ReservationForm
+        snapshot={snapshot}
+        balances={balances}
+        open={followUpOpen}
+        onOpenChange={setFollowUpOpen}
+        reload={reload}
+        mode="hub"
+        preset={cancelGuidance.reservationPreset}
+      />
     </LogisticsPageShell>
   );
 };

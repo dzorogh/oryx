@@ -18,6 +18,7 @@ import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { warehouseOwnerLabel } from "@/features/logistics/logistics-lookups";
 import { stockHref } from "@/features/logistics/stock-filters";
 import {
+  relatedAdjustmentsForWarehouse,
   relatedProductionsForManufacturer,
   relatedProductionsForWarehouse,
   relatedShipmentsForWarehouse,
@@ -385,6 +386,7 @@ export const WarehouseDetailPage = () => {
   const transfers = warehouse ? relatedTransfersForWarehouse(snapshot, warehouse.id) : [];
   const shipments = warehouse ? relatedShipmentsForWarehouse(snapshot, warehouse.id) : [];
   const productions = warehouse ? relatedProductionsForWarehouse(snapshot, warehouse.id) : [];
+  const adjustments = warehouse ? relatedAdjustmentsForWarehouse(snapshot, warehouse.id) : [];
 
   const openEdit = () => {
     setName(warehouse?.name ?? "");
@@ -476,6 +478,7 @@ export const WarehouseDetailPage = () => {
         {productions.length > 0 ? (
           <RelatedDocuments title="Заказы на производство" href="/store/logistics/production-orders" items={productions} />
         ) : null}
+        <RelatedDocuments title="Корректировки" href="/store/logistics/adjustments" items={adjustments} />
       </RelatedDocumentsBoard>
       <DocumentLedger
         snapshot={snapshot}
