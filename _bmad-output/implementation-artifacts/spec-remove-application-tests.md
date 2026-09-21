@@ -89,6 +89,22 @@ context: []
 - `verification-gap-2` — `medium`, `defer`: derivation `reservationDirection` теперь может регрессировать без исполняемой проверки; reviewer подтвердил потребителя и демонстрацию.
 - `verification-gap-3` — `low`, `reject`: контракт static-image scanner больше не self-tested, но production scanner не менялся и его команда успешно проверила реальный репозиторий; replacement self-test противоречит выбранной политике.
 - `verification-gap-other-1` — `medium`, `defer`: draft-спека Stock Adjustments требует удалённый `npm run test`; проблема подтверждена, но создана параллельно и не staged.
+- `review-2-blind-1` — `false`, carried: untracked brainstorming memlog и `spec-stock-adjustments.md` не входят в коммит этой реализации; unified diff включает их только для обязательного обзора текущего дерева.
+- `review-2-blind-2` — `medium`, carried defer: параллельная draft-спека Stock Adjustments ссылается на удалённые test-файл и npm-команду; это подтверждённая отдельная работа, уже записанная в deferred-work.
+- `review-2-blind-3` — `medium`, carried defer: prototype-first правка находится внутри managed-блока `AGENTS.md` и требует устойчивого изменения генератора; уже отложено отдельно.
+- `review-2-blind-4` — `medium`, carried defer: `lint` и `check:deps` остаются красными из-за существовавших до chore продуктовых ошибок и устаревших зависимостей; восстановление baseline уже отложено.
+- `review-2-blind-5` — `false`: задачи удаления выполнены, а оставшиеся команды доступны и не зависят от удалённых runners; зелёный baseline не заявлен как результат этого chore и его прежние сбои задокументированы.
+- `review-2-blind-6` — `low`, carried defer: утверждение Comments об успешном `check:deps` предшествует chore и противоречит текущему baseline; исправление уже отложено.
+- `review-2-blind-7` — `false`, carried: основной документ Comments сохраняет описание поведения; удалён только обязательный список автоматизированных сценариев, а ручная проверка явно добавлена.
+- `review-2-blind-8` — `medium`, carried defer: удаление menu e2e оставляет навигацию без автоматического smoke; это осознанное следствие политики и риск уже отложен.
+- `review-2-blind-9` — `false`: удалённый `bench-packing.mjs` не измерял packing engine, а только время запуска Vitest-теста; frozen intent прямо разрешает удалить этот сломанный псевдобенчмарк и его команды.
+- `review-2-blind-10` — `false`: после удаления first-party runners ни одна команда проекта не создаёт coverage, Playwright или Stryker outputs; сохранение защитных ignores поддерживало бы мёртвую тестовую инфраструктуру.
+- `review-2-blind-11` — `false`, carried: Playwright остаётся только optional peer metadata Next.js; чистая установка и корневой manifest не содержат его как прямую зависимость, что соответствует acceptance criterion.
+- `review-2-blind-12` — `false`: повторный `npm install --package-lock-only --ignore-scripts` не изменил lockfile; наблюдаемый churn — воспроизводимый результат пересчёта графа после удаления test-only пакетов.
+- `review-2-blind-13` — `false`, carried: Store PIM документ содержит специфичный локальный checklist, а канонический полный baseline остаётся в README/AGENTS; Stock указан как соседний маршрут, UI которого chore не менял.
+- `review-2-edge-1` — `medium`, carried defer: draft-спека Stock Adjustments требует отсутствующие test-файл и `npm run test`; параллельный untracked-файл уже вынесен в deferred-work.
+- `review-2-verification-1` — `medium`, carried defer: packing `orderOverride` теряет исполняемую регрессионную защиту; это подтверждённый и уже отложенный риск принятой prototype-first политики.
+- `review-2-verification-2` — `medium`, carried defer: `reservationDirection` теряет исполняемую проверку классификации; это подтверждённый и уже отложенный риск принятой prototype-first политики.
 
 ## Verification
 
