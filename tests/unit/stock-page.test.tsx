@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StockPage } from "@/features/logistics/stock-page";
 import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
@@ -117,15 +118,6 @@ beforeEach(() => {
   storeMock.isLoading = false;
   storeMock.error = null;
   navigationMock.reset();
-  Object.defineProperty(window, "matchMedia", {
-    writable: true,
-    value: (query: string) => ({
-      matches: false,
-      media: query,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-    }),
-  });
 });
 
 afterEach(() => {
@@ -148,7 +140,21 @@ describe("stock page", () => {
     storeMock.isLoading = true;
     render(<StockPage />);
 
-    expect(screen.getByRole("button", { name: "Open stock filters" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Открыть фильтры остатков" })).toBeDisabled();
+  });
+
+  it("opens filters in a drawer instead of an inline panel", async () => {
+    const user = userEvent.setup();
+    render(<StockPage />);
+
+    await user.click(screen.getByRole("button", { name: "Открыть фильтры остатков" }));
+
+    const drawer = await screen.findByRole("dialog", { name: "Фильтры" });
+    expect(drawer).toBeInTheDocument();
+    expect(drawer).toHaveTextContent("Закреплено за");
+    expect(drawer).toHaveTextContent("Место");
+    expect(drawer).toHaveTextContent("Регион");
+    expect(screen.queryByRole("complementary", { name: "Фильтры остатков" })).not.toBeInTheDocument();
   });
 
   it("ignores unknown warehouse and region URL ids so the matrix stays populated", () => {

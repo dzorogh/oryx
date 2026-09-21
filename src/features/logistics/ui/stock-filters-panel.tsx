@@ -1,8 +1,8 @@
+// english-ui:ignore-file
 "use client";
 
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -11,23 +11,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ASSIGNED_TO_LABEL } from "@/features/logistics/logistics-labels";
 import { regionSelectItems, warehouseSelectItems } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import type { StockGroup, StockLocationFilter, StockOwnerFilter, StockViewFilter } from "@/features/logistics/stock-filters";
-import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 
 const OWNER_OPTIONS: Array<{ value: StockOwnerFilter; label: string }> = [
-  { value: "all", label: "All owners" },
-  { value: "free", label: "Free" },
-  { value: "region", label: "Region reserve" },
-  { value: "order", label: "Order reserve" },
+  { value: "all", label: "Все" },
+  { value: "free", label: "Свободно" },
+  { value: "region", label: "Резерв региона" },
+  { value: "order", label: "Резерв заказа" },
 ];
 
 const LOCATION_OPTIONS: Array<{ value: StockLocationFilter; label: string }> = [
-  { value: "all", label: "All locations" },
-  { value: "warehouse", label: "Warehouses" },
-  { value: "production", label: "Production" },
-  { value: "transfer", label: "Transfers" },
+  { value: "all", label: "Все места" },
+  { value: "warehouse", label: "Склады" },
+  { value: "production", label: "Производство" },
+  { value: "transfer", label: "Перемещения" },
 ];
 
 const FilterSelect = ({
@@ -60,39 +61,36 @@ const FilterSelect = ({
   </label>
 );
 
-export const StockFiltersPanel = ({
-  snapshot,
-  group,
-  filters,
-  hasActiveFilters,
-  onChange,
-  onReset,
-  onClose,
-  variant,
-  id,
-}: {
+const filterDescription = (group: StockGroup) => {
+  if (group === "products") {
+    return "Закреплено за, место и регион для матрицы товаров.";
+  }
+  if (group === "warehouses") {
+    return "Склад, закрепление и регион для секций склада.";
+  }
+  return "Регион, место и склад для резерва региона.";
+};
+
+type StockFiltersFieldsProps = {
   snapshot: LogisticsSnapshot;
   group: StockGroup;
   filters: StockViewFilter;
-  hasActiveFilters: boolean;
   onChange: (patch: Partial<StockViewFilter>) => void;
-  onReset: () => void;
-  onClose?: () => void;
-  variant: "aside" | "sheet";
-  id?: string;
-}) => {
+};
+
+export const StockFiltersPanel = ({ snapshot, group, filters, onChange }: StockFiltersFieldsProps) => {
   const warehouseOptions = [
-    { value: "all", label: "All warehouses" },
+    { value: "all", label: "Все склады" },
     ...warehouseSelectItems(snapshot),
   ];
   const regionOptions = [
-    { value: "all", label: "All regions" },
+    { value: "all", label: "Все регионы" },
     ...regionSelectItems(snapshot),
   ];
 
   const ownerSelect = (
     <FilterSelect
-      label="Owner"
+      label={ASSIGNED_TO_LABEL}
       value={filters.owner}
       options={OWNER_OPTIONS}
       onChange={(value) => onChange({ owner: value as StockOwnerFilter })}
@@ -100,7 +98,7 @@ export const StockFiltersPanel = ({
   );
   const locationSelect = (
     <FilterSelect
-      label="Location"
+      label="Место"
       value={filters.location}
       options={LOCATION_OPTIONS}
       onChange={(value) => onChange({ location: value as StockLocationFilter })}
@@ -108,7 +106,7 @@ export const StockFiltersPanel = ({
   );
   const warehouseSelect = (
     <FilterSelect
-      label="Warehouse"
+      label="Склад"
       value={filters.warehouseId ?? "all"}
       options={warehouseOptions}
       onChange={(value) => onChange({ warehouseId: !value || value === "all" ? null : value })}
@@ -116,87 +114,81 @@ export const StockFiltersPanel = ({
   );
   const regionSelect = (
     <FilterSelect
-      label="Region"
+      label="Регион"
       value={filters.regionId ?? "all"}
       options={regionOptions}
       onChange={(value) => onChange({ regionId: !value || value === "all" ? null : value })}
     />
   );
 
-  const controls =
-    group === "products" ? (
-      <>
+  if (group === "products") {
+    return (
+      <div className="grid gap-4 pb-4">
         {ownerSelect}
         {locationSelect}
         {regionSelect}
-      </>
-    ) : group === "warehouses" ? (
-      <>
-        {warehouseSelect}
-        {ownerSelect}
-        {regionSelect}
-      </>
-    ) : (
-      <>
-        {regionSelect}
-        {locationSelect}
-        {warehouseSelect}
-      </>
+      </div>
     );
+  }
 
-  const body = (
-    <div className="grid gap-3">
-      {controls}
-      {hasActiveFilters ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onReset}
-          className="justify-start gap-1 text-muted-foreground"
-          aria-label="Reset stock filters"
-        >
-          <X aria-hidden className="size-3.5" />
-          Reset
-        </Button>
-      ) : null}
-    </div>
-  );
-
-  if (variant === "sheet") {
-    return body;
+  if (group === "warehouses") {
+    return (
+      <div className="grid gap-4 pb-4">
+        {warehouseSelect}
+        {ownerSelect}
+        {regionSelect}
+      </div>
+    );
   }
 
   return (
-    <aside id={id} className="w-full shrink-0 lg:w-[min(40vw,30rem)] lg:min-w-[20rem]" aria-label="Stock filters">
-      <Card size="sm" className={logisticsCardClass}>
-        <div className="flex items-start justify-between gap-2 px-3">
-          <div className="min-w-0 space-y-1">
-            <h2 className="text-sm font-semibold">Filters</h2>
-            <p className="text-xs text-muted-foreground">
-              {group === "products"
-                ? "Owner, location, and region for the product matrix."
-                : group === "warehouses"
-                  ? "Warehouse, owner, and region for warehouse sections."
-                  : "Region, location, and warehouse for region reserve."}
-            </p>
-          </div>
-          {onClose ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="shrink-0 gap-1 text-muted-foreground"
-              aria-label="Close stock filters"
-            >
-              <X aria-hidden className="size-3.5" />
-              Close
-            </Button>
-          ) : null}
-        </div>
-        <CardContent className="pt-0">{body}</CardContent>
-      </Card>
-    </aside>
+    <div className="grid gap-4 pb-4">
+      {regionSelect}
+      {locationSelect}
+      {warehouseSelect}
+    </div>
   );
 };
+
+export const StockFiltersSheet = ({
+  open,
+  onOpenChange,
+  snapshot,
+  group,
+  filters,
+  hasActiveFilters,
+  onChange,
+  onReset,
+  id,
+}: StockFiltersFieldsProps & {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  hasActiveFilters: boolean;
+  onReset: () => void;
+  id?: string;
+}) => (
+  <Sheet open={open} onOpenChange={onOpenChange}>
+    <SheetContent side="right" className="w-full sm:max-w-md" id={id}>
+      <SheetHeader>
+        <SheetTitle>Фильтры</SheetTitle>
+        <SheetDescription>{filterDescription(group)}</SheetDescription>
+      </SheetHeader>
+      <StockFiltersPanel snapshot={snapshot} group={group} filters={filters} onChange={onChange} />
+      <SheetFooter className="border-t bg-muted/30">
+        {hasActiveFilters ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onReset}
+            className="justify-start gap-1 text-muted-foreground"
+            aria-label="Сбросить фильтры остатков"
+          >
+            <X aria-hidden className="size-3.5" />
+            Сбросить фильтры
+          </Button>
+        ) : null}
+      </SheetFooter>
+    </SheetContent>
+  </Sheet>
+);

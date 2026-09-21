@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -6,7 +7,6 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import {
@@ -30,14 +30,14 @@ import {
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
-import { StockFiltersPanel } from "@/features/logistics/ui/stock-filters-panel";
+import { StockFiltersSheet } from "@/features/logistics/ui/stock-filters-panel";
 import { StockProductsMatrix } from "@/features/logistics/ui/stock-products-matrix";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const GROUP_TABS: Array<{ id: StockGroup; label: string }> = [
-  { id: "products", label: "Products" },
-  { id: "warehouses", label: "Warehouses" },
-  { id: "regions", label: "Regions" },
+  { id: "products", label: "Товары" },
+  { id: "warehouses", label: "Склады" },
+  { id: "regions", label: "Регионы" },
 ];
 
 const STOCK_TABPANEL_ID = "stock-tabpanel";
@@ -51,28 +51,10 @@ const compareProductName = (snapshot: LogisticsSnapshot, leftId: string, rightId
   return name(leftId).localeCompare(name(rightId), "en");
 };
 
-const useDesktopFilters = () => {
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
-    const sync = () => setIsDesktop(media.matches);
-    media.addEventListener("change", sync);
-    const frame = requestAnimationFrame(sync);
-    return () => {
-      cancelAnimationFrame(frame);
-      media.removeEventListener("change", sync);
-    };
-  }, []);
-
-  return isDesktop;
-};
-
 const StockPageContent = () => {
   const { snapshot, balances, isLoading, error } = useLogisticsStore();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const isDesktop = useDesktopFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const dataReady = !isLoading && !error;
   const snapshotOptions = dataReady ? snapshot : undefined;
@@ -145,8 +127,8 @@ const StockPageContent = () => {
     );
 
   const emptyMessage = hasActiveFilters
-    ? "No on-hand stock matches the selected filters."
-    : "No on-hand stock yet.";
+    ? "Нет наличия по выбранным фильтрам."
+    : "Пока нет наличия.";
 
   const filtersPanelProps = {
     snapshot,
@@ -158,13 +140,12 @@ const StockPageContent = () => {
   };
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Stock" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Остатки" }]}>
       <LogisticsToolbar
-        title="Stock"
-        description="On-hand stock by owner and location. Shipped customer quantity is not included."
+        title="Остатки"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Stock grouping">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Группировка остатков">
             {GROUP_TABS.map((item) => (
               <HomeFilterChip
                 key={item.id}
@@ -186,16 +167,16 @@ const StockPageContent = () => {
               size="sm"
               onClick={resetFilters}
               className="ml-auto gap-1 text-muted-foreground"
-              aria-label="Reset stock filters"
+              aria-label="Сбросить фильтры остатков"
             >
               <X aria-hidden className="size-3.5" />
-              Reset
+              Сбросить
             </Button>
           ) : null}
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="min-w-0 flex-1">
-            <span className="sr-only">Search by name or SKU</span>
+            <span className="sr-only">Поиск по названию или артикулу</span>
             <div className="relative">
               <Search
                 aria-hidden
@@ -204,9 +185,9 @@ const StockPageContent = () => {
               <Input
                 value={filters.query}
                 onChange={(event) => updateFilters({ query: event.target.value })}
-                placeholder="Search by name or SKU"
+                placeholder="Поиск по названию или артикулу"
                 className="pl-8"
-                aria-label="Search stock by name or SKU"
+                aria-label="Поиск остатков по названию или артикулу"
               />
             </div>
           </label>
@@ -214,14 +195,15 @@ const StockPageContent = () => {
             type="button"
             variant={filtersOpen || hasActiveFilters ? "default" : "outline"}
             size="sm"
-            onClick={() => setFiltersOpen((open) => !open)}
+            onClick={() => setFiltersOpen(true)}
             disabled={!dataReady}
             aria-expanded={filtersOpen}
             aria-controls={STOCK_FILTERS_PANEL_ID}
-            aria-label={filtersOpen ? "Close stock filters" : "Open stock filters"}
+            aria-haspopup="dialog"
+            aria-label="Открыть фильтры остатков"
           >
             <SlidersHorizontal aria-hidden className="size-3.5" />
-            Filters
+            Фильтры
           </Button>
         </div>
       </LogisticsToolbar>
@@ -230,52 +212,29 @@ const StockPageContent = () => {
       {error ? <LogisticsError message={error} /> : null}
 
       {dataReady ? (
-        <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-start">
-          <div
-            id={STOCK_TABPANEL_ID}
-            role="tabpanel"
-            aria-labelledby={stockTabId(filters.group)}
-            className="min-w-0 flex-1"
-          >
-            <StockProductsMatrix
-              snapshot={snapshot}
-              group={filters.group}
-              productRows={productRows}
-              warehouseSections={warehouseSections}
-              regionSections={regionSections}
-              empty={emptyMessage}
-            />
-          </div>
-          {filtersOpen && isDesktop ? (
-            <StockFiltersPanel
-              {...filtersPanelProps}
-              id={STOCK_FILTERS_PANEL_ID}
-              variant="aside"
-              onClose={() => setFiltersOpen(false)}
-            />
-          ) : null}
+        <div
+          id={STOCK_TABPANEL_ID}
+          role="tabpanel"
+          aria-labelledby={stockTabId(filters.group)}
+          className="min-w-0"
+        >
+          <StockProductsMatrix
+            snapshot={snapshot}
+            group={filters.group}
+            productRows={productRows}
+            warehouseSections={warehouseSections}
+            regionSections={regionSections}
+            empty={emptyMessage}
+          />
         </div>
       ) : null}
 
-      <Sheet open={filtersOpen && !isDesktop} onOpenChange={setFiltersOpen}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-md"
-          id={!isDesktop ? STOCK_FILTERS_PANEL_ID : undefined}
-        >
-          <SheetHeader>
-            <SheetTitle>Filters</SheetTitle>
-            <SheetDescription>
-              {filters.group === "products"
-                ? "Owner, location, and region for the product matrix."
-                : filters.group === "warehouses"
-                  ? "Warehouse, owner, and region for warehouse sections."
-                  : "Region, location, and warehouse for region reserve."}
-            </SheetDescription>
-          </SheetHeader>
-          <StockFiltersPanel {...filtersPanelProps} variant="sheet" />
-        </SheetContent>
-      </Sheet>
+      <StockFiltersSheet
+        {...filtersPanelProps}
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        id={STOCK_FILTERS_PANEL_ID}
+      />
     </LogisticsPageShell>
   );
 };
@@ -283,7 +242,7 @@ const StockPageContent = () => {
 export const StockPage = () => (
   <Suspense
     fallback={
-      <LogisticsPageShell crumbs={[{ label: "Stock" }]}>
+      <LogisticsPageShell crumbs={[{ label: "Остатки" }]}>
         <LogisticsLoading />
       </LogisticsPageShell>
     }

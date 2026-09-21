@@ -91,17 +91,13 @@ const headerTexts = () => screen.getAllByRole("columnheader").map((header) => he
 
 const forbiddenHeaders = ["SKU", "Unit", "Plant", "Shipped", "Customer"];
 
-const renderFilters = (group: "products" | "warehouses" | "regions", onClose?: () => void) =>
+const renderFilters = (group: "products" | "warehouses" | "regions") =>
   render(
     <StockFiltersPanel
       snapshot={snapshot}
       group={group}
       filters={defaultStockViewFilter(group)}
-      hasActiveFilters={false}
       onChange={() => undefined}
-      onReset={() => undefined}
-      onClose={onClose}
-      variant="aside"
     />,
   );
 
@@ -261,52 +257,39 @@ describe("stock products matrix", () => {
 });
 
 describe("stock filters panel", () => {
-  it("shows context filters for each grouping and a Close action on desktop", async () => {
-    const user = userEvent.setup();
-    const onClose = vi.fn();
-    const { rerender } = renderFilters("products", onClose);
+  it("shows context filters for each grouping", () => {
+    const { rerender } = renderFilters("products");
 
-    expect(screen.getByRole("combobox", { name: "Owner" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Location" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Region" })).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Warehouse" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Закреплено за" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Место" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Регион" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Склад" })).not.toBeInTheDocument();
 
     rerender(
       <StockFiltersPanel
         snapshot={snapshot}
         group="warehouses"
         filters={defaultStockViewFilter("warehouses")}
-        hasActiveFilters={false}
         onChange={() => undefined}
-        onReset={() => undefined}
-        onClose={onClose}
-        variant="aside"
       />,
     );
-    expect(screen.getByRole("combobox", { name: "Warehouse" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Owner" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Region" })).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Склад" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Закреплено за" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Регион" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Место" })).not.toBeInTheDocument();
 
     rerender(
       <StockFiltersPanel
         snapshot={snapshot}
         group="regions"
         filters={defaultStockViewFilter("regions")}
-        hasActiveFilters={false}
         onChange={() => undefined}
-        onReset={() => undefined}
-        onClose={onClose}
-        variant="aside"
       />,
     );
-    expect(screen.getByRole("combobox", { name: "Region" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Location" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Warehouse" })).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Owner" })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Close stock filters" }));
-    expect(onClose).toHaveBeenCalledOnce();
+    expect(screen.getByRole("combobox", { name: "Регион" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Место" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Склад" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Закреплено за" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Apply" })).not.toBeInTheDocument();
   });
 
@@ -318,34 +301,28 @@ describe("stock filters panel", () => {
         snapshot={snapshot}
         group="products"
         filters={defaultStockViewFilter("products")}
-        hasActiveFilters={false}
         onChange={onChange}
-        onReset={() => undefined}
-        variant="aside"
       />,
     );
 
-    await chooseOption(user, "Owner", "Free");
-    await chooseOption(user, "Owner", "All owners");
-    await chooseOption(user, "Location", "Warehouses");
-    await chooseOption(user, "Location", "All locations");
-    await chooseOption(user, "Region", "REG-1 · Nordics");
-    await chooseOption(user, "Region", "All regions");
+    await chooseOption(user, "Закреплено за", "Свободно");
+    await chooseOption(user, "Закреплено за", "Все");
+    await chooseOption(user, "Место", "Склады");
+    await chooseOption(user, "Место", "Все места");
+    await chooseOption(user, "Регион", "REG-1 · Nordics");
+    await chooseOption(user, "Регион", "Все регионы");
 
     rerender(
       <StockFiltersPanel
         snapshot={snapshot}
         group="warehouses"
         filters={defaultStockViewFilter("warehouses")}
-        hasActiveFilters={false}
         onChange={onChange}
-        onReset={() => undefined}
-        variant="aside"
       />,
     );
 
-    await chooseOption(user, "Warehouse", "WH-2");
-    await chooseOption(user, "Warehouse", "All warehouses");
+    await chooseOption(user, "Склад", "WH-2");
+    await chooseOption(user, "Склад", "Все склады");
 
     expect(onChange.mock.calls.map((call) => call[0])).toEqual([
       { owner: "free" },
