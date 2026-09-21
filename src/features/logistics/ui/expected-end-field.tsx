@@ -12,6 +12,9 @@ type ExpectedEndFieldProps = {
   optional?: boolean;
   hint?: string;
   layout?: "stack" | "inline";
+  disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
 };
 
 export const ExpectedEndField = ({
@@ -22,6 +25,9 @@ export const ExpectedEndField = ({
   optional = false,
   hint,
   layout = "stack",
+  disabled = false,
+  invalid = false,
+  errorId,
 }: ExpectedEndFieldProps) => {
   const caption = optional ? (
     <span className="font-medium">
@@ -32,14 +38,17 @@ export const ExpectedEndField = ({
     <span className="font-medium">{label}</span>
   );
   const hintId = hint ? `${id}-hint` : undefined;
+  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
   const input = (
     <Input
       id={id}
       type="date"
       value={value}
-      aria-describedby={hintId}
+      disabled={disabled}
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
       onChange={(event) => onChange(event.target.value)}
-      className={layout === "inline" ? "w-[11.5rem]" : undefined}
+      className={layout === "inline" ? "w-[11.5rem] max-w-full" : "w-full min-w-0 max-w-full"}
     />
   );
   const hintLine = hint ? (

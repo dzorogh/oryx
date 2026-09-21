@@ -157,3 +157,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-document-cancellation-guidance.md`
   summary: Список корректировок показывает draft/cancelled, нет seed ADJ и related-блоков.
   evidence: Зависимость `spec-stock-adjustments`; ADJ проводится без черновика, seed и related не входили в помощник отмены.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-production-order-detail-redesign.md`
+  summary: Нет автотеста идемпотентности `store_create_production_output`.
+  evidence: Утверждённая спека запрещает новый test suite. Повтор ключа и откат транзакции проверены устройством RPC, не тестом.

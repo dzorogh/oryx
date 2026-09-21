@@ -639,7 +639,15 @@ export const createAndPostShipment = async (
   return { id: String(created.id), direction: created.direction };
 };
 
+export const newProductionOutputRequestKey = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `out-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 export const createProductionOutput = async (args: {
+  requestKey: string;
   orderId: string;
   lineId: string;
   productId: string;
@@ -652,38 +660,28 @@ export const createProductionOutput = async (args: {
   };
   expectedEndOn?: string | null;
   complete?: boolean;
-}) => {
+}): Promise<string> => {
   if (args.allocation && args.allocation.quantity > 0) {
-    await createAndPostReservation({
-      locationType: "production_order",
-      locationId: args.orderId,
-      toOwnerType: args.allocation.ownerType,
-      toOwnerId: args.allocation.ownerId,
-      lines: [
-        {
-          productId: args.allocation.productId,
-          quantity: args.allocation.quantity,
-          fromOwnerType: null,
-          fromOwnerId: null,
-        },
-      ],
-    });
+    if (args.allocation.productId !== args.productId) {
+      throw new Error("Товар резерва должен совпадать с товаром выпуска");
+    }
+    if (args.allocation.quantity > args.quantity) {
+      throw new Error("Занятое количество не может превышать выпуск");
+    }
   }
-  const id = await insertReturningId("store_output", {
-    production_order_id: args.orderId,
-    status: "planned",
-    expected_end_on: args.expectedEndOn || null,
+  const created = await rpcJson<{ id: number | string }>("store_create_production_output", {
+    p_request_key: args.requestKey,
+    p_production_order_id: Number(args.orderId),
+    p_production_order_line_id: Number(args.lineId),
+    p_product_id: Number(args.productId),
+    p_quantity: args.quantity,
+    p_expected_end_on: args.expectedEndOn || null,
+    p_complete: args.complete !== false,
+    p_allocation_owner_type: args.allocation?.quantity ? args.allocation.ownerType : null,
+    p_allocation_owner_id: args.allocation?.quantity ? Number(args.allocation.ownerId) : null,
+    p_allocation_quantity: args.allocation?.quantity ?? null,
   });
-  await insertRows("store_output_line", {
-    output_id: id,
-    production_order_line_id: args.lineId,
-    product_id: args.productId,
-    quantity: args.quantity,
-  });
-  if (args.complete !== false) {
-    await completeOutput(id);
-  }
-  return id;
+  return String(created.id);
 };
 
 export const createProductionForOrder = async (args: {

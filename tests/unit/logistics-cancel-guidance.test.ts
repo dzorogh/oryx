@@ -208,8 +208,9 @@ describe("помощник отмены складских документов"
     assert.equal(guidance.actions[0]?.id, "close-production-order");
     assert.equal(guidance.actions[0]?.label, "Закрыть заказ");
     assert.equal(guidance.closeEffects, CANCEL_GUIDANCE_PRODUCTION_CLOSE);
-    assert.match(guidance.closeEffects ?? "", /незавершённого производства/);
-    assert.match(guidance.closeEffects ?? "", /выпуски сохранятся/);
+    assert.match(guidance.closeEffects ?? "", /незавершённый остаток/);
+    assert.match(guidance.closeEffects ?? "", /история движений сохранится/);
+    assert.match(guidance.closeEffects ?? "", /Завершённые выпуски и связанные документы не отменяются/);
   });
 
   it("для безопасного черновика подтверждает только смену статуса", () => {

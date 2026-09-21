@@ -1,7 +1,7 @@
 // english-ui:ignore-file
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { HomeFilterChip } from "@/components/home/home-filter-chip";
@@ -11,6 +11,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import {
   completeOutput,
   createProductionOutput,
+  newProductionOutputRequestKey,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
 import {
@@ -531,6 +532,8 @@ export const OutputsPage = () => {
   const [allocOrderLineId, setAllocOrderLineId] = useState("none");
   const [allocQty, setAllocQty] = useState("0");
   const [expectedEndOn, setExpectedEndOn] = useState("");
+  const requestKeyRef = useRef(newProductionOutputRequestKey());
+  const creatingRef = useRef(false);
   const rows = snapshot.outputs.filter((item) => status === "all" || item.status === status);
   const prodLines = snapshot.productionOrderLines.filter((line) => line.orderId === orderId);
   const selectedLine = prodLines.find((line) => line.id === lineId);
@@ -542,7 +545,14 @@ export const OutputsPage = () => {
     ? Math.min(Number(quantity) || remaining, remainingToReserveForLine(allocLine, balances))
     : 0;
 
+  const renewOutputKey = () => {
+    requestKeyRef.current = newProductionOutputRequestKey();
+  };
+
   const create = async (complete: boolean) => {
+    if (creatingRef.current) {
+      return;
+    }
     if (!orderId || !selectedLine || !isAllowedQuantity(quantity, remaining)) {
       toast.error("Выберите строку заказа на производство и количество в пределах плана");
       return;
@@ -560,9 +570,11 @@ export const OutputsPage = () => {
       toast.error(caught instanceof Error ? caught.message : "Проверьте количество");
       return;
     }
+    creatingRef.current = true;
     const ok = await runLogisticsAction(
       () =>
         createProductionOutput({
+          requestKey: requestKeyRef.current,
           orderId,
           lineId: selectedLine.id,
           productId: selectedLine.productId,
@@ -582,7 +594,9 @@ export const OutputsPage = () => {
       complete ? "Выпуск завершён" : "Выпуск запланирован",
       reload,
     );
+    creatingRef.current = false;
     if (ok) {
+      renewOutputKey();
       setOpen(false);
       setExpectedEndOn("");
     }
@@ -642,7 +656,12 @@ export const OutputsPage = () => {
       ) : null}
       <LogisticsDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            renewOutputKey();
+          }
+        }}
         title="Новый выпуск"
       >
         <div className="flex flex-col gap-3">
@@ -655,6 +674,7 @@ export const OutputsPage = () => {
             onChange={(value) => {
               setOrderId(value);
               setLineId("");
+              renewOutputKey();
             }}
           />
           <FieldSelect
@@ -668,12 +688,22 @@ export const OutputsPage = () => {
                 `осталось ${formatQuantity(remainingToOutputForLine(snapshot, line.id, line.quantity))}`,
               ),
             }))}
-            onChange={setLineId}
+            onChange={(value) => {
+              setLineId(value);
+              renewOutputKey();
+            }}
           />
           {selectedLine ? (
             <AvailabilityPanel snapshot={snapshot} balances={balances} productId={selectedLine.productId} />
           ) : null}
-          <QuantityField value={quantity} onChange={setQuantity} max={selectedLine ? remaining : undefined} />
+          <QuantityField
+            value={quantity}
+            onChange={(value) => {
+              setQuantity(value);
+              renewOutputKey();
+            }}
+            max={selectedLine ? remaining : undefined}
+          />
           <FieldSelect
             label="Зарезервировать под строку заказа клиента"
             value={allocOrderLineId}
@@ -687,18 +717,30 @@ export const OutputsPage = () => {
                   label: `${customerOrderById(snapshot, line.orderId)?.number ?? line.orderId} · можно ${formatQuantity(remainingToReserveForLine(line, balances))}`,
                 })),
             ]}
-            onChange={setAllocOrderLineId}
+            onChange={(value) => {
+              setAllocOrderLineId(value);
+              renewOutputKey();
+            }}
           />
           {allocLine ? (
             <QuantityField
               label="Занятое количество"
               value={allocQty}
-              onChange={setAllocQty}
+              onChange={(value) => {
+                setAllocQty(value);
+                renewOutputKey();
+              }}
               max={allocMax}
               min={0}
             />
           ) : null}
-          <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
+          <ExpectedEndField
+            value={expectedEndOn}
+            onChange={(value) => {
+              setExpectedEndOn(value);
+              renewOutputKey();
+            }}
+          />
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"

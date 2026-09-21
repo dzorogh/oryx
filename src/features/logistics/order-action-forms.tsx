@@ -20,6 +20,7 @@ import {
   createAndSendTransfer,
   createProductionForOrder,
   createProductionOutput,
+  newProductionOutputRequestKey,
 } from "@/features/logistics/logistics-api";
 import {
   newTransferRequestKey,
@@ -532,6 +533,8 @@ export const OutputFromOrderForm = ({
   const [productionLineId, setProductionLineId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [expectedEndOn, setExpectedEndOn] = useState("");
+  const requestKeyRef = useRef(newProductionOutputRequestKey());
+  const creatingRef = useRef(false);
   const orderLine = lines.find((line) => line.id === orderLineId);
   const candidates = useMemo(() => {
     if (!orderLine) {
@@ -584,9 +587,13 @@ export const OutputFromOrderForm = ({
     setProductionLineId("");
     setQuantity("1");
     setExpectedEndOn("");
+    requestKeyRef.current = newProductionOutputRequestKey();
   };
 
   const submit = async () => {
+    if (creatingRef.current) {
+      return;
+    }
     if (!orderLine || !selected || !isAllowedQuantity(quantity, max)) {
       toast.error("Выберите товар, заказ на производство и количество");
       return;
@@ -598,9 +605,11 @@ export const OutputFromOrderForm = ({
       toast.error("Заказ на производство не найден");
       return;
     }
+    creatingRef.current = true;
     const ok = await runLogisticsAction(
       () =>
         createProductionOutput({
+          requestKey: requestKeyRef.current,
           orderId: production.id,
           lineId: selected.line.id,
           productId: selected.line.productId,
@@ -619,7 +628,9 @@ export const OutputFromOrderForm = ({
       "Выпуск проведён",
       reload,
     );
+    creatingRef.current = false;
     if (ok) {
+      requestKeyRef.current = newProductionOutputRequestKey();
       onOpenChange(false);
     }
   };
@@ -631,6 +642,8 @@ export const OutputFromOrderForm = ({
         onOpenChange(next);
         if (next) {
           reset();
+        } else {
+          requestKeyRef.current = newProductionOutputRequestKey();
         }
       }}
       title="Выпустить под заказ клиента"
@@ -646,6 +659,7 @@ export const OutputFromOrderForm = ({
           onChange={(value) => {
             setOrderLineId(value);
             setProductionLineId("");
+            requestKeyRef.current = newProductionOutputRequestKey();
           }}
         />
         <FieldSelect
@@ -657,6 +671,7 @@ export const OutputFromOrderForm = ({
           }))}
           onChange={(value) => {
             setProductionLineId(value);
+            requestKeyRef.current = newProductionOutputRequestKey();
             const next = candidates.find((item) => item.line.id === value);
             const cap = next
               ? Math.min(
@@ -670,8 +685,21 @@ export const OutputFromOrderForm = ({
           placeholder="Выберите строку"
           emptyLabel="Нет доступного заказа на производство"
         />
-        <QuantityField value={quantity} onChange={setQuantity} max={selected ? max : undefined} />
-        <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
+        <QuantityField
+          value={quantity}
+          onChange={(value) => {
+            setQuantity(value);
+            requestKeyRef.current = newProductionOutputRequestKey();
+          }}
+          max={selected ? max : undefined}
+        />
+        <ExpectedEndField
+          value={expectedEndOn}
+          onChange={(value) => {
+            setExpectedEndOn(value);
+            requestKeyRef.current = newProductionOutputRequestKey();
+          }}
+        />
         <Button type="button" disabled={!selected || !isAllowedQuantity(quantity, max)} onClick={() => void submit()}>
           Завершить выпуск
         </Button>
