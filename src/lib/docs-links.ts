@@ -4,9 +4,7 @@ export type OfficialDocLinkId =
   | "three"
   | "r3f"
   | "drei"
-  | "zod"
-  | "vitest"
-  | "playwright";
+  | "zod";
 
 export type OfficialDocLink = {
   id: OfficialDocLinkId;
@@ -21,6 +19,4 @@ export const OFFICIAL_DOC_LINKS: ReadonlyArray<OfficialDocLink> = [
   { id: "r3f", title: "@react-three/fiber Documentation", url: "https://docs.pmnd.rs/react-three-fiber" },
   { id: "drei", title: "@react-three/drei Documentation", url: "https://docs.pmnd.rs/drei" },
   { id: "zod", title: "Zod Documentation", url: "https://zod.dev" },
-  { id: "vitest", title: "Vitest Documentation", url: "https://vitest.dev" },
-  { id: "playwright", title: "Playwright Documentation", url: "https://playwright.dev" },
 ] as const;

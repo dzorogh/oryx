@@ -5,7 +5,7 @@
 
 ## Oryx BMS
 
-Internal business management app. Next.js App Router, React, TypeScript, Tailwind v4, Vitest. Conventions live in `docs/conventions/`; screen behavior in `docs/features/`. Follow this file before changing UI, layout, or the demo backend.
+Internal business management app. Next.js App Router, React, TypeScript, Tailwind v4. Conventions live in `docs/conventions/`; screen behavior in `docs/features/`. Follow this file before changing UI, layout, or the demo backend.
 
 ## Policy
 
@@ -28,8 +28,8 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 
 ## Running and verifying
 
-- There is no CI. Before handing off UI work, run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run check:static-images` locally.
-- `npm run test` does not run the static-image scanner. Use `check:static-images` for that. The old `check:ui-english` / `lint:ui-english` scripts are retired.
+- There is no CI and the application has no automated test suite. Before handing off work, run `npm run lint`, `npm run typecheck`, `npm run build`, `npm run check:deps`, `npm run check:docs`, and `npm run check:static-images` locally.
+- For UI changes, also verify the affected screens manually in a browser. The old `check:ui-english` / `lint:ui-english` scripts are retired and are not gates.
 
 ## Conventions that differ from defaults
 
@@ -62,5 +62,5 @@ Outside the managed block on purpose: keep this section when refreshing `bmad-pr
 
 When the active model is Grok, quality outranks speed, token count, and smallest-diff. Do not economize on tokens, do not rush, and do not skip checks or clarifying questions. Work as a senior: read the relevant code and conventions, handle edge cases, and produce a careful result. There is no cap on change volume or time when quality needs more work.
 
-- Do not skip verification (`lint` / `typecheck` / `test` / `check:static-images` as applicable), browser checks for UI, or questions that would change the design.
+- Do not skip verification (`lint` / `typecheck` / `build` / `check:deps` / `check:docs` / `check:static-images` as applicable), browser checks for UI, or questions that would change the design.
 - Do not use the project token-saver MCP in `active` (suppression) mode on Grok. Leave it `off`.

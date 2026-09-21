@@ -10,13 +10,6 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "test:coverage": "vitest run --coverage --passWithNoTests",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "bench:packing": "node scripts/bench-packing.mjs",
-    "analyze:cpu": "node --cpu-prof scripts/bench-packing.mjs",
-    "test:mutation": "stryker run",
     "check:deps": "node scripts/check-dependencies.mjs",
     "check:docs": "node scripts/check-doc-links.mjs",
     "check:ui-english": "node scripts/check-english-ui.mjs",
@@ -65,26 +58,16 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "@stryker-mutator/core": "^9.6.0",
-    "@stryker-mutator/vitest-runner": "^9.6.0",
     "@tailwindcss/postcss": "^4.2.2",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^4.1.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.0",
-    "jsdom": "^29.0.1",
     "postcss": "^8.5.8",
     "shadcn": "^4.8.3",
     "tailwindcss": "^4.2.2",
-    "tinybench": "^6.0.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "typescript": "^5.9.3"
   }
 }

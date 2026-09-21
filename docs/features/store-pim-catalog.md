@@ -139,8 +139,13 @@ npm run dev
 # http://localhost:3000/store/pim/products?listing=variants
 # http://localhost:3000/store/logistics/stock
 
-npm run test -- tests/unit/store-catalog-page.test.tsx
+npm run lint
+npm run typecheck
+npm run build
+npm run check:static-images
 ```
+
+После запуска вручную проверьте оба режима каталога, фильтры, пагинацию и переход в карточку товара.
 
 ## Связанные материалы
 

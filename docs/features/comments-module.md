@@ -412,18 +412,12 @@ to local-only with no presence.
 - New deps installed at latest **stable** versions (passes `check:deps`).
 - Русские подписи UI. См. [russian-labels.md](../conventions/ui/russian-labels.md).
 - Avatars via `i.pravatar.cc` per static-images convention; no bundled image strings.
-- `typecheck`, `lint`, `test` must stay green.
+- `typecheck`, `lint`, `build`, `check:deps`, `check:docs` and `check:static-images` must stay green.
 
-## Testing
+## Manual verification
 
-- Unit (vitest + RTL): posting a root comment appends at the bottom; reply attaches under its
-  root (single level); "Load earlier" reveals older threads; attachment chip renders for a
-  selected file; mention ids are captured; editing an own comment replaces its body and sets
-  the "edited" marker; like toggles count and hides "0" at zero; a system notice renders
-  author-less with no actions; the actions menu opens via the ⋯ button and exposes
-  Edit/Delete only for the author; deleting requires confirmation; deleting a leaf removes it
-  while deleting a root with replies leaves a "Comment deleted" tombstone with the replies
-  still present. Editor internals are smoke-tested (render + type), not deeply asserted.
+After UI changes, verify the affected comments flow in a browser at representative mobile,
+tablet, and desktop widths.
 
 ## Risks / notes
 

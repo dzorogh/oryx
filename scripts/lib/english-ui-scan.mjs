@@ -385,13 +385,8 @@ export const shouldScanFile = (relativePath) => {
   }
   if (
     normalized.includes("/node_modules/") ||
-    normalized.includes("/.next/") ||
-    normalized.includes("/coverage/") ||
-    normalized.includes("/.stryker-tmp/")
+    normalized.includes("/.next/")
   ) {
-    return false;
-  }
-  if (/\.(test|spec)\.(tsx|jsx)$/.test(normalized)) {
     return false;
   }
   return normalized.startsWith("app/") || normalized.startsWith("src/");

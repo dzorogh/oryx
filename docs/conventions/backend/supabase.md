@@ -91,7 +91,6 @@ In chat report HTTP status, row counts, and table names only. After a live probe
 
 npm run seed:thanks    # upserts Thanks demo rows
 npm run seed:logistics # upserts Logistics demo rows and posts the story
-npm run test           # includes thanks mapping test
 ```
 
 CORS is `*` on Kong. After a live probe (`TEST`, dummy, wiring-check), **delete that row** in the same session.

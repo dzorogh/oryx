@@ -16,7 +16,6 @@
 - Стили: `Tailwind CSS v4`
 - 3D: `three`, `@react-three/fiber`, `@react-three/drei`
 - Валидация данных: `zod`
-- Тесты: `Vitest`, `@testing-library/react`, `jsdom`
 - Качество кода: `ESLint`, `TypeScript` (`tsc --noEmit`)
 
 ## Быстрый старт
@@ -92,11 +91,7 @@ src/
     packing-result.worker.ts      # Вычисление упаковки в Web Worker
   lib/                            # Вспомогательные утилиты
 
-tests/
-  unit/                           # Unit/integration тесты
-
 scripts/
-  bench-packing.mjs
   check-dependencies.mjs
   check-doc-links.mjs
 ```
@@ -124,32 +119,26 @@ PIM-модуль использует доменную логику из `src/do
 
 - `npm run lint` — ESLint
 - `npm run typecheck` — проверка типов TypeScript
+- `npm run build` — production-сборка
 - `npm run check:deps` — проверка зависимостей
 - `npm run check:docs` — проверка ссылок в документации
+- `npm run check:static-images` — проверка правил для статических изображений
 - Пользовательский текст на страницах — на русском ([russian-labels.md](docs/conventions/ui/russian-labels.md)). Старые `check:ui-english` / `lint:ui-english` не являются обязательной проверкой.
 
-### Тестирование
-
-- `npm run test` — запуск тестов
-- `npm run test:coverage` — тесты с покрытием
-- `npm run test:watch` — watch-режим
-- `npm run test:mutation` — mutation-тестирование (Stryker)
-
-### Производительность
-
-- `npm run bench:packing` — бенчмарк упаковочного движка
-- `npm run analyze:cpu` — CPU-профилирование бенчмарка
+Приложение — быстро меняющийся исследовательский прототип, поэтому прикладная автоматизированная тестовая инфраструктура не поддерживается. Изменения интерфейса дополнительно проверяются вручную в браузере на затронутых экранах.
 
 ## Рекомендуемый baseline-check перед PR
 
 ```bash
 npm run lint
 npm run typecheck
-npm run test
 npm run build
 npm run check:deps
 npm run check:docs
+npm run check:static-images
 ```
+
+Для изменений интерфейса после этих команд вручную проверьте затронутые экраны в браузере.
 
 ## Текущий статус и ограничения
 

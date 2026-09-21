@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 const docsFile = resolve(process.cwd(), "src/lib/docs-links.ts");
 const content = readFileSync(docsFile, "utf8");
 
-const requiredIds = ["nextjs", "react", "three", "r3f", "drei", "zod", "vitest", "playwright"];
+const requiredIds = ["nextjs", "react", "three", "r3f", "drei", "zod"];
 
 const missingIds = requiredIds.filter((id) => !content.includes(`id: "${id}"`));
 const links = [...content.matchAll(/url:\s*"([^"]+)"/g)].map((match) => match[1]);

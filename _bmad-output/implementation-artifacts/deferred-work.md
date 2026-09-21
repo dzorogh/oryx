@@ -85,3 +85,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-universal-entity-movement-table.md`
   summary: Убрать дублирующую пару `ownerType`/`ownerId` с `StockBalance` после cutover.
   evidence: читатели ещё могут суммировать по старой паре, пока aliases остаются обязательными.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-remove-application-tests.md`
+  summary: Перенести prototype-first verification policy из управляемого блока AGENTS.md в устойчивый источник генерации.
+  evidence: Текущая правка обязательных команд находится внутри `bmad:context` и может исчезнуть при следующем refresh.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-remove-application-tests.md`
+  summary: Вернуть зелёный baseline для lint и check:deps без ослабления правил.
+  evidence: До этого chore в продуктовых файлах уже были 11 lint-ошибок, а 23 прямые зависимости отставали от wanted-версий; активное утверждение Comments об успешном check:deps также устарело.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-remove-application-tests.md`
+  summary: Обновить draft-спеку Stock Adjustments под репозиторий без прикладных автотестов.
+  evidence: Параллельный untracked-файл `spec-stock-adjustments.md` требует отсутствующие `tests/unit/logistics-stock-adjustment.test.ts` и `npm run test`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-remove-application-tests.md`
+  summary: Зафиксировать допустимый уровень ручной регрессионной проверки критичных потоков после удаления test suite.
+  evidence: У Thanks mapping, меню, packing overrides, Reservation direction и других logistics/pricelist потоков больше нет исполняемой регрессионной защиты; это принято prototype-first intent, но риск остаётся явным.
