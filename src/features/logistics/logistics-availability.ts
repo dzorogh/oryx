@@ -308,22 +308,11 @@ export const reservationCapForOwner = (
   return Math.max(0, sourceQty);
 };
 
-export const returnedForShipmentLine = (snapshot: LogisticsSnapshot, shipmentLineId: string): number =>
-  snapshot.returnLines
-    .filter((line) => {
-      if (line.shipmentLineId !== shipmentLineId) {
-        return false;
-      }
-      const doc = snapshot.returns.find((item) => item.id === line.returnId);
-      return doc?.status === "posted";
-    })
-    .reduce((sum, line) => sum + line.quantity, 0);
-
-export const remainingToReturnForLine = (
-  snapshot: LogisticsSnapshot,
-  shipmentLineId: string,
-  shippedQuantity: number,
-): number => Math.max(0, shippedQuantity - returnedForShipmentLine(snapshot, shipmentLineId));
+export const remainingToReturnForOrderProduct = (
+  balances: StockBalance[],
+  orderId: string,
+  productId: string,
+): number => Math.max(0, sumShippedForOrderProduct(balances, orderId, productId));
 
 const groupBalancesByOwner = (entries: StockBalance[]): ProductionLineReservation[] => {
   const reservedByOwner = new Map<string, ProductionLineReservation>();
@@ -459,7 +448,7 @@ export const hrefForDocument = (documentType: SourceType, documentId: string): s
     case "shipment":
       return logisticsPath("shipments", documentId);
     case "return":
-      return logisticsPath("returns", documentId);
+      return logisticsPath("shipments", documentId);
     case "output":
       return logisticsPath("outputs", documentId);
     case "production_order":

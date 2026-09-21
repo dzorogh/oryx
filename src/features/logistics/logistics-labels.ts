@@ -8,6 +8,7 @@ import type {
   OwnerType,
   ProductionStatus,
   ReservationDirection,
+  ShipmentDirection,
   SourceType,
   StockState,
   TransferStatus,
@@ -98,6 +99,11 @@ export const LEDGER_DOCUMENT_KIND_LABELS: Record<DocumentType, string> = {
   production_order: "Заказ на производство",
   output: "Выпуск",
   adjustment: "Корректировка",
+};
+
+export const SHIPMENT_DIRECTION_LABELS: Record<ShipmentDirection, string> = {
+  shipment: "Отгрузка",
+  return: "Возврат",
 };
 
 export const RESERVATION_DIRECTION_LABELS: Record<ReservationDirection, string> = {

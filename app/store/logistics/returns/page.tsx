@@ -1,12 +1,13 @@
 // english-ui:ignore-file
-import type { Metadata } from "next";
-import { ReturnsPage } from "@/features/logistics/flow-documents-pages";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Возвраты | Логистика магазина | Oryx BMS",
-  description: "Возвраты отгрузок",
+export const metadata = {
+  title: "Отгрузки и возвраты | Логистика магазина | Oryx BMS",
+  description: "Перенаправление в единый раздел «Отгрузки и возвраты»",
 };
 
-const Page = () => <ReturnsPage />;
+const Page = () => {
+  redirect("/store/logistics/shipments");
+};
 
 export default Page;

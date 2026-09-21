@@ -213,12 +213,17 @@ export type TransferAllocation = {
   quantity: number;
 };
 
+export const SHIPMENT_DIRECTIONS = ["shipment", "return"] as const;
+export type ShipmentDirection = (typeof SHIPMENT_DIRECTIONS)[number];
+
 export type Shipment = {
   id: string;
   number: string;
   customerOrderId: string;
-  warehouseId: string;
-  status: DocumentStatus;
+  fromLocationType: LocationType;
+  fromLocationId: string;
+  toLocationType: LocationType;
+  toLocationId: string;
   createdAt: string;
   createdBy: string;
 };
@@ -228,6 +233,8 @@ export type ShipmentLine = {
   shipmentId: string;
   productId: string;
   quantity: number;
+  toOwnerType: OwnerType | null;
+  toOwnerId: string | null;
 };
 
 export type ProductionOutput = {
@@ -253,22 +260,6 @@ export type ProductionOutputAllocation = {
   lineId: string;
   ownerType: OwnerType;
   ownerId: string;
-  quantity: number;
-};
-
-export type ShipmentReturn = {
-  id: string;
-  number: string;
-  shipmentId: string;
-  status: DocumentStatus;
-  createdAt: string;
-  createdBy: string;
-};
-
-export type ShipmentReturnLine = {
-  id: string;
-  returnId: string;
-  shipmentLineId: string;
   quantity: number;
 };
 
@@ -340,8 +331,6 @@ export type LogisticsSnapshot = {
   outputs: ProductionOutput[];
   outputLines: ProductionOutputLine[];
   outputAllocations: ProductionOutputAllocation[];
-  returns: ShipmentReturn[];
-  returnLines: ShipmentReturnLine[];
   adjustments: StockAdjustment[];
   adjustmentLines: StockAdjustmentLine[];
   transactions: StockTransaction[];
@@ -379,6 +368,22 @@ export const ownerKey = (
   ownerType: OwnerType | null | undefined,
   ownerId: string | null | undefined,
 ): string => (isFreeOwner(ownerType, ownerId) ? "free" : `${ownerType}:${ownerId}`);
+
+export const shipmentDirection = (
+  fromLocationType: LocationType,
+  toLocationType: LocationType,
+): ShipmentDirection => {
+  if (fromLocationType === "warehouse" && toLocationType === "customer_order") {
+    return "shipment";
+  }
+  if (fromLocationType === "customer_order" && toLocationType === "warehouse") {
+    return "return";
+  }
+  throw new Error("Допустимы только маршруты склад → заказ клиента и заказ клиента → склад");
+};
+
+export const shipmentWarehouseId = (doc: Pick<Shipment, "fromLocationType" | "fromLocationId" | "toLocationType" | "toLocationId">): string =>
+  doc.fromLocationType === "warehouse" ? doc.fromLocationId : doc.toLocationId;
 
 export const reservationDirection = (
   doc: Pick<Reservation, "toOwnerType" | "toOwnerId">,

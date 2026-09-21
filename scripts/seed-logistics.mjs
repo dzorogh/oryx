@@ -87,7 +87,16 @@ await upsert(
 await upsert("store_manufacturer", snapshot.manufacturers);
 await upsert("store_warehouse", snapshot.warehouses);
 await upsert("store_product", snapshot.products.map(enrichProduct));
-await upsert("store_customer_order", snapshot.customer_orders);
+await upsert(
+  "store_customer_order",
+  snapshot.customer_orders.map((row) => ({
+    id: row.id,
+    status: row.status,
+    created_at: row.created_at,
+    expected_end_on: row.expected_end_on ?? null,
+    description: row.description ?? "",
+  })),
+);
 await upsert("store_customer_order_line", snapshot.customer_order_lines);
 
 const countRes = await fetch(`${url}/rest/v1/store_customer_order?select=id`, {

@@ -48,8 +48,12 @@ export const assertDocumentCanBeCancelled = (kind: string, status?: string | nul
   if (kind === "adjustment") {
     throw new Error(ADJUSTMENT_CANCEL_FORBIDDEN);
   }
+  if (kind === "shipment" || kind === "shipment_return" || kind === "return") {
+    throw new Error(
+      "Проведённый документ отгрузки или возврата нельзя отменить. Создайте документ обратного маршрута.",
+    );
+  }
   const posted =
-    ((kind === "shipment" || kind === "shipment_return" || kind === "return") && status === "posted") ||
     ((kind === "production_output" || kind === "output") && status === "done") ||
     (kind === "transfer" && (status === "sent" || status === "delivered"));
   if (posted) {

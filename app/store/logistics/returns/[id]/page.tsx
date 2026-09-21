@@ -1,12 +1,14 @@
 // english-ui:ignore-file
-import type { Metadata } from "next";
-import { ReturnDetailPage } from "@/features/logistics/flow-documents-pages";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Возврат | Логистика магазина | Oryx BMS",
-  description: "Возврат отгрузки",
+export const metadata = {
+  title: "Отгрузки и возвраты | Логистика магазина | Oryx BMS",
+  description: "Перенаправление в карточку единого документа",
 };
 
-const Page = () => <ReturnDetailPage />;
+const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params;
+  redirect(`/store/logistics/shipments/${id}`);
+};
 
 export default Page;

@@ -57,8 +57,6 @@ const emptySnapshot = (): LogisticsSnapshot => ({
   outputs: [],
   outputLines: [],
   outputAllocations: [],
-  returns: [],
-  returnLines: [],
   adjustments: [],
   adjustmentLines: [],
   transactions: [],
@@ -143,11 +141,11 @@ describe("помощник отмены складских документов"
     assert.equal(guidance.returnShipmentId, "1");
   });
 
-  it("для проведённого возврата предлагает снова зарезервировать свободный товар", () => {
+  it("для проведённого возврата предлагает отгрузку обратного маршрута", () => {
     const guidance = projectCancelGuidance(facts({ type: "return", status: "posted" }));
     commonCopyPresent(guidance);
-    assert.equal(guidance.actions[0]?.id, "open-reservation");
-    assert.equal(guidance.actions[0]?.label, "Зарезервировать снова");
+    assert.equal(guidance.actions[0]?.id, "open-shipment");
+    assert.equal(guidance.actions[0]?.label, "Создать отгрузку");
     assert.equal(guidance.actions[0]?.enabled, true);
   });
 
@@ -216,16 +214,13 @@ describe("помощник отмены складских документов"
 
   it("для безопасного черновика подтверждает только смену статуса", () => {
     const shipment = projectCancelGuidance(facts({ type: "shipment", status: "draft" }));
-    assert.equal(shipment.mode, "safe-cancel");
-    assert.equal(shipment.cancelRpcKind, "shipment");
-    assert.equal(shipment.actions[0]?.id, "confirm-cancel");
-    assert.equal(shipment.actions[0]?.label, "Подтвердить отмену");
-    assert.equal(shipment.context, CANCEL_GUIDANCE_SAFE_CONFIRM);
-    assert.doesNotThrow(() => assertDocumentCanBeCancelled("shipment", "draft"));
+    assert.equal(shipment.mode, "guidance");
+    assert.equal(shipment.actions[0]?.id, "open-return");
+    assert.throws(() => assertDocumentCanBeCancelled("shipment", "draft"));
 
     const ret = projectCancelGuidance(facts({ type: "return", status: "draft" }));
-    assert.equal(ret.cancelRpcKind, "shipment_return");
-    assert.doesNotThrow(() => assertDocumentCanBeCancelled("shipment_return", "draft"));
+    assert.equal(ret.actions[0]?.id, "open-shipment");
+    assert.throws(() => assertDocumentCanBeCancelled("shipment_return", "draft"));
 
     const output = projectCancelGuidance(facts({ type: "output", status: "planned" }));
     assert.equal(output.cancelRpcKind, "production_output");
@@ -256,8 +251,8 @@ describe("помощник отмены складских документов"
     assert.equal(shippedReservation.actions[0]?.blockedReason, CANCEL_GUIDANCE_BLOCKED.needReturn);
 
     const emptyShipment = projectCancelGuidance(facts({ type: "shipment", status: "posted", availableQuantity: 0 }));
-    assert.equal(emptyShipment.actions[0]?.enabled, false);
-    assert.equal(emptyShipment.actions[0]?.blockedReason, CANCEL_GUIDANCE_BLOCKED.nothingToReturn);
+    assert.equal(emptyShipment.actions[0]?.enabled, true);
+    assert.equal(emptyShipment.actions[0]?.id, "open-return");
 
     const reservedTransfer = projectCancelGuidance(
       facts({ type: "transfer", status: "delivered", availableQuantity: 0, reservedQuantity: 5 }),
@@ -313,17 +308,29 @@ describe("помощник отмены складских документов"
         id: "s1",
         number: "SHP-1",
         customerOrderId: "12",
-        warehouseId: "w1",
-        status: "posted",
+        fromLocationType: "warehouse",
+        fromLocationId: "w1",
+        toLocationType: "customer_order",
+        toLocationId: "12",
+        createdAt: "",
+        createdBy: "1",
+      },
+      {
+        id: "ret1",
+        number: "SHP-2",
+        customerOrderId: "12",
+        fromLocationType: "customer_order",
+        fromLocationId: "12",
+        toLocationType: "warehouse",
+        toLocationId: "w1",
         createdAt: "",
         createdBy: "1",
       },
     ];
-    snapshot.shipmentLines = [{ id: "sl1", shipmentId: "s1", productId: "7", quantity: 4 }];
-    snapshot.returns = [
-      { id: "ret1", number: "RET-1", shipmentId: "s1", status: "posted", createdAt: "", createdBy: "1" },
+    snapshot.shipmentLines = [
+      { id: "sl1", shipmentId: "s1", productId: "7", quantity: 4, toOwnerType: "order", toOwnerId: "12" },
+      { id: "retl1", shipmentId: "ret1", productId: "7", quantity: 2, toOwnerType: null, toOwnerId: null },
     ];
-    snapshot.returnLines = [{ id: "retl1", returnId: "ret1", shipmentLineId: "sl1", quantity: 2 }];
     snapshot.transfers = [
       {
         id: "t1",
@@ -412,8 +419,8 @@ describe("помощник отмены складских документов"
     assert.equal(shipment.actions[0]?.enabled, true);
 
     const ret = projectDocumentCancelGuidance({ type: "return", id: "ret1" }, snapshot, balances);
-    assert.equal(ret.reservationPreset?.toOwnerType, "order");
-    assert.equal(ret.reservationPreset?.locationId, "w1");
+    assert.equal(ret.shipmentOrderId, "12");
+    assert.equal(ret.actions[0]?.id, "open-shipment");
     assert.equal(ret.actions[0]?.enabled, true);
 
     const transfer = projectDocumentCancelGuidance({ type: "transfer", id: "t1" }, snapshot, balances);
@@ -473,17 +480,17 @@ describe("помощник отмены складских документов"
         id: "s-empty",
         number: "SHP-2",
         customerOrderId: "12",
-        warehouseId: "w1",
-        status: "posted",
+        fromLocationType: "warehouse",
+        fromLocationId: "w1",
+        toLocationType: "customer_order",
+        toLocationId: "12",
         createdAt: "",
         createdBy: "1",
       },
     ];
-    snapshot.shipmentLines = [{ id: "sl-empty", shipmentId: "s-empty", productId: "7", quantity: 4 }];
-    snapshot.returns = [
-      { id: "ret-full", number: "RET-2", shipmentId: "s-empty", status: "posted", createdAt: "", createdBy: "1" },
+    snapshot.shipmentLines = [
+      { id: "sl-empty", shipmentId: "s-empty", productId: "7", quantity: 4, toOwnerType: "order", toOwnerId: "12" },
     ];
-    snapshot.returnLines = [{ id: "retl-full", returnId: "ret-full", shipmentLineId: "sl-empty", quantity: 4 }];
     snapshot.transfers = [
       {
         id: "t-reserved",
@@ -557,8 +564,8 @@ describe("помощник отмены складских документов"
     assert.equal(fullyShippedReservation.actions[0]?.blockedReason, CANCEL_GUIDANCE_BLOCKED.needReturn);
 
     const emptyShipment = projectDocumentCancelGuidance({ type: "shipment", id: "s-empty" }, snapshot, []);
-    assert.equal(emptyShipment.actions[0]?.enabled, false);
-    assert.equal(emptyShipment.actions[0]?.blockedReason, CANCEL_GUIDANCE_BLOCKED.nothingToReturn);
+    assert.equal(emptyShipment.actions[0]?.enabled, true);
+    assert.equal(emptyShipment.actions[0]?.id, "open-return");
 
     const reservedTransfer = projectDocumentCancelGuidance(
       { type: "transfer", id: "t-reserved" },

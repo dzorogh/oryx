@@ -291,7 +291,7 @@ export const documentLabel = (
     case "shipment":
       return snapshot.shipments.find((item) => item.id === documentId)?.number ?? documentId;
     case "return":
-      return snapshot.returns.find((item) => item.id === documentId)?.number ?? documentId;
+      return snapshot.shipments.find((item) => item.id === documentId)?.number ?? documentId;
     case "output":
       return snapshot.outputs.find((item) => item.id === documentId)?.number ?? documentId;
     case "production_order":

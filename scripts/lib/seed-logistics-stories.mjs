@@ -296,36 +296,45 @@ const deliverTransfer = async (client, { id, fromWarehouseId, toWarehouseId, ord
 };
 
 const postShipment = async (client, { id, orderId, warehouseId, productId, quantity, createdAt }) => {
-  await client.insert("store_shipment", {
-    id,
-    customer_order_id: orderId,
-    warehouse_id: warehouseId,
-    status: "draft",
-    created_at: createdAt,
+  await client.rpc("store_create_and_post_shipment", {
+    p_request_key: `seed:shipment:${id}`,
+    p_customer_order_id: orderId,
+    p_from_location_type: "warehouse",
+    p_from_location_id: warehouseId,
+    p_to_location_type: "customer_order",
+    p_to_location_id: orderId,
+    p_id: id,
+    p_created_at: createdAt,
+    p_lines: [
+      {
+        product_id: productId,
+        quantity,
+        to_owner_type: "order",
+        to_owner_id: orderId,
+      },
+    ],
   });
-  await client.insert("store_shipment_line", {
-    id,
-    shipment_id: id,
-    product_id: productId,
-    quantity,
-  });
-  await client.rpc("store_post_shipment", { p_id: id });
 };
 
-const postReturn = async (client, { id, shipmentId, shipmentLineId, quantity, createdAt }) => {
-  await client.insert("store_return", {
-    id,
-    shipment_id: shipmentId,
-    status: "draft",
-    created_at: createdAt,
+const postReturn = async (client, { id, orderId, warehouseId, productId, quantity, createdAt }) => {
+  await client.rpc("store_create_and_post_shipment", {
+    p_request_key: `seed:return:${id}`,
+    p_customer_order_id: orderId,
+    p_from_location_type: "customer_order",
+    p_from_location_id: orderId,
+    p_to_location_type: "warehouse",
+    p_to_location_id: warehouseId,
+    p_id: id,
+    p_created_at: createdAt,
+    p_lines: [
+      {
+        product_id: productId,
+        quantity,
+        to_owner_type: null,
+        to_owner_id: null,
+      },
+    ],
   });
-  await client.insert("store_return_line", {
-    id,
-    return_id: id,
-    shipment_line_id: shipmentLineId,
-    quantity,
-  });
-  await client.rpc("store_post_return", { p_id: id });
 };
 
 const seedSurplusThenReserve = async (client) => {
@@ -567,9 +576,10 @@ const seedReturnHeavy = async (client) => {
     createdAt: "2026-09-06T09:00:00+00:00",
   });
   await postReturn(client, {
-    id: 905,
-    shipmentId: 905,
-    shipmentLineId: 905,
+    id: 915,
+    orderId: 905,
+    warehouseId: PLANT.taotao.warehouseId,
+    productId: PRODUCT.cruiser300,
     quantity: 2,
     createdAt: "2026-09-13T08:45:00+00:00",
   });

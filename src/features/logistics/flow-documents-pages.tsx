@@ -1,8 +1,8 @@
 // english-ui:ignore-file
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,6 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import {
   completeOutput,
   createProductionOutput,
-  postReturn,
-  postShipment,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
 import {
@@ -27,13 +25,14 @@ import {
   hrefForWarehouse,
   remainingToOutputForLine,
   remainingToReserveForLine,
-  remainingToReturnForLine,
+  remainingToReturnForOrderProduct,
   remainingToShipForLine,
 } from "@/features/logistics/logistics-availability";
-import { AdjustmentForm, ReservationForm, ReturnForm, ShipmentForm } from "@/features/logistics/logistics-forms";
+import { AdjustmentForm, ReservationForm, ShipmentForm } from "@/features/logistics/logistics-forms";
 import {
   ADJUSTMENT_OPERATION_LABELS,
   DOCUMENT_TYPE_LABELS,
+  SHIPMENT_DIRECTION_LABELS,
   expectedEndMeta,
   formatExpectedEnd,
   formatQuantity,
@@ -43,28 +42,31 @@ import {
 import { adjustmentSignedQuantity } from "@/features/logistics/logistics-adjustments";
 import {
   customerOrderById,
+  documentLabel,
+  ownerLabel,
   productById,
   productIdentityLabel,
   productionOrderById,
   warehouseById,
   warehouseCode,
-  documentLabel,
 } from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
-import { LocationLink } from "@/features/logistics/ui/location-link";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
-import { relatedOrderItem, relatedOrdersForOutput, relatedReturnsForShipment } from "@/features/logistics/logistics-related";
+import { relatedOrderItem, relatedOrdersForOutput } from "@/features/logistics/logistics-related";
 import {
   assertEnoughStock,
   assertProductionOutputCapacity,
 } from "@/features/logistics/logistics-rules";
 import {
   OUTPUT_STATUSES,
+  shipmentDirection,
+  shipmentWarehouseId,
   type DocumentStatus,
   type DocumentType,
   type LogisticsSnapshot,
   type OutputStatus,
+  type ShipmentDirection,
 } from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
@@ -77,7 +79,7 @@ import { LogisticsMetaField, LogisticsToolbar } from "@/features/logistics/ui/lo
 import { RelatedDocuments } from "@/features/logistics/ui/related-documents";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
-import { DocumentStatusBadge, OutputStatusBadge } from "@/features/logistics/ui/status-badge";
+import { DocumentStatusBadge, OutputStatusBadge, ShipmentDirectionBadge } from "@/features/logistics/ui/status-badge";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const STATUS_FILTERS: Array<{ id: "all" | DocumentStatus; label: string }> = [
@@ -111,44 +113,101 @@ const StatusTabs = ({
   </div>
 );
 
+const DIRECTION_FILTERS: Array<{ id: "all" | ShipmentDirection; label: string }> = [
+  { id: "all", label: "Все" },
+  { id: "shipment", label: "Отгрузки" },
+  { id: "return", label: "Возвраты" },
+];
+
 export const ShipmentsPage = () => {
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const directionParam = searchParams.get("direction");
+  const parsedDirection: "all" | ShipmentDirection =
+    directionParam === "shipment" || directionParam === "return" ? directionParam : "all";
+  const [direction, setDirection] = useState<"all" | ShipmentDirection>(parsedDirection);
   const [open, setOpen] = useState(false);
-  const rows = snapshot.shipments.filter((item) => status === "all" || item.status === status);
+
+  useEffect(() => {
+    setDirection(parsedDirection);
+  }, [parsedDirection]);
+
+  const setDirectionFilter = (next: "all" | ShipmentDirection) => {
+    setDirection(next);
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "all") {
+      params.delete("direction");
+    } else {
+      params.set("direction", next);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+  const rows = useMemo(
+    () =>
+      snapshot.shipments.filter((item) => {
+        if (direction === "all") {
+          return true;
+        }
+        return shipmentDirection(item.fromLocationType, item.toLocationType) === direction;
+      }),
+    [direction, snapshot.shipments],
+  );
 
   return (
-    <DocumentList
-      title="Отгрузки"
-      crumbs="Отгрузки"
-      actionLabel="Новая отгрузка"
-      snapshot={snapshot}
-      path="/store/logistics/shipments"
-      rows={rows.map((item) => ({
-        id: item.id,
-        number: item.number,
-        extra: (
-          <span className="inline-flex flex-wrap items-center gap-1.5">
-            <LogisticsCodeBadge
-              code={customerOrderById(snapshot, item.customerOrderId)?.number ?? item.customerOrderId}
-              href={hrefForCustomerOrder(item.customerOrderId)}
-            />
-            <LogisticsCodeBadge
-              code={warehouseCode(snapshot, item.warehouseId)}
-              href={hrefForWarehouse(item.warehouseId)}
-            />
-          </span>
-        ),
-        products: snapshot.shipmentLines.filter((line) => line.shipmentId === item.id),
-        status: item.status,
-      }))}
-      extraHeader="Заказ клиента / склад"
-      isLoading={isLoading}
-      error={error}
-      status={status}
-      onStatus={setStatus}
-      onCreate={() => setOpen(true)}
-    >
+    <LogisticsPageShell crumbs={[{ label: "Отгрузки и возвраты" }]}>
+      <LogisticsToolbar title="Отгрузки и возвраты" actionLabel="Новый документ" onAction={() => setOpen(true)}>
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Тип документа">
+          {DIRECTION_FILTERS.map((item) => (
+            <HomeFilterChip
+              key={item.id}
+              active={direction === item.id}
+              role="tab"
+              aria-selected={direction === item.id}
+              onClick={() => setDirectionFilter(item.id)}
+            >
+              {item.label}
+            </HomeFilterChip>
+          ))}
+        </div>
+      </LogisticsToolbar>
+      {isLoading ? <LogisticsLoading /> : null}
+      {error ? <LogisticsError message={error} /> : null}
+      {!isLoading && !error ? (
+        <LogisticsTableCard headers={["Номер", "Тип", "Заказ / склад", "Товары"]} isEmpty={rows.length === 0}>
+          {rows.map((item) => {
+            const itemDirection = shipmentDirection(item.fromLocationType, item.toLocationType);
+            const warehouseId = shipmentWarehouseId(item);
+            return (
+              <TableRow key={item.id}>
+                <TableCell className="px-3 py-2 align-top">
+                  <LogisticsCodeBadge code={item.number} href={`/store/logistics/shipments/${item.id}`} />
+                </TableCell>
+                <TableCell className="px-3 py-2 align-top">
+                  <ShipmentDirectionBadge direction={itemDirection} />
+                </TableCell>
+                <TableCell className="px-3 py-2 align-top">
+                  <span className="inline-flex flex-wrap items-center gap-1.5">
+                    <LogisticsCodeBadge
+                      code={customerOrderById(snapshot, item.customerOrderId)?.number ?? item.customerOrderId}
+                      href={hrefForCustomerOrder(item.customerOrderId)}
+                    />
+                    <LogisticsCodeBadge code={warehouseCode(snapshot, warehouseId)} href={hrefForWarehouse(warehouseId)} />
+                  </span>
+                </TableCell>
+                <TableCell className="px-3 py-2 align-top">
+                  <DocumentProductLines
+                    snapshot={snapshot}
+                    lines={snapshot.shipmentLines.filter((line) => line.shipmentId === item.id)}
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </LogisticsTableCard>
+      ) : null}
       <ShipmentForm
         snapshot={snapshot}
         balances={balances}
@@ -157,138 +216,156 @@ export const ShipmentsPage = () => {
         reload={reload}
         mode="list"
       />
-    </DocumentList>
+    </LogisticsPageShell>
   );
 };
 
 export const ShipmentDetailPage = () => {
   const params = useParams<{ id: string }>();
   const store = useLogisticsStore();
-  const [returnOpen, setReturnOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formIntention, setFormIntention] = useState<ShipmentDirection>("return");
   const doc = store.snapshot.shipments.find((item) => item.id === params.id);
   const lines = store.snapshot.shipmentLines.filter((line) => line.shipmentId === params.id);
   const order = doc ? relatedOrderItem(store.snapshot, doc.customerOrderId) : null;
-  const returns = doc ? relatedReturnsForShipment(store.snapshot, doc.id) : [];
+  const direction = doc ? shipmentDirection(doc.fromLocationType, doc.toLocationType) : null;
+  const warehouseId = doc ? shipmentWarehouseId(doc) : "";
+  const cancelGuidance = doc && direction
+    ? projectDocumentCancelGuidance({ type: direction, id: doc.id }, store.snapshot, store.balances)
+    : null;
+
+  if (store.isLoading || store.error || !doc || !direction) {
+    return (
+      <LogisticsPageShell crumbs={[{ label: "Отгрузки и возвраты", href: "/store/logistics/shipments" }, { label: "Документ" }]}>
+        {store.isLoading ? <LogisticsLoading /> : <LogisticsError message={store.error ?? "Документ не найден."} />}
+      </LogisticsPageShell>
+    );
+  }
 
   return (
     <>
-      <DocumentDetail
-        store={store}
-        title={doc?.number ?? "Отгрузка"}
-        crumbs={[{ label: "Отгрузки", href: "/store/logistics/shipments" }, { label: doc?.number ?? "Отгрузка" }]}
-        status={doc?.status}
-        documentType="shipment"
-        sourceId={doc?.id}
-        onPost={doc ? () => postShipment(doc.id) : undefined}
-        cancelSubject={doc ? { type: "shipment", id: doc.id } : undefined}
-        onCancelFollowUp={(action) => {
-          if (action.id === "open-return") {
-            setReturnOpen(true);
+      <LogisticsPageShell
+        crumbs={[
+          { label: "Отгрузки и возвраты", href: "/store/logistics/shipments" },
+          { label: doc.number },
+        ]}
+      >
+        <LogisticsToolbar
+          title={doc.number}
+          actions={
+            <>
+              {order && store.snapshot.customerOrders.find((item) => item.id === doc.customerOrderId)?.status === "open" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setFormIntention(direction === "shipment" ? "return" : "shipment");
+                    setFormOpen(true);
+                  }}
+                >
+                  {direction === "shipment" ? "Принять возврат" : "Отгрузить"}
+                </Button>
+              ) : null}
+              {cancelGuidance ? (
+                <DocumentCancelControl
+                  guidance={cancelGuidance}
+                  reload={store.reload}
+                  onFollowUp={(action) => {
+                    if (action.id === "open-return") {
+                      setFormIntention("return");
+                      setFormOpen(true);
+                    }
+                    if (action.id === "open-shipment") {
+                      setFormIntention("shipment");
+                      setFormOpen(true);
+                    }
+                  }}
+                />
+              ) : null}
+            </>
           }
-        }}
-        extraActions={
-          doc?.status === "posted" ? (
-            <Button type="button" size="sm" variant="outline" onClick={() => setReturnOpen(true)}>
-              Вернуть
-            </Button>
-          ) : null
-        }
-        related={
-          <>
-          {order ? <RelatedDocuments title="Заказ клиента" items={[order]} /> : null}
-            <RelatedDocuments
-              title="Возвраты"
-              href="/store/logistics/returns"
-              items={returns}
-              onCreate={doc?.status === "posted" ? () => setReturnOpen(true) : undefined}
-              createLabel="Вернуть"
-            />
-          </>
-        }
-        lines={lines.map((line) => {
-          const orderLine = store.snapshot.customerOrderLines.find(
-            (item) => item.orderId === doc?.customerOrderId && item.productId === line.productId,
-          );
-          const remaining = orderLine
-            ? remainingToShipForLine(orderLine, store.balances, doc?.warehouseId)
-            : 0;
-          const returned = remainingToReturnForLine(store.snapshot, line.id, line.quantity);
-          return {
-            id: line.id,
-            productId: line.productId,
-            quantity: line.quantity,
-            place: doc?.warehouseId ? (
-              <LogisticsCodeBadge
-                code={warehouseCode(store.snapshot, doc.warehouseId)}
-                href={hrefForWarehouse(doc.warehouseId)}
-              />
-            ) : (
-              "Склад"
-            ),
-            hint: `Ещё можно отгрузить ${formatQuantity(remaining)} · можно вернуть ${formatQuantity(returned)}`,
-          };
-        })}
-      />
-      {doc ? (
-        <ReturnForm
-          snapshot={store.snapshot}
-          balances={store.balances}
-          open={returnOpen}
-          onOpenChange={setReturnOpen}
-          reload={store.reload}
-          mode="hub"
-          preset={{ shipmentId: doc.id }}
+        >
+          <LogisticsMetaField label="Тип">
+            <ShipmentDirectionBadge direction={direction} />
+          </LogisticsMetaField>
+          <LogisticsMetaField label="Маршрут">
+            <span className="text-sm">
+              {direction === "shipment" ? "Склад → заказ клиента" : "Заказ клиента → склад"}
+            </span>
+          </LogisticsMetaField>
+        </LogisticsToolbar>
+        {order ? <RelatedDocuments title="Заказ клиента" items={[order]} /> : null}
+        <RelatedDocuments
+          title="Склад"
+          items={[
+            {
+              id: warehouseId,
+              href: hrefForWarehouse(warehouseId),
+              label: warehouseCode(store.snapshot, warehouseId),
+              meta: SHIPMENT_DIRECTION_LABELS[direction],
+            },
+          ]}
         />
-      ) : null}
-    </>
-  );
-};
-
-export const ReturnsPage = () => {
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
-  const [open, setOpen] = useState(false);
-  const rows = snapshot.returns.filter((item) => status === "all" || item.status === status);
-
-  return (
-    <DocumentList
-      title="Возвраты"
-      crumbs="Возвраты"
-      actionLabel="Новый возврат"
-      snapshot={snapshot}
-      path="/store/logistics/returns"
-      rows={rows.map((item) => {
-        const shipment = snapshot.shipments.find((entry) => entry.id === item.shipmentId);
-        return {
-          id: item.id,
-          number: item.number,
-          extra: shipment?.number ?? item.shipmentId,
-          extraHref: shipment ? `/store/logistics/shipments/${shipment.id}` : undefined,
-          products: snapshot.returnLines
-            .filter((line) => line.returnId === item.id)
-            .map((line) => {
-              const shipmentLine = snapshot.shipmentLines.find((entry) => entry.id === line.shipmentLineId);
-              return { productId: shipmentLine?.productId ?? "", quantity: line.quantity };
-            }),
-          status: item.status,
-        };
-      })}
-      extraHeader="Отгрузка"
-      isLoading={isLoading}
-      error={error}
-      status={status}
-      onStatus={setStatus}
-      onCreate={() => setOpen(true)}
-    >
-      <ReturnForm
-        snapshot={snapshot}
-        balances={balances}
-        open={open}
-        onOpenChange={setOpen}
-        reload={reload}
-        mode="list"
+        <LogisticsTableCard headers={["Товар", "Количество", "Назначение", "Место"]} isEmpty={lines.length === 0}>
+          {lines.map((line) => {
+            const orderLine = store.snapshot.customerOrderLines.find(
+              (item) => item.orderId === doc.customerOrderId && item.productId === line.productId,
+            );
+            const remainingShip = orderLine ? remainingToShipForLine(orderLine, store.balances, warehouseId) : 0;
+            const remainingReturn = remainingToReturnForOrderProduct(
+              store.balances,
+              doc.customerOrderId,
+              line.productId,
+            );
+            return (
+              <TableRow key={line.id}>
+                <TableCell className="px-3 py-2">
+                  <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
+                </TableCell>
+                <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(line.quantity)}</TableCell>
+                <TableCell className="px-3 py-2 text-sm">
+                  {line.toOwnerType
+                    ? ownerLabel(store.snapshot, line.toOwnerType, line.toOwnerId)
+                    : "Свободно"}
+                </TableCell>
+                <TableCell className="px-3 py-2 text-sm">
+                  <LogisticsCodeBadge
+                    code={warehouseCode(store.snapshot, warehouseId)}
+                    href={hrefForWarehouse(warehouseId)}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {direction === "shipment"
+                      ? `Ещё можно отгрузить ${formatQuantity(remainingShip)}`
+                      : `Ещё можно вернуть ${formatQuantity(remainingReturn)}`}
+                  </p>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </LogisticsTableCard>
+        {lines[0]?.productId ? (
+          <AvailabilityPanel snapshot={store.snapshot} balances={store.balances} productId={lines[0].productId} />
+        ) : null}
+        <DocumentLedger
+          snapshot={store.snapshot}
+          hide="document"
+          filter={(entry) =>
+            (entry.documentType === "shipment" || entry.documentType === "return") && entry.documentId === doc.id
+          }
+        />
+      </LogisticsPageShell>
+      <ShipmentForm
+        key={`${formIntention}:${doc.customerOrderId}:${warehouseId}:${formOpen ? "open" : "closed"}`}
+        snapshot={store.snapshot}
+        balances={store.balances}
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        reload={store.reload}
+        mode="hub"
+        preset={{ intention: formIntention, customerOrderId: doc.customerOrderId, warehouseId }}
       />
-    </DocumentList>
+    </>
   );
 };
 
@@ -433,85 +510,6 @@ export const AdjustmentDetailPage = () => {
         reload={store.reload}
         mode="hub"
         preset={adjustPreset}
-      />
-    ) : null}
-    </>
-  );
-};
-
-export const ReturnDetailPage = () => {
-  const params = useParams<{ id: string }>();
-  const store = useLogisticsStore();
-  const [reserveOpen, setReserveOpen] = useState(false);
-  const [reservePreset, setReservePreset] = useState<CancelGuidance["reservationPreset"]>();
-  const doc = store.snapshot.returns.find((item) => item.id === params.id);
-  const lines = store.snapshot.returnLines.filter((line) => line.returnId === params.id);
-  const shipment = doc ? store.snapshot.shipments.find((item) => item.id === doc.shipmentId) : undefined;
-  const order = shipment ? relatedOrderItem(store.snapshot, shipment.customerOrderId) : null;
-  const warehouse = shipment ? warehouseById(store.snapshot, shipment.warehouseId) : undefined;
-
-  return (
-    <>
-    <DocumentDetail
-      store={store}
-      title={doc?.number ?? "Возврат"}
-      crumbs={[{ label: "Возвраты", href: "/store/logistics/returns" }, { label: doc?.number ?? "Возврат" }]}
-      status={doc?.status}
-      documentType="return"
-      sourceId={doc?.id}
-      onPost={doc ? () => postReturn(doc.id) : undefined}
-      cancelSubject={doc ? { type: "return", id: doc.id } : undefined}
-      onCancelFollowUp={(action, guidance) => {
-        if (action.id === "open-reservation") {
-          setReservePreset(guidance.reservationPreset);
-          setReserveOpen(true);
-        }
-      }}
-      related={
-        <>
-          {shipment ? (
-            <RelatedDocuments
-              title="Отгрузка"
-              items={[
-                {
-                  id: shipment.id,
-                  href: `/store/logistics/shipments/${shipment.id}`,
-                  label: shipment.number,
-                  meta: shipment.status,
-                },
-              ]}
-            />
-          ) : null}
-          {order ? <RelatedDocuments title="Заказ клиента" items={[order]} /> : null}
-        </>
-      }
-      lines={lines.map((line) => {
-        const shipmentLine = store.snapshot.shipmentLines.find((item) => item.id === line.shipmentLineId);
-        const remaining = shipmentLine
-          ? remainingToReturnForLine(store.snapshot, shipmentLine.id, shipmentLine.quantity)
-          : 0;
-        return {
-          id: line.id,
-          productId: shipmentLine?.productId ?? "",
-          quantity: line.quantity,
-          place: warehouse ? (
-            <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
-          ) : (
-            "Склад отгрузки"
-          ),
-          hint: `Ещё можно вернуть ${formatQuantity(remaining)}`,
-        };
-      })}
-    />
-    {reserveOpen ? (
-      <ReservationForm
-        snapshot={store.snapshot}
-        balances={store.balances}
-        open
-        onOpenChange={setReserveOpen}
-        reload={store.reload}
-        mode="hub"
-        preset={reservePreset}
       />
     ) : null}
     </>

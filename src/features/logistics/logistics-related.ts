@@ -5,14 +5,22 @@ import {
 } from "@/features/logistics/logistics-availability";
 import { manufacturerCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
-import { expectedEndMeta, formatQuantity, RESERVATION_DIRECTION_LABELS } from "@/features/logistics/logistics-labels";
+import {
+  expectedEndMeta,
+  formatQuantity,
+  RESERVATION_DIRECTION_LABELS,
+  SHIPMENT_DIRECTION_LABELS,
+} from "@/features/logistics/logistics-labels";
 import {
   ownersEqual,
   reservationDirection,
   reservationTouchesOrder,
+  shipmentDirection,
+  shipmentWarehouseId,
   type DocumentStatus,
   type LogisticsSnapshot,
   type ReservationDirection,
+  type Shipment,
   type StockBalance,
   type TransferStatus,
 } from "@/features/logistics/logistics-types";
@@ -62,34 +70,31 @@ export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId
       };
     });
 
+const shipmentItem = (item: Shipment): RelatedDocumentItem => ({
+  id: item.id,
+  href: `/store/logistics/shipments/${item.id}`,
+  label: item.number,
+  meta: SHIPMENT_DIRECTION_LABELS[shipmentDirection(item.fromLocationType, item.toLocationType)],
+  statusKey: "posted",
+});
+
 export const relatedShipments = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
   snapshot.shipments
-    .filter((item) => item.customerOrderId === customerOrderId)
-    .map((item) => ({
-      id: item.id,
-      href: `/store/logistics/shipments/${item.id}`,
-      label: item.number,
-      meta: statusMeta(item.status),
-      statusKey: item.status,
-    }));
+    .filter(
+      (item) =>
+        item.customerOrderId === customerOrderId &&
+        shipmentDirection(item.fromLocationType, item.toLocationType) === "shipment",
+    )
+    .map(shipmentItem);
 
-export const relatedReturnsForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
-  const shipmentIds = new Set(
-    snapshot.shipments.filter((item) => item.customerOrderId === customerOrderId).map((item) => item.id),
-  );
-  return snapshot.returns
-    .filter((item) => shipmentIds.has(item.shipmentId))
-    .map((item) => {
-      const shipment = snapshot.shipments.find((entry) => entry.id === item.shipmentId);
-      return {
-        id: item.id,
-        href: `/store/logistics/returns/${item.id}`,
-        label: item.number,
-        meta: `${statusMeta(item.status)}${shipment ? ` · ${shipment.number}` : ""}`,
-        statusKey: item.status,
-      };
-    });
-};
+export const relatedReturnsForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
+  snapshot.shipments
+    .filter(
+      (item) =>
+        item.customerOrderId === customerOrderId &&
+        shipmentDirection(item.fromLocationType, item.toLocationType) === "return",
+    )
+    .map(shipmentItem);
 
 export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
   const transferIds = new Set<string>();
@@ -324,16 +329,6 @@ export const relatedReservationsForProduction = (
     });
 };
 
-export const relatedReturnsForShipment = (snapshot: LogisticsSnapshot, shipmentId: string): RelatedDocumentItem[] =>
-  snapshot.returns
-    .filter((item) => item.shipmentId === shipmentId)
-    .map((item) => ({
-      id: item.id,
-      href: `/store/logistics/returns/${item.id}`,
-      label: item.number,
-      meta: statusMeta(item.status),
-    }));
-
 export const relatedTransfersForWarehouse = (
   snapshot: LogisticsSnapshot,
   warehouseId: string,
@@ -356,13 +351,8 @@ export const relatedShipmentsForWarehouse = (
   warehouseId: string,
 ): RelatedDocumentItem[] =>
   snapshot.shipments
-    .filter((item) => item.warehouseId === warehouseId)
-    .map((item) => ({
-      id: item.id,
-      href: `/store/logistics/shipments/${item.id}`,
-      label: item.number,
-      meta: statusMeta(item.status),
-    }));
+    .filter((item) => shipmentWarehouseId(item) === warehouseId)
+    .map(shipmentItem);
 
 export const relatedAdjustmentsForWarehouse = (
   snapshot: LogisticsSnapshot,
@@ -567,10 +557,10 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
         href: `/store/logistics/shipments/${item.id}`,
         number: item.number,
         quantity: shipmentQty.get(item.id) ?? 0,
-        status: item.status,
+        status: "posted",
         expectedEndOn: null,
         hasExpectedEnd: false,
-        hint: order?.number ?? warehouseCode(snapshot, item.warehouseId),
+        hint: `${SHIPMENT_DIRECTION_LABELS[shipmentDirection(item.fromLocationType, item.toLocationType)]}${order ? ` · ${order.number}` : ""}`,
         manufacturerId: null,
       };
     })

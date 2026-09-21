@@ -474,7 +474,7 @@ export const WarehouseDetailPage = () => {
       </LogisticsTableCard>
       <RelatedDocumentsBoard columns={2}>
         <RelatedDocuments title="Перемещения" href="/store/logistics/transfers" items={transfers} />
-        <RelatedDocuments title="Отгрузки" href="/store/logistics/shipments" items={shipments} />
+        <RelatedDocuments title="Отгрузки и возвраты" href="/store/logistics/shipments" items={shipments} />
         {productions.length > 0 ? (
           <RelatedDocuments title="Заказы на производство" href="/store/logistics/production-orders" items={productions} />
         ) : null}

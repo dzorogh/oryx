@@ -6,11 +6,13 @@ import {
   OUTPUT_STATUS_LABELS,
   PRODUCTION_STATUS_LABELS,
   STOCK_STATE_LABELS,
+  SHIPMENT_DIRECTION_LABELS,
   TRANSFER_STATUS_LABELS,
 } from "@/features/logistics/logistics-labels";
 import type {
   CustomerOrderStatus,
   DocumentStatus,
+  ShipmentDirection,
   OutputStatus,
   ProductionStatus,
   StockState,
@@ -32,6 +34,10 @@ const tone = (value: string): "outline" | "secondary" | "default" | "destructive
 
 export const DocumentStatusBadge = ({ status }: { status: DocumentStatus | "draft" | "posted" }) => (
   <Badge variant={tone(status)}>{DOCUMENT_STATUS_LABELS[status as DocumentStatus] ?? status}</Badge>
+);
+
+export const ShipmentDirectionBadge = ({ direction }: { direction: ShipmentDirection }) => (
+  <Badge variant={direction === "return" ? "secondary" : "default"}>{SHIPMENT_DIRECTION_LABELS[direction]}</Badge>
 );
 
 export const TransferStatusBadge = ({ status }: { status: TransferStatus }) => (

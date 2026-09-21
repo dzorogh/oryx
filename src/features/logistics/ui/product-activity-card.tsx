@@ -34,7 +34,7 @@ const SECTION_COPY: Record<
   production_order: { title: "Заказы на производство", href: "/store/logistics/production-orders", always: true },
   transfer: { title: "Перемещения", href: "/store/logistics/transfers", always: false },
   output: { title: "Выпуски", href: "/store/logistics/outputs", always: false },
-  shipment: { title: "Отгрузки", href: "/store/logistics/shipments", always: false },
+  shipment: { title: "Отгрузки и возвраты", href: "/store/logistics/shipments", always: false },
 };
 
 const STATUS_LABELS = {

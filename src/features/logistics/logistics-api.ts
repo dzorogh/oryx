@@ -25,8 +25,6 @@ import type {
   ReservationStatus,
   Shipment,
   ShipmentLine,
-  ShipmentReturn,
-  ShipmentReturnLine,
   StockAdjustment,
   StockAdjustmentLine,
   StockBalance,
@@ -49,6 +47,11 @@ import {
   type LogisticsCodePrefixes,
 } from "@/features/logistics/logistics-codes";
 import { assertDocumentCanBeCancelled } from "@/features/logistics/logistics-rules";
+import {
+  shipmentCreateRpcArgs,
+  type ShipmentCreateAndPostInput,
+  type ShipmentCreateAndPostResult,
+} from "@/features/logistics/shipment-direct-post";
 import {
   transferCreateRpcArgs,
   type TransferCreateAndSendInput,
@@ -239,8 +242,10 @@ const mapShipment = (row: Record<string, unknown>): Shipment => {
     id,
     number: formatLogisticsCode("shipment", id),
     customerOrderId: String(row.customer_order_id),
-    warehouseId: String(row.warehouse_id),
-    status: row.status as Shipment["status"],
+    fromLocationType: row.from_location_type as Shipment["fromLocationType"],
+    fromLocationId: String(row.from_location_id),
+    toLocationType: row.to_location_type as Shipment["toLocationType"],
+    toLocationId: String(row.to_location_id),
     createdAt: String(row.created_at),
     createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
   };
@@ -251,6 +256,8 @@ const mapShipmentLine = (row: Record<string, unknown>): ShipmentLine => ({
   shipmentId: String(row.shipment_id),
   productId: String(row.product_id),
   quantity: Number(row.quantity),
+  toOwnerType: mapOwnerType(row.to_owner_type),
+  toOwnerId: mapOwnerId(row.to_owner_id),
 });
 
 const mapOutput = (row: Record<string, unknown>): ProductionOutput => {
@@ -279,25 +286,6 @@ const mapOutputAllocation = (row: Record<string, unknown>): ProductionOutputAllo
   lineId: String(row.line_id),
   ownerType: mapOwnerType(row.owner_type) ?? "order",
   ownerId: mapOwnerId(row.owner_id) ?? "",
-  quantity: Number(row.quantity),
-});
-
-const mapReturn = (row: Record<string, unknown>): ShipmentReturn => {
-  const id = String(row.id);
-  return {
-    id,
-    number: formatLogisticsCode("return", id),
-    shipmentId: String(row.shipment_id),
-    status: row.status as ShipmentReturn["status"],
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
-  };
-};
-
-const mapReturnLine = (row: Record<string, unknown>): ShipmentReturnLine => ({
-  id: String(row.id),
-  returnId: String(row.return_id),
-  shipmentLineId: String(row.shipment_line_id),
   quantity: Number(row.quantity),
 });
 
@@ -420,8 +408,6 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     outputs,
     outputLines,
     outputAllocations,
-    returns,
-    returnLines,
     adjustments,
     adjustmentLines,
     transactions,
@@ -473,13 +459,13 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
     selectAll(
       "store_shipment",
-      "id,customer_order_id,warehouse_id,status,created_at,created_by",
+      "id,customer_order_id,from_location_type,from_location_id,to_location_type,to_location_id,created_at,created_by",
       mapShipment,
       "id",
     ),
     selectAll(
       "store_shipment_line",
-      "id,shipment_id,product_id,quantity",
+      "id,shipment_id,product_id,quantity,to_owner_type,to_owner_id",
       mapShipmentLine,
       "id",
     ),
@@ -501,13 +487,6 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
       mapOutputAllocation,
       "id",
     ),
-    selectAll(
-      "store_return",
-      "id,shipment_id,status,created_at,created_by",
-      mapReturn,
-      "id",
-    ),
-    selectAll("store_return_line", "id,return_id,shipment_line_id,quantity", mapReturnLine, "id"),
     selectAll(
       "store_adjustment",
       "id,operation,warehouse_id,explanation,source_document_type,source_document_id,status,created_at,created_by",
@@ -555,8 +534,6 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     outputs,
     outputLines,
     outputAllocations,
-    returns,
-    returnLines,
     adjustments,
     adjustmentLines,
     transactions,
@@ -647,56 +624,19 @@ export const addReservationLine = (args: ReservationLineInput & { reservationId:
     from_owner_id: args.fromOwnerId ?? null,
   });
 
-export const postShipment = (id: string) => rpc("store_post_shipment", { p_id: id });
-export const postReturn = (id: string) => rpc("store_post_return", { p_id: id });
 export const completeOutput = (id: string) => rpc("store_complete_output", { p_id: id });
 
-export const createAndPostShipment = async (args: {
-  customerOrderId: string;
-  warehouseId: string;
-  lines: Array<{ productId: string; quantity: number }>;
-  post?: boolean;
-}) => {
-  const id = await insertReturningId("store_shipment", {
-    customer_order_id: args.customerOrderId,
-    warehouse_id: args.warehouseId,
-    status: "draft",
-  });
-  await insertRows(
-    "store_shipment_line",
-    args.lines.map((line) => ({
-      shipment_id: id,
-      product_id: line.productId,
-      quantity: line.quantity,
-    })),
+export const createAndPostShipment = async (
+  input: ShipmentCreateAndPostInput,
+): Promise<ShipmentCreateAndPostResult> => {
+  const created = await rpcJson<{ id: number | string; direction: string }>(
+    "store_create_and_post_shipment",
+    shipmentCreateRpcArgs(input),
   );
-  if (args.post !== false) {
-    await postShipment(id);
+  if (created.direction !== "shipment" && created.direction !== "return") {
+    throw new Error("Ожидался документ отгрузки или возврата");
   }
-  return id;
-};
-
-export const createAndPostReturn = async (args: {
-  shipmentId: string;
-  lines: Array<{ shipmentLineId: string; quantity: number }>;
-  post?: boolean;
-}) => {
-  const id = await insertReturningId("store_return", {
-    shipment_id: args.shipmentId,
-    status: "draft",
-  });
-  await insertRows(
-    "store_return_line",
-    args.lines.map((line) => ({
-      return_id: id,
-      shipment_line_id: line.shipmentLineId,
-      quantity: line.quantity,
-    })),
-  );
-  if (args.post !== false) {
-    await postReturn(id);
-  }
-  return id;
+  return { id: String(created.id), direction: created.direction };
 };
 
 export const createProductionOutput = async (args: {

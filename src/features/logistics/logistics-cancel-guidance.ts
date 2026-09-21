@@ -1,6 +1,6 @@
 import {
   freeAtPlace,
-  remainingToReturnForLine,
+  remainingToReturnForOrderProduct,
   reservationCapForOwner,
   reservedAtPlaceForOwner,
 } from "@/features/logistics/logistics-availability";
@@ -8,6 +8,8 @@ import { freeWarehouseQuantity, type AdjustmentSourceDocumentType } from "@/feat
 import { manufacturerById } from "@/features/logistics/logistics-lookups";
 import {
   reservationDirection,
+  shipmentDirection,
+  shipmentWarehouseId,
   type AdjustmentOperation,
   type LogisticsSnapshot,
   type OwnerType,
@@ -72,6 +74,7 @@ export type CancelGuidanceActionId =
   | "confirm-cancel"
   | "open-reservation"
   | "open-return"
+  | "open-shipment"
   | "open-adjustment"
   | "open-reverse-transfer"
   | "mark-delivered"
@@ -127,6 +130,7 @@ export type CancelGuidance = {
   adjustmentPreset?: CancelGuidanceAdjustmentPreset;
   transferPreset?: CancelGuidanceTransferPreset;
   returnShipmentId?: string;
+  shipmentOrderId?: string;
 };
 
 export type CancelGuidanceFacts = {
@@ -206,51 +210,27 @@ export const projectCancelGuidance = (facts: CancelGuidanceFacts): CancelGuidanc
   }
 
   if (facts.type === "shipment") {
-    if (facts.status === "draft") {
-      return safeCancelGuidance(facts.id, facts.status, "shipment", "отгрузку");
-    }
-    if (facts.status !== "posted") {
-      return hiddenGuidance(facts.id);
-    }
     return withCommon({
       mode: "guidance",
       title: "Проведённую отгрузку нельзя отменить",
       context:
-        "Отгрузка уже списала резерв заказа. Чтобы вернуть товар на склад, создайте возврат — исходная отгрузка останется в истории.",
+        "Отгрузка уже списала резерв заказа. Чтобы вернуть товар на склад, создайте документ обратного маршрута — исходная отгрузка останется в истории.",
       documentId: facts.id,
       returnShipmentId: facts.id,
-      actions: [
-        action(
-          "open-return",
-          "Создать возврат",
-          facts.availableQuantity > 0,
-          CANCEL_GUIDANCE_BLOCKED.nothingToReturn,
-        ),
-      ],
+      shipmentOrderId: facts.id,
+      actions: [action("open-return", "Создать возврат", true)],
     });
   }
 
   if (facts.type === "return") {
-    if (facts.status === "draft") {
-      return safeCancelGuidance(facts.id, facts.status, "shipment_return", "возврат");
-    }
-    if (facts.status !== "posted") {
-      return hiddenGuidance(facts.id);
-    }
     return withCommon({
       mode: "guidance",
       title: "Проведённый возврат нельзя отменить",
       context:
-        "Возврат уже вернул товар в свободный остаток. Чтобы снова занять его, создайте новый резерв — исходный возврат не изменится.",
+        "Возврат уже вернул товар на склад. Чтобы снова отгрузить его, создайте документ обратного маршрута — исходный возврат не изменится.",
       documentId: facts.id,
-      actions: [
-        action(
-          "open-reservation",
-          "Зарезервировать снова",
-          facts.availableQuantity > 0,
-          CANCEL_GUIDANCE_BLOCKED.nothingToReserve,
-        ),
-      ],
+      shipmentOrderId: facts.id,
+      actions: [action("open-shipment", "Создать отгрузку", true)],
     });
   }
 
@@ -420,64 +400,39 @@ export const cancelGuidanceFactsFromSnapshot = (
     };
   }
 
-  if (subject.type === "shipment") {
+  if (subject.type === "shipment" || subject.type === "return") {
     const doc = snapshot.shipments.find((item) => item.id === subject.id);
     if (!doc) {
       return null;
     }
+    const direction = shipmentDirection(doc.fromLocationType, doc.toLocationType);
     const lines = snapshot.shipmentLines.filter((line) => line.shipmentId === doc.id);
+    const warehouseId = shipmentWarehouseId(doc);
+    if (direction === "shipment") {
+      const availableQuantity = lines.reduce(
+        (sum, line) => sum + remainingToReturnForOrderProduct(balances, doc.customerOrderId, line.productId),
+        0,
+      );
+      return {
+        type: "shipment",
+        id: doc.id,
+        status: "posted",
+        availableQuantity,
+        reservedQuantity: 0,
+      };
+    }
     const availableQuantity = lines.reduce(
-      (sum, line) => sum + remainingToReturnForLine(snapshot, line.id, line.quantity),
+      (sum, line) =>
+        sum +
+        reservedAtPlaceForOwner(balances, line.productId, "warehouse", warehouseId, "order", doc.customerOrderId),
       0,
     );
     return {
-      type: "shipment",
-      id: doc.id,
-      status: doc.status,
-      availableQuantity,
-      reservedQuantity: 0,
-    };
-  }
-
-  if (subject.type === "return") {
-    const doc = snapshot.returns.find((item) => item.id === subject.id);
-    if (!doc) {
-      return null;
-    }
-    const shipment = snapshot.shipments.find((item) => item.id === doc.shipmentId);
-    const lines = snapshot.returnLines
-      .filter((line) => line.returnId === doc.id)
-      .map((line) => {
-        const shipmentLine = snapshot.shipmentLines.find((item) => item.id === line.shipmentLineId);
-        return { productId: shipmentLine?.productId ?? "", quantity: line.quantity };
-      })
-      .filter((line) => line.productId);
-    const warehouseId = shipment?.warehouseId ?? "";
-    const availableQuantity = warehouseId
-      ? lines.reduce((sum, line) => sum + freeWarehouseQuantity(balances, line.productId, warehouseId), 0)
-      : 0;
-    const reservedQuantity = warehouseId
-      ? lines.reduce(
-          (sum, line) =>
-            sum +
-            balances
-              .filter(
-                (entry) =>
-                  entry.productId === line.productId &&
-                  entry.locationType === "warehouse" &&
-                  entry.locationId === warehouseId &&
-                  entry.stockState === "reserved",
-              )
-              .reduce((inner, entry) => inner + entry.quantity, 0),
-          0,
-        )
-      : 0;
-    return {
       type: "return",
       id: doc.id,
-      status: doc.status,
+      status: "posted",
       availableQuantity,
-      reservedQuantity,
+      reservedQuantity: availableQuantity,
     };
   }
 
@@ -749,40 +704,16 @@ const attachPresets = (
     };
   }
 
-  if (subject.type === "return") {
-    const doc = snapshot.returns.find((item) => item.id === subject.id);
-    const shipment = doc ? snapshot.shipments.find((item) => item.id === doc.shipmentId) : undefined;
-    const returnLines = snapshot.returnLines.filter((line) => line.returnId === subject.id);
-    const chosenLine = firstAvailable(returnLines, (line) => {
-      const shipmentLine = snapshot.shipmentLines.find((item) => item.id === line.shipmentLineId);
-      return Boolean(
-        shipment &&
-          shipmentLine &&
-          freeWarehouseQuantity(balances, shipmentLine.productId, shipment.warehouseId) > 0,
-      );
-    });
-    const shipmentLine = chosenLine
-      ? snapshot.shipmentLines.find((item) => item.id === chosenLine.shipmentLineId)
-      : undefined;
-    if (!shipment || !shipmentLine) {
+  if (subject.type === "return" || subject.type === "shipment") {
+    const doc = snapshot.shipments.find((item) => item.id === subject.id);
+    if (!doc) {
       return guidance;
     }
     return {
       ...guidance,
-      reservationPreset: {
-        locationType: "warehouse",
-        locationId: shipment.warehouseId,
-        toOwnerType: "order",
-        toOwnerId: shipment.customerOrderId,
-        fromOwnerType: null,
-        fromOwnerId: null,
-        productId: shipmentLine.productId,
-      },
+      returnShipmentId: doc.id,
+      shipmentOrderId: doc.customerOrderId,
     };
-  }
-
-  if (subject.type === "shipment") {
-    return { ...guidance, returnShipmentId: subject.id };
   }
 
   if (subject.type === "output") {

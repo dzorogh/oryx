@@ -432,7 +432,7 @@ export const CustomerOrderDetailPage = () => {
           {
             id: "returns",
             title: "Возвраты",
-            href: "/store/logistics/returns",
+            href: "/store/logistics/shipments?direction=return",
             items: withOrderCoverage(
               relatedReturnsForOrder(snapshot, order.id),
               coverage.return,
@@ -482,13 +482,14 @@ export const CustomerOrderDetailPage = () => {
         }}
       />
       <ShipmentForm
+        key={`order-ship:${order.id}:${shipOpen ? "open" : "closed"}`}
         snapshot={snapshot}
         balances={balances}
         open={shipOpen}
         onOpenChange={setShipOpen}
         reload={reload}
         mode="hub"
-        preset={{ customerOrderId: order.id }}
+        preset={{ intention: "shipment", customerOrderId: order.id }}
       />
       <ReservationForm
         snapshot={snapshot}

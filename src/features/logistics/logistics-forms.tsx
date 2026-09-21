@@ -9,10 +9,16 @@ import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import {
   createAndPostAdjustment,
   createAndPostReservation,
-  createAndPostReturn,
   createAndPostShipment,
   createReservationDraft,
 } from "@/features/logistics/logistics-api";
+import {
+  assertUniqueReturnDestinations,
+  newShipmentRequestKey,
+  reserveThenShipNextAction,
+  shipmentIntentionAfterBack,
+  shipmentsForAdjustmentSource,
+} from "@/features/logistics/shipment-direct-post";
 import {
   ADJUSTMENT_EXPLANATION_REQUIRED,
   ADJUSTMENT_LINES_REQUIRED,
@@ -26,7 +32,7 @@ import {
 } from "@/features/logistics/logistics-adjustments";
 import {
   freePlacesForProduct,
-  remainingToReturnForLine,
+  remainingToReturnForOrderProduct,
   remainingToShipForLine,
   reservationCapForOwner,
   reservedAtPlaceForOwner,
@@ -39,6 +45,7 @@ import {
   FREE_OWNER_LABEL,
   OWNER_TYPE_LABELS,
   RESERVATION_DIRECTION_LABELS,
+  SHIPMENT_DIRECTION_LABELS,
   formatQuantity,
 } from "@/features/logistics/logistics-labels";
 import {
@@ -58,6 +65,7 @@ import {
   ownersEqual,
   reservationDirection,
   type LogisticsSnapshot,
+  type ShipmentDirection,
   type OwnerType,
   type ReservationLocationType,
   type StockBalance,
@@ -65,7 +73,7 @@ import {
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
-import { runLogisticsAction } from "@/features/logistics/ui/run-action";
+import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 type FormMode = "hub" | "list";
 
@@ -610,25 +618,66 @@ export const ReservationForm = ({
   );
 };
 
+type ReturnDraftLine = {
+  key: string;
+  productId: string;
+  quantity: string;
+  destKind: OwnerKind;
+  destOwnerId: string;
+};
+
+type ReserveSourceDraft = {
+  key: string;
+  productId: string;
+  fromOwnerKind: "free" | "region";
+  fromOwnerId: string;
+  quantity: string;
+};
+
+const emptyReturnLine = (productId = ""): ReturnDraftLine => ({
+  key: `return-${productId || "new"}-${Math.random().toString(16).slice(2)}`,
+  productId,
+  quantity: "1",
+  destKind: "free",
+  destOwnerId: "",
+});
+
+export type ShipmentFormPreset = {
+  intention?: ShipmentDirection;
+  customerOrderId?: string;
+  warehouseId?: string;
+};
+
 export const ShipmentForm = ({
   snapshot,
   balances,
   open,
   onOpenChange,
   reload,
-  mode = "list",
   preset,
 }: SharedFormProps & {
-  preset?: { customerOrderId?: string; warehouseId?: string };
+  preset?: ShipmentFormPreset;
 }) => {
+  const [intention, setIntention] = useState<ShipmentDirection | null>(preset?.intention ?? null);
   const [orderId, setOrderId] = useState(preset?.customerOrderId ?? "");
   const [warehouseId, setWarehouseId] = useState(preset?.warehouseId ?? "");
   const [quantities, setQuantities] = useState<Record<string, string>>({});
+  const [returnLines, setReturnLines] = useState<ReturnDraftLine[]>([emptyReturnLine()]);
+  const [reserveThenShip, setReserveThenShip] = useState(false);
+  const [reserveSources, setReserveSources] = useState<ReserveSourceDraft[]>([]);
+  const [reservationId, setReservationId] = useState<string | null>(null);
+  const [shipmentError, setShipmentError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const shipmentKeyRef = useRef(newShipmentRequestKey());
 
   const selectedOrderId = preset?.customerOrderId ?? orderId;
   const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === selectedOrderId);
-  const warehouses = warehousesWithReservedForOrder(balances, orderLines);
-  const lines = warehouseId ? reservedLinesAtWarehouse(balances, warehouseId, orderLines) : [];
+  const reservedWarehouses = warehousesWithReservedForOrder(balances, orderLines);
+  const reservedShipLines = warehouseId ? reservedLinesAtWarehouse(balances, warehouseId, orderLines) : [];
+  const shippedLines = orderLines.filter(
+    (line) => remainingToReturnForOrderProduct(balances, line.orderId, line.productId) > 0,
+  );
   const regionRows = warehouseId
     ? balances
         .filter(
@@ -648,58 +697,282 @@ export const ShipmentForm = ({
           quantity: entry.quantity,
         }))
     : [];
+  const freeRows = warehouseId
+    ? balances.filter(
+        (entry) =>
+          entry.locationType === "warehouse" &&
+          entry.locationId === warehouseId &&
+          entry.stockState === "free" &&
+          entry.quantity > 1e-9 &&
+          orderLines.some((line) => line.productId === entry.productId),
+      )
+    : [];
 
-  const reset = () => {
-    setOrderId(preset?.customerOrderId ?? "");
+  const resetDetails = () => {
     setWarehouseId(preset?.warehouseId ?? "");
     setQuantities({});
+    setReturnLines([emptyReturnLine(shippedLines[0]?.productId ?? "")]);
+    setReserveThenShip(false);
+    setReserveSources([]);
+    setReservationId(null);
+    setShipmentError(null);
+    setSubmitting(false);
+    shipmentKeyRef.current = newShipmentRequestKey();
   };
 
-  const submit = async (post: boolean) => {
-    const payload = lines
-      .map((item) => ({
-        productId: item.line.productId,
-        quantity: Number(quantities[item.line.id] ?? item.reserved),
-      }))
-      .filter((item) => item.quantity > 0);
-    if (!selectedOrderId || !warehouseId || payload.length === 0) {
+  const reset = () => {
+    setIntention(preset?.intention ?? null);
+    setOrderId(preset?.customerOrderId ?? "");
+    resetDetails();
+  };
+
+  const goBack = () => {
+    const cleared = shipmentIntentionAfterBack(preset?.customerOrderId ?? "");
+    setIntention(cleared.intention);
+    setOrderId(cleared.orderId);
+    resetDetails();
+  };
+
+  const chooseIntention = (next: ShipmentDirection) => {
+    resetDetails();
+    setIntention(next);
+    if (next === "return") {
+      setReturnLines([emptyReturnLine()]);
+    }
+  };
+
+  const reservePayload = reserveSources
+    .map((line) => ({
+      productId: line.productId,
+      quantity: Number(line.quantity),
+      fromOwnerType: line.fromOwnerKind === "free" ? null : ("region" as const),
+      fromOwnerId: line.fromOwnerKind === "free" ? null : line.fromOwnerId,
+    }))
+    .filter((item) => item.productId && item.quantity > 0);
+
+  const extraShipLines =
+    reserveThenShip || reservationId
+      ? orderLines
+          .filter((line) => !reservedShipLines.some((item) => item.line.id === line.id))
+          .filter((line) => reservePayload.some((item) => item.productId === line.productId))
+          .map((line) => ({
+            line,
+            reserved: reservePayload
+              .filter((item) => item.productId === line.productId)
+              .reduce((sum, item) => sum + item.quantity, 0),
+          }))
+      : [];
+  const shipLines = [...reservedShipLines, ...extraShipLines];
+
+  const shipPayload = shipLines
+    .map((item) => ({
+      productId: item.line.productId,
+      quantity: Number(quantities[item.line.id] ?? item.reserved),
+      toOwnerType: "order" as const,
+      toOwnerId: selectedOrderId,
+    }))
+    .filter((item) => item.quantity > 0);
+
+  const returnPayload = returnLines
+    .map((line) => {
+      const dest = destinationFromKind(line.destKind, line.destOwnerId);
+      return {
+        productId: line.productId,
+        quantity: Number(line.quantity),
+        toOwnerType: dest.toOwnerType,
+        toOwnerId: dest.toOwnerId,
+      };
+    })
+    .filter((item) => item.productId && item.quantity > 0);
+
+  const submitShipment = async () => {
+    if (submittingRef.current || submitting) {
+      return;
+    }
+    if (!selectedOrderId || !warehouseId || shipPayload.length === 0) {
       toast.error("Выберите заказ клиента, склад с резервом и количества");
       return;
     }
-    for (const item of payload) {
+    for (const item of shipPayload) {
       const line = orderLines.find((entry) => entry.productId === item.productId);
       if (!line) {
         continue;
       }
-      const max = remainingToShipForLine(line, balances, warehouseId);
+      const reserved = remainingToShipForLine(line, balances, warehouseId);
+      const extra = Math.max(0, item.quantity - reserved);
+      if (extra > 0 && !(reserveThenShip && reservePayload.length > 0) && !reservationId) {
+        toast.error("Нельзя отгрузить свободный или региональный остаток без резерва");
+        return;
+      }
       try {
-        assertEnoughStock(max, item.quantity, "reserved");
+        if (!reserveThenShip && !reservationId) {
+          assertEnoughStock(reserved, item.quantity, "reserved");
+        }
         assertShipmentCapacity(line, balances, item.quantity);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Нельзя отгрузить больше доступного");
         return;
       }
     }
-    const ok = await runLogisticsAction(
-      () =>
-        createAndPostShipment({
-          customerOrderId: selectedOrderId,
-          warehouseId,
-          lines: payload,
-          post,
-        }),
-      post ? "Отгрузка проведена" : "Черновик отгрузки создан",
-      reload,
-    );
-    if (ok) {
-      onOpenChange(false);
-      reset();
+
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      if (reserveThenShip && reservePayload.length > 0 && !reservationId) {
+        try {
+          await createAndPostReservation({
+            locationType: "warehouse",
+            locationId: warehouseId,
+            toOwnerType: "order",
+            toOwnerId: selectedOrderId,
+            lines: reservePayload,
+          });
+          setReservationId("done");
+          toast.success("Резерв проведён");
+          try {
+            await reload();
+          } catch {
+            // Резерв уже проведён; повтор должен идти только в отгрузку.
+          }
+        } catch (error) {
+          toast.error("Не удалось выполнить действие", {
+            description: translateLogisticsError(error instanceof Error ? error.message : "Попробуйте ещё раз."),
+          });
+          return;
+        }
+      }
+
+      const shipped = await runLogisticsAction(
+        () =>
+          createAndPostShipment({
+            requestKey: shipmentKeyRef.current,
+            customerOrderId: selectedOrderId,
+            fromLocationType: "warehouse",
+            fromLocationId: warehouseId,
+            toLocationType: "customer_order",
+            toLocationId: selectedOrderId,
+            lines: shipPayload,
+          }),
+        "Отгрузка проведена",
+        reload,
+      );
+      if (shipped) {
+        onOpenChange(false);
+        reset();
+        return;
+      }
+      if (reservationId || (reserveThenShip && reservePayload.length > 0)) {
+        setReservationId((current) => current ?? "done");
+        setShipmentError("Отгрузка не прошла. Резерв сохранён — можно повторить только отгрузку.");
+      }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
-  const canSubmit = lines.some((item) =>
-    isAllowedQuantity(quantities[item.line.id] ?? String(item.reserved), item.reserved),
+  const submitReturn = async () => {
+    if (submittingRef.current || submitting) {
+      return;
+    }
+    if (!selectedOrderId || !warehouseId || returnPayload.length === 0) {
+      toast.error("Выберите заказ клиента, склад и количества возврата");
+      return;
+    }
+    const totals = new Map<string, number>();
+    for (const item of returnPayload) {
+      if ((item.toOwnerType == null) !== (item.toOwnerId == null)) {
+        toast.error("Назначение остатка должно быть полным");
+        return;
+      }
+      totals.set(item.productId, (totals.get(item.productId) ?? 0) + item.quantity);
+    }
+    try {
+      assertUniqueReturnDestinations(returnPayload);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Одинаковый товар и назначение можно указать только один раз");
+      return;
+    }
+    for (const [productId, quantity] of totals) {
+      const remaining = remainingToReturnForOrderProduct(balances, selectedOrderId, productId);
+      if (quantity - remaining > 1e-9) {
+        toast.error("Недостаточно отгруженного количества по заказу");
+        return;
+      }
+    }
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      const ok = await runLogisticsAction(
+        () =>
+          createAndPostShipment({
+            requestKey: shipmentKeyRef.current,
+            customerOrderId: selectedOrderId,
+            fromLocationType: "customer_order",
+            fromLocationId: selectedOrderId,
+            toLocationType: "warehouse",
+            toLocationId: warehouseId,
+            lines: returnPayload,
+          }),
+        "Возврат проведён",
+        reload,
+      );
+      if (ok) {
+        onOpenChange(false);
+        reset();
+      }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  };
+
+  const canShip = shipLines.some((item) =>
+    isAllowedQuantity(quantities[item.line.id] ?? String(item.reserved), Number.POSITIVE_INFINITY),
   );
+  const canReturn = returnPayload.length > 0 && warehouseId.length > 0;
+
+  const fillReserveSources = (nextWarehouseId: string) => {
+    const sources: ReserveSourceDraft[] = [];
+    for (const line of orderLines) {
+      const free = balances.find(
+        (entry) =>
+          entry.productId === line.productId &&
+          entry.locationType === "warehouse" &&
+          entry.locationId === nextWarehouseId &&
+          entry.stockState === "free" &&
+          entry.quantity > 1e-9,
+      );
+      if (free) {
+        sources.push({
+          key: `free:${line.productId}`,
+          productId: line.productId,
+          fromOwnerKind: "free",
+          fromOwnerId: "",
+          quantity: String(free.quantity),
+        });
+      }
+      for (const region of balances.filter(
+        (entry) =>
+          entry.productId === line.productId &&
+          entry.locationType === "warehouse" &&
+          entry.locationId === nextWarehouseId &&
+          entry.stockState === "reserved" &&
+          entry.ownerType === "region" &&
+          entry.ownerId &&
+          entry.quantity > 1e-9,
+      )) {
+        sources.push({
+          key: `region:${line.productId}:${region.ownerId}`,
+          productId: line.productId,
+          fromOwnerKind: "region",
+          fromOwnerId: region.ownerId as string,
+          quantity: String(region.quantity),
+        });
+      }
+    }
+    setReserveSources(sources);
+  };
 
   return (
     <LogisticsDialog
@@ -710,10 +983,44 @@ export const ShipmentForm = ({
           reset();
         }
       }}
-      title="Отгрузка"
+      title={intention ? SHIPMENT_DIRECTION_LABELS[intention] : "Новый документ"}
+      description={
+        intention
+          ? `Маршрут: ${intention === "shipment" ? "склад → заказ клиента" : "заказ клиента → склад"}`
+          : "Выберите намерение. Его можно сменить только возвратом на этот шаг."
+      }
+      className={intention ? undefined : "sm:max-w-xl"}
     >
       <div className="flex flex-col gap-3">
-        {preset?.customerOrderId ? null : (
+        {intention ? (
+          <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2">
+            <p className="text-sm font-medium">{SHIPMENT_DIRECTION_LABELS[intention]}</p>
+            <Button type="button" size="sm" variant="ghost" onClick={goBack}>
+              Назад
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              className="rounded-lg border p-4 text-left transition hover:border-foreground"
+              onClick={() => chooseIntention("shipment")}
+            >
+              <p className="text-base font-semibold">Отгрузить</p>
+              <p className="mt-1 text-xs text-muted-foreground">Склад → заказ клиента из резерва заказа</p>
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border p-4 text-left transition hover:border-foreground"
+              onClick={() => chooseIntention("return")}
+            >
+              <p className="text-base font-semibold">Принять возврат</p>
+              <p className="mt-1 text-xs text-muted-foreground">Заказ клиента → любой склад с выбором назначения</p>
+            </button>
+          </div>
+        )}
+
+        {intention && !preset?.customerOrderId ? (
           <FieldSelect
             label="Заказ клиента"
             value={selectedOrderId}
@@ -724,167 +1031,252 @@ export const ShipmentForm = ({
               setOrderId(value);
               setWarehouseId("");
               setQuantities({});
+              setReturnLines([emptyReturnLine()]);
+              setReserveSources([]);
+              shipmentKeyRef.current = newShipmentRequestKey();
             }}
           />
-        )}
-        <FieldSelect
-          label="Склад"
-          value={warehouseId}
-          items={warehouses.map((item) => ({
-            value: item.warehouseId,
-            label: `${warehouseCode(snapshot, item.warehouseId)} · зарезервировано ${formatQuantity(item.quantity)}`,
-          }))}
-          onChange={(value) => {
-            setWarehouseId(value);
-            const nextLines = reservedLinesAtWarehouse(balances, value, orderLines);
-            setQuantities(Object.fromEntries(nextLines.map((item) => [item.line.id, String(item.reserved)])));
-          }}
-          placeholder="Выберите склад"
-          emptyLabel="Нет резерва на складах"
-        />
-        {lines.map((item) => {
-          const product = productById(snapshot, item.line.productId);
-          return (
-            <div key={item.line.id} className="space-y-2">
-              <ProductIdentity snapshot={snapshot} productId={item.line.productId} nameAs="text" />
-              <AvailabilityPanel snapshot={snapshot} balances={balances} productId={item.line.productId} />
-              <QuantityField
-                value={quantities[item.line.id] ?? String(item.reserved)}
-                onChange={(value) => setQuantities((current) => ({ ...current, [item.line.id]: value }))}
-                max={item.reserved}
-                unit={product?.unit}
-              />
+        ) : null}
+
+        {intention === "shipment" ? (
+          <>
+            <div className="grid gap-1 text-sm">
+              <p>
+                <span className="text-muted-foreground">Откуда:</span> склад
+              </p>
+              <p>
+                <span className="text-muted-foreground">Куда:</span> заказ клиента
+              </p>
             </div>
-          );
-        })}
-        {regionRows.map((item) => (
-          <div key={item.key} className="space-y-1 rounded-md border border-dashed p-3 opacity-70">
-            <ProductIdentity snapshot={snapshot} productId={item.productId} nameAs="text" />
-            <p className="text-sm text-muted-foreground">
-              {ownerLabel(snapshot, "region", item.ownerId)} · {formatQuantity(item.quantity)} · сначала
-              переназначьте на этот заказ
-            </p>
-          </div>
-        ))}
-        <FormActions
-          mode={mode}
-          canSubmit={canSubmit}
-          onDraft={() => void submit(false)}
-          onPost={() => void submit(true)}
-          postLabel="Отгрузить"
-        />
-      </div>
-    </LogisticsDialog>
-  );
-};
+            <FieldSelect
+              label="Склад"
+              value={warehouseId}
+              items={[
+                ...reservedWarehouses.map((item) => ({
+                  value: item.warehouseId,
+                  label: `${warehouseCode(snapshot, item.warehouseId)} · резерв ${formatQuantity(item.quantity)}`,
+                })),
+                ...snapshot.warehouses
+                  .filter((warehouse) => !reservedWarehouses.some((item) => item.warehouseId === warehouse.id))
+                  .map((warehouse) => ({
+                    value: warehouse.id,
+                    label: warehouse.code,
+                  })),
+              ]}
+              onChange={(value) => {
+                setWarehouseId(value);
+                const nextLines = reservedLinesAtWarehouse(balances, value, orderLines);
+                setQuantities(Object.fromEntries(nextLines.map((item) => [item.line.id, String(item.reserved)])));
+                fillReserveSources(value);
+                setReservationId(null);
+                setShipmentError(null);
+                shipmentKeyRef.current = newShipmentRequestKey();
+              }}
+              placeholder="Выберите склад"
+              emptyLabel="Нет складов"
+            />
+            {shipLines.map((item) => {
+              const product = productById(snapshot, item.line.productId);
+              return (
+                <div key={item.line.id} className="space-y-2">
+                  <ProductIdentity snapshot={snapshot} productId={item.line.productId} nameAs="text" />
+                  <AvailabilityPanel snapshot={snapshot} balances={balances} productId={item.line.productId} />
+                  <QuantityField
+                    value={quantities[item.line.id] ?? String(item.reserved)}
+                    onChange={(value) => setQuantities((current) => ({ ...current, [item.line.id]: value }))}
+                    max={reserveThenShip ? undefined : item.reserved}
+                    unit={product?.unit}
+                  />
+                </div>
+              );
+            })}
+            {regionRows.length > 0 || freeRows.length > 0 ? (
+              <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={reserveThenShip}
+                  disabled={Boolean(reservationId)}
+                  onChange={(event) => {
+                    setReserveThenShip(event.target.checked);
+                    if (event.target.checked && warehouseId) {
+                      fillReserveSources(warehouseId);
+                    }
+                  }}
+                />
+                <span>
+                  Сначала зарезервировать свободный и региональный остаток, затем отгрузить. Резерв останется, если
+                  отгрузка не пройдёт.
+                </span>
+              </label>
+            ) : null}
+            {reserveThenShip ? (
+              <div className="space-y-2 rounded-md border p-3">
+                <p className="text-sm font-medium">Превью резерва</p>
+                {reserveSources.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Нет свободного или регионального остатка на складе</p>
+                ) : (
+                  reserveSources.map((source) => (
+                    <div key={source.key} className="space-y-1">
+                      <p className="text-sm">
+                        {productIdentityLabel(productById(snapshot, source.productId), source.productId)} ·{" "}
+                        {source.fromOwnerKind === "free"
+                          ? FREE_OWNER_LABEL
+                          : ownerLabel(snapshot, "region", source.fromOwnerId)}
+                      </p>
+                      <QuantityField
+                        value={source.quantity}
+                        onChange={(value) =>
+                          setReserveSources((current) =>
+                            current.map((item) => (item.key === source.key ? { ...item, quantity: value } : item)),
+                          )
+                        }
+                        min={0}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              regionRows.map((item) => (
+                <div key={item.key} className="space-y-1 rounded-md border border-dashed p-3 opacity-70">
+                  <ProductIdentity snapshot={snapshot} productId={item.productId} nameAs="text" />
+                  <p className="text-sm text-muted-foreground">
+                    {ownerLabel(snapshot, "region", item.ownerId)} · {formatQuantity(item.quantity)} · сначала
+                    переназначьте на этот заказ
+                  </p>
+                </div>
+              ))
+            )}
+            {reservationId && shipmentError ? (
+              <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                <p className="text-sm font-medium">Резерв проведён</p>
+                <p className="text-sm text-destructive">{shipmentError}</p>
+              </div>
+            ) : null}
+            <Button
+              type="button"
+              disabled={!canShip || submitting}
+              onClick={() => void submitShipment()}
+            >
+              {reserveThenShipNextAction(Boolean(reservationId)) === "retry-shipment"
+                ? "Повторить отгрузку"
+                : reserveThenShip
+                  ? "Зарезервировать и отгрузить"
+                  : "Отгрузить"}
+            </Button>
+          </>
+        ) : null}
 
-export const ReturnForm = ({
-  snapshot,
-  balances,
-  open,
-  onOpenChange,
-  reload,
-  mode = "list",
-  preset,
-}: SharedFormProps & {
-  preset?: { shipmentId?: string };
-}) => {
-  const [shipmentId, setShipmentId] = useState(preset?.shipmentId ?? "");
-  const [quantities, setQuantities] = useState<Record<string, string>>({});
-  const selectedShipmentId = preset?.shipmentId ?? shipmentId;
-  const shipmentLines = snapshot.shipmentLines.filter((line) => line.shipmentId === selectedShipmentId);
-
-  const lines = useMemo(
-    () =>
-      shipmentLines.map((line) => ({
-        line,
-        remaining: remainingToReturnForLine(snapshot, line.id, line.quantity),
-      })),
-    [shipmentLines, snapshot],
-  );
-
-  const reset = () => {
-    setShipmentId(preset?.shipmentId ?? "");
-    setQuantities({});
-  };
-
-  const submit = async (post: boolean) => {
-    const payload = lines
-      .map((item) => ({
-        shipmentLineId: item.line.id,
-        quantity: Number(quantities[item.line.id] ?? (item.remaining > 0 ? item.remaining : 0)),
-      }))
-      .filter((item) => item.quantity > 0);
-    if (!selectedShipmentId || payload.length === 0) {
-      toast.error("Укажите количество возврата");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      () =>
-        createAndPostReturn({
-          shipmentId: selectedShipmentId,
-          lines: payload,
-          post,
-        }),
-      post ? "Возврат проведён" : "Черновик возврата создан",
-      reload,
-    );
-    if (ok) {
-      onOpenChange(false);
-      reset();
-    }
-  };
-
-  return (
-    <LogisticsDialog
-      open={open}
-      onOpenChange={(next) => {
-        onOpenChange(next);
-        if (next) {
-          reset();
-        }
-      }}
-      title="Возврат"
-    >
-      <div className="flex flex-col gap-3">
-        {preset?.shipmentId ? null : (
-          <FieldSelect
-            label="Отгрузка"
-            value={selectedShipmentId}
-            items={snapshot.shipments
-              .filter((item) => item.status === "posted")
-              .map((item) => ({ value: item.id, label: item.number }))}
-            onChange={(value) => {
-              setShipmentId(value);
-              setQuantities({});
-            }}
-          />
-        )}
-        {lines.map((item) => {
-          const product = productById(snapshot, item.line.productId);
-          return (
-            <div key={item.line.id} className="space-y-2">
-              <ProductIdentity snapshot={snapshot} productId={item.line.productId} nameAs="text" />
-              {product ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={product.id} /> : null}
-              <QuantityField
-                value={quantities[item.line.id] ?? (item.remaining > 0 ? String(item.remaining) : "0")}
-                onChange={(value) => setQuantities((current) => ({ ...current, [item.line.id]: value }))}
-                max={item.remaining}
-                min={0}
-                unit={product?.unit}
-              />
+        {intention === "return" ? (
+          <>
+            <div className="grid gap-1 text-sm">
+              <p>
+                <span className="text-muted-foreground">Откуда:</span> заказ клиента
+              </p>
+              <p>
+                <span className="text-muted-foreground">Куда:</span> склад
+              </p>
             </div>
-          );
-        })}
-        <FormActions
-          mode={mode}
-          canSubmit={lines.some((item) =>
-            isAllowedQuantity(quantities[item.line.id] ?? String(item.remaining), item.remaining),
-          )}
-          onDraft={() => void submit(false)}
-          onPost={() => void submit(true)}
-          postLabel="Вернуть"
-        />
+            <FieldSelect
+              label="Склад"
+              value={warehouseId}
+              items={snapshot.warehouses.map((item) => ({ value: item.id, label: item.code }))}
+              onChange={(value) => {
+                setWarehouseId(value);
+                shipmentKeyRef.current = newShipmentRequestKey();
+              }}
+              placeholder="Выберите склад"
+            />
+            {returnLines.map((line, index) => {
+              const remaining = line.productId
+                ? remainingToReturnForOrderProduct(balances, selectedOrderId, line.productId)
+                : 0;
+              const product = productById(snapshot, line.productId);
+              return (
+                <div key={line.key} className="space-y-2 rounded-md border p-3">
+                  <FieldSelect
+                    label="Товар"
+                    value={line.productId}
+                    items={shippedLines.map((item) => ({
+                      value: item.productId,
+                      label: `${productIdentityLabel(productById(snapshot, item.productId), item.productId)} · отгружено ${formatQuantity(remainingToReturnForOrderProduct(balances, item.orderId, item.productId))}`,
+                    }))}
+                    onChange={(value) =>
+                      setReturnLines((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, productId: value } : item,
+                        ),
+                      )
+                    }
+                    emptyLabel="Нет отгруженного товара"
+                  />
+                  <FieldSelect
+                    label="Назначение остатка"
+                    value={line.destKind}
+                    items={OWNER_KIND_ITEMS.filter((item) => item.value !== "order" || Boolean(selectedOrderId)).map(
+                      (item) => ({
+                        value: item.value,
+                        label: item.value === "order" ? "Текущий заказ" : item.label,
+                      }),
+                    )}
+                    onChange={(value) =>
+                      setReturnLines((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? {
+                                ...item,
+                                destKind: value as OwnerKind,
+                                destOwnerId: value === "order" ? selectedOrderId : "",
+                              }
+                            : item,
+                        ),
+                      )
+                    }
+                  />
+                  {line.destKind === "region" ? (
+                    <FieldSelect
+                      label="Регион"
+                      value={line.destOwnerId}
+                      items={snapshot.regions.map((item) => ({ value: item.id, label: item.code }))}
+                      onChange={(value) =>
+                        setReturnLines((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, destOwnerId: value } : item,
+                          ),
+                        )
+                      }
+                    />
+                  ) : null}
+                  {line.productId ? (
+                    <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} />
+                  ) : null}
+                  <QuantityField
+                    value={line.quantity}
+                    onChange={(value) =>
+                      setReturnLines((current) =>
+                        current.map((item, itemIndex) => (itemIndex === index ? { ...item, quantity: value } : item)),
+                      )
+                    }
+                    max={remaining}
+                    unit={product?.unit}
+                  />
+                </div>
+              );
+            })}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setReturnLines((current) => [...current, emptyReturnLine(shippedLines[0]?.productId ?? "")])}
+            >
+              Добавить строку
+            </Button>
+            <Button type="button" disabled={!canReturn || submitting} onClick={() => void submitReturn()}>
+              Принять возврат
+            </Button>
+          </>
+        ) : null}
       </div>
     </LogisticsDialog>
   );
@@ -946,10 +1338,10 @@ export const AdjustmentForm = ({
       return snapshot.reservations.map((item) => ({ value: item.id, label: item.number }));
     }
     if (sourceType === "shipment") {
-      return snapshot.shipments.map((item) => ({ value: item.id, label: item.number }));
+      return shipmentsForAdjustmentSource(snapshot.shipments, "shipment");
     }
     if (sourceType === "return") {
-      return snapshot.returns.map((item) => ({ value: item.id, label: item.number }));
+      return shipmentsForAdjustmentSource(snapshot.shipments, "return");
     }
     if (sourceType === "production_order") {
       return snapshot.productionOrders.map((item) => ({ value: item.id, label: item.number }));

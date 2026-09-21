@@ -3,6 +3,7 @@ import {
   ownersEqual,
   reservationDirection,
   reservationTouchesOrder,
+  shipmentDirection,
   type CustomerOrderLine,
   type LogisticsSnapshot,
   type Reservation,
@@ -217,27 +218,13 @@ export const calculateOrderDocumentCoverage = (
     if (!shipment) {
       continue;
     }
-    addForProduct(quantities.shipment, shipment.id, orderLines, customerOrderId, line.productId, line.quantity);
-  }
-
-  const shipmentLineById = new Map(snapshot.shipmentLines.map((line) => [line.id, line]));
-  for (const line of snapshot.returnLines) {
-    const returnedShipmentLine = shipmentLineById.get(line.shipmentLineId);
-    const returnedDocument = snapshot.returns.find((item) => item.id === line.returnId);
-    const shipment = returnedDocument
-      ? snapshot.shipments.find(
-          (item) => item.id === returnedDocument.shipmentId && item.customerOrderId === customerOrderId,
-        )
-      : undefined;
-    if (!shipment || !returnedShipmentLine) {
-      continue;
-    }
+    const kind = shipmentDirection(shipment.fromLocationType, shipment.toLocationType);
     addForProduct(
-      quantities.return,
-      line.returnId,
+      kind === "return" ? quantities.return : quantities.shipment,
+      shipment.id,
       orderLines,
       customerOrderId,
-      returnedShipmentLine.productId,
+      line.productId,
       line.quantity,
     );
   }

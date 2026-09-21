@@ -9,13 +9,12 @@ export const LOGISTICS_OVERVIEW_NAV_ITEMS: ModuleSubnavItem[] = [
 export const LOGISTICS_FLOW_NAV_ITEMS: ModuleSubnavItem[] = [
   { href: LOGISTICS_PATHS.productionOrders, label: "Заказы на производство" },
   { href: LOGISTICS_PATHS.transfers, label: "Перемещения" },
-  { href: LOGISTICS_PATHS.shipments, label: "Отгрузки" },
+  { href: LOGISTICS_PATHS.shipments, label: "Отгрузки и возвраты" },
 ];
 
 export const LOGISTICS_MORE_NAV_ITEMS: ModuleSubnavItem[] = [
   { href: LOGISTICS_PATHS.outputs, label: "Выпуски" },
   { href: LOGISTICS_PATHS.reservations, label: "Резервы" },
-  { href: LOGISTICS_PATHS.returns, label: "Возвраты" },
   { href: LOGISTICS_PATHS.adjustments, label: "Корректировки" },
   { href: LOGISTICS_PATHS.warehouses, label: "Склады" },
   { href: LOGISTICS_PATHS.regions, label: "Регионы" },
