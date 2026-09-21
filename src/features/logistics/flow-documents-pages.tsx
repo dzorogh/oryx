@@ -34,6 +34,7 @@ import {
   warehouseById,
   warehouseCode,
 } from "@/features/logistics/logistics-lookups";
+import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { LocationLink } from "@/features/logistics/ui/location-link";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
@@ -42,7 +43,13 @@ import {
   assertEnoughStock,
   assertProductionOutputCapacity,
 } from "@/features/logistics/logistics-rules";
-import { OUTPUT_STATUSES, type DocumentStatus, type DocumentType, type OutputStatus } from "@/features/logistics/logistics-types";
+import {
+  OUTPUT_STATUSES,
+  type DocumentStatus,
+  type DocumentType,
+  type LogisticsSnapshot,
+  type OutputStatus,
+} from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
@@ -97,9 +104,9 @@ export const ShipmentsPage = () => {
   return (
     <DocumentList
       title="Отгрузки"
-      description="Одна отгрузка — один заказ клиента и один склад. В форму попадают все строки с резервом на складе."
       crumbs="Отгрузки"
       actionLabel="Новая отгрузка"
+      snapshot={snapshot}
       path="/store/logistics/shipments"
       rows={rows.map((item) => ({
         id: item.id,
@@ -116,6 +123,7 @@ export const ShipmentsPage = () => {
             />
           </span>
         ),
+        products: snapshot.shipmentLines.filter((line) => line.shipmentId === item.id),
         status: item.status,
       }))}
       extraHeader="Заказ клиента / склад"
@@ -152,11 +160,6 @@ export const ShipmentDetailPage = () => {
         store={store}
         title={doc?.number ?? "Отгрузка"}
         crumbs={[{ label: "Отгрузки", href: "/store/logistics/shipments" }, { label: doc?.number ?? "Отгрузка" }]}
-        description={
-          doc
-            ? `Отгрузить занятый остаток ${customerOrderById(store.snapshot, doc.customerOrderId)?.number ?? doc.customerOrderId} со склада ${warehouseCode(store.snapshot, doc.warehouseId)}.`
-            : ""
-        }
         status={doc?.status}
         documentType="shipment"
         sourceId={doc?.id}
@@ -228,9 +231,9 @@ export const ReturnsPage = () => {
   return (
     <DocumentList
       title="Возвраты"
-      description="Возвращают ранее отгруженное количество. Остаток становится свободным на складе исходной отгрузки."
       crumbs="Возвраты"
       actionLabel="Новый возврат"
+      snapshot={snapshot}
       path="/store/logistics/returns"
       rows={rows.map((item) => {
         const shipment = snapshot.shipments.find((entry) => entry.id === item.shipmentId);
@@ -239,6 +242,12 @@ export const ReturnsPage = () => {
           number: item.number,
           extra: shipment?.number ?? item.shipmentId,
           extraHref: shipment ? `/store/logistics/shipments/${shipment.id}` : undefined,
+          products: snapshot.returnLines
+            .filter((line) => line.returnId === item.id)
+            .map((line) => {
+              const shipmentLine = snapshot.shipmentLines.find((entry) => entry.id === line.shipmentLineId);
+              return { productId: shipmentLine?.productId ?? "", quantity: line.quantity };
+            }),
           status: item.status,
         };
       })}
@@ -275,7 +284,6 @@ export const ReturnDetailPage = () => {
       store={store}
       title={doc?.number ?? "Возврат"}
       crumbs={[{ label: "Возвраты", href: "/store/logistics/returns" }, { label: doc?.number ?? "Возврат" }]}
-      description="Возвращённый товар становится свободным на исходном складе."
       status={doc?.status}
       documentType="return"
       sourceId={doc?.id}
@@ -395,7 +403,6 @@ export const OutputsPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Выпуски" }]}>
       <LogisticsToolbar
         title="Выпуски"
-        description="Выпуск можно запланировать и завершить позже. Остатки двигаются только в статусе «Готов»."
         actionLabel="Новый выпуск"
         onAction={() => setOpen(true)}
       >
@@ -416,22 +423,28 @@ export const OutputsPage = () => {
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
       {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Номер", "Заказ на производство", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
+        <LogisticsTableCard headers={["Номер", "Заказ на производство", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
           {rows.map((item) => (
             <TableRow key={item.id}>
-              <TableCell className="px-3 py-2">
+              <TableCell className="px-3 py-2 align-top">
                 <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.id}`} />
               </TableCell>
-              <TableCell className="px-3 py-2">
+              <TableCell className="px-3 py-2 align-top">
                 <LogisticsCodeBadge
                   code={productionOrderById(snapshot, item.productionOrderId)?.number ?? item.productionOrderId}
                   href={`/store/logistics/production-orders/${item.productionOrderId}`}
                 />
               </TableCell>
-              <TableCell className="px-3 py-2">
+              <TableCell className="px-3 py-2 align-top">
+                <DocumentProductLines
+                  snapshot={snapshot}
+                  lines={snapshot.outputLines.filter((line) => line.outputId === item.id)}
+                />
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top">
                 <OutputStatusBadge status={item.status} />
               </TableCell>
-              <TableCell className="px-3 py-2 text-sm tabular-nums">
+              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
                 {formatExpectedEnd(item.expectedEndOn)}
               </TableCell>
             </TableRow>
@@ -442,7 +455,6 @@ export const OutputsPage = () => {
         open={open}
         onOpenChange={setOpen}
         title="Новый выпуск"
-        description="План не двигает остатки. Завершение увозит занятое занятым, свободное свободным."
       >
         <div className="flex flex-col gap-3">
           <FieldSelect
@@ -554,7 +566,6 @@ export const OutputDetailPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Выпуски", href: "/store/logistics/outputs" }, { label: doc.number }]}>
       <LogisticsToolbar
         title={doc.number}
-        description="Продукция переходит со строки заказа на производство на склад производителя. План можно завершить позже."
         actions={
           <>
             {doc.status === "planned" ? (
@@ -640,14 +651,15 @@ type ListRow = {
   number: string;
   extra: React.ReactNode;
   extraHref?: string;
+  products: Array<{ productId: string; quantity: number }>;
   status: DocumentStatus;
 };
 
 const DocumentList = ({
   title,
-  description,
   crumbs,
   path,
+  snapshot,
   rows,
   extraHeader,
   actionLabel,
@@ -659,9 +671,9 @@ const DocumentList = ({
   children,
 }: {
   title: string;
-  description: string;
   crumbs: string;
   path: string;
+  snapshot: LogisticsSnapshot;
   rows: ListRow[];
   extraHeader: string;
   actionLabel: string;
@@ -673,26 +685,29 @@ const DocumentList = ({
   children: React.ReactNode;
 }) => (
   <LogisticsPageShell crumbs={[{ label: crumbs }]}>
-    <LogisticsToolbar title={title} description={description} actionLabel={actionLabel} onAction={onCreate}>
+    <LogisticsToolbar title={title} actionLabel={actionLabel} onAction={onCreate}>
       <StatusTabs value={status} onChange={onStatus} label={`Статус: ${title}`} />
     </LogisticsToolbar>
     {isLoading ? <LogisticsLoading /> : null}
     {error ? <LogisticsError message={error} /> : null}
     {!isLoading && !error ? (
-      <LogisticsTableCard headers={["Номер", extraHeader, "Статус"]} isEmpty={rows.length === 0}>
+      <LogisticsTableCard headers={["Номер", extraHeader, "Товары", "Статус"]} isEmpty={rows.length === 0}>
         {rows.map((row) => (
           <TableRow key={row.id}>
-            <TableCell className="px-3 py-2">
+            <TableCell className="px-3 py-2 align-top">
               <LogisticsCodeBadge code={row.number} href={`${path}/${row.id}`} />
             </TableCell>
-            <TableCell className="px-3 py-2 text-sm">
+            <TableCell className="px-3 py-2 align-top text-sm">
               {typeof row.extra === "string" && row.extraHref ? (
                 <LogisticsCodeBadge code={row.extra} href={row.extraHref} />
               ) : (
                 row.extra
               )}
             </TableCell>
-            <TableCell className="px-3 py-2">
+            <TableCell className="px-3 py-2 align-top">
+              <DocumentProductLines snapshot={snapshot} lines={row.products} />
+            </TableCell>
+            <TableCell className="px-3 py-2 align-top">
               <DocumentStatusBadge status={row.status} />
             </TableCell>
           </TableRow>
@@ -707,7 +722,6 @@ const DocumentDetail = ({
   store,
   title,
   crumbs,
-  description,
   status,
   documentType,
   sourceId,
@@ -720,7 +734,6 @@ const DocumentDetail = ({
   store: ReturnType<typeof useLogisticsStore>;
   title: string;
   crumbs: Array<{ label: string; href?: string }>;
-  description: string;
   status?: DocumentStatus;
   documentType?: DocumentType;
   sourceId?: string;
@@ -749,7 +762,6 @@ const DocumentDetail = ({
     <LogisticsPageShell crumbs={crumbs}>
       <LogisticsToolbar
         title={title}
-        description={description}
         actions={
           <>
             {extraActions}

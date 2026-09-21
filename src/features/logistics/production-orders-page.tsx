@@ -51,6 +51,7 @@ import {
   productsForManufacturer,
 } from "@/features/logistics/logistics-lookups";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
+import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { PRODUCTION_STATUSES, type ProductionStatus } from "@/features/logistics/logistics-types";
@@ -134,7 +135,6 @@ export const ProductionOrdersPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Заказы на производство" }]}>
       <LogisticsToolbar
         title="Заказы на производство"
-        description="Планирует и ограничивает выпуск. После создания количество сразу появляется в остатках заказа на производство."
         actionLabel="Новый заказ на производство"
         onAction={() => setOpen(true)}
       >
@@ -161,25 +161,24 @@ export const ProductionOrdersPage = () => {
         <LogisticsTableCard headers={["Номер", "Производитель", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
           {rows.map((item) => {
             const orderLines = snapshot.productionOrderLines.filter((line) => line.orderId === item.id);
-            const products = orderLines
-              .map((line) => productById(snapshot, line.productId)?.name ?? line.productId)
-              .join(", ");
             return (
               <TableRow key={item.id}>
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 align-top">
                   <LogisticsCodeBadge
                     code={item.number}
                     href={`/store/logistics/production-orders/${item.id}`}
                   />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm">
+                <TableCell className="px-3 py-2 align-top text-sm">
                   <ManufacturerLink snapshot={snapshot} manufacturerId={item.manufacturerId} />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm">{products || "—"}</TableCell>
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 align-top">
+                  <DocumentProductLines snapshot={snapshot} lines={orderLines} />
+                </TableCell>
+                <TableCell className="px-3 py-2 align-top">
                   <ProductionStatusBadge status={item.status} />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm tabular-nums">
+                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
                   {formatExpectedEnd(item.expectedEndOn)}
                 </TableCell>
               </TableRow>
@@ -192,7 +191,6 @@ export const ProductionOrdersPage = () => {
         open={open}
         onOpenChange={setOpen}
         title="Новый заказ на производство"
-        description="Можно указать несколько товаров. После создания они сразу в остатках заказа на производство."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -423,7 +421,6 @@ export const ProductionOrderDetailPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Заказы на производство", href: "/store/logistics/production-orders" }, { label: order.number }]}>
       <LogisticsToolbar
         title={order.number}
-        description="Количество сразу в остатках заказа на производство."
         actionLabel={order.status !== "closed" ? "Закрыть заказ на производство" : undefined}
         onAction={
           order.status !== "closed"
@@ -631,29 +628,28 @@ export const ProductionOrderDetailPage = () => {
             </Button>
           ) : undefined
         }
-        headers={["Номер", "Товар", "Количество", "Под заказ клиента", "Статус", "Ожидаемое окончание"]}
+        headers={["Номер", "Товары", "Количество", "Под заказ клиента", "Статус", "Ожидаемое окончание"]}
         isEmpty={outputs.length === 0}
         empty="Выпусков пока нет."
       >
         {outputs.map((item) => {
           const itemLines = snapshot.outputLines.filter((line) => line.outputId === item.id);
-          const products = itemLines
-            .map((line) => productById(snapshot, line.productId)?.name ?? line.productId)
-            .join(", ");
           const quantity = itemLines.reduce((sum, line) => sum + line.quantity, 0);
           const unit =
             itemLines.length === 1 ? productById(snapshot, itemLines[0]?.productId ?? "")?.unit : undefined;
           const orders = relatedOrdersForOutput(snapshot, item.id);
           return (
             <TableRow key={item.id}>
-              <TableCell className="px-3 py-2">
+              <TableCell className="px-3 py-2 align-top">
                 <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.id}`} />
               </TableCell>
-              <TableCell className="px-3 py-2 text-sm">{products || "—"}</TableCell>
-              <TableCell className="px-3 py-2 text-sm tabular-nums">
+              <TableCell className="px-3 py-2 align-top">
+                <DocumentProductLines snapshot={snapshot} lines={itemLines} />
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
                 {itemLines.length === 0 ? "—" : formatQuantity(quantity, unit)}
               </TableCell>
-              <TableCell className="px-3 py-2">
+              <TableCell className="px-3 py-2 align-top">
                 {orders.length === 0 ? (
                   "—"
                 ) : (
@@ -664,10 +660,10 @@ export const ProductionOrderDetailPage = () => {
                   </span>
                 )}
               </TableCell>
-              <TableCell className="px-3 py-2">
+              <TableCell className="px-3 py-2 align-top">
                 <OutputStatusBadge status={item.status} />
               </TableCell>
-              <TableCell className="px-3 py-2 text-sm tabular-nums">
+              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
                 {formatExpectedEnd(item.expectedEndOn)}
               </TableCell>
             </TableRow>
@@ -682,14 +678,13 @@ export const ProductionOrderDetailPage = () => {
           (entry.documentType === "output" && outputs.some((item) => item.id === entry.documentId)) ||
           (entry.locationType === "production_order" && entry.locationId === order.id)
         }
-        title="Movements"
+        title="Движения"
       />
 
       <LogisticsDialog
         open={productOpen}
         onOpenChange={setProductOpen}
         title="Добавить товар"
-        description="Новая строка сразу появляется в остатках заказа на производство."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -851,7 +846,6 @@ export const ProductionOrderDetailPage = () => {
         open={outputOpen}
         onOpenChange={setOutputOpen}
         title="Новый выпуск"
-        description="Можно выпускать частями, пока заказ на производство не закрыт."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">

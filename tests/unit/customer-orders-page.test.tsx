@@ -122,6 +122,6 @@ describe("CustomerOrdersPage newest-first list", () => {
   it("shows the empty table copy when there are no orders", () => {
     storeMock.use(emptySnapshot());
     render(<CustomerOrdersPage />);
-    expect(screen.getByText("No records yet.")).toBeVisible();
+    expect(screen.getByText("Пока нет записей.")).toBeVisible();
   });
 });

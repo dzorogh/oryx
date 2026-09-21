@@ -13,7 +13,7 @@ import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { hrefForTransfer } from "@/features/logistics/logistics-availability";
 import { ReservationForm } from "@/features/logistics/logistics-forms";
 import { formatExpectedEnd } from "@/features/logistics/logistics-labels";
-import { productById } from "@/features/logistics/logistics-lookups";
+import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { LOGISTICS_PATHS } from "@/features/logistics/logistics-paths";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
@@ -84,7 +84,6 @@ export const TransfersPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Перемещения" }]}>
       <LogisticsToolbar
         title="Перемещения"
-        description="Со склада на склад. Несколько товаров в одном документе. Свободный остаток уезжает свободным."
         actionLabel="New transfer"
         onAction={() => setOpen(true)}
       >
@@ -110,24 +109,22 @@ export const TransfersPage = () => {
             const itemLines = snapshot.transferLines.filter((line) => line.transferId === item.id);
             return (
               <TableRow key={item.id}>
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 align-top">
                   <LogisticsCodeBadge code={item.number} href={hrefForTransfer(item.id)} />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm">
+                <TableCell className="px-3 py-2 align-top text-sm">
                   <WarehouseLink snapshot={snapshot} warehouseId={item.fromWarehouseId} />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm">
+                <TableCell className="px-3 py-2 align-top text-sm">
                   <WarehouseLink snapshot={snapshot} warehouseId={item.toWarehouseId} />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm">
-                  {itemLines
-                    .map((line) => productById(snapshot, line.productId)?.name ?? line.productId)
-                    .join(", ") || "—"}
+                <TableCell className="px-3 py-2 align-top">
+                  <DocumentProductLines snapshot={snapshot} lines={itemLines} />
                 </TableCell>
-                <TableCell className="px-3 py-2">
+                <TableCell className="px-3 py-2 align-top">
                   <TransferStatusBadge status={item.status} />
                 </TableCell>
-                <TableCell className="px-3 py-2 text-sm tabular-nums">
+                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
                   {formatExpectedEnd(item.expectedEndOn)}
                 </TableCell>
               </TableRow>
