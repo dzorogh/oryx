@@ -45,6 +45,17 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 
 <!-- /bmad:context -->
 
+## Prototype status
+
+Oryx is a visual prototype for exploring product ideas, interfaces, workflows, and data models. It is not a production system.
+
+- Treat every record in the app and its demo backend as fictional demonstration data, not authoritative business data.
+- Optimize product work for realistic scenarios, coherent UX, rapid iteration, and easy-to-change data models while preserving normal code quality and verification.
+- Mocks, fixtures, seeded records, and simplified workflows are appropriate when they support the prototype; keep them believable and internally consistent.
+- Do not infer production requirements from the prototype or add production-only complexity such as real authentication, billing, compliance controls, high availability, migration/backfill machinery, or hardened external integrations unless the user explicitly asks.
+- Assume interfaces, workflows, schemas, and contracts are exploratory and may change. Prefer reversible changes and avoid unnecessary compatibility layers.
+- Never present demo values as real company facts, operational state, or evidence that a production integration is configured.
+
 ## Grok models
 
 Outside the managed block on purpose: keep this section when refreshing `bmad-project-context`.
