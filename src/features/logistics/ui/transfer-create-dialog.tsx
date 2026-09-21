@@ -58,9 +58,9 @@ const formatUnits = (quantity: number, unit?: string): string => {
 };
 
 const formatExpectedSummary = (value: string): string =>
-  new Date(`${value}T00:00:00`).toLocaleDateString("en-US", {
-    month: "short",
+  new Date(`${value}T00:00:00`).toLocaleDateString("ru-RU", {
     day: "numeric",
+    month: "short",
     year: "numeric",
   });
 
@@ -202,9 +202,9 @@ export const TransferCreateDialog = ({
     });
   };
 
-  const title = "Create transfer";
+  const title = "Создать перемещение";
   const primaryLabel =
-    context.kind === "order" ? `Create and send for ${orderNumber}` : "Create and send transfer";
+    context.kind === "order" ? `Создать и отправить для ${orderNumber}` : "Создать и отправить перемещение";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,7 +212,7 @@ export const TransferCreateDialog = ({
         <DialogHeader className="gap-1 border-b px-5 py-4">
           {context.kind === "order" ? (
             <p className="text-[10px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-              Customer order {orderNumber}
+              Заказ клиента {orderNumber}
             </p>
           ) : null}
           <DialogTitle className="text-lg">{title}</DialogTitle>
@@ -222,7 +222,7 @@ export const TransferCreateDialog = ({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
           <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-[1fr_auto_1fr_1.1fr]">
             <FieldSelect
-              label="From warehouse"
+              label="Со склада"
               value={fromId}
               items={
                 context.kind === "order"
@@ -239,8 +239,8 @@ export const TransferCreateDialog = ({
                   setToId("");
                 }
               }}
-              placeholder="Select warehouse"
-              emptyLabel="No warehouse with transferable stock"
+              placeholder="Выберите склад"
+              emptyLabel="Нет склада с остатком для перемещения"
               disabled={submitting}
               autoFocus
             />
@@ -249,19 +249,19 @@ export const TransferCreateDialog = ({
             </div>
             <div className="space-y-1">
               <FieldSelect
-                label="To warehouse"
+                label="На склад"
                 value={toId}
                 items={warehouseSelectItems(snapshot, fromId || undefined)}
                 onChange={setToId}
-                placeholder="Select warehouse"
+                placeholder="Выберите склад"
                 disabled={submitting}
               />
               {sameWarehouses ? (
-                <p className="text-xs font-medium text-[#B91C1C]">Choose two different warehouses.</p>
+                <p className="text-xs font-medium text-[#B91C1C]">Выберите два разных склада.</p>
               ) : null}
             </div>
             <ExpectedEndField
-              label="Expected end"
+              label="Ожидаемое окончание"
               value={expectedEndOn}
               onChange={setExpectedEndOn}
               optional
@@ -278,23 +278,23 @@ export const TransferCreateDialog = ({
           >
             {context.kind === "order" ? (
               <p>
-                <span className="font-semibold">Selected stock stays allocated to {orderNumber}</span>
-                {" during transfer."}
+                <span className="font-semibold">Выбранный остаток остаётся закреплённым за {orderNumber}</span>
+                {" на время перемещения."}
               </p>
             ) : (
               <p>
-                <span className="font-semibold text-foreground">Free stock only.</span>{" "}
-                Customer-order reserved stock is excluded from availability.
+                <span className="font-semibold text-foreground">Только свободный остаток.</span>{" "}
+                Резерв заказов клиента в доступность не входит.
               </p>
             )}
           </div>
 
           <div className="mt-3 overflow-hidden rounded-lg border border-border">
             <div className="hidden grid-cols-[minmax(12rem,1.8fr)_5.75rem_5.75rem_7.5rem_2.25rem] bg-[#F8FAFC] text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:grid">
-              <div className="px-2.5 py-2">Product</div>
-              <div className="px-2.5 py-2 text-right">On hand</div>
-              <div className="px-2.5 py-2 text-right">Available</div>
-              <div className="px-2.5 py-2 text-right">Move</div>
+              <div className="px-2.5 py-2">Товар</div>
+              <div className="px-2.5 py-2 text-right">На складе</div>
+              <div className="px-2.5 py-2 text-right">Доступно</div>
+              <div className="px-2.5 py-2 text-right">Переместить</div>
               <div />
             </div>
             {lines.map((line, index) => {
@@ -321,7 +321,7 @@ export const TransferCreateDialog = ({
                   <div className="grid grid-cols-1 gap-2 p-2.5 md:grid-cols-[minmax(12rem,1.8fr)_5.75rem_5.75rem_7.5rem_2.25rem] md:items-center md:gap-0 md:p-0">
                     <div className="min-w-0 md:px-2.5 md:py-2">
                       <FieldSelect
-                        label={index === 0 ? "Product" : `Product ${index + 1}`}
+                        label={index === 0 ? "Товар" : `Товар ${index + 1}`}
                         labelClassName="font-medium md:sr-only"
                         value={line.productId}
                         items={chooserItems}
@@ -333,13 +333,13 @@ export const TransferCreateDialog = ({
                               context.kind === "order" && nextAvailable > 0 ? String(nextAvailable) : line.quantity,
                           });
                         }}
-                        placeholder={fromId ? "Select product" : "Choose a source warehouse first"}
+                        placeholder={fromId ? "Выберите товар" : "Сначала выберите склад-источник"}
                         emptyLabel={
                           fromId
                             ? context.kind === "order"
-                              ? "No allocated stock is available to transfer from this order."
-                              : "No products are available at this warehouse."
-                            : "Choose a source warehouse first"
+                              ? "Нет закреплённого остатка для перемещения из этого заказа."
+                              : "На этом складе нет доступных товаров."
+                            : "Сначала выберите склад-источник"
                         }
                         disabled={submitting || !fromId}
                         autoFocus={focusKey === line.key}
@@ -347,32 +347,32 @@ export const TransferCreateDialog = ({
                       {product?.sku ? <p className="mt-1 hidden text-[10px] text-muted-foreground md:block">{product.sku}</p> : null}
                     </div>
                     <div className="flex items-center justify-between text-sm tabular-nums md:block md:px-2.5 md:py-2 md:text-right">
-                      <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">On hand</span>
+                      <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">На складе</span>
                       <span className="text-xs font-medium">
                         {line.productId && fromId ? formatUnits(onHand, product?.unit) : "—"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm tabular-nums md:block md:px-2.5 md:py-2 md:text-right">
-                      <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">Available</span>
+                      <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">Доступно</span>
                       <span className={cn("text-xs font-semibold", over > 0 && "text-[#B91C1C]")}>
                         {line.productId && fromId ? formatUnits(available, product?.unit) : "—"}
                         {line.productId && fromId ? (
                           <span className="block text-[10px] font-normal text-muted-foreground">
-                            {context.kind === "order" ? "reserved" : "free"}
+                            {context.kind === "order" ? "резерв" : "свободно"}
                           </span>
                         ) : null}
                       </span>
                     </div>
                     <div className="md:px-2.5 md:py-2 md:text-right">
                       <label className="flex items-center justify-between gap-2 md:block">
-                        <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:sr-only">Move</span>
+                        <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:sr-only">Переместить</span>
                         <Input
                           type="number"
                           min={0}
                           step="any"
                           value={line.quantity}
                           disabled={submitting || !line.productId}
-                          aria-label={product ? `Move ${product.name}` : "Move"}
+                          aria-label={product ? `Переместить ${product.name}` : "Переместить"}
                           aria-invalid={over > 0}
                           aria-describedby={over > 0 ? errorId : undefined}
                           className={cn(
@@ -384,7 +384,7 @@ export const TransferCreateDialog = ({
                       </label>
                       {over > 0 ? (
                         <p id={errorId} className="mt-1 text-[10px] font-semibold text-[#B91C1C]">
-                          {formatQuantity(over)} over available
+                          превышает доступное на {formatQuantity(over)}
                         </p>
                       ) : null}
                     </div>
@@ -395,7 +395,7 @@ export const TransferCreateDialog = ({
                         size="icon-sm"
                         className="min-h-11 min-w-11 text-muted-foreground md:min-h-8 md:min-w-8"
                         disabled={submitting}
-                        aria-label={product ? `Remove product: ${product.name}` : "Remove product"}
+                        aria-label={product ? `Удалить товар: ${product.name}` : "Удалить товар"}
                         onClick={() => removeLine(line.key)}
                       >
                         <X className="size-4" />
@@ -409,12 +409,12 @@ export const TransferCreateDialog = ({
 
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
             <Button type="button" variant="outline" size="sm" disabled={!canAdd || submitting} onClick={addLine}>
-              Add product
+              Добавить товар
             </Button>
             <p className="text-xs text-muted-foreground">
               {fromId
-                ? `Availability shown at ${fromCode} before quantity entry`
-                : "Choose a source warehouse to see availability"}
+                ? `Доступность на ${fromCode} до ввода количества`
+                : "Выберите склад-источник, чтобы увидеть доступность"}
             </p>
           </div>
         </div>
@@ -422,21 +422,21 @@ export const TransferCreateDialog = ({
         <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-muted/50 sm:justify-between">
           <div className="min-w-0 text-left" aria-live="polite" id={liveId}>
             <p className="text-sm font-semibold">
-              {validLines.length} {validLines.length === 1 ? "product" : "products"}
-              {totalUnits > 0 ? ` · ${formatQuantity(totalUnits)} ${totalUnits === 1 ? "unit" : "units"}` : ""}
+              {validLines.length} {validLines.length === 1 ? "товар" : "товара"}
+              {totalUnits > 0 ? ` · ${formatQuantity(totalUnits)} ед.` : ""}
             </p>
             <p className="text-xs text-muted-foreground">
               {fromCode} → {toCode}
-              {expectedEndOn ? ` · Expected ${formatExpectedSummary(expectedEndOn)}` : ""}
-              {issueCount > 0 ? ` · ${issueCount} ${issueCount === 1 ? "line needs" : "lines need"} attention` : ""}
+              {expectedEndOn ? ` · ожидается ${formatExpectedSummary(expectedEndOn)}` : ""}
+              {issueCount > 0 ? ` · ${issueCount} ${issueCount === 1 ? "строка требует" : "строк требуют"} внимания` : ""}
             </p>
           </div>
           <div className="flex w-full gap-2 sm:w-auto">
             <Button type="button" variant="outline" disabled={submitting} onClick={resetAndClose}>
-              Cancel
+              Отмена
             </Button>
             <Button type="button" disabled={!canSubmit} onClick={() => void submit()}>
-              {submitting ? "Sending…" : primaryLabel}
+              {submitting ? "Отправка…" : primaryLabel}
             </Button>
           </div>
         </DialogFooter>

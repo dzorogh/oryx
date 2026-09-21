@@ -104,18 +104,18 @@ const isPositive = (quantity: number): boolean => quantity > POSITIVE;
 
 const reservationTitle = (direction: ReservationDirection, ownerType: OwnerType | null): string => {
   if (direction === "release") {
-    return "Reservation released";
+    return "Резерв снят";
   }
   if (direction === "reassign") {
-    return "Reservation reassigned";
+    return "Резерв переназначен";
   }
   if (ownerType === "region") {
-    return "Region reservation created";
+    return "Создан резерв региона";
   }
   if (ownerType === "order") {
-    return "Order reservation created";
+    return "Создан резерв заказа";
   }
-  return "Reservation posted";
+  return "Резерв проведён";
 };
 
 export const transferOwnerRef = (
@@ -143,7 +143,7 @@ export const transferOwnerRef = (
       kind: "order",
       ownerType,
       ownerId,
-      title: `Order ${number}`,
+      title: `Заказ ${number}`,
       breakdownLabel: number,
       href,
     };
@@ -158,7 +158,7 @@ export const transferOwnerRef = (
     kind: "region",
     ownerType: "region",
     ownerId: ownerId ?? null,
-    title: name ? `Region ${code} · ${name}` : `Region ${code}`,
+    title: name ? `Регион ${code} · ${name}` : `Регион ${code}`,
     breakdownLabel,
     href,
   };
@@ -437,7 +437,7 @@ const projectRoute = (
 ): TransferRouteProjection => {
   const originValue = warehouseCode(snapshot, transfer.fromWarehouseId);
   const destinationValue = warehouseCode(snapshot, transfer.toWarehouseId);
-  const transferValue = `Transfer ${transfer.number}`;
+  const transferValue = `Перемещение ${transfer.number}`;
 
   let currentKind: TransferCurrentKind = "transfer";
   if (transfer.status === "delivered") {
@@ -459,21 +459,21 @@ const projectRoute = (
     currentKind,
     origin: {
       role: "origin",
-      label: "Origin",
+      label: "Откуда",
       value: originValue,
       warehouseId: transfer.fromWarehouseId,
       current: currentKind === "origin",
     },
     current: {
       role: "current",
-      label: "Current location",
+      label: "Сейчас",
       value: currentValue,
       warehouseId: currentWarehouseId,
       current: currentKind === "transfer",
     },
     destination: {
       role: "destination",
-      label: "Destination",
+      label: "Куда",
       value: destinationValue,
       warehouseId: transfer.toWarehouseId,
       current: currentKind === "destination",
@@ -526,8 +526,8 @@ const projectActivity = (snapshot: LogisticsSnapshot, transfer: Transfer): Trans
       events.push({
         id,
         occurredAt,
-        title: "Transfer sent",
-        detail: `${warehouseCode(snapshot, transfer.fromWarehouseId)} → Transfer ${transfer.number}`,
+        title: "Перемещение отправлено",
+        detail: `${warehouseCode(snapshot, transfer.fromWarehouseId)} → Перемещение ${transfer.number}`,
         refLabel: transfer.number,
         href: hrefForSource("transfer", transfer.id),
       });
@@ -538,8 +538,8 @@ const projectActivity = (snapshot: LogisticsSnapshot, transfer: Transfer): Trans
       events.push({
         id,
         occurredAt,
-        title: "Transfer delivered",
-        detail: `Transfer ${transfer.number} → ${warehouseCode(snapshot, transfer.toWarehouseId)}`,
+        title: "Перемещение доставлено",
+        detail: `Перемещение ${transfer.number} → ${warehouseCode(snapshot, transfer.toWarehouseId)}`,
         refLabel: transfer.number,
         href: hrefForSource("transfer", transfer.id),
       });
@@ -558,7 +558,7 @@ const projectActivity = (snapshot: LogisticsSnapshot, transfer: Transfer): Trans
             Number.isInteger(firstLine.quantity) ? String(firstLine.quantity) : firstLine.quantity.toFixed(2)
           }`
         : reservationLines.length > 1
-          ? `${reservationLines.length} products`
+          ? `${reservationLines.length} товаров`
           : null;
 
     events.push({

@@ -45,12 +45,12 @@ const Qty = ({ quantity, className }: { quantity: number; className?: string }) 
 };
 
 const ATLAS_HELP =
-  "In production is current WIP reserved for this order line. Produced is cumulative completed output for this line. Do not add Produced to current location columns; they use different bases and may overlap.";
+  "«В производстве» — текущий незавершённый резерв по этой строке заказа. «Выпущено» — накопленный завершённый выпуск. Не складывайте «Выпущено» с колонками текущих мест: у них разные базы и они могут пересекаться.";
 
 const IN_PRODUCTION_HELP =
-  "Current WIP reserved for this order line. Do not add to Produced.";
+  "Текущий незавершённый резерв по этой строке. Не складывайте с «Выпущено».";
 const PRODUCED_HELP =
-  "Cumulative completed output for this line. Do not add to current location columns.";
+  "Накопленный завершённый выпуск по этой строке. Не складывайте с колонками текущих мест.";
 
 const CompactProduct = ({
   snapshot,
@@ -109,7 +109,7 @@ const LineActionsMenu = ({
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label={`Actions for ${productName}`}
+            aria-label={`Действия для ${productName}`}
             className="shrink-0 text-muted-foreground"
           />
         }
@@ -117,8 +117,8 @@ const LineActionsMenu = ({
         <MoreHorizontal className="size-3.5" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
-        {canReserve ? <DropdownMenuItem onClick={onReserve}>Reserve</DropdownMenuItem> : null}
-        {canShip ? <DropdownMenuItem onClick={onShip}>Ship</DropdownMenuItem> : null}
+        {canReserve ? <DropdownMenuItem onClick={onReserve}>Зарезервировать</DropdownMenuItem> : null}
+        {canShip ? <DropdownMenuItem onClick={onShip}>Отгрузить</DropdownMenuItem> : null}
         {releasePlaces.map((place) => {
           const details = [place.title, formatQuantity(place.quantity)];
           if (place.hint) {
@@ -129,7 +129,7 @@ const LineActionsMenu = ({
               key={`${place.locationType}:${place.locationId}`}
               onClick={() => onRelease({ locationType: place.locationType, locationId: place.locationId })}
             >
-              Release {details.join(" · ")}
+              Снять {details.join(" · ")}
             </DropdownMenuItem>
           );
         })}
@@ -163,7 +163,7 @@ export const CustomerOrderLinesTable = ({
   }) => void;
 }) => {
   const warehouseIds = warehouseIdsWithReservedForOrder(snapshot, balances, lines);
-  const title = lines.length > 0 ? `Products · ${lines.length}` : "Products";
+  const title = lines.length > 0 ? `Товары · ${lines.length}` : "Товары";
 
   return (
     <Card size="sm" className={logisticsCardClass}>
@@ -176,23 +176,23 @@ export const CustomerOrderLinesTable = ({
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className={cn(headClass, "sticky left-0 z-20 min-w-44 max-w-56 bg-muted text-left")}>
-                Product
+                Товар
               </TableHead>
-              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Ordered</TableHead>
+              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Заказано</TableHead>
               <TableHead
                 title={IN_PRODUCTION_HELP}
                 className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}
               >
-                In production
+                В производстве
               </TableHead>
               <TableHead
                 title={PRODUCED_HELP}
                 className={cn(headClass, "bg-muted/30 text-center text-muted-foreground")}
               >
-                Produced
+                Выпущено
               </TableHead>
               <TableHead className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}>
-                In transit
+                В пути
               </TableHead>
               {warehouseIds.map((warehouseId) => (
                 <TableHead
@@ -207,7 +207,7 @@ export const CustomerOrderLinesTable = ({
                   </Link>
                 </TableHead>
               ))}
-              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Shipped</TableHead>
+              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Отгружено</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -217,7 +217,7 @@ export const CustomerOrderLinesTable = ({
                   colSpan={6 + warehouseIds.length}
                   className="px-3 py-8 text-center text-sm text-muted-foreground"
                 >
-                  This customer order has no products.
+                  В этом заказе нет товаров.
                 </TableCell>
               </TableRow>
             ) : (
@@ -301,7 +301,7 @@ export const CustomerOrderLinesTable = ({
                           quantity={shippedQty}
                           className={cn("text-sm font-extrabold", complete && "text-emerald-800")}
                         />
-                        {complete ? <Check className="size-3.5" aria-label="Complete" /> : null}
+                        {complete ? <Check className="size-3.5" aria-label="Выполнено" /> : null}
                       </span>
                     </TableCell>
                   </TableRow>

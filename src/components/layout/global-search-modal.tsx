@@ -32,6 +32,8 @@ const SEARCH_TARGETS: SearchTarget[] = [
   // english-ui:ignore
   { id: "logistics-ledger", title: "Журнал", description: "Журнал движений остатков", href: "/store/logistics/ledger" },
   // english-ui:ignore
+  { id: "logistics-regions", title: "Регионы", description: "Регионы продаж и их резерв", href: "/store/logistics/regions" },
+  // english-ui:ignore
   { id: "logistics-orders", title: "Заказы клиента", description: "Спрос и исполнение", href: "/store/logistics/customer-orders" },
   { id: "learning", title: "Learning", description: "Lessons and knowledge base", href: "/learning/lessons" },
   { id: "library", title: "Library", description: "Documents and files", href: "/library/documents" },

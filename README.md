@@ -126,8 +126,7 @@ PIM-модуль использует доменную логику из `src/do
 - `npm run typecheck` — проверка типов TypeScript
 - `npm run check:deps` — проверка зависимостей
 - `npm run check:docs` — проверка ссылок в документации
-- `npm run check:ui-english` — проверка, что UI-текст в TSX без кириллицы (см. `scripts/english-ui-baseline.json`)
-- `npm run lint:ui-english` — то же через ESLint (`oryx-ui/no-cyrillic-ui`)
+- Пользовательский текст на страницах — на русском ([russian-labels.md](docs/conventions/ui/russian-labels.md)). Старые `check:ui-english` / `lint:ui-english` не являются обязательной проверкой.
 
 ### Тестирование
 
@@ -150,7 +149,6 @@ npm run test
 npm run build
 npm run check:deps
 npm run check:docs
-npm run check:ui-english
 ```
 
 ## Текущий статус и ограничения

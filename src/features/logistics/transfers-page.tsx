@@ -71,7 +71,7 @@ export const TransfersPage = () => {
         );
         openSentTransfer(created, (href) => router.push(href));
       },
-      "Transfer sent",
+      "Перемещение отправлено",
       reload,
     );
     if (ok) {
@@ -84,7 +84,7 @@ export const TransfersPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Перемещения" }]}>
       <LogisticsToolbar
         title="Перемещения"
-        actionLabel="New transfer"
+        actionLabel="Новое перемещение"
         onAction={() => setOpen(true)}
       >
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус перемещения">
@@ -146,13 +146,13 @@ export const TransfersPage = () => {
 };
 
 const transferCrumbs = (label: string) => [
-  { label: "Transfers", href: LOGISTICS_PATHS.transfers },
+  { label: "Перемещения", href: LOGISTICS_PATHS.transfers },
   { label },
 ];
 
 const TransferDetailSkeleton = () => (
   <div className="flex flex-col gap-3" aria-busy="true" aria-live="polite">
-    <p className="sr-only">Loading transfer…</p>
+    <p className="sr-only">Загрузка перемещения…</p>
     <div className="rounded-lg border border-border bg-card p-4">
       <Skeleton className="h-8 w-40" />
       <Skeleton className="mt-3 h-8 w-64" />
@@ -191,14 +191,14 @@ export const TransferDetailPage = () => {
     setActionError(null);
     const ok = await runLogisticsAction(action, success, reload);
     if (!ok) {
-      setActionError("The action could not be completed.");
+      setActionError("Действие не удалось выполнить.");
     }
     setPendingAction(null);
   };
 
   if (isLoading && !doc && !error) {
     return (
-      <LogisticsPageShell crumbs={transferCrumbs("Transfer")}>
+      <LogisticsPageShell crumbs={transferCrumbs("Перемещение")}>
         <TransferDetailSkeleton />
       </LogisticsPageShell>
     );
@@ -206,11 +206,11 @@ export const TransferDetailPage = () => {
 
   if (error && (!doc || !isLoading)) {
     return (
-      <LogisticsPageShell crumbs={transferCrumbs("Transfer")}>
+      <LogisticsPageShell crumbs={transferCrumbs("Перемещение")}>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm">Transfer could not be loaded.</p>
+          <p className="text-sm">Не удалось загрузить перемещение.</p>
           <Button type="button" size="sm" className="mt-3 h-11 min-w-11 md:h-8" onClick={() => void reload()}>
-            Retry
+            Повторить
           </Button>
         </div>
       </LogisticsPageShell>
@@ -219,11 +219,11 @@ export const TransferDetailPage = () => {
 
   if (!doc || !projection) {
     return (
-      <LogisticsPageShell crumbs={transferCrumbs("Transfer")}>
+      <LogisticsPageShell crumbs={transferCrumbs("Перемещение")}>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm">Transfer not found.</p>
+          <p className="text-sm">Перемещение не найдено.</p>
           <Link href={LOGISTICS_PATHS.transfers} className="mt-3 inline-flex text-sm font-medium text-primary hover:underline">
-            Back to Transfers
+            К перемещениям
           </Link>
         </div>
       </LogisticsPageShell>
@@ -242,13 +242,13 @@ export const TransferDetailPage = () => {
           actionError={actionError}
           onReserveInTransit={() => setReserveOpen(true)}
           onMarkDelivered={() => {
-            void runDetailAction("deliver", () => completeTransfer(doc.id), "Transfer marked delivered");
+            void runDetailAction("deliver", () => completeTransfer(doc.id), "Перемещение отмечено доставленным");
           }}
           onExpectedEndChange={(value) => {
             void runDetailAction(
               "expected",
               () => updateExpectedEnd("store_transfer", doc.id, value || null),
-              "Expected date updated",
+              "Дата обновлена",
             );
           }}
         />

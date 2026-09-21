@@ -39,7 +39,7 @@ import { DocumentStatusBadge } from "@/features/logistics/ui/status-badge";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const DIRECTION_FILTERS: Array<{ id: "all" | ReservationDirection; label: string }> = [
-  { id: "all", label: "All" },
+  { id: "all", label: "Все" },
   { id: "reserve", label: RESERVATION_DIRECTION_LABELS.reserve },
   { id: "release", label: RESERVATION_DIRECTION_LABELS.release },
   { id: "reassign", label: RESERVATION_DIRECTION_LABELS.reassign },
@@ -71,13 +71,13 @@ export const ReservationsPage = () => {
   });
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Reservations" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Резервы" }]}>
       <LogisticsToolbar
-        title="Reservations"
-        actionLabel="New reservation"
+        title="Резервы"
+        actionLabel="Новый резерв"
         onAction={() => setOpen(true)}
       >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Reservation direction">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Направление резерва">
           {DIRECTION_FILTERS.map((item) => (
             <HomeFilterChip
               key={item.id}
@@ -90,7 +90,7 @@ export const ReservationsPage = () => {
             </HomeFilterChip>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Reservation status">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус резерва">
           {STATUS_FILTERS.map((item) => (
             <HomeFilterChip
               key={item.id}
@@ -109,7 +109,7 @@ export const ReservationsPage = () => {
       {!isLoading && !error ? (
         <ReservationHoldTable
           snapshot={snapshot}
-          placeHeader="Place"
+          placeHeader="Место"
           rows={rows.map((item) => {
             const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
             return {
@@ -167,8 +167,8 @@ export const ReservationDetailPage = () => {
 
   if (isLoading || error || !doc) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Reservations", href: "/store/logistics/reservations" }, { label: "Reservation" }]}>
-        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Reservation not found."} />}
+      <LogisticsPageShell crumbs={[{ label: "Резервы", href: "/store/logistics/reservations" }, { label: "Резерв" }]}>
+        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Резерв не найден."} />}
       </LogisticsPageShell>
     );
   }
@@ -177,7 +177,7 @@ export const ReservationDetailPage = () => {
   const destHref = hrefForOwner(doc.toOwnerType, doc.toOwnerId);
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Reservations", href: "/store/logistics/reservations" }, { label: doc.number }]}>
+    <LogisticsPageShell crumbs={[{ label: "Резервы", href: "/store/logistics/reservations" }, { label: doc.number }]}>
       <LogisticsToolbar
         title={doc.number}
         actions={
@@ -186,10 +186,10 @@ export const ReservationDetailPage = () => {
               type="button"
               size="sm"
               onClick={() => {
-                void runLogisticsAction(() => postReservation(doc.id), "Reservation posted", reload);
+                void runLogisticsAction(() => postReservation(doc.id), "Резерв проведён", reload);
               }}
             >
-              Post
+              Провести
             </Button>
           ) : null
         }
@@ -198,23 +198,23 @@ export const ReservationDetailPage = () => {
         <span className="text-sm text-muted-foreground">{RESERVATION_DIRECTION_LABELS[direction]}</span>
       </LogisticsToolbar>
       <RelatedDocuments
-        title="Destination"
+        title="Назначение"
         items={
           destHref
             ? [{ id: doc.toOwnerId ?? destLabel, href: destHref, label: destLabel, meta: doc.toOwnerType ?? FREE_OWNER_LABEL }]
-            : [{ id: "free", href: "/store/logistics/reservations", label: FREE_OWNER_LABEL, meta: "destination" }]
+            : [{ id: "free", href: "/store/logistics/reservations", label: FREE_OWNER_LABEL, meta: "назначение" }]
         }
       />
       <LogisticsTableCard
-        title="Lines"
+        title="Строки"
         action={
           doc.status === "draft" ? (
             <Button type="button" size="sm" onClick={() => setLineOpen(true)}>
-              Add line
+              Добавить строку
             </Button>
           ) : undefined
         }
-        headers={["Product", "Source", "Quantity", "Place", "Available now", "Note"]}
+        headers={["Товар", "Источник", "Количество", "Место", "Сейчас доступно", "Комментарий"]}
       >
         {lines.map((line, index) => {
           const product = productById(snapshot, line.productId);
@@ -270,7 +270,7 @@ export const ReservationDetailPage = () => {
             setNewLine(emptyReservationLine());
           }
         }}
-        title="Add line"
+        title="Добавить строку"
       >
         <div className="flex flex-col gap-3">
           <ReservationLineFields
@@ -288,13 +288,13 @@ export const ReservationDetailPage = () => {
             type="button"
             onClick={() => {
               if (!newLine.productId) {
-                toast.error("Choose a product and quantity");
+                toast.error("Выберите товар и количество");
                 return;
               }
               const fromOwnerType = newLine.fromOwnerKind === "free" ? null : (newLine.fromOwnerKind as OwnerType);
               const fromOwnerId = newLine.fromOwnerKind === "free" ? null : newLine.fromOwnerId;
               if (lines.some((line) => line.productId === newLine.productId && line.fromOwnerType === fromOwnerType && line.fromOwnerId === fromOwnerId)) {
-                toast.error("This source and product is already on the document");
+                toast.error("Этот источник и товар уже есть в документе");
                 return;
               }
               const orderLine =
@@ -313,7 +313,7 @@ export const ReservationDetailPage = () => {
                 orderLine?.quantity,
               );
               if (!isAllowedQuantity(newLine.quantity, max)) {
-                toast.error("Quantity is more than available");
+                toast.error("Количество больше доступного");
                 return;
               }
               const qty = Number(newLine.quantity);
@@ -323,7 +323,7 @@ export const ReservationDetailPage = () => {
                   assertCustomerCapacity(orderLine, balances, qty);
                 }
               } catch (caught) {
-                toast.error(caught instanceof Error ? caught.message : "Not enough stock");
+                toast.error(caught instanceof Error ? caught.message : "Недостаточно остатка");
                 return;
               }
               void runLogisticsAction(
@@ -335,7 +335,7 @@ export const ReservationDetailPage = () => {
                     fromOwnerType,
                     fromOwnerId,
                   }),
-                "Line added",
+                "Строка добавлена",
                 reload,
               ).then((ok) => {
                 if (ok) {
@@ -345,7 +345,7 @@ export const ReservationDetailPage = () => {
               });
             }}
           >
-            Add
+            Добавить
           </Button>
         </div>
       </LogisticsDialog>

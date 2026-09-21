@@ -71,8 +71,8 @@ const FormActions = ({
   onDraft,
   onPost,
   canSubmit,
-  draftLabel = "Save draft",
-  postLabel = "Post",
+  draftLabel = "Сохранить черновик",
+  postLabel = "Провести",
 }: {
   mode: FormMode;
   onDraft?: () => void;
@@ -213,14 +213,14 @@ export const ReservationLineFields = ({
   return (
     <div className="space-y-2 rounded-md border p-3">
       <FieldSelect
-        label={`Source ${index + 1}`}
+        label={`Источник ${index + 1}`}
         value={line.fromOwnerKind}
         items={OWNER_KIND_ITEMS}
         onChange={(value) => onChange({ ...line, fromOwnerKind: value as OwnerKind, fromOwnerId: "", productId: line.productId })}
       />
       {line.fromOwnerKind === "free" ? null : (
         <FieldSelect
-          label={line.fromOwnerKind === "order" ? "Source order" : "Source region"}
+          label={line.fromOwnerKind === "order" ? "Исходный заказ" : "Исходный регион"}
           value={line.fromOwnerId}
           items={(line.fromOwnerKind === "order" ? snapshot.customerOrders : snapshot.regions)
             .map((item) => {
@@ -249,12 +249,12 @@ export const ReservationLineFields = ({
             .filter((item) => item.quantity > 0 || item.value === line.fromOwnerId)
             .map(({ value, label }) => ({ value, label }))}
           onChange={(value) => onChange({ ...line, fromOwnerId: value })}
-          placeholder="Select owner"
-          emptyLabel="No reserved quantity for this source"
+          placeholder="Выберите владельца"
+          emptyLabel="Нет резерва у этого источника"
         />
       )}
       <FieldSelect
-        label={`Product ${index + 1}`}
+        label={`Товар ${index + 1}`}
         value={line.productId}
         items={productItems}
         onChange={(value) => {
@@ -276,15 +276,15 @@ export const ReservationLineFields = ({
               : 0;
           onChange({ ...line, productId: value, quantity: String(nextMax > 0 ? nextMax : 1) });
         }}
-        placeholder="Select product"
+        placeholder="Выберите товар"
         disabled={!locationType || !locationId}
       />
       {line.productId ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} /> : null}
       <QuantityField
-        label="Quantity"
-        emptyLabel="No available quantity"
-        availablePrefix="Available"
-        afterActionPrefix="after this action"
+        label="Количество"
+        emptyLabel="Нет доступного количества"
+        availablePrefix="Доступно"
+        afterActionPrefix="после этого действия"
         value={line.quantity}
         onChange={(value) => onChange({ ...line, quantity: value })}
         max={locationType && locationId && line.productId ? max : undefined}
@@ -363,19 +363,19 @@ export const ReservationForm = ({
       }
       if (destKind === "free") {
         if (entry.stockState === "reserved") {
-          addPlace(entry.locationType, entry.locationId, `reserved ${formatQuantity(entry.quantity)}`);
+          addPlace(entry.locationType, entry.locationId, `резерв ${formatQuantity(entry.quantity)}`);
         }
         continue;
       }
       if (entry.stockState === "free") {
-        addPlace(entry.locationType, entry.locationId, `free ${formatQuantity(entry.quantity)}`);
+        addPlace(entry.locationType, entry.locationId, `свободно ${formatQuantity(entry.quantity)}`);
         continue;
       }
       if (
         entry.stockState === "reserved" &&
         !ownersEqual(entry.ownerType, entry.ownerId, dest.toOwnerType, dest.toOwnerId)
       ) {
-        addPlace(entry.locationType, entry.locationId, `reserved ${formatQuantity(entry.quantity)}`);
+        addPlace(entry.locationType, entry.locationId, `резерв ${formatQuantity(entry.quantity)}`);
       }
     }
     return items;
@@ -435,7 +435,7 @@ export const ReservationForm = ({
 
   const submit = async (post: boolean) => {
     if (!destReady || !locationType || !locationId || validLines.length === 0) {
-      toast.error("Choose a destination, place, and at least one product line");
+      toast.error("Выберите назначение, место и хотя бы одну строку товара");
       return;
     }
     const payloadLines = [];
@@ -445,7 +445,7 @@ export const ReservationForm = ({
       }
       const source = ownerFromKind(line.fromOwnerKind, line.fromOwnerId);
       if (ownersEqual(source.fromOwnerType, source.fromOwnerId, dest.toOwnerType, dest.toOwnerId)) {
-        toast.error("Source and destination owners must be different");
+        toast.error("Источник и назначение должны отличаться");
         return;
       }
       const orderLine =
@@ -464,7 +464,7 @@ export const ReservationForm = ({
         orderLine?.quantity,
       );
       if (!isAllowedQuantity(line.quantity, max)) {
-        toast.error("Each line needs a product and an allowed quantity");
+        toast.error("В каждой строке нужны товар и допустимое количество");
         return;
       }
       const qty = Number(line.quantity);
@@ -474,7 +474,7 @@ export const ReservationForm = ({
           assertCustomerCapacity(orderLine, balances, qty);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Not enough stock");
+        toast.error(error instanceof Error ? error.message : "Недостаточно остатка");
         return;
       }
       payloadLines.push({
@@ -494,7 +494,7 @@ export const ReservationForm = ({
     };
     const ok = await runLogisticsAction(
       () => (post ? createAndPostReservation(payload) : createReservationDraft(payload)),
-      post ? `${RESERVATION_DIRECTION_LABELS[derivedDirection]} posted` : "Reservation draft created",
+      post ? `${RESERVATION_DIRECTION_LABELS[derivedDirection]} проведён` : "Черновик резерва создан",
       reload,
     );
     if (ok) {
@@ -512,15 +512,15 @@ export const ReservationForm = ({
           reset();
         }
       }}
-      title="Reservation"
+      title="Резерв"
       className="sm:max-w-lg"
     >
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
-          Direction: <span className="font-medium text-foreground">{RESERVATION_DIRECTION_LABELS[derivedDirection]}</span>
+          Направление: <span className="font-medium text-foreground">{RESERVATION_DIRECTION_LABELS[derivedDirection]}</span>
         </p>
         <FieldSelect
-          label="Destination"
+          label="Назначение"
           value={destKind}
           items={OWNER_KIND_ITEMS}
           onChange={(value) => {
@@ -531,7 +531,7 @@ export const ReservationForm = ({
         />
         {destKind === "free" ? null : (
           <FieldSelect
-            label={destKind === "order" ? "Order" : "Region"}
+            label={destKind === "order" ? "Заказ" : "Регион"}
             value={destOwnerId}
             items={
               destKind === "order"
@@ -544,16 +544,16 @@ export const ReservationForm = ({
               setDestOwnerId(value);
               setLocation("");
             }}
-            placeholder={destKind === "order" ? "Select order" : "Select region"}
+            placeholder={destKind === "order" ? "Выберите заказ" : "Выберите регион"}
           />
         )}
         <FieldSelect
-          label="Place"
+          label="Место"
           value={location}
           items={placeItems}
           onChange={setLocation}
-          placeholder="Select place"
-          emptyLabel="No matching stock at a place"
+          placeholder="Выберите место"
+          emptyLabel="Нет подходящего остатка в месте"
           disabled={destKind !== "free" && !destOwnerId}
         />
         {lines.map((_, index) => (
@@ -573,11 +573,11 @@ export const ReservationForm = ({
           />
         ))}
         <Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, emptyReservationLine()])}>
-          Add line
+          Добавить строку
         </Button>
         <label className="space-y-1 text-sm">
-          <span className="font-medium">Note</span>
-          <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional" />
+          <span className="font-medium">Комментарий</span>
+          <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Необязательно" />
         </label>
         <FormActions
           mode={mode}
@@ -742,8 +742,8 @@ export const ShipmentForm = ({
           <div key={item.key} className="space-y-1 rounded-md border border-dashed p-3 opacity-70">
             <ProductIdentity snapshot={snapshot} productId={item.productId} nameAs="text" />
             <p className="text-sm text-muted-foreground">
-              {ownerLabel(snapshot, "region", item.ownerId)} · {formatQuantity(item.quantity)} · Reassign to this
-              order first
+              {ownerLabel(snapshot, "region", item.ownerId)} · {formatQuantity(item.quantity)} · сначала
+              переназначьте на этот заказ
             </p>
           </div>
         ))}

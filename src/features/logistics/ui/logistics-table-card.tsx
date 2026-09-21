@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -44,7 +45,7 @@ export const LogisticsTableCard = ({
           {isEmpty ? (
             <TableRow>
               <TableCell colSpan={headers.length} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                {empty ?? "No records yet."}
+                {empty ?? "Пока нет записей."}
               </TableCell>
             </TableRow>
           ) : (

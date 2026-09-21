@@ -1,0 +1,10 @@
+---
+description: Русские подписи UI — см. docs/conventions (канон)
+alwaysApply: true
+---
+
+# Русские подписи в интерфейсе
+
+**Канонический документ:** [docs/conventions/ui/russian-labels.md](../../docs/conventions/ui/russian-labels.md)
+
+Пользовательский текст на страницах — на русском. Не дублируйте правило здесь — правьте markdown выше.

@@ -1,7 +1,7 @@
 # Agent instructions (Oryx BMS)
 
 <!-- bmad:context -->
-<!-- Verified 2026-09-18 against 4d28913ff0ce30895549e0280ea9a52a5308cdfe. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-09-21 against 7c9fc8c801b9d3d4b3f135c8e2ec27c88f8403cd. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## Oryx BMS
 
@@ -13,7 +13,7 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 - Never put secrets in any user-visible message (quotes, diffs, logs, tables, code blocks): passwords, hashes, API keys, tokens, JWTs, PATs, private keys, connection strings with credentials, OTP/magic-link secrets, Studio/DB/auth credentials. Write secrets only to a gitignored file or the secret store (Dokploy env, password manager). In chat say only that it was set and where to open it; confirm without the value.
 - After any diagnostic write to a live system (Oryx demo Supabase, APIs, UI), delete or revert it in the same session. Do not leave rows, users, files, or groups named TEST, dummy, DELETE ME, or similar. Prefer mocks and local fixtures.
 - Use only this project's Dokploy compose `supabase` (`oryx-supabase-bb1dnn`). Agent access is MCP `oryx-supabase`. Never Capacity, YNAPB, or cloud `user-supabase`. Browser uses the anon key, no login. Details: `docs/conventions/backend/supabase.md`.
-- User-facing page text must be in English. Do not regenerate `scripts/english-ui-baseline.json` unless intentionally allowing new Cyrillic.
+- User-facing page text must be in Russian. Do not use `check:ui-english` / `lint:ui-english` as a gate — that scanner is a leftover English-only rule.
 - Planning, design, and implementation workflows use BMAD skills from `.agents/skills/` only. Never Superpowers skills (`superpowers:*`), never write new `docs/superpowers/` plans or specs, never run `.superpowers/` sessions. Historical files under `docs/superpowers/` are leftovers; ignore their "use superpowers:*" headers.
 
 ## Where things are
@@ -28,8 +28,8 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 
 ## Running and verifying
 
-- There is no CI. Before handing off UI work, run `npm run lint`, `npm run typecheck`, `npm run test`, `npm run check:ui-english`, and `npm run check:static-images` locally.
-- `npm run lint` does not include the Cyrillic UI rule; `npm run test` does not run the English-UI or static-image scanners. Use `check:ui-english` / `lint:ui-english` and `check:static-images` for those.
+- There is no CI. Before handing off UI work, run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run check:static-images` locally.
+- `npm run test` does not run the static-image scanner. Use `check:static-images` for that. The old `check:ui-english` / `lint:ui-english` scripts are retired.
 
 ## Conventions that differ from defaults
 
@@ -62,5 +62,5 @@ Outside the managed block on purpose: keep this section when refreshing `bmad-pr
 
 When the active model is Grok, quality outranks speed, token count, and smallest-diff. Do not economize on tokens, do not rush, and do not skip checks or clarifying questions. Work as a senior: read the relevant code and conventions, handle edge cases, and produce a careful result. There is no cap on change volume or time when quality needs more work.
 
-- Do not skip verification (`lint` / `typecheck` / `test` / `check:ui-english` / `check:static-images` as applicable), browser checks for UI, or questions that would change the design.
+- Do not skip verification (`lint` / `typecheck` / `test` / `check:static-images` as applicable), browser checks for UI, or questions that would change the design.
 - Do not use the project token-saver MCP in `active` (suppression) mode on Grok. Leave it `off`.

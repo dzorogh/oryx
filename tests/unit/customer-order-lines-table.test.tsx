@@ -184,43 +184,41 @@ const renderTable = (
 describe("CustomerOrderLinesTable", () => {
   const expectShippedLast = () => {
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent);
-    expect(headers.at(-1)).toBe("Shipped");
+    expect(headers.at(-1)).toBe("Отгружено");
     expect(headers).not.toContain("Actions");
     expect(screen.queryByRole("columnheader", { name: "Actions" })).not.toBeInTheDocument();
   };
 
-  it("renders English matrix headers ending with Shipped and warehouse codes without wrapping labels", () => {
+  it("renders Russian matrix headers ending with Отгружено and warehouse codes without wrapping labels", () => {
     renderTable();
 
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent);
     expect(headers).toEqual([
-      "Product",
-      "Ordered",
-      "In production",
-      "Produced",
-      "In transit",
+      "Товар",
+      "Заказано",
+      "В производстве",
+      "Выпущено",
+      "В пути",
       "WH-2",
       "WH-10",
-      "Shipped",
+      "Отгружено",
     ]);
     expectShippedLast();
     expect(screen.queryByRole("columnheader", { name: "WH-1" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "WH-2" })).toHaveAttribute("href", "/store/logistics/warehouses/wh-2");
     expect(screen.getByRole("link", { name: "WH-10" })).toHaveAttribute("href", "/store/logistics/warehouses/wh-10");
     expect(
-      screen.getAllByText(/In production is current WIP reserved for this order line/).length,
-    ).toBeGreaterThanOrEqual(2);
-    expect(
-      screen.getAllByText(/Produced is cumulative completed output for this line/).length,
-    ).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText(/Do not add Produced to current location columns/).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole("columnheader", { name: "In production" })).toHaveAttribute(
+      screen.getByText(/«В производстве» — текущий незавершённый резерв по этой строке заказа/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/«Выпущено» — накопленный завершённый выпуск/)).toBeInTheDocument();
+    expect(screen.getByText(/Не складывайте «Выпущено» с колонками текущих мест/)).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "В производстве" })).toHaveAttribute(
       "title",
-      "Current WIP reserved for this order line. Do not add to Produced.",
+      "Текущий незавершённый резерв по этой строке. Не складывайте с «Выпущено».",
     );
-    expect(screen.getByRole("columnheader", { name: "Produced" })).toHaveAttribute(
+    expect(screen.getByRole("columnheader", { name: "Выпущено" })).toHaveAttribute(
       "title",
-      "Cumulative completed output for this line. Do not add to current location columns.",
+      "Накопленный завершённый выпуск по этой строке. Не складывайте с колонками текущих мест.",
     );
     expect(screen.queryByText("Нехватка")).not.toBeInTheDocument();
     expect(screen.queryByText("To reserve")).not.toBeInTheDocument();
@@ -236,29 +234,29 @@ describe("CustomerOrderLinesTable", () => {
     expect(cells[5]).toHaveTextContent("2");
     expect(cells[6]).toHaveTextContent("4");
     expect(cells[7]).toHaveTextContent("—");
-    expect(within(cells[0]).getByRole("button", { name: "Actions for Cruiser 300 FJ" })).toBeInTheDocument();
+    expect(within(cells[0]).getByRole("button", { name: "Действия для Cruiser 300 FJ" })).toBeInTheDocument();
   });
 
-  it("keeps Shipped as the last column when canAct is false", () => {
+  it("keeps Отгружено as the last column when canAct is false", () => {
     renderTable({ canAct: false });
     expectShippedLast();
-    expect(screen.queryByRole("button", { name: /Actions for/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Действия для/ })).not.toBeInTheDocument();
   });
 
-  it("marks a fully shipped line complete with a check in Shipped", () => {
+  it("marks a fully shipped line complete with a check in Отгружено", () => {
     renderTable({ canAct: false });
     expectShippedLast();
 
     const completeLink = screen.getByRole("link", { name: "Enduro 125" });
     const row = completeLink.closest("tr");
     expect(row).not.toBeNull();
-    expect(within(row!).getByLabelText("Complete")).toBeInTheDocument();
+    expect(within(row!).getByLabelText("Выполнено")).toBeInTheDocument();
     expect(within(row!).getAllByText("10")).toHaveLength(2);
 
     const openLink = screen.getByRole("link", { name: "Cruiser 300 FJ" });
     const openRow = openLink.closest("tr");
     expect(openRow).not.toBeNull();
-    expect(within(openRow!).queryByLabelText("Complete")).not.toBeInTheDocument();
+    expect(within(openRow!).queryByLabelText("Выполнено")).not.toBeInTheDocument();
   });
 
   it("keeps Reserve, Ship, and Release including production and transfer places in the Product cell menu", async () => {
@@ -269,22 +267,22 @@ describe("CustomerOrderLinesTable", () => {
     const openRow = screen.getByRole("link", { name: "Cruiser 300 FJ" }).closest("tr");
     expect(openRow).not.toBeNull();
     const productCell = within(openRow!).getAllByRole("cell")[0];
-    const actions = within(productCell).getByRole("button", { name: "Actions for Cruiser 300 FJ" });
+    const actions = within(productCell).getByRole("button", { name: "Действия для Cruiser 300 FJ" });
 
-    expect(screen.queryByRole("button", { name: "Reserve" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Зарезервировать" })).not.toBeInTheDocument();
     await user.click(actions);
 
-    await user.click(await screen.findByRole("menuitem", { name: "Reserve" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Зарезервировать" }));
     expect(onReserve).toHaveBeenCalledTimes(1);
 
-    await user.click(within(productCell).getByRole("button", { name: "Actions for Cruiser 300 FJ" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Ship" }));
+    await user.click(within(productCell).getByRole("button", { name: "Действия для Cruiser 300 FJ" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Отгрузить" }));
     expect(onShip).toHaveBeenCalledTimes(1);
 
-    await user.click(within(productCell).getByRole("button", { name: "Actions for Cruiser 300 FJ" }));
-    expect(await screen.findByRole("menuitem", { name: "Release WH-2 · 2 · PLT-1" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Release TR-1 · 1 · WH-1 → WH-2" })).toBeInTheDocument();
-    await user.click(screen.getByRole("menuitem", { name: "Release PO-1 · 3 · PLT-1" }));
+    await user.click(within(productCell).getByRole("button", { name: "Действия для Cruiser 300 FJ" }));
+    expect(await screen.findByRole("menuitem", { name: "Снять WH-2 · 2 · PLT-1" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Снять TR-1 · 1 · WH-1 → WH-2" })).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitem", { name: "Снять PO-1 · 3 · PLT-1" }));
     expect(onRelease).toHaveBeenCalledWith({
       line: expect.objectContaining({ id: "col-open" }),
       locationType: "production_order",
@@ -295,18 +293,18 @@ describe("CustomerOrderLinesTable", () => {
   it("does not render a menu trigger on a line with no available actions", () => {
     renderTable();
     expectShippedLast();
-    expect(screen.queryByRole("button", { name: "Actions for Enduro 125" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Действия для Enduro 125" })).not.toBeInTheDocument();
   });
 
   it("shows empty-order copy spanning the fixed matrix columns", () => {
     renderTable({ lines: [] });
 
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent);
-    expect(headers).toEqual(["Product", "Ordered", "In production", "Produced", "In transit", "Shipped"]);
+    expect(headers).toEqual(["Товар", "Заказано", "В производстве", "Выпущено", "В пути", "Отгружено"]);
     expectShippedLast();
-    const empty = screen.getByText("This customer order has no products.");
+    const empty = screen.getByText("В этом заказе нет товаров.");
     expect(empty).toBeInTheDocument();
     expect(empty.closest("td")).toHaveAttribute("colspan", "6");
-    expect(screen.getByRole("heading", { name: "Products" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Товары" })).toBeInTheDocument();
   });
 });

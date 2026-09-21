@@ -1,3 +1,4 @@
+// english-ui:ignore-file
 "use client";
 
 import { useMemo, useState } from "react";
@@ -12,7 +13,7 @@ import { DocumentLedger, documentLedgerRows } from "@/features/logistics/ui/docu
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const DOCUMENT_FILTERS: Array<{ id: "all" | DocumentType; label: string }> = [
-  { id: "all", label: "All documents" },
+  { id: "all", label: "Все документы" },
   ...DOCUMENT_TYPES.map((id) => ({
     id,
     label: DOCUMENT_TYPE_LABELS[id],
@@ -34,12 +35,11 @@ export const LedgerPage = () => {
   );
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Ledger" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Журнал" }]}>
       <LogisticsToolbar
-        title="Ledger"
-        description="Immutable stock facts. Posted warehouse documents are not reversed; correct them with a new document."
+        title="Журнал"
       >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Document class">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Класс документа">
           {DOCUMENT_FILTERS.map((item) => (
             <HomeFilterChip
               key={item.id}
@@ -59,11 +59,11 @@ export const LedgerPage = () => {
 
       {!isLoading && !error ? (
         snapshot.transactions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">The ledger is empty.</p>
+          <p className="text-sm text-muted-foreground">Журнал пуст.</p>
         ) : filteredRows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No stock facts match this document class.</p>
+          <p className="text-sm text-muted-foreground">Нет фактов по этому классу документов.</p>
         ) : (
-          <DocumentLedger snapshot={snapshot} filter={filter} title="Stock facts" />
+          <DocumentLedger snapshot={snapshot} filter={filter} title="Факты" />
         )
       ) : null}
     </LogisticsPageShell>

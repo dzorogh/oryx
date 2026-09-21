@@ -308,18 +308,18 @@ describe("TransfersPage", () => {
     expect(screen.queryByRole("tab", { name: "Draft" })).toBeNull();
     expect(screen.getByRole("tab", { name: "Отправлено" })).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "New transfer" }));
-    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
-    expect(screen.getAllByText("On hand").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Available").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Move").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Free stock only/)).toBeTruthy();
-    await chooseOption(user, "From warehouse", /WH-7/);
-    expect(screen.getByRole("combobox", { name: "From warehouse" })).toHaveTextContent("WH-7");
-    expect(screen.getByRole("combobox", { name: "From warehouse" })).not.toHaveTextContent("Plant");
-    await chooseOption(user, "To warehouse", /WH-11/);
-    await chooseOption(user, "Product", /Enduro 250/);
-    await user.click(screen.getByRole("button", { name: "Create and send transfer" }));
+    await user.click(screen.getByRole("button", { name: "Новое перемещение" }));
+    expect(screen.getByRole("heading", { name: "Создать перемещение" })).toBeTruthy();
+    expect(screen.getAllByText("На складе").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Доступно").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Переместить").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Только свободный остаток/)).toBeTruthy();
+    await chooseOption(user, "Со склада", /WH-7/);
+    expect(screen.getByRole("combobox", { name: "Со склада" })).toHaveTextContent("WH-7");
+    expect(screen.getByRole("combobox", { name: "Со склада" })).not.toHaveTextContent("Plant");
+    await chooseOption(user, "На склад", /WH-11/);
+    await chooseOption(user, "Товар", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Создать и отправить перемещение" }));
 
     expect(supabaseMock.rpc).toHaveBeenCalledWith(
       "store_create_and_send_transfer",
@@ -340,17 +340,17 @@ describe("TransfersPage", () => {
       .mockResolvedValueOnce({ data: { id: 42, status: "sent" }, error: null });
 
     render(<TransfersPage />);
-    await user.click(screen.getByRole("button", { name: "New transfer" }));
-    await chooseOption(user, "From warehouse", /WH-7/);
-    await chooseOption(user, "To warehouse", /WH-11/);
-    await chooseOption(user, "Product", /Enduro 250/);
-    await user.click(screen.getByRole("button", { name: "Create and send transfer" }));
+    await user.click(screen.getByRole("button", { name: "Новое перемещение" }));
+    await chooseOption(user, "Со склада", /WH-7/);
+    await chooseOption(user, "На склад", /WH-11/);
+    await chooseOption(user, "Товар", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Создать и отправить перемещение" }));
 
-    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "From warehouse" })).toHaveTextContent("WH-7");
+    expect(screen.getByRole("heading", { name: "Создать перемещение" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Со склада" })).toHaveTextContent("WH-7");
     expect(routerMock.push).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Create and send transfer" }));
+    await user.click(screen.getByRole("button", { name: "Создать и отправить перемещение" }));
     expect(supabaseMock.rpc.mock.calls[0]?.[1].p_request_key).toBe(
       supabaseMock.rpc.mock.calls[1]?.[1].p_request_key,
     );
@@ -362,17 +362,17 @@ describe("TransfersPage", () => {
     storeMock.use(snapshot(), freeBalances);
 
     render(<TransfersPage />);
-    await user.click(screen.getByRole("button", { name: "New transfer" }));
-    await chooseOption(user, "From warehouse", /WH-7/);
-    await chooseOption(user, "To warehouse", /WH-11/);
-    await chooseOption(user, "Product", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Новое перемещение" }));
+    await chooseOption(user, "Со склада", /WH-7/);
+    await chooseOption(user, "На склад", /WH-11/);
+    await chooseOption(user, "Товар", /Enduro 250/);
 
-    const move = screen.getByRole("spinbutton", { name: "Move Enduro 250" });
+    const move = screen.getByRole("spinbutton", { name: "Переместить Enduro 250" });
     await user.clear(move);
     await user.type(move, "99");
 
-    expect(screen.getByText(/over available/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Create and send transfer" })).toBeDisabled();
+    expect(screen.getByText(/превышает доступное/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Создать и отправить перемещение" })).toBeDisabled();
     expect(supabaseMock.rpc).not.toHaveBeenCalled();
   });
 });
@@ -388,7 +388,7 @@ describe("TransferDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Добавить товар" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Изменить" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Mark delivered" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Отметить доставленным" })).toBeTruthy();
   });
 });
 
@@ -411,12 +411,12 @@ describe("TransferReservedForm", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
-    expect(screen.getByText(/Customer order OMS-901/)).toBeTruthy();
-    await chooseOption(user, "From warehouse", /WH-7/);
-    await chooseOption(user, "To warehouse", /WH-11|Hub/);
-    await chooseOption(user, "Product", /Enduro 250/);
-    await user.click(screen.getByRole("button", { name: "Create and send for OMS-901" }));
+    expect(screen.getByRole("heading", { name: "Создать перемещение" })).toBeTruthy();
+    expect(screen.getByText(/Заказ клиента OMS-901/)).toBeTruthy();
+    await chooseOption(user, "Со склада", /WH-7/);
+    await chooseOption(user, "На склад", /WH-11|Hub/);
+    await chooseOption(user, "Товар", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Создать и отправить для OMS-901" }));
 
     expect(supabaseMock.rpc).toHaveBeenCalledWith(
       "store_create_and_send_transfer",
@@ -449,16 +449,16 @@ describe("TransferReservedForm", () => {
       />,
     );
 
-    await chooseOption(user, "From warehouse", /WH-7/);
-    await chooseOption(user, "To warehouse", /WH-11|Hub/);
-    await chooseOption(user, "Product", /Enduro 250/);
-    await user.click(screen.getByRole("button", { name: "Create and send for OMS-901" }));
+    await chooseOption(user, "Со склада", /WH-7/);
+    await chooseOption(user, "На склад", /WH-11|Hub/);
+    await chooseOption(user, "Товар", /Enduro 250/);
+    await user.click(screen.getByRole("button", { name: "Создать и отправить для OMS-901" }));
 
-    expect(screen.getByRole("heading", { name: "Create transfer" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "From warehouse" })).toHaveTextContent("WH-7");
+    expect(screen.getByRole("heading", { name: "Создать перемещение" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Со склада" })).toHaveTextContent("WH-7");
     expect(routerMock.push).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Create and send for OMS-901" }));
+    await user.click(screen.getByRole("button", { name: "Создать и отправить для OMS-901" }));
     expect(supabaseMock.rpc.mock.calls[0]?.[1].p_request_key).toBe(
       supabaseMock.rpc.mock.calls[1]?.[1].p_request_key,
     );

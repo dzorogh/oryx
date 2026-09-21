@@ -13,10 +13,10 @@ import type {
 } from "@/features/logistics/logistics-types";
 
 export const LOCATION_LABELS: Record<LocationType, string> = {
-  warehouse: "Warehouse",
-  production_order: "Production order",
-  transfer: "Transfer",
-  customer_order: "Customer order",
+  warehouse: "Склад",
+  production_order: "Заказ на производство",
+  transfer: "Перемещение",
+  customer_order: "Заказ клиента",
 };
 
 /** Host entity that holds stock or a reservation — not the stock-place phrasing. */
@@ -75,11 +75,11 @@ export const OUTPUT_STATUS_LABELS: Record<OutputStatus, string> = {
 };
 
 export const OWNER_TYPE_LABELS: Record<OwnerType, string> = {
-  order: "Order",
-  region: "Region",
+  order: "Заказ",
+  region: "Регион",
 };
 
-export const FREE_OWNER_LABEL = "Free";
+export const FREE_OWNER_LABEL = "Свободно";
 
 export const ASSIGNED_TO_LABEL = "Закреплено за";
 
@@ -99,20 +99,20 @@ export const LEDGER_DOCUMENT_KIND_LABELS: Record<DocumentType, string> = {
 };
 
 export const RESERVATION_DIRECTION_LABELS: Record<ReservationDirection, string> = {
-  reserve: "Reserve",
-  release: "Release",
-  reassign: "Reassign",
+  reserve: "Резерв",
+  release: "Снятие",
+  reassign: "Переназначение",
 };
 
 export const RESERVATION_OPERATION_LABELS = RESERVATION_DIRECTION_LABELS;
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
-  reservation: "Reservation",
-  shipment: "Shipment",
-  return: "Return",
-  transfer: "Transfer",
-  production_order: "Production order",
-  output: "Output",
+  reservation: "Резерв",
+  shipment: "Отгрузка",
+  return: "Возврат",
+  transfer: "Перемещение",
+  production_order: "Заказ на производство",
+  output: "Выпуск",
 };
 
 export const SOURCE_TYPE_LABELS: Record<SourceType, string> = DOCUMENT_TYPE_LABELS;
@@ -145,7 +145,7 @@ export const formatTimestamp = (value: string | null): string => {
   if (!value) {
     return "—";
   }
-    return new Date(value).toLocaleString("en-GB", {
+    return new Date(value).toLocaleString("ru-RU", {
     day: "numeric",
     month: "short",
     year: "numeric",

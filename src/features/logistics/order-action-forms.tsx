@@ -73,10 +73,7 @@ type ActionFormProps = {
 const qtyCell = (quantity: number, unit?: string) =>
   quantity > 1e-9 ? formatQuantity(quantity, unit) : "—";
 
-const plannerQuantity = (quantity: number, unit?: string) => {
-  const normalized = Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
-  return unit ? `${normalized} ${unit}` : normalized;
-};
+const plannerQuantity = (quantity: number, unit?: string) => formatQuantity(quantity, unit);
 
 export const relativeDayLabel = (isoDate: string, now = new Date()): string | null => {
   if (!isoDate) {
@@ -90,18 +87,18 @@ export const relativeDayLabel = (isoDate: string, now = new Date()): string | nu
   today.setHours(0, 0, 0, 0);
   const days = Math.round((date.getTime() - today.getTime()) / 86_400_000);
   if (days === 0) {
-    return "today";
+    return "сегодня";
   }
   if (days === 1) {
-    return "in 1 day";
+    return "через 1 день";
   }
   if (days > 1) {
-    return `in ${days} days`;
+    return `через ${days} дн.`;
   }
   if (days === -1) {
-    return "yesterday";
+    return "вчера";
   }
-  return `${Math.abs(days)} days ago`;
+  return `${Math.abs(days)} дн. назад`;
 };
 
 export const productionDraftActionLabel = (
@@ -109,16 +106,16 @@ export const productionDraftActionLabel = (
   snapshot: LogisticsSnapshot,
 ) => {
   if (payload.length === 0) {
-    return "Create order";
+    return "Создать заказ";
   }
   const units = payload.map((line) => productById(snapshot, line.productId)?.unit ?? "");
   const firstUnit = units[0];
   const sameUnit = Boolean(firstUnit) && units.every((unit) => unit === firstUnit);
   if (sameUnit) {
     const total = payload.reduce((sum, line) => sum + line.quantity, 0);
-    return `Create order · ${plannerQuantity(total, firstUnit)}`;
+    return `Создать заказ · ${plannerQuantity(total, firstUnit)}`;
   }
-  return `Create order · ${payload.length} ${payload.length === 1 ? "product" : "products"}`;
+  return `Создать заказ · ${payload.length} ${payload.length === 1 ? "товар" : "товара"}`;
 };
 
 const plantsForOpenLines = (snapshot: LogisticsSnapshot, productIds: string[]) => {
@@ -228,12 +225,12 @@ export const ProductionFromOrderForm = ({
   const expectedRelative = relativeDayLabel(expectedEndOn);
   const summaryTitle = plantItems.length === 0
     ? openLines.length === 0
-      ? "This order is already fully covered."
-      : "No manufacturer is available."
+      ? "Этот заказ уже полностью закрыт."
+      : "Нет доступного производителя."
     : !manufacturerId || selectedLineCount === 0
-      ? "Select a manufacturer and quantity"
+      ? "Выберите производителя и количество"
       : [
-        `${selectedLineCount} ${selectedLineCount === 1 ? "product" : "products"}`,
+        `${selectedLineCount} ${selectedLineCount === 1 ? "товар" : "товара"}`,
         sharedUnit ? plannerQuantity(selectedTotal, sharedUnit) : null,
         manufacturerLabel,
       ]
@@ -242,7 +239,7 @@ export const ProductionFromOrderForm = ({
 
   const submit = async () => {
     if (!manufacturerId || payload.length === 0) {
-      toast.error("Select a manufacturer and a quantity");
+      toast.error("Выберите производителя и количество");
       return;
     }
     const ok = await runLogisticsAction(
@@ -253,7 +250,7 @@ export const ProductionFromOrderForm = ({
           expectedEndOn: expectedEndOn || null,
           lines: payload,
         }),
-      "Production order created and reserved",
+      "Заказ на производство создан и зарезервирован",
       reload,
     );
     if (ok) {
@@ -265,22 +262,22 @@ export const ProductionFromOrderForm = ({
     <LogisticsDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Launch production"
-      description={`Customer order ${customerOrderNumber}`}
+      title="Запустить производство"
+      description={`Заказ клиента ${customerOrderNumber}`}
       className="sm:max-w-2xl"
     >
       <div className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <FieldSelect
-            label="Manufacturer"
+            label="Производитель"
             value={manufacturerId}
             items={plantItems}
             onChange={selectManufacturer}
-            placeholder="Select a plant"
-            emptyLabel={openLines.length === 0 ? "Nothing left to produce" : "No plant can produce these products"}
+            placeholder="Выберите завод"
+            emptyLabel={openLines.length === 0 ? "Нечего производить" : "Ни один завод не выпускает эти товары"}
           />
           <ExpectedEndField
-            label="Expected end"
+            label="Ожидаемое окончание"
             optional
             hint={expectedRelative ?? undefined}
             value={expectedEndOn}
@@ -290,24 +287,24 @@ export const ProductionFromOrderForm = ({
         </div>
         {plantItems.length === 0 ? (
           <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            {openLines.length === 0 ? "This order is already fully covered." : "No manufacturer is available."}
+            {openLines.length === 0 ? "Этот заказ уже полностью закрыт." : "Нет доступного производителя."}
           </div>
         ) : !manufacturerId ? (
           <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            Select a manufacturer to set quantities.
+            Выберите производителя, чтобы задать количества.
           </div>
         ) : plantLines.length === 0 ? (
           <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            This plant has no open products on this customer order.
+            У этого завода нет открытых позиций в заказе.
           </div>
         ) : (
           <div className="overflow-hidden rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Product</TableHead>
-                  <TableHead className="text-right">Need</TableHead>
-                  <TableHead className="w-[8.5rem] text-right">Make</TableHead>
+                  <TableHead>Товар</TableHead>
+                  <TableHead className="text-right">Нужно</TableHead>
+                  <TableHead className="w-[8.5rem] text-right">Произвести</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -326,14 +323,14 @@ export const ProductionFromOrderForm = ({
                       <TableCell className="whitespace-normal">
                         <ProductIdentity snapshot={snapshot} productId={line.productId} nameAs="text" />
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Ordered {plannerQuantity(line.quantity, product?.unit)}
-                          {" · "}Reserved {plannerQuantity(reserved, product?.unit)}
-                          {" · "}In production {plannerQuantity(inProduction, product?.unit)}
+                          Заказано {plannerQuantity(line.quantity, product?.unit)}
+                          {" · "}зарезервировано {plannerQuantity(reserved, product?.unit)}
+                          {" · "}в производстве {plannerQuantity(inProduction, product?.unit)}
                         </p>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">
                         <div className="font-medium tabular-nums">{plannerQuantity(max, product?.unit)}</div>
-                        <div className="text-xs text-muted-foreground">remaining</div>
+                        <div className="text-xs text-muted-foreground">осталось</div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="relative ml-auto w-[7.5rem]">
@@ -343,7 +340,7 @@ export const ProductionFromOrderForm = ({
                             max={max}
                             value={rawQuantity}
                             className="h-8 pr-9 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            aria-label={`Make ${productIdentityLabel(product, line.productId)}`}
+                            aria-label={`Произвести ${productIdentityLabel(product, line.productId)}`}
                             onChange={(event) => setLineQuantity(line.id, event.target.value, max)}
                           />
                           {product?.unit ? (
@@ -364,11 +361,11 @@ export const ProductionFromOrderForm = ({
       <DialogFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 text-left sm:max-w-[55%]">
           <p className="font-medium">{summaryTitle}</p>
-          <p className="text-xs text-muted-foreground">Quantity will be reserved automatically</p>
+          <p className="text-xs text-muted-foreground">Количество зарезервируется автоматически</p>
         </div>
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Отмена
           </Button>
           <Button
             type="button"
@@ -717,7 +714,7 @@ export const TransferReservedForm = ({
             );
             openSentTransfer(created, (href) => router.push(href));
           },
-          "Transfer sent",
+          "Перемещение отправлено",
           reload,
         );
         if (ok) {

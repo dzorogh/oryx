@@ -19,12 +19,12 @@ import {
 } from "@/features/logistics/logistics-types";
 
 describe("unified reservation model", () => {
-  it("keeps a single RSV prefix and English direction labels", () => {
+  it("keeps a single RSV prefix and Russian direction labels", () => {
     expect(LOGISTICS_CODE_PREFIXES.reservation).toBe("RSV");
     expect(formatLogisticsCode("reservation", 8)).toBe("RSV-8");
-    expect(RESERVATION_DIRECTION_LABELS.reserve).toBe("Reserve");
-    expect(RESERVATION_DIRECTION_LABELS.release).toBe("Release");
-    expect(RESERVATION_DIRECTION_LABELS.reassign).toBe("Reassign");
+    expect(RESERVATION_DIRECTION_LABELS.reserve).toBe("Резерв");
+    expect(RESERVATION_DIRECTION_LABELS.release).toBe("Снятие");
+    expect(RESERVATION_DIRECTION_LABELS.reassign).toBe("Переназначение");
     expect([...RESERVATION_DIRECTIONS]).toEqual(["reserve", "release", "reassign"]);
     expect([...RESERVATION_STATUSES]).toEqual(["draft", "posted"]);
     expect([...RESERVATION_ORIGINS]).toEqual(["manual", "order_close"]);
@@ -39,7 +39,7 @@ describe("unified reservation model", () => {
     expect(() => assertDocumentCanBeCancelled("reservation")).toThrow(RESERVATION_CANCEL_FORBIDDEN);
     expect(() => assertDocumentCanBeCancelled("reservation_release")).toThrow(RESERVATION_CANCEL_FORBIDDEN);
     expect(RESERVATION_CANCEL_FORBIDDEN).toBe(
-      "Posted reservations cannot be cancelled. Create a Reservation that releases to Free instead.",
+      "Проведённый резерв нельзя отменить. Создайте резерв со снятием в «Свободно».",
     );
     expect(IRREVERSIBLE_DOCUMENT_KINDS).toEqual(
       expect.arrayContaining(["shipment", "shipment_return", "production_output", "transfer"]),

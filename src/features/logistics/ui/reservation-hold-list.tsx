@@ -23,10 +23,10 @@ import {
 import { DocumentStatusBadge } from "@/features/logistics/ui/status-badge";
 
 export const HOLD_STATUS_FILTERS: Array<{ id: "all" | ReservationStatus | "cancelled"; label: string }> = [
-  { id: "all", label: "All" },
-  { id: "draft", label: "Draft" },
-  { id: "posted", label: "Posted" },
-  { id: "cancelled", label: "Cancelled" },
+  { id: "all", label: "Все" },
+  { id: "draft", label: "Черновик" },
+  { id: "posted", label: "Проведён" },
+  { id: "cancelled", label: "Отменён" },
 ];
 
 export type ReservationHoldLine = {
@@ -77,7 +77,7 @@ export const ReservationHoldTable = ({
 
   return (
     <LogisticsTableCard
-      headers={["Number", "Direction", "Destination", "Source", "Products", placeHeader, "Status"]}
+      headers={["Номер", "Направление", "Назначение", "Источник", "Товары", placeHeader, "Статус"]}
       isEmpty={rows.length === 0}
     >
       {rows.map((item) => {

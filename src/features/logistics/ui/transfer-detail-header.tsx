@@ -5,14 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
+import { TRANSFER_STATUS_LABELS } from "@/features/logistics/logistics-labels";
 import type { LogisticsSnapshot, Transfer, TransferStatus } from "@/features/logistics/logistics-types";
 import type { TransferRouteNode, TransferRouteProjection } from "@/features/logistics/transfer-detail-projection";
-
-const STATUS_LABELS: Record<TransferStatus, string> = {
-  sent: "In transit",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
 
 const statusTone = (status: TransferStatus): "secondary" | "default" | "destructive" => {
   if (status === "cancelled") {
@@ -94,7 +89,7 @@ export const TransferDetailHeader = ({
             aria-busy={pendingAction === "reserve"}
             onClick={onReserveInTransit}
           >
-            Reserve in transit
+            Зарезервировать в пути
           </Button>
         ) : null}
         <Button
@@ -106,7 +101,7 @@ export const TransferDetailHeader = ({
           aria-busy={pendingAction === "deliver"}
           onClick={onMarkDelivered}
         >
-          Mark delivered
+          Отметить доставленным
         </Button>
       </div>
     );
@@ -118,11 +113,11 @@ export const TransferDetailHeader = ({
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{transfer.number}</h1>
-            <Badge variant={statusTone(transfer.status)}>{STATUS_LABELS[transfer.status]}</Badge>
+            <Badge variant={statusTone(transfer.status)}>{TRANSFER_STATUS_LABELS[transfer.status]}</Badge>
           </div>
           <ExpectedEndField
             layout="inline"
-            label="Expected"
+            label="Ожидается"
             value={transfer.expectedEndOn ?? ""}
             onChange={onExpectedEndChange}
           />
@@ -132,7 +127,7 @@ export const TransferDetailHeader = ({
 
       <div
         className="mt-4 flex flex-col items-stretch gap-1 border-t border-border pt-3 md:flex-row md:items-center md:gap-2"
-        aria-label="Transfer route"
+        aria-label="Маршрут перемещения"
       >
         <RouteNode snapshot={snapshot} node={route.origin} />
         <RouteArrow />
@@ -142,7 +137,7 @@ export const TransferDetailHeader = ({
       </div>
 
       <div role="status" aria-live="polite" className="sr-only">
-        {busy ? "Working…" : null}
+        {busy ? "Выполняется…" : null}
         {actionError}
       </div>
     </header>

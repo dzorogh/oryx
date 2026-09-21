@@ -121,15 +121,15 @@ describe("stock products matrix", () => {
     );
 
     expect(headerTexts()).toEqual([
-      "Product",
-      "Owner",
-      "Location",
-      "Free",
-      "Region reserve",
-      "Order reserve",
-      "Warehouses",
-      "Production",
-      "Transfers",
+      "Товар",
+      "Закреплено за",
+      "Место",
+      "Свободно",
+      "Резерв региона",
+      "Резерв заказа",
+      "Склады",
+      "Производство",
+      "Перемещения",
     ]);
     for (const header of forbiddenHeaders) {
       expect(headerTexts()).not.toContain(header);
@@ -167,7 +167,7 @@ describe("stock products matrix", () => {
 
     expect(screen.getByText("WH-2")).toBeInTheDocument();
     expect(screen.queryByText("Plant warehouse")).not.toBeInTheDocument();
-    expect(headerTexts()).toEqual(["Product", "Free", "Region reserve", "Order reserve", "On hand"]);
+    expect(headerTexts()).toEqual(["Товар", "Свободно", "Резерв региона", "Резерв заказа", "Наличие"]);
 
     rerender(
       <StockProductsMatrix
@@ -195,7 +195,7 @@ describe("stock products matrix", () => {
     );
 
     expect(screen.getByText("REG-1 · Nordics")).toBeInTheDocument();
-    expect(headerTexts()).toEqual(["Product", "Warehouses", "Production", "Transfers", "Region reserve"]);
+    expect(headerTexts()).toEqual(["Товар", "Склады", "Производство", "Перемещения", "Резерв региона"]);
     expect(screen.getByText("0 pcs")).toBeInTheDocument();
   });
 

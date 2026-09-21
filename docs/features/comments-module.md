@@ -410,7 +410,7 @@ to local-only with no presence.
 ## Dependencies & checks
 
 - New deps installed at latest **stable** versions (passes `check:deps`).
-- English-only UI labels (`check:ui-english`).
+- Русские подписи UI. См. [russian-labels.md](../conventions/ui/russian-labels.md).
 - Avatars via `i.pravatar.cc` per static-images convention; no bundled image strings.
 - `typecheck`, `lint`, `test` must stay green.
 

@@ -90,4 +90,4 @@ Do not put create or edit fields inline beside a table or list. The list stays a
 2. Breadcrumb above white toolbar card
 3. Dedicated `*Toolbar` with title, divider, controls
 4. List full width with anti-stretch (grid columns or table)
-5. English UI labels — [english-labels.md](english-labels.md)
+5. Русские подписи — [russian-labels.md](russian-labels.md)

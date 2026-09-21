@@ -26,7 +26,7 @@ export const ExpectedEndField = ({
   const caption = optional ? (
     <span className="font-medium">
       {label}
-      <span className="ml-1 font-normal text-muted-foreground">Optional</span>
+      <span className="ml-1 font-normal text-muted-foreground">необязательно</span>
     </span>
   ) : (
     <span className="font-medium">{label}</span>

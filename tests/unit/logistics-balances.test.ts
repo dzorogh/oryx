@@ -185,7 +185,7 @@ describe("logistics balances", () => {
 
 describe("logistics posting rules", () => {
   it("rejects over-allocation and over-shipment", () => {
-    expect(() => assertAllocationWithinLine(10, 11)).toThrow(/exceed/);
+    expect(() => assertAllocationWithinLine(10, 11)).toThrow(/превышать/);
     expect(() =>
       assertShipmentCapacity(
         { id: "col-1", orderId: "co-1", productId: "p-chair", quantity: 5 },
@@ -199,8 +199,8 @@ describe("logistics posting rules", () => {
         ]),
         1,
       ),
-    ).toThrow(/ship/);
-    expect(() => assertEnoughStock(2, 3, "free")).toThrow(/Not enough/);
+    ).toThrow(/отгрузить/);
+    expect(() => assertEnoughStock(2, 3, "free")).toThrow(/Недостаточно свободного количества/);
     expect(() =>
       assertCustomerCapacity(
         { id: "col-1", orderId: "co-1", productId: "p-chair", quantity: 4 },
@@ -214,7 +214,7 @@ describe("logistics posting rules", () => {
         ]),
         1,
       ),
-    ).toThrow(/reserve/);
+    ).toThrow(/зарезервировать/);
   });
 });
 

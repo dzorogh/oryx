@@ -149,17 +149,17 @@ describe("transferOwnerRef", () => {
     const data = snapshot();
     expect(transferOwnerRef(data, null, null)).toMatchObject({
       kind: "free",
-      title: "Free",
-      breakdownLabel: "Free",
+      title: "Свободно",
+      breakdownLabel: "Свободно",
     });
     expect(transferOwnerRef(data, "order", "901")).toMatchObject({
       kind: "order",
-      title: "Order OMS-901",
+      title: "Заказ OMS-901",
       breakdownLabel: "OMS-901",
     });
     expect(transferOwnerRef(data, "region", "1")).toMatchObject({
       kind: "region",
-      title: "Region REG-1 · North",
+      title: "Регион REG-1 · North",
       breakdownLabel: "REG-1 · North",
     });
   });
@@ -172,14 +172,14 @@ describe("projectTransferDetail live balances", () => {
 
     expect(projected.source).toBe("live");
     expect(projected.route.currentKind).toBe("transfer");
-    expect(projected.route.current.value).toBe("Transfer TR-901");
+    expect(projected.route.current.value).toBe("Перемещение TR-901");
     expect(projected.route.origin.current).toBe(false);
     expect(projected.route.current.current).toBe(true);
     expect(projected.route.destination.current).toBe(false);
     expect(projected.groups.map((group) => [group.title, group.total])).toEqual([
-      ["Free", 8],
-      ["Order OMS-901", 4],
-      ["Region REG-1 · North", 4],
+      ["Свободно", 8],
+      ["Заказ OMS-901", 4],
+      ["Регион REG-1 · North", 4],
     ]);
     expect(projected.groups[0]?.lines).toEqual([{ productId: "30", quantity: 8 }]);
     expect(projected.groups[1]?.lines).toEqual([{ productId: "22", quantity: 4 }]);
@@ -200,7 +200,7 @@ describe("projectTransferDetail live balances", () => {
 
     expect(force?.total).toBe(12);
     expect(force?.breakdown.map((item) => [item.breakdownLabel, item.quantity])).toEqual([
-      ["Free", 8],
+      ["Свободно", 8],
       ["REG-1 · North", 4],
     ]);
     expect(force?.breakdown.reduce((sum, item) => sum + item.quantity, 0)).toBe(force?.total);
@@ -348,16 +348,16 @@ describe("projectTransferDetail terminal history", () => {
     expect(projected.route.current.current).toBe(false);
     expect(projected.route.destination.current).toBe(true);
     expect(projected.groups.map((group) => [group.title, group.total])).toEqual([
-      ["Free", 8],
-      ["Order OMS-901", 4],
-      ["Region REG-1 · North", 4],
+      ["Свободно", 8],
+      ["Заказ OMS-901", 4],
+      ["Регион REG-1 · North", 4],
     ]);
     expect(projected.canReserveInTransit).toBe(false);
     expect(projected.activity.map((event) => event.title)).toEqual([
-      "Transfer sent",
-      "Order reservation created",
-      "Region reservation created",
-      "Transfer delivered",
+      "Перемещение отправлено",
+      "Создан резерв заказа",
+      "Создан резерв региона",
+      "Перемещение доставлено",
     ]);
     expect(projected.activity.map((event) => event.href)).toEqual([
       "/store/logistics/transfers/tr-1",
@@ -408,9 +408,9 @@ describe("projectTransferDetail terminal history", () => {
     expect(projected.groups.some((group) => group.kind === "order")).toBe(true);
     expect(projected.groups.some((group) => group.kind === "free")).toBe(true);
     expect(projected.activity.map((event) => event.title)).toEqual([
-      "Transfer sent",
-      "Reservation posted",
-      "Reservation posted",
+      "Перемещение отправлено",
+      "Резерв проведён",
+      "Резерв проведён",
     ]);
     expect(projected.activity.some((event) => /cancel/i.test(event.title))).toBe(false);
   });
@@ -434,7 +434,7 @@ describe("projectTransferDetail terminal history", () => {
       ],
     });
     const projected = projectTransferDetail(data, [], transferOf(data));
-    expect(projected.activity.map((event) => event.title)).toEqual(["Transfer sent"]);
+    expect(projected.activity.map((event) => event.title)).toEqual(["Перемещение отправлено"]);
   });
 });
 
@@ -464,9 +464,9 @@ describe("projectTransferDetail document fallback", () => {
     const projected = projectTransferDetail(data, [], transferOf(data, "delivered"));
     expect(projected.source).toBe("document");
     expect(projected.groups.map((group) => [group.title, group.total])).toEqual([
-      ["Free", 7],
-      ["Order OMS-901", 4],
-      ["Region REG-1 · North", 5],
+      ["Свободно", 7],
+      ["Заказ OMS-901", 4],
+      ["Регион REG-1 · North", 5],
     ]);
     const force = projected.products.find((row) => row.productId === "30");
     expect(force?.total).toBe(12);
@@ -498,7 +498,7 @@ describe("projectTransferDetail document fallback", () => {
     const force = projected.products.find((row) => row.productId === "30");
     expect(force?.total).toBe(12);
     expect(force?.breakdown.map((item) => [item.breakdownLabel, item.quantity])).toEqual([
-      ["Free", 7],
+      ["Свободно", 7],
       ["REG-1 · North", 5],
     ]);
   });

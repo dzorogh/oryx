@@ -125,7 +125,7 @@ src/components/store/pim/products/
 - **`StoreCatalogPage`** больше не принимает `config` prop — один маршрут, режим из `useSearchParams`.
 - **Миниатюра товара** в колонке Name — `Link` на товар + tooltip с увеличенным изображением слева.
 - **Add** в toolbar без handler (заглушка).
-- **English UI** для подписей чипов (`CATALOG_LISTING_MODE_LABELS`); русские строки в UI нарушат `check:ui-english`.
+- **Русский UI** для подписей чипов (`CATALOG_LISTING_MODE_LABELS`). См. [russian-labels.md](../conventions/ui/russian-labels.md).
 
 ## Подключение к бэкенду
 
@@ -140,7 +140,6 @@ npm run dev
 # http://localhost:3000/store/logistics/stock
 
 npm run test -- tests/unit/store-catalog-page.test.tsx
-npm run check:ui-english
 ```
 
 ## Связанные материалы

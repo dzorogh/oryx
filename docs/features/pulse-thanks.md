@@ -130,7 +130,7 @@ src/components/home/
 
 ## UI-правила проекта
 
-- Английский UI: [english-labels.md](../conventions/ui/english-labels.md), `npm run check:ui-english`
+- Русский UI: [russian-labels.md](../conventions/ui/russian-labels.md)
 - Ширина и сетка: [full-width-page-content.md](../conventions/ui/full-width-page-content.md)
 - Шапка над списком: [list-page-toolbar.md](../conventions/ui/list-page-toolbar.md)
 
@@ -152,7 +152,6 @@ src/components/home/
 npm run dev
 # http://localhost:3000/pulse/thanks
 
-npm run check:ui-english
 ```
 
 ## Связанные материалы

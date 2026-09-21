@@ -6,7 +6,7 @@ Canonical guidelines for humans and AI agents (Cursor, Codex, Claude, CI, etc.).
 
 | Topic | Document |
 |-------|----------|
-| English UI copy | [ui/english-labels.md](ui/english-labels.md) |
+| Русские подписи UI | [ui/russian-labels.md](ui/russian-labels.md) |
 | Full-width list/content area | [ui/full-width-page-content.md](ui/full-width-page-content.md) |
 | List pages with toolbar header | [ui/list-page-toolbar.md](ui/list-page-toolbar.md) |
 | Warehouse and plant codes | [ui/place-codes.md](ui/place-codes.md) |
@@ -26,7 +26,5 @@ Canonical guidelines for humans and AI agents (Cursor, Codex, Claude, CI, etc.).
 ## Verification
 
 ```bash
-npm run check:ui-english      # English UI copy
-npm run lint:ui-english       # ESLint rule oryx-ui/no-cyrillic-ui
 npm run check:static-images     # No public/ string paths for bundled images
 ```

@@ -10,9 +10,9 @@ export type CatalogScopeOption = {
 };
 
 export const CATALOG_SCOPE_OPTIONS: CatalogScopeOption[] = [
-  { value: "equipment", label: "Equipment" },
-  { value: "parts", label: "Parts" },
-  { value: "accessories", label: "Accessories" },
+  { value: "equipment", label: "Техника" },
+  { value: "parts", label: "Запчасти" },
+  { value: "accessories", label: "Аксессуары" },
 ];
 
 const DEFAULT_SCOPE: CatalogScope = "equipment";

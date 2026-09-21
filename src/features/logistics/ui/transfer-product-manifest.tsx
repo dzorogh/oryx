@@ -36,7 +36,7 @@ const OwnerName = ({ owner }: { owner: TransferOwnerRef }) => {
   if (owner.kind === "order") {
     return (
       <span>
-        Order{" "}
+        Заказ{" "}
         <Link href={owner.href} className="text-primary hover:underline">
           {owner.breakdownLabel}
         </Link>
@@ -49,7 +49,7 @@ const OwnerName = ({ owner }: { owner: TransferOwnerRef }) => {
   const name = splitAt === -1 ? "" : owner.breakdownLabel.slice(splitAt + separator.length);
   return (
     <span>
-      Region{" "}
+      Регион{" "}
       <Link href={owner.href} className="text-primary hover:underline">
         {code}
       </Link>
@@ -130,9 +130,9 @@ export const TransferProductManifest = ({
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
-        <h2 className="text-sm font-semibold">Products and reservations</h2>
+        <h2 className="text-sm font-semibold">Товары и резервы</h2>
         <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium">
-          <span id={switchId}>Group by reservation</span>
+          <span id={switchId}>Группировать по резерву</span>
           <Switch
             checked={grouped}
             onCheckedChange={(checked) => setGrouped(Boolean(checked))}
@@ -142,16 +142,16 @@ export const TransferProductManifest = ({
       </div>
 
       {empty ? (
-        <p className="px-3 py-8 text-center text-sm text-muted-foreground">No products in this transfer.</p>
+        <p className="px-3 py-8 text-center text-sm text-muted-foreground">В этом перемещении нет товаров.</p>
       ) : grouped ? (
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
               <th scope="col" className="px-3 py-1.5 text-left font-semibold">
-                Product
+                Товар
               </th>
               <th scope="col" className="w-[5.5rem] px-3 py-1.5 text-right font-semibold">
-                Quantity
+                Количество
               </th>
             </tr>
           </thead>
@@ -184,8 +184,8 @@ export const TransferProductManifest = ({
       ) : (
         <div>
           <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] border-b border-border bg-muted/30 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-            <span>Product</span>
-            <span className="text-right">Quantity</span>
+            <span>Товар</span>
+            <span className="text-right">Количество</span>
           </div>
           {products.map((product) => (
             <UngroupedProduct key={product.productId} snapshot={snapshot} product={product} />

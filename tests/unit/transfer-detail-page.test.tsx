@@ -244,24 +244,24 @@ const chooseOption = async (
 };
 
 describe("TransferDetailPage header and route", () => {
-  it("shows one English status, one expected date, and one origin-current-destination route", () => {
+  it("shows one Russian status, one expected date, and one origin-current-destination route", () => {
     storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "TR-901" })).toBeTruthy();
-    expect(screen.getByText("In transit")).toBeTruthy();
-    expect(screen.getAllByText("In transit")).toHaveLength(1);
-    expect(screen.getByLabelText("Expected")).toBeTruthy();
-    expect(screen.getAllByLabelText("Expected")).toHaveLength(1);
+    expect(screen.getByText("Отправлен")).toBeTruthy();
+    expect(screen.getAllByText("Отправлен")).toHaveLength(1);
+    expect(screen.getByLabelText("Ожидается")).toBeTruthy();
+    expect(screen.getAllByLabelText("Ожидается")).toHaveLength(1);
 
-    const route = screen.getByLabelText("Transfer route");
-    expect(within(route).getByText("Origin")).toBeTruthy();
-    expect(within(route).getByText("Current location")).toBeTruthy();
-    expect(within(route).getByText("Destination")).toBeTruthy();
-    expect(within(route).getByText("Transfer TR-901")).toBeTruthy();
+    const route = screen.getByLabelText("Маршрут перемещения");
+    expect(within(route).getByText("Откуда")).toBeTruthy();
+    expect(within(route).getByText("Сейчас")).toBeTruthy();
+    expect(within(route).getByText("Куда")).toBeTruthy();
+    expect(within(route).getByText("Перемещение TR-901")).toBeTruthy();
     const currentNode = route.querySelector('[data-current="true"]');
-    expect(currentNode).toHaveTextContent("Current location");
-    expect(currentNode).toHaveTextContent("Transfer TR-901");
+    expect(currentNode).toHaveTextContent("Сейчас");
+    expect(currentNode).toHaveTextContent("Перемещение TR-901");
     expect(currentNode).toHaveAttribute("aria-current", "location");
     expect(route.querySelectorAll('[data-current="true"]')).toHaveLength(1);
     expect(screen.queryByText("Товары")).toBeNull();
@@ -275,10 +275,10 @@ describe("TransferDetailPage manifest", () => {
     storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
-    expect(screen.getByRole("heading", { level: 2, name: "Products and reservations" })).toBeTruthy();
-    expect(screen.getByRole("switch", { name: "Group by reservation" })).toBeChecked();
-    expect(screen.getByRole("rowheader", { name: "Free" })).toBeTruthy();
-    expect(screen.getByRole("rowheader", { name: /Order OMS-901/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Товары и резервы" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Группировать по резерву" })).toBeChecked();
+    expect(screen.getByRole("rowheader", { name: "Свободно" })).toBeTruthy();
+    expect(screen.getByRole("rowheader", { name: /Заказ OMS-901/ })).toBeTruthy();
     expect(screen.getAllByText("8").length).toBeGreaterThan(0);
     expect(screen.getAllByText("4").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Enduro 250").length).toBeGreaterThan(0);
@@ -306,8 +306,8 @@ describe("TransferDetailPage manifest", () => {
     );
     render(<TransferDetailPage />);
 
-    await user.click(screen.getByRole("switch", { name: "Group by reservation" }));
-    expect(screen.getByRole("switch", { name: "Group by reservation" })).not.toBeChecked();
+    await user.click(screen.getByRole("switch", { name: "Группировать по резерву" }));
+    expect(screen.getByRole("switch", { name: "Группировать по резерву" })).not.toBeChecked();
 
     const disclosure = screen.getByRole("button", { name: /Force 1100 EFI, 12/ });
     expect(disclosure).toHaveAttribute("aria-expanded", "false");
@@ -318,7 +318,7 @@ describe("TransferDetailPage manifest", () => {
 
     const panel = document.getElementById(disclosure.getAttribute("aria-controls") ?? "");
     expect(panel).toBeTruthy();
-    expect(within(panel as HTMLElement).getByText("Free")).toBeTruthy();
+    expect(within(panel as HTMLElement).getByText("Свободно")).toBeTruthy();
     expect(within(panel as HTMLElement).getByText("REG-1 · North · Coast")).toBeTruthy();
     expect(within(panel as HTMLElement).getByText("8")).toBeTruthy();
     expect(within(panel as HTMLElement).getByText("4")).toBeTruthy();
@@ -331,13 +331,13 @@ describe("TransferDetailPage actions", () => {
     storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
-    await user.click(screen.getByRole("button", { name: "Reserve in transit" }));
-    expect(screen.getByRole("heading", { name: "Reservation" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Place" })).toHaveTextContent(/TR-901/);
-    await chooseOption(user, "Order", "OMS-901");
-    await chooseOption(user, "Place", /TR-901/);
-    await chooseOption(user, "Product 1", /Force 1100 EFI/);
-    await user.click(screen.getByRole("button", { name: /^Reserve$/ }));
+    await user.click(screen.getByRole("button", { name: "Зарезервировать в пути" }));
+    expect(screen.getByRole("heading", { name: "Резерв" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Место" })).toHaveTextContent(/TR-901/);
+    await chooseOption(user, "Заказ", "OMS-901");
+    await chooseOption(user, "Место", /TR-901/);
+    await chooseOption(user, "Товар 1", /Force 1100 EFI/);
+    await user.click(screen.getByRole("button", { name: /^Резерв$/ }));
     expect(apiMock.createAndPostReservation).toHaveBeenCalledWith(
       expect.objectContaining({
         locationType: "transfer",
@@ -347,7 +347,7 @@ describe("TransferDetailPage actions", () => {
     expect(storeMock.reload).toHaveBeenCalledTimes(1);
   });
 
-  it("hides Reserve in transit without positive Free and hides lifecycle actions after delivery", () => {
+  it("hides Зарезервировать в пути without positive Free and hides lifecycle actions after delivery", () => {
     storeMock.use(snapshot(), [
       {
         productId: "22",
@@ -360,8 +360,8 @@ describe("TransferDetailPage actions", () => {
       },
     ]);
     const { rerender } = render(<TransferDetailPage />);
-    expect(screen.queryByRole("button", { name: "Reserve in transit" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Mark delivered" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Зарезервировать в пути" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Отметить доставленным" })).toBeTruthy();
 
     storeMock.use(
       snapshot({
@@ -375,17 +375,17 @@ describe("TransferDetailPage actions", () => {
       [],
     );
     rerender(<TransferDetailPage />);
-    expect(screen.queryByRole("button", { name: "Reserve in transit" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Mark delivered" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Зарезервировать в пути" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Отметить доставленным" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel transfer" })).toBeNull();
-    expect(screen.getByText("Delivered")).toBeTruthy();
+    expect(screen.getByText("Доставлен")).toBeTruthy();
 
-    const route = screen.getByLabelText("Transfer route");
+    const route = screen.getByLabelText("Маршрут перемещения");
     const currentNode = route.querySelector('[data-current="true"]');
-    expect(currentNode).toHaveTextContent("Destination");
+    expect(currentNode).toHaveTextContent("Куда");
     expect(currentNode).toHaveTextContent("WH-11");
     expect(currentNode).toHaveAttribute("aria-current", "location");
-    expect(currentNode).not.toHaveTextContent("Current location");
+    expect(currentNode).not.toHaveTextContent("Сейчас");
     expect(route.querySelectorAll('[data-current="true"]')).toHaveLength(1);
   });
 
@@ -403,13 +403,13 @@ describe("TransferDetailPage actions", () => {
     );
     render(<TransferDetailPage />);
 
-    const route = screen.getByLabelText("Transfer route");
+    const route = screen.getByLabelText("Маршрут перемещения");
     const currentNode = route.querySelector('[data-current="true"]');
-    expect(screen.getByText("Cancelled")).toBeTruthy();
-    expect(currentNode).toHaveTextContent("Origin");
+    expect(screen.getByText("Отменён")).toBeTruthy();
+    expect(currentNode).toHaveTextContent("Откуда");
     expect(currentNode).toHaveTextContent("WH-7");
     expect(currentNode).toHaveAttribute("aria-current", "location");
-    expect(currentNode).not.toHaveTextContent("Current location");
+    expect(currentNode).not.toHaveTextContent("Сейчас");
   });
 
   it("keeps the current projection when reservation posting fails", async () => {
@@ -418,16 +418,16 @@ describe("TransferDetailPage actions", () => {
     storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
-    await user.click(screen.getByRole("button", { name: "Reserve in transit" }));
-    await chooseOption(user, "Order", "OMS-901");
-    await chooseOption(user, "Place", /TR-901/);
-    await chooseOption(user, "Product 1", /Force 1100 EFI/);
-    await user.click(screen.getByRole("button", { name: /^Reserve$/ }));
+    await user.click(screen.getByRole("button", { name: "Зарезервировать в пути" }));
+    await chooseOption(user, "Заказ", "OMS-901");
+    await chooseOption(user, "Место", /TR-901/);
+    await chooseOption(user, "Товар 1", /Force 1100 EFI/);
+    await user.click(screen.getByRole("button", { name: /^Резерв$/ }));
 
     expect(apiMock.createAndPostReservation).toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "Reservation" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Резерв" })).toBeTruthy();
     await user.keyboard("{Escape}");
-    expect(screen.getByRole("rowheader", { name: "Free" })).toBeTruthy();
+    expect(screen.getByRole("rowheader", { name: "Свободно" })).toBeTruthy();
     expect(screen.getAllByText("8").length).toBeGreaterThan(0);
   });
 
@@ -443,9 +443,9 @@ describe("TransferDetailPage actions", () => {
     storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
-    await user.click(screen.getByRole("button", { name: "Mark delivered" }));
+    await user.click(screen.getByRole("button", { name: "Отметить доставленным" }));
     expect(apiMock.completeTransfer).toHaveBeenCalledWith("tr-1");
-    expect(screen.getByRole("button", { name: "Mark delivered" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Отметить доставленным" })).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Cancel transfer" })).toBeNull();
     expect(storeMock.reload).not.toHaveBeenCalled();
     finish?.();
@@ -459,12 +459,12 @@ describe("TransferDetailPage actions", () => {
 
     expect(screen.queryByRole("button", { name: "Cancel transfer" })).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Mark delivered" }));
+    await user.click(screen.getByRole("button", { name: "Отметить доставленным" }));
     expect(apiMock.completeTransfer).toHaveBeenCalledWith("tr-1");
     await waitFor(() => expect(storeMock.reload).toHaveBeenCalledTimes(1));
     expect(apiMock.cancelDocument).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Expected"), { target: { value: "2026-09-12" } });
+    fireEvent.change(screen.getByLabelText("Ожидается"), { target: { value: "2026-09-12" } });
     expect(apiMock.updateExpectedEnd).toHaveBeenCalledWith("store_transfer", "tr-1", "2026-09-12");
     await waitFor(() => expect(storeMock.reload).toHaveBeenCalledTimes(2));
   });
@@ -473,12 +473,12 @@ describe("TransferDetailPage actions", () => {
     storeMock.use(snapshot(), sentBalances);
     render(<TransferDetailPage />);
 
-    const activity = screen.getByRole("heading", { name: "Document activity" }).closest("section");
+    const activity = screen.getByRole("heading", { name: "История документа" }).closest("section");
     expect(activity).toBeTruthy();
     const titles = within(activity as HTMLElement)
       .getAllByRole("listitem")
       .map((item) => item.querySelector("p")?.textContent);
-    expect(titles).toEqual(["Transfer sent", "Order reservation created"]);
+    expect(titles).toEqual(["Перемещение отправлено", "Создан резерв заказа"]);
     const transferLinks = within(activity as HTMLElement).getAllByRole("link", { name: "TR-901" });
     expect(transferLinks).toHaveLength(1);
     expect(transferLinks[0]).toHaveAttribute("href", "/store/logistics/transfers/tr-1");
@@ -493,33 +493,33 @@ describe("TransferDetailPage async states", () => {
   it("marks the shell busy and repeats the page frame while loading", () => {
     storeMock.use(emptySnapshot(), [], { isLoading: true });
     render(<TransferDetailPage />);
-    expect(screen.getByText("Loading transfer…")).toBeTruthy();
-    expect(screen.getByText("Loading transfer…").parentElement).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByText("Загрузка перемещения…")).toBeTruthy();
+    expect(screen.getByText("Загрузка перемещения…").parentElement).toHaveAttribute("aria-busy", "true");
   });
 
   it("keeps the existing detail visible during refresh", () => {
     storeMock.use(snapshot(), sentBalances, { isLoading: true });
     render(<TransferDetailPage />);
     expect(screen.getByRole("heading", { level: 1, name: "TR-901" })).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 2, name: "Products and reservations" })).toBeTruthy();
-    expect(screen.queryByText("Loading transfer…")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "Товары и резервы" })).toBeTruthy();
+    expect(screen.queryByText("Загрузка перемещения…")).toBeNull();
   });
 
   it("shows the English load error and retry instead of stale success", async () => {
     const user = userEvent.setup();
     storeMock.use(emptySnapshot(), [], { error: "network" });
     render(<TransferDetailPage />);
-    expect(screen.getByText("Transfer could not be loaded.")).toBeTruthy();
+    expect(screen.getByText("Не удалось загрузить перемещение.")).toBeTruthy();
     expect(screen.queryByRole("heading", { level: 1, name: "TR-901" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Retry" }));
+    await user.click(screen.getByRole("button", { name: "Повторить" }));
     expect(storeMock.reload).toHaveBeenCalledTimes(1);
   });
 
   it("shows not found with a link back to Transfers", () => {
     storeMock.use(snapshot({ transfers: [] }), []);
     render(<TransferDetailPage />);
-    expect(screen.getByText("Transfer not found.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Back to Transfers" })).toHaveAttribute(
+    expect(screen.getByText("Перемещение не найдено.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "К перемещениям" })).toHaveAttribute(
       "href",
       "/store/logistics/transfers",
     );
@@ -536,8 +536,8 @@ describe("TransferDetailPage async states", () => {
       [],
     );
     render(<TransferDetailPage />);
-    expect(screen.getByText("No products in this transfer.")).toBeTruthy();
-    expect(screen.getByText("No activity yet.")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 2, name: "Document activity" })).toBeTruthy();
+    expect(screen.getByText("В этом перемещении нет товаров.")).toBeTruthy();
+    expect(screen.getByText("Пока нет событий.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "История документа" })).toBeTruthy();
   });
 });

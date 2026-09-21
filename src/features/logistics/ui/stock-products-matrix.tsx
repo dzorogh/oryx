@@ -1,8 +1,10 @@
+// english-ui:ignore-file
 "use client";
 
 import { Fragment } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ASSIGNED_TO_LABEL } from "@/features/logistics/logistics-labels";
 import { productById, regionById, regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import type { StockGroup } from "@/features/logistics/stock-filters";
@@ -73,37 +75,37 @@ const ProductsMatrixTable = ({
     <TableHeader>
       <TableRow className="hover:bg-transparent">
         <TableHead scope="col" rowSpan={2} className={cn(IDENTITY_HEAD, "align-bottom")}>
-          Product
+          Товар
         </TableHead>
         <TableHead scope="colgroup" colSpan={3} className="h-8 px-3 text-center text-xs font-medium">
-          Owner
+          {ASSIGNED_TO_LABEL}
         </TableHead>
         <TableHead
           scope="colgroup"
           colSpan={3}
           className="h-8 border-l-2 border-border px-3 text-center text-xs font-medium"
         >
-          Location
+          Место
         </TableHead>
       </TableRow>
       <TableRow className="hover:bg-transparent">
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Free
+          Свободно
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Region reserve
+          Резерв региона
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Order reserve
+          Резерв заказа
         </TableHead>
         <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l-2 border-border")}>
-          Warehouses
+          Склады
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Production
+          Производство
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Transfers
+          Перемещения
         </TableHead>
       </TableRow>
     </TableHeader>
@@ -157,19 +159,19 @@ const WarehousesMatrixTable = ({
     <TableHeader>
       <TableRow className="hover:bg-transparent">
         <TableHead scope="col" className={IDENTITY_HEAD}>
-          Product
+          Товар
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Free
+          Свободно
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Region reserve
+          Резерв региона
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Order reserve
+          Резерв заказа
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          On hand
+          Наличие
         </TableHead>
       </TableRow>
     </TableHeader>
@@ -225,19 +227,19 @@ const RegionsMatrixTable = ({
     <TableHeader>
       <TableRow className="hover:bg-transparent">
         <TableHead scope="col" className={IDENTITY_HEAD}>
-          Product
+          Товар
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Warehouses
+          Склады
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Production
+          Производство
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Transfers
+          Перемещения
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
-          Region reserve
+          Резерв региона
         </TableHead>
       </TableRow>
     </TableHeader>
@@ -297,28 +299,20 @@ export const StockProductsMatrix = ({
   empty: string;
 }) => {
   const title =
-    group === "products" ? "Products" : group === "warehouses" ? "Warehouses" : "Regions";
+    group === "products" ? "Товары" : group === "warehouses" ? "Склады" : "Регионы";
   const count =
     group === "products"
       ? productRows.length
       : group === "warehouses"
         ? warehouseSections.reduce((sum, section) => sum + section.rows.length, 0)
         : regionSections.reduce((sum, section) => sum + section.rows.length, 0);
-  const legend =
-    group === "products"
-      ? "Owner and location describe the same on-hand quantity — do not add across groups."
-      : group === "warehouses"
-        ? "Each row is one product on one warehouse. On hand is Free + Region reserve + Order reserve."
-        : "Each row is region-owned reserve for one product, split by location.";
-
   return (
     <Card size="sm" className={logisticsCardClass}>
-      <div className="space-y-1 px-3">
+      <div className="px-3">
         <h2 className="text-sm font-semibold">
           {title}
           {count > 0 ? <span className="font-normal text-muted-foreground"> · {count}</span> : null}
         </h2>
-        <p className="text-[11px] text-muted-foreground">{legend}</p>
       </div>
       <CardContent className="px-0">
         {group === "products" ? (

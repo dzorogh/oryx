@@ -76,11 +76,11 @@ describe("relativeDayLabel", () => {
   const now = new Date("2026-09-18T12:00:00");
 
   it("describes a future date from today", () => {
-    expect(relativeDayLabel("2026-09-18", now)).toBe("today");
-    expect(relativeDayLabel("2026-09-19", now)).toBe("in 1 day");
-    expect(relativeDayLabel("2026-09-25", now)).toBe("in 7 days");
-    expect(relativeDayLabel("2026-09-17", now)).toBe("yesterday");
-    expect(relativeDayLabel("2026-09-11", now)).toBe("7 days ago");
+    expect(relativeDayLabel("2026-09-18", now)).toBe("сегодня");
+    expect(relativeDayLabel("2026-09-19", now)).toBe("через 1 день");
+    expect(relativeDayLabel("2026-09-25", now)).toBe("через 7 дн.");
+    expect(relativeDayLabel("2026-09-17", now)).toBe("вчера");
+    expect(relativeDayLabel("2026-09-11", now)).toBe("7 дн. назад");
     expect(relativeDayLabel("", now)).toBeNull();
   });
 });
@@ -93,8 +93,8 @@ describe("productionDraftActionLabel", () => {
         { id: "p-b", code: "PRD-2", sku: "B", name: "Fabric", unit: "m", manufacturerId: "m-12" },
       ],
     });
-    expect(productionDraftActionLabel([], data)).toBe("Create order");
-    expect(productionDraftActionLabel([{ productId: "p-a", quantity: 3 }], data)).toBe("Create order · 3 pcs");
+    expect(productionDraftActionLabel([], data)).toBe("Создать заказ");
+    expect(productionDraftActionLabel([{ productId: "p-a", quantity: 3 }], data)).toBe("Создать заказ · 3 шт");
     expect(
       productionDraftActionLabel(
         [
@@ -103,7 +103,7 @@ describe("productionDraftActionLabel", () => {
         ],
         data,
       ),
-    ).toBe("Create order · 2 products");
+    ).toBe("Создать заказ · 2 товара");
   });
 });
 
@@ -122,17 +122,17 @@ describe("ProductionFromOrderForm", () => {
       />,
     );
 
-    expect(screen.getByText("Launch production")).toBeTruthy();
-    expect(screen.getByText("Customer order OMS-1048")).toBeTruthy();
-    expect(screen.getByText("Need")).toBeTruthy();
-    expect(screen.getByText("Make")).toBeTruthy();
-    expect(screen.getByText("3 pcs")).toBeTruthy();
-    expect(screen.getByText("remaining")).toBeTruthy();
-    expect(screen.getByText(/Ordered 8 pcs/)).toBeTruthy();
-    expect(screen.getByText("Quantity will be reserved automatically")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Create order · 3 pcs" })).toBeTruthy();
+    expect(screen.getByText("Запустить производство")).toBeTruthy();
+    expect(screen.getByText("Заказ клиента OMS-1048")).toBeTruthy();
+    expect(screen.getByText("Нужно")).toBeTruthy();
+    expect(screen.getByText("Произвести")).toBeTruthy();
+    expect(screen.getByText("3 шт")).toBeTruthy();
+    expect(screen.getByText("осталось")).toBeTruthy();
+    expect(screen.getByText(/Заказано 8 шт/)).toBeTruthy();
+    expect(screen.getByText("Количество зарезервируется автоматически")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Создать заказ · 3 шт" })).toBeTruthy();
     expect(screen.queryByText("Live order preview")).toBeNull();
-    expect(screen.getByText("Optional")).toBeTruthy();
+    expect(screen.getByText("необязательно")).toBeTruthy();
   });
 
   it("explains a fully covered order instead of asking for a manufacturer", () => {
@@ -160,7 +160,7 @@ describe("ProductionFromOrderForm", () => {
       />,
     );
 
-    expect(screen.getAllByText("This order is already fully covered.")).toHaveLength(2);
-    expect(screen.getByRole("button", { name: "Create order" })).toHaveProperty("disabled", true);
+    expect(screen.getAllByText("Этот заказ уже полностью закрыт.")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Создать заказ" })).toHaveProperty("disabled", true);
   });
 });

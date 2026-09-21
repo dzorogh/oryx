@@ -4,18 +4,18 @@ import type { TransferActivityEvent } from "@/features/logistics/transfer-detail
 const formatActivityStamp = (value: string): { date: string; time: string } => {
   const date = new Date(value);
   return {
-    date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    time: date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
+    date: date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }),
+    time: date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", hour12: false }),
   };
 };
 
 export const TransferActivity = ({ events }: { events: TransferActivityEvent[] }) => (
   <section className="min-w-0 overflow-hidden rounded-lg border border-border bg-card lg:min-w-[280px]">
     <div className="border-b border-border px-3 py-2">
-      <h2 className="text-sm font-semibold">Document activity</h2>
+      <h2 className="text-sm font-semibold">История документа</h2>
     </div>
     {events.length === 0 ? (
-      <p className="px-3 py-8 text-center text-sm text-muted-foreground">No activity yet.</p>
+      <p className="px-3 py-8 text-center text-sm text-muted-foreground">Пока нет событий.</p>
     ) : (
       <ol className="px-3 pb-2">
         {events.map((event, index) => {

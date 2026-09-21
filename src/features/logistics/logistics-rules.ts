@@ -26,13 +26,13 @@ export const IRREVERSIBLE_DOCUMENT_KINDS = [
 ] as const;
 
 export const RESERVATION_CANCEL_FORBIDDEN =
-  "Posted reservations cannot be cancelled. Create a Reservation that releases to Free instead.";
+  "Проведённый резерв нельзя отменить. Создайте резерв со снятием в «Свободно».";
 
 export const POSTED_DOCUMENT_CANCEL_FORBIDDEN =
-  "Posted warehouse documents cannot be cancelled. Create a new business document instead.";
+  "Проведённый складской документ нельзя отменить. Создайте новый документ.";
 
 export const SHIPMENT_OWNER_MUST_BE_ORDER =
-  "Shipment can only consume stock reserved for a customer order.";
+  "Отгрузка может списать только резерв заказа клиента.";
 
 export const isIrreversibleDocumentKind = (kind: string): boolean =>
   IRREVERSIBLE_DOCUMENT_KINDS.includes(kind as (typeof IRREVERSIBLE_DOCUMENT_KINDS)[number]);
@@ -52,25 +52,27 @@ export const assertDocumentCanBeCancelled = (kind: string, status?: string | nul
 
 export const assertPositiveQuantity = (quantity: number): void => {
   if (!(quantity > 0)) {
-    throw new Error("Quantity must be positive");
+    throw new Error("Количество должно быть больше нуля");
   }
 };
 
 export const assertAllocationWithinLine = (lineQuantity: number, allocated: number): void => {
   if (allocated - lineQuantity > 1e-9) {
-    throw new Error("Allocated quantity cannot exceed the document line");
+    throw new Error("Закреплённое количество не может превышать строку документа");
   }
 };
 
 export const assertProductMatch = (documentProductId: string, orderProductId: string): void => {
   if (documentProductId !== orderProductId) {
-    throw new Error("Product must match the customer order line");
+    throw new Error("Товар должен совпадать со строкой заказа клиента");
   }
 };
 
 export const assertEnoughStock = (available: number, needed: number, label: string): void => {
   if (needed - available > 1e-9) {
-    throw new Error(`Not enough ${label} quantity`);
+    throw new Error(
+      `Недостаточно ${label === "reserved" ? "зарезервированного" : label === "free" ? "свободного" : label} количества`,
+    );
   }
 };
 
@@ -95,7 +97,7 @@ export const assertCustomerCapacity = (
 ): void => {
   const remaining = remainingToReserveForOrderProduct(line.quantity, balances, line.orderId, line.productId);
   if (extraReserved - remaining > 1e-9) {
-    throw new Error("Cannot reserve more than the open customer order quantity");
+    throw new Error("Нельзя зарезервировать больше открытого количества заказа");
   }
 };
 
@@ -106,7 +108,7 @@ export const assertShipmentCapacity = (
 ): void => {
   const shipped = sumShippedForOrderProduct(balances, line.orderId, line.productId);
   if (shipped + extraShipped - line.quantity > 1e-9) {
-    throw new Error("Cannot ship more than the ordered quantity");
+    throw new Error("Нельзя отгрузить больше заказанного количества");
   }
 };
 
@@ -116,7 +118,7 @@ export const assertProductionOutputCapacity = (
   extra: number,
 ): void => {
   if (alreadyOutput + extra - line.quantity > 1e-9) {
-    throw new Error("Cannot output more than the production order line");
+    throw new Error("Нельзя выпустить больше строки заказа на производство");
   }
 };
 

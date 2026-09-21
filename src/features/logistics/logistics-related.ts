@@ -5,7 +5,7 @@ import {
 } from "@/features/logistics/logistics-availability";
 import { manufacturerCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
-import { expectedEndMeta, formatQuantity } from "@/features/logistics/logistics-labels";
+import { expectedEndMeta, formatQuantity, RESERVATION_DIRECTION_LABELS } from "@/features/logistics/logistics-labels";
 import {
   ownersEqual,
   reservationDirection,
@@ -56,7 +56,7 @@ export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId
         id: item.id,
         href: `/store/logistics/reservations/${item.id}`,
         label: item.number,
-        meta: `${direction} · ${statusMeta(item.status)}`,
+        meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
         statusKey: item.status,
         operation: direction,
       };
@@ -290,7 +290,7 @@ export const relatedReservationsForRegion = (
         id: item.id,
         href: `/store/logistics/reservations/${item.id}`,
         label: item.number,
-        meta: `${direction} · ${statusMeta(item.status)}`,
+        meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
         statusKey: item.status,
         operation: direction,
       };
@@ -317,7 +317,7 @@ export const relatedReservationsForProduction = (
         id: item.id,
         href: `/store/logistics/reservations/${item.id}`,
         label: item.number,
-        meta: `${direction} · ${statusMeta(item.status)}`,
+        meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
         statusKey: item.status,
         operation: direction,
       };

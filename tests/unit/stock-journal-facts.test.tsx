@@ -80,8 +80,8 @@ const shipLegs = () => [
 ];
 
 describe("stock journal facts", () => {
-  it("labels the journal Ledger", () => {
-    expect(LOGISTICS_MORE_NAV_ITEMS.find((item) => item.href.includes("ledger"))?.label).toBe("Ledger");
+  it("labels the journal Журнал", () => {
+    expect(LOGISTICS_MORE_NAV_ITEMS.find((item) => item.href.includes("ledger"))?.label).toBe("Журнал");
   });
 
   it("derives free, reserved, and shipped from assigned_to and location", () => {
@@ -290,7 +290,7 @@ describe("stock journal facts", () => {
     expect(fact).not.toHaveProperty("transactionId");
     expect(fact).not.toHaveProperty("occurredAt");
     expect(fact).not.toHaveProperty("postedAt");
-    expect(POSTED_DOCUMENT_CANCEL_FORBIDDEN).toMatch(/cannot be cancelled/);
+    expect(POSTED_DOCUMENT_CANCEL_FORBIDDEN).toMatch(/нельзя отменить/);
   });
 
   it("snapshots document history with the hardcoded demo author", () => {

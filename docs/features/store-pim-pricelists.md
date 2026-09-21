@@ -305,7 +305,7 @@ src/components/store/pim/pricelists/
 - **collab singleton** делится между подписчиками; на `pagehide` уничтожается, чтобы корректно убрать presence.
 - **Бэкенд-пересчёт** — производные значения идут через общий кэш `computed`; единственный писатель — лидер (минимальный `clientID`). Клиенты шлют запросы в `computeRequests` (батчем) и читают кэш; загрузка (скелетон) видна всем. Подробнее — раздел «Бэкенд-пересчёт».
 - **Видимость по статусу** — `supplier`/`dealer` скрывают `Unavailable` в выбранном регионе; `global` показывает всё. Смена статуса перефильтровывает список и кратко показывает скелетон.
-- **English UI** для всех подписей; русские строки в UI нарушат `check:ui-english`.
+- **Русский UI** для всех подписей. См. [russian-labels.md](../conventions/ui/russian-labels.md).
 - **Export** — клиентская генерация `.xlsx` (`write-excel-file/browser`, ленивый импорт); экспортируются все отфильтрованные строки и видимые колонки числами с Excel-форматом.
 - **Formula evaluation** — заглушка (выражение хранится, но не вычисляется).
 
@@ -328,7 +328,6 @@ npm run dev
 # http://localhost:3000/store/pim/pricelists
 # http://localhost:3000/store/pim/pricelists?list=supplier&region=ru
 
-npm run check:ui-english
 ```
 
 ## Связанные материалы
