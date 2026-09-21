@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatQuantity, formatSignedQuantity, locationKindLabel } from "@/features/logistics/logistics-labels";
+import {
+  ASSIGNED_TO_LABEL,
+  formatQuantity,
+  formatSignedQuantity,
+  LEDGER_ASSIGNED_TO_KIND_LABELS,
+  LEDGER_DOCUMENT_KIND_LABELS,
+  locationKindLabel,
+} from "@/features/logistics/logistics-labels";
 
 describe("formatSignedQuantity", () => {
   it("always prefixes positives with plus", () => {
@@ -34,5 +41,16 @@ describe("locationKindLabel", () => {
     expect(locationKindLabel("production_order")).toBe("Заказ на производство");
     expect(locationKindLabel("transfer")).toBe("Перемещение");
     expect(locationKindLabel("customer_order")).toBe("Заказ клиента");
+  });
+
+  it("names ledger assigned-to and document kinds in Russian", () => {
+    expect(ASSIGNED_TO_LABEL).toBe("Закреплено за");
+    expect(LEDGER_ASSIGNED_TO_KIND_LABELS.free).toBe("Свободно");
+    expect(LEDGER_ASSIGNED_TO_KIND_LABELS.order).toBe("Заказ клиента");
+    expect(LEDGER_ASSIGNED_TO_KIND_LABELS.region).toBe("Регион");
+    expect(LEDGER_DOCUMENT_KIND_LABELS.reservation).toBe("Резерв");
+    expect(LEDGER_DOCUMENT_KIND_LABELS.shipment).toBe("Отгрузка");
+    expect(LEDGER_DOCUMENT_KIND_LABELS.return).toBe("Возврат");
+    expect(LEDGER_DOCUMENT_KIND_LABELS.output).toBe("Выпуск");
   });
 });

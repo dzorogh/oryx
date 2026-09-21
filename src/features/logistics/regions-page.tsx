@@ -179,7 +179,6 @@ export const RegionDetailPage = () => {
       <RelatedDocuments title="Reservations" href="/store/logistics/reservations" items={reservations} />
       <DocumentLedger
         snapshot={snapshot}
-        hide="assignedTo"
         filter={(entry) =>
           documentKeysForAssignedEntity(snapshot.transactions, "region", region.id).has(
             documentKey(entry.documentType, entry.documentId),

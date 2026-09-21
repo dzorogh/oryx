@@ -449,13 +449,12 @@ export const CustomerOrderDetailPage = () => {
 
       <DocumentLedger
         snapshot={snapshot}
-        hide="assignedTo"
         filter={(entry) =>
           documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
             documentKey(entry.documentType, entry.documentId),
           )
         }
-        title="Movements"
+        title="Движения"
       />
 
       <ReservationForm

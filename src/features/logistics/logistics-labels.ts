@@ -81,6 +81,23 @@ export const OWNER_TYPE_LABELS: Record<OwnerType, string> = {
 
 export const FREE_OWNER_LABEL = "Free";
 
+export const ASSIGNED_TO_LABEL = "Закреплено за";
+
+export const LEDGER_ASSIGNED_TO_KIND_LABELS: Record<OwnerType | "free", string> = {
+  free: "Свободно",
+  order: "Заказ клиента",
+  region: "Регион",
+};
+
+export const LEDGER_DOCUMENT_KIND_LABELS: Record<DocumentType, string> = {
+  reservation: "Резерв",
+  shipment: "Отгрузка",
+  return: "Возврат",
+  transfer: "Перемещение",
+  production_order: "Заказ на производство",
+  output: "Выпуск",
+};
+
 export const RESERVATION_DIRECTION_LABELS: Record<ReservationDirection, string> = {
   reserve: "Reserve",
   release: "Release",

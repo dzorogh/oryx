@@ -1,17 +1,22 @@
+// english-ui:ignore-file
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { hrefForOwner } from "@/features/logistics/logistics-availability";
-import { formatSignedQuantity, formatTimestamp } from "@/features/logistics/logistics-labels";
-import { ownerLabel, productById } from "@/features/logistics/logistics-lookups";
+import { useMemo, useState } from "react";
+import { hrefForDocument, hrefForLocation, hrefForOwner } from "@/features/logistics/logistics-availability";
+import {
+  ASSIGNED_TO_LABEL,
+  formatSignedQuantity,
+  formatTimestamp,
+  LEDGER_ASSIGNED_TO_KIND_LABELS,
+  LEDGER_DOCUMENT_KIND_LABELS,
+  locationKindLabel,
+} from "@/features/logistics/logistics-labels";
+import { documentLabel, locationIdentity, ownerLabel, productById } from "@/features/logistics/logistics-lookups";
 import { isFreeOwner } from "@/features/logistics/logistics-types";
-import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
+import { LedgerEntityIdentity } from "@/features/logistics/ui/ledger-entity-identity";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import type { LogisticsSnapshot, StockTransaction } from "@/features/logistics/logistics-types";
-import { LocationLink } from "@/features/logistics/ui/location-link";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { DocumentLink } from "@/features/logistics/ui/source-link";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { buildPaginationItems } from "@/lib/pagination";
 import {
@@ -29,12 +34,12 @@ export const LEDGER_PAGE_SIZE = 20;
 export type DocumentLedgerHide = "product" | "location" | "assignedTo" | "document";
 
 const COLUMN_LABELS = {
-  time: "Time",
-  change: "Change",
-  product: "Product",
-  location: "Location",
-  assignedTo: "Assigned to",
-  document: "Document",
+  time: "Время",
+  change: "Изменение",
+  product: "Товар",
+  location: "Место",
+  assignedTo: ASSIGNED_TO_LABEL,
+  document: "Документ",
 } as const;
 
 export const documentLedgerRows = (
@@ -80,7 +85,7 @@ const LedgerPager = ({
   return (
     <div className="flex flex-col gap-3 border-t border-border/60 px-3 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-xs text-muted-foreground">
-        Showing {shownCount} of {totalCount}
+        Показано {shownCount} из {totalCount}
       </span>
       {totalPages > 1 ? (
         <Pagination className="mx-0 w-auto justify-end">
@@ -88,7 +93,7 @@ const LedgerPager = ({
             <PaginationItem>
               <PaginationPrevious
                 href="#"
-                text="Previous"
+                text="Назад"
                 aria-disabled={isFirstPage}
                 className={isFirstPage ? "pointer-events-none opacity-50" : undefined}
                 onClick={(event) => {
@@ -111,7 +116,7 @@ const LedgerPager = ({
                       event.preventDefault();
                       onPageChange(item);
                     }}
-                    aria-label={`Go to page ${item}`}
+                    aria-label={`На страницу ${item}`}
                   >
                     {item}
                   </PaginationLink>
@@ -121,7 +126,7 @@ const LedgerPager = ({
             <PaginationItem>
               <PaginationNext
                 href="#"
-                text="Next"
+                text="Далее"
                 aria-disabled={isLastPage}
                 className={isLastPage ? "pointer-events-none opacity-50" : undefined}
                 onClick={(event) => {
@@ -143,7 +148,7 @@ export const DocumentLedger = ({
   snapshot,
   filter,
   hide,
-  title = "Movements",
+  title = "Движения",
 }: {
   snapshot: LogisticsSnapshot;
   filter: (entry: StockTransaction) => boolean;
@@ -151,7 +156,6 @@ export const DocumentLedger = ({
   title?: string;
 }) => {
   const [page, setPage] = useState(1);
-  const [openId, setOpenId] = useState<string | null>(null);
   const rows = useMemo(() => documentLedgerRows(snapshot.transactions, filter), [filter, snapshot.transactions]);
   const paged = useMemo(() => paginateLedgerRows(rows, page), [page, rows]);
 
@@ -184,83 +188,52 @@ export const DocumentLedger = ({
     >
       {paged.pageRows.map((entry) => {
         const product = productById(snapshot, entry.productId);
-        const open = openId === entry.id;
+        const place = locationIdentity(snapshot, entry.locationType, entry.locationId);
         return (
-          <Fragment key={entry.id}>
-            <TableRow
-              className="cursor-pointer"
-              onClick={(event) => {
-                if ((event.target as HTMLElement).closest("a")) {
-                  return;
-                }
-                setOpenId(open ? null : entry.id);
-              }}
-              data-state={open ? "open" : "closed"}
-            >
-              <TableCell className="px-3 py-2 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-                  {formatTimestamp(entry.createdAt)}
-                </span>
+          <TableRow key={entry.id}>
+            <TableCell className="px-3 py-2 text-xs text-muted-foreground">
+              {formatTimestamp(entry.createdAt)}
+            </TableCell>
+            <TableCell className="px-3 py-2 text-sm tabular-nums">
+              {formatSignedQuantity(entry.quantity, product?.unit)}
+            </TableCell>
+            {hide === "product" ? null : (
+              <TableCell className="px-3 py-2">
+                <ProductIdentity snapshot={snapshot} productId={entry.productId} />
               </TableCell>
-              <TableCell className="px-3 py-2 text-sm tabular-nums">
-                {formatSignedQuantity(entry.quantity, product?.unit)}
+            )}
+            {hide === "location" ? null : (
+              <TableCell className="px-3 py-2">
+                <LedgerEntityIdentity
+                  kind={locationKindLabel(entry.locationType, place.isPlantWarehouse)}
+                  code={place.title}
+                  href={hrefForLocation(snapshot, entry.locationType, entry.locationId)}
+                />
               </TableCell>
-              {hide === "product" ? null : (
-                <TableCell className="px-3 py-2">
-                  <ProductIdentity snapshot={snapshot} productId={entry.productId} />
-                </TableCell>
-              )}
-              {hide === "location" ? null : (
-                <TableCell className="px-3 py-2 text-sm">
-                  <LocationLink
-                    snapshot={snapshot}
-                    locationType={entry.locationType}
-                    locationId={entry.locationId}
+            )}
+            {hide === "assignedTo" ? null : (
+              <TableCell className="px-3 py-2">
+                {isFreeOwner(entry.assignedToType, entry.assignedToId) ? (
+                  <LedgerEntityIdentity kind={LEDGER_ASSIGNED_TO_KIND_LABELS.free} />
+                ) : (
+                  <LedgerEntityIdentity
+                    kind={LEDGER_ASSIGNED_TO_KIND_LABELS[entry.assignedToType ?? "free"]}
+                    code={ownerLabel(snapshot, entry.assignedToType, entry.assignedToId)}
+                    href={hrefForOwner(entry.assignedToType, entry.assignedToId)}
                   />
-                </TableCell>
-              )}
-              {hide === "assignedTo" ? null : (
-                <TableCell className="px-3 py-2 text-sm">
-                  {isFreeOwner(entry.assignedToType, entry.assignedToId) ? (
-                    "Free"
-                  ) : (
-                    <LogisticsCodeBadge
-                      code={ownerLabel(snapshot, entry.assignedToType, entry.assignedToId)}
-                      href={hrefForOwner(entry.assignedToType, entry.assignedToId) ?? undefined}
-                    />
-                  )}
-                </TableCell>
-              )}
-              {hide === "document" ? null : (
-                <TableCell className="px-3 py-2 text-sm">
-                  <DocumentLink
-                    snapshot={snapshot}
-                    documentType={entry.documentType}
-                    documentId={entry.documentId}
-                  />
-                </TableCell>
-              )}
-            </TableRow>
-            {open ? (
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableCell colSpan={headers.length} className="px-3 py-2 text-xs text-muted-foreground">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    <span>id {entry.id}</span>
-                    <span>
-                      location {entry.locationType}/{entry.locationId}
-                    </span>
-                    <span>
-                      assigned_to {entry.assignedToType ?? "null"}/{entry.assignedToId ?? "null"}
-                    </span>
-                    <span>
-                      document {entry.documentType}/{entry.documentId}
-                    </span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : null}
-          </Fragment>
+                )}
+              </TableCell>
+            )}
+            {hide === "document" ? null : (
+              <TableCell className="px-3 py-2">
+                <LedgerEntityIdentity
+                  kind={LEDGER_DOCUMENT_KIND_LABELS[entry.documentType]}
+                  code={documentLabel(snapshot, entry.documentType, entry.documentId)}
+                  href={hrefForDocument(entry.documentType, entry.documentId)}
+                />
+              </TableCell>
+            )}
+          </TableRow>
         );
       })}
     </LogisticsTableCard>

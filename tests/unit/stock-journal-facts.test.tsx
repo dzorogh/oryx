@@ -350,20 +350,6 @@ describe("document ledger hide and pager", () => {
     expect(documentLedgerRows(facts, () => true).map((entry) => entry.id)).toEqual(["3", "2", "10"]);
   });
 
-  it("does not toggle raw ids when a document link is clicked", async () => {
-    const user = userEvent.setup();
-    const facts = reserveLegs();
-    const data = snapshot({
-      products: [{ id: "p-chair", code: "PRD-1", sku: "CHAIR", name: "Chair", unit: "pcs", manufacturerId: null }],
-      warehouses: [{ id: "wh-1", code: "WH-1", name: "One", manufacturerId: null }],
-      reservations: [reservation({ id: "rsv-10" })],
-      transactions: facts,
-    });
-    render(<DocumentLedger snapshot={data} filter={() => true} />);
-    await user.click(screen.getAllByRole("link")[0]!);
-    expect(screen.queryByText(/id tx-/)).toBeNull();
-  });
-
   it("pages newest facts first and keeps the rest reachable", () => {
     const rows = documentLedgerRows(manyFacts, () => true);
     expect(rows[0]?.id).toBe("tx-25");
@@ -386,20 +372,20 @@ describe("document ledger hide and pager", () => {
     });
     render(<DocumentLedger snapshot={data} hide="product" filter={() => true} />);
 
-    expect(screen.getByRole("columnheader", { name: "Time" })).toBeTruthy();
-    expect(screen.getByRole("columnheader", { name: "Change" })).toBeTruthy();
-    expect(screen.queryByRole("columnheader", { name: "Product" })).toBeNull();
-    expect(screen.getByRole("columnheader", { name: "Location" })).toBeTruthy();
-    expect(screen.getByRole("columnheader", { name: "Assigned to" })).toBeTruthy();
-    expect(screen.getByRole("columnheader", { name: "Document" })).toBeTruthy();
-    expect(screen.getByText("Showing 20 of 25")).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Время" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Изменение" })).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: "Товар" })).toBeNull();
+    expect(screen.getByRole("columnheader", { name: "Место" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Закреплено за" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Документ" })).toBeTruthy();
+    expect(screen.getByText("Показано 20 из 25")).toBeTruthy();
     expect(screen.getAllByRole("row").length).toBeGreaterThan(20);
 
-    await user.click(screen.getByRole("button", { name: "Go to page 2" }));
-    expect(screen.getByText("Showing 5 of 25")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "На страницу 2" }));
+    expect(screen.getByText("Показано 5 из 25")).toBeTruthy();
   });
 
-  it("hides Assigned to on an order card without dropping the free leg", () => {
+  it("keeps Assigned to on an order card so Free and order legs stay distinguishable", () => {
     const facts = reserveLegs();
     const data = snapshot({
       products: [{ id: "p-chair", code: "PRD-1", sku: "CHAIR", name: "Chair", unit: "pcs", manufacturerId: null }],
@@ -412,13 +398,30 @@ describe("document ledger hide and pager", () => {
     render(
       <DocumentLedger
         snapshot={data}
-        hide="assignedTo"
         filter={(entry) => keys.has(documentKey(entry.documentType, entry.documentId))}
       />,
     );
-    expect(screen.queryByRole("columnheader", { name: "Assigned to" })).toBeNull();
-    expect(screen.getByRole("columnheader", { name: "Product" })).toBeTruthy();
-    expect(screen.getAllByRole("row").length).toBeGreaterThan(2);
+    expect(screen.getByRole("columnheader", { name: "Закреплено за" })).toBeTruthy();
+    expect(screen.getByText("Свободно")).toBeTruthy();
+    expect(screen.getByText("Заказ клиента")).toBeTruthy();
+    expect(screen.queryByText(/id tx-/)).toBeNull();
+  });
+
+  it("shows Russian entity kinds above codes in Location, Assigned to, and Document", () => {
+    const facts = reserveLegs();
+    const data = snapshot({
+      products: [{ id: "p-chair", code: "PRD-1", sku: "CHAIR", name: "Chair", unit: "pcs", manufacturerId: null }],
+      warehouses: [{ id: "wh-1", code: "WH-1", name: "One", manufacturerId: null }],
+      customerOrders: [customerOrder({ id: "12", number: "OMS-12" })],
+      reservations: [reservation({ id: "rsv-10", toOwnerType: "order", toOwnerId: "12" })],
+      transactions: facts,
+    });
+    render(<DocumentLedger snapshot={data} filter={() => true} />);
+    expect(screen.getAllByText("Склад").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Свободно").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Заказ клиента").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Резерв").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("WH-1").length).toBeGreaterThan(0);
   });
 
   it("hides Location on a place card and Document on a document card", () => {
@@ -429,11 +432,11 @@ describe("document ledger hide and pager", () => {
       transactions: reserveLegs(),
     });
     const { rerender } = render(<DocumentLedger snapshot={data} hide="location" filter={() => true} />);
-    expect(screen.queryByRole("columnheader", { name: "Location" })).toBeNull();
-    expect(screen.getByRole("columnheader", { name: "Document" })).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: "Место" })).toBeNull();
+    expect(screen.getByRole("columnheader", { name: "Документ" })).toBeTruthy();
     rerender(<DocumentLedger snapshot={data} hide="document" filter={() => true} />);
-    expect(screen.queryByRole("columnheader", { name: "Document" })).toBeNull();
-    expect(screen.getByRole("columnheader", { name: "Location" })).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: "Документ" })).toBeNull();
+    expect(screen.getByRole("columnheader", { name: "Место" })).toBeTruthy();
   });
 });
 
