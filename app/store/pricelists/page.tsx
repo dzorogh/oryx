@@ -2,10 +2,7 @@
 import { StorePlaceholderPage } from "@/components/store/store-placeholder-page";
 
 const StorePricelistsRoute = () => (
-  <StorePlaceholderPage
-    title="Прайс-листы"
-    description="Дилерские и розничные прайс-листы каналов."
-  />
+  <StorePlaceholderPage title="Прайс-листы" />
 );
 
 export default StorePricelistsRoute;

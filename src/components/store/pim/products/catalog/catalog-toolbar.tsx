@@ -38,9 +38,8 @@ export const CatalogToolbar = ({
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
     <CardHeader className="gap-0 space-y-2 pb-0">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-        <div className="min-w-0 space-y-1">
+        <div className="min-w-0">
           <h1 className="text-lg font-semibold text-foreground">{STORE_CATALOG_PAGE.pageTitle}</h1>
-          <p className="text-xs text-muted-foreground">{STORE_CATALOG_PAGE.pageDescription}</p>
         </div>
 
         <Button type="button" size="default" className="shrink-0" aria-label={addButtonAriaLabel}>

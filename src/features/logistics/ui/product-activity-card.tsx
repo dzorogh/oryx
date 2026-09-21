@@ -132,9 +132,6 @@ export const ProductActivityCard = ({
     <Card size="sm" className={cn(logisticsCardClass, "gap-0 overflow-hidden py-0")}>
       <div className="flex flex-col gap-1 px-3 py-2.5">
         <h2 className="text-sm font-semibold">Текущая активность</h2>
-        <p className="text-xs text-muted-foreground">
-          Документы, в которых сейчас участвует этот товар — статус и ожидаемое окончание, если они есть.
-        </p>
       </div>
       <div className="divide-y divide-[var(--corportal-border-grey)] border-t border-[var(--corportal-border-grey)]">
         {groups.map((group) => {

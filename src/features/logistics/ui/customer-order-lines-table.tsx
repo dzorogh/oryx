@@ -167,9 +167,8 @@ export const CustomerOrderLinesTable = ({
 
   return (
     <Card size="sm" className={logisticsCardClass}>
-      <div className="space-y-1 px-3">
+      <div className="px-3">
         <h2 className="text-sm font-semibold">{title}</h2>
-        {lines.length > 0 ? <p className="text-[11px] text-muted-foreground">{ATLAS_HELP}</p> : null}
       </div>
       <CardContent className="px-0">
         <Table className="w-max min-w-full">

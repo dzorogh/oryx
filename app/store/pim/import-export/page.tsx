@@ -2,10 +2,7 @@
 import { ModulePlaceholderPage } from "@/components/layout/module-placeholder-page";
 
 const StoreImportExportPage = () => (
-  <ModulePlaceholderPage
-    title="Импорт/Экспорт"
-    description="Экспорт и импорт данных каталога, заказов и прайс-листов."
-  />
+  <ModulePlaceholderPage title="Импорт/Экспорт" />
 );
 
 export default StoreImportExportPage;

@@ -22,7 +22,7 @@ export const LogisticsDialog = ({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description: ReactNode;
+  description?: ReactNode;
   children: ReactNode;
   className?: string;
 }) => (
@@ -30,7 +30,9 @@ export const LogisticsDialog = ({
     <DialogContent className={cn("max-h-[85vh] overflow-y-auto sm:max-w-md", className)}>
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogDescription className={description ? undefined : "sr-only"}>
+          {description ?? title}
+        </DialogDescription>
       </DialogHeader>
       {children}
     </DialogContent>

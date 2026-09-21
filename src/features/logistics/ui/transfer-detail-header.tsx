@@ -118,7 +118,6 @@ export const TransferDetailHeader = ({
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{transfer.number}</h1>
-            <span className="text-xs text-muted-foreground">Transfer document</span>
             <Badge variant={statusTone(transfer.status)}>{STATUS_LABELS[transfer.status]}</Badge>
           </div>
           <ExpectedEndField

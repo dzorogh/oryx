@@ -203,10 +203,6 @@ export const TransferCreateDialog = ({
   };
 
   const title = "Create transfer";
-  const description =
-    context.kind === "order"
-      ? `Select order lines and quantities. Creating the document sends it immediately.`
-      : "Move free stock between warehouses. Creating the document sends it immediately.";
   const primaryLabel =
     context.kind === "order" ? `Create and send for ${orderNumber}` : "Create and send transfer";
 
@@ -220,7 +216,7 @@ export const TransferCreateDialog = ({
             </p>
           ) : null}
           <DialogTitle className="text-lg">{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription className="sr-only">{title}</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">

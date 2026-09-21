@@ -136,12 +136,8 @@ export const StoreSettingsPage = () => {
           <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
             <CardHeader className="gap-0 space-y-3 pb-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
+                <div>
                   <h1 className="text-lg font-semibold text-foreground">Настройки</h1>
-                  <p className="text-xs text-muted-foreground">
-                    Префиксы номеров документов логистики магазина. Коды остаются автоматическими:
-                    префикс плюс целочисленный id.
-                  </p>
                 </div>
                 <Button
                   type="button"
@@ -171,10 +167,6 @@ export const StoreSettingsPage = () => {
             <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
               <CardHeader className="gap-1">
                 <h2 className="text-sm font-semibold text-foreground">Префиксы документов</h2>
-                <p className="text-xs text-muted-foreground">
-                  После сохранения отображаемые коды сразу используют новый префикс. У существующих
-                  записей целочисленный id не меняется.
-                </p>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">

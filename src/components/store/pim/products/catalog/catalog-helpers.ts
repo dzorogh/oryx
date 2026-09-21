@@ -34,7 +34,6 @@ export const CATALOG_LISTING_MODE_DESCRIPTIONS: Record<CatalogListingMode, strin
 export const STORE_CATALOG_PAGE = {
   breadcrumbLabel: "Товары",
   pageTitle: "Товары",
-  pageDescription: "Ассортимент, цены и статусы дилерского и розничного каналов.",
   storeLinkHref: "/store/pim/products",
 } as const;
 

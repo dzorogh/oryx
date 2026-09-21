@@ -74,7 +74,6 @@ export const ReservationsPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Reservations" }]}>
       <LogisticsToolbar
         title="Reservations"
-        description="Destination is on the document. Source is on each line. Direction is derived: Reserve, Release, or Reassign."
         actionLabel="New reservation"
         onAction={() => setOpen(true)}
       >
@@ -181,7 +180,6 @@ export const ReservationDetailPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Reservations", href: "/store/logistics/reservations" }, { label: doc.number }]}>
       <LogisticsToolbar
         title={doc.number}
-        description={`${RESERVATION_DIRECTION_LABELS[direction]} at one place. Posted reservations cannot be changed; create another Reservation instead.`}
         actions={
           doc.status === "draft" ? (
             <Button
@@ -273,7 +271,6 @@ export const ReservationDetailPage = () => {
           }
         }}
         title="Add line"
-        description="Lines can be added while the reservation is still a draft."
       >
         <div className="flex flex-col gap-3">
           <ReservationLineFields

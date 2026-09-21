@@ -475,7 +475,6 @@ export const ReserveOnProductionForm = ({
       open={open}
       onOpenChange={onOpenChange}
       title="Зарезервировать в заказе на производство"
-      description="Занять свободное на строке существующего заказа на производство. Выпуск потом увезёт уже занятое."
     >
       <div className="flex flex-col gap-3">
         <FieldSelect
@@ -638,7 +637,6 @@ export const OutputFromOrderForm = ({
         }
       }}
       title="Выпустить под заказ клиента"
-      description="Если на строке ещё свободно, сначала проводится резерв, потом выпуск увозит уже занятое."
     >
       <div className="flex flex-col gap-3">
         <FieldSelect
@@ -800,7 +798,6 @@ export const ReserveOnTransferForm = ({
         }
       }}
       title="Зарезервировать в перемещении"
-      description="Свободное, которое уже едет, можно занять обычным резервом. После доставки оно приедет занятым."
     >
       <div className="flex flex-col gap-3">
         <FieldSelect

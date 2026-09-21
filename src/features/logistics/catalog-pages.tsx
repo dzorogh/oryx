@@ -91,7 +91,6 @@ export const ProductsPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Товары" }]}>
       <LogisticsToolbar
         title="Товары"
-        description="В чём измеряются остатки. Единица копируется в каждую строку журнала."
         actionLabel="Новый товар"
         onAction={() => setOpen(true)}
       />
@@ -127,7 +126,6 @@ export const ProductsPage = () => {
         open={open}
         onOpenChange={setOpen}
         title="Новый товар"
-        description="Артикул должен быть уникальным. Единица попадёт в журнал остатков."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -264,7 +262,6 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
           }
         }}
         title="Новый заказ на производство"
-        description="Завод можно выбрать только среди площадок, где этот товар производится."
       >
         <div className="flex flex-col gap-3">
           <FieldSelect
@@ -324,7 +321,6 @@ export const WarehousesPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Склады" }]}>
       <LogisticsToolbar
         title="Склады"
-        description="Физические места. Код склада выдаётся автоматически. В остальных экранах склад показывается только кодом."
         actionLabel="Новый склад"
         onAction={() => setOpen(true)}
       />
@@ -358,7 +354,6 @@ export const WarehousesPage = () => {
         open={open}
         onOpenChange={setOpen}
         title="Новый склад"
-        description="Общий склад или РЦ. Склад производителя создаётся вместе с производителем. Код появится после сохранения."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -426,7 +421,6 @@ export const WarehouseDetailPage = () => {
       <LogisticsToolbar
         title={warehouse.name}
         titleMeta={<LogisticsCodeBadge code={warehouse.code} />}
-        description={`${owner}. Остатки считаются из журнала. Производителя здесь не меняют.`}
         actions={
           <>
             <Link
@@ -493,7 +487,6 @@ export const WarehouseDetailPage = () => {
         open={editOpen}
         onOpenChange={setEditOpen}
         title="Склад"
-        description="Можно изменить название. Код склада не редактируется."
       >
         <div className="flex flex-col gap-3">
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -538,7 +531,6 @@ export const ManufacturersPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Производители" }]}>
       <LogisticsToolbar
         title="Производители"
-        description="У каждого производителя ровно один склад. Выпуск всегда приходит туда. В остальных экранах завод показывается только кодом."
         actionLabel="Новый производитель"
         onAction={() => setOpen(true)}
       />
@@ -568,7 +560,6 @@ export const ManufacturersPage = () => {
         open={open}
         onOpenChange={setOpen}
         title="Новый производитель"
-        description="Вместе с производителем создаётся его единственный склад. Код появится после сохранения."
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -637,7 +628,6 @@ export const ManufacturerDetailPage = () => {
       <LogisticsToolbar
         title={manufacturer.name}
         titleMeta={<LogisticsCodeBadge code={manufacturer.code} />}
-        description="Выпуск всегда приходит на склад производителя."
         actions={
           <>
             {warehouse ? (
@@ -702,7 +692,6 @@ export const ManufacturerDetailPage = () => {
         open={editOpen}
         onOpenChange={setEditOpen}
         title="Производитель"
-        description="Можно изменить название. Код завода не редактируется."
       >
         <div className="flex flex-col gap-3">
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

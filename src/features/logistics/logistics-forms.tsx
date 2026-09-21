@@ -513,7 +513,6 @@ export const ReservationForm = ({
         }
       }}
       title="Reservation"
-      description="Destination is on the header. Source is on each line. Direction is derived: Reserve, Release, or Reassign."
       className="sm:max-w-lg"
     >
       <div className="flex flex-col gap-3">
@@ -693,7 +692,6 @@ export const ShipmentForm = ({
         }
       }}
       title="Отгрузка"
-      description="Один заказ клиента и один склад. Строки берутся из зарезервированного остатка на этом складе."
     >
       <div className="flex flex-col gap-3">
         {preset?.customerOrderId ? null : (
@@ -828,7 +826,6 @@ export const ReturnForm = ({
         }
       }}
       title="Возврат"
-      description="Возвращайте не больше ещё не возвращённого отгруженного количества. Остаток становится свободным на складе исходной отгрузки."
     >
       <div className="flex flex-col gap-3">
         {preset?.shipmentId ? null : (

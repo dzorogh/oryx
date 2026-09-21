@@ -410,9 +410,6 @@ export const OrderProgressTracker = ({
                 {ORDER_STATUS_LABELS[status]}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Сроки и статусы процессов заказа. Действия менеджера — в меню этапов.
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <ExpectedEndField
