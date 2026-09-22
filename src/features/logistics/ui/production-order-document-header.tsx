@@ -69,18 +69,27 @@ export const ProductionOrderDocumentHeader = ({
     );
   }
 
+  const controlClass = "flex h-9 w-full items-center rounded-lg border border-input bg-background px-2.5 text-sm font-medium";
+
   return (
     <header className="min-w-0 rounded-lg border border-border bg-card p-4">
-      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(10rem,1.1fr)_minmax(6.5rem,0.55fr)_minmax(8.5rem,0.7fr)_minmax(10rem,0.8fr)_auto] lg:items-end">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] text-muted-foreground">Заказ на производство</p>
+          <p className="text-xs text-muted-foreground">Заказ на производство</p>
           <h1 className="text-2xl font-semibold tracking-tight">{order.number}</h1>
         </div>
+        {closeAction}
+      </div>
 
-        <div className="min-w-0 space-y-1">
-          <span className="block text-[11px] text-muted-foreground">Производитель</span>
-          <div className="flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold">
-            <ManufacturerLink snapshot={snapshot} manufacturerId={order.manufacturerId} />
+      <div className="mt-4 grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
+        <div className="min-w-0">
+          <span className="mb-1 block text-xs leading-4 text-muted-foreground">Производитель</span>
+          <div className={controlClass}>
+            <ManufacturerLink
+              snapshot={snapshot}
+              manufacturerId={order.manufacturerId}
+              className="h-auto rounded-none border-0 bg-transparent px-0 text-sm font-medium shadow-none"
+            />
           </div>
         </div>
 
@@ -88,13 +97,13 @@ export const ProductionOrderDocumentHeader = ({
           ref={statusRef}
           tabIndex={terminal ? -1 : undefined}
           aria-busy={statusPending || undefined}
-          className="min-w-0 space-y-1 outline-none"
+          className="min-w-0 outline-none"
         >
-          <span className="block text-[11px] text-muted-foreground" id="production-status-label">
+          <span className="mb-1 block text-xs leading-4 text-muted-foreground" id="production-status-label">
             Статус
           </span>
           {terminal ? (
-            <div className="flex h-9 items-center">
+            <div className={controlClass}>
               <ProductionStatusBadge status={order.status} />
             </div>
           ) : (
@@ -111,7 +120,7 @@ export const ProductionOrderDocumentHeader = ({
             >
               <SelectTrigger
                 id="production-status"
-                className="h-9 bg-background"
+                className="h-9 w-full bg-background text-sm font-medium data-[size=default]:h-9"
                 aria-labelledby="production-status-label"
                 aria-invalid={statusError ? true : undefined}
                 aria-errormessage={statusError ? "production-status-error" : undefined}
@@ -144,6 +153,7 @@ export const ProductionOrderDocumentHeader = ({
 
         <div aria-busy={datePending || undefined} className="min-w-0">
           <ExpectedEndField
+            appearance="meta"
             layout="stack"
             id="production-expected-end"
             value={order.expectedEndOn ?? ""}
@@ -168,8 +178,6 @@ export const ProductionOrderDocumentHeader = ({
             </p>
           ) : null}
         </div>
-
-        <div className="flex items-end justify-start lg:justify-end">{closeAction}</div>
       </div>
     </header>
   );

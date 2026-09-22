@@ -56,14 +56,14 @@ export const ProductionOrderOutputs = ({
 }) => {
   const action: ReactNode =
     canMutate && onCreate ? (
-      <Button type="button" size="sm" className="h-11 min-w-11 md:h-8" onClick={onCreate}>
+      <Button type="button" size="sm" className="h-7 px-2.5 text-xs" onClick={onCreate}>
         Новый выпуск
       </Button>
     ) : null;
 
   return (
     <section id="outputs" className="scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
         <h2 tabIndex={-1} className="text-base font-semibold outline-none">
           Выпуски
         </h2>
@@ -78,12 +78,12 @@ export const ProductionOrderOutputs = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Номер</TableHead>
-                  <TableHead>Товары</TableHead>
-                  <TableHead>Количество</TableHead>
-                  <TableHead>Под заказ клиента</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead>Ожидаемое окончание</TableHead>
+                  <TableHead className="px-3">Номер</TableHead>
+                  <TableHead className="px-3">Товары</TableHead>
+                  <TableHead className="px-3">Количество</TableHead>
+                  <TableHead className="px-3">Под заказ клиента</TableHead>
+                  <TableHead className="px-3">Статус</TableHead>
+                  <TableHead className="px-3">Ожидаемое окончание</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

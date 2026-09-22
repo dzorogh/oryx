@@ -99,7 +99,7 @@ export const ProductionOrderMovements = ({
 
   return (
     <section id="movements" className="scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card">
-      <div className="border-b border-border px-4 py-3">
+      <div className="border-b border-border px-4 py-2">
         <h2 ref={headingRef} tabIndex={-1} className="text-base font-semibold outline-none">
           Движения
         </h2>
@@ -114,12 +114,12 @@ export const ProductionOrderMovements = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Время</TableHead>
-                  <TableHead>Изменение</TableHead>
-                  <TableHead>Товар</TableHead>
-                  <TableHead>Место</TableHead>
-                  <TableHead>{ASSIGNED_TO_LABEL}</TableHead>
-                  <TableHead>Документ</TableHead>
+                  <TableHead className="px-3">Время</TableHead>
+                  <TableHead className="px-3">Изменение</TableHead>
+                  <TableHead className="px-3">Товар</TableHead>
+                  <TableHead className="px-3">Место</TableHead>
+                  <TableHead className="px-3">{ASSIGNED_TO_LABEL}</TableHead>
+                  <TableHead className="px-3">Документ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

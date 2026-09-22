@@ -24,84 +24,54 @@ type ReservationAssignment = {
   quantity: number;
 };
 
-const ReservationDetails = ({
+const ReserveDisclosure = ({
+  open,
+  name,
+  code,
+  controls,
+  onToggle,
+}: {
+  open: boolean;
+  name: string;
+  code: string;
+  controls: string;
+  onToggle: () => void;
+}) => (
+  <button
+    type="button"
+    className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-foreground md:size-8"
+    aria-expanded={open}
+    aria-controls={open ? controls : undefined}
+    aria-label={open ? `Свернуть резервы ${name}, ${code}` : `Развернуть резервы ${name}, ${code}`}
+    onClick={onToggle}
+  >
+    <ChevronRight
+      className={cn("size-4 transition-transform motion-reduce:transition-none", open && "rotate-90")}
+      aria-hidden
+    />
+  </button>
+);
+
+const ReservationOwner = ({
   snapshot,
-  productName,
-  productCodeLabel,
-  assignments,
-  panelId,
+  assignment,
+  indent = false,
 }: {
   snapshot: LogisticsSnapshot;
-  productName: string;
-  productCodeLabel: string;
-  assignments: ReservationAssignment[];
-  panelId: string;
-}) => {
-  const label = `Резервы для ${productName}, ${productCodeLabel}`;
-  return (
-    <>
-      <div className="hidden bg-muted/30 lg:block">
-        <table id={panelId} className="w-full text-sm" aria-label={label}>
-          <caption className="px-3 py-2 pl-10 text-left text-[10px] text-muted-foreground">
-            {label}
-          </caption>
-          <thead>
-            <tr className="text-xs text-muted-foreground">
-              <th scope="col" className="px-3 py-2 pl-10 text-left font-medium">
-                Тип владельца
-              </th>
-              <th scope="col" className="px-3 py-2 text-left font-medium">
-                Код
-              </th>
-              <th scope="col" className="px-3 py-2 text-left font-medium">
-                В резерве
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {assignments.map((item) => (
-              <tr key={`${item.ownerType}:${item.ownerId}`} className="border-t border-border/60">
-                <td className="px-3 py-2 pl-10">{LEDGER_ASSIGNED_TO_KIND_LABELS[item.ownerType]}</td>
-                <td className="px-3 py-2">
-                  <LogisticsCodeBadge
-                    code={ownerLabel(snapshot, item.ownerType, item.ownerId)}
-                    href={hrefForOwner(item.ownerType, item.ownerId) ?? undefined}
-                  />
-                </td>
-                <td className="px-3 py-2 tabular-nums">{formatQuantity(item.quantity)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <ul className="divide-y divide-border/60 bg-muted/30 lg:hidden" aria-label={label}>
-        {assignments.map((item) => (
-          <li key={`${item.ownerType}:${item.ownerId}`} className="px-3 py-2 pl-8">
-            <dl className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-sm">
-              <div>
-                <dt className="text-[10px] text-muted-foreground">Тип владельца</dt>
-                <dd>{LEDGER_ASSIGNED_TO_KIND_LABELS[item.ownerType]}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] text-muted-foreground">Код</dt>
-                <dd>
-                  <LogisticsCodeBadge
-                    code={ownerLabel(snapshot, item.ownerType, item.ownerId)}
-                    href={hrefForOwner(item.ownerType, item.ownerId) ?? undefined}
-                  />
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[10px] text-muted-foreground">В резерве</dt>
-                <dd className="font-medium tabular-nums">{formatQuantity(item.quantity)}</dd>
-              </div>
-            </dl>
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-};
+  assignment: ReservationAssignment;
+  indent?: boolean;
+}) => (
+  <div className="flex min-w-0 items-center gap-2">
+    {indent ? <span className="inline-block size-8 shrink-0" aria-hidden /> : null}
+    <span className="text-sm text-muted-foreground">
+      {LEDGER_ASSIGNED_TO_KIND_LABELS[assignment.ownerType]}
+    </span>
+    <LogisticsCodeBadge
+      code={ownerLabel(snapshot, assignment.ownerType, assignment.ownerId)}
+      href={hrefForOwner(assignment.ownerType, assignment.ownerId) ?? undefined}
+    />
+  </div>
+);
 
 export const ProductionOrderProductManifest = ({
   snapshot,
@@ -136,14 +106,14 @@ export const ProductionOrderProductManifest = ({
 
   const action: ReactNode =
     canMutate && onAddProduct ? (
-      <Button type="button" size="sm" className="h-11 min-w-11 md:h-8" onClick={onAddProduct}>
+      <Button type="button" size="sm" className="h-7 px-2.5 text-xs" onClick={onAddProduct}>
         Добавить товар
       </Button>
     ) : null;
 
   return (
     <section id="products" className="scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
         <h2 tabIndex={-1} className="text-base font-semibold outline-none">
           Товары
         </h2>
@@ -158,12 +128,12 @@ export const ProductionOrderProductManifest = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Товар</TableHead>
-                  <TableHead>План</TableHead>
-                  <TableHead>Свободно</TableHead>
-                  <TableHead>В резерве</TableHead>
-                  <TableHead>Выпущено</TableHead>
-                  <TableHead className="text-right">Действие</TableHead>
+                  <TableHead className="px-3">Товар</TableHead>
+                  <TableHead className="px-3">План</TableHead>
+                  <TableHead className="px-3">Свободно</TableHead>
+                  <TableHead className="px-3">В резерве</TableHead>
+                  <TableHead className="px-3">Выпущено</TableHead>
+                  <TableHead className="px-3 text-right">Действие</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -179,41 +149,26 @@ export const ProductionOrderProductManifest = ({
                       ownerLabel(snapshot, right.ownerType, right.ownerId),
                     ),
                   ) as ReservationAssignment[];
-                  const hasReserves = assignments.length > 0;
-                  const isOpen = hasReserves && expanded.has(line.id);
+                  const isOpen = expanded.has(line.id);
                   const panelId = `po-reserves-${line.id}`;
                   const showReserve = canMutate && breakdown.free > 0;
                   return (
                     <Fragment key={line.id}>
-                      <TableRow className={isOpen ? "border-b-0" : undefined}>
+                      <TableRow>
                         <TableCell className="px-3 py-2">
                           <div className="flex items-start gap-1.5">
-                            {hasReserves ? (
-                              <button
-                                type="button"
-                                className="mt-0.5 inline-flex size-11 items-center justify-center rounded-md text-muted-foreground md:size-8"
-                                aria-expanded={isOpen}
-                                aria-controls={isOpen ? panelId : undefined}
-                                aria-label={
-                                  isOpen
-                                    ? `Свернуть резервы ${name}, ${code}`
-                                    : `Развернуть резервы ${name}, ${code}`
-                                }
-                                onClick={() => toggle(line.id)}
-                              >
-                                <ChevronRight
-                                  className={cn("size-3.5 transition-transform motion-reduce:transition-none", isOpen && "rotate-90")}
-                                  aria-hidden
-                                />
-                              </button>
-                            ) : (
-                              <span className="inline-block size-11 shrink-0 md:size-8" aria-hidden />
-                            )}
+                            <ReserveDisclosure
+                              open={isOpen}
+                              name={name}
+                              code={code}
+                              controls={panelId}
+                              onToggle={() => toggle(line.id)}
+                            />
                             <ProductIdentity snapshot={snapshot} productId={line.productId} nameAs="text" />
                           </div>
                         </TableCell>
                         <TableCell className="px-3 py-2 text-sm tabular-nums">
-                          {formatQuantity(line.quantity, product?.unit)}
+                          {formatQuantity(line.quantity)}
                         </TableCell>
                         <TableCell className="px-3 py-2 text-sm tabular-nums">
                           {formatQuantity(breakdown.free)}
@@ -238,17 +193,65 @@ export const ProductionOrderProductManifest = ({
                           ) : null}
                         </TableCell>
                       </TableRow>
-                      {isOpen ? (
-                        <TableRow className="hover:bg-transparent">
-                          <TableCell colSpan={6} className="p-0">
-                            <ReservationDetails
-                              snapshot={snapshot}
-                              productName={name}
-                              productCodeLabel={code}
-                              assignments={assignments}
-                              panelId={panelId}
-                            />
+                      {isOpen
+                        ? assignments.map((item, index) => (
+                            <TableRow
+                              key={`${item.ownerType}:${item.ownerId}`}
+                              id={index === 0 ? panelId : undefined}
+                              className="bg-muted/30 hover:bg-muted/30"
+                              aria-label={`${LEDGER_ASSIGNED_TO_KIND_LABELS[item.ownerType]} ${ownerLabel(snapshot, item.ownerType, item.ownerId)}, в резерве ${formatQuantity(item.quantity)}`}
+                            >
+                              <TableCell className="px-3 py-1.5">
+                                <ReservationOwner snapshot={snapshot} assignment={item} indent />
+                              </TableCell>
+                              <TableCell className="px-3 py-1.5 text-sm tabular-nums">
+                                {formatQuantity(item.quantity)}
+                              </TableCell>
+                              <TableCell className="px-3 py-1.5 text-sm tabular-nums">0</TableCell>
+                              <TableCell className="px-3 py-1.5 text-sm font-semibold tabular-nums">
+                                {formatQuantity(item.quantity)}
+                              </TableCell>
+                              <TableCell className="px-3 py-1.5 text-sm tabular-nums">0</TableCell>
+                              <TableCell className="px-3 py-1.5" aria-hidden />
+                            </TableRow>
+                          ))
+                        : null}
+                      {isOpen && (assignments.length === 0 || breakdown.free > 0) ? (
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                          <TableCell id={assignments.length === 0 ? panelId : undefined} className="px-3 py-1.5">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="inline-block size-8 shrink-0" aria-hidden />
+                              <span className="text-sm text-muted-foreground">Свободно</span>
+                            </div>
                           </TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm tabular-nums">
+                            {formatQuantity(breakdown.free)}
+                          </TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm font-semibold tabular-nums">
+                            {formatQuantity(breakdown.free)}
+                          </TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm tabular-nums">0</TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm tabular-nums">0</TableCell>
+                          <TableCell className="px-3 py-1.5" aria-hidden />
+                        </TableRow>
+                      ) : null}
+                      {isOpen && outputted > 0 ? (
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                          <TableCell className="px-3 py-1.5">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="inline-block size-8 shrink-0" aria-hidden />
+                              <span className="text-sm text-muted-foreground">Выпущено</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm tabular-nums">
+                            {formatQuantity(outputted)}
+                          </TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm tabular-nums">0</TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm tabular-nums">0</TableCell>
+                          <TableCell className="px-3 py-1.5 text-sm font-semibold tabular-nums">
+                            {formatQuantity(outputted)}
+                          </TableCell>
+                          <TableCell className="px-3 py-1.5" aria-hidden />
                         </TableRow>
                       ) : null}
                     </Fragment>
@@ -271,41 +274,30 @@ export const ProductionOrderProductManifest = ({
                   ownerLabel(snapshot, right.ownerType, right.ownerId),
                 ),
               ) as ReservationAssignment[];
-              const hasReserves = assignments.length > 0;
-              const isOpen = hasReserves && expanded.has(line.id);
+              const isOpen = expanded.has(line.id);
               const panelId = `po-reserves-list-${line.id}`;
               const showReserve = canMutate && breakdown.free > 0;
               return (
                 <li key={line.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2">
+                    <ReserveDisclosure
+                      open={isOpen}
+                      name={name}
+                      code={code}
+                      controls={panelId}
+                      onToggle={() => toggle(line.id)}
+                    />
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold">{name}</h3>
                       <div className="mt-1">
                         <LogisticsCodeBadge code={code} />
                       </div>
                     </div>
-                    {hasReserves ? (
-                      <button
-                        type="button"
-                        className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground"
-                        aria-expanded={isOpen}
-                        aria-controls={isOpen ? panelId : undefined}
-                        aria-label={
-                          isOpen ? `Свернуть резервы ${name}, ${code}` : `Развернуть резервы ${name}, ${code}`
-                        }
-                        onClick={() => toggle(line.id)}
-                      >
-                        <ChevronRight
-                          className={cn("size-4 transition-transform motion-reduce:transition-none", isOpen && "rotate-90")}
-                          aria-hidden
-                        />
-                      </button>
-                    ) : null}
                   </div>
                   <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
                     <div>
                       <dt className="text-[10px] text-muted-foreground">План</dt>
-                      <dd className="text-sm tabular-nums">{formatQuantity(line.quantity, product?.unit)}</dd>
+                      <dd className="text-sm tabular-nums">{formatQuantity(line.quantity)}</dd>
                     </div>
                     <div>
                       <dt className="text-[10px] text-muted-foreground">Свободно</dt>
@@ -337,18 +329,51 @@ export const ProductionOrderProductManifest = ({
                         )}
                       </dd>
                     </div>
+                    {isOpen
+                      ? assignments.map((item, index) => (
+                          <div
+                            key={`${item.ownerType}:${item.ownerId}`}
+                            id={index === 0 ? panelId : undefined}
+                            className={cn(
+                              "col-span-full grid grid-cols-2 gap-x-3 bg-muted/30 py-2 sm:grid-cols-3",
+                              index === 0 && "border-t border-border",
+                            )}
+                          >
+                            <div className="col-span-full">
+                              <ReservationOwner snapshot={snapshot} assignment={item} />
+                            </div>
+                            <div className="text-sm tabular-nums">{formatQuantity(item.quantity)}</div>
+                            <div className="text-sm tabular-nums">0</div>
+                            <div className="text-sm font-semibold tabular-nums">{formatQuantity(item.quantity)}</div>
+                            <div className="text-sm tabular-nums">0</div>
+                          </div>
+                        ))
+                      : null}
+                    {isOpen && (assignments.length === 0 || breakdown.free > 0) ? (
+                      <div
+                        id={assignments.length === 0 ? panelId : undefined}
+                        className={cn(
+                          "col-span-full grid grid-cols-2 gap-x-3 bg-muted/30 py-2 sm:grid-cols-3",
+                          assignments.length === 0 && "border-t border-border",
+                        )}
+                      >
+                        <div className="col-span-full text-sm text-muted-foreground">Свободно</div>
+                        <div className="text-sm tabular-nums">{formatQuantity(breakdown.free)}</div>
+                        <div className="text-sm font-semibold tabular-nums">{formatQuantity(breakdown.free)}</div>
+                        <div className="text-sm tabular-nums">0</div>
+                        <div className="text-sm tabular-nums">0</div>
+                      </div>
+                    ) : null}
+                    {isOpen && outputted > 0 ? (
+                      <div className="col-span-full grid grid-cols-2 gap-x-3 bg-muted/30 py-2 sm:grid-cols-3">
+                        <div className="col-span-full text-sm text-muted-foreground">Выпущено</div>
+                        <div className="text-sm tabular-nums">{formatQuantity(outputted)}</div>
+                        <div className="text-sm tabular-nums">0</div>
+                        <div className="text-sm tabular-nums">0</div>
+                        <div className="text-sm font-semibold tabular-nums">{formatQuantity(outputted)}</div>
+                      </div>
+                    ) : null}
                   </dl>
-                  {isOpen ? (
-                    <div id={panelId}>
-                      <ReservationDetails
-                        snapshot={snapshot}
-                        productName={name}
-                        productCodeLabel={code}
-                        assignments={assignments}
-                        panelId={`${panelId}-inner`}
-                      />
-                    </div>
-                  ) : null}
                 </li>
               );
             })}

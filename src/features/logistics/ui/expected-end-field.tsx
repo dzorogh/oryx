@@ -12,6 +12,7 @@ type ExpectedEndFieldProps = {
   optional?: boolean;
   hint?: string;
   layout?: "stack" | "inline";
+  appearance?: "default" | "meta";
   disabled?: boolean;
   invalid?: boolean;
   errorId?: string;
@@ -25,6 +26,7 @@ export const ExpectedEndField = ({
   optional = false,
   hint,
   layout = "stack",
+  appearance = "default",
   disabled = false,
   invalid = false,
   errorId,
@@ -56,6 +58,27 @@ export const ExpectedEndField = ({
       {hint}
     </p>
   ) : null;
+
+  if (appearance === "meta" && layout === "stack") {
+    return (
+      <div className="min-w-0">
+        <label htmlFor={id} className="mb-1 block text-xs leading-4 text-muted-foreground">
+          {label}
+        </label>
+        <Input
+          id={id}
+          type="date"
+          value={value}
+          disabled={disabled}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-full min-w-0 bg-background text-sm font-medium"
+        />
+        {hintLine}
+      </div>
+    );
+  }
 
   if (layout === "inline") {
     return (
