@@ -611,19 +611,21 @@ export const OutputFromOrderForm = ({
         createProductionOutput({
           requestKey: requestKeyRef.current,
           orderId: production.id,
-          lineId: selected.line.id,
-          productId: selected.line.productId,
-          quantity: qty,
           expectedEndOn: expectedEndOn || null,
-          allocation:
-            needReserve > 0
-              ? {
-                ownerType: "order",
-                ownerId: customerOrderId,
-                productId: orderLine.productId,
-                quantity: needReserve,
-              }
-              : undefined,
+          lines: [
+            {
+              productId: selected.line.productId,
+              quantity: qty,
+              allocation:
+                needReserve > 0
+                  ? {
+                      ownerType: "order",
+                      ownerId: customerOrderId,
+                      quantity: needReserve,
+                    }
+                  : undefined,
+            },
+          ],
         }),
       "Выпуск проведён",
       reload,

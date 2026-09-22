@@ -124,12 +124,46 @@ export const assertShipmentCapacity = (
 };
 
 export const assertProductionOutputCapacity = (
-  line: ProductionOrderLine,
+  line: Pick<ProductionOrderLine, "quantity">,
   alreadyOutput: number,
   extra: number,
 ): void => {
   if (alreadyOutput + extra - line.quantity > 1e-9) {
     throw new Error("Нельзя выпустить больше строки заказа на производство");
+  }
+};
+
+export type ProductionOutputLineDraft = {
+  productId: string;
+  quantity: number;
+  planQuantity: number;
+  alreadyOutput: number;
+  allocationQuantity?: number;
+};
+
+export const assertProductionOutputLines = (lines: ProductionOutputLineDraft[]): void => {
+  if (lines.length === 0) {
+    throw new Error("Выберите товар и положительное количество");
+  }
+  const seen = new Set<string>();
+  for (const line of lines) {
+    if (seen.has(line.productId)) {
+      throw new Error("Товар не должен повторяться в выпуске");
+    }
+    seen.add(line.productId);
+    assertPositiveQuantity(line.quantity);
+    assertProductionOutputCapacity(
+      { quantity: line.planQuantity },
+      line.alreadyOutput,
+      line.quantity,
+    );
+    const alloc = line.allocationQuantity ?? 0;
+    if (alloc < 0) {
+      throw new Error("Количество должно быть больше нуля");
+    }
+    if (alloc - line.quantity > 1e-9) {
+      throw new Error("Занятое количество не может превышать выпуск");
+    }
   }
 };
 

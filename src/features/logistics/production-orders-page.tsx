@@ -24,7 +24,7 @@ import {
   remainingToReserveForLine,
 } from "@/features/logistics/logistics-availability";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
-import { assertEnoughStock, assertProductionOutputCapacity } from "@/features/logistics/logistics-rules";
+import { assertEnoughStock, assertProductionOutputLines } from "@/features/logistics/logistics-rules";
 import {
   addProductionLine,
   closeProductionOrder,
@@ -48,7 +48,11 @@ import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
 import { matchDocumentParam, PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
-import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
+import {
+  buildProductionOutputDrafts,
+  ProductionOutputLinesFields,
+  type ProductionOutputDraftLine,
+} from "@/features/logistics/ui/production-output-lines-fields";
 import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
@@ -301,10 +305,7 @@ export const ProductionOrderDetailPage = () => {
   const [outputOpen, setOutputOpen] = useState(false);
   const [outputPending, setOutputPending] = useState(false);
   const [outputError, setOutputError] = useState<string | null>(null);
-  const [outputLineId, setOutputLineId] = useState("");
-  const [outputQuantity, setOutputQuantity] = useState("1");
-  const [outputAllocLineId, setOutputAllocLineId] = useState("none");
-  const [outputAllocQty, setOutputAllocQty] = useState("0");
+  const [outputDrafts, setOutputDrafts] = useState<ProductionOutputDraftLine[]>([]);
   const [outputExpectedEndOn, setOutputExpectedEndOn] = useState("");
 
   const [closeOpen, setCloseOpen] = useState(false);
@@ -379,21 +380,16 @@ export const ProductionOrderDetailPage = () => {
     : undefined;
 
   const outputEligibleLines = lines.filter((line) => line.quantity - (doneByLine.get(line.id) ?? 0) > 0);
-  const outputLine = lines.find((line) => line.id === outputLineId);
-  const outputRemaining = outputLine ? outputLine.quantity - (doneByLine.get(outputLine.id) ?? 0) : 0;
-  const allocItems = snapshot.customerOrderLines
-    .filter((line) => {
-      const customerOrder = snapshot.customerOrders.find((item) => item.id === line.orderId);
-      return customerOrder?.status === "open" && (!outputLine || line.productId === outputLine.productId);
-    })
-    .map((line) => ({
-      value: line.id,
-      label: `${customerOrderById(snapshot, line.orderId)?.number ?? line.orderId} · можно ${formatQuantity(remainingToReserveForLine(line, balances))}`,
-    }));
-  const outputAllocLine = snapshot.customerOrderLines.find((line) => line.id === outputAllocLineId);
-  const outputAllocMax = outputAllocLine
-    ? Math.min(Number(outputQuantity) || outputRemaining, remainingToReserveForLine(outputAllocLine, balances))
-    : 0;
+  const remainingForOutput = (lineId: string) => {
+    const line = lines.find((item) => item.id === lineId);
+    return line ? line.quantity - (doneByLine.get(line.id) ?? 0) : 0;
+  };
+  const selectedOutputDrafts = outputDrafts.filter((draft) => Number(draft.quantity) > 0);
+  const canSubmitOutput =
+    selectedOutputDrafts.length > 0 &&
+    selectedOutputDrafts.every((draft) =>
+      isAllowedQuantity(draft.quantity, remainingForOutput(draft.productionLineId)),
+    );
 
   const manufacturerProducts = order ? productsForManufacturer(snapshot, order.manufacturerId) : [];
   const canMutate = Boolean(order && order.status !== "closed" && order.status !== "cancelled");
@@ -415,18 +411,36 @@ export const ProductionOrderDetailPage = () => {
   };
 
   const createOutputFromProduction = async (complete: boolean) => {
-    if (!order || !outputLine || !(Number(outputQuantity) > 0)) {
+    if (!order || !canSubmitOutput) {
       setOutputError("Выберите товар и количество");
       return;
     }
-    if (!isAllowedQuantity(outputQuantity, outputRemaining)) {
-      setOutputError("Нельзя выпустить больше оставшегося плана");
-      return;
-    }
     try {
-      assertProductionOutputCapacity(outputLine, doneByLine.get(outputLine.id) ?? 0, Number(outputQuantity));
-      if (Number(outputAllocQty) > 0) {
-        assertEnoughStock(outputAllocMax, Number(outputAllocQty), "open order");
+      assertProductionOutputLines(
+        selectedOutputDrafts.map((draft) => {
+          const line = lines.find((item) => item.id === draft.productionLineId)!;
+          return {
+            productId: draft.productId,
+            quantity: Number(draft.quantity),
+            planQuantity: line.quantity,
+            alreadyOutput: doneByLine.get(line.id) ?? 0,
+            allocationQuantity: draft.allocOrderLineId !== "none" ? Number(draft.allocQty) || 0 : 0,
+          };
+        }),
+      );
+      for (const draft of selectedOutputDrafts) {
+        if (draft.allocOrderLineId === "none" || !(Number(draft.allocQty) > 0)) {
+          continue;
+        }
+        const allocLine = snapshot.customerOrderLines.find((line) => line.id === draft.allocOrderLineId);
+        if (!allocLine) {
+          continue;
+        }
+        const allocMax = Math.min(
+          Number(draft.quantity),
+          remainingToReserveForLine(allocLine, balances),
+        );
+        assertEnoughStock(allocMax, Number(draft.allocQty), "open order");
       }
     } catch (caught) {
       setOutputError(caught instanceof Error ? caught.message : "Проверьте количество");
@@ -435,7 +449,6 @@ export const ProductionOrderDetailPage = () => {
     if (outputLockRef.current) {
       return;
     }
-    const allocLine = snapshot.customerOrderLines.find((line) => line.id === outputAllocLineId);
     outputLockRef.current = true;
     setOutputPending(true);
     setOutputError(null);
@@ -443,28 +456,28 @@ export const ProductionOrderDetailPage = () => {
       await createProductionOutput({
         requestKey: outputKeyRef.current,
         orderId: order.id,
-        lineId: outputLine.id,
-        productId: outputLine.productId,
-        quantity: Number(outputQuantity),
         expectedEndOn: outputExpectedEndOn || null,
         complete,
-        allocation:
-          allocLine && Number(outputAllocQty) > 0
-            ? {
-              ownerType: "order" as const,
-              ownerId: allocLine.orderId,
-              productId: allocLine.productId,
-              quantity: Number(outputAllocQty),
-            }
-            : undefined,
+        lines: selectedOutputDrafts.map((draft) => {
+          const allocLine = snapshot.customerOrderLines.find((line) => line.id === draft.allocOrderLineId);
+          return {
+            productId: draft.productId,
+            quantity: Number(draft.quantity),
+            allocation:
+              allocLine && Number(draft.allocQty) > 0
+                ? {
+                    ownerType: "order" as const,
+                    ownerId: allocLine.orderId,
+                    quantity: Number(draft.allocQty),
+                  }
+                : undefined,
+          };
+        }),
       });
       renewOutputKey();
       setOutputOpen(false);
-      setOutputQuantity("1");
-      setOutputAllocLineId("none");
-      setOutputAllocQty("0");
+      setOutputDrafts([]);
       setOutputExpectedEndOn("");
-      setOutputLineId("");
       toast.success(complete ? "Выпуск завершён" : "Выпуск запланирован");
       try {
         await reload();
@@ -600,11 +613,9 @@ export const ProductionOrderDetailPage = () => {
               onCreate={() => {
                 setOutputError(null);
                 renewOutputKey();
-                const first = outputEligibleLines[0];
-                setOutputLineId(first?.id ?? "");
-                setOutputQuantity("1");
-                setOutputAllocLineId("none");
-                setOutputAllocQty("0");
+                setOutputDrafts(
+                  buildProductionOutputDrafts(outputEligibleLines, (lineId) => remainingForOutput(lineId)),
+                );
                 setOutputExpectedEndOn("");
                 setOutputOpen(true);
               }}
@@ -858,103 +869,15 @@ export const ProductionOrderDetailPage = () => {
         title="Новый выпуск"
       >
         <div className="flex flex-col gap-3" aria-busy={outputPending || undefined}>
-          {outputEligibleLines.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Нет строк с оставшимся количеством для выпуска.</p>
-          ) : (
-            <label className="space-y-1 text-sm">
-              <span className="font-medium">Товар</span>
-              <Select
-                items={outputEligibleLines.map((line) => {
-                  const remaining = line.quantity - (doneByLine.get(line.id) ?? 0);
-                  return {
-                    value: line.id,
-                    label: productIdentityLabel(
-                      productById(snapshot, line.productId),
-                      line.productId,
-                      `осталось ${formatQuantity(remaining)}`,
-                    ),
-                  };
-                })}
-                value={outputLineId}
-                disabled={outputPending}
-                onValueChange={(value) => {
-                  setOutputLineId(value ?? "");
-                  setOutputAllocLineId("none");
-                  setOutputAllocQty("0");
-                  renewOutputKey();
-                }}
-              >
-                <SelectTrigger className="w-full bg-background" aria-label="Строка для выпуска">
-                  <SelectValue placeholder="Выберите товар" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {outputEligibleLines.map((line) => {
-                      const remaining = line.quantity - (doneByLine.get(line.id) ?? 0);
-                      return (
-                        <SelectItem key={line.id} value={line.id}>
-                          {productIdentityLabel(
-                            productById(snapshot, line.productId),
-                            line.productId,
-                            `осталось ${formatQuantity(remaining)}`,
-                          )}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </label>
-          )}
-          {outputLine ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={outputLine.productId} /> : null}
-          <QuantityField
-            value={outputQuantity}
-            onChange={(value) => {
-              setOutputQuantity(value);
-              renewOutputKey();
-            }}
-            max={outputRemaining}
+          <ProductionOutputLinesFields
+            snapshot={snapshot}
+            balances={balances}
+            drafts={outputDrafts}
+            remainingByLineId={remainingForOutput}
             disabled={outputPending || outputEligibleLines.length === 0}
+            onChange={setOutputDrafts}
+            onRenewKey={renewOutputKey}
           />
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Под заказ клиента</span>
-            <Select
-              items={[{ value: "none", label: "Нет — свободно на складе" }, ...allocItems]}
-              value={outputAllocLineId}
-              disabled={outputPending || outputEligibleLines.length === 0}
-              onValueChange={(value) => {
-                setOutputAllocLineId(value ?? "none");
-                renewOutputKey();
-              }}
-            >
-              <SelectTrigger className="w-full bg-background" aria-label="Заказ клиента для выпуска">
-                <SelectValue placeholder="Не занимать" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="none">Нет — свободно на складе</SelectItem>
-                  {allocItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </label>
-          {outputAllocLineId !== "none" ? (
-            <QuantityField
-              label="Занятое количество"
-              value={outputAllocQty}
-              onChange={(value) => {
-                setOutputAllocQty(value);
-                renewOutputKey();
-              }}
-              min={0}
-              max={outputAllocMax}
-              disabled={outputPending}
-            />
-          ) : null}
           <ExpectedEndField
             value={outputExpectedEndOn}
             disabled={outputPending || outputEligibleLines.length === 0}
@@ -985,7 +908,7 @@ export const ProductionOrderDetailPage = () => {
             <Button
               type="button"
               variant="outline"
-              disabled={outputPending || outputEligibleLines.length === 0 || !outputLine}
+              disabled={outputPending || !canSubmitOutput}
               onClick={() => {
                 void createOutputFromProduction(false);
               }}
@@ -994,7 +917,7 @@ export const ProductionOrderDetailPage = () => {
             </Button>
             <Button
               type="button"
-              disabled={outputPending || outputEligibleLines.length === 0 || !outputLine}
+              disabled={outputPending || !canSubmitOutput}
               onClick={() => {
                 void createOutputFromProduction(true);
               }}

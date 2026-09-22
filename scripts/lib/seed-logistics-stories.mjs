@@ -193,21 +193,41 @@ const insertProduction = async (client, { id, manufacturerId, productId, quantit
   return docId;
 };
 
-const completeOutput = async (client, { id, productionOrderId, productId, quantity, createdAt, expectedEndOn }) => {
-  const docId = DOC_ID.out(id);
+export const resolveOutputSeedLines = ({ productId, quantity, lines }) => {
+  if (Array.isArray(lines) && lines.length > 0) {
+    return lines.map((line) => ({
+      product_id: line.productId,
+      quantity: line.quantity,
+    }));
+  }
+  return [{ product_id: productId, quantity }];
+};
+
+export const buildCompleteOutputRpcArgs = ({
+  id,
+  productionOrderId,
+  productId,
+  quantity,
+  lines,
+  expectedEndOn,
+}) => {
   const poId = productionOrderId > 2_000_000 ? productionOrderId : DOC_ID.po(productionOrderId);
-  await client.rpc("store_create_production_output", {
+  return {
     p_request_key: `seed:output:${id}`,
     p_production_order_id: poId,
-    p_product_id: productId,
-    p_quantity: quantity,
+    p_lines: resolveOutputSeedLines({ productId, quantity, lines }),
     p_expected_end_on: expectedEndOn,
     p_complete: true,
-  });
+  };
+};
+
+const completeOutput = async (client, args) => {
+  const docId = DOC_ID.out(args.id);
+  await client.rpc("store_create_production_output", buildCompleteOutputRpcArgs(args));
   // Force sequence/id for story display when RPC auto-assigns: acceptable if numbers differ;
   // stories look up by relationships. Prefer explicit id via follow-up if needed.
   void docId;
-  void createdAt;
+  void args.createdAt;
 };
 
 const postReservation = async (client, {

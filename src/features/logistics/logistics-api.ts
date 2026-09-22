@@ -766,40 +766,54 @@ export const newProductionOutputRequestKey = (): string => {
   return `out-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
-export const createProductionOutput = async (args: {
-  requestKey: string;
-  orderId: string;
-  lineId: string;
+export type ProductionOutputLineInput = {
   productId: string;
   quantity: number;
   allocation?: {
     ownerType: OwnerType;
     ownerId: string;
-    productId: string;
     quantity: number;
   };
+};
+
+export const buildCreateProductionOutputRpcArgs = (args: {
+  requestKey: string;
+  orderId: string;
+  lines: ProductionOutputLineInput[];
   expectedEndOn?: string | null;
   complete?: boolean;
-}): Promise<string> => {
-  if (args.allocation && args.allocation.quantity > 0) {
-    if (args.allocation.productId !== args.productId) {
-      throw new Error("Товар резерва должен совпадать с товаром выпуска");
-    }
-    if (args.allocation.quantity > args.quantity) {
+}) => {
+  for (const line of args.lines) {
+    if (line.allocation && line.allocation.quantity > 0 && line.allocation.quantity > line.quantity) {
       throw new Error("Занятое количество не может превышать выпуск");
     }
   }
-  const created = await rpcJson<{ id: number | string }>("store_create_production_output", {
+  return {
     p_request_key: args.requestKey,
     p_production_order_id: Number(args.orderId),
-    p_product_id: Number(args.productId),
-    p_quantity: args.quantity,
+    p_lines: args.lines.map((line) => ({
+      product_id: Number(line.productId),
+      quantity: line.quantity,
+      allocation_owner_type: line.allocation?.quantity ? line.allocation.ownerType : null,
+      allocation_owner_id: line.allocation?.quantity ? Number(line.allocation.ownerId) : null,
+      allocation_quantity: line.allocation?.quantity ?? null,
+    })),
     p_expected_end_on: args.expectedEndOn || null,
     p_complete: args.complete !== false,
-    p_allocation_owner_type: args.allocation?.quantity ? args.allocation.ownerType : null,
-    p_allocation_owner_id: args.allocation?.quantity ? Number(args.allocation.ownerId) : null,
-    p_allocation_quantity: args.allocation?.quantity ?? null,
-  });
+  };
+};
+
+export const createProductionOutput = async (args: {
+  requestKey: string;
+  orderId: string;
+  lines: ProductionOutputLineInput[];
+  expectedEndOn?: string | null;
+  complete?: boolean;
+}): Promise<string> => {
+  const created = await rpcJson<{ id: number | string }>(
+    "store_create_production_output",
+    buildCreateProductionOutputRpcArgs(args),
+  );
   return String(created.id);
 };
 

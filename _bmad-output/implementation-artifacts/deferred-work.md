@@ -165,3 +165,11 @@
 - source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-universal-document-product-lines.md`
   summary: Нет автотеста, что закрытие заказа на производство не списывает складской остаток.
   evidence: `npm test` не вызывает RPC. Случайное возвращение списания WIP не уронит юнит-тесты; поведение закрытия проверено чтением функции, не тестом.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-outputs-multi-product.md`
+  summary: Нет автотеста SQL-функции многотоварного выпуска и группировки резервов.
+  evidence: `npm test` не вызывает Postgres. Два товара, разбиение 6/4, два резерва, план и отказы проверены живым SQL с откатом подтранзакции.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-outputs-multi-product.md`
+  summary: Подсказка «Осталось выпустить по плану» на карточке выпуска считает остаток по пустому `productionOrderLineId`.
+  evidence: Загрузка строк выпуска пишет `productionOrderLineId: ""` с универсальных строк, до этой задачи. Подсказка берёт количество строки выпуска, а не остаток плана.
