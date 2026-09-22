@@ -138,11 +138,10 @@ export const ProductionOrderProductManifest = ({
               </TableHeader>
               <TableBody>
                 {lines.map((line) => {
-                  const product = productById(snapshot, line.productId);
-                  const name = product?.name ?? line.productId;
-                  const code = productCode(snapshot, line.productId);
+                  const name = line.productName || productById(snapshot, line.productId)?.name || line.productId;
+                  const code = line.productSku || productCode(snapshot, line.productId);
                   const outputted = doneByLine.get(line.id) ?? 0;
-                  const breakdown = productionLineReservationBreakdown(line, balances);
+                  const breakdown = productionLineReservationBreakdown(line, snapshot);
                   const reservedTotal = breakdown.reserved.reduce((sum, item) => sum + item.quantity, 0);
                   const assignments = [...breakdown.reserved].sort((left, right) =>
                     ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(
@@ -164,7 +163,13 @@ export const ProductionOrderProductManifest = ({
                               controls={panelId}
                               onToggle={() => toggle(line.id)}
                             />
-                            <ProductIdentity snapshot={snapshot} productId={line.productId} nameAs="text" />
+                            <ProductIdentity
+                              snapshot={snapshot}
+                              productId={line.productId}
+                              productName={line.productName}
+                              productSku={line.productSku}
+                              nameAs="text"
+                            />
                           </div>
                         </TableCell>
                         <TableCell className="px-3 py-2 text-sm tabular-nums">
@@ -263,11 +268,10 @@ export const ProductionOrderProductManifest = ({
 
           <ul className="divide-y divide-border lg:hidden">
             {lines.map((line) => {
-              const product = productById(snapshot, line.productId);
-              const name = product?.name ?? line.productId;
-              const code = productCode(snapshot, line.productId);
+              const name = line.productName || productById(snapshot, line.productId)?.name || line.productId;
+              const code = line.productSku || productCode(snapshot, line.productId);
               const outputted = doneByLine.get(line.id) ?? 0;
-              const breakdown = productionLineReservationBreakdown(line, balances);
+              const breakdown = productionLineReservationBreakdown(line, snapshot);
               const reservedTotal = breakdown.reserved.reduce((sum, item) => sum + item.quantity, 0);
               const assignments = [...breakdown.reserved].sort((left, right) =>
                 ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(

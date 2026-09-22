@@ -20,6 +20,7 @@ import { HOLD_STATUS_FILTERS, ReservationHoldTable } from "@/features/logistics/
 import { assertCustomerCapacity, assertEnoughStock } from "@/features/logistics/logistics-rules";
 import {
   isFreeOwner,
+  matchDocumentParam,
   orderLineForProduct,
   reservationDirection,
   type OwnerType,
@@ -117,7 +118,7 @@ export const ReservationsPage = () => {
             return {
               id: item.id,
               number: item.number,
-              href: `/store/logistics/reservations/${item.id}`,
+              href: `/store/logistics/reservations/${item.sequenceNumber}`,
               status: item.status,
               direction: reservationDirection(item, lines),
               toOwnerType: item.toOwnerType,
@@ -160,10 +161,10 @@ export const ReservationDetailPage = () => {
   const [lineOpen, setLineOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [newLine, setNewLine] = useState(emptyReservationLine());
-  const doc = snapshot.reservations.find((item) => item.id === params.id);
+  const doc = matchDocumentParam(snapshot.reservations, params.id);
   const lines = useMemo(
-    () => snapshot.reservationLines.filter((line) => line.reservationId === params.id),
-    [params.id, snapshot.reservationLines],
+    () => (doc ? snapshot.reservationLines.filter((line) => line.reservationId === doc.id) : []),
+    [doc, snapshot.reservationLines],
   );
   const direction = doc ? reservationDirection(doc, lines) : "reserve";
   const productIds = [...new Set(lines.map((line) => line.productId).filter(Boolean))];

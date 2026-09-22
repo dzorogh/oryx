@@ -2,6 +2,7 @@ import {
   hrefForCustomerOrder,
   hrefForProductionOrder,
   hrefForTransfer,
+  productionDemandAssigned,
 } from "@/features/logistics/logistics-availability";
 import { manufacturerCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
@@ -17,6 +18,7 @@ import {
   reservationTouchesOrder,
   shipmentDirection,
   shipmentWarehouseId,
+  publicDocumentParam,
   type DocumentStatus,
   type LogisticsSnapshot,
   type ReservationDirection,
@@ -62,7 +64,7 @@ export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId
       const direction = reservationDirection(item, lines);
       return {
         id: item.id,
-        href: `/store/logistics/reservations/${item.id}`,
+        href: `/store/logistics/reservations/${publicDocumentParam(item)}`,
         label: item.number,
         meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
         statusKey: item.status,
@@ -72,7 +74,7 @@ export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId
 
 const shipmentItem = (item: Shipment): RelatedDocumentItem => ({
   id: item.id,
-  href: `/store/logistics/shipments/${item.id}`,
+  href: `/store/logistics/shipments/${publicDocumentParam(item)}`,
   label: item.number,
   meta: SHIPMENT_DIRECTION_LABELS[shipmentDirection(item.fromLocationType, item.toLocationType)],
   statusKey: "posted",
@@ -128,7 +130,7 @@ export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOr
     .filter((item) => transferIds.has(item.id))
     .map((item) => ({
       id: item.id,
-      href: `/store/logistics/transfers/${item.id}`,
+      href: `/store/logistics/transfers/${publicDocumentParam(item)}`,
       label: item.number,
       meta: expectedEndMeta(item.status, item.expectedEndOn),
       statusKey: item.status,
@@ -159,7 +161,7 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
     .filter((item) => outputIds.has(item.id))
     .map((item) => ({
       id: item.id,
-      href: `/store/logistics/outputs/${item.id}`,
+      href: `/store/logistics/outputs/${publicDocumentParam(item)}`,
       label: item.number,
       meta: expectedEndMeta(item.status, item.expectedEndOn),
       statusKey: item.status,
@@ -193,38 +195,30 @@ export const relatedProductionsForOrder = (
   return snapshot.productionOrders
     .filter((item) => productionIds.has(item.id))
     .map((item) => {
-      const lineIds = snapshot.productionOrderLines
+      const reserved = snapshot.productionOrderLines
         .filter((line) => line.orderId === item.id)
-        .map((line) => line.id);
-      const reserved = stock
-        .filter(
-          (entry) =>
-            entry.stockState === "reserved" &&
-            ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
-            entry.locationType === "production_order" &&
-            (entry.locationId === item.id || lineIds.includes(entry.locationId)),
-        )
-        .reduce((sum, entry) => sum + entry.quantity, 0);
-      const outputted = snapshot.transactions
-        .filter(
-          (entry) =>
-            entry.documentType === "output" &&
-            ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
-            entry.quantity > 0 &&
-            entry.locationType === "warehouse",
-        )
-        .filter((entry) => {
-          const output = snapshot.outputs.find((doc) => doc.id === entry.documentId);
-          return output?.productionOrderId === item.id;
+        .reduce((sum, line) => {
+          const assigned = productionDemandAssigned(snapshot, item.id, line.productId)
+            .filter((entry) => ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId))
+            .reduce((inner, entry) => inner + entry.quantity, 0);
+          return sum + assigned;
+        }, 0);
+      const outputted = snapshot.outputLines
+        .filter((line) => {
+          if (!ownersEqual(line.toOwnerType, line.toOwnerId, "order", customerOrderId)) {
+            return false;
+          }
+          const output = snapshot.outputs.find((doc) => doc.id === line.outputId);
+          return output?.productionOrderId === item.id && output.status === "done";
         })
-        .reduce((sum, entry) => sum + entry.quantity, 0);
+        .reduce((sum, line) => sum + line.quantity, 0);
       const extras = [
         reserved > 0 ? `занято ${formatQuantity(reserved)}` : null,
         outputted > 0 ? `выпущено ${formatQuantity(outputted)}` : null,
       ].filter((part): part is string => Boolean(part));
       return {
         id: item.id,
-        href: `/store/logistics/production-orders/${item.id}`,
+        href: `/store/logistics/production-orders/${publicDocumentParam(item)}`,
         label: item.number,
         meta: expectedEndMeta(item.status, item.expectedEndOn, extras),
         statusKey: item.status,
@@ -293,7 +287,7 @@ export const relatedReservationsForRegion = (
       const direction = reservationDirection(item, lines);
       return {
         id: item.id,
-        href: `/store/logistics/reservations/${item.id}`,
+        href: `/store/logistics/reservations/${publicDocumentParam(item)}`,
         label: item.number,
         meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
         statusKey: item.status,
@@ -320,7 +314,7 @@ export const relatedReservationsForProduction = (
       const direction = reservationDirection(item, lines);
       return {
         id: item.id,
-        href: `/store/logistics/reservations/${item.id}`,
+        href: `/store/logistics/reservations/${publicDocumentParam(item)}`,
         label: item.number,
         meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
         statusKey: item.status,
@@ -337,7 +331,7 @@ export const relatedTransfersForWarehouse = (
     .filter((item) => item.fromWarehouseId === warehouseId || item.toWarehouseId === warehouseId)
     .map((item) => ({
       id: item.id,
-      href: `/store/logistics/transfers/${item.id}`,
+      href: `/store/logistics/transfers/${publicDocumentParam(item)}`,
       label: item.number,
       meta: expectedEndMeta(
         item.status,
@@ -362,7 +356,7 @@ export const relatedAdjustmentsForWarehouse = (
     .filter((item) => item.warehouseId === warehouseId)
     .map((item) => ({
       id: item.id,
-      href: `/store/logistics/adjustments/${item.id}`,
+      href: `/store/logistics/adjustments/${publicDocumentParam(item)}`,
       label: item.number,
       meta: statusMeta(item.status),
     }));
@@ -375,7 +369,7 @@ export const relatedProductionsForManufacturer = (
     .filter((item) => item.manufacturerId === manufacturerId)
     .map((item) => ({
       id: item.id,
-      href: `/store/logistics/production-orders/${item.id}`,
+      href: `/store/logistics/production-orders/${publicDocumentParam(item)}`,
       label: item.number,
       meta: expectedEndMeta(item.status, item.expectedEndOn),
     }));
@@ -489,7 +483,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
     .filter((item) => orderQty.has(item.id))
     .map((item) => ({
       id: item.id,
-      href: hrefForCustomerOrder(item.id),
+      href: hrefForCustomerOrder(item.id, snapshot),
       number: item.number,
       quantity: orderQty.get(item.id) ?? 0,
       status: item.status,
@@ -504,7 +498,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
     .filter((item) => productionQty.has(item.id))
     .map((item) => ({
       id: item.id,
-      href: hrefForProductionOrder(item.id),
+      href: hrefForProductionOrder(item.id, snapshot),
       number: item.number,
       quantity: productionQty.get(item.id) ?? 0,
       status: item.status,
@@ -519,7 +513,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
     .filter((item) => transferQty.has(item.id))
     .map((item) => ({
       id: item.id,
-      href: hrefForTransfer(item.id),
+      href: hrefForTransfer(item.id, snapshot),
       number: item.number,
       quantity: transferQty.get(item.id) ?? 0,
       status: item.status,
@@ -536,7 +530,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
       const production = snapshot.productionOrders.find((order) => order.id === item.productionOrderId);
       return {
         id: item.id,
-        href: `/store/logistics/outputs/${item.id}`,
+        href: `/store/logistics/outputs/${publicDocumentParam(item)}`,
         number: item.number,
         quantity: outputQty.get(item.id) ?? 0,
         status: item.status,
@@ -554,7 +548,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
       const order = snapshot.customerOrders.find((entry) => entry.id === item.customerOrderId);
       return {
         id: item.id,
-        href: `/store/logistics/shipments/${item.id}`,
+        href: `/store/logistics/shipments/${publicDocumentParam(item)}`,
         number: item.number,
         quantity: shipmentQty.get(item.id) ?? 0,
         status: "posted",

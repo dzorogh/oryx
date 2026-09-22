@@ -19,7 +19,7 @@ import { DocumentProductLines } from "@/features/logistics/ui/document-product-l
 import { LOGISTICS_PATHS } from "@/features/logistics/logistics-paths";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
-import type { TransferStatus } from "@/features/logistics/logistics-types";
+import { matchDocumentParam, type TransferStatus } from "@/features/logistics/logistics-types";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { TransferCreateDialog } from "@/features/logistics/ui/transfer-create-dialog";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
@@ -112,7 +112,7 @@ export const TransfersPage = () => {
             return (
               <TableRow key={item.id}>
                 <TableCell className="px-3 py-2 align-top">
-                  <LogisticsCodeBadge code={item.number} href={hrefForTransfer(item.id)} />
+                  <LogisticsCodeBadge code={item.number} href={hrefForTransfer(item.sequenceNumber)} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top text-sm">
                   <WarehouseLink snapshot={snapshot} warehouseId={item.fromWarehouseId} />
@@ -176,7 +176,7 @@ const TransferDetailSkeleton = () => (
 export const TransferDetailPage = () => {
   const params = useParams<{ id: string }>();
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
-  const doc = snapshot.transfers.find((item) => item.id === params.id);
+  const doc = matchDocumentParam(snapshot.transfers, params.id);
   const projection = useMemo(
     () => (doc ? projectTransferDetail(snapshot, balances, doc) : null),
     [balances, doc, snapshot],

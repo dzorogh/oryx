@@ -12,6 +12,7 @@ export const EMPTY_SNAPSHOT: LogisticsSnapshot = {
   warehouses: [],
   regions: [],
   settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
+  documentProductLines: [],
   customerOrders: [],
   customerOrderLines: [],
   productionOrders: [],

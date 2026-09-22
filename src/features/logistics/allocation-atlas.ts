@@ -29,10 +29,40 @@ export const isLineFullyShipped = (ordered: number, shipped: number): boolean =>
 export const lineLocationAllocations = (
   balances: StockBalance[],
   line: Pick<CustomerOrderLine, "orderId" | "productId">,
+  snapshot?: LogisticsSnapshot,
 ): LineLocationAllocation => {
   let inProduction = 0;
   let inTransit = 0;
   const byWarehouseId: Record<string, number> = {};
+
+  if (snapshot) {
+    for (const reservation of snapshot.reservations) {
+      if (reservation.locationType !== "production_order" || reservation.status !== "posted") {
+        continue;
+      }
+      for (const rLine of snapshot.reservationLines) {
+        if (rLine.reservationId !== reservation.id || rLine.productId !== line.productId) {
+          continue;
+        }
+        if (
+          reservation.toOwnerType === "order" &&
+          reservation.toOwnerId === line.orderId &&
+          !rLine.fromOwnerType
+        ) {
+          inProduction += rLine.quantity;
+        } else if (
+          rLine.fromOwnerType === "order" &&
+          rLine.fromOwnerId === line.orderId &&
+          !reservation.toOwnerType
+        ) {
+          inProduction -= rLine.quantity;
+        }
+      }
+    }
+    if (inProduction < 0) {
+      inProduction = 0;
+    }
+  }
 
   for (const entry of balances) {
     if (entry.stockState !== "reserved" || !matchesOrderProduct(entry, line)) {
@@ -42,7 +72,9 @@ export const lineLocationAllocations = (
       continue;
     }
     if (entry.locationType === "production_order") {
-      inProduction += entry.quantity;
+      if (!snapshot) {
+        inProduction += entry.quantity;
+      }
       continue;
     }
     if (entry.locationType === "transfer") {
@@ -134,6 +166,22 @@ export const sumProducedForOrderProduct = (
       continue;
     }
     produced += allocation.quantity;
+  }
+
+  for (const outputLine of snapshot.outputLines) {
+    if (outputLine.productId !== productId) {
+      continue;
+    }
+    if (!ownersEqual(outputLine.toOwnerType, outputLine.toOwnerId, "order", orderId)) {
+      continue;
+    }
+    if (ledgerOutputIds.has(outputLine.outputId)) {
+      continue;
+    }
+    if (outputStatusById.get(outputLine.outputId) !== "done") {
+      continue;
+    }
+    produced += outputLine.quantity;
   }
 
   return produced < 0 && produced > -ALLOCATION_ATLAS_EPSILON ? 0 : produced;

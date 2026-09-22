@@ -161,3 +161,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-production-order-detail-redesign.md`
   summary: Нет автотеста идемпотентности `store_create_production_output`.
   evidence: Утверждённая спека запрещает новый test suite. Повтор ключа и откат транзакции проверены устройством RPC, не тестом.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-universal-document-product-lines.md`
+  summary: Нет автотеста, что закрытие заказа на производство не списывает складской остаток.
+  evidence: `npm test` не вызывает RPC. Случайное возвращение списания WIP не уронит юнит-тесты; поведение закрытия проверено чтением функции, не тестом.

@@ -93,7 +93,7 @@ export const ProductionOrderOutputs = ({
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="px-3 py-2 align-top">
-                        <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.id}`} />
+                        <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.sequenceNumber}`} />
                       </TableCell>
                       <TableCell className="px-3 py-2 align-top">
                         <OutputLinesGroup
@@ -153,7 +153,7 @@ export const ProductionOrderOutputs = ({
                       <div>
                         <dt className="text-[10px] text-muted-foreground">Номер</dt>
                         <dd>
-                          <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.id}`} />
+                          <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.sequenceNumber}`} />
                         </dd>
                       </div>
                       <div>

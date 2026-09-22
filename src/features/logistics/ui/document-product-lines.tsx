@@ -12,6 +12,9 @@ export const DOCUMENT_PRODUCT_LINE_PREVIEW = 5;
 export type DocumentProductLine = {
   productId: string;
   quantity: number;
+  productName?: string | null;
+  productSku?: string | null;
+  productUnit?: string | null;
 };
 
 export const documentProductMoreLabel = (hidden: number, expanded: boolean) =>
@@ -53,7 +56,7 @@ export const DocumentProductLines = ({
 }) => {
   const listId = useId();
   const [expanded, setExpanded] = useState(false);
-  const items = lines.filter((line) => line.productId);
+  const items = lines.filter((line) => line.productId || line.productName);
   if (items.length === 0) {
     return <span className="text-muted-foreground">{empty}</span>;
   }
@@ -66,17 +69,21 @@ export const DocumentProductLines = ({
       <ul id={listId} className="flex flex-col gap-1">
         {visible.map((line, index) => {
           const product = productById(snapshot, line.productId);
-          const name = product?.name ?? line.productId;
+          const name = line.productName || product?.name || line.productId;
           return (
-            <li key={`${line.productId}-${index}`} className="flex items-start justify-between gap-3">
-              <Link
-                href={hrefForProduct(line.productId)}
-                className="min-w-0 break-words text-sm font-medium text-primary hover:underline"
-              >
-                {name}
-              </Link>
+            <li key={`${line.productId || line.productName}-${index}`} className="flex items-start justify-between gap-3">
+              {line.productId ? (
+                <Link
+                  href={hrefForProduct(line.productId)}
+                  className="min-w-0 break-words text-sm font-medium text-primary hover:underline"
+                >
+                  {name}
+                </Link>
+              ) : (
+                <span className="min-w-0 break-words text-sm font-medium">{name}</span>
+              )}
               <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                {formatQuantity(line.quantity, product?.unit)}
+                {formatQuantity(line.quantity, line.productUnit || product?.unit)}
               </span>
             </li>
           );

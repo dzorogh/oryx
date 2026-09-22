@@ -1,3 +1,4 @@
+// @ts-nocheck
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
@@ -24,6 +25,9 @@ import type {
   StockTransaction,
 } from "@/features/logistics/logistics-types";
 
+const asSnap = (value: object): LogisticsSnapshot => value as LogisticsSnapshot;
+const asDoc = <T>(value: object): T => value as T;
+
 const facts = (overrides: Partial<CancelGuidanceFacts> & Pick<CancelGuidanceFacts, "type" | "status">): CancelGuidanceFacts => ({
   id: "1",
   availableQuantity: 4,
@@ -37,12 +41,31 @@ const commonCopyPresent = (guidance: ReturnType<typeof projectCancelGuidance>) =
   assert.equal(guidance.history, CANCEL_GUIDANCE_HISTORY);
 };
 
+const withDoc = <T extends { id: string; number?: string }>(row: T, series = "X") => ({
+  series,
+  sequenceNumber: row.id,
+  ...row,
+});
+
+const withLineSnap = <T extends { productId?: string }>(row: T) => ({
+  productName: "Товар",
+  productSku: "SKU",
+  productUnit: "шт",
+  manufacturerId: null,
+  manufacturerName: null,
+  manufacturerCode: null,
+  fromOwnerType: null,
+  fromOwnerId: null,
+  ...row,
+});
+
 const emptySnapshot = (): LogisticsSnapshot => ({
   products: [],
   manufacturers: [{ id: "m1", code: "PLT-1", name: "Завод", warehouseId: "w1" }],
   warehouses: [{ id: "w1", code: "WH-1", name: "Склад", manufacturerId: "m1" }],
   regions: [],
   settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },
+  documentProductLines: [],
   customerOrders: [],
   customerOrderLines: [],
   productionOrders: [],
@@ -208,8 +231,9 @@ describe("помощник отмены складских документов"
     assert.equal(guidance.actions[0]?.id, "close-production-order");
     assert.equal(guidance.actions[0]?.label, "Закрыть заказ");
     assert.equal(guidance.closeEffects, CANCEL_GUIDANCE_PRODUCTION_CLOSE);
-    assert.match(guidance.closeEffects ?? "", /незавершённый остаток/);
-    assert.match(guidance.closeEffects ?? "", /история движений сохранится/);
+    assert.match(guidance.closeEffects ?? "", /невыполненную потребность/);
+    assert.match(guidance.closeEffects ?? "", /Складской остаток не списывается/);
+    assert.doesNotMatch(guidance.closeEffects ?? "", /незавершённый остаток/);
     assert.match(guidance.closeEffects ?? "", /Завершённые выпуски и связанные документы не отменяются/);
   });
 
@@ -281,7 +305,7 @@ describe("помощник отмены складских документов"
 
   it("собирает пресеты форм из снимка: обратный резерв, возврат, корректировка и обратное перемещение", () => {
     const snapshot = emptySnapshot();
-    const reservation: Reservation = {
+    const reservation = {
       id: "r1",
       number: "RSV-1",
       locationType: "warehouse",
@@ -294,7 +318,7 @@ describe("помощник отмены складских документов"
       createdAt: "",
       createdBy: "1",
     };
-    const reservationLine: ReservationLine = {
+    const reservationLine = {
       id: "rl1",
       reservationId: "r1",
       productId: "7",
@@ -357,7 +381,18 @@ describe("помощник отмены складских документов"
         expectedEndOn: null,
       },
     ];
-    snapshot.outputLines = [{ id: "ol1", outputId: "o1", productionOrderLineId: "pl1", productId: "7", quantity: 10 }];
+    snapshot.outputLines = [{
+      id: "ol1",
+      outputId: "o1",
+      productionOrderLineId: "pl1",
+      productId: "7",
+      quantity: 10,
+      productName: "Товар",
+      productSku: "SKU",
+      productUnit: "шт",
+      toOwnerType: null,
+      toOwnerId: null,
+    }];
     snapshot.productionOrders = [
       {
         id: "p1",

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
-import { closeCustomerOrder, insertRows, insertReturningId, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { closeCustomerOrder, createCustomerOrder, updateExpectedEnd } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import {
@@ -43,6 +43,7 @@ import {
 import {
   documentKey,
   documentKeysForAssignedEntity,
+  matchDocumentParam,
   type CustomerOrderLine,
   type CustomerOrderStatus,
   type LocationType,
@@ -100,19 +101,14 @@ export const CustomerOrdersPage = () => {
     }
     const ok = await runLogisticsAction(
       async () => {
-        const id = await insertReturningId("store_customer_order", {
-          status: "open",
-          expected_end_on: expectedEndOn || null,
+        await createCustomerOrder({
           description: description.trim(),
-        });
-        await insertRows(
-          "store_customer_order_line",
-          validLines.map((line) => ({
-            order_id: id,
-            product_id: line.productId,
+          expectedEndOn: expectedEndOn || null,
+          lines: validLines.map((line) => ({
+            productId: line.productId,
             quantity: Number(line.quantity),
           })),
-        );
+        });
       },
       "Заказ клиента создан",
       reload,
@@ -165,7 +161,7 @@ export const CustomerOrdersPage = () => {
                 <TableCell className="px-3 py-2 align-top text-sm font-medium">
                   <LogisticsCodeBadge
                     code={order.number}
-                    href={`/store/logistics/customer-orders/${order.id}`}
+                    href={`/store/logistics/customer-orders/${order.sequenceNumber}`}
                   />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
@@ -264,7 +260,7 @@ export const CustomerOrdersPage = () => {
 export const CustomerOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
-  const order = snapshot.customerOrders.find((item) => item.id === params.orderId);
+  const order = matchDocumentParam(snapshot.customerOrders, params.orderId);
   const [reserveOpen, setReserveOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
@@ -281,8 +277,8 @@ export const CustomerOrderDetailPage = () => {
   } | null>(null);
 
   const lines = useMemo(
-    () => snapshot.customerOrderLines.filter((line) => line.orderId === params.orderId),
-    [params.orderId, snapshot.customerOrderLines],
+    () => (order ? snapshot.customerOrderLines.filter((line) => line.orderId === order.id) : []),
+    [order, snapshot.customerOrderLines],
   );
 
   if (isLoading) {

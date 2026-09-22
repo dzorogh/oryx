@@ -45,22 +45,27 @@ const Qty = ({ quantity, className }: { quantity: number; className?: string }) 
 };
 
 const ATLAS_HELP =
-  "«В производстве» — текущий незавершённый резерв по этой строке заказа. «Выпущено» — накопленный завершённый выпуск. Не складывайте «Выпущено» с колонками текущих мест: у них разные базы и они могут пересекаться.";
+  "«В производстве» — назначение потребности по этой строке заказа. «Выпущено» — накопленный завершённый выпуск. Не складывайте «Выпущено» с колонками текущих мест: у них разные базы и они могут пересекаться.";
 
 const IN_PRODUCTION_HELP =
-  "Текущий незавершённый резерв по этой строке. Не складывайте с «Выпущено».";
+  "Назначение потребности этому заказу на производстве. Не складывайте с «Выпущено».";
 const PRODUCED_HELP =
   "Накопленный завершённый выпуск по этой строке. Не складывайте с колонками текущих мест.";
 
 const CompactProduct = ({
   snapshot,
   productId,
+  productName,
+  productSku,
 }: {
   snapshot: LogisticsSnapshot;
   productId: string;
+  productName?: string | null;
+  productSku?: string | null;
 }) => {
   const product = productById(snapshot, productId);
-  const name = product?.name ?? productId;
+  const name = productName || product?.name || productId;
+  const sku = productSku || product?.sku;
   return (
     <div className="min-w-0">
       <Link
@@ -69,7 +74,7 @@ const CompactProduct = ({
       >
         {name}
       </Link>
-      {product?.sku ? <div className="truncate text-[10px] text-muted-foreground">{product.sku}</div> : null}
+      {sku ? <div className="truncate text-[10px] text-muted-foreground">{sku}</div> : null}
     </div>
   );
 };
@@ -223,12 +228,12 @@ export const CustomerOrderLinesTable = ({
             ) : (
               lines.map((line) => {
                 const product = productById(snapshot, line.productId);
-                const productName = product?.name ?? line.productId;
+                const productName = line.productName || product?.name || line.productId;
                 const reserved = reservedPlacesForLine(balances, line);
                 const freePlaces = freePlacesForProduct(balances, line.productId);
                 const shippedQty = sumShippedForLine(balances, line);
                 const producedQty = sumProducedForLine(snapshot, line);
-                const locations = lineLocationAllocations(balances, line);
+                const locations = lineLocationAllocations(balances, line, snapshot);
                 const toReserve = remainingToReserveForLine(line, balances);
                 const warehouseReserved = reserved.filter((place) => place.locationType === "warehouse");
                 const canReserve = canAct && toReserve > 0 && freePlaces.length > 0;
@@ -249,7 +254,12 @@ export const CustomerOrderLinesTable = ({
                     >
                       <div className="flex min-w-0 items-center gap-1">
                         <div className="min-w-0 flex-1 overflow-hidden">
-                          <CompactProduct snapshot={snapshot} productId={line.productId} />
+                          <CompactProduct
+                            snapshot={snapshot}
+                            productId={line.productId}
+                            productName={line.productName}
+                            productSku={line.productSku}
+                          />
                         </div>
                         {canAct ? (
                           <LineActionsMenu

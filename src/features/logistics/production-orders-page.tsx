@@ -47,7 +47,7 @@ import {
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
-import { PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
+import { matchDocumentParam, PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
@@ -159,7 +159,7 @@ export const ProductionOrdersPage = () => {
                 <TableCell className="px-3 py-2 align-top">
                   <LogisticsCodeBadge
                     code={item.number}
-                    href={`/store/logistics/production-orders/${item.id}`}
+                    href={`/store/logistics/production-orders/${item.sequenceNumber}`}
                   />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top text-sm">
@@ -318,23 +318,27 @@ export const ProductionOrderDetailPage = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dateMessage, setDateMessage] = useState<string | null>(null);
 
-  const order = snapshot.productionOrders.find((item) => item.id === params.orderId);
+  const order = matchDocumentParam(snapshot.productionOrders, params.orderId);
   const lines = useMemo(
-    () => snapshot.productionOrderLines.filter((line) => line.orderId === params.orderId),
-    [params.orderId, snapshot.productionOrderLines],
+    () => (order ? snapshot.productionOrderLines.filter((line) => line.orderId === order.id) : []),
+    [order, snapshot.productionOrderLines],
   );
-  const outputs = snapshot.outputs.filter((item) => item.productionOrderId === params.orderId);
+  const outputs = order ? snapshot.outputs.filter((item) => item.productionOrderId === order.id) : [];
   const doneByLine = useMemo(() => {
-    const counts = new Map<string, number>();
+    const byProduct = new Map<string, number>();
     for (const outputLine of snapshot.outputLines) {
       const output = snapshot.outputs.find((item) => item.id === outputLine.outputId);
-      if (output?.status !== "done") {
+      if (!order || output?.status !== "done" || output.productionOrderId !== order.id) {
         continue;
       }
-      counts.set(outputLine.productionOrderLineId, (counts.get(outputLine.productionOrderLineId) ?? 0) + outputLine.quantity);
+      byProduct.set(outputLine.productId, (byProduct.get(outputLine.productId) ?? 0) + outputLine.quantity);
+    }
+    const counts = new Map<string, number>();
+    for (const line of lines) {
+      counts.set(line.id, byProduct.get(line.productId) ?? 0);
     }
     return counts;
-  }, [snapshot.outputLines, snapshot.outputs]);
+  }, [lines, order, snapshot.outputLines, snapshot.outputs]);
 
   const outputIdsKey = outputs.map((item) => item.id).join("|");
   const movementFilter = useMemo(
@@ -576,7 +580,7 @@ export const ProductionOrderDetailPage = () => {
                 if (!line) {
                   return;
                 }
-                const breakdown = productionLineReservationBreakdown(line, balances);
+                const breakdown = productionLineReservationBreakdown(line, snapshot);
                 const eligible = openOrderLinesForProduct(snapshot, balances, line.productId);
                 const first = eligible.length === 1 ? eligible[0] : undefined;
                 const cap = first
@@ -1029,7 +1033,7 @@ export const ProductionOrderDetailPage = () => {
                 statusRef.current?.focus();
                 if (closeAnnounceRef.current) {
                   closeAnnounceRef.current.textContent =
-                    "Заказ закрыт. Резервы сняты, остаток списан.";
+                    "Потребность снята. Складской остаток не списан. Завершённые выпуски и связанные документы не отменены.";
                 }
               });
               try {

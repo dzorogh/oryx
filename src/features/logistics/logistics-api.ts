@@ -4,6 +4,8 @@ import type {
   CustomerOrder,
   CustomerOrderLine,
   DocumentHistoryEntry,
+  DocumentProductLine,
+  DocumentProductLineRegionSnapshot,
   DocumentType,
   HistoryDocumentType,
   LogisticsManufacturer,
@@ -39,7 +41,12 @@ import {
   assertAdjustmentLines,
   type AdjustmentDraft,
 } from "@/features/logistics/logistics-adjustments";
-import { derivedStockState, STORE_CURRENT_USER_ID } from "@/features/logistics/logistics-types";
+import {
+  derivedStockState,
+  documentNumber,
+  isFreeOwner,
+  STORE_CURRENT_USER_ID,
+} from "@/features/logistics/logistics-types";
 import {
   formatLogisticsCode,
   mergeLogisticsCodePrefixes,
@@ -140,52 +147,64 @@ const mapSetting = (row: Record<string, unknown>): LogisticsSetting => ({
 
 const dateOrNull = (value: unknown): string | null => (value ? String(value) : null);
 
-const mapCustomerOrder = (row: Record<string, unknown>): CustomerOrder => {
-  const id = String(row.id);
+type DocRegistryRow = {
+  id: string;
+  kind: string;
+  series: string;
+  sequence_number: string | number;
+  created_at: string;
+  created_by: string | number | null;
+};
+
+const attachDoc = (
+  docs: Map<string, DocRegistryRow>,
+  row: { id: string },
+  kind: string,
+): DocRegistryRow => {
+  const doc = docs.get(String(row.id));
+  if (!doc) {
+    throw new Error(`store_document missing for ${kind} ${row.id}`);
+  }
+  return doc;
+};
+
+const mapCustomerOrder = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): CustomerOrder => {
+  const doc = attachDoc(docs, { id: String(row.id) }, "customer_order");
   return {
-    id,
-    number: formatLogisticsCode("customerOrder", id),
+    id: doc.id,
+    series: doc.series,
+    sequenceNumber: String(doc.sequence_number),
+    number: documentNumber(doc.series, doc.sequence_number),
     status: row.status as CustomerOrder["status"],
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+    createdAt: String(doc.created_at),
+    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
     description: row.description ? String(row.description) : "",
   };
 };
 
-const mapCustomerOrderLine = (row: Record<string, unknown>): CustomerOrderLine => ({
-  id: String(row.id),
-  orderId: String(row.order_id),
-  productId: String(row.product_id),
-  quantity: Number(row.quantity),
-});
-
-const mapProductionOrder = (row: Record<string, unknown>): ProductionOrder => {
-  const id = String(row.id);
+const mapProductionOrder = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): ProductionOrder => {
+  const doc = attachDoc(docs, { id: String(row.id) }, "production_order");
   return {
-    id,
-    number: formatLogisticsCode("productionOrder", id),
+    id: doc.id,
+    series: doc.series,
+    sequenceNumber: String(doc.sequence_number),
+    number: documentNumber(doc.series, doc.sequence_number),
     manufacturerId: String(row.manufacturer_id),
     status: row.status as ProductionOrder["status"],
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+    createdAt: String(doc.created_at),
+    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
   };
 };
 
-const mapProductionOrderLine = (row: Record<string, unknown>): ProductionOrderLine => ({
-  id: String(row.id),
-  orderId: String(row.order_id),
-  productId: String(row.product_id),
-  quantity: Number(row.quantity),
-  activatedQuantity: Number(row.activated_quantity),
-});
-
-const mapReservation = (row: Record<string, unknown>): Reservation => {
-  const id = String(row.id);
+const mapReservation = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): Reservation => {
+  const doc = attachDoc(docs, { id: String(row.id) }, "reservation");
   return {
-    id,
-    number: formatLogisticsCode("reservation", id),
+    id: doc.id,
+    series: doc.series,
+    sequenceNumber: String(doc.sequence_number),
+    number: documentNumber(doc.series, doc.sequence_number),
     locationType: row.location_type as ReservationLocationType,
     locationId: String(row.location_id),
     toOwnerType: mapOwnerType(row.to_owner_type),
@@ -193,126 +212,119 @@ const mapReservation = (row: Record<string, unknown>): Reservation => {
     status: row.status as ReservationStatus,
     origin: row.origin as Reservation["origin"],
     note: row.note ? String(row.note) : "",
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+    createdAt: String(doc.created_at),
+    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
   };
 };
 
-const mapReservationLine = (row: Record<string, unknown>): ReservationLine => ({
-  id: String(row.id),
-  reservationId: String(row.reservation_id),
-  productId: String(row.product_id),
-  quantity: Number(row.quantity),
-  fromOwnerType: mapOwnerType(row.from_owner_type),
-  fromOwnerId: mapOwnerId(row.from_owner_id),
-});
-
-const mapTransfer = (row: Record<string, unknown>): Transfer => {
-  const id = String(row.id);
+const mapTransfer = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): Transfer => {
+  const doc = attachDoc(docs, { id: String(row.id) }, "transfer");
   return {
-    id,
-    number: formatLogisticsCode("transfer", id),
+    id: doc.id,
+    series: doc.series,
+    sequenceNumber: String(doc.sequence_number),
+    number: documentNumber(doc.series, doc.sequence_number),
     fromWarehouseId: String(row.from_warehouse_id),
     toWarehouseId: String(row.to_warehouse_id),
     status: row.status as Transfer["status"],
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+    createdAt: String(doc.created_at),
+    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
   };
 };
 
-const mapTransferLine = (row: Record<string, unknown>): TransferLine => ({
-  id: String(row.id),
-  transferId: String(row.transfer_id),
-  productId: String(row.product_id),
-  quantity: Number(row.quantity),
-});
-
-const mapTransferAllocation = (row: Record<string, unknown>): TransferAllocation => ({
-  id: String(row.id),
-  lineId: String(row.line_id),
-  ownerType: mapOwnerType(row.owner_type) ?? "order",
-  ownerId: mapOwnerId(row.owner_id) ?? "",
-  quantity: Number(row.quantity),
-});
-
-const mapShipment = (row: Record<string, unknown>): Shipment => {
-  const id = String(row.id);
+const mapShipment = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): Shipment => {
+  const doc = attachDoc(docs, { id: String(row.id) }, "shipment");
   return {
-    id,
-    number: formatLogisticsCode("shipment", id),
+    id: doc.id,
+    series: doc.series,
+    sequenceNumber: String(doc.sequence_number),
+    number: documentNumber(doc.series, doc.sequence_number),
     customerOrderId: String(row.customer_order_id),
     fromLocationType: row.from_location_type as Shipment["fromLocationType"],
     fromLocationId: String(row.from_location_id),
     toLocationType: row.to_location_type as Shipment["toLocationType"],
     toLocationId: String(row.to_location_id),
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+    createdAt: String(doc.created_at),
+    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
   };
 };
 
-const mapShipmentLine = (row: Record<string, unknown>): ShipmentLine => ({
-  id: String(row.id),
-  shipmentId: String(row.shipment_id),
-  productId: String(row.product_id),
-  quantity: Number(row.quantity),
-  toOwnerType: mapOwnerType(row.to_owner_type),
-  toOwnerId: mapOwnerId(row.to_owner_id),
-});
-
-const mapOutput = (row: Record<string, unknown>): ProductionOutput => {
-  const id = String(row.id);
+const mapOutput = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): ProductionOutput => {
+  const doc = attachDoc(docs, { id: String(row.id) }, "output");
   return {
-    id,
-    number: formatLogisticsCode("output", id),
+    id: doc.id,
+    series: doc.series,
+    sequenceNumber: String(doc.sequence_number),
+    number: documentNumber(doc.series, doc.sequence_number),
     productionOrderId: String(row.production_order_id),
     status: row.status as ProductionOutput["status"],
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+    createdAt: String(doc.created_at),
+    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
     expectedEndOn: dateOrNull(row.expected_end_on),
   };
 };
 
-const mapOutputLine = (row: Record<string, unknown>): ProductionOutputLine => ({
-  id: String(row.id),
-  outputId: String(row.output_id),
-  productionOrderLineId: String(row.production_order_line_id),
-  productId: String(row.product_id),
-  quantity: Number(row.quantity),
-});
-
-const mapOutputAllocation = (row: Record<string, unknown>): ProductionOutputAllocation => ({
-  id: String(row.id),
-  lineId: String(row.line_id),
-  ownerType: mapOwnerType(row.owner_type) ?? "order",
-  ownerId: mapOwnerId(row.owner_id) ?? "",
-  quantity: Number(row.quantity),
-});
-
-const mapAdjustment = (row: Record<string, unknown>): StockAdjustment => {
-  const id = String(row.id);
+const mapAdjustment = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): StockAdjustment => {
+  const doc = attachDoc(docs, { id: String(row.id) }, "adjustment");
   return {
-    id,
-    number: formatLogisticsCode("adjustment", id),
+    id: doc.id,
+    series: doc.series,
+    sequenceNumber: String(doc.sequence_number),
+    number: documentNumber(doc.series, doc.sequence_number),
     operation: row.operation as AdjustmentOperation,
     warehouseId: String(row.warehouse_id),
-    explanation: row.explanation ? String(row.explanation) : "",
+    explanation: row.explanation == null ? "" : String(row.explanation),
     sourceDocumentType: (row.source_document_type as DocumentType | null) ?? null,
     sourceDocumentId: row.source_document_id ? String(row.source_document_id) : null,
     status: row.status as AdjustmentStatus,
-    createdAt: String(row.created_at),
-    createdBy: row.created_by ? String(row.created_by) : STORE_CURRENT_USER_ID,
+    createdAt: String(doc.created_at),
+    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
   };
 };
 
-const mapAdjustmentLine = (row: Record<string, unknown>): StockAdjustmentLine => ({
+const mapRegionSnapshot = (row: Record<string, unknown>): DocumentProductLineRegionSnapshot => ({
   id: String(row.id),
-  adjustmentId: String(row.adjustment_id),
-  productId: String(row.product_id),
-  quantity: Number(row.quantity),
+  lineId: String(row.line_id),
+  regionId: row.region_id == null ? null : String(row.region_id),
+  regionCode: String(row.region_code),
+  regionName: String(row.region_name),
+  purchasePrice: row.purchase_price == null ? null : Number(row.purchase_price),
+  purchaseCurrency: row.purchase_currency == null ? null : String(row.purchase_currency),
+  dealerPrice: row.dealer_price == null ? null : Number(row.dealer_price),
+  dealerCurrency: row.dealer_currency == null ? null : String(row.dealer_currency),
+  retailPrice: row.retail_price == null ? null : Number(row.retail_price),
+  retailCurrency: row.retail_currency == null ? null : String(row.retail_currency),
+  dealerStatus: row.dealer_status == null ? null : String(row.dealer_status),
+  retailStatus: row.retail_status == null ? null : String(row.retail_status),
 });
 
-export const mapTransaction = (row: Record<string, unknown>): StockTransaction => {
+const mapDocumentProductLine = (
+  row: Record<string, unknown>,
+  snapshotsByLine: Map<string, DocumentProductLineRegionSnapshot[]>,
+): DocumentProductLine => {
+  const id = String(row.id);
+  return {
+    id,
+    documentId: String(row.document_id),
+    productId: row.product_id == null ? null : String(row.product_id),
+    manufacturerId: row.manufacturer_id == null ? null : String(row.manufacturer_id),
+    quantity: Number(row.quantity),
+    fromOwnerType: mapOwnerType(row.from_owner_type),
+    fromOwnerId: mapOwnerId(row.from_owner_id),
+    toOwnerType: mapOwnerType(row.to_owner_type),
+    toOwnerId: mapOwnerId(row.to_owner_id),
+    productName: String(row.product_name),
+    productSku: String(row.product_sku),
+    productUnit: String(row.product_unit),
+    variant: row.variant == null ? null : String(row.variant),
+    manufacturerName: row.manufacturer_name == null ? null : String(row.manufacturer_name),
+    manufacturerCode: row.manufacturer_code == null ? null : String(row.manufacturer_code),
+    regionSnapshots: snapshotsByLine.get(id) ?? [],
+  };
+};
+
+const mapTransaction = (row: Record<string, unknown>): StockTransaction => {
   const locationType = row.location_type as StockTransaction["locationType"];
   const assignedToType = mapOwnerType(row.assigned_to_type);
   const assignedToId = mapOwnerId(row.assigned_to_id);
@@ -389,27 +401,39 @@ export const saveLogisticsCodePrefixes = async (
 
 export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
   const settings = await loadLogisticsSettings();
+  const client = requireClient();
+
+  const { data: docRows, error: docError } = await client
+    .from("store_document")
+    .select("id,kind,series,sequence_number,created_at,created_by")
+    .order("id", { ascending: true });
+  const documents = requireData(docRows, docError) as unknown as DocRegistryRow[];
+  const docs = new Map<string, DocRegistryRow>();
+  for (const doc of documents) {
+    docs.set(String(doc.id), {
+      ...doc,
+      id: String(doc.id),
+      sequence_number: String(doc.sequence_number),
+      created_by: doc.created_by == null ? null : String(doc.created_by),
+    });
+  }
+
+  const kindByDocumentId = new Map(documents.map((doc) => [String(doc.id), String(doc.kind)]));
+
   const [
     products,
     warehouses,
     manufacturers,
     regions,
     customerOrders,
-    customerOrderLines,
     productionOrders,
-    productionOrderLines,
     reservations,
-    reservationLines,
     transfers,
-    transferLines,
-    transferAllocations,
     shipments,
-    shipmentLines,
     outputs,
-    outputLines,
-    outputAllocations,
     adjustments,
-    adjustmentLines,
+    rawLines,
+    rawSnapshots,
     transactions,
     users,
     documentHistory,
@@ -418,85 +442,43 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     selectAll("store_warehouse", "id,name,manufacturer_id", mapWarehouse, "id"),
     selectAll("store_manufacturer", "id,name,warehouse_id", mapManufacturer, "id"),
     selectAll("store_region", "id,name", mapRegion, "id"),
-    selectAll("store_customer_order", "id,status,created_at,created_by,expected_end_on,description", mapCustomerOrder, "id"),
-    selectAll("store_customer_order_line", "id,order_id,product_id,quantity", mapCustomerOrderLine, "id"),
-    selectAll(
-      "store_production_order",
-      "id,manufacturer_id,status,created_at,created_by,expected_end_on",
-      mapProductionOrder,
-      "id",
-    ),
-    selectAll(
-      "store_production_order_line",
-      "id,order_id,product_id,quantity,activated_quantity",
-      mapProductionOrderLine,
-      "id",
-    ),
+    selectAll("store_customer_order", "id,status,expected_end_on,description", (row) => mapCustomerOrder(docs, row), "id"),
+    selectAll("store_production_order", "id,manufacturer_id,status,expected_end_on", (row) => mapProductionOrder(docs, row), "id"),
     selectAll(
       "store_reservation",
-      "id,location_type,location_id,to_owner_type,to_owner_id,status,origin,note,created_at,created_by",
-      mapReservation,
-      "id",
-    ),
-    selectAll(
-      "store_reservation_line",
-      "id,reservation_id,product_id,quantity,from_owner_type,from_owner_id",
-      mapReservationLine,
+      "id,location_type,location_id,to_owner_type,to_owner_id,status,origin,note",
+      (row) => mapReservation(docs, row),
       "id",
     ),
     selectAll(
       "store_transfer",
-      "id,from_warehouse_id,to_warehouse_id,status,created_at,created_by,expected_end_on",
-      mapTransfer,
-      "id",
-    ),
-    selectAll("store_transfer_line", "id,transfer_id,product_id,quantity", mapTransferLine, "id"),
-    selectAll(
-      "store_transfer_allocation",
-      "id,line_id,owner_type,owner_id,quantity",
-      mapTransferAllocation,
+      "id,from_warehouse_id,to_warehouse_id,status,expected_end_on",
+      (row) => mapTransfer(docs, row),
       "id",
     ),
     selectAll(
       "store_shipment",
-      "id,customer_order_id,from_location_type,from_location_id,to_location_type,to_location_id,created_at,created_by",
-      mapShipment,
+      "id,customer_order_id,from_location_type,from_location_id,to_location_type,to_location_id",
+      (row) => mapShipment(docs, row),
       "id",
     ),
-    selectAll(
-      "store_shipment_line",
-      "id,shipment_id,product_id,quantity,to_owner_type,to_owner_id",
-      mapShipmentLine,
-      "id",
-    ),
-    selectAll(
-      "store_output",
-      "id,production_order_id,status,created_at,created_by,expected_end_on",
-      mapOutput,
-      "id",
-    ),
-    selectAll(
-      "store_output_line",
-      "id,output_id,production_order_line_id,product_id,quantity",
-      mapOutputLine,
-      "id",
-    ),
-    selectAll(
-      "store_output_allocation",
-      "id,line_id,owner_type,owner_id,quantity",
-      mapOutputAllocation,
-      "id",
-    ),
+    selectAll("store_output", "id,production_order_id,status,expected_end_on", (row) => mapOutput(docs, row), "id"),
     selectAll(
       "store_adjustment",
-      "id,operation,warehouse_id,explanation,source_document_type,source_document_id,status,created_at,created_by",
-      mapAdjustment,
+      "id,operation,warehouse_id,explanation,source_document_type,source_document_id,status",
+      (row) => mapAdjustment(docs, row),
       "id",
     ),
     selectAll(
-      "store_adjustment_line",
-      "id,adjustment_id,product_id,quantity",
-      mapAdjustmentLine,
+      "store_document_product_line",
+      "id,document_id,product_id,manufacturer_id,quantity,from_owner_type,from_owner_id,to_owner_type,to_owner_id,product_name,product_sku,product_unit,variant,manufacturer_name,manufacturer_code",
+      (row) => row,
+      "id",
+    ),
+    selectAll(
+      "store_document_product_line_region_snapshot",
+      "id,line_id,region_id,region_code,region_name,purchase_price,purchase_currency,dealer_price,dealer_currency,retail_price,retail_currency,dealer_status,retail_status",
+      mapRegionSnapshot,
       "id",
     ),
     selectAll(
@@ -514,12 +496,129 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     ),
   ]);
 
+  const snapshotsByLine = new Map<string, DocumentProductLineRegionSnapshot[]>();
+  for (const snap of rawSnapshots) {
+    const list = snapshotsByLine.get(snap.lineId) ?? [];
+    list.push(snap);
+    snapshotsByLine.set(snap.lineId, list);
+  }
+
+  const documentProductLines = (rawLines as unknown as Record<string, unknown>[]).map((row) =>
+    mapDocumentProductLine(row, snapshotsByLine),
+  );
+
+  const linesByKind = (kind: string) =>
+    documentProductLines.filter((line) => kindByDocumentId.get(line.documentId) === kind);
+
+  const productIdOf = (line: DocumentProductLine): string => line.productId ?? "";
+
+  const customerOrderLines: CustomerOrderLine[] = linesByKind("customer_order").map((line) => ({
+    id: line.id,
+    orderId: line.documentId,
+    productId: productIdOf(line),
+    quantity: line.quantity,
+    productName: line.productName,
+    productSku: line.productSku,
+    productUnit: line.productUnit,
+    manufacturerId: line.manufacturerId,
+    manufacturerName: line.manufacturerName,
+    manufacturerCode: line.manufacturerCode,
+  }));
+
+  const productionOrderLines: ProductionOrderLine[] = linesByKind("production_order").map((line) => ({
+    id: line.id,
+    orderId: line.documentId,
+    productId: productIdOf(line),
+    quantity: line.quantity,
+    productName: line.productName,
+    productSku: line.productSku,
+    productUnit: line.productUnit,
+    manufacturerId: line.manufacturerId,
+    manufacturerName: line.manufacturerName,
+    manufacturerCode: line.manufacturerCode,
+  }));
+
+  const reservationLines: ReservationLine[] = linesByKind("reservation").map((line) => ({
+    id: line.id,
+    reservationId: line.documentId,
+    productId: productIdOf(line),
+    quantity: line.quantity,
+    fromOwnerType: line.fromOwnerType,
+    fromOwnerId: line.fromOwnerId,
+    productName: line.productName,
+    productSku: line.productSku,
+    productUnit: line.productUnit,
+  }));
+
+  const transferLines: TransferLine[] = [];
+  const transferAllocations: TransferAllocation[] = [];
+  for (const line of linesByKind("transfer")) {
+    transferLines.push({
+      id: line.id,
+      transferId: line.documentId,
+      productId: productIdOf(line),
+      quantity: line.quantity,
+      productName: line.productName,
+      productSku: line.productSku,
+      productUnit: line.productUnit,
+    });
+    if (!isFreeOwner(line.fromOwnerType, line.fromOwnerId) && line.fromOwnerType && line.fromOwnerId) {
+      transferAllocations.push({
+        id: line.id,
+        lineId: line.id,
+        ownerType: line.fromOwnerType,
+        ownerId: line.fromOwnerId,
+        quantity: line.quantity,
+      });
+    }
+  }
+
+  const shipmentLines: ShipmentLine[] = linesByKind("shipment").map((line) => ({
+    id: line.id,
+    shipmentId: line.documentId,
+    productId: productIdOf(line),
+    quantity: line.quantity,
+    toOwnerType: line.toOwnerType,
+    toOwnerId: line.toOwnerId,
+    fromOwnerType: line.fromOwnerType,
+    fromOwnerId: line.fromOwnerId,
+    productName: line.productName,
+    productSku: line.productSku,
+    productUnit: line.productUnit,
+  }));
+
+  const outputLines: ProductionOutputLine[] = linesByKind("output").map((line) => ({
+    id: line.id,
+    outputId: line.documentId,
+    productionOrderLineId: "",
+    productId: productIdOf(line),
+    quantity: line.quantity,
+    productName: line.productName,
+    productSku: line.productSku,
+    productUnit: line.productUnit,
+    toOwnerType: line.toOwnerType,
+    toOwnerId: line.toOwnerId,
+  }));
+
+  const outputAllocations: ProductionOutputAllocation[] = [];
+
+  const adjustmentLines: StockAdjustmentLine[] = linesByKind("adjustment").map((line) => ({
+    id: line.id,
+    adjustmentId: line.documentId,
+    productId: productIdOf(line),
+    quantity: line.quantity,
+    productName: line.productName,
+    productSku: line.productSku,
+    productUnit: line.productUnit,
+  }));
+
   return {
     products,
     warehouses,
     manufacturers,
     regions,
     settings,
+    documentProductLines,
     customerOrders,
     customerOrderLines,
     productionOrders,
@@ -580,26 +679,24 @@ export const createReservationDraft = async (args: {
   note?: string;
   lines: ReservationLineInput[];
 }) => {
-  const id = await insertReturningId("store_reservation", {
-    location_type: args.locationType,
-    location_id: args.locationId,
-    to_owner_type: args.toOwnerType ?? null,
-    to_owner_id: args.toOwnerId ?? null,
-    origin: "manual",
-    note: args.note ?? "",
-    status: "draft",
-  });
-  await insertRows(
-    "store_reservation_line",
-    args.lines.map((line) => ({
-      reservation_id: id,
-      product_id: line.productId,
-      quantity: line.quantity,
-      from_owner_type: line.fromOwnerType ?? null,
-      from_owner_id: line.fromOwnerId ?? null,
-    })),
+  const created = await rpcJson<{ id: number | string; status: string }>(
+    "store_create_reservation_draft",
+    {
+      p_location_type: args.locationType,
+      p_location_id: Number(args.locationId),
+      p_to_owner_type: args.toOwnerType ?? null,
+      p_to_owner_id: args.toOwnerId ? Number(args.toOwnerId) : null,
+      p_note: args.note ?? "",
+      p_origin: "manual",
+      p_lines: args.lines.map((line) => ({
+        product_id: Number(line.productId),
+        quantity: line.quantity,
+        from_owner_type: line.fromOwnerType ?? null,
+        from_owner_id: line.fromOwnerId ? Number(line.fromOwnerId) : null,
+      })),
+    },
   );
-  return id;
+  return String(created.id);
 };
 
 export const createAndPostReservation = async (args: {
@@ -610,19 +707,42 @@ export const createAndPostReservation = async (args: {
   note?: string;
   lines: ReservationLineInput[];
 }) => {
-  const id = await createReservationDraft(args);
-  await postReservation(id);
-  return id;
+  const created = await rpcJson<{ id: number | string; status: string }>(
+    "store_create_and_post_reservation",
+    {
+      p_location_type: args.locationType,
+      p_location_id: Number(args.locationId),
+      p_to_owner_type: args.toOwnerType ?? null,
+      p_to_owner_id: args.toOwnerId ? Number(args.toOwnerId) : null,
+      p_note: args.note ?? "",
+      p_origin: "manual",
+      p_lines: args.lines.map((line) => ({
+        product_id: Number(line.productId),
+        quantity: line.quantity,
+        from_owner_type: line.fromOwnerType ?? null,
+        from_owner_id: line.fromOwnerId ? Number(line.fromOwnerId) : null,
+      })),
+    },
+  );
+  return String(created.id);
 };
 
-export const addReservationLine = (args: ReservationLineInput & { reservationId: string }) =>
-  insertRows("store_reservation_line", {
-    reservation_id: args.reservationId,
-    product_id: args.productId,
-    quantity: args.quantity,
-    from_owner_type: args.fromOwnerType ?? null,
-    from_owner_id: args.fromOwnerId ?? null,
+export const addReservationLine = async (args: ReservationLineInput & { reservationId: string }) => {
+  const client = requireClient();
+  const { data, error } = await client.rpc("store_add_document_product_line", {
+    p_document_id: Number(args.reservationId),
+    p_product_id: Number(args.productId),
+    p_quantity: args.quantity,
+    p_from_owner_type: args.fromOwnerType ?? null,
+    p_from_owner_id: args.fromOwnerId ? Number(args.fromOwnerId) : null,
+    p_to_owner_type: null,
+    p_to_owner_id: null,
   });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return String(data);
+};
 
 export const completeOutput = (id: string) => rpc("store_complete_output", { p_id: id });
 
@@ -672,7 +792,6 @@ export const createProductionOutput = async (args: {
   const created = await rpcJson<{ id: number | string }>("store_create_production_output", {
     p_request_key: args.requestKey,
     p_production_order_id: Number(args.orderId),
-    p_production_order_line_id: Number(args.lineId),
     p_product_id: Number(args.productId),
     p_quantity: args.quantity,
     p_expected_end_on: args.expectedEndOn || null,
@@ -759,6 +878,26 @@ export const createAndSendTransfer = async (
 export const sendTransfer = (id: string) => rpc("store_send_transfer", { p_id: id });
 export const completeTransfer = (id: string) => rpc("store_complete_transfer", { p_id: id });
 export const closeCustomerOrder = (id: string) => rpc("store_close_customer_order", { p_id: id });
+
+export const createCustomerOrder = async (args: {
+  description?: string;
+  expectedEndOn?: string | null;
+  lines: Array<{ productId: string; quantity: number }>;
+}) => {
+  const created = await rpcJson<{
+    id: number | string;
+    lines: Array<{ id: number | string; product_id: number | string }>;
+  }>("store_create_customer_order", {
+    p_description: args.description ?? "",
+    p_expected_end_on: args.expectedEndOn || null,
+    p_lines: args.lines.map((line) => ({
+      product_id: Number(line.productId),
+      quantity: line.quantity,
+    })),
+  });
+  return { id: String(created.id), lines: created.lines };
+};
+
 export const closeProductionOrder = (id: string) => rpc("store_close_production_order", { p_id: id });
 export const setProductionStatus = (id: string, status: ProductionStatus) =>
   rpc("store_set_production_status", { p_id: id, p_status: status });
@@ -789,7 +928,8 @@ export const addProductionLine = (args: { orderId: string; productId: string; qu
     p_product_id: Number(args.productId),
     p_quantity: args.quantity,
   });
-export const syncProductionStock = (id: string) => rpc("store_sync_production_activation", { p_id: id });
+/** @deprecated Production orders no longer materialize WIP; kept as no-op for leftover callers. */
+export const syncProductionStock = async (_id: string) => "ok";
 /** Status-only cancel for unposted drafts already supported by the domain. Posted documents use the cancel helper. */
 export const cancelDocument = (kind: string, id: string, status?: string | null) => {
   assertDocumentCanBeCancelled(kind, status);

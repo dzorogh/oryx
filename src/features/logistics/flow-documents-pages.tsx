@@ -67,6 +67,7 @@ import {
   type DocumentType,
   type LogisticsSnapshot,
   type OutputStatus,
+  matchDocumentParam,
   type ShipmentDirection,
 } from "@/features/logistics/logistics-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
@@ -184,7 +185,7 @@ export const ShipmentsPage = () => {
             return (
               <TableRow key={item.id}>
                 <TableCell className="px-3 py-2 align-top">
-                  <LogisticsCodeBadge code={item.number} href={`/store/logistics/shipments/${item.id}`} />
+                  <LogisticsCodeBadge code={item.number} href={`/store/logistics/shipments/${item.sequenceNumber}`} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
                   <ShipmentDirectionBadge direction={itemDirection} />
@@ -226,8 +227,10 @@ export const ShipmentDetailPage = () => {
   const store = useLogisticsStore();
   const [formOpen, setFormOpen] = useState(false);
   const [formIntention, setFormIntention] = useState<ShipmentDirection>("return");
-  const doc = store.snapshot.shipments.find((item) => item.id === params.id);
-  const lines = store.snapshot.shipmentLines.filter((line) => line.shipmentId === params.id);
+  const doc = matchDocumentParam(store.snapshot.shipments, params.id);
+  const lines = doc
+    ? store.snapshot.shipmentLines.filter((line) => line.shipmentId === doc.id)
+    : [];
   const order = doc ? relatedOrderItem(store.snapshot, doc.customerOrderId) : null;
   const direction = doc ? shipmentDirection(doc.fromLocationType, doc.toLocationType) : null;
   const warehouseId = doc ? shipmentWarehouseId(doc) : "";
@@ -385,6 +388,7 @@ export const AdjustmentsPage = () => {
       path="/store/logistics/adjustments"
       rows={rows.map((item) => ({
         id: item.id,
+        sequenceNumber: item.sequenceNumber,
         number: item.number,
         extra: (
           <span className="inline-flex flex-wrap items-center gap-1.5">
@@ -400,6 +404,9 @@ export const AdjustmentsPage = () => {
           .map((line) => ({
             productId: line.productId,
             quantity: line.quantity,
+            productName: line.productName,
+            productSku: line.productSku,
+            productUnit: line.productUnit,
           })),
         status: item.status,
       }))}
@@ -427,8 +434,10 @@ export const AdjustmentDetailPage = () => {
   const store = useLogisticsStore();
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
-  const doc = store.snapshot.adjustments.find((item) => item.id === params.id);
-  const lines = store.snapshot.adjustmentLines.filter((line) => line.adjustmentId === params.id);
+  const doc = matchDocumentParam(store.snapshot.adjustments, params.id);
+  const lines = doc
+    ? store.snapshot.adjustmentLines.filter((line) => line.adjustmentId === doc.id)
+    : [];
   const warehouse = doc ? warehouseById(store.snapshot, doc.warehouseId) : undefined;
   const sourceHref =
     doc?.sourceDocumentType && doc.sourceDocumentId
@@ -630,12 +639,12 @@ export const OutputsPage = () => {
           {rows.map((item) => (
             <TableRow key={item.id}>
               <TableCell className="px-3 py-2 align-top">
-                <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.id}`} />
+                <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.sequenceNumber}`} />
               </TableCell>
               <TableCell className="px-3 py-2 align-top">
                 <LogisticsCodeBadge
                   code={productionOrderById(snapshot, item.productionOrderId)?.number ?? item.productionOrderId}
-                  href={`/store/logistics/production-orders/${item.productionOrderId}`}
+                  href={`/store/logistics/production-orders/${productionOrderById(snapshot, item.productionOrderId)?.sequenceNumber ?? item.productionOrderId}`}
                 />
               </TableCell>
               <TableCell className="px-3 py-2 align-top">
@@ -782,8 +791,8 @@ export const OutputDetailPage = () => {
   const store = useLogisticsStore();
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
-  const doc = store.snapshot.outputs.find((item) => item.id === params.id);
-  const lines = store.snapshot.outputLines.filter((line) => line.outputId === params.id);
+  const doc = matchDocumentParam(store.snapshot.outputs, params.id);
+  const lines = doc ? store.snapshot.outputLines.filter((line) => line.outputId === doc.id) : [];
   const production = doc ? productionOrderById(store.snapshot, doc.productionOrderId) : undefined;
   const allocations = doc ? relatedOrdersForOutput(store.snapshot, doc.id) : [];
   const cancelGuidance = doc
@@ -851,7 +860,7 @@ export const OutputDetailPage = () => {
           items={[
             {
               id: production.id,
-              href: `/store/logistics/production-orders/${production.id}`,
+              href: `/store/logistics/production-orders/${production.sequenceNumber}`,
               label: production.number,
               meta: expectedEndMeta(production.status, production.expectedEndOn),
             },
@@ -907,10 +916,17 @@ export const OutputDetailPage = () => {
 
 type ListRow = {
   id: string;
+  sequenceNumber: string;
   number: string;
   extra: React.ReactNode;
   extraHref?: string;
-  products: Array<{ productId: string; quantity: number }>;
+  products: Array<{
+    productId: string;
+    quantity: number;
+    productName?: string | null;
+    productSku?: string | null;
+    productUnit?: string | null;
+  }>;
   status: DocumentStatus;
 };
 
@@ -954,7 +970,7 @@ const DocumentList = ({
         {rows.map((row) => (
           <TableRow key={row.id}>
             <TableCell className="px-3 py-2 align-top">
-              <LogisticsCodeBadge code={row.number} href={`${path}/${row.id}`} />
+              <LogisticsCodeBadge code={row.number} href={`${path}/${row.sequenceNumber}`} />
             </TableCell>
             <TableCell className="px-3 py-2 align-top text-sm">
               {typeof row.extra === "string" && row.extraHref ? (

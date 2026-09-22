@@ -372,29 +372,103 @@ export const placeStockBreakdown = (
   };
 };
 
-export const productionLineReservationBreakdown = (
-  line: { id: string; productId: string; orderId?: string },
-  balances: StockBalance[],
-): ProductionLineReservationBreakdown => {
-  const breakdown = placeStockBreakdown(
-    balances,
-    line.productId,
-    "production_order",
-    line.orderId ?? line.id,
-  );
-  return { free: breakdown.free, reserved: breakdown.reserved };
+export const productionDemandAssigned = (
+  snapshot: LogisticsSnapshot,
+  productionOrderId: string,
+  productId: string,
+): ProductionLineReservation[] => {
+  const byOwner = new Map<string, ProductionLineReservation>();
+
+  for (const reservation of snapshot.reservations) {
+    if (
+      reservation.locationType !== "production_order" ||
+      reservation.locationId !== productionOrderId ||
+      reservation.status !== "posted"
+    ) {
+      continue;
+    }
+    for (const line of snapshot.reservationLines) {
+      if (line.reservationId !== reservation.id || line.productId !== productId) {
+        continue;
+      }
+      let ownerType: OwnerType | null = null;
+      let ownerId: string | null = null;
+      let signed = 0;
+      if (reservation.toOwnerType && isFreeOwner(line.fromOwnerType, line.fromOwnerId)) {
+        ownerType = reservation.toOwnerType;
+        ownerId = reservation.toOwnerId;
+        signed = line.quantity;
+      } else if (isFreeOwner(reservation.toOwnerType, reservation.toOwnerId) && line.fromOwnerType) {
+        ownerType = line.fromOwnerType;
+        ownerId = line.fromOwnerId;
+        signed = -line.quantity;
+      }
+      if (!ownerType || !ownerId || Math.abs(signed) < 1e-9) {
+        continue;
+      }
+      const key = `${ownerType}:${ownerId}`;
+      const current = byOwner.get(key);
+      if (current) {
+        current.quantity += signed;
+      } else {
+        byOwner.set(key, { ownerType, ownerId, quantity: signed });
+      }
+    }
+  }
+
+  return [...byOwner.values()].filter((item) => item.quantity > 1e-9);
 };
 
-export const outputtedForProductionLine = (snapshot: LogisticsSnapshot, productionOrderLineId: string): number =>
+export const producedForProductionProduct = (
+  snapshot: LogisticsSnapshot,
+  productionOrderId: string,
+  productId: string,
+): number =>
   snapshot.outputLines
     .filter((line) => {
-      if (line.productionOrderLineId !== productionOrderLineId) {
+      if (line.productId !== productId) {
         return false;
       }
       const doc = snapshot.outputs.find((item) => item.id === line.outputId);
-      return doc?.status === "done";
+      return doc?.productionOrderId === productionOrderId && doc.status === "done";
     })
     .reduce((sum, line) => sum + line.quantity, 0);
+
+export const productionLineReservationBreakdown = (
+  line: { id: string; productId: string; orderId?: string; quantity?: number },
+  balancesOrSnapshot: StockBalance[] | LogisticsSnapshot,
+  maybeSnapshot?: LogisticsSnapshot,
+): ProductionLineReservationBreakdown => {
+  // Backward-compatible: (line, balances) used stock; (line, snapshot) or (line, balances, snapshot) uses demand.
+  const snapshot =
+    maybeSnapshot ??
+    (Array.isArray(balancesOrSnapshot) ? null : (balancesOrSnapshot as LogisticsSnapshot));
+  if (!snapshot) {
+    const breakdown = placeStockBreakdown(
+      balancesOrSnapshot as StockBalance[],
+      line.productId,
+      "production_order",
+      line.orderId ?? line.id,
+    );
+    return { free: breakdown.free, reserved: breakdown.reserved };
+  }
+
+  const productionOrderId = line.orderId ?? line.id;
+  const reserved = productionDemandAssigned(snapshot, productionOrderId, line.productId);
+  const reservedTotal = reserved.reduce((sum, item) => sum + item.quantity, 0);
+  const produced = producedForProductionProduct(snapshot, productionOrderId, line.productId);
+  const plan = line.quantity ?? 0;
+  const free = Math.max(0, plan - reservedTotal - produced);
+  return { free, reserved };
+};
+
+export const outputtedForProductionLine = (snapshot: LogisticsSnapshot, productionOrderLineId: string): number => {
+  const planLine = snapshot.productionOrderLines.find((line) => line.id === productionOrderLineId);
+  if (!planLine) {
+    return 0;
+  }
+  return producedForProductionProduct(snapshot, planLine.orderId, planLine.productId);
+};
 
 export const remainingToOutputForLine = (
   snapshot: LogisticsSnapshot,
@@ -441,22 +515,59 @@ export const reservedOrderLinesAtWarehouse = (
     }))
     .filter((item) => positive(item.reserved));
 
-export const hrefForDocument = (documentType: SourceType, documentId: string): string | null => {
+const resolveDocumentPublicId = (
+  snapshot: LogisticsSnapshot | undefined,
+  documentType: SourceType | "customer_order",
+  documentId: string,
+): string => {
+  if (!snapshot) {
+    return documentId;
+  }
+  if (documentType === "customer_order") {
+    return snapshot.customerOrders.find((item) => item.id === documentId)?.sequenceNumber ?? documentId;
+  }
+  if (documentType === "reservation") {
+    return snapshot.reservations.find((item) => item.id === documentId)?.sequenceNumber ?? documentId;
+  }
+  if (documentType === "shipment" || documentType === "return") {
+    return snapshot.shipments.find((item) => item.id === documentId)?.sequenceNumber ?? documentId;
+  }
+  if (documentType === "output") {
+    return snapshot.outputs.find((item) => item.id === documentId)?.sequenceNumber ?? documentId;
+  }
+  if (documentType === "production_order") {
+    return snapshot.productionOrders.find((item) => item.id === documentId)?.sequenceNumber ?? documentId;
+  }
+  if (documentType === "transfer") {
+    return snapshot.transfers.find((item) => item.id === documentId)?.sequenceNumber ?? documentId;
+  }
+  if (documentType === "adjustment") {
+    return snapshot.adjustments.find((item) => item.id === documentId)?.sequenceNumber ?? documentId;
+  }
+  return documentId;
+};
+
+export const hrefForDocument = (
+  documentType: SourceType,
+  documentId: string,
+  snapshot?: LogisticsSnapshot,
+): string | null => {
+  const publicId = resolveDocumentPublicId(snapshot, documentType, documentId);
   switch (documentType) {
     case "reservation":
-      return logisticsPath("reservations", documentId);
+      return logisticsPath("reservations", publicId);
     case "shipment":
-      return logisticsPath("shipments", documentId);
+      return logisticsPath("shipments", publicId);
     case "return":
-      return logisticsPath("shipments", documentId);
+      return logisticsPath("shipments", publicId);
     case "output":
-      return logisticsPath("outputs", documentId);
+      return logisticsPath("outputs", publicId);
     case "production_order":
-      return logisticsPath("production-orders", documentId);
+      return logisticsPath("production-orders", publicId);
     case "transfer":
-      return logisticsPath("transfers", documentId);
+      return logisticsPath("transfers", publicId);
     case "adjustment":
-      return logisticsPath("adjustments", documentId);
+      return logisticsPath("adjustments", publicId);
     default:
       return null;
   }
@@ -464,23 +575,27 @@ export const hrefForDocument = (documentType: SourceType, documentId: string): s
 
 export const hrefForSource = hrefForDocument;
 
-export const hrefForCustomerOrder = (id: string): string => logisticsPath("customer-orders", id);
+export const hrefForCustomerOrder = (id: string, snapshot?: LogisticsSnapshot): string =>
+  logisticsPath("customer-orders", resolveDocumentPublicId(snapshot, "customer_order", id));
 export const hrefForProduct = (id: string): string => hrefForStoreProduct(id);
 export const hrefForWarehouse = (id: string): string => logisticsPath("warehouses", id);
 export const hrefForRegion = (id: string): string => logisticsPath("regions", id);
 export const hrefForManufacturer = (id: string): string => logisticsPath("manufacturers", id);
-export const hrefForTransfer = (id: string): string => logisticsPath("transfers", id);
-export const hrefForProductionOrder = (id: string): string => logisticsPath("production-orders", id);
+export const hrefForTransfer = (id: string, snapshot?: LogisticsSnapshot): string =>
+  logisticsPath("transfers", resolveDocumentPublicId(snapshot, "transfer", id));
+export const hrefForProductionOrder = (id: string, snapshot?: LogisticsSnapshot): string =>
+  logisticsPath("production-orders", resolveDocumentPublicId(snapshot, "production_order", id));
 
 export const hrefForOwner = (
   ownerType: OwnerType | null | undefined,
   ownerId: string | null | undefined,
+  snapshot?: LogisticsSnapshot,
 ): string | null => {
   if (!ownerId) {
     return null;
   }
   if (ownerType === "order") {
-    return hrefForCustomerOrder(ownerId);
+    return hrefForCustomerOrder(ownerId, snapshot);
   }
   if (ownerType === "region") {
     return hrefForRegion(ownerId);
@@ -497,16 +612,16 @@ export const hrefForLocation = (
     return hrefForWarehouse(locationId);
   }
   if (locationType === "transfer") {
-    return hrefForTransfer(locationId);
+    return hrefForTransfer(locationId, snapshot);
   }
   if (locationType === "customer_order") {
-    return hrefForCustomerOrder(locationId);
+    return hrefForCustomerOrder(locationId, snapshot);
   }
   if (locationType === "production_order") {
-    const orderId = snapshot.productionOrders?.some((item) => item.id === locationId)
+    const orderId = snapshot.productionOrders.some((item) => item.id === locationId)
       ? locationId
-      : snapshot.productionOrderLines?.find((item) => item.id === locationId)?.orderId;
-    return orderId ? hrefForProductionOrder(orderId) : null;
+      : snapshot.productionOrderLines.find((item) => item.id === locationId)?.orderId;
+    return orderId ? hrefForProductionOrder(orderId, snapshot) : null;
   }
   return null;
 };

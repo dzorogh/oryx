@@ -10,18 +10,23 @@ export const ProductIdentity = ({
   productId,
   nameAs = "link",
   name,
+  productName,
+  productSku,
 }: {
   snapshot: LogisticsSnapshot;
   productId: string;
   nameAs?: "link" | "text";
   name?: ReactNode;
+  /** Historical line snapshot — preferred over live catalog. */
+  productName?: string | null;
+  productSku?: string | null;
 }) => {
   const product = productById(snapshot, productId);
-  const label = product?.name ?? productId;
-  const code = productCode(snapshot, productId);
+  const label = productName || product?.name || productId;
+  const code = productSku || productCode(snapshot, productId);
   const title =
     name ??
-    (nameAs === "link" ? (
+    (nameAs === "link" && productId ? (
       <Link href={hrefForProduct(productId)} className="text-sm font-medium text-primary hover:underline">
         {label}
       </Link>
@@ -34,7 +39,10 @@ export const ProductIdentity = ({
       {title}
       {code ? (
         <div className="mt-0.5">
-          <LogisticsCodeBadge code={code} href={nameAs === "link" ? hrefForProduct(productId) : undefined} />
+          <LogisticsCodeBadge
+            code={productSku ? productSku : code}
+            href={nameAs === "link" && productId ? hrefForProduct(productId) : undefined}
+          />
         </div>
       ) : null}
     </div>

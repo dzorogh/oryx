@@ -219,7 +219,7 @@ export const DocumentLedger = ({
                   <LedgerEntityIdentity
                     kind={LEDGER_ASSIGNED_TO_KIND_LABELS[entry.assignedToType ?? "free"]}
                     code={ownerLabel(snapshot, entry.assignedToType, entry.assignedToId)}
-                    href={hrefForOwner(entry.assignedToType, entry.assignedToId)}
+                    href={hrefForOwner(entry.assignedToType, entry.assignedToId, snapshot)}
                   />
                 )}
               </TableCell>
@@ -229,7 +229,7 @@ export const DocumentLedger = ({
                 <LedgerEntityIdentity
                   kind={LEDGER_DOCUMENT_KIND_LABELS[entry.documentType]}
                   code={documentLabel(snapshot, entry.documentType, entry.documentId)}
-                  href={hrefForDocument(entry.documentType, entry.documentId)}
+                  href={hrefForDocument(entry.documentType, entry.documentId, snapshot)}
                 />
               </TableCell>
             )}

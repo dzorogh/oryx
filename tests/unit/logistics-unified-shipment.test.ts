@@ -34,6 +34,8 @@ const shipped = (orderId: string, productId: string, quantity: number): StockBal
 });
 
 const shipment = (overrides: Partial<Shipment> & Pick<Shipment, "id" | "fromLocationType" | "toLocationType">): Shipment => ({
+  series: "SHP",
+  sequenceNumber: overrides.id,
   number: `SHP-${overrides.id}`,
   customerOrderId: "12",
   fromLocationId: overrides.fromLocationType === "warehouse" ? "w1" : "12",
@@ -43,14 +45,24 @@ const shipment = (overrides: Partial<Shipment> & Pick<Shipment, "id" | "fromLoca
   ...overrides,
 });
 
+const lineSnap = {
+  productName: "Товар",
+  productSku: "SKU",
+  productUnit: "шт",
+  manufacturerId: null as string | null,
+  manufacturerName: null as string | null,
+  manufacturerCode: null as string | null,
+};
+
 const snapshotWithDocs = (): LogisticsSnapshot => ({
   products: [],
   manufacturers: [],
   warehouses: [],
   regions: [],
   settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },
+  documentProductLines: [],
   customerOrders: [],
-  customerOrderLines: [{ id: "l1", orderId: "12", productId: "7", quantity: 6 }],
+  customerOrderLines: [{ id: "l1", orderId: "12", productId: "7", quantity: 6, ...lineSnap }],
   productionOrders: [],
   productionOrderLines: [],
   reservations: [],
@@ -63,8 +75,8 @@ const snapshotWithDocs = (): LogisticsSnapshot => ({
     shipment({ id: "r1", fromLocationType: "customer_order", toLocationType: "warehouse", toLocationId: "w9" }),
   ],
   shipmentLines: [
-    { id: "sl1", shipmentId: "s1", productId: "7", quantity: 4, toOwnerType: "order", toOwnerId: "12" },
-    { id: "rl1", shipmentId: "r1", productId: "7", quantity: 2, toOwnerType: null, toOwnerId: null },
+    { id: "sl1", shipmentId: "s1", productId: "7", quantity: 4, toOwnerType: "order", toOwnerId: "12", fromOwnerType: "order", fromOwnerId: "12", productName: "Товар", productSku: "SKU", productUnit: "шт" },
+    { id: "rl1", shipmentId: "r1", productId: "7", quantity: 2, toOwnerType: null, toOwnerId: null, fromOwnerType: null, fromOwnerId: null, productName: "Товар", productSku: "SKU", productUnit: "шт" },
   ],
   outputs: [],
   outputLines: [],
@@ -104,6 +116,12 @@ describe("единый документ отгрузки и возврата", (
       orderId: "12",
       productId: "7",
       quantity: 6,
+      productName: "Товар",
+      productSku: "SKU",
+      productUnit: "шт",
+      manufacturerId: null,
+      manufacturerName: null,
+      manufacturerCode: null,
     };
     assert.doesNotThrow(() => assertShipmentOwnerIsOrder("order", "12"));
     assert.throws(() => assertShipmentOwnerIsOrder(null, null), /резерв заказа/);

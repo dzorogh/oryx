@@ -129,8 +129,46 @@ export type LogisticsSetting = {
   codePrefixes: LogisticsCodePrefixes;
 };
 
+export type DocumentProductLineRegionSnapshot = {
+  id: string;
+  lineId: string;
+  regionId: string | null;
+  regionCode: string;
+  regionName: string;
+  purchasePrice: number | null;
+  purchaseCurrency: string | null;
+  dealerPrice: number | null;
+  dealerCurrency: string | null;
+  retailPrice: number | null;
+  retailCurrency: string | null;
+  dealerStatus: string | null;
+  retailStatus: string | null;
+};
+
+/** Universal product line shared by every document kind. */
+export type DocumentProductLine = {
+  id: string;
+  documentId: string;
+  productId: string | null;
+  manufacturerId: string | null;
+  quantity: number;
+  fromOwnerType: OwnerType | null;
+  fromOwnerId: string | null;
+  toOwnerType: OwnerType | null;
+  toOwnerId: string | null;
+  productName: string;
+  productSku: string;
+  productUnit: string;
+  variant: string | null;
+  manufacturerName: string | null;
+  manufacturerCode: string | null;
+  regionSnapshots: DocumentProductLineRegionSnapshot[];
+};
+
 export type CustomerOrder = {
   id: string;
+  series: string;
+  sequenceNumber: string;
   number: string;
   status: CustomerOrderStatus;
   createdAt: string;
@@ -144,10 +182,18 @@ export type CustomerOrderLine = {
   orderId: string;
   productId: string;
   quantity: number;
+  productName: string;
+  productSku: string;
+  productUnit: string;
+  manufacturerId: string | null;
+  manufacturerName: string | null;
+  manufacturerCode: string | null;
 };
 
 export type ProductionOrder = {
   id: string;
+  series: string;
+  sequenceNumber: string;
   number: string;
   manufacturerId: string;
   status: ProductionStatus;
@@ -161,11 +207,18 @@ export type ProductionOrderLine = {
   orderId: string;
   productId: string;
   quantity: number;
-  activatedQuantity: number;
+  productName: string;
+  productSku: string;
+  productUnit: string;
+  manufacturerId: string | null;
+  manufacturerName: string | null;
+  manufacturerCode: string | null;
 };
 
 export type Reservation = {
   id: string;
+  series: string;
+  sequenceNumber: string;
   number: string;
   locationType: ReservationLocationType;
   locationId: string;
@@ -185,10 +238,15 @@ export type ReservationLine = {
   quantity: number;
   fromOwnerType: OwnerType | null;
   fromOwnerId: string | null;
+  productName: string;
+  productSku: string;
+  productUnit: string;
 };
 
 export type Transfer = {
   id: string;
+  series: string;
+  sequenceNumber: string;
   number: string;
   fromWarehouseId: string;
   toWarehouseId: string;
@@ -203,6 +261,9 @@ export type TransferLine = {
   transferId: string;
   productId: string;
   quantity: number;
+  productName: string;
+  productSku: string;
+  productUnit: string;
 };
 
 export type TransferAllocation = {
@@ -218,6 +279,8 @@ export type ShipmentDirection = (typeof SHIPMENT_DIRECTIONS)[number];
 
 export type Shipment = {
   id: string;
+  series: string;
+  sequenceNumber: string;
   number: string;
   customerOrderId: string;
   fromLocationType: LocationType;
@@ -235,10 +298,17 @@ export type ShipmentLine = {
   quantity: number;
   toOwnerType: OwnerType | null;
   toOwnerId: string | null;
+  fromOwnerType: OwnerType | null;
+  fromOwnerId: string | null;
+  productName: string;
+  productSku: string;
+  productUnit: string;
 };
 
 export type ProductionOutput = {
   id: string;
+  series: string;
+  sequenceNumber: string;
   number: string;
   productionOrderId: string;
   status: OutputStatus;
@@ -250,9 +320,15 @@ export type ProductionOutput = {
 export type ProductionOutputLine = {
   id: string;
   outputId: string;
+  /** @deprecated No line-level provenance; kept empty for leftover callers. */
   productionOrderLineId: string;
   productId: string;
   quantity: number;
+  productName: string;
+  productSku: string;
+  productUnit: string;
+  toOwnerType: OwnerType | null;
+  toOwnerId: string | null;
 };
 
 export type ProductionOutputAllocation = {
@@ -265,6 +341,8 @@ export type ProductionOutputAllocation = {
 
 export type StockAdjustment = {
   id: string;
+  series: string;
+  sequenceNumber: string;
   number: string;
   operation: AdjustmentOperation;
   warehouseId: string;
@@ -281,6 +359,9 @@ export type StockAdjustmentLine = {
   adjustmentId: string;
   productId: string;
   quantity: number;
+  productName: string;
+  productSku: string;
+  productUnit: string;
 };
 
 export type StockTransaction = {
@@ -317,6 +398,7 @@ export type LogisticsSnapshot = {
   warehouses: LogisticsWarehouse[];
   regions: LogisticsRegion[];
   settings: LogisticsSetting;
+  documentProductLines: DocumentProductLine[];
   customerOrders: CustomerOrder[];
   customerOrderLines: CustomerOrderLine[];
   productionOrders: ProductionOrder[];
@@ -337,6 +419,16 @@ export type LogisticsSnapshot = {
   users: StoreUser[];
   documentHistory: DocumentHistoryEntry[];
 };
+
+export const documentNumber = (series: string, sequenceNumber: string | number): string =>
+  `${series}-${sequenceNumber}`;
+
+export const matchDocumentParam = <T extends { id: string; sequenceNumber: string }>(
+  items: T[],
+  param: string,
+): T | undefined => items.find((item) => item.sequenceNumber === param || item.id === param);
+
+export const publicDocumentParam = (doc: { sequenceNumber: string }): string => doc.sequenceNumber;
 
 export type OwnerRef = {
   ownerType: OwnerType | null;
