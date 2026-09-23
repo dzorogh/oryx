@@ -223,3 +223,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-reservations-only-in-outputs.md`
   summary: Снятие резерва внутри черновика выпуска (вернуть занятую строку в свободную) без отмены всего выпуска.
   evidence: Вне объёма по спецификации; сейчас резерв из черновика снимается только отменой выпуска.
+- source_spec: `_bmad-output/implementation-artifacts/spec-reserve-on-output-line.md`
+  summary: Заменить оставшиеся проверки заказа клиента `status === "open"` на `isOpenCustomerOrderStatus` (формы отгрузки `logistics-forms.tsx` ~568/~1030, `flow-documents-pages.tsx` ~380, `logistics-cancel-guidance.ts` ~307, локальный хелпер в `customer-orders-page.tsx`).
+  evidence: В данных статус `in_progress`, поэтому эти списки/ветки сейчас не срабатывают; в диалогах резерва уже исправлено.

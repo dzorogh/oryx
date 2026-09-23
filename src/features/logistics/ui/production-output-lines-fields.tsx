@@ -10,7 +10,12 @@ import {
   productIdentityLabel,
 } from "@/features/logistics/logistics-lookups";
 import { remainingToReserveInProductionOutputsForLine } from "@/features/logistics/logistics-availability";
-import type { LogisticsSnapshot, ProductionOrderLine, StockBalance } from "@/features/logistics/logistics-types";
+import {
+  isOpenCustomerOrderStatus,
+  type LogisticsSnapshot,
+  type ProductionOrderLine,
+  type StockBalance,
+} from "@/features/logistics/logistics-types";
 
 export type ProductionOutputDraftLine = {
   productionLineId: string;
@@ -61,7 +66,7 @@ export const ProductionOutputLinesFields = ({
         const openOrderItems = snapshot.customerOrderLines
           .filter((line) => {
             const customerOrder = snapshot.customerOrders.find((item) => item.id === line.orderId);
-            return customerOrder?.status === "open" && line.productId === draft.productId;
+            return isOpenCustomerOrderStatus(customerOrder?.status) && line.productId === draft.productId;
           })
           .map((line) => ({
             value: line.id,

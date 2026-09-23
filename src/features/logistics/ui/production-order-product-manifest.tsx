@@ -103,9 +103,34 @@ const ReleaseButton = ({
       size="sm"
       variant="outline"
       className={cn("h-7 shrink-0 px-2.5 text-xs", className)}
+      aria-label={`Снять резерв в выпуске ${row.output.number}`}
       onClick={() => onRelease(row, item)}
     >
       Снять
+    </Button>
+  ) : null;
+
+type ReserveHandler = (row: ProductionProductOutputRow) => void;
+
+const ReserveInOutputButton = ({
+  row,
+  onReserve,
+  className,
+}: {
+  row: ProductionProductOutputRow;
+  onReserve?: ReserveHandler;
+  className?: string;
+}) =>
+  onReserve && row.output.status === "draft" && row.free > 0 ? (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      className={cn("h-7 shrink-0 px-2.5 text-xs", className)}
+      aria-label={`Зарезервировать в выпуске ${row.output.number}`}
+      onClick={() => onReserve(row)}
+    >
+      Зарезервировать
     </Button>
   ) : null;
 
@@ -117,6 +142,7 @@ const OutputsTable = ({
   expandedOutputs,
   onToggleOutput,
   onRelease,
+  onReserve,
 }: {
   snapshot: LogisticsSnapshot;
   lineId: string;
@@ -125,6 +151,7 @@ const OutputsTable = ({
   expandedOutputs: Set<string>;
   onToggleOutput: (key: string) => void;
   onRelease?: ReleaseHandler;
+  onReserve?: ReserveHandler;
 }) => {
   const q = (n: number) => formatQuantity(n, unit);
   if (rows.length === 0) {
@@ -162,7 +189,10 @@ const OutputsTable = ({
                   </div>
                 </TableCell>
                 <TableCell className="px-3 py-1.5">
-                  <OutputStatusBadge status={row.output.status} />
+                  <div className="flex items-center justify-between gap-2">
+                    <OutputStatusBadge status={row.output.status} />
+                    <ReserveInOutputButton row={row} onReserve={onReserve} />
+                  </div>
                 </TableCell>
                 <TableCell className={NUM_CELL}>{q(row.quantity)}</TableCell>
                 <TableCell className={cn(NUM_CELL, row.free > 0 ? undefined : MUTED_ZERO)}>{q(row.free)}</TableCell>
@@ -215,6 +245,7 @@ const OutputsList = ({
   expandedOutputs,
   onToggleOutput,
   onRelease,
+  onReserve,
 }: {
   snapshot: LogisticsSnapshot;
   lineId: string;
@@ -223,6 +254,7 @@ const OutputsList = ({
   expandedOutputs: Set<string>;
   onToggleOutput: (key: string) => void;
   onRelease?: ReleaseHandler;
+  onReserve?: ReserveHandler;
 }) => {
   const q = (n: number) => formatQuantity(n, unit);
   if (rows.length === 0) {
@@ -245,6 +277,7 @@ const OutputsList = ({
               />
               <LogisticsCodeBadge code={row.output.number} href={outputHref(row)} />
               <OutputStatusBadge status={row.output.status} />
+              <ReserveInOutputButton row={row} onReserve={onReserve} className="ml-auto h-11" />
             </div>
             <dl className="mt-2 grid grid-cols-3 gap-x-3">
               <div>
@@ -297,6 +330,7 @@ export const ProductionOrderProductManifest = ({
   onAddProduct,
   onReserve,
   onReleaseReservation,
+  onReserveInOutput,
   bare = false,
 }: {
   snapshot: LogisticsSnapshot;
@@ -305,6 +339,7 @@ export const ProductionOrderProductManifest = ({
   onAddProduct?: () => void;
   onReserve: (lineId: string) => void;
   onReleaseReservation?: (target: OutputReleaseTarget) => void;
+  onReserveInOutput?: (outputId: string, productId: string) => void;
   bare?: boolean;
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -351,12 +386,15 @@ export const ProductionOrderProductManifest = ({
               quantity: item.quantity,
             })
         : undefined;
+    const onReserveRow: ReserveHandler | undefined =
+      canMutate && onReserveInOutput ? (row) => onReserveInOutput(row.output.id, line.productId) : undefined;
     return {
       unit,
       name,
       code,
       outputs,
       onRelease,
+      onReserveRow,
       showReserve: canMutate && (planRoom > 0 || draftFree),
       q: (n: number) => formatQuantity(n, unit),
     };
@@ -436,6 +474,7 @@ export const ProductionOrderProductManifest = ({
                               expandedOutputs={expandedOutputs}
                               onToggleOutput={toggleOutput}
                               onRelease={view.onRelease}
+                              onReserve={view.onReserveRow}
                             />
                           </div>
                         </TableCell>
@@ -504,6 +543,7 @@ export const ProductionOrderProductManifest = ({
                       expandedOutputs={expandedOutputs}
                       onToggleOutput={toggleOutput}
                       onRelease={view.onRelease}
+                      onReserve={view.onReserveRow}
                     />
                   </div>
                 ) : null}

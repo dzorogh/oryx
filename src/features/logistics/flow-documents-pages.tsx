@@ -108,6 +108,8 @@ import {
 } from "@/features/logistics/ui/list/document-list-configs";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
+import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
+import { OutputReserveDialog, type OutputReserveTarget } from "@/features/logistics/ui/output-reserve-dialog";
 import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
@@ -1111,7 +1113,10 @@ export const OutputDetailPage = () => {
   });
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
+  const [reserveTarget, setReserveTarget] = useState<OutputReserveTarget | null>(null);
+  const [releaseTarget, setReleaseTarget] = useState<OutputReleaseTarget | null>(null);
   const doc = matchDocumentParam(store.snapshot.outputs, params.id);
+  const canEditReserve = doc?.status === "draft";
   const lines = doc ? store.snapshot.outputLines.filter((line) => line.outputId === doc.id) : [];
   const production = doc ? productionOrderById(store.snapshot, doc.productionOrderId) : undefined;
   const cancelGuidance = doc
@@ -1186,7 +1191,7 @@ export const OutputDetailPage = () => {
         status={<OutputStatusBadge status={doc.status} />}
         actions={
           <>
-            {doc.status === "planned" ? (
+            {doc.status === "draft" || doc.status === "planned" ? (
               <Button
                 type="button"
                 size="sm"
@@ -1261,7 +1266,11 @@ export const OutputDetailPage = () => {
               <DocumentSection title="Товары">
                 <LogisticsTableCard
                   embedded
-                  headers={["Товар", "Количество", "Место", "Осталось по плану"]}
+                  headers={
+                    canEditReserve
+                      ? ["Товар", "Количество", "Под что", "Осталось по плану", ""]
+                      : ["Товар", "Количество", "Под что", "Осталось по плану"]
+                  }
                   numericColumns={[1, 3]}
                   isEmpty={lines.length === 0}
                 >
@@ -1288,16 +1297,16 @@ export const OutputDetailPage = () => {
                           {formatQuantity(line.quantity, unit)}
                         </TableCell>
                         <TableCell className="px-3 py-2 text-sm">
-                          {production ? (
+                          {line.toOwnerType && line.toOwnerId ? (
                             <span className="inline-flex items-center gap-1.5">
-                              <span className="text-foreground font-medium">Заказ на производство</span>
+                              <span className="text-muted-foreground">{OWNER_TYPE_LABELS[line.toOwnerType]}</span>
                               <LogisticsCodeBadge
-                                code={production.number}
-                                href={`/store/logistics/production-orders/${production.sequenceNumber}`}
+                                code={ownerLabel(store.snapshot, line.toOwnerType, line.toOwnerId)}
+                                href={hrefForOwner(line.toOwnerType, line.toOwnerId, store.snapshot) ?? undefined}
                               />
                             </span>
                           ) : (
-                            "—"
+                            <span className="text-muted-foreground">{FREE_OWNER_LABEL}</span>
                           )}
                         </TableCell>
                         <TableCell
@@ -1305,6 +1314,48 @@ export const OutputDetailPage = () => {
                         >
                           {remaining === 0 ? formatQuantity(0, unit) : formatQuantity(remaining, unit)}
                         </TableCell>
+                        {canEditReserve ? (
+                          <TableCell className="px-3 py-2 text-right">
+                            {line.toOwnerType && line.toOwnerId ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2.5 text-xs"
+                                aria-label={`Снять резерв: ${productById(store.snapshot, line.productId)?.name ?? line.productId}`}
+                                onClick={() =>
+                                  setReleaseTarget({
+                                    outputId: doc.id,
+                                    outputNumber: doc.number,
+                                    ownerType: line.toOwnerType!,
+                                    ownerId: line.toOwnerId!,
+                                    productId: line.productId,
+                                    quantity: line.quantity,
+                                  })
+                                }
+                              >
+                                Снять
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2.5 text-xs"
+                                aria-label={`Зарезервировать: ${productById(store.snapshot, line.productId)?.name ?? line.productId}`}
+                                onClick={() =>
+                                  setReserveTarget({
+                                    productionOrderId: doc.productionOrderId,
+                                    productId: line.productId,
+                                    outputId: doc.id,
+                                  })
+                                }
+                              >
+                                Зарезервировать
+                              </Button>
+                            )}
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     );
                   })}
@@ -1346,6 +1397,13 @@ export const OutputDetailPage = () => {
           preset={adjustPreset}
         />
       ) : null}
+      <OutputReserveDialog target={reserveTarget} onClose={() => setReserveTarget(null)} reload={store.reload} />
+      <OutputReleaseDialog
+        snapshot={store.snapshot}
+        target={releaseTarget}
+        onClose={() => setReleaseTarget(null)}
+        reload={store.reload}
+      />
     </LogisticsPageShell>
   );
 };

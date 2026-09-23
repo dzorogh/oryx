@@ -31,6 +31,10 @@ export type LifecycleStatus =
   | (typeof LEGACY_LIFECYCLE_STATUSES)[number];
 export type DocumentStatus = LifecycleStatus;
 
+/** DB lifecycle is `in_progress`; `open` is the legacy UI value some fixtures still use. */
+export const isOpenCustomerOrderStatus = (status: string | null | undefined): boolean =>
+  status === "in_progress" || status === "open";
+
 export const DOCUMENT_KINDS = [
   "customer_order",
   "production_order",

@@ -8,6 +8,7 @@ import {
 import { hrefForStoreProduct, logisticsPath } from "@/features/logistics/logistics-paths";
 import {
   isFreeOwner,
+  isOpenCustomerOrderStatus,
   isOrderOwner,
   ownersEqual,
   type CustomerOrderLine,
@@ -273,7 +274,7 @@ export const openOrderLinesForProduct = (
       return false;
     }
     const order = snapshot.customerOrders.find((item) => item.id === line.orderId);
-    return order?.status === "open" && remainingToReserveForLine(line, balances) > 0;
+    return isOpenCustomerOrderStatus(order?.status) && remainingToReserveForLine(line, balances) > 0;
   });
 
 export const reservationCap = (
@@ -689,7 +690,7 @@ export const reservedOrderLinesAtWarehouse = (
   snapshot.customerOrderLines
     .filter((line) => {
       const order = snapshot.customerOrders.find((item) => item.id === line.orderId);
-      return order?.status === "open" && line.productId === productId;
+      return isOpenCustomerOrderStatus(order?.status) && line.productId === productId;
     })
     .map((line) => ({
       line,
