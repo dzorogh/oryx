@@ -680,17 +680,20 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     productUnit: line.productUnit,
   }));
 
-  const outputLines: ProductionOutputLine[] = linesByKind("production_output").map((line) => ({
-    id: line.id,
-    outputId: line.documentId,
-    productionOrderLineId: "",
-    productId: line.productId,
-    quantity: line.quantity,
-    productName: line.productName,
-    productUnit: line.productUnit,
-    toOwnerId: line.toOwnerId,
-    toOwnerType: line.toOwnerType,
-  }));
+  const outputLines: ProductionOutputLine[] = linesByKind("production_output").map((line) => {
+    const to = resolveOwnerProjection(line.toOwnerId);
+    return {
+      id: line.id,
+      outputId: line.documentId,
+      productionOrderLineId: "",
+      productId: line.productId,
+      quantity: line.quantity,
+      productName: line.productName,
+      productUnit: line.productUnit,
+      toOwnerId: to.ownerId,
+      toOwnerType: to.ownerType,
+    };
+  });
 
   const outputAllocations: ProductionOutputAllocation[] = [];
 
@@ -1091,13 +1094,19 @@ export const buildCreateProductionOutputRpcArgs = (args: {
   }
   return {
     p_production_order_id: Number(args.orderId),
-    p_lines: args.lines.map((line) => ({
-      product_variant_id: Number(line.productId),
-      quantity: line.quantity,
-      allocation_owner_id: line.allocation?.quantity
-        ? (args.resolvedAllocationOwnerIds?.[line.productId] ?? Number(line.allocation.ownerId))
-        : null,
-    })),
+    p_lines: args.lines.map((line) => {
+      const allocQty = line.allocation?.quantity ?? 0;
+      const ownerId =
+        allocQty > 0
+          ? (args.resolvedAllocationOwnerIds?.[line.productId] ?? Number(line.allocation!.ownerId))
+          : null;
+      return {
+        product_variant_id: Number(line.productId),
+        quantity: line.quantity,
+        allocation_owner_id: ownerId,
+        allocation_quantity: allocQty > 0 ? allocQty : 0,
+      };
+    }),
     p_expected_end_on: args.expectedEndOn || null,
     p_complete: args.complete !== false,
   };
@@ -1124,6 +1133,18 @@ export const createProductionOutput = async (args: {
   return String(created.id);
 };
 
+export class ProductionForOrderOutputError extends Error {
+  productionOrderId: string;
+  sequenceNumber: string | null;
+  constructor(productionOrderId: string, sequenceNumber: string | null, cause: unknown) {
+    const detail = cause instanceof Error ? cause.message : "Не удалось создать черновик выпуска";
+    super(detail);
+    this.name = "ProductionForOrderOutputError";
+    this.productionOrderId = productionOrderId;
+    this.sequenceNumber = sequenceNumber;
+  }
+}
+
 export const createProductionForOrder = async (args: {
   plantId?: string;
   customerOrderId: string;
@@ -1139,19 +1160,42 @@ export const createProductionForOrder = async (args: {
     expectedEndOn: args.expectedEndOn,
     lines: args.lines,
   });
-  await createAndPostReservation({
-    locationType: "production_order",
-    locationId: String(created.id),
-    toOwnerType: "order",
-    toOwnerId: args.customerOrderId,
-    lines: args.lines.map((line) => ({
-      productId: line.productId,
+  try {
+    await createProductionOutput({
+      orderId: String(created.id),
+      expectedEndOn: args.expectedEndOn,
+      complete: false,
+      lines: args.lines.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+        allocation: {
+          ownerType: "order",
+          ownerId: args.customerOrderId,
+          quantity: line.quantity,
+        },
+      })),
+    });
+  } catch (caught) {
+    throw new ProductionForOrderOutputError(String(created.id), created.sequenceNumber, caught);
+  }
+  return created.id;
+};
+
+export const reserveInProductionOutput = async (args: {
+  outputId: string;
+  ownerType: OwnerType;
+  ownerId: string;
+  lines: Array<{ productId: string; quantity: number }>;
+}): Promise<void> => {
+  const ownerStockId = await resolveOwnerId(args.ownerType, args.ownerId);
+  await rpc("store_reserve_in_production_output", {
+    p_output_id: Number(args.outputId),
+    p_owner_id: Number(ownerStockId),
+    p_lines: args.lines.map((line) => ({
+      product_variant_id: Number(line.productId),
       quantity: line.quantity,
-      fromOwnerType: null,
-      fromOwnerId: null,
     })),
   });
-  return created.id;
 };
 
 export type AdjustmentCreateResult = {
@@ -1236,7 +1280,11 @@ export const createProductionOrder = async (args: {
 }) => {
   const plantId = args.plantId;
   if (!plantId) throw new Error("Нужен plantId");
-  const created = await rpcJson<{ id: number | string; lines: unknown }>("store_create_production_order", {
+  const created = await rpcJson<{
+    id: number | string;
+    lines: unknown;
+    sequence_number?: number | string | null;
+  }>("store_create_production_order", {
     p_plant_id: Number(plantId),
     p_expected_end_on: args.expectedEndOn || null,
     p_lines: args.lines.map((line) => ({
@@ -1244,7 +1292,14 @@ export const createProductionOrder = async (args: {
       quantity: line.quantity,
     })),
   });
-  return { id: String(created.id), lines: created.lines };
+  return {
+    id: String(created.id),
+    lines: created.lines,
+    sequenceNumber:
+      created.sequence_number == null || created.sequence_number === ""
+        ? null
+        : String(created.sequence_number),
+  };
 };
 
 export const addProductionLine = (args: { orderId: string; productId: string; quantity: number }) =>

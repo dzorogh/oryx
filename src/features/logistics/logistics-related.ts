@@ -5,7 +5,6 @@ import {
   productionDemandAssigned,
 } from "@/features/logistics/logistics-availability";
 import { plantCode, warehouseCode } from "@/features/logistics/logistics-lookups";
-import { computeStockBalances } from "@/features/logistics/logistics-balances";
 import {
   expectedEndMeta,
   formatQuantity,
@@ -157,6 +156,19 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
       outputIds.add(outputId);
     }
   }
+  for (const line of snapshot.outputLines) {
+    if (!ownersEqual(line.toOwnerType, line.toOwnerId, "order", customerOrderId)) {
+      continue;
+    }
+    const output = snapshot.outputs.find((item) => item.id === line.outputId);
+    if (!output) {
+      continue;
+    }
+    const status = output.status;
+    if (status === "draft" || status === "planned" || status === "in_progress" || status === "done") {
+      outputIds.add(output.id);
+    }
+  }
   return snapshot.outputs
     .filter((item) => outputIds.has(item.id))
     .map((item) => ({
@@ -172,25 +184,22 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
 export const relatedProductionsForOrder = (
   snapshot: LogisticsSnapshot,
   customerOrderId: string,
-  balances?: StockBalance[],
+  _balances?: StockBalance[],
 ): RelatedDocumentItem[] => {
-  const stock = balances ?? computeStockBalances(snapshot.transactions);
   const productionIds = new Set<string>();
-  for (const reservation of snapshot.reservations) {
-    if (
-      reservation.locationType !== "production_order" ||
-      !activeReservation(snapshot, reservation.id) ||
-      !reservationTouchesOrder(reservation, snapshot.reservationLines, customerOrderId)
-    ) {
+  for (const line of snapshot.outputLines) {
+    if (!ownersEqual(line.toOwnerType, line.toOwnerId, "order", customerOrderId)) {
       continue;
     }
-    const orderId =
-      snapshot.productionOrders.some((item) => item.id === reservation.locationId)
-        ? reservation.locationId
-        : snapshot.productionOrderLines.find((line) => line.id === reservation.locationId)?.orderId;
-    if (orderId) {
-      productionIds.add(orderId);
+    const output = snapshot.outputs.find((item) => item.id === line.outputId);
+    if (!output) {
+      continue;
     }
+    const status = output.status;
+    if (status === "cancelled") {
+      continue;
+    }
+    productionIds.add(output.productionOrderId);
   }
   return snapshot.productionOrders
     .filter((item) => productionIds.has(item.id))

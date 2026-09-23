@@ -20,18 +20,23 @@ import {
   createAndSendTransfer,
   createProductionForOrder,
   createProductionOutput,
+  ProductionForOrderOutputError,
+  reserveInProductionOutput,
 } from "@/features/logistics/logistics-api";
 import {
   openSentTransfer,
   orderOwnedTransferPayload,
 } from "@/features/logistics/transfer-direct-send";
 import {
-  freeProductionLinesForProduct,
+  freeInDraftOutput,
   freeTransfersForProduct,
+  remainingPlanForProductionProduct,
   remainingToOutputForLine,
   remainingToReserveForLine,
-  reservedPlacesForLine,
+  remainingToReserveInProductionOutputsForLine,
+  reservedInActiveOutputsForOrderProduct,
 } from "@/features/logistics/logistics-availability";
+import { lineLocationAllocations } from "@/features/logistics/allocation-atlas";
 import { TransferCreateDialog } from "@/features/logistics/ui/transfer-create-dialog";
 import { sumReservedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
@@ -51,8 +56,10 @@ import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quanti
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
-import { runLogisticsAction } from "@/features/logistics/ui/run-action";
+import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
+import { LOGISTICS_PATHS, logisticsPath } from "@/features/logistics/logistics-paths";
 import {
+  documentNumber,
   ownersEqual,
   type CustomerOrderLine,
   type LogisticsSnapshot,
@@ -140,14 +147,15 @@ export const ProductionFromOrderForm = ({
   customerOrderId,
   lines,
 }: ActionFormProps) => {
+  const router = useRouter();
   const [plantId, setPlantId] = useState("");
   const [expectedEndOn, setExpectedEndOn] = useState("");
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const didOpen = useRef(false);
 
   const openLines = useMemo(
-    () => lines.filter((line) => remainingToReserveForLine(line, balances) > 0),
-    [balances, lines],
+    () => lines.filter((line) => remainingToReserveInProductionOutputsForLine(line, balances, snapshot) > 0),
+    [balances, lines, snapshot],
   );
   const plantItems = useMemo(
     () => plantsForOpenLines(snapshot, openLines.map((line) => line.productId)),
@@ -162,7 +170,12 @@ export const ProductionFromOrderForm = ({
   }, [plantId, openLines, snapshot]);
 
   const seedQuantities = (nextLines: CustomerOrderLine[]) =>
-    Object.fromEntries(nextLines.map((line) => [line.id, String(remainingToReserveForLine(line, balances))]));
+    Object.fromEntries(
+      nextLines.map((line) => [
+        line.id,
+        String(remainingToReserveInProductionOutputsForLine(line, balances, snapshot)),
+      ]),
+    );
 
   useEffect(() => {
     if (!open) {
@@ -210,7 +223,9 @@ export const ProductionFromOrderForm = ({
   const payload = plantLines
     .map((line) => ({
       productId: line.productId,
-      quantity: Number(quantities[line.id] ?? remainingToReserveForLine(line, balances)),
+      quantity: Number(
+        quantities[line.id] ?? remainingToReserveInProductionOutputsForLine(line, balances, snapshot),
+      ),
     }))
     .filter((line) => line.quantity > 0);
   const customerOrderNumber = customerOrderById(snapshot, customerOrderId)?.number ?? customerOrderId;
@@ -241,19 +256,33 @@ export const ProductionFromOrderForm = ({
       toast.error("Выберите производителя и количество");
       return;
     }
-    const ok = await runLogisticsAction(
-      () =>
-        createProductionForOrder({
-          plantId,
-          customerOrderId,
-          expectedEndOn: expectedEndOn || null,
-          lines: payload,
-        }),
-      "Заказ на производство создан и зарезервирован",
-      reload,
-    );
-    if (ok) {
+    try {
+      await createProductionForOrder({
+        plantId,
+        customerOrderId,
+        expectedEndOn: expectedEndOn || null,
+        lines: payload,
+      });
+      toast.success("Заказ на производство и черновик выпуска созданы — резерв в выпуске");
+      await reload();
       onOpenChange(false);
+    } catch (caught: unknown) {
+      const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      if (caught instanceof ProductionForOrderOutputError) {
+        const seq = caught.sequenceNumber;
+        toast.error("Заказ на производство создан, но черновик выпуска не создан", {
+          description: `${translateLogisticsError(raw)} Откройте заказ на производство и зарезервируйте в выпуске повторно.`,
+          action: {
+            label: seq ? documentNumber("PO", seq) : "Заказы на производство",
+            onClick: () =>
+              router.push(seq ? logisticsPath("production-orders", seq) : LOGISTICS_PATHS.productionOrders),
+          },
+        });
+        await reload();
+        onOpenChange(false);
+        return;
+      }
+      toast.error("Не удалось выполнить действие", { description: translateLogisticsError(raw) });
     }
   };
 
@@ -309,11 +338,9 @@ export const ProductionFromOrderForm = ({
               <TableBody>
                 {plantLines.map((line) => {
                   const product = productById(snapshot, line.productId);
-                  const max = remainingToReserveForLine(line, balances);
+                  const max = remainingToReserveInProductionOutputsForLine(line, balances, snapshot);
                   const reserved = sumReservedForLine(balances, line);
-                  const inProduction = reservedPlacesForLine(balances, line)
-                    .filter((place) => place.locationType === "production_order")
-                    .reduce((sum, place) => sum + place.quantity, 0);
+                  const inProduction = lineLocationAllocations(balances, line, snapshot).inProduction;
                   const rawQuantity = quantities[line.id] ?? String(max);
                   const numericQuantity = Number(rawQuantity);
                   const excluded = !Number.isFinite(numericQuantity) || numericQuantity <= 0;
@@ -356,11 +383,19 @@ export const ProductionFromOrderForm = ({
             </Table>
           </div>
         )}
+        {plantId && selectedLineCount > 0 ? (
+          <div
+            role="status"
+            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          >
+            Вместе с заказом на производство создадим черновик выпуска на весь объём — резерв будет в
+            выпуске.
+          </div>
+        ) : null}
       </div>
       <DialogFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 text-left sm:max-w-[55%]">
           <p className="font-medium">{summaryTitle}</p>
-          <p className="text-xs text-muted-foreground">Количество зарезервируется автоматически</p>
         </div>
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -388,80 +423,148 @@ export const ReserveOnProductionForm = ({
   customerOrderId,
   lines,
 }: ActionFormProps) => {
+  type Target =
+    | { kind: "new"; productionOrderId: string; available: number }
+    | { kind: "draft"; outputId: string; productionOrderId: string; available: number };
+
   const [orderLineId, setOrderLineId] = useState("");
-  const [locationId, setLocationId] = useState("");
-  const [quantity, setQuantity] = useState("1");
-  const reservableLines = lines.filter((line) => remainingToReserveForLine(line, balances) > 0);
-  const orderLine = lines.find((line) => line.id === orderLineId);
-  const productionLineIds = orderLine
-    ? snapshot.productionOrderLines
-      .filter((line) => {
-        if (line.productId !== orderLine.productId) {
-          return false;
+  const [targetKey, setTargetKey] = useState("");
+  /** null = auto → use current max */
+  const [quantity, setQuantity] = useState<string | null>(null);
+  const reservableLines = lines.filter(
+    (line) => remainingToReserveInProductionOutputsForLine(line, balances, snapshot) > 0,
+  );
+  const effectiveOrderLineId =
+    orderLineId && reservableLines.some((line) => line.id === orderLineId)
+      ? orderLineId
+      : (reservableLines[0]?.id ?? "");
+  const orderLine = lines.find((line) => line.id === effectiveOrderLineId);
+
+  const targets: Target[] = useMemo(() => {
+    if (!orderLine) {
+      return [];
+    }
+    const result: Target[] = [];
+    const openProductions = snapshot.productionOrders.filter(
+      (po) => po.status !== "closed" && po.status !== "cancelled" && po.status !== "done",
+    );
+    for (const po of openProductions) {
+      const planLine = snapshot.productionOrderLines.find(
+        (line) => line.orderId === po.id && line.productId === orderLine.productId,
+      );
+      if (!planLine) {
+        continue;
+      }
+      const planRoom = remainingPlanForProductionProduct(
+        snapshot,
+        po.id,
+        orderLine.productId,
+        planLine.quantity,
+      );
+      if (planRoom > 0) {
+        result.push({ kind: "new", productionOrderId: po.id, available: planRoom });
+      }
+      for (const output of snapshot.outputs) {
+        if (output.productionOrderId !== po.id) {
+          continue;
         }
-        const production = productionOrderById(snapshot, line.orderId);
-        return production?.status !== "closed" && production?.status !== "cancelled";
-      })
-      .map((line) => line.id)
-    : [];
-  const places = orderLine
-    ? freeProductionLinesForProduct(balances, orderLine.productId, productionLineIds)
-    : [];
-  const selected = places.find((place) => place.locationId === locationId);
-  const max = orderLine && selected
-    ? Math.min(selected.quantity, remainingToReserveForLine(orderLine, balances))
+        if (output.status !== "draft" && output.status !== "planned") {
+          continue;
+        }
+        const free = freeInDraftOutput(snapshot, output.id, orderLine.productId);
+        if (free > 0) {
+          result.push({
+            kind: "draft",
+            outputId: output.id,
+            productionOrderId: po.id,
+            available: free,
+          });
+        }
+      }
+    }
+    return result;
+  }, [orderLine, snapshot]);
+
+  const targetItems = targets.map((target) => {
+    const po = productionOrderById(snapshot, target.productionOrderId);
+    const poNumber = po?.number ?? target.productionOrderId;
+    if (target.kind === "new") {
+      return {
+        value: `new:${target.productionOrderId}`,
+        label: `Новый выпуск в ${poNumber} · можно ${formatQuantity(target.available)}`,
+      };
+    }
+    const output = snapshot.outputs.find((item) => item.id === target.outputId);
+    return {
+      value: `draft:${target.outputId}`,
+      label: `${output?.number ?? target.outputId} · ${poNumber} · свободно ${formatQuantity(target.available)}`,
+    };
+  });
+
+  const selectedTarget =
+    targets.find((target) => {
+      if (target.kind === "new") {
+        return targetKey === `new:${target.productionOrderId}`;
+      }
+      return targetKey === `draft:${target.outputId}`;
+    }) ?? targets[0];
+  const effectiveTargetKey = selectedTarget
+    ? selectedTarget.kind === "new"
+      ? `new:${selectedTarget.productionOrderId}`
+      : `draft:${selectedTarget.outputId}`
+    : "";
+  const formCap = orderLine
+    ? remainingToReserveInProductionOutputsForLine(orderLine, balances, snapshot)
     : 0;
+  const max = selectedTarget ? Math.min(selectedTarget.available, formCap) : 0;
+  const quantityValue = quantity ?? (max > 0 ? String(max) : "");
 
-  const firstReservableId = reservableLines[0]?.id ?? "";
-  const firstPlaceId = places[0]?.locationId ?? "";
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    setOrderLineId(firstReservableId);
-    setLocationId("");
-    setQuantity("1");
-  }, [firstReservableId, open]);
-
-  useEffect(() => {
-    if (!open || !orderLine || !firstPlaceId || locationId) {
-      return;
-    }
-    const first = places[0];
-    if (!first) {
-      return;
-    }
-    setLocationId(first.locationId);
-    const cap = Math.min(first.quantity, remainingToReserveForLine(orderLine, balances));
-    setQuantity(String(cap > 0 ? cap : 1));
-  }, [balances, firstPlaceId, locationId, open, orderLine, places]);
+  const resetClosed = () => {
+    setOrderLineId("");
+    setTargetKey("");
+    setQuantity(null);
+  };
 
   const submit = async () => {
-    if (!orderLine || !selected || !isAllowedQuantity(quantity, max)) {
-      toast.error("Выберите товар, заказ на производство и количество");
+    if (!orderLine || !selectedTarget || !isAllowedQuantity(quantityValue, max)) {
+      toast.error("Выберите товар, цель резерва и количество");
       return;
     }
+    const qty = Number(quantityValue);
     const ok = await runLogisticsAction(
-      () =>
-        createAndPostReservation({
-          locationType: "production_order",
-          locationId: selected.locationId,
-          toOwnerType: "order",
-          toOwnerId: customerOrderId,
-          lines: [
-            {
-              productId: orderLine.productId,
-              quantity: Number(quantity),
-              fromOwnerType: null,
-              fromOwnerId: null,
-            },
-          ],
-        }),
-      "Зарезервировано в заказе на производство",
+      async () => {
+        if (selectedTarget.kind === "new") {
+          const po = productionOrderById(snapshot, selectedTarget.productionOrderId);
+          await createProductionOutput({
+            orderId: selectedTarget.productionOrderId,
+            expectedEndOn: po?.expectedEndOn ?? null,
+            complete: false,
+            lines: [
+              {
+                productId: orderLine.productId,
+                quantity: qty,
+                allocation: {
+                  ownerType: "order",
+                  ownerId: customerOrderId,
+                  quantity: qty,
+                },
+              },
+            ],
+          });
+          return;
+        }
+        await reserveInProductionOutput({
+          outputId: selectedTarget.outputId,
+          ownerType: "order",
+          ownerId: customerOrderId,
+          lines: [{ productId: orderLine.productId, quantity: qty }],
+        });
+      },
+      "Зарезервировано в выпуске",
       reload,
     );
     if (ok) {
+      resetClosed();
       onOpenChange(false);
     }
   };
@@ -469,48 +572,65 @@ export const ReserveOnProductionForm = ({
   return (
     <LogisticsDialog
       open={open}
-      onOpenChange={onOpenChange}
-      title="Зарезервировать в заказе на производство"
+      onOpenChange={(next) => {
+        if (!next) {
+          resetClosed();
+        }
+        onOpenChange(next);
+      }}
+      title="Зарезервировать в выпуске"
     >
       <div className="flex flex-col gap-3">
+        <div
+          role="status"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+        >
+          Резерв под производство держится в черновике выпуска, а не на месте заказа на производство.
+        </div>
         <FieldSelect
           label="Товар заказа клиента"
-          value={orderLineId}
+          value={effectiveOrderLineId}
           items={reservableLines.map((line) => ({
             value: line.id,
             label: productIdentityLabel(
               productById(snapshot, line.productId),
               line.productId,
-              `можно ${formatQuantity(remainingToReserveForLine(line, balances))}`,
+              `можно ${formatQuantity(remainingToReserveInProductionOutputsForLine(line, balances, snapshot))}`,
             ),
           }))}
           onChange={(value) => {
             setOrderLineId(value);
-            setLocationId("");
+            setTargetKey("");
+            setQuantity(null);
           }}
           placeholder="Выберите товар"
           emptyLabel="Нечего резервировать"
         />
         <FieldSelect
-          label="Заказ на производство"
-          value={locationId}
-          items={places.map((place) => ({
-            value: place.locationId,
-            label: `${locationLabel(snapshot, place.locationType, place.locationId)} · свободно ${formatQuantity(place.quantity)}`,
-          }))}
+          label="Куда зарезервировать"
+          value={effectiveTargetKey}
+          items={targetItems}
           onChange={(value) => {
-            setLocationId(value);
-            const place = places.find((item) => item.locationId === value);
-            const cap = orderLine && place
-              ? Math.min(place.quantity, remainingToReserveForLine(orderLine, balances))
-              : 0;
-            setQuantity(String(cap > 0 ? cap : 1));
+            setTargetKey(value);
+            setQuantity(null);
           }}
-          placeholder="Выберите строку"
-          emptyLabel={orderLine ? "Нет свободного остатка в заказе на производство" : "Сначала выберите товар"}
+          placeholder="Выберите цель"
+          emptyLabel={
+            orderLine
+              ? "Нет доступного заказа на производство или свободного черновика выпуска"
+              : "Сначала выберите товар"
+          }
         />
-        <QuantityField value={quantity} onChange={setQuantity} max={selected ? max : undefined} />
-        <Button type="button" disabled={!selected || !isAllowedQuantity(quantity, max)} onClick={() => void submit()}>
+        <QuantityField
+          value={quantityValue}
+          onChange={setQuantity}
+          max={selectedTarget ? max : undefined}
+        />
+        <Button
+          type="button"
+          disabled={!selectedTarget || !isAllowedQuantity(quantityValue, max)}
+          onClick={() => void submit()}
+        >
           Зарезервировать
         </Button>
       </div>
@@ -543,40 +663,44 @@ export const OutputFromOrderForm = ({
           return false;
         }
         const production = productionOrderById(snapshot, line.orderId);
-        return production?.status !== "closed" && production?.status !== "cancelled";
+        return production?.status !== "closed" && production?.status !== "cancelled" && production?.status !== "done";
       })
       .map((line) => {
         const remaining = remainingToOutputForLine(snapshot, line.id, line.quantity);
-        const reservedHere = balances
-          .filter(
-            (entry) =>
-              entry.locationType === "production_order" &&
-              entry.locationId === line.orderId &&
-              entry.stockState === "reserved" &&
-              ownersEqual(entry.ownerType, entry.ownerId, "order", orderLine.orderId) &&
-              entry.productId === orderLine.productId,
-          )
-          .reduce((sum, entry) => sum + entry.quantity, 0);
-        const freeHere = balances
-          .filter(
-            (entry) =>
-              entry.locationType === "production_order" &&
-              entry.locationId === line.orderId &&
-              entry.stockState === "free" &&
-              entry.productId === line.productId,
-          )
-          .reduce((sum, entry) => sum + entry.quantity, 0);
-        return { line, remaining, reservedHere, freeHere };
+        const planRoom = remainingPlanForProductionProduct(
+          snapshot,
+          line.orderId,
+          line.productId,
+          line.quantity,
+        );
+        const reservedHere = snapshot.outputLines
+          .filter((outputLine) => {
+            if (outputLine.productId !== orderLine.productId) {
+              return false;
+            }
+            if (!ownersEqual(outputLine.toOwnerType, outputLine.toOwnerId, "order", orderLine.orderId)) {
+              return false;
+            }
+            const output = snapshot.outputs.find((item) => item.id === outputLine.outputId);
+            return (
+              output?.productionOrderId === line.orderId &&
+              (output.status === "draft" ||
+                output.status === "planned" ||
+                output.status === "in_progress")
+            );
+          })
+          .reduce((sum, outputLine) => sum + outputLine.quantity, 0);
+        // Cap by plan room for new completed output from this PO line.
+        return { line, remaining: Math.min(remaining, planRoom), reservedHere, planRoom };
       })
-      .filter((item) => item.remaining > 0 && item.reservedHere + item.freeHere > 0);
-  }, [balances, orderLine, snapshot]);
+      .filter((item) => item.remaining > 0);
+  }, [orderLine, snapshot]);
   const selected = candidates.find((item) => item.line.id === productionLineId);
-  const max = selected
+  const max = selected && orderLine
     ? Math.min(
-      selected.remaining,
-      selected.reservedHere +
-      Math.min(selected.freeHere, orderLine ? remainingToReserveForLine(orderLine, balances) : 0),
-    )
+        selected.remaining,
+        remainingToReserveInProductionOutputsForLine(orderLine, balances, snapshot),
+      )
     : 0;
 
   const reset = () => {
@@ -595,7 +719,6 @@ export const OutputFromOrderForm = ({
       return;
     }
     const qty = Number(quantity);
-    const needReserve = Math.max(0, qty - selected.reservedHere);
     const production = productionOrderById(snapshot, selected.line.orderId);
     if (!production) {
       toast.error("Заказ на производство не найден");
@@ -611,14 +734,11 @@ export const OutputFromOrderForm = ({
             {
               productId: selected.line.productId,
               quantity: qty,
-              allocation:
-                needReserve > 0
-                  ? {
-                      ownerType: "order",
-                      ownerId: customerOrderId,
-                      quantity: needReserve,
-                    }
-                  : undefined,
+              allocation: {
+                ownerType: "order",
+                ownerId: customerOrderId,
+                quantity: qty,
+              },
             },
           ],
         }),
@@ -661,22 +781,26 @@ export const OutputFromOrderForm = ({
           value={productionLineId}
           items={candidates.map((item) => ({
             value: item.line.id,
-            label: `${locationLabel(snapshot, "production_order", item.line.orderId)} · занято ${formatQuantity(item.reservedHere)} · свободно ${formatQuantity(item.freeHere)}`,
+            label: `${locationLabel(snapshot, "production_order", item.line.orderId)} · остаток плана ${formatQuantity(item.planRoom)} · уже в черновиках ${formatQuantity(item.reservedHere)}`,
           }))}
           onChange={(value) => {
             setProductionLineId(value);
             const next = candidates.find((item) => item.line.id === value);
-            const cap = next
+            const cap = next && orderLine
               ? Math.min(
-                next.remaining,
-                next.reservedHere +
-                Math.min(next.freeHere, orderLine ? remainingToReserveForLine(orderLine, balances) : 0),
-              )
+                  next.remaining,
+                  remainingToReserveInProductionOutputsForLine(orderLine, balances, snapshot),
+                )
               : 0;
             setQuantity(String(cap > 0 ? cap : 1));
           }}
           placeholder="Выберите строку"
-          emptyLabel="Нет доступного заказа на производство"
+          emptyLabel={
+            orderLine &&
+            reservedInActiveOutputsForOrderProduct(snapshot, orderLine.orderId, orderLine.productId) > 0
+              ? "Весь план уже в черновиках выпусков — завершите выпуск на его странице"
+              : "Нет доступного заказа на производство"
+          }
         />
         <QuantityField
           value={quantity}

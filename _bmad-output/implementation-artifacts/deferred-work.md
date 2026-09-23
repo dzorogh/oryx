@@ -211,3 +211,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-lists-redesign.md`
   summary: Добавить `npm test` в обязательные проверки перед сдачей в AGENTS.md (через bmad-project-context).
   evidence: В `package.json` есть `test` (node --test, 80+ тестов), но AGENTS.md пишет «no automated test suite» и не требует его запускать.
+- source_spec: `_bmad-output/implementation-artifacts/spec-reservations-only-in-outputs.md`
+  summary: Вынести сборку аргументов `createProductionForOrder` (PO + черновик выпуска, `p_complete=false`, полный резерв) в чистую функцию и покрыть unit-тестом.
+  evidence: Сейчас async-функция зовёт Supabase напрямую, слоя моков RPC нет; регрессия `complete: false` → `true` превратит черновик в завершённый выпуск незаметно для тестов.
+- source_spec: `_bmad-output/implementation-artifacts/spec-reservations-only-in-outputs.md`
+  summary: Автотесты SQL-правил резерва в выпусках (запрет RSV на месте PO, план по неотменённым выпускам, split, `store_reserve_in_production_output`, отмена выпусков при закрытии/отмене PO).
+  evidence: В репозитории нет DB-harness; правила проверены только живым probe в транзакции с rollback.
+- source_spec: `_bmad-output/implementation-artifacts/spec-reservations-only-in-outputs.md`
+  summary: Ошибка гидратации React в `logistics-page-shell.tsx:33` на детальных страницах логистики (Next.js «1 Issue»).
+  evidence: Видна в dev-overlay на `/store/logistics/customer-orders/906`; файл этой задачей не менялся — существовала до неё.
+- source_spec: `_bmad-output/implementation-artifacts/spec-reservations-only-in-outputs.md`
+  summary: Снятие резерва внутри черновика выпуска (вернуть занятую строку в свободную) без отмены всего выпуска.
+  evidence: Вне объёма по спецификации; сейчас резерв из черновика снимается только отменой выпуска.

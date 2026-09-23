@@ -7,13 +7,16 @@ import {
   remainingToOutputForLine,
 } from "@/features/logistics/logistics-availability";
 import { lineLocationAllocations } from "@/features/logistics/allocation-atlas";
+import { calculateOrderDocumentCoverage } from "@/features/logistics/order-document-coverage";
+import {
+  relatedOutputsForOrder,
+  relatedProductionsForOrder,
+} from "@/features/logistics/logistics-related";
 import {
   documentNumber,
   matchDocumentParam,
   publicDocumentParam,
   type LogisticsSnapshot,
-  type Reservation,
-  type ReservationLine,
   type StockBalance,
 } from "@/features/logistics/logistics-types";
 
@@ -23,47 +26,21 @@ const snapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot
     reservationLines: [],
     outputs: [],
     outputLines: [],
+    outputAllocations: [],
     productionOrders: [],
+    productionOrderLines: [],
     customerOrders: [],
+    customerOrderLines: [],
     shipments: [],
+    shipmentLines: [],
     transfers: [],
+    transferLines: [],
+    transferAllocations: [],
     adjustments: [],
+    adjustmentLines: [],
+    transactions: [],
     ...overrides,
   }) as LogisticsSnapshot;
-
-const reservation = (overrides: Partial<Reservation> & Pick<Reservation, "id">): Reservation => ({
-  series: "RSV",
-  numberPrefix: "RSV",
-  sequenceNumber: overrides.sequenceNumber ?? overrides.id,
-  number: `RSV-${overrides.sequenceNumber ?? overrides.id}`,
-  locationType: "production_order",
-  locationId: "2000001",
-  stockLocationId: "1",
-  ownerId: "1",
-  toOwnerType: "order",
-  toOwnerId: "12",
-  status: "posted",
-  postedAt: "2026-09-22T00:00:00Z",
-  origin: "manual",
-  creationSource: "manual",
-  description: "",
-  note: "",
-  createdAt: "2026-09-22T00:00:00Z",
-  createdBy: "1",
-  ...overrides,
-});
-
-const reservationLine = (
-  overrides: Partial<ReservationLine> & Pick<ReservationLine, "id" | "reservationId">,
-): ReservationLine => ({
-  productId: "7",
-  quantity: 4,
-  fromOwnerType: null,
-  fromOwnerId: null,
-  productName: "Снимок",
-  productUnit: "шт",
-  ...overrides,
-});
 
 const poStock = (quantity: number): StockBalance => ({
   productId: "7",
@@ -106,10 +83,8 @@ describe("универсальные товарные строки", () => {
     );
   });
 
-  it("свободно на заказе производства = план − назначено − выпущено, журнал места не считается", () => {
+  it("свободно на заказе производства = план − неотменённые выпуски; занято — из активных выпусков", () => {
     const view = snapshot({
-      reservations: [reservation({ id: "3000001", locationId: "2000001" })],
-      reservationLines: [reservationLine({ id: "1", reservationId: "3000001", quantity: 4 })],
       outputs: [
         {
           id: "6000001",
@@ -119,6 +94,28 @@ describe("универсальные товарные строки", () => {
           productionOrderId: "2000001",
           status: "done",
           createdAt: "2026-09-22T00:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+        {
+          id: "6000002",
+          series: "OUT",
+          sequenceNumber: "2",
+          number: "OUT-2",
+          productionOrderId: "2000001",
+          status: "draft",
+          createdAt: "2026-09-22T01:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+        {
+          id: "6000003",
+          series: "OUT",
+          sequenceNumber: "3",
+          number: "OUT-3",
+          productionOrderId: "2000001",
+          status: "cancelled",
+          createdAt: "2026-09-22T02:00:00Z",
           createdBy: "1",
           expectedEndOn: null,
         },
@@ -132,8 +129,30 @@ describe("универсальные товарные строки", () => {
           quantity: 3,
           productName: "Снимок",
           productUnit: "шт",
-          toOwnerType: null,
-          toOwnerId: null,
+          toOwnerType: "order",
+          toOwnerId: "12",
+        },
+        {
+          id: "10",
+          outputId: "6000002",
+          productionOrderLineId: "",
+          productId: "7",
+          quantity: 4,
+          productName: "Снимок",
+          productUnit: "шт",
+          toOwnerType: "order",
+          toOwnerId: "12",
+        },
+        {
+          id: "12",
+          outputId: "6000003",
+          productionOrderLineId: "",
+          productId: "7",
+          quantity: 5,
+          productName: "Снимок",
+          productUnit: "шт",
+          toOwnerType: "order",
+          toOwnerId: "12",
         },
       ],
     });
@@ -144,14 +163,39 @@ describe("универсальные товарные строки", () => {
       view,
     );
 
+    // plan 10 − done 3 − draft 4 = 3 (cancelled ignored); reserved = draft owned only
     assert.equal(breakdown.free, 3);
     assert.equal(breakdown.reserved.reduce((sum, item) => sum + item.quantity, 0), 4);
   });
 
-  it("«В производстве» в атласе — назначение заказу, а не складской остаток на месте производства", () => {
+  it("«В производстве» в атласе — занятое в активных выпусках, а не RSV на месте PO", () => {
     const view = snapshot({
-      reservations: [reservation({ id: "3000001" })],
-      reservationLines: [reservationLine({ id: "1", reservationId: "3000001", quantity: 4 })],
+      outputs: [
+        {
+          id: "out-1",
+          series: "OUT",
+          sequenceNumber: "1",
+          number: "OUT-1",
+          productionOrderId: "2000001",
+          status: "draft",
+          createdAt: "2026-09-22T00:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+      ],
+      outputLines: [
+        {
+          id: "ol-1",
+          outputId: "out-1",
+          productionOrderLineId: "",
+          productId: "7",
+          quantity: 4,
+          productName: "Снимок",
+          productUnit: "шт",
+          toOwnerType: "order",
+          toOwnerId: "12",
+        },
+      ],
     });
     const allocation = lineLocationAllocations(
       [poStock(99)],
@@ -216,5 +260,163 @@ describe("универсальные товарные строки", () => {
 
     assert.equal(outputtedForProductionLine(view, "missing-plan-line"), 4);
     assert.equal(remainingToOutputForLine(view, "missing-plan-line", 10), 6);
+  });
+});
+
+describe("связанные документы и покрытие этапов из выпусков", () => {
+  const base = () =>
+    snapshot({
+      customerOrderLines: [
+        {
+          id: "col-1",
+          orderId: "12",
+          productId: "7",
+          quantity: 10,
+          productName: "A",
+          productUnit: "шт",
+        },
+      ],
+      productionOrders: [
+        {
+          id: "po-1",
+          series: "PO",
+          sequenceNumber: "1",
+          number: "PO-1",
+          plantId: "1",
+          status: "draft",
+          createdAt: "2026-09-22T00:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+      ],
+      productionOrderLines: [
+        {
+          id: "pol-1",
+          orderId: "po-1",
+          productId: "7",
+          quantity: 10,
+          productName: "A",
+          productUnit: "шт",
+          plantId: "1",
+          plantName: "Завод",
+          plantCode: "P1",
+        },
+      ],
+      outputs: [
+        {
+          id: "out-draft",
+          series: "OUT",
+          sequenceNumber: "1",
+          number: "OUT-1",
+          productionOrderId: "po-1",
+          status: "draft",
+          createdAt: "2026-09-22T00:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+        {
+          id: "out-done",
+          series: "OUT",
+          sequenceNumber: "2",
+          number: "OUT-2",
+          productionOrderId: "po-1",
+          status: "done",
+          createdAt: "2026-09-22T01:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+        {
+          id: "out-cancelled",
+          series: "OUT",
+          sequenceNumber: "3",
+          number: "OUT-3",
+          productionOrderId: "po-1",
+          status: "cancelled",
+          createdAt: "2026-09-22T02:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+      ],
+      outputLines: [
+        {
+          id: "ol-draft",
+          outputId: "out-draft",
+          productionOrderLineId: "pol-1",
+          productId: "7",
+          quantity: 4,
+          productName: "A",
+          productUnit: "шт",
+          toOwnerType: "order",
+          toOwnerId: "12",
+        },
+        {
+          id: "ol-done",
+          outputId: "out-done",
+          productionOrderLineId: "pol-1",
+          productId: "7",
+          quantity: 3,
+          productName: "A",
+          productUnit: "шт",
+          toOwnerType: "order",
+          toOwnerId: "12",
+        },
+        {
+          id: "ol-cancelled",
+          outputId: "out-cancelled",
+          productionOrderLineId: "pol-1",
+          productId: "7",
+          quantity: 2,
+          productName: "A",
+          productUnit: "шт",
+          toOwnerType: "order",
+          toOwnerId: "12",
+        },
+      ],
+      transactions: [
+        {
+          id: "tx-1",
+          createdAt: "2026-09-22T01:00:00Z",
+          productVariantId: "7",
+          productId: "7",
+          quantity: 3,
+          stockLocationId: "wh-1",
+          stockOwnerId: "12",
+          documentId: "out-done",
+          documentKind: "output",
+          locationType: "warehouse",
+          locationId: "wh-1",
+          ownerKind: "customer_order",
+          stockState: "reserved",
+          assignedToType: "order",
+          assignedToId: "12",
+          documentType: "output",
+          ownerType: "order",
+          ownerId: "12",
+        },
+      ],
+    });
+
+  it("черновик выпуска под CO даёт PO и OUT в связанных и в coverage", () => {
+    const view = base();
+    const productions = relatedProductionsForOrder(view, "12");
+    const outputs = relatedOutputsForOrder(view, "12");
+    assert.ok(productions.some((item) => item.id === "po-1"));
+    assert.ok(outputs.some((item) => item.id === "out-draft"));
+    assert.ok(!outputs.some((item) => item.id === "out-cancelled"));
+
+    const coverage = calculateOrderDocumentCoverage(view, "12");
+    // percents: production (4+3)/10, draft 4/10, done 3/10 via ledger
+    assert.equal(coverage.production.get("po-1"), 70);
+    assert.equal(coverage.output.get("out-draft"), 40);
+    assert.equal(coverage.output.get("out-done"), 30);
+    assert.equal(coverage.output.has("out-cancelled"), false);
+  });
+
+  it("done покрывает production, а active-loop не дублирует output", () => {
+    const view = base();
+    const coverage = calculateOrderDocumentCoverage(view, "12");
+    assert.equal(coverage.production.get("po-1"), 70);
+    assert.equal(coverage.output.get("out-draft"), 40);
+    assert.equal(coverage.output.get("out-done"), 30);
   });
 });

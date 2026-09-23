@@ -372,6 +372,89 @@ export const placeStockBreakdown = (
   };
 };
 
+export const isActiveProductionOutputStatus = (status: string | null | undefined): boolean =>
+  status === "draft" || status === "planned" || status === "in_progress";
+
+export const isUncancelledProductionOutputStatus = (status: string | null | undefined): boolean =>
+  status != null && status !== "cancelled";
+
+/** Qty already reserved for a CO product in active (draft/in_progress) outputs. */
+export const reservedInActiveOutputsForOrderProduct = (
+  snapshot: LogisticsSnapshot,
+  orderId: string,
+  productId: string,
+): number => {
+  let total = 0;
+  for (const line of snapshot.outputLines) {
+    if (line.productId !== productId) {
+      continue;
+    }
+    if (!ownersEqual(line.toOwnerType, line.toOwnerId, "order", orderId)) {
+      continue;
+    }
+    const output = snapshot.outputs.find((item) => item.id === line.outputId);
+    if (!output || !isActiveProductionOutputStatus(output.status)) {
+      continue;
+    }
+    total += line.quantity;
+  }
+  return total;
+};
+
+/** Free (unowned) qty of a product inside one draft output. */
+export const freeInDraftOutput = (
+  snapshot: LogisticsSnapshot,
+  outputId: string,
+  productId: string,
+): number => {
+  const output = snapshot.outputs.find((item) => item.id === outputId);
+  if (!output || (output.status !== "draft" && output.status !== "planned")) {
+    return 0;
+  }
+  return snapshot.outputLines
+    .filter(
+      (line) =>
+        line.outputId === outputId &&
+        line.productId === productId &&
+        isFreeOwner(line.toOwnerType, line.toOwnerId),
+    )
+    .reduce((sum, line) => sum + line.quantity, 0);
+};
+
+/** Plan minus all uncancelled output lines for the PO product. */
+export const remainingPlanForProductionProduct = (
+  snapshot: LogisticsSnapshot,
+  productionOrderId: string,
+  productId: string,
+  planQuantity: number,
+): number => {
+  const committed = snapshot.outputLines
+    .filter((line) => {
+      if (line.productId !== productId) {
+        return false;
+      }
+      const output = snapshot.outputs.find((item) => item.id === line.outputId);
+      return (
+        output?.productionOrderId === productionOrderId &&
+        isUncancelledProductionOutputStatus(output.status)
+      );
+    })
+    .reduce((sum, line) => sum + line.quantity, 0);
+  return Math.max(0, planQuantity - committed);
+};
+
+/** Form cap: warehouse remaining-to-reserve minus already reserved in active outputs. */
+export const remainingToReserveInProductionOutputsForLine = (
+  line: CustomerOrderLine,
+  balances: StockBalance[],
+  snapshot: LogisticsSnapshot,
+): number =>
+  Math.max(
+    0,
+    remainingToReserveForLine(line, balances) -
+      reservedInActiveOutputsForOrderProduct(snapshot, line.orderId, line.productId),
+  );
+
 export const productionDemandAssigned = (
   snapshot: LogisticsSnapshot,
   productionOrderId: string,
@@ -379,40 +462,31 @@ export const productionDemandAssigned = (
 ): ProductionLineReservation[] => {
   const byOwner = new Map<string, ProductionLineReservation>();
 
-  for (const reservation of snapshot.reservations) {
+  for (const line of snapshot.outputLines) {
+    if (line.productId !== productId) {
+      continue;
+    }
+    if (isFreeOwner(line.toOwnerType, line.toOwnerId) || !line.toOwnerType || !line.toOwnerId) {
+      continue;
+    }
+    const output = snapshot.outputs.find((item) => item.id === line.outputId);
     if (
-      reservation.locationType !== "production_order" ||
-      reservation.locationId !== productionOrderId ||
-      reservation.status !== "posted"
+      !output ||
+      output.productionOrderId !== productionOrderId ||
+      !isActiveProductionOutputStatus(output.status)
     ) {
       continue;
     }
-    for (const line of snapshot.reservationLines) {
-      if (line.reservationId !== reservation.id || line.productId !== productId) {
-        continue;
-      }
-      let ownerType: OwnerType | null = null;
-      let ownerId: string | null = null;
-      let signed = 0;
-      if (reservation.toOwnerType && isFreeOwner(line.fromOwnerType, line.fromOwnerId)) {
-        ownerType = reservation.toOwnerType;
-        ownerId = reservation.toOwnerId;
-        signed = line.quantity;
-      } else if (isFreeOwner(reservation.toOwnerType, reservation.toOwnerId) && line.fromOwnerType) {
-        ownerType = line.fromOwnerType;
-        ownerId = line.fromOwnerId;
-        signed = -line.quantity;
-      }
-      if (!ownerType || !ownerId || Math.abs(signed) < 1e-9) {
-        continue;
-      }
-      const key = `${ownerType}:${ownerId}`;
-      const current = byOwner.get(key);
-      if (current) {
-        current.quantity += signed;
-      } else {
-        byOwner.set(key, { ownerType, ownerId, quantity: signed });
-      }
+    const key = `${line.toOwnerType}:${line.toOwnerId}`;
+    const current = byOwner.get(key);
+    if (current) {
+      current.quantity += line.quantity;
+    } else {
+      byOwner.set(key, {
+        ownerType: line.toOwnerType,
+        ownerId: line.toOwnerId,
+        quantity: line.quantity,
+      });
     }
   }
 
@@ -455,10 +529,13 @@ export const productionLineReservationBreakdown = (
 
   const productionOrderId = line.orderId ?? line.id;
   const reserved = productionDemandAssigned(snapshot, productionOrderId, line.productId);
-  const reservedTotal = reserved.reduce((sum, item) => sum + item.quantity, 0);
-  const produced = producedForProductionProduct(snapshot, productionOrderId, line.productId);
   const plan = line.quantity ?? 0;
-  const free = Math.max(0, plan - reservedTotal - produced);
+  const free = remainingPlanForProductionProduct(
+    snapshot,
+    productionOrderId,
+    line.productId,
+    plan,
+  );
   return { free, reserved };
 };
 

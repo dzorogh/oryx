@@ -112,9 +112,6 @@ export const calculateOrderDocumentCoverage = (
   const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === customerOrderId);
   const quantities = createCoverageQuantities();
   const reservations = reservationById(snapshot, customerOrderId);
-  const productionOrderByLine = new Map(
-    snapshot.productionOrderLines.map((line) => [line.id, line.orderId]),
-  );
 
   for (const line of snapshot.reservationLines) {
     const reservation = reservations.get(line.reservationId);
@@ -140,15 +137,38 @@ export const calculateOrderDocumentCoverage = (
     );
     const coversLocation = destinationIsOrder || direction === "reserve";
 
-    if (coversLocation && reservation.locationType === "production_order") {
-      const productionId = snapshot.productionOrders.some((item) => item.id === reservation.locationId)
-        ? reservation.locationId
-        : (productionOrderByLine.get(reservation.locationId) ?? reservation.locationId);
-      addQuantity(quantities.production, productionId, orderLine.id, line.quantity);
-    }
-
     if (coversLocation && reservation.locationType === "transfer") {
       addQuantity(quantities.transfer, reservation.locationId, orderLine.id, line.quantity);
+    }
+  }
+
+  for (const outputLine of snapshot.outputLines) {
+    if (!ownersEqual(outputLine.toOwnerType, outputLine.toOwnerId, "order", customerOrderId)) {
+      continue;
+    }
+    const output = snapshot.outputs.find((item) => item.id === outputLine.outputId);
+    if (!output || output.status === "cancelled") {
+      continue;
+    }
+    const status = output.status;
+    const active = status === "draft" || status === "planned" || status === "in_progress";
+    addForProduct(
+      quantities.production,
+      output.productionOrderId,
+      orderLines,
+      customerOrderId,
+      outputLine.productId,
+      outputLine.quantity,
+    );
+    if (active) {
+      addForProduct(
+        quantities.output,
+        output.id,
+        orderLines,
+        customerOrderId,
+        outputLine.productId,
+        outputLine.quantity,
+      );
     }
   }
 

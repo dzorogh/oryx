@@ -384,9 +384,7 @@ export const ReservationForm = ({
     for (const entry of balances) {
       if (
         entry.quantity <= 1e-9 ||
-        (entry.locationType !== "warehouse" &&
-          entry.locationType !== "production_order" &&
-          entry.locationType !== "transfer")
+        (entry.locationType !== "warehouse" && entry.locationType !== "transfer")
       ) {
         continue;
       }

@@ -552,7 +552,7 @@ export const CustomerOrderDetailPage = () => {
       actions: canAct
         ? [
             { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
-            { label: "Зарезервировать в заказе на производство", onClick: () => setReserveOnProductionOpen(true) },
+            { label: "Зарезервировать в выпуске", onClick: () => setReserveOnProductionOpen(true) },
           ]
         : undefined,
     },
@@ -814,7 +814,7 @@ export const CustomerOrderDetailPage = () => {
           fromOwnerType: "order",
           fromOwnerId: order.id,
           productId: releasePlace?.line.productId,
-          locationType: releasePlace?.locationType === "customer_order" ? undefined : releasePlace?.locationType as "warehouse" | "production_order" | "transfer" | undefined,
+          locationType: releasePlace?.locationType === "customer_order" || releasePlace?.locationType === "production_order" ? undefined : releasePlace?.locationType as "warehouse" | "transfer" | undefined,
           locationId: releasePlace?.locationId,
         }}
       />

@@ -36,31 +36,22 @@ export const lineLocationAllocations = (
   const byWarehouseId: Record<string, number> = {};
 
   if (snapshot) {
-    for (const reservation of snapshot.reservations) {
-      if (reservation.locationType !== "production_order" || reservation.status !== "posted") {
+    for (const outputLine of snapshot.outputLines) {
+      if (outputLine.productId !== line.productId) {
         continue;
       }
-      for (const rLine of snapshot.reservationLines) {
-        if (rLine.reservationId !== reservation.id || rLine.productId !== line.productId) {
-          continue;
-        }
-        if (
-          reservation.toOwnerType === "order" &&
-          reservation.toOwnerId === line.orderId &&
-          !rLine.fromOwnerType
-        ) {
-          inProduction += rLine.quantity;
-        } else if (
-          rLine.fromOwnerType === "order" &&
-          rLine.fromOwnerId === line.orderId &&
-          !reservation.toOwnerType
-        ) {
-          inProduction -= rLine.quantity;
-        }
+      if (!ownersEqual(outputLine.toOwnerType, outputLine.toOwnerId, "order", line.orderId)) {
+        continue;
       }
-    }
-    if (inProduction < 0) {
-      inProduction = 0;
+      const output = snapshot.outputs.find((item) => item.id === outputLine.outputId);
+      if (!output) {
+        continue;
+      }
+      const status = output.status;
+      if (status !== "draft" && status !== "planned" && status !== "in_progress") {
+        continue;
+      }
+      inProduction += outputLine.quantity;
     }
   }
 
@@ -72,6 +63,7 @@ export const lineLocationAllocations = (
       continue;
     }
     if (entry.locationType === "production_order") {
+      // Legacy PO-location stock is ignored when snapshot drives inProduction.
       if (!snapshot) {
         inProduction += entry.quantity;
       }

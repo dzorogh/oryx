@@ -9,7 +9,7 @@ import {
   productById,
   productIdentityLabel,
 } from "@/features/logistics/logistics-lookups";
-import { remainingToReserveForLine } from "@/features/logistics/logistics-availability";
+import { remainingToReserveInProductionOutputsForLine } from "@/features/logistics/logistics-availability";
 import type { LogisticsSnapshot, ProductionOrderLine, StockBalance } from "@/features/logistics/logistics-types";
 
 export type ProductionOutputDraftLine = {
@@ -65,11 +65,14 @@ export const ProductionOutputLinesFields = ({
           })
           .map((line) => ({
             value: line.id,
-            label: `${customerOrderById(snapshot, line.orderId)?.number ?? line.orderId} · можно ${formatQuantity(remainingToReserveForLine(line, balances))}`,
+            label: `${customerOrderById(snapshot, line.orderId)?.number ?? line.orderId} · можно ${formatQuantity(remainingToReserveInProductionOutputsForLine(line, balances, snapshot))}`,
           }));
         const allocLine = snapshot.customerOrderLines.find((line) => line.id === draft.allocOrderLineId);
         const allocMax = allocLine
-          ? Math.min(quantity || remaining, remainingToReserveForLine(allocLine, balances))
+          ? Math.min(
+              quantity || remaining,
+              remainingToReserveInProductionOutputsForLine(allocLine, balances, snapshot),
+            )
           : 0;
 
         const patch = (partial: Partial<ProductionOutputDraftLine>) => {

@@ -18,21 +18,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
-import { remainingToReserve, sumLocationState } from "@/features/logistics/logistics-balances";
 import {
+  freeInDraftOutput,
   openOrderLinesForProduct,
-  productionLineReservationBreakdown,
-  remainingToReserveForLine,
+  remainingPlanForProductionProduct,
+  remainingToReserveInProductionOutputsForLine,
 } from "@/features/logistics/logistics-availability";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { assertEnoughStock, assertProductionOutputLines } from "@/features/logistics/logistics-rules";
 import {
   addProductionLine,
   closeProductionOrder,
-  createAndPostReservation,
   createProductionOrder,
   createProductionOutput,
   loadProductionOrderList,
+  reserveInProductionOutput,
   setProductionStatus,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
@@ -402,6 +402,7 @@ export const ProductionOrderDetailPage = () => {
   const [reserveLineId, setReserveLineId] = useState("");
   const [reserveOrderLineId, setReserveOrderLineId] = useState("");
   const [reserveQuantity, setReserveQuantity] = useState("1");
+  const [reserveTargetKey, setReserveTargetKey] = useState("");
 
   const [outputOpen, setOutputOpen] = useState(false);
   const [outputPending, setOutputPending] = useState(false);
@@ -421,7 +422,10 @@ export const ProductionOrderDetailPage = () => {
     () => (order ? snapshot.productionOrderLines.filter((line) => line.orderId === order.id) : []),
     [order, snapshot.productionOrderLines],
   );
-  const outputs = order ? snapshot.outputs.filter((item) => item.productionOrderId === order.id) : [];
+  const outputs = useMemo(
+    () => (order ? snapshot.outputs.filter((item) => item.productionOrderId === order.id) : []),
+    [order, snapshot.outputs],
+  );
   const doneByLine = useMemo(() => {
     const byProduct = new Map<string, number>();
     for (const outputLine of snapshot.outputLines) {
@@ -457,24 +461,56 @@ export const ProductionOrderDetailPage = () => {
   );
 
   const reserveLine = lines.find((line) => line.id === reserveLineId);
-  const reserveFree = reserveLine
-    ? sumLocationState(balances, {
-      locationType: "production_order",
-      locationId: params.orderId,
-      stockState: "free",
-      productId: reserveLine.productId,
-    })
+  const reservePlanRoom = reserveLine && order
+    ? remainingPlanForProductionProduct(snapshot, order.id, reserveLine.productId, reserveLine.quantity)
     : 0;
+  type ReserveTarget =
+    | { kind: "new"; available: number }
+    | { kind: "draft"; outputId: string; available: number };
+  const reserveTargets: ReserveTarget[] = useMemo(() => {
+    if (!reserveLine || !order) {
+      return [];
+    }
+    const targets: ReserveTarget[] = [];
+    if (reservePlanRoom > 0) {
+      targets.push({ kind: "new", available: reservePlanRoom });
+    }
+    for (const output of outputs) {
+      if (output.status !== "draft" && output.status !== "planned") {
+        continue;
+      }
+      const free = freeInDraftOutput(snapshot, output.id, reserveLine.productId);
+      if (free > 0) {
+        targets.push({ kind: "draft", outputId: output.id, available: free });
+      }
+    }
+    return targets;
+  }, [order, outputs, reserveLine, reservePlanRoom, snapshot]);
+  const selectedReserveTarget =
+    reserveTargets.find((target) =>
+      target.kind === "new" ? reserveTargetKey === "new" : reserveTargetKey === `draft:${target.outputId}`,
+    ) ?? reserveTargets[0];
+  const effectiveReserveTargetKey = selectedReserveTarget
+    ? selectedReserveTarget.kind === "new"
+      ? "new"
+      : `draft:${selectedReserveTarget.outputId}`
+    : "";
   const reserveOrderLine = snapshot.customerOrderLines.find((line) => line.id === reserveOrderLineId);
   const reserveOrderItems = reserveLine
-    ? openOrderLinesForProduct(snapshot, balances, reserveLine.productId).map((line) => ({
-        value: line.id,
-        label: `${customerOrderById(snapshot, line.orderId)?.number ?? line.orderId} · осталось ${formatQuantity(remainingToReserveForLine(line, balances))}`,
-      }))
+    ? openOrderLinesForProduct(snapshot, balances, reserveLine.productId)
+        .filter((line) => remainingToReserveInProductionOutputsForLine(line, balances, snapshot) > 0)
+        .map((line) => ({
+          value: line.id,
+          label: `${customerOrderById(snapshot, line.orderId)?.number ?? line.orderId} · осталось ${formatQuantity(remainingToReserveInProductionOutputsForLine(line, balances, snapshot))}`,
+        }))
     : [];
-  const reserveMax = reserveLine && reserveOrderLine
-    ? Math.min(reserveFree, remainingToReserveForLine(reserveOrderLine, balances))
-    : undefined;
+  const reserveFormCap = reserveOrderLine
+    ? remainingToReserveInProductionOutputsForLine(reserveOrderLine, balances, snapshot)
+    : 0;
+  const reserveMax =
+    selectedReserveTarget && reserveOrderLine
+      ? Math.min(selectedReserveTarget.available, reserveFormCap)
+      : undefined;
 
   const outputEligibleLines = lines.filter((line) => line.quantity - (doneByLine.get(line.id) ?? 0) > 0);
   const remainingForOutput = (lineId: string) => {
@@ -534,7 +570,7 @@ export const ProductionOrderDetailPage = () => {
         }
         const allocMax = Math.min(
           Number(draft.quantity),
-          remainingToReserveForLine(allocLine, balances),
+          remainingToReserveInProductionOutputsForLine(allocLine, balances, snapshot),
         );
         assertEnoughStock(allocMax, Number(draft.allocQty), "open order");
       }
@@ -760,14 +796,35 @@ export const ProductionOrderDetailPage = () => {
                       if (!line) {
                         return;
                       }
-                      const breakdown = productionLineReservationBreakdown(line, snapshot);
-                      const eligible = openOrderLinesForProduct(snapshot, balances, line.productId);
+                      const planRoom = remainingPlanForProductionProduct(
+                        snapshot,
+                        order.id,
+                        line.productId,
+                        line.quantity,
+                      );
+                      const draftTargets = outputs
+                        .filter((output) => output.status === "draft" || output.status === "planned")
+                        .map((output) => ({
+                          output,
+                          free: freeInDraftOutput(snapshot, output.id, line.productId),
+                        }))
+                        .filter((item) => item.free > 0);
+                      const eligible = openOrderLinesForProduct(snapshot, balances, line.productId).filter(
+                        (item) =>
+                          remainingToReserveInProductionOutputsForLine(item, balances, snapshot) > 0,
+                      );
                       const first = eligible.length === 1 ? eligible[0] : undefined;
-                      const cap = first
-                        ? Math.min(breakdown.free, remainingToReserveForLine(first, balances))
-                        : breakdown.free;
+                      const firstTargetAvailable =
+                        planRoom > 0
+                          ? planRoom
+                          : (draftTargets[0]?.free ?? 0);
+                      const formCap = first
+                        ? remainingToReserveInProductionOutputsForLine(first, balances, snapshot)
+                        : firstTargetAvailable;
+                      const cap = Math.min(firstTargetAvailable, formCap);
                       setReserveLineId(line.id);
                       setReserveOrderLineId(first?.id ?? "");
+                      setReserveTargetKey(planRoom > 0 ? "new" : draftTargets[0] ? `draft:${draftTargets[0].output.id}` : "");
                       setReserveQuantity(String(cap > 0 ? cap : 1));
                       setReserveError(null);
                       setReserveOpen(true);
@@ -954,14 +1011,20 @@ export const ProductionOrderDetailPage = () => {
             setReserveError(null);
           }
         }}
-        title="Зарезервировать"
+        title="Зарезервировать в выпуске"
         description={
           reserveLine
-            ? `${productIdentityLabel(productById(snapshot, reserveLine.productId), reserveLine.productId)}. Свободно ${formatQuantity(reserveFree)}.`
+            ? `${productIdentityLabel(productById(snapshot, reserveLine.productId), reserveLine.productId)}. Остаток плана ${formatQuantity(reservePlanRoom)}.`
             : "Выберите товар в таблице."
         }
       >
         <div className="flex flex-col gap-3">
+          <div
+            role="status"
+            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          >
+            Резерв будет в черновике выпуска этого заказа на производство.
+          </div>
           {reserveOrderItems.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Нет открытых заказов клиента с незарезервированным количеством этого товара.
@@ -976,18 +1039,46 @@ export const ProductionOrderDetailPage = () => {
               onChange={(value) => {
                 setReserveOrderLineId(value);
                 const line = snapshot.customerOrderLines.find((item) => item.id === value);
-                const cap = line
-                  ? Math.min(reserveFree, remainingToReserveForLine(line, balances))
-                  : reserveFree;
+                const formCap = line
+                  ? remainingToReserveInProductionOutputsForLine(line, balances, snapshot)
+                  : 0;
+                const available = selectedReserveTarget?.available ?? reservePlanRoom;
+                const cap = Math.min(available, formCap);
                 setReserveQuantity(String(cap > 0 ? cap : 1));
               }}
             />
           )}
+          <FieldSelect
+            label="Куда зарезервировать"
+            value={effectiveReserveTargetKey}
+            items={reserveTargets.map((target) =>
+              target.kind === "new"
+                ? {
+                    value: "new",
+                    label: `Новый выпуск · можно ${formatQuantity(target.available)}`,
+                  }
+                : {
+                    value: `draft:${target.outputId}`,
+                    label: `${snapshot.outputs.find((item) => item.id === target.outputId)?.number ?? target.outputId} · свободно ${formatQuantity(target.available)}`,
+                  },
+            )}
+            disabled={reservePending || reserveTargets.length === 0}
+            placeholder="Выберите цель"
+            emptyLabel="Нет места в плане и нет свободного черновика выпуска"
+            onChange={(value) => {
+              setReserveTargetKey(value);
+              const next = reserveTargets.find((target) =>
+                target.kind === "new" ? value === "new" : value === `draft:${target.outputId}`,
+              );
+              const cap = next ? Math.min(next.available, reserveFormCap) : 0;
+              setReserveQuantity(String(cap > 0 ? cap : 1));
+            }}
+          />
           <QuantityField
             value={reserveQuantity}
             onChange={setReserveQuantity}
             max={reserveMax}
-            disabled={reservePending || reserveOrderItems.length === 0 || !reserveOrderLine}
+            disabled={reservePending || reserveOrderItems.length === 0 || !reserveOrderLine || !selectedReserveTarget}
           />
           {reserveError ? (
             <p role="alert" className="text-sm text-destructive">
@@ -1009,20 +1100,29 @@ export const ProductionOrderDetailPage = () => {
                 reservePending ||
                 !reserveLine ||
                 !reserveOrderLine ||
+                !selectedReserveTarget ||
                 !isAllowedQuantity(reserveQuantity, reserveMax) ||
                 reserveOrderItems.length === 0
               }
               onClick={() => {
                 const orderLine = reserveOrderLine;
-                if (!reserveLine || !orderLine || !isAllowedQuantity(reserveQuantity, reserveMax)) {
-                  setReserveError("Выберите заказ клиента и количество");
+                if (
+                  !reserveLine ||
+                  !orderLine ||
+                  !selectedReserveTarget ||
+                  !isAllowedQuantity(reserveQuantity, reserveMax)
+                ) {
+                  setReserveError("Выберите заказ клиента, цель и количество");
                   return;
                 }
-                if (Number(reserveQuantity) > reserveFree) {
-                  setReserveError("Нельзя зарезервировать больше свободного количества");
+                if (Number(reserveQuantity) > selectedReserveTarget.available) {
+                  setReserveError("Нельзя зарезервировать больше доступного количества");
                   return;
                 }
-                if (Number(reserveQuantity) > remainingToReserve(orderLine.quantity, balances, orderLine)) {
+                if (
+                  Number(reserveQuantity) >
+                  remainingToReserveInProductionOutputsForLine(orderLine, balances, snapshot)
+                ) {
                   setReserveError("Нельзя зарезервировать больше открытого количества заказа клиента");
                   return;
                 }
@@ -1030,25 +1130,38 @@ export const ProductionOrderDetailPage = () => {
                 setReserveError(null);
                 void (async () => {
                   try {
-                    await createAndPostReservation({
-                      locationType: "production_order",
-                      locationId: params.orderId,
-                      toOwnerType: "order",
-                      toOwnerId: orderLine.orderId,
-                      lines: [
-                        {
-                          productId: orderLine.productId,
-                          quantity: Number(reserveQuantity),
-                          fromOwnerType: null,
-                          fromOwnerId: null,
-                        },
-                      ],
-                    });
+                    const qty = Number(reserveQuantity);
+                    if (selectedReserveTarget.kind === "new") {
+                      await createProductionOutput({
+                        orderId: order.id,
+                        expectedEndOn: order.expectedEndOn ?? null,
+                        complete: false,
+                        lines: [
+                          {
+                            productId: orderLine.productId,
+                            quantity: qty,
+                            allocation: {
+                              ownerType: "order",
+                              ownerId: orderLine.orderId,
+                              quantity: qty,
+                            },
+                          },
+                        ],
+                      });
+                    } else {
+                      await reserveInProductionOutput({
+                        outputId: selectedReserveTarget.outputId,
+                        ownerType: "order",
+                        ownerId: orderLine.orderId,
+                        lines: [{ productId: orderLine.productId, quantity: qty }],
+                      });
+                    }
                     await reload();
                     setReserveOpen(false);
                     setReserveOrderLineId("");
+                    setReserveTargetKey("");
                     setReserveQuantity("1");
-                    toast.success("Резерв проведён");
+                    toast.success("Резерв в выпуске создан");
                   } catch (caught) {
                     setReserveError(
                       translateLogisticsError(caught instanceof Error ? caught.message : "Не удалось зарезервировать"),

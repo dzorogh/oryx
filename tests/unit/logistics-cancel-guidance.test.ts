@@ -224,15 +224,14 @@ describe("помощник отмены складских документов"
     assert.match(guidance.closeEffects ?? "", /не отменяет и не откатывает связанные документы/);
   });
 
-  it("для активного заказа на производство описывает снятие резервов и сохранение выпусков", () => {
+  it("для активного заказа на производство описывает отмену незавершённых выпусков", () => {
     const guidance = projectCancelGuidance(facts({ type: "production_order", status: "in_progress" }));
     commonCopyPresent(guidance);
     assert.equal(guidance.actions[0]?.id, "close-production-order");
     assert.equal(guidance.actions[0]?.label, "Закрыть заказ");
     assert.equal(guidance.closeEffects, CANCEL_GUIDANCE_PRODUCTION_CLOSE);
-    assert.match(guidance.closeEffects ?? "", /невыполненную потребность/);
+    assert.match(guidance.closeEffects ?? "", /незавершённые выпуски/);
     assert.match(guidance.closeEffects ?? "", /Складской остаток не списывается/);
-    assert.doesNotMatch(guidance.closeEffects ?? "", /незавершённый остаток/);
     assert.match(guidance.closeEffects ?? "", /Завершённые выпуски и связанные документы не отменяются/);
   });
 

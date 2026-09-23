@@ -193,6 +193,34 @@ describe("mapLogisticsPayload", () => {
     assert.equal(region?.locationId, "9");
   });
 
+  it("maps output line owners to customer order ids, not stock owner ids", () => {
+    const mapped = mapLogisticsPayload({
+      document_kinds: [
+        { code: "customer_order", number_prefix: "OMS" },
+        { code: "production_output", number_prefix: "OUT" },
+      ],
+      documents: [
+        { id: 12, kind: "customer_order", sequence_number: 12, status: "in_progress", created_at: "2026-01-01T00:00:00Z" },
+        { id: 30, kind: "production_output", sequence_number: 5, status: "draft", created_at: "2026-01-02T00:00:00Z" },
+      ],
+      customer_orders: [{ id: 12, region_id: 1, stock_location_id: 100, stock_owner_id: 50 }],
+      production_outputs: [{ id: 30, production_order_id: 9 }],
+      stock_owners: [
+        { id: 1, kind: "free" },
+        { id: 50, kind: "customer_order" },
+      ],
+      document_product_lines: [
+        { id: 1, document_id: 30, product_variant_id: 7, quantity: 2, from_owner_id: null, to_owner_id: 50 },
+        { id: 2, document_id: 30, product_variant_id: 7, quantity: 3, from_owner_id: null, to_owner_id: 1 },
+      ],
+    });
+    const [owned, free] = mapped.snapshot.outputLines;
+    assert.equal(owned?.toOwnerType, "order");
+    assert.equal(owned?.toOwnerId, "12");
+    assert.equal(free?.toOwnerType, null);
+    assert.equal(free?.toOwnerId, null);
+  });
+
   it("honors found=false from context RPCs", () => {
     const mapped = mapLogisticsPayload({ found: false });
     assert.equal(mapped.found, false);
