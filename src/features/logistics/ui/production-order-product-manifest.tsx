@@ -5,36 +5,30 @@ import { Fragment, useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { hrefForOwner, productionLineReservationBreakdown } from "@/features/logistics/logistics-availability";
+import {
+  hrefForOwner,
+  productionProductOutputs,
+  remainingPlanForProductionProduct,
+  type ProductionLineReservation,
+  type ProductionProductOutputRow,
+} from "@/features/logistics/logistics-availability";
 import { formatQuantity, LEDGER_ASSIGNED_TO_KIND_LABELS } from "@/features/logistics/logistics-labels";
 import { ownerLabel, productById, productCode } from "@/features/logistics/logistics-lookups";
-import type {
-  LogisticsSnapshot,
-  OwnerType,
-  ProductionOrderLine,
-  StockBalance,
-} from "@/features/logistics/logistics-types";
+import type { LogisticsSnapshot, ProductionOrderLine } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DOCUMENT_TABLE_HEAD_CLASS } from "@/features/logistics/ui/logistics-table-card";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { OutputStatusBadge } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
 
-type ReservationAssignment = {
-  ownerType: OwnerType;
-  ownerId: string;
-  quantity: number;
-};
-
-const ReserveDisclosure = ({
+const Disclosure = ({
   open,
-  name,
-  code,
+  label,
   controls,
   onToggle,
 }: {
   open: boolean;
-  name: string;
-  code: string;
+  label: string;
   controls: string;
   onToggle: () => void;
 }) => (
@@ -43,7 +37,7 @@ const ReserveDisclosure = ({
     className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-foreground md:size-8"
     aria-expanded={open}
     aria-controls={open ? controls : undefined}
-    aria-label={open ? `Свернуть резервы ${name}, ${code}` : `Развернуть резервы ${name}, ${code}`}
+    aria-label={open ? `Свернуть ${label}` : `Развернуть ${label}`}
     onClick={onToggle}
   >
     <ChevronRight
@@ -56,56 +50,241 @@ const ReserveDisclosure = ({
 const ReservationOwner = ({
   snapshot,
   assignment,
-  indent = false,
+  released = false,
 }: {
   snapshot: LogisticsSnapshot;
-  assignment: ReservationAssignment;
-  indent?: boolean;
+  assignment: ProductionLineReservation;
+  released?: boolean;
 }) => (
   <div className="flex min-w-0 items-center gap-2">
-    {indent ? <span className="inline-block size-8 shrink-0" aria-hidden /> : null}
     <span className="text-sm text-muted-foreground">
+      {released ? "Выпущено под: " : null}
       {LEDGER_ASSIGNED_TO_KIND_LABELS[assignment.ownerType]}
     </span>
     <LogisticsCodeBadge
       code={ownerLabel(snapshot, assignment.ownerType, assignment.ownerId)}
-      href={hrefForOwner(assignment.ownerType, assignment.ownerId) ?? undefined}
+      href={hrefForOwner(assignment.ownerType, assignment.ownerId, snapshot) ?? undefined}
     />
   </div>
 );
 
+const outputHref = (row: ProductionProductOutputRow) => `/store/logistics/outputs/${row.output.sequenceNumber}`;
+
+const sortedReserved = (snapshot: LogisticsSnapshot, row: ProductionProductOutputRow) =>
+  [...row.reserved].sort((left, right) =>
+    ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(
+      ownerLabel(snapshot, right.ownerType, right.ownerId),
+    ),
+  );
+
+const reservedTotal = (row: ProductionProductOutputRow) =>
+  row.reserved.reduce((sum, item) => sum + item.quantity, 0);
+
+const NUM_CELL = "px-3 py-1.5 text-right text-sm tabular-nums";
+const MUTED_ZERO = "text-muted-foreground/50";
+
+const OutputsTable = ({
+  snapshot,
+  lineId,
+  rows,
+  unit,
+  expandedOutputs,
+  onToggleOutput,
+}: {
+  snapshot: LogisticsSnapshot;
+  lineId: string;
+  rows: ProductionProductOutputRow[];
+  unit?: string;
+  expandedOutputs: Set<string>;
+  onToggleOutput: (key: string) => void;
+}) => {
+  const q = (n: number) => formatQuantity(n, unit);
+  if (rows.length === 0) {
+    return <p className="px-3 py-3 text-sm text-muted-foreground">Выпусков с этим товаром пока нет.</p>;
+  }
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Выпуск</TableHead>
+          <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Статус</TableHead>
+          <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>Количество</TableHead>
+          <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>Свободно</TableHead>
+          <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>В резерве</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => {
+          const key = `${lineId}:${row.output.id}`;
+          const isOpen = expandedOutputs.has(key);
+          const panelId = `po-output-${key}`;
+          const reserved = reservedTotal(row);
+          return (
+            <Fragment key={row.output.id}>
+              <TableRow className="hover:bg-transparent">
+                <TableCell className="px-3 py-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Disclosure
+                      open={isOpen}
+                      label={`резервы выпуска ${row.output.number}`}
+                      controls={panelId}
+                      onToggle={() => onToggleOutput(key)}
+                    />
+                    <LogisticsCodeBadge code={row.output.number} href={outputHref(row)} />
+                  </div>
+                </TableCell>
+                <TableCell className="px-3 py-1.5">
+                  <OutputStatusBadge status={row.output.status} />
+                </TableCell>
+                <TableCell className={NUM_CELL}>{q(row.quantity)}</TableCell>
+                <TableCell className={cn(NUM_CELL, row.free > 0 ? undefined : MUTED_ZERO)}>{q(row.free)}</TableCell>
+                <TableCell className={cn(NUM_CELL, reserved > 0 ? undefined : MUTED_ZERO)}>{q(reserved)}</TableCell>
+              </TableRow>
+              {isOpen
+                ? sortedReserved(snapshot, row).map((item, index) => (
+                    <TableRow
+                      key={`${item.ownerType}:${item.ownerId}`}
+                      id={index === 0 ? panelId : undefined}
+                      className="bg-muted/40 hover:bg-muted/40"
+                    >
+                      <TableCell className="py-1.5 pl-14 pr-3" colSpan={3}>
+                        <ReservationOwner
+                          snapshot={snapshot}
+                          assignment={item}
+                          released={row.output.status === "done"}
+                        />
+                      </TableCell>
+                      <TableCell className={cn(NUM_CELL, MUTED_ZERO)}>—</TableCell>
+                      <TableCell className={cn(NUM_CELL, "font-semibold")}>{q(item.quantity)}</TableCell>
+                    </TableRow>
+                  ))
+                : null}
+              {isOpen && (row.reserved.length === 0 || row.free > 0) ? (
+                <TableRow id={row.reserved.length === 0 ? panelId : undefined} className="bg-muted/40 hover:bg-muted/40">
+                  <TableCell className="py-1.5 pl-14 pr-3 text-sm text-muted-foreground" colSpan={3}>
+                    Свободно
+                  </TableCell>
+                  <TableCell className={cn(NUM_CELL, "font-semibold")}>{q(row.free)}</TableCell>
+                  <TableCell className={cn(NUM_CELL, MUTED_ZERO)}>—</TableCell>
+                </TableRow>
+              ) : null}
+            </Fragment>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+};
+
+const OutputsList = ({
+  snapshot,
+  lineId,
+  rows,
+  unit,
+  expandedOutputs,
+  onToggleOutput,
+}: {
+  snapshot: LogisticsSnapshot;
+  lineId: string;
+  rows: ProductionProductOutputRow[];
+  unit?: string;
+  expandedOutputs: Set<string>;
+  onToggleOutput: (key: string) => void;
+}) => {
+  const q = (n: number) => formatQuantity(n, unit);
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">Выпусков с этим товаром пока нет.</p>;
+  }
+  return (
+    <ul className="grid gap-2">
+      {rows.map((row) => {
+        const key = `${lineId}:${row.output.id}`;
+        const isOpen = expandedOutputs.has(key);
+        const panelId = `po-output-list-${key}`;
+        return (
+          <li key={row.output.id} className="rounded-md bg-muted/30 p-2">
+            <div className="flex items-center gap-1.5">
+              <Disclosure
+                open={isOpen}
+                label={`резервы выпуска ${row.output.number}`}
+                controls={panelId}
+                onToggle={() => onToggleOutput(key)}
+              />
+              <LogisticsCodeBadge code={row.output.number} href={outputHref(row)} />
+              <OutputStatusBadge status={row.output.status} />
+            </div>
+            <dl className="mt-2 grid grid-cols-3 gap-x-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">Количество</dt>
+                <dd className="text-sm tabular-nums">{q(row.quantity)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Свободно</dt>
+                <dd className="text-sm tabular-nums">{q(row.free)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">В резерве</dt>
+                <dd className="text-sm tabular-nums">{q(reservedTotal(row))}</dd>
+              </div>
+            </dl>
+            {isOpen ? (
+              <ul id={panelId} className="mt-2 grid gap-1.5 border-t border-border pt-2">
+                {sortedReserved(snapshot, row).map((item) => (
+                  <li key={`${item.ownerType}:${item.ownerId}`} className="flex items-center justify-between gap-2">
+                    <ReservationOwner
+                      snapshot={snapshot}
+                      assignment={item}
+                      released={row.output.status === "done"}
+                    />
+                    <span className="text-sm font-semibold tabular-nums">{q(item.quantity)}</span>
+                  </li>
+                ))}
+                {row.reserved.length === 0 || row.free > 0 ? (
+                  <li className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">Свободно</span>
+                    <span className="text-sm font-semibold tabular-nums">{q(row.free)}</span>
+                  </li>
+                ) : null}
+              </ul>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
+
 export const ProductionOrderProductManifest = ({
   snapshot,
-  balances,
   lines,
-  doneByLine,
   canMutate,
   onAddProduct,
   onReserve,
   bare = false,
 }: {
   snapshot: LogisticsSnapshot;
-  balances: StockBalance[];
   lines: ProductionOrderLine[];
-  doneByLine: Map<string, number>;
   canMutate: boolean;
   onAddProduct?: () => void;
   onReserve: (lineId: string) => void;
   bare?: boolean;
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [expandedOutputs, setExpandedOutputs] = useState<Set<string>>(() => new Set());
 
-  const toggle = (lineId: string) => {
-    setExpanded((current) => {
+  const toggleIn = (setter: typeof setExpanded) => (key: string) => {
+    setter((current) => {
       const next = new Set(current);
-      if (next.has(lineId)) {
-        next.delete(lineId);
+      if (next.has(key)) {
+        next.delete(key);
       } else {
-        next.add(lineId);
+        next.add(key);
       }
       return next;
     });
   };
+  const toggle = toggleIn(setExpanded);
+  const toggleOutput = toggleIn(setExpandedOutputs);
 
   const action: ReactNode =
     !bare && canMutate && onAddProduct ? (
@@ -114,286 +293,173 @@ export const ProductionOrderProductManifest = ({
       </Button>
     ) : null;
 
+  const lineView = (line: ProductionOrderLine) => {
+    const product = productById(snapshot, line.productId);
+    const unit = line.productUnit || product?.unit;
+    const name = line.productName || product?.name || line.productId;
+    const code = productCode(snapshot, line.productId);
+    const outputs = productionProductOutputs(snapshot, line.orderId, line.productId);
+    const planRoom = remainingPlanForProductionProduct(snapshot, line.orderId, line.productId, line.quantity);
+    const draftFree = outputs.rows.some((row) => row.output.status === "draft" && row.free > 0);
+    return {
+      unit,
+      name,
+      code,
+      outputs,
+      showReserve: canMutate && (planRoom > 0 || draftFree),
+      q: (n: number) => formatQuantity(n, unit),
+    };
+  };
+
   const tableBody =
     lines.length === 0 ? (
       <p className="px-4 py-8 text-center text-sm text-muted-foreground">В заказе пока нет товаров.</p>
     ) : (
-        <>
-          <div className="hidden lg:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Товар</TableHead>
-                  <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>План</TableHead>
-                  <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>Свободно</TableHead>
-                  <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>В резерве</TableHead>
-                  <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>Выпущено</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lines.map((line) => {
-                  const product = productById(snapshot, line.productId);
-                  const unit = line.productUnit || product?.unit;
-                  const name = line.productName || product?.name || line.productId;
-                  const code = productCode(snapshot, line.productId);
-                  const outputted = doneByLine.get(line.id) ?? 0;
-                  const breakdown = productionLineReservationBreakdown(line, snapshot);
-                  const reservedTotal = breakdown.reserved.reduce((sum, item) => sum + item.quantity, 0);
-                  const assignments = [...breakdown.reserved].sort((left, right) =>
-                    ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(
-                      ownerLabel(snapshot, right.ownerType, right.ownerId),
-                    ),
-                  ) as ReservationAssignment[];
-                  const isOpen = expanded.has(line.id);
-                  const panelId = `po-reserves-${line.id}`;
-                  const showReserve = canMutate && breakdown.free > 0;
-                  const q = (n: number) => formatQuantity(n, unit);
-                  return (
-                    <Fragment key={line.id}>
-                      <TableRow className="group/row">
-                        <TableCell className="px-3 py-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex min-w-0 items-start gap-1.5">
-                              <ReserveDisclosure
-                                open={isOpen}
-                                name={name}
-                                code={code}
-                                controls={panelId}
-                                onToggle={() => toggle(line.id)}
-                              />
-                              <ProductIdentity
-                                snapshot={snapshot}
-                                productId={line.productId}
-                                productName={line.productName}
-                                nameAs="text"
-                              />
-                            </div>
-                            {showReserve ? (
-                              <div className="opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 motion-reduce:transition-none">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 shrink-0"
-                                  onClick={() => onReserve(line.id)}
-                                >
-                                  Зарезервировать
-                                </Button>
-                              </div>
-                            ) : null}
+      <>
+        <div className="hidden lg:block">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Товар</TableHead>
+                <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>План</TableHead>
+                <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>В выпусках</TableHead>
+                <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>Выпущено</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lines.map((line) => {
+                const view = lineView(line);
+                const isOpen = expanded.has(line.id);
+                const panelId = `po-outputs-${line.id}`;
+                return (
+                  <Fragment key={line.id}>
+                    <TableRow className="group/row">
+                      <TableCell className="px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-start gap-1.5">
+                            <Disclosure
+                              open={isOpen}
+                              label={`выпуски ${view.name}, ${view.code}`}
+                              controls={panelId}
+                              onToggle={() => toggle(line.id)}
+                            />
+                            <ProductIdentity
+                              snapshot={snapshot}
+                              productId={line.productId}
+                              productName={line.productName}
+                              nameAs="text"
+                            />
                           </div>
-                        </TableCell>
-                        <TableCell className="px-3 py-2 text-right text-sm tabular-nums">
-                          {q(line.quantity)}
-                        </TableCell>
-                        <TableCell className="px-3 py-2 text-right text-sm tabular-nums">
-                          {q(breakdown.free)}
-                        </TableCell>
-                        <TableCell className="px-3 py-2 text-right text-sm tabular-nums">
-                          {q(reservedTotal)}
-                        </TableCell>
-                        <TableCell className="px-3 py-2 text-right text-sm tabular-nums">
-                          {q(outputted)}
+                          {view.showReserve ? (
+                            <div className="opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 motion-reduce:transition-none">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-8 shrink-0"
+                                onClick={() => onReserve(line.id)}
+                              >
+                                Зарезервировать
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right text-sm tabular-nums">{view.q(line.quantity)}</TableCell>
+                      <TableCell className="px-3 py-2 text-right text-sm tabular-nums">
+                        {view.q(view.outputs.inOutputs)}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right text-sm tabular-nums">
+                        {view.q(view.outputs.outputted)}
+                      </TableCell>
+                    </TableRow>
+                    {isOpen ? (
+                      <TableRow id={panelId} className="bg-muted/30 hover:bg-muted/30">
+                        <TableCell colSpan={4} className="py-2 pl-12 pr-3">
+                          <div className="overflow-hidden rounded-md border border-border bg-card">
+                            <OutputsTable
+                              snapshot={snapshot}
+                              lineId={line.id}
+                              rows={view.outputs.rows}
+                              unit={view.unit}
+                              expandedOutputs={expandedOutputs}
+                              onToggleOutput={toggleOutput}
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
-                      {isOpen
-                        ? assignments.map((item, index) => (
-                            <TableRow
-                              key={`${item.ownerType}:${item.ownerId}`}
-                              id={index === 0 ? panelId : undefined}
-                              className="bg-muted/30 hover:bg-muted/30"
-                              aria-label={`${LEDGER_ASSIGNED_TO_KIND_LABELS[item.ownerType]} ${ownerLabel(snapshot, item.ownerType, item.ownerId)}, в резерве ${q(item.quantity)}`}
-                            >
-                              <TableCell className="px-3 py-1.5">
-                                <ReservationOwner snapshot={snapshot} assignment={item} indent />
-                              </TableCell>
-                              <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums">
-                                {q(item.quantity)}
-                              </TableCell>
-                              <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums text-muted-foreground/50">
-                                {q(0)}
-                              </TableCell>
-                              <TableCell className="px-3 py-1.5 text-right text-sm font-semibold tabular-nums">
-                                {q(item.quantity)}
-                              </TableCell>
-                              <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums text-muted-foreground/50">
-                                {q(0)}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        : null}
-                      {isOpen && (assignments.length === 0 || breakdown.free > 0) ? (
-                        <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell id={assignments.length === 0 ? panelId : undefined} className="px-3 py-1.5">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="inline-block size-8 shrink-0" aria-hidden />
-                              <span className="text-sm text-muted-foreground">Свободно</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums">
-                            {q(breakdown.free)}
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm font-semibold tabular-nums">
-                            {q(breakdown.free)}
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums text-muted-foreground/50">
-                            {q(0)}
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums text-muted-foreground/50">
-                            {q(0)}
-                          </TableCell>
-                        </TableRow>
-                      ) : null}
-                      {isOpen && outputted > 0 ? (
-                        <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell className="px-3 py-1.5">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="inline-block size-8 shrink-0" aria-hidden />
-                              <span className="text-sm text-muted-foreground">Выпущено</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums">
-                            {q(outputted)}
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums text-muted-foreground/50">
-                            {q(0)}
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm tabular-nums text-muted-foreground/50">
-                            {q(0)}
-                          </TableCell>
-                          <TableCell className="px-3 py-1.5 text-right text-sm font-semibold tabular-nums">
-                            {q(outputted)}
-                          </TableCell>
-                        </TableRow>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
 
-          <ul className="divide-y divide-border lg:hidden">
-            {lines.map((line) => {
-              const product = productById(snapshot, line.productId);
-              const unit = line.productUnit || product?.unit;
-              const name = line.productName || product?.name || line.productId;
-              const code = productCode(snapshot, line.productId);
-              const outputted = doneByLine.get(line.id) ?? 0;
-              const breakdown = productionLineReservationBreakdown(line, snapshot);
-              const reservedTotal = breakdown.reserved.reduce((sum, item) => sum + item.quantity, 0);
-              const assignments = [...breakdown.reserved].sort((left, right) =>
-                ownerLabel(snapshot, left.ownerType, left.ownerId).localeCompare(
-                  ownerLabel(snapshot, right.ownerType, right.ownerId),
-                ),
-              ) as ReservationAssignment[];
-              const isOpen = expanded.has(line.id);
-              const panelId = `po-reserves-list-${line.id}`;
-              const showReserve = canMutate && breakdown.free > 0;
-              const q = (n: number) => formatQuantity(n, unit);
-              return (
-                <li key={line.id} className="px-4 py-3">
-                  <div className="flex items-start gap-2">
-                    <ReserveDisclosure
-                      open={isOpen}
-                      name={name}
-                      code={code}
-                      controls={panelId}
-                      onToggle={() => toggle(line.id)}
-                    />
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-semibold">{name}</h3>
-                      <div className="mt-1">
-                        <LogisticsCodeBadge code={code} />
-                      </div>
+        <ul className="divide-y divide-border lg:hidden">
+          {lines.map((line) => {
+            const view = lineView(line);
+            const isOpen = expanded.has(line.id);
+            const panelId = `po-outputs-list-${line.id}`;
+            return (
+              <li key={line.id} className="px-4 py-3">
+                <div className="flex items-start gap-2">
+                  <Disclosure
+                    open={isOpen}
+                    label={`выпуски ${view.name}, ${view.code}`}
+                    controls={panelId}
+                    onToggle={() => toggle(line.id)}
+                  />
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold">{view.name}</h3>
+                    <div className="mt-1">
+                      <LogisticsCodeBadge code={view.code} />
                     </div>
                   </div>
-                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
-                    <div>
-                      <dt className="text-xs text-muted-foreground">План</dt>
-                      <dd className="text-sm tabular-nums">{q(line.quantity)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">Свободно</dt>
-                      <dd className="text-sm tabular-nums">{q(breakdown.free)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">В резерве</dt>
-                      <dd className="text-sm tabular-nums">{q(reservedTotal)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">Выпущено</dt>
-                      <dd className="text-sm tabular-nums">{q(outputted)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">Действие</dt>
-                      <dd className="text-sm">
-                        {showReserve ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="mt-1 h-11"
-                            onClick={() => onReserve(line.id)}
-                          >
-                            Зарезервировать
-                          </Button>
-                        ) : (
-                          "—"
-                        )}
-                      </dd>
-                    </div>
-                    {isOpen
-                      ? assignments.map((item, index) => (
-                          <div
-                            key={`${item.ownerType}:${item.ownerId}`}
-                            id={index === 0 ? panelId : undefined}
-                            className={cn(
-                              "col-span-full grid grid-cols-2 gap-x-3 bg-muted/30 py-2 sm:grid-cols-3",
-                              index === 0 && "border-t border-border",
-                            )}
-                          >
-                            <div className="col-span-full">
-                              <ReservationOwner snapshot={snapshot} assignment={item} />
-                            </div>
-                            <div className="text-sm tabular-nums">{formatQuantity(item.quantity)}</div>
-                            <div className="text-sm tabular-nums">0</div>
-                            <div className="text-sm font-semibold tabular-nums">{formatQuantity(item.quantity)}</div>
-                            <div className="text-sm tabular-nums">0</div>
-                          </div>
-                        ))
-                      : null}
-                    {isOpen && (assignments.length === 0 || breakdown.free > 0) ? (
-                      <div
-                        id={assignments.length === 0 ? panelId : undefined}
-                        className={cn(
-                          "col-span-full grid grid-cols-2 gap-x-3 bg-muted/30 py-2 sm:grid-cols-3",
-                          assignments.length === 0 && "border-t border-border",
-                        )}
-                      >
-                        <div className="col-span-full text-sm text-muted-foreground">Свободно</div>
-                        <div className="text-sm tabular-nums">{formatQuantity(breakdown.free)}</div>
-                        <div className="text-sm font-semibold tabular-nums">{formatQuantity(breakdown.free)}</div>
-                        <div className="text-sm tabular-nums">0</div>
-                        <div className="text-sm tabular-nums">0</div>
-                      </div>
-                    ) : null}
-                    {isOpen && outputted > 0 ? (
-                      <div className="col-span-full grid grid-cols-2 gap-x-3 bg-muted/30 py-2 sm:grid-cols-3">
-                        <div className="col-span-full text-sm text-muted-foreground">Выпущено</div>
-                        <div className="text-sm tabular-nums">{formatQuantity(outputted)}</div>
-                        <div className="text-sm tabular-nums">0</div>
-                        <div className="text-sm tabular-nums">0</div>
-                        <div className="text-sm font-semibold tabular-nums">{formatQuantity(outputted)}</div>
-                      </div>
-                    ) : null}
-                  </dl>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      );
+                </div>
+                <dl className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2">
+                  <div>
+                    <dt className="text-xs text-muted-foreground">План</dt>
+                    <dd className="text-sm tabular-nums">{view.q(line.quantity)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">В выпусках</dt>
+                    <dd className="text-sm tabular-nums">{view.q(view.outputs.inOutputs)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Выпущено</dt>
+                    <dd className="text-sm tabular-nums">{view.q(view.outputs.outputted)}</dd>
+                  </div>
+                </dl>
+                {view.showReserve ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="mt-3 h-11"
+                    onClick={() => onReserve(line.id)}
+                  >
+                    Зарезервировать
+                  </Button>
+                ) : null}
+                {isOpen ? (
+                  <div id={panelId} className="mt-3">
+                    <OutputsList
+                      snapshot={snapshot}
+                      lineId={line.id}
+                      rows={view.outputs.rows}
+                      unit={view.unit}
+                      expandedOutputs={expandedOutputs}
+                      onToggleOutput={toggleOutput}
+                    />
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </>
+    );
 
   if (bare) {
     return tableBody;

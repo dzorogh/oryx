@@ -4,6 +4,7 @@ import { buildCreateProductionOutputRpcArgs } from "@/features/logistics/logisti
 import { assertProductionOutputLines } from "@/features/logistics/logistics-rules";
 import {
   freeInDraftOutput,
+  productionProductOutputs,
   remainingPlanForProductionProduct,
   remainingToReserveInProductionOutputsForLine,
   reservedInActiveOutputsForOrderProduct,
@@ -195,6 +196,25 @@ describe("резерв в активных выпусках", () => {
 
   it("свободно в черновике — строки без владельца", () => {
     assert.equal(freeInDraftOutput(view, "out-draft", "7"), 2);
+  });
+
+  it("разбивка товара заказа на производство по выпускам", () => {
+    const result = productionProductOutputs(view, "po-1", "7");
+    assert.equal(result.inOutputs, 6);
+    assert.equal(result.outputted, 3);
+    assert.deepEqual(
+      result.rows.map((row) => ({
+        id: row.output.id,
+        quantity: row.quantity,
+        free: row.free,
+        reserved: row.reserved.map((item) => `${item.ownerType}:${item.ownerId}:${item.quantity}`),
+      })),
+      [
+        { id: "out-draft", quantity: 6, free: 2, reserved: ["order:12:4"] },
+        { id: "out-done", quantity: 3, free: 0, reserved: ["order:12:3"] },
+      ],
+    );
+    assert.deepEqual(productionProductOutputs(view, "po-1", "8").rows, []);
   });
 
   it("остаток плана = план − неотменённые выпуски", () => {

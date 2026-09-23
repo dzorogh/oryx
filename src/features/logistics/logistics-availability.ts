@@ -14,6 +14,7 @@ import {
   type LocationType,
   type LogisticsSnapshot,
   type OwnerType,
+  type ProductionOutput,
   type SourceType,
   type StockBalance,
   type StockState,
@@ -491,6 +492,70 @@ export const productionDemandAssigned = (
   }
 
   return [...byOwner.values()].filter((item) => item.quantity > 1e-9);
+};
+
+export type ProductionProductOutputRow = {
+  output: ProductionOutput;
+  quantity: number;
+  free: number;
+  reserved: ProductionLineReservation[];
+};
+
+export type ProductionProductOutputs = {
+  inOutputs: number;
+  outputted: number;
+  rows: ProductionProductOutputRow[];
+};
+
+/** One PO product split by its uncancelled outputs: free and owner-held qty per output. */
+export const productionProductOutputs = (
+  snapshot: LogisticsSnapshot,
+  productionOrderId: string,
+  productId: string,
+): ProductionProductOutputs => {
+  const rows: ProductionProductOutputRow[] = [];
+  let inOutputs = 0;
+  let outputted = 0;
+  const outputs = snapshot.outputs
+    .filter(
+      (output) =>
+        output.productionOrderId === productionOrderId && isUncancelledProductionOutputStatus(output.status),
+    )
+    .sort((left, right) => Number(left.sequenceNumber) - Number(right.sequenceNumber));
+
+  for (const output of outputs) {
+    const lines = snapshot.outputLines.filter(
+      (line) => line.outputId === output.id && line.productId === productId,
+    );
+    if (lines.length === 0) {
+      continue;
+    }
+    let free = 0;
+    const byOwner = new Map<string, ProductionLineReservation>();
+    for (const line of lines) {
+      if (isFreeOwner(line.toOwnerType, line.toOwnerId) || !line.toOwnerType || !line.toOwnerId) {
+        free += line.quantity;
+        continue;
+      }
+      const key = `${line.toOwnerType}:${line.toOwnerId}`;
+      const current = byOwner.get(key);
+      if (current) {
+        current.quantity += line.quantity;
+      } else {
+        byOwner.set(key, { ownerType: line.toOwnerType, ownerId: line.toOwnerId, quantity: line.quantity });
+      }
+    }
+    const reserved = [...byOwner.values()];
+    const quantity = free + reserved.reduce((sum, item) => sum + item.quantity, 0);
+    if (output.status === "done") {
+      outputted += quantity;
+    } else {
+      inOutputs += quantity;
+    }
+    rows.push({ output, quantity, free, reserved });
+  }
+
+  return { inOutputs, outputted, rows };
 };
 
 export const producedForProductionProduct = (

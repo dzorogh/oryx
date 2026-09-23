@@ -786,9 +786,7 @@ export const ProductionOrderDetailPage = () => {
                 >
                   <ProductionOrderProductManifest
                     snapshot={snapshot}
-                    balances={balances}
                     lines={lines}
-                    doneByLine={doneByLine}
                     canMutate={canMutate}
                     bare
                     onReserve={(lineId) => {
