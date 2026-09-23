@@ -173,7 +173,7 @@ export const stockHref = (filter: StockHrefInput = {}): string => {
 };
 
 export const matchesProductQuery = (
-  product: { name: string; sku: string; code?: string } | undefined,
+  product: { name: string; code?: string } | undefined,
   query: string,
   fallbackId: string,
 ): boolean => {
@@ -181,7 +181,7 @@ export const matchesProductQuery = (
   if (!needle) {
     return true;
   }
-  const haystack = [product?.code, product?.name, product?.sku, fallbackId].filter(Boolean).join(" ").toLowerCase();
+  const haystack = [product?.code, product?.name, fallbackId].filter(Boolean).join(" ").toLowerCase();
   return haystack.includes(needle);
 };
 

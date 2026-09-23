@@ -11,6 +11,7 @@ import {
   LEDGER_ASSIGNED_TO_KIND_LABELS,
   LEDGER_DOCUMENT_KIND_LABELS,
   locationKindLabel,
+  signedQuantityClassName,
 } from "@/features/logistics/logistics-labels";
 import { documentLabel, locationIdentity, ownerLabel, productById } from "@/features/logistics/logistics-lookups";
 import { isFreeOwner, type LogisticsSnapshot, type StockTransaction } from "@/features/logistics/logistics-types";
@@ -21,6 +22,7 @@ import {
 } from "@/features/logistics/ui/document-ledger";
 import { LedgerEntityIdentity } from "@/features/logistics/ui/ledger-entity-identity";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { DOCUMENT_TABLE_HEAD_CLASS } from "@/features/logistics/ui/logistics-table-card";
 import { buildPaginationItems } from "@/lib/pagination";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,13 +31,16 @@ import {
   PaginationEllipsis,
   PaginationItem,
 } from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 
 export const ProductionOrderMovements = ({
   snapshot,
   filter,
+  bare = false,
 }: {
   snapshot: LogisticsSnapshot;
   filter: (entry: StockTransaction) => boolean;
+  bare?: boolean;
 }) => {
   const [page, setPage] = useState(1);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -98,12 +103,17 @@ export const ProductionOrderMovements = ({
   const isLastPage = paged.visiblePage >= paged.totalPages;
 
   return (
-    <section id="movements" className="scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card">
-      <div className="border-b border-border px-4 py-2">
-        <h2 ref={headingRef} tabIndex={-1} className="text-base font-semibold outline-none">
-          Движения
-        </h2>
-      </div>
+    <section
+      id="movements"
+      className={bare ? undefined : "scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card"}
+    >
+      {bare ? null : (
+        <div className="border-b border-border px-4 py-2">
+          <h2 ref={headingRef} tabIndex={-1} className="text-base font-semibold outline-none">
+            Движения
+          </h2>
+        </div>
+      )}
       <p ref={announceRef} role="status" aria-live="polite" className="sr-only" />
 
       {rows.length === 0 ? (
@@ -113,13 +123,13 @@ export const ProductionOrderMovements = ({
           <div className="hidden lg:block">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="px-3">Время</TableHead>
-                  <TableHead className="px-3">Изменение</TableHead>
-                  <TableHead className="px-3">Товар</TableHead>
-                  <TableHead className="px-3">Место</TableHead>
-                  <TableHead className="px-3">{ASSIGNED_TO_LABEL}</TableHead>
-                  <TableHead className="px-3">Документ</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Время</TableHead>
+                  <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>Изменение</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Товар</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Место</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>{ASSIGNED_TO_LABEL}</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Документ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -131,7 +141,12 @@ export const ProductionOrderMovements = ({
                       <TableCell className="px-3 py-2 text-xs text-muted-foreground">
                         {formatTimestamp(entry.createdAt)}
                       </TableCell>
-                      <TableCell className="px-3 py-2 text-sm tabular-nums">
+                      <TableCell
+                        className={cn(
+                          "px-3 py-2 text-right text-sm tabular-nums",
+                          signedQuantityClassName(entry.quantity),
+                        )}
+                      >
                         {formatSignedQuantity(entry.quantity, product?.unit)}
                       </TableCell>
                       <TableCell className="px-3 py-2">
@@ -182,25 +197,25 @@ export const ProductionOrderMovements = ({
                     </h3>
                     <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Время</dt>
+                        <dt className="text-xs text-muted-foreground">Время</dt>
                         <dd className="text-sm">
                           <time>{formatTimestamp(entry.createdAt)}</time>
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Изменение</dt>
+                        <dt className="text-xs text-muted-foreground">Изменение</dt>
                         <dd className="text-sm font-medium tabular-nums">
                           {formatSignedQuantity(entry.quantity, product?.unit)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Товар</dt>
+                        <dt className="text-xs text-muted-foreground">Товар</dt>
                         <dd>
                           <ProductIdentity snapshot={snapshot} productId={entry.productId} />
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Место</dt>
+                        <dt className="text-xs text-muted-foreground">Место</dt>
                         <dd>
                           <LedgerEntityIdentity
                             kind={locationKindLabel(entry.locationType, place.isPlantWarehouse)}
@@ -210,7 +225,7 @@ export const ProductionOrderMovements = ({
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">{ASSIGNED_TO_LABEL}</dt>
+                        <dt className="text-xs text-muted-foreground">{ASSIGNED_TO_LABEL}</dt>
                         <dd>
                           {isFreeOwner(entry.assignedToType, entry.assignedToId) ? (
                             <LedgerEntityIdentity kind={LEDGER_ASSIGNED_TO_KIND_LABELS.free} />
@@ -224,7 +239,7 @@ export const ProductionOrderMovements = ({
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Документ</dt>
+                        <dt className="text-xs text-muted-foreground">Документ</dt>
                         <dd>
                           <LedgerEntityIdentity
                             kind={LEDGER_DOCUMENT_KIND_LABELS[entry.documentType]}

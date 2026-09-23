@@ -1,6 +1,7 @@
 // english-ui:ignore-file
 "use client";
 
+import { ArrowLeftRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -12,9 +13,14 @@ import { completeTransfer, createAndSendTransfer, loadTransferList, updateExpect
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
-import { hrefForTransfer } from "@/features/logistics/logistics-availability";
+import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
+import { hrefForTransfer, hrefForWarehouse } from "@/features/logistics/logistics-availability";
 import { ReservationForm } from "@/features/logistics/logistics-forms";
-import { formatExpectedEnd } from "@/features/logistics/logistics-labels";
+import {
+  formatExpectedEnd,
+  formatMetaTimestamp,
+  TRANSFER_STATUS_LABELS,
+} from "@/features/logistics/logistics-labels";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { LOGISTICS_PATHS } from "@/features/logistics/logistics-paths";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -26,9 +32,12 @@ import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
-import { TransferStatusBadge } from "@/features/logistics/ui/status-badge";
-import { TransferActivity } from "@/features/logistics/ui/transfer-activity";
-import { TransferDetailHeader, type TransferDetailPendingAction } from "@/features/logistics/ui/transfer-detail-header";
+import { StatusPill, TransferStatusBadge } from "@/features/logistics/ui/status-badge";
+import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
+import { DocumentHistory } from "@/features/logistics/ui/document/document-history";
+import { DocumentMetaDateInput, DocumentMetaEmpty, overdueDays } from "@/features/logistics/ui/document/document-meta-field";
+import { DocumentSection } from "@/features/logistics/ui/document/document-section";
+import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
 import { TransferProductManifest } from "@/features/logistics/ui/transfer-product-manifest";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { projectTransferDetail } from "@/features/logistics/transfer-detail-projection";
@@ -36,6 +45,9 @@ import {
   freeTransferPayload,
   openSentTransfer,
 } from "@/features/logistics/transfer-direct-send";
+import { warehouseCode } from "@/features/logistics/logistics-lookups";
+
+type TransferDetailPendingAction = "reserve" | "deliver" | "expected" | null;
 
 const STATUS_FILTERS: Array<{ id: "all" | TransferStatus; label: string }> = [
   { id: "all", label: "Все" },
@@ -244,50 +256,185 @@ export const TransferDetailPage = () => {
   return (
     <LogisticsPageShell crumbs={transferCrumbs(doc.number)}>
       <div className="flex flex-col gap-3" aria-busy={pendingAction != null || isLoading}>
-        <TransferDetailHeader
-          snapshot={snapshot}
-          transfer={doc}
-          route={projection.route}
-          canReserveInTransit={projection.canReserveInTransit}
-          pendingAction={pendingAction}
-          actionError={actionError}
-          extraActions={
-            cancelGuidance ? (
-              <DocumentCancelControl
-                guidance={cancelGuidance}
-                reload={reload}
-                onFollowUp={(action) => {
-                  if (action.id === "mark-delivered") {
+        <DocumentHeader
+          kind="Перемещение"
+          icon={ArrowLeftRight}
+          number={doc.number}
+          status={<TransferStatusBadge status={doc.status} />}
+          actions={
+            <>
+              {doc.status === "sent" && projection.canReserveInTransit ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pendingAction != null}
+                  aria-busy={pendingAction === "reserve"}
+                  onClick={() => setReserveOpen(true)}
+                >
+                  Зарезервировать в пути
+                </Button>
+              ) : null}
+              {doc.status === "sent" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={pendingAction != null}
+                  aria-busy={pendingAction === "deliver"}
+                  onClick={() => {
                     void runDetailAction("deliver", () => completeTransfer(doc.id), "Перемещение отмечено доставленным");
-                  }
-                  if (action.id === "open-reverse-transfer") {
-                    setReverseOpen(true);
-                  }
-                }}
-              />
-            ) : null
+                  }}
+                >
+                  Отметить доставленным
+                </Button>
+              ) : null}
+              {cancelGuidance ? (
+                <DocumentCancelControl
+                  guidance={cancelGuidance}
+                  reload={reload}
+                  onFollowUp={(action) => {
+                    if (action.id === "mark-delivered") {
+                      void runDetailAction("deliver", () => completeTransfer(doc.id), "Перемещение отмечено доставленным");
+                    }
+                    if (action.id === "open-reverse-transfer") {
+                      setReverseOpen(true);
+                    }
+                  }}
+                />
+              ) : null}
+            </>
           }
-          onReserveInTransit={() => setReserveOpen(true)}
-          onMarkDelivered={() => {
-            void runDetailAction("deliver", () => completeTransfer(doc.id), "Перемещение отмечено доставленным");
-          }}
-          onExpectedEndChange={(value) => {
-            void runDetailAction(
-              "expected",
-              () => updateExpectedEnd(doc.id, value || null),
-              "Дата обновлена",
-            );
-          }}
+          meta={[
+            {
+              label: "Откуда",
+              value: <LogisticsCodeBadge code={warehouseCode(snapshot, doc.fromWarehouseId)} href={hrefForWarehouse(doc.fromWarehouseId)} />,
+            },
+            {
+              label: "Куда",
+              value: <LogisticsCodeBadge code={warehouseCode(snapshot, doc.toWarehouseId)} href={hrefForWarehouse(doc.toWarehouseId)} />,
+            },
+            {
+              label: "Сейчас",
+              value:
+                projection.route.currentKind === "transfer" ? (
+                  <span>
+                    в пути <LogisticsCodeBadge code={doc.number} />
+                  </span>
+                ) : projection.route.currentKind === "destination" ? (
+                  <span>
+                    на складе{" "}
+                    <LogisticsCodeBadge
+                      code={warehouseCode(snapshot, doc.toWarehouseId)}
+                      href={hrefForWarehouse(doc.toWarehouseId)}
+                    />
+                  </span>
+                ) : (
+                  <span>
+                    на складе{" "}
+                    <LogisticsCodeBadge
+                      code={warehouseCode(snapshot, doc.fromWarehouseId)}
+                      href={hrefForWarehouse(doc.fromWarehouseId)}
+                    />
+                  </span>
+                ),
+            },
+            {
+              label: "Ожидалось",
+              value: (
+                <DocumentMetaDateInput
+                  value={doc.expectedEndOn ?? ""}
+                  aria-label="Ожидалось"
+                  overdueDays={
+                    doc.status !== "done" && doc.status !== "delivered" && doc.status !== "cancelled"
+                      ? overdueDays(doc.expectedEndOn)
+                      : 0
+                  }
+                  onChange={(value) => {
+                    void runDetailAction(
+                      "expected",
+                      () => updateExpectedEnd(doc.id, value || null),
+                      "Дата обновлена",
+                    );
+                  }}
+                />
+              ),
+            },
+            {
+              label: "Отправлено",
+              value: formatMetaTimestamp(doc.createdAt),
+            },
+            {
+              label: "Доставлено",
+              value: documentCompletedAt(snapshot, doc.id)
+                ? formatMetaTimestamp(documentCompletedAt(snapshot, doc.id))
+                : <DocumentMetaEmpty />,
+            },
+          ]}
         />
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-          <TransferProductManifest snapshot={snapshot} groups={projection.groups} products={projection.products} />
-          <TransferActivity events={projection.activity} />
+
+        <DocumentTabs
+          tabs={[
+            {
+              id: "products",
+              label: "Товары и резервы",
+              count: projection.products.length,
+              panel: (
+                <DocumentSection title="Товары и резервы">
+                  <TransferProductManifest
+                    bare
+                    snapshot={snapshot}
+                    groups={projection.groups}
+                    products={projection.products}
+                  />
+                </DocumentSection>
+              ),
+            },
+            {
+              id: "movements",
+              label: "Движения",
+              count: snapshot.transactions.filter(
+                (entry) => entry.documentType === "transfer" && entry.documentId === doc.id,
+              ).length,
+              panel: (
+                <DocumentSection title="Движения">
+                  <DocumentLedger
+                    bare
+                    snapshot={snapshot}
+                    hide="document"
+                    filter={(entry) => entry.documentType === "transfer" && entry.documentId === doc.id}
+                  />
+                </DocumentSection>
+              ),
+            },
+            {
+              id: "history",
+              label: "История",
+              count: buildDocumentTimeline(snapshot, {
+                documentId: doc.id,
+                createdAt: doc.createdAt,
+                createdBy: doc.createdBy,
+                statusLabels: TRANSFER_STATUS_LABELS,
+              }).length,
+              panel: (
+                <DocumentHistory
+                  entries={buildDocumentTimeline(snapshot, {
+                    documentId: doc.id,
+                    createdAt: doc.createdAt,
+                    createdBy: doc.createdBy,
+                    statusLabels: TRANSFER_STATUS_LABELS,
+                  })}
+                  renderStatus={(statusKey) => (
+                    <StatusPill status={statusKey} label={TRANSFER_STATUS_LABELS[statusKey as TransferStatus]} />
+                  )}
+                />
+              ),
+            },
+          ]}
+        />
+        <div role="status" aria-live="polite" className="sr-only">
+          {pendingAction != null ? "Выполняется…" : null}
+          {actionError}
         </div>
-        <DocumentLedger
-          snapshot={snapshot}
-          hide="document"
-          filter={(entry) => entry.documentType === "transfer" && entry.documentId === doc.id}
-        />
       </div>
       <ReservationForm
         snapshot={snapshot}

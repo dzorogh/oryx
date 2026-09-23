@@ -3,7 +3,6 @@ export const VARIANTS_CATALOG_COLUMNS_STORAGE_KEY = "store-variants-catalog-visi
 
 export type CatalogColumnId =
   | "name"
-  | "sku"
   | "brand"
   | "category"
   | "family"
@@ -23,7 +22,6 @@ export type CatalogColumnDefinition = {
 
 export const CATALOG_COLUMNS: CatalogColumnDefinition[] = [
   { id: "name", label: "Название", defaultVisible: true, locked: true, widthClass: "w-[220px]" },
-  { id: "sku", label: "Артикул", defaultVisible: false, widthClass: "w-[110px]" },
   { id: "brand", label: "Бренд", defaultVisible: true, widthClass: "w-[110px]" },
   { id: "category", label: "Категория", defaultVisible: true, widthClass: "w-[130px]" },
   { id: "family", label: "Семейство", defaultVisible: false, widthClass: "w-[120px]" },

@@ -2,7 +2,6 @@
   "products": [
     {
       "id": 1,
-      "sku": "FORCE-1100-EFI",
       "name": "Force 1100 EFI",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/01/03/223416/conversions/Force-1100-(6)-medium.webp",
@@ -12,7 +11,6 @@
     },
     {
       "id": 17,
-      "sku": "CROSS-180-RX",
       "name": "Cross 180 RX",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/19/191255/conversions/180-Cross-RX-medium.webp",
@@ -22,7 +20,6 @@
     },
     {
       "id": 29,
-      "sku": "ACTIVATOR-280-RX",
       "name": "Activator 280 RX",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/16/197015/conversions/Activator-280-RX-(19)-medium.webp",
@@ -32,7 +29,6 @@
     },
     {
       "id": 36,
-      "sku": "CRUISER-300-FJ",
       "name": "Cruiser 300 FJ",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/04/203877/conversions/6825efde5c4d1620449154-medium.webp",
@@ -42,7 +38,6 @@
     },
     {
       "id": 46,
-      "sku": "HUMMER-320-RX-LTD",
       "name": "Hummer 320 RX LTD",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/19/191279/conversions/Hummer-320-RX-LTD-medium.webp",
@@ -52,7 +47,6 @@
     },
     {
       "id": 131,
-      "sku": "FORCE-650",
       "name": "Force 650",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/12/191383/conversions/Sharmax-Force-650-—-копия-medium.webp",
@@ -62,7 +56,6 @@
     },
     {
       "id": 207,
-      "sku": "CROSS-E-200",
       "name": "Cross E-200",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/04/203871/conversions/Cross-E-200-(4)-medium.webp",
@@ -72,7 +65,6 @@
     },
     {
       "id": 2,
-      "sku": "CRUISER-RACE-350-GX",
       "name": "Cruiser Race 350 GX",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191296/conversions/6825ef08146ea335049195-medium.webp",
@@ -82,7 +74,6 @@
     },
     {
       "id": 3,
-      "sku": "CRUISER-RACE-550-GX",
       "name": "Cruiser Race 550 GX",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191303/conversions/6825ef3629508319286321-(1)-medium.webp",
@@ -92,7 +83,6 @@
     },
     {
       "id": 4,
-      "sku": "JUNIOR-200",
       "name": "Junior 200",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205018/conversions/200_pro-medium.webp",
@@ -102,7 +92,6 @@
     },
     {
       "id": 5,
-      "sku": "JUNIOR-250",
       "name": "Junior 250",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205044/conversions/Junior-250-(20)-medium.webp",
@@ -112,7 +101,6 @@
     },
     {
       "id": 6,
-      "sku": "PREDATOR-420-2-SEATER",
       "name": "Predator 420 2 seater",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205062/conversions/682f4bf95e3e7197477387-medium.webp",
@@ -122,7 +110,6 @@
     },
     {
       "id": 9,
-      "sku": "5000-2-2-SEATER",
       "name": "5000 2+2 Seater",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/21/205098/conversions/6826ed31be73e096857416-medium.webp",
@@ -132,7 +119,6 @@
     },
     {
       "id": 10,
-      "sku": "5000-4-SEATER-PRO",
       "name": "5000 4 Seater Pro",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/22/205107/conversions/69b0366638c32931032066-(1)-medium.webp",
@@ -142,7 +128,6 @@
     },
     {
       "id": 11,
-      "sku": "SPORT-250",
       "name": "Sport 250",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/14/203013/conversions/Sport-309-(2)-medium.webp",
@@ -152,7 +137,6 @@
     },
     {
       "id": 12,
-      "sku": "POWER-MAX-250",
       "name": "Power Max 250",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203129/conversions/682cba5b16b63445981055-medium.webp",
@@ -162,7 +146,6 @@
     },
     {
       "id": 14,
-      "sku": "POWER-MAX-320",
       "name": "Power Max 320",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/13/15/219616/conversions/Power-Max-320-(38)-medium.webp",
@@ -172,7 +155,6 @@
     },
     {
       "id": 18,
-      "sku": "EXPERT-PRO-450",
       "name": "Expert Pro 450",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/13/17/219657/conversions/Expert-Pro-RXP-450-(5)-medium.webp",
@@ -182,7 +164,6 @@
     },
     {
       "id": 21,
-      "sku": "CUSTOM-1000-RST-ROADSTER",
       "name": "Custom 1000 RST Roadster",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/17/22/167548/conversions/6827442d38d25426040151-medium.webp",
@@ -192,7 +173,6 @@
     },
     {
       "id": 22,
-      "sku": "ENDURO-250",
       "name": "Enduro 250",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2025/12/14/21/162355/conversions/6827446e7e4bf842911729-medium.webp",
@@ -202,7 +182,6 @@
     },
     {
       "id": 23,
-      "sku": "ENDURO-300",
       "name": "Enduro 300",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/17/204160/conversions/Tour-Enduro-300-Ultra-(22)-medium.webp",
@@ -212,7 +191,6 @@
     },
     {
       "id": 24,
-      "sku": "FX-200",
       "name": "FX 200",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/17/208117/conversions/FX-200-(10)-medium.webp",
@@ -222,7 +200,6 @@
     },
     {
       "id": 25,
-      "sku": "FX-150-ULTRA-EFI",
       "name": "FX 150 Ultra EFI",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/22/204792/conversions/682748de90b7e098173401-medium.webp",
@@ -232,7 +209,6 @@
     },
     {
       "id": 26,
-      "sku": "FX-350-ULTRA",
       "name": "FX 350 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207690/conversions/FX-350-ultra-(3)-medium.webp",
@@ -242,7 +218,6 @@
     },
     {
       "id": 30,
-      "sku": "RST-240-ULTRA",
       "name": "RST 240 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/02/25/14/175790/conversions/69299a86f36c8084011751-medium.webp",
@@ -252,7 +227,6 @@
     },
     {
       "id": 31,
-      "sku": "RST-250-LATINA",
       "name": "RST 250 Latina",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/15/204436/conversions/RST-250-Latina-(8)-medium.webp",
@@ -262,7 +236,6 @@
     },
     {
       "id": 32,
-      "sku": "RST-322-ULTRA",
       "name": "RST 322 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/07/167553/conversions/682c9b1430cf9837319837-medium.webp",
@@ -272,7 +245,6 @@
     },
     {
       "id": 33,
-      "sku": "RST-422-ULTRA",
       "name": "RST 422 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/15/204442/conversions/1-medium.webp",
@@ -282,7 +254,6 @@
     },
     {
       "id": 34,
-      "sku": "RST-750-ULTRA",
       "name": "RST 750 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/12/167567/conversions/682c9b73ec327178111119_converted-medium.webp",
@@ -292,7 +263,6 @@
     },
     {
       "id": 35,
-      "sku": "RR-301-ULTRA",
       "name": "RR 301 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/09/218156/conversions/Custom-1000-RST-Roadster-(3)-medium.webp",
@@ -302,7 +272,6 @@
     },
     {
       "id": 37,
-      "sku": "SCOOTER-TANK-150",
       "name": "Scooter Tank 150",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204687/conversions/1-(30)-medium.webp",
@@ -312,7 +281,6 @@
     },
     {
       "id": 42,
-      "sku": "GP-401-ULTRA",
       "name": "GP 401 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207723/conversions/GP-401-Ultra-medium.webp",
@@ -322,7 +290,6 @@
     },
     {
       "id": 43,
-      "sku": "GP-881-ULTRA",
       "name": "GP 881 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/08/204635/conversions/682c9711e990e228619270-medium.webp",
@@ -332,7 +299,6 @@
     },
     {
       "id": 44,
-      "sku": "GP-1100-ULTRA",
       "name": "GP 1100 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/09/204647/conversions/GP-1100-Ultra-medium.webp",
@@ -342,7 +308,6 @@
     },
     {
       "id": 45,
-      "sku": "GL-250",
       "name": "GL 250",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208069/conversions/GL-102122-medium.webp",
@@ -352,7 +317,6 @@
     },
     {
       "id": 47,
-      "sku": "GL-300-DUBAI",
       "name": "GL 300 Dubai",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/09/204316/conversions/682749a8e151e380172377-medium.webp",
@@ -362,7 +326,6 @@
     },
     {
       "id": 48,
-      "sku": "GL-400",
       "name": "GL 400",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/15/19/219953/conversions/GL-400-medium.webp",
@@ -372,7 +335,6 @@
     },
     {
       "id": 49,
-      "sku": "GL-570-ULTRA",
       "name": "GL 570 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208056/conversions/GL-570-Ult1ra-medium.webp",
@@ -382,7 +344,6 @@
     },
     {
       "id": 62,
-      "sku": "GL-770-ULTRA",
       "name": "GL 770 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207728/conversions/GL-770-Ultra-medium.webp",
@@ -392,7 +353,6 @@
     },
     {
       "id": 109,
-      "sku": "GL-991-ULTRA",
       "name": "GL 991 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/12/204368/conversions/682c95e50d088313130977-medium.webp",
@@ -402,7 +362,6 @@
     },
     {
       "id": 129,
-      "sku": "POWER-MAX-145",
       "name": "Power Max 145",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/15/203644/conversions/POWER-MAX-301-medium.webp",
@@ -412,7 +371,6 @@
     },
     {
       "id": 130,
-      "sku": "POWER-MAX-190",
       "name": "Power Max 190",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/17/203774/conversions/67dc316d75ee5976035250-(3)-medium.webp",
@@ -422,7 +380,6 @@
     },
     {
       "id": 132,
-      "sku": "RR-801-V-ULTRA",
       "name": "RR 801 V Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/08/218141/conversions/69a9595f48396410292739-medium.webp",
@@ -432,7 +389,6 @@
     },
     {
       "id": 50,
-      "sku": "CROSS-130",
       "name": "Cross 130",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/15/191246/conversions/130-Cross-medium.webp",
@@ -442,7 +398,6 @@
     },
     {
       "id": 51,
-      "sku": "RAIZER-250-RACE-CUP",
       "name": "Raizer 250 Race Cup",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191291/conversions/Raizer-250-Race-Cup-(6)-medium.webp",
@@ -452,7 +407,6 @@
     },
     {
       "id": 52,
-      "sku": "FORCE-800-EFI-CHALLENGER",
       "name": "Force 800 EFI Challenger",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207746/conversions/Force-Challenger-801-medium.webp",
@@ -462,7 +416,6 @@
     },
     {
       "id": 53,
-      "sku": "FORCE-420-CYBER-EFI",
       "name": "Force 420 Cyber EFI",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/17/197037/conversions/Force-420-Cyber-(9)-medium.webp",
@@ -472,7 +425,6 @@
     },
     {
       "id": 54,
-      "sku": "FORCE-1100-EFI-LTD",
       "name": "Force 1100 EFI LTD",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/14/191452/conversions/68f76dd9681a6202957510-medium.webp",
@@ -482,7 +434,6 @@
     },
     {
       "id": 55,
-      "sku": "XFORCE-1100-SPORT-X4",
       "name": "XForce 1100 Sport x4",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/17/205015/conversions/XForce-1100-Sport-X4-(17)-medium.webp",
@@ -492,7 +443,6 @@
     },
     {
       "id": 56,
-      "sku": "XFORCE-1100-SPORT",
       "name": "XForce 1100 Sport",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/02/09/03/172240/conversions/XForce-1101-medium.webp",
@@ -502,7 +452,6 @@
     },
     {
       "id": 57,
-      "sku": "SPORT-230",
       "name": "Sport 230",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/09/202924/conversions/Sport-230-medium.webp",
@@ -512,7 +461,6 @@
     },
     {
       "id": 58,
-      "sku": "SPORT-280",
       "name": "Sport 280",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/14/203035/conversions/Sport-310-(1)-medium.webp",
@@ -522,7 +470,6 @@
     },
     {
       "id": 59,
-      "sku": "SPORT-300-AIR-ULTIMATUM",
       "name": "Sport 300 Air Ultimatum",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/19/203094/conversions/Sport-300-Air-Ultimatum-(6)-medium.webp",
@@ -532,7 +479,6 @@
     },
     {
       "id": 60,
-      "sku": "POWER-MAX-300-AIR",
       "name": "Power Max 300 Air",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203143/conversions/Power-Max-300-Air-2029-medium.webp",
@@ -542,7 +488,6 @@
     },
     {
       "id": 61,
-      "sku": "POWER-MAX-330",
       "name": "Power Max 330",
       "unit": "pcs",
       "image_url": null,
@@ -552,7 +497,6 @@
     },
     {
       "id": 63,
-      "sku": "EXPERT-PRO-320",
       "name": "Expert Pro 320",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/05/203229/conversions/Expert-Pro-454-medium.webp",
@@ -562,7 +506,6 @@
     },
     {
       "id": 64,
-      "sku": "EXPERT-PRO-300-AIR",
       "name": "Expert Pro 300 Air",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/04/203212/conversions/Expert-Pro-300-Air-(3)-medium.webp",
@@ -572,7 +515,6 @@
     },
     {
       "id": 65,
-      "sku": "SPORT-320",
       "name": "Sport 320",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/19/203105/conversions/Sport-320-(15)-medium.webp",
@@ -582,7 +524,6 @@
     },
     {
       "id": 66,
-      "sku": "POWER-MAX-322",
       "name": "Power Max 322",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203169/conversions/Power-Max-322-(8)-medium.webp",
@@ -592,7 +533,6 @@
     },
     {
       "id": 67,
-      "sku": "SPORT-145",
       "name": "Sport 145",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/10/203384/conversions/Sport-145-medium.webp",
@@ -602,7 +542,6 @@
     },
     {
       "id": 68,
-      "sku": "SPORT-190",
       "name": "Sport 190",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207761/conversions/Sport-190-medium.webp",
@@ -612,7 +551,6 @@
     },
     {
       "id": 69,
-      "sku": "SPORT-145-MIAMI",
       "name": "Sport 145 Miami",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/15/204149/conversions/Sport-145-Miami-(9)-medium.webp",
@@ -622,7 +560,6 @@
     },
     {
       "id": 70,
-      "sku": "SPORT-190-MIAMI",
       "name": "Sport 190 Miami",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/12/203490/conversions/Sport-190-Miami-(6)-medium.webp",
@@ -632,7 +569,6 @@
     },
     {
       "id": 71,
-      "sku": "POWER-MAX-145-MIAMI",
       "name": "Power Max 145 Miami",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/11/203427/conversions/Power-Max-145-MIAMI-(6)-medium.webp",
@@ -642,7 +578,6 @@
     },
     {
       "id": 72,
-      "sku": "POWER-MAX-190-MIAMI",
       "name": "Power Max 190 Miami",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/18/203823/conversions/Power-Max-190-MIAMI-(4)-medium.webp",
@@ -652,7 +587,6 @@
     },
     {
       "id": 73,
-      "sku": "POWER-MAX-140-MINI",
       "name": "Power Max 140 Mini",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/13/203562/conversions/682f37799436e829910344-medium.webp",
@@ -662,7 +596,6 @@
     },
     {
       "id": 74,
-      "sku": "SPORT-130-MINI",
       "name": "Sport 130 Mini",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/07/203259/conversions/130-Mini-(1)-medium.webp",
@@ -672,7 +605,6 @@
     },
     {
       "id": 75,
-      "sku": "ENDURO-125",
       "name": "Enduro 125",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/18/204188/conversions/Enduro-125-EU-(13)-medium.webp",
@@ -682,7 +614,6 @@
     },
     {
       "id": 76,
-      "sku": "ENDURO-250-LATINA",
       "name": "Enduro 250 Latina",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218088/conversions/Enduro-250-Latina-medium.webp",
@@ -692,7 +623,6 @@
     },
     {
       "id": 77,
-      "sku": "ENDURO-351",
       "name": "Enduro 351",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218102/conversions/Enduro-351-(13)-medium.webp",
@@ -702,7 +632,6 @@
     },
     {
       "id": 78,
-      "sku": "VESPITO-150-EFI",
       "name": "Vespito 150 EFI",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204732/conversions/68fb9d7fae8b9320909486-medium.webp",
@@ -712,7 +641,6 @@
     },
     {
       "id": 79,
-      "sku": "MOPED-150",
       "name": "Moped 150",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207712/conversions/Moped-152-medium.webp",
@@ -722,7 +650,6 @@
     },
     {
       "id": 80,
-      "sku": "VESPITO-150",
       "name": "Vespito 150",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204751/conversions/Vespito-150-medium.webp",
@@ -732,7 +659,6 @@
     },
     {
       "id": 81,
-      "sku": "VESPITO-125-EU",
       "name": "Vespito 125 EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/20/204759/conversions/Vespito-126-medium.webp",
@@ -742,7 +668,6 @@
     },
     {
       "id": 82,
-      "sku": "FX-MAX-125-EU",
       "name": "FX Max 125 EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/21/204783/conversions/69de5432ee8b4168704633-(1)-medium.webp",
@@ -752,7 +677,6 @@
     },
     {
       "id": 83,
-      "sku": "FX-250-LATINA",
       "name": "FX 250 Latina",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/23/204803/conversions/FX-250-medium.webp",
@@ -762,7 +686,6 @@
     },
     {
       "id": 84,
-      "sku": "FX-300-EFI",
       "name": "FX 300 EFI",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207697/conversions/FX-300-EFI-(8)-medium.webp",
@@ -772,7 +695,6 @@
     },
     {
       "id": 85,
-      "sku": "FX-441-EU",
       "name": "FX 441 EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/17/208124/conversions/FX-441-EU-(29)-medium.webp",
@@ -782,7 +704,6 @@
     },
     {
       "id": 86,
-      "sku": "PHANTOM-125",
       "name": "Phantom 125",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/20/204769/conversions/Phantom-125-(33)-medium.webp",
@@ -792,7 +713,6 @@
     },
     {
       "id": 87,
-      "sku": "RST-140-MINI-BANANA",
       "name": "RST 140 Mini Banana",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/19/204515/conversions/RST-MINI-BANANA-140-(5)-medium.webp",
@@ -802,7 +722,6 @@
     },
     {
       "id": 88,
-      "sku": "RST-210-LATINA",
       "name": "RST 210 Latina",
       "unit": "pcs",
       "image_url": null,
@@ -812,7 +731,6 @@
     },
     {
       "id": 89,
-      "sku": "RST-501-ZOOMA",
       "name": "RST 501 Zooma",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/17/204478/conversions/RST-501-Zooma-(2)-—-копия-medium.webp",
@@ -822,7 +740,6 @@
     },
     {
       "id": 90,
-      "sku": "RST-501-ULTRA",
       "name": "RST 501 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/14/204418/conversions/RST-501-ULTRA-(30)-medium.webp",
@@ -832,7 +749,6 @@
     },
     {
       "id": 91,
-      "sku": "BANDIT-501",
       "name": "Bandit 501",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/17/204466/conversions/Bandit-502-(1)-medium.webp",
@@ -842,7 +758,6 @@
     },
     {
       "id": 92,
-      "sku": "RST-351",
       "name": "RST 351",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/13/204413/conversions/RST-351-medium.webp",
@@ -852,7 +767,6 @@
     },
     {
       "id": 93,
-      "sku": "RST-125",
       "name": "RST 125",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/14/208018/conversions/RST-125-EU-medium.webp",
@@ -862,7 +776,6 @@
     },
     {
       "id": 94,
-      "sku": "GP-501-L",
       "name": "GP 501 L",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/08/204629/conversions/GP-501-L-(24)-medium.webp",
@@ -872,7 +785,6 @@
     },
     {
       "id": 95,
-      "sku": "GP-301",
       "name": "GP 301",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/06/204546/conversions/691f6ee98a643412876997-medium.webp",
@@ -882,7 +794,6 @@
     },
     {
       "id": 96,
-      "sku": "GP-451",
       "name": "GP 451",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/13/204680/conversions/Frame-22-medium.webp",
@@ -892,7 +803,6 @@
     },
     {
       "id": 97,
-      "sku": "GP-501-E",
       "name": "GP 501 E",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/04/207658/conversions/_E-GP-510-(1)-medium.webp",
@@ -902,7 +812,6 @@
     },
     {
       "id": 98,
-      "sku": "GP-301-LATINA",
       "name": "GP 301 Latina",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/09/204654/conversions/691f6ee98a643412876997-medium.webp",
@@ -912,7 +821,6 @@
     },
     {
       "id": 99,
-      "sku": "GP-601-ULTRA",
       "name": "GP 601 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208080/conversions/GP-1104-medium.webp",
@@ -922,7 +830,6 @@
     },
     {
       "id": 100,
-      "sku": "GP-321-S",
       "name": "GP 321 S",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208084/conversions/GP-321-S-(7)-medium.webp",
@@ -932,7 +839,6 @@
     },
     {
       "id": 101,
-      "sku": "GP-410",
       "name": "GP 410",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208096/conversions/GP-410-(7)-medium.webp",
@@ -942,7 +848,6 @@
     },
     {
       "id": 102,
-      "sku": "GP-125-EU-X",
       "name": "GP 125 EU X",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/07/204603/conversions/GP-125-EU-(21)-medium.webp",
@@ -952,7 +857,6 @@
     },
     {
       "id": 103,
-      "sku": "RR-771-VICTORIA",
       "name": "RR 771 Victoria",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/05/204250/conversions/RR-771-Victoria-(14)-medium.webp",
@@ -962,7 +866,6 @@
     },
     {
       "id": 104,
-      "sku": "RR-661",
       "name": "RR 661",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/19/167597/conversions/6967b9aa54ec2155133016_converted-medium.webp",
@@ -972,7 +875,6 @@
     },
     {
       "id": 105,
-      "sku": "RR-351",
       "name": "RR 351",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/04/204217/conversions/691f6fcfa3875256201900-medium.webp",
@@ -982,7 +884,6 @@
     },
     {
       "id": 106,
-      "sku": "RR-801-ULTRA",
       "name": "RR 801 Ultra",
       "unit": "pcs",
       "image_url": null,
@@ -992,7 +893,6 @@
     },
     {
       "id": 107,
-      "sku": "RR-611-EU",
       "name": "RR 611 EU",
       "unit": "pcs",
       "image_url": null,
@@ -1002,7 +902,6 @@
     },
     {
       "id": 108,
-      "sku": "CR-125",
       "name": "CR 125",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/06/204278/conversions/CR-125-EU-medium.webp",
@@ -1012,7 +911,6 @@
     },
     {
       "id": 134,
-      "sku": "GL-351",
       "name": "GL 351",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/15/17/219938/conversions/GL-351-medium.webp",
@@ -1022,7 +920,6 @@
     },
     {
       "id": 135,
-      "sku": "GL-601-ULTRA",
       "name": "GL 601 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/08/204303/conversions/GL-601-Ultra-(1)-medium.webp",
@@ -1032,7 +929,6 @@
     },
     {
       "id": 136,
-      "sku": "GL-801-ULTRA",
       "name": "GL 801 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/09/204315/conversions/691f6d03939a1162939527-medium.webp",
@@ -1042,7 +938,6 @@
     },
     {
       "id": 137,
-      "sku": "STREET-BIKE-175-ME-DUBAI",
       "name": "Street Bike 175 ME Dubai",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/08/204859/conversions/Street-Bike-175-ME-Dubai-(8)-medium.webp",
@@ -1052,7 +947,6 @@
     },
     {
       "id": 138,
-      "sku": "STREET-BIKE-125-EU",
       "name": "Street Bike 125 EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/06/204838/conversions/1-medium.webp",
@@ -1062,7 +956,6 @@
     },
     {
       "id": 139,
-      "sku": "CUSTOM-1000-RR-LIMITED",
       "name": "Custom 1000 RR Limited",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/17/20/167543/conversions/682c9c37dabd0256125411-medium.webp",
@@ -1072,7 +965,6 @@
     },
     {
       "id": 140,
-      "sku": "SPYDER-661",
       "name": "Spyder 661",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207677/conversions/Spyder-1115-(1)-medium.webp",
@@ -1082,7 +974,6 @@
     },
     {
       "id": 141,
-      "sku": "SPYDER-301",
       "name": "Spyder 301",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/08/204890/conversions/69202fde73525836429749-medium.webp",
@@ -1092,7 +983,6 @@
     },
     {
       "id": 142,
-      "sku": "5000-6-SEATER-PRO",
       "name": "5000 6 Seater Pro",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/22/205120/conversions/Golf-Cart-5000-6-Seater-Pro-(43)-medium.webp",
@@ -1102,7 +992,6 @@
     },
     {
       "id": 143,
-      "sku": "COUNTRY-CLUB-4-2-SEATER",
       "name": "Country Club 4+2 seater",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/11/06/218669/conversions/Country-Club-4-Seater-(5)-medium.webp",
@@ -1112,7 +1001,6 @@
     },
     {
       "id": 144,
-      "sku": "COUNTRY-CLUB-2-2-SEATER",
       "name": "Country Club 2+2 Seater",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205127/conversions/Country-Club-2+2-(5)-medium.webp",
@@ -1122,7 +1010,6 @@
     },
     {
       "id": 145,
-      "sku": "COUNTRY-CLUB-6-SEATER",
       "name": "Country Club 6 Seater",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205157/conversions/Country-Club-6-Seater-(20)-medium.webp",
@@ -1132,7 +1019,6 @@
     },
     {
       "id": 146,
-      "sku": "COUNTRY-CLUB-4-SEATER",
       "name": "Country Club 4 Seater",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205139/conversions/Country-Club-4-Seater-(6)-medium.webp",
@@ -1142,7 +1028,6 @@
     },
     {
       "id": 7,
-      "sku": "EXPERT-PRO-300-2T-HUSQ-EDITION",
       "name": "Expert Pro 300 2t Husq Edition",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2025/12/14/18/162343/conversions/1-medium.webp",
@@ -1152,7 +1037,6 @@
     },
     {
       "id": 8,
-      "sku": "GL-301",
       "name": "GL 301",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2025/12/15/00/162358/conversions/682f372dc216f574983584-medium.webp",
@@ -1162,7 +1046,6 @@
     },
     {
       "id": 13,
-      "sku": "RR-250",
       "name": "RR 250",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/15/167576/conversions/682c98ad9fa59143257323-medium.webp",
@@ -1172,7 +1055,6 @@
     },
     {
       "id": 15,
-      "sku": "TOUR-ENDURO-300-EURASIA",
       "name": "Tour Enduro 300 Eurasia",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/19/204195/conversions/Frame-21-medium.webp",
@@ -1182,7 +1064,6 @@
     },
     {
       "id": 16,
-      "sku": "STREET-BIKE-175-ME-MAX-ULTRA",
       "name": "Street Bike 175 ME Max Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/02/08/19/172191/conversions/68d3c35c8ca4a126124719-medium.webp",
@@ -1192,7 +1073,6 @@
     },
     {
       "id": 19,
-      "sku": "ACE-1000",
       "name": "Ace 1000",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/12/204994/conversions/ACE-1001-medium.webp",
@@ -1202,7 +1082,6 @@
     },
     {
       "id": 20,
-      "sku": "FORCE-720",
       "name": "Force 720",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/08/14/202658/conversions/Rage-720-LTD-(18)-medium.webp",
@@ -1212,7 +1091,6 @@
     },
     {
       "id": 27,
-      "sku": "SN-380-ULTRA",
       "name": "SN 380 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/11/204953/conversions/SN-380-(6)-medium.webp",
@@ -1222,7 +1100,6 @@
     },
     {
       "id": 28,
-      "sku": "SN-500",
       "name": "SN 500",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/04/207642/conversions/SN-500-(10)-medium.webp",
@@ -1232,7 +1109,6 @@
     },
     {
       "id": 38,
-      "sku": "ACTIVATOR-300-RX",
       "name": "Activator 300 RX",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/25/07/197155/conversions/Activator-300-RX-(16)-medium.webp",
@@ -1242,7 +1118,6 @@
     },
     {
       "id": 39,
-      "sku": "FORCE-425-CYBER",
       "name": "Force 425 Cyber",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/19/197050/conversions/Force-425-Cyber-(7)-medium.webp",
@@ -1252,7 +1127,6 @@
     },
     {
       "id": 40,
-      "sku": "FORCE-720-RAGE-LTD",
       "name": "Force 720 Rage LTD",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/13/191426/conversions/69206379cc218670595640-medium.webp",
@@ -1262,7 +1136,6 @@
     },
     {
       "id": 41,
-      "sku": "FORCE-1100-MUD-LITE",
       "name": "Force 1100 Mud Lite",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/16/191478/conversions/113-medium.webp",
@@ -1272,7 +1145,6 @@
     },
     {
       "id": 110,
-      "sku": "SPORT-240",
       "name": "Sport 240",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/10/202934/conversions/Sport-240-1-(1)-medium.webp",
@@ -1282,7 +1154,6 @@
     },
     {
       "id": 111,
-      "sku": "POWERMAX-140-MINI-SEMI-AUTOMATIC",
       "name": "PowerMax 140 MINI Semi-Automatic",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/14/203611/conversions/682f37799436e829910344-medium.webp",
@@ -1292,7 +1163,6 @@
     },
     {
       "id": 112,
-      "sku": "POWERMAX-140-MINI-MANUAL",
       "name": "PowerMax 140 MINI Manual",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/14/203619/conversions/682f37799436e829910344-medium.webp",
@@ -1302,7 +1172,6 @@
     },
     {
       "id": 113,
-      "sku": "POWER-MAX-145-MANUAL",
       "name": "Power Max 145 Manual",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/16/203749/conversions/POWER-MAX-301-medium.webp",
@@ -1312,7 +1181,6 @@
     },
     {
       "id": 114,
-      "sku": "POWER-MAX-145-SEMI-AUTOMATIC",
       "name": "Power Max 145 Semi-Automatic",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/16/203754/conversions/POWER-MAX-301-medium.webp",
@@ -1322,7 +1190,6 @@
     },
     {
       "id": 115,
-      "sku": "POWER-MAX-190-MANUAL",
       "name": "Power Max 190 Manual",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/08/21/218058/conversions/68dd29a956fbb316574661-medium.webp",
@@ -1332,7 +1199,6 @@
     },
     {
       "id": 116,
-      "sku": "POWER-MAX-190-SEMI-AUTOMATIC",
       "name": "Power Max 190 Semi-Automatic",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/17/203784/conversions/67dc316d75ee5976035250-(3)-medium.webp",
@@ -1342,7 +1208,6 @@
     },
     {
       "id": 117,
-      "sku": "FORCE-1000-RANGER",
       "name": "Force 1000 Ranger",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207770/conversions/Force-1000-Ranger-(7)-medium.webp",
@@ -1352,7 +1217,6 @@
     },
     {
       "id": 118,
-      "sku": "TOUR-ENDURO-300-ULTRA",
       "name": "Tour Enduro 300 Ultra",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/17/204168/conversions/Tour-Enduro-300-Ultra-(22)-medium.webp",
@@ -1362,7 +1226,6 @@
     },
     {
       "id": 119,
-      "sku": "RR-240",
       "name": "RR 240",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218117/conversions/RR-1005-medium.webp",
@@ -1372,7 +1235,6 @@
     },
     {
       "id": 120,
-      "sku": "RR-801",
       "name": "RR 801",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/08/218130/conversions/RR-801-Ultra-(11)-medium.webp",
@@ -1382,7 +1244,6 @@
     },
     {
       "id": 121,
-      "sku": "EURO-TANK-125",
       "name": "Euro Tank 125",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204696/conversions/Eurotank-133-medium.webp",
@@ -1392,7 +1253,6 @@
     },
     {
       "id": 122,
-      "sku": "JET-X-50",
       "name": "Jet X 50",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204716/conversions/Eurotank-133-medium.webp",
@@ -1402,7 +1262,6 @@
     },
     {
       "id": 123,
-      "sku": "JET-X-125",
       "name": "Jet X 125",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204731/conversions/JET-X-125-(18)-medium.webp",
@@ -1412,7 +1271,6 @@
     },
     {
       "id": 124,
-      "sku": "SN-280",
       "name": "SN 280",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/17/00/220081/conversions/SN-282-medium.webp",
@@ -1422,7 +1280,6 @@
     },
     {
       "id": 125,
-      "sku": "GTX-190",
       "name": "GTX 190",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/11/08/218704/conversions/SN-500-(16)-medium.webp",
@@ -1432,7 +1289,6 @@
     },
     {
       "id": 126,
-      "sku": "FX-190",
       "name": "FX 190",
       "unit": "pcs",
       "image_url": null,
@@ -1442,7 +1298,6 @@
     },
     {
       "id": 127,
-      "sku": "GP-501-E-BLACK",
       "name": "GP 501 E Black",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207667/conversions/_E-GP-511-medium.webp",
@@ -1452,7 +1307,6 @@
     },
     {
       "id": 128,
-      "sku": "RST-250",
       "name": "RST 250",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207685/conversions/RST-250-(14)-medium.webp",
@@ -1462,7 +1316,6 @@
     },
     {
       "id": 133,
-      "sku": "5000-4-2-SEATER",
       "name": "5000 4+2 Seater",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/10/18/218608/conversions/6826ed8738853947330495-medium.webp",
@@ -1472,7 +1325,6 @@
     },
     {
       "id": 147,
-      "sku": "RR-1390-BLACK-STAR",
       "name": "RR 1390 Black Star",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/04/07/216674/conversions/RR-1390-Black-Star-(19)-medium.webp",
@@ -1482,7 +1334,6 @@
     },
     {
       "id": 148,
-      "sku": "FX-125-ADV-EU",
       "name": "FX 125 ADV EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/04/09/216731/conversions/FX-125-ADV-EU-(16)-medium.webp",
@@ -1492,7 +1343,6 @@
     },
     {
       "id": 149,
-      "sku": "FORCE-450-CYBER-EU",
       "name": "Force 450 Cyber EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/06/13/217705/conversions/Force-425-Cyber-(7)-medium.webp",
@@ -1502,7 +1352,6 @@
     },
     {
       "id": 150,
-      "sku": "SPORT-300-AIR",
       "name": "Sport 300 Air",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/08/10/217964/conversions/6a75bb646fb21138579033-medium.webp",
@@ -1512,7 +1361,6 @@
     },
     {
       "id": 151,
-      "sku": "RST-511-EU",
       "name": "RST 511 EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218168/conversions/RST-511-EU-medium.webp",
@@ -1522,7 +1370,6 @@
     },
     {
       "id": 152,
-      "sku": "RST-125-MINI-BANANA-EU",
       "name": "RST 125 Mini Banana EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218172/conversions/RST-MINI-BANANA-140-(5)-medium.webp",
@@ -1532,7 +1379,6 @@
     },
     {
       "id": 153,
-      "sku": "RST-MINI-MOON-200",
       "name": "RST Mini Moon 200",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218180/conversions/RST-Mini-Moon-200-medium.webp",
@@ -1542,7 +1388,6 @@
     },
     {
       "id": 154,
-      "sku": "PREDATOR-500",
       "name": "Predator 500",
       "unit": "pcs",
       "image_url": null,
@@ -1552,7 +1397,6 @@
     },
     {
       "id": 155,
-      "sku": "SPYDER-881",
       "name": "Spyder 881",
       "unit": "pcs",
       "image_url": null,
@@ -1562,7 +1406,6 @@
     },
     {
       "id": 156,
-      "sku": "GP-377-EFI",
       "name": "GP 377 EFI",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222201/conversions/PIM_TEST_bike_transparent-medium.webp",
@@ -1572,7 +1415,6 @@
     },
     {
       "id": 157,
-      "sku": "FX-200-ADV",
       "name": "FX 200 ADV",
       "unit": "pcs",
       "image_url": null,
@@ -1582,7 +1424,6 @@
     },
     {
       "id": 158,
-      "sku": "FX-401-ADV",
       "name": "FX 401 ADV",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/07/222129/conversions/PIM_TEST_bike_transparent-medium.webp",
@@ -1592,7 +1433,6 @@
     },
     {
       "id": 159,
-      "sku": "STREET-BIKE-49",
       "name": "Street Bike 49",
       "unit": "pcs",
       "image_url": null,
@@ -1602,7 +1442,6 @@
     },
     {
       "id": 160,
-      "sku": "RST-911",
       "name": "RST 911",
       "unit": "pcs",
       "image_url": null,
@@ -1612,7 +1451,6 @@
     },
     {
       "id": 161,
-      "sku": "RST-451",
       "name": "RST 451",
       "unit": "pcs",
       "image_url": null,
@@ -1622,7 +1460,6 @@
     },
     {
       "id": 162,
-      "sku": "RST-1100",
       "name": "RST 1100",
       "unit": "pcs",
       "image_url": null,
@@ -1632,7 +1469,6 @@
     },
     {
       "id": 163,
-      "sku": "RST-301",
       "name": "RST 301",
       "unit": "pcs",
       "image_url": null,
@@ -1642,7 +1478,6 @@
     },
     {
       "id": 164,
-      "sku": "AFRO-125",
       "name": "Afro 125",
       "unit": "pcs",
       "image_url": null,
@@ -1652,7 +1487,6 @@
     },
     {
       "id": 165,
-      "sku": "RETRO-180",
       "name": "Retro 180",
       "unit": "pcs",
       "image_url": null,
@@ -1662,7 +1496,6 @@
     },
     {
       "id": 166,
-      "sku": "EURASIA-250",
       "name": "Eurasia 250",
       "unit": "pcs",
       "image_url": null,
@@ -1672,7 +1505,6 @@
     },
     {
       "id": 167,
-      "sku": "5000-CARGO",
       "name": "5000 Cargo",
       "unit": "pcs",
       "image_url": null,
@@ -1682,7 +1514,6 @@
     },
     {
       "id": 168,
-      "sku": "CARGO-350",
       "name": "Cargo 350",
       "unit": "pcs",
       "image_url": null,
@@ -1692,7 +1523,6 @@
     },
     {
       "id": 169,
-      "sku": "GL-441",
       "name": "GL 441",
       "unit": "pcs",
       "image_url": null,
@@ -1702,7 +1532,6 @@
     },
     {
       "id": 170,
-      "sku": "GL-901",
       "name": "GL 901",
       "unit": "pcs",
       "image_url": null,
@@ -1712,7 +1541,6 @@
     },
     {
       "id": 171,
-      "sku": "SPORT-322",
       "name": "Sport 322",
       "unit": "pcs",
       "image_url": null,
@@ -1722,7 +1550,6 @@
     },
     {
       "id": 172,
-      "sku": "RST-911-EU",
       "name": "RST 911 EU",
       "unit": "pcs",
       "image_url": null,
@@ -1732,7 +1559,6 @@
     },
     {
       "id": 173,
-      "sku": "FORCE-450-CYBER-EU-EQ-73523",
       "name": "Force 450 Cyber EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/06/13/217705/conversions/Force-425-Cyber-(7)-medium.webp",
@@ -1742,7 +1568,6 @@
     },
     {
       "id": 174,
-      "sku": "FORCE-450-CYBER-EFI-BLACK",
       "name": "Force 450 Cyber EFI (Black)",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/24/02/221837/conversions/Force-450-black-medium.webp",
@@ -1752,7 +1577,6 @@
     },
     {
       "id": 175,
-      "sku": "FORCE-450-CYBER-EFI-RED",
       "name": "Force 450 Cyber EFI (Red)",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/24/02/221843/conversions/Force-450-red-medium.webp",
@@ -1762,7 +1586,6 @@
     },
     {
       "id": 176,
-      "sku": "GL-511-EFI",
       "name": "GL 511 EFI",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/10/222192/conversions/PIM_TEST_bike_transparent-medium.webp",
@@ -1772,7 +1595,6 @@
     },
     {
       "id": 177,
-      "sku": "GL-511-EFI-X",
       "name": "GL 511 EFI X",
       "unit": "pcs",
       "image_url": null,
@@ -1782,7 +1604,6 @@
     },
     {
       "id": 178,
-      "sku": "JUNIOR-300",
       "name": "Junior 300",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/01/222084/conversions/1-(34)-Photoroom-medium.webp",
@@ -1792,7 +1613,6 @@
     },
     {
       "id": 179,
-      "sku": "SPORT-380",
       "name": "Sport 380",
       "unit": "pcs",
       "image_url": null,
@@ -1802,7 +1622,6 @@
     },
     {
       "id": 180,
-      "sku": "RST-351-EFI",
       "name": "RST 351 EFI",
       "unit": "pcs",
       "image_url": null,
@@ -1812,7 +1631,6 @@
     },
     {
       "id": 181,
-      "sku": "DIO-150",
       "name": "DIO 150",
       "unit": "pcs",
       "image_url": null,
@@ -1822,7 +1640,6 @@
     },
     {
       "id": 182,
-      "sku": "GL-401-ROVER-MAX-X",
       "name": "GL 401 Rover Max X",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222198/conversions/PIM_TEST_bike_transparent-medium.webp",
@@ -1832,7 +1649,6 @@
     },
     {
       "id": 183,
-      "sku": "FX-401-MX",
       "name": "FX 401 MX",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222203/conversions/PIM_TEST_bike_transparent-medium.webp",
@@ -1842,7 +1658,6 @@
     },
     {
       "id": 184,
-      "sku": "RST-150-MINI",
       "name": "RST 150 Mini",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222209/conversions/PIM_TEST_bike_transparent-medium.webp",
@@ -1852,7 +1667,6 @@
     },
     {
       "id": 185,
-      "sku": "CUB-MAX-130",
       "name": "Cub Max 130",
       "unit": "pcs",
       "image_url": null,
@@ -1862,7 +1676,6 @@
     },
     {
       "id": 186,
-      "sku": "RST-125-MINI-EU",
       "name": "RST 125 Mini EU",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/27/03/222774/conversions/PIM_TEST_bike_transparent-medium.webp",
@@ -1872,7 +1685,6 @@
     },
     {
       "id": 187,
-      "sku": "EURASIA-320",
       "name": "Eurasia 320",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/15/09/226355/conversions/Eurasia-320-medium.webp",
@@ -1882,7 +1694,6 @@
     },
     {
       "id": 188,
-      "sku": "JUNIOR-300-PRO",
       "name": "Junior 300 Pro",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/15/09/226380/conversions/Junior-300-Pro-medium.webp",
@@ -1892,7 +1703,6 @@
     },
     {
       "id": 189,
-      "sku": "FORCE-525-SUPERCHARGER",
       "name": "Force 525 Supercharger",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/14/12/226205/conversions/Force-525-Supercharge-(7)-medium.webp",
@@ -1902,7 +1712,6 @@
     },
     {
       "id": 190,
-      "sku": "SPORT-300-AIR-BLACK-EDITION",
       "name": "Sport 300 Air Black Edition",
       "unit": "pcs",
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/14/16/226272/conversions/Sport-300-air-black-edition-(15)-medium.webp",
@@ -1912,7 +1721,6 @@
     },
     {
       "id": 191,
-      "sku": "RST-311",
       "name": "RST 311",
       "unit": "pcs",
       "image_url": null,
@@ -1922,7 +1730,6 @@
     },
     {
       "id": 192,
-      "sku": "RST-377-EFI",
       "name": "RST 377 EFI",
       "unit": "pcs",
       "image_url": null,
@@ -1932,7 +1739,6 @@
     },
     {
       "id": 193,
-      "sku": "BANDIT-125-EU",
       "name": "Bandit 125 EU",
       "unit": "pcs",
       "image_url": null,
@@ -1942,7 +1748,6 @@
     },
     {
       "id": 194,
-      "sku": "RST-501-EFI",
       "name": "RST 501 EFi",
       "unit": "pcs",
       "image_url": null,
@@ -1952,7 +1757,6 @@
     },
     {
       "id": 195,
-      "sku": "GP-250-MX",
       "name": "GP 250 MX",
       "unit": "pcs",
       "image_url": null,
@@ -1962,7 +1766,6 @@
     },
     {
       "id": 196,
-      "sku": "RR-681",
       "name": "RR 681",
       "unit": "pcs",
       "image_url": null,
@@ -1972,7 +1775,6 @@
     },
     {
       "id": 197,
-      "sku": "SPRINTER-125",
       "name": "Sprinter 125",
       "unit": "pcs",
       "image_url": null,
@@ -1982,7 +1784,6 @@
     },
     {
       "id": 198,
-      "sku": "CITYWALK-4-PRO",
       "name": "CityWalk 4 Pro",
       "unit": "pcs",
       "image_url": null,
@@ -1992,7 +1793,6 @@
     },
     {
       "id": 199,
-      "sku": "CITYWALK-6-PRO",
       "name": "CityWalk 6 Pro",
       "unit": "pcs",
       "image_url": null,
@@ -2002,7 +1802,6 @@
     },
     {
       "id": 200,
-      "sku": "FX-3000-ADV",
       "name": "FX 3000 ADV",
       "unit": "pcs",
       "image_url": null,
@@ -2012,7 +1811,6 @@
     },
     {
       "id": 201,
-      "sku": "CARGO-PRO-2000",
       "name": "Cargo Pro 2000",
       "unit": "pcs",
       "image_url": null,
@@ -2022,7 +1820,6 @@
     },
     {
       "id": 202,
-      "sku": "URBAN-2000",
       "name": "Urban 2000",
       "unit": "pcs",
       "image_url": null,
@@ -2032,7 +1829,6 @@
     },
     {
       "id": 203,
-      "sku": "POWER-MAX-450-EFI",
       "name": "Power Max 450 EFI",
       "unit": "pcs",
       "image_url": null,
@@ -2042,7 +1838,6 @@
     },
     {
       "id": 204,
-      "sku": "FX-50-EU",
       "name": "FX 50 EU",
       "unit": "pcs",
       "image_url": null,
@@ -2052,7 +1847,6 @@
     },
     {
       "id": 205,
-      "sku": "GL-401-TRAVEL",
       "name": "GL 401 Travel",
       "unit": "pcs",
       "image_url": null,
@@ -2062,7 +1856,6 @@
     },
     {
       "id": 206,
-      "sku": "GP-451-EFI",
       "name": "GP 451 EFI",
       "unit": "pcs",
       "image_url": null,

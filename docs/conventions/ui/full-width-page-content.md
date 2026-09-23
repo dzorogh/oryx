@@ -37,6 +37,10 @@ On wide screens, a single full-width column makes cards and lines too long. Pref
 
 Empty states spanning a grid should use `md:col-span-2 xl:col-span-3` when appropriate.
 
+## Tables inside a card
+
+A table inside a `Card` spans the card edge to edge: no horizontal padding on the card body or table wrapper, and no vertical card padding above or below the table. Only the first and last cells keep an inset (`pl-4` / `pr-4`), so row hover and row borders reach the card edges. In Store logistics use `LogisticsTableCard` (or `FLUSH_TABLE_CLASS` from it) instead of hand-rolled padding. Note: shadcn `CardContent` in `size="sm"` cards adds `group-data-[size=sm]/card:px-3`, which a plain `px-0` does not override — clear it explicitly.
+
 ## List pages with toolbar
 
 Pages with a compact white toolbar above a list (Products, Thanks) use `bg-muted/30` and place the breadcrumb outside the card. See [list-page-toolbar.md](list-page-toolbar.md) for the header; this document governs width of the list body below.

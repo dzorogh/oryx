@@ -9,6 +9,7 @@ import {
   type StoreCatalogItem,
 } from "../store-catalog-demo-data";
 import { getCategoryNodeLabel } from "@/features/store/category-tree";
+import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { getDisplayProductName } from "../catalog/catalog-display";
 import { buildProductDescriptions } from "./product-detail-descriptions";
 
@@ -27,7 +28,7 @@ export type ProductVariant = {
   id: string;
   name: string;
   isDefault: boolean;
-  sku: string | null;
+  code: string | null;
   productionSite: string;
   unitQuantity: number;
   dealerStatus: DealerStatus;
@@ -45,7 +46,7 @@ export type ProductDetail = {
   id: string;
   name: string;
   displayName: string;
-  sku: string | null;
+  code: string | null;
   brand: string;
   family: string;
   category: string;
@@ -200,7 +201,7 @@ const buildVariants = (item: StoreCatalogItem): ProductVariant[] => {
       id: `${item.id}-v${variantIndex + 1}`,
       name: variantName,
       isDefault,
-      sku: isDefault ? item.sku || null : `${item.sku || "000000"}-${variantIndex + 1}`,
+      code: isDefault ? item.code : formatLogisticsCode("product", `${item.id}-v${variantIndex + 1}`),
       productionSite: trim.productionSite ?? item.productionSite,
       unitQuantity: 1,
       dealerStatus: item.dealerStatus,
@@ -231,7 +232,7 @@ const buildProductDetail = (item: StoreCatalogItem): ProductDetail => {
     id: item.id,
     name: item.name,
     displayName,
-    sku: item.sku || null,
+    code: item.code || null,
     brand: "Sharmax",
     family: item.family,
     category: getCategoryNodeLabel(item.categoryId) ?? item.category,
@@ -272,8 +273,7 @@ export const getVariantCatalogItems = (): StoreCatalogItem[] => {
     buildVariants(product).map((variant, variantIndex) => ({
       id: variant.id,
       name: variant.isDefault ? product.name : `Oryx ${variant.name}`,
-      sku: variant.sku ?? "",
-      code: product.code,
+      code: variant.code ?? formatLogisticsCode("product", variant.id),
       imageSrc: variant.imageSrc,
       imageAlt: variant.imageAlt,
       categoryId: product.categoryId,

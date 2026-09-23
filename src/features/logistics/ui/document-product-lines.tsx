@@ -13,7 +13,6 @@ export type DocumentProductLine = {
   productId: string;
   quantity: number;
   productName?: string | null;
-  productSku?: string | null;
   productUnit?: string | null;
 };
 

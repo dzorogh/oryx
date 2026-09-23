@@ -97,7 +97,7 @@ export const OUTPUT_STATUS_LABELS: Partial<Record<OutputStatus, string>> = {
 };
 
 export const OWNER_TYPE_LABELS: Record<OwnerType, string> = {
-  order: "Заказ",
+  order: "Заказ клиента",
   region: "Регион",
 };
 
@@ -150,8 +150,8 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 
 export const ADJUSTMENT_OPERATION_LABELS: Record<AdjustmentOperation | "mixed", string> = {
   write_off: "Списание",
-  decrease: "Корректировка −",
-  increase: "Корректировка +",
+  decrease: "Уменьшение",
+  increase: "Увеличение",
   mixed: "Корректировка",
 };
 
@@ -181,6 +181,14 @@ export const formatSignedQuantity = (quantity: number, unit?: string): string =>
   return quantity > 0 ? `+${magnitude}` : `${MINUS_SIGN}${magnitude}`;
 };
 
+/** Tailwind class for signed qty: green plus, red minus, muted zero/neutral. */
+export const signedQuantityClassName = (quantity: number): string => {
+  if (Math.abs(quantity) < 1e-9) {
+    return "text-muted-foreground";
+  }
+  return quantity > 0 ? "text-green-700" : "text-red-700";
+};
+
 export const formatTimestamp = (value: string | null): string => {
   if (!value) {
     return "—";
@@ -188,6 +196,20 @@ export const formatTimestamp = (value: string | null): string => {
     return new Date(value).toLocaleString("ru-RU", {
     day: "numeric",
     month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/** Compact date-time for document header meta fields: «23.09.2026, 14:09». */
+export const formatMetaTimestamp = (value: string | null): string => {
+  if (!value) {
+    return "—";
+  }
+  return new Date(value).toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",

@@ -10,7 +10,6 @@ export type RetailStatus = "Available for sale" | "Made to order" | "Awaiting de
 export type StoreCatalogItem = {
   id: string;
   name: string;
-  sku: string;
   code: string;
   imageSrc: StaticImageData | string;
   imageAlt: string;
@@ -33,7 +32,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-001",
     name: "Oryx Force 1000 EFI",
-    sku: "100451",
     imageSrc: STORE_DEMO_IMAGES.force1000Photo,
     imageAlt: "ATV Oryx Force 1000 EFI",
     categoryId: "atv-4x4",
@@ -48,7 +46,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-002",
     name: "Oryx Force 750 Touring",
-    sku: "100452",
     imageSrc: STORE_DEMO_IMAGES.force750Photo,
     imageAlt: "ATV Oryx Force 750 Touring",
     categoryId: "atv-4x4",
@@ -63,7 +60,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-003",
     name: "Oryx Cross 300 RX",
-    sku: "203781",
     imageSrc: STORE_DEMO_IMAGES.cross300Photo,
     imageAlt: "Enduro Oryx Cross 300 RX",
     categoryId: "off-road-enduro",
@@ -78,7 +74,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-004",
     name: "Oryx Cross E-250",
-    sku: "203782",
     imageSrc: STORE_DEMO_IMAGES.crossE250Photo,
     imageAlt: "Electric bike Oryx Cross E-250",
     categoryId: "atv-electric-motorcycles",
@@ -93,7 +88,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-005",
     name: "Oryx Urban 180",
-    sku: "310945",
     imageSrc: STORE_DEMO_IMAGES.urban180Photo,
     imageAlt: "Scooter Oryx Urban 180",
     categoryId: "road-scooter",
@@ -108,7 +102,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-006",
     name: "Oryx Sprint 200 ABS",
-    sku: "310946",
     imageSrc: STORE_DEMO_IMAGES.sprint200Photo,
     imageAlt: "Scooter Oryx Sprint 200 ABS",
     categoryId: "road-scooter",
@@ -123,7 +116,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-007",
     name: "Oryx GP 450 Rally",
-    sku: "427501",
     imageSrc: STORE_DEMO_IMAGES.gp450Photo,
     imageAlt: "Motorcycle Oryx GP 450 Rally",
     categoryId: "road-street-bike",
@@ -138,7 +130,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-008",
     name: "Oryx GP 650 Touring",
-    sku: "427502",
     imageSrc: STORE_DEMO_IMAGES.gp650Photo,
     imageAlt: "Motorcycle Oryx GP 650 Touring",
     categoryId: "road-street-bike",
@@ -153,7 +144,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-009",
     name: "Oryx RST 520",
-    sku: "518340",
     imageSrc: STORE_DEMO_IMAGES.rst520Photo,
     imageAlt: "Snowmobile Oryx RST 520",
     categoryId: "off-road-snowmobile",
@@ -168,7 +158,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-010",
     name: "Oryx RST 620 Ultra",
-    sku: "518341",
     imageSrc: STORE_DEMO_IMAGES.rst620Photo,
     imageAlt: "Snowmobile Oryx RST 620 Ultra",
     categoryId: "off-road-snowmobile",
@@ -183,7 +172,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-011",
     name: "Oryx Ace 1000 Side-by-Side",
-    sku: "689220",
     imageSrc: STORE_DEMO_IMAGES.ace1000Photo,
     imageAlt: "Side-by-side Oryx Ace 1000 Side-by-Side",
     categoryId: "atv-side-by-side",
@@ -198,7 +186,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-012",
     name: "Oryx Ace 700 Trail",
-    sku: "689221",
     imageSrc: STORE_DEMO_IMAGES.ace700Photo,
     imageAlt: "Side-by-side Oryx Ace 700 Trail",
     categoryId: "atv-side-by-side",
@@ -213,7 +200,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-013",
     name: "Oryx Force 650 PRO",
-    sku: "100453",
     imageSrc: STORE_DEMO_IMAGES.force650Photo,
     imageAlt: "ATV Oryx Force 650 PRO",
     categoryId: "atv-4x4",
@@ -228,7 +214,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-014",
     name: "Oryx Force 850 Expedition",
-    sku: "100454",
     imageSrc: STORE_DEMO_IMAGES.force1000Photo,
     imageAlt: "ATV Oryx Force 850 Expedition",
     categoryId: "atv-4x4",
@@ -243,7 +228,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-015",
     name: "Oryx Cross 280 Enduro",
-    sku: "203783",
     imageSrc: STORE_DEMO_IMAGES.cross300Photo,
     imageAlt: "Enduro Oryx Cross 280 Enduro",
     categoryId: "off-road-enduro",
@@ -258,7 +242,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-016",
     name: "Oryx Cross 450 Adventure",
-    sku: "203784",
     imageSrc: STORE_DEMO_IMAGES.cross450Photo,
     imageAlt: "Enduro Oryx Cross 450 Adventure",
     categoryId: "off-road-enduro",
@@ -273,7 +256,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-017",
     name: "Oryx Urban 125 City",
-    sku: "310947",
     imageSrc: STORE_DEMO_IMAGES.urban180Photo,
     imageAlt: "Scooter Oryx Urban 125 City",
     categoryId: "road-scooter",
@@ -288,7 +270,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-018",
     name: "Oryx Sprint 300 MAX",
-    sku: "310948",
     imageSrc: STORE_DEMO_IMAGES.urban180Photo,
     imageAlt: "Scooter Oryx Sprint 300 MAX",
     categoryId: "road-scooter",
@@ -303,7 +284,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-019",
     name: "Oryx GP 300 Street",
-    sku: "427503",
     imageSrc: STORE_DEMO_IMAGES.gp300Photo,
     imageAlt: "Motorcycle Oryx GP 300 Street",
     categoryId: "road-street-bike",
@@ -318,7 +298,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-020",
     name: "Oryx GP 700 Touring Plus",
-    sku: "427504",
     imageSrc: STORE_DEMO_IMAGES.gp450Photo,
     imageAlt: "Motorcycle Oryx GP 700 Touring Plus",
     categoryId: "road-street-bike",
@@ -333,7 +312,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-021",
     name: "Oryx RST 450 Snow",
-    sku: "518342",
     imageSrc: STORE_DEMO_IMAGES.rst520Photo,
     imageAlt: "Snowmobile Oryx RST 450 Snow",
     categoryId: "off-road-snowmobile",
@@ -348,7 +326,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-022",
     name: "Oryx RST 720 Arctic",
-    sku: "518343",
     imageSrc: STORE_DEMO_IMAGES.rst520Photo,
     imageAlt: "Snowmobile Oryx RST 720 Arctic",
     categoryId: "off-road-snowmobile",
@@ -363,7 +340,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-023",
     name: "Oryx Ace 900 Trail Pro",
-    sku: "689222",
     imageSrc: STORE_DEMO_IMAGES.ace1000Photo,
     imageAlt: "Side-by-side Oryx Ace 900 Trail Pro",
     categoryId: "atv-side-by-side",
@@ -378,7 +354,6 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
     id: "bike-024",
     name: "Oryx Ace 1100 Rally",
-    sku: "689223",
     imageSrc: STORE_DEMO_IMAGES.ace1000Photo,
     imageAlt: "Side-by-side Oryx Ace 1100 Rally",
     categoryId: "atv-side-by-side",
@@ -408,14 +383,12 @@ const GENERATED_RETAIL_STATUSES: RetailStatus[] = [
 const GENERATED_CATALOG_ITEMS: StoreCatalogSeedItem[] = Array.from({ length: GENERATED_ITEMS_COUNT }, (_, index) => {
   const baseItem = STORE_CATALOG_BASE_ITEMS[index % STORE_CATALOG_BASE_ITEMS.length] ?? STORE_CATALOG_BASE_ITEMS[0];
   const serial = index + 1;
-  const sku = String(700000 + serial);
   const dealerPrice = (baseItem.dealerPrice ?? 0) + ((serial % 12) - 6) * 50;
   const retailPrice = Math.round((dealerPrice * 1.17) / 10) * 10;
 
   return {
     id: `bike-g${String(serial).padStart(3, "0")}`,
     name: `${baseItem.name} Series ${String(serial).padStart(2, "0")}`,
-    sku,
     imageSrc: baseItem.imageSrc,
     imageAlt: baseItem.imageAlt,
     categoryId: baseItem.categoryId,

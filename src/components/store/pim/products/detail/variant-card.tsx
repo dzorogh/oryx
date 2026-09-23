@@ -80,7 +80,7 @@ export const VariantCard = ({ variant }: VariantCardProps) => {
           </div>
 
           <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-[var(--corportal-border-grey)] pt-3">
-            <MetaItem label="Артикул" value={variant.sku ?? "—"} />
+            <MetaItem label="Код" value={variant.code ?? "—"} />
             <MetaItem label="Площадка" value={variant.productionSite} />
             <MetaItem label="Количество в упаковке" value={`${variant.unitQuantity} шт`} />
           </div>

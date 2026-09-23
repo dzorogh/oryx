@@ -27,8 +27,8 @@ export const PricelistsFiltersSheet = ({ open, onOpenChange, filters }: Pricelis
           <Input
             value={filters.search.value}
             onChange={(event) => filters.search.onChange(event.target.value)}
-            placeholder="Название или артикул"
-            aria-label="Поиск по названию или артикулу в панели фильтров"
+            placeholder="Название или код"
+            aria-label="Поиск по названию или коду в панели фильтров"
           />
         </label>
 

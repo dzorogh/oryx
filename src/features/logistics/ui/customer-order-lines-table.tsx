@@ -3,7 +3,6 @@
 import { Check, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,19 +26,19 @@ import {
 } from "@/features/logistics/logistics-availability";
 import { sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
-import { locationIdentity, productById, warehouseCode } from "@/features/logistics/logistics-lookups";
+import { locationIdentity, productById, productCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type {
   CustomerOrderLine,
   LocationType,
   LogisticsSnapshot,
   StockBalance,
 } from "@/features/logistics/logistics-types";
-import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
+import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { cn } from "@/lib/utils";
 
 const Qty = ({ quantity, className }: { quantity: number; className?: string }) => {
   if (quantity <= ALLOCATION_ATLAS_EPSILON) {
-    return <span className="font-medium text-muted-foreground">—</span>;
+    return <span className={cn("tabular-nums text-muted-foreground/50", className)}>—</span>;
   }
   return <span className={cn("font-semibold tabular-nums", className)}>{formatQuantity(quantity)}</span>;
 };
@@ -56,25 +55,23 @@ const CompactProduct = ({
   snapshot,
   productId,
   productName,
-  productSku,
 }: {
   snapshot: LogisticsSnapshot;
   productId: string;
   productName?: string | null;
-  productSku?: string | null;
 }) => {
   const product = productById(snapshot, productId);
   const name = productName || product?.name || productId;
-  const sku = productSku || product?.sku;
+  const code = productCode(snapshot, productId);
   return (
-    <div className="min-w-0">
+    <div className="flex min-w-0 flex-col items-start gap-0.5">
       <Link
         href={hrefForProduct(productId)}
-        className="block truncate text-sm font-medium text-primary hover:underline"
+        className="font-medium text-foreground hover:underline hover:underline-offset-2"
       >
         {name}
       </Link>
-      {sku ? <div className="truncate text-[10px] text-muted-foreground">{sku}</div> : null}
+      {code ? <LogisticsCodeBadge code={code} href={hrefForProduct(productId)} /> : null}
     </div>
   );
 };
@@ -108,19 +105,25 @@ const LineActionsMenu = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Действия для ${productName}`}
-            className="shrink-0 text-muted-foreground"
-          />
-        }
+      <div
+        className={cn(
+          "opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 has-[[aria-expanded=true]]:opacity-100 motion-reduce:transition-none",
+        )}
       >
-        <MoreHorizontal className="size-3.5" aria-hidden />
-      </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Действия для ${productName}`}
+              className="shrink-0 text-muted-foreground"
+            />
+          }
+        >
+          <MoreHorizontal className="size-3.5" aria-hidden />
+        </DropdownMenuTrigger>
+      </div>
       <DropdownMenuContent align="end" className="min-w-40">
         {canReserve ? <DropdownMenuItem onClick={onReserve}>Зарезервировать</DropdownMenuItem> : null}
         {canShip ? <DropdownMenuItem onClick={onShip}>Отгрузить</DropdownMenuItem> : null}
@@ -143,8 +146,14 @@ const LineActionsMenu = ({
   );
 };
 
-const headClass = "h-8 px-2 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap";
-const cellClass = "px-2 py-1.5 text-center";
+const th = "px-3 pt-2 pb-2 text-xs font-medium whitespace-nowrap text-muted-foreground align-bottom";
+const thNum = cn(th, "text-right");
+const thGroup =
+  "px-3 pt-2 pb-0 text-center text-xs font-medium tracking-[0.06em] whitespace-nowrap text-muted-foreground/70 uppercase";
+const td = "px-3 py-2.5 align-middle";
+const tdNum = cn(td, "text-right tabular-nums");
+const sep = "border-l border-border/60";
+const book = "bg-[#fcfcfc]";
 
 export const CustomerOrderLinesTable = ({
   snapshot,
@@ -154,6 +163,7 @@ export const CustomerOrderLinesTable = ({
   onReserve,
   onShip,
   onRelease,
+  bare = false,
 }: {
   snapshot: LogisticsSnapshot;
   balances: StockBalance[];
@@ -166,161 +176,159 @@ export const CustomerOrderLinesTable = ({
     locationType: LocationType;
     locationId: string;
   }) => void;
+  /** When true, render only the table (DocumentSection provides the card). */
+  bare?: boolean;
 }) => {
   const warehouseIds = warehouseIdsWithReservedForOrder(snapshot, balances, lines);
-  const title = lines.length > 0 ? `Товары · ${lines.length}` : "Товары";
+  const colSpan = 6 + warehouseIds.length;
 
-  return (
-    <Card size="sm" className={logisticsCardClass}>
-      <div className="px-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-      </div>
-      <CardContent className="px-0">
-        <Table className="w-max min-w-full">
-          <TableCaption className="sr-only">{ATLAS_HELP}</TableCaption>
-          <TableHeader>
+  const table = (
+    <div className="overflow-x-auto">
+      <Table className="w-max min-w-full border-separate border-spacing-0">
+        <TableCaption className="sr-only">{ATLAS_HELP}</TableCaption>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead rowSpan={2} className={cn(th, "sticky left-0 z-20 min-w-44 bg-card")}>
+              Товар
+            </TableHead>
+            <TableHead rowSpan={2} className={cn(thNum, book)}>
+              Заказано
+            </TableHead>
+            <TableHead colSpan={3} className={cn(thGroup, sep)}>
+              Поток
+            </TableHead>
+            {warehouseIds.length > 0 ? (
+              <TableHead colSpan={warehouseIds.length} className={cn(thGroup, sep)}>
+                Резерв на складах
+              </TableHead>
+            ) : null}
+            <TableHead rowSpan={2} className={cn(thNum, book, sep)}>
+              Отгружено
+            </TableHead>
+          </TableRow>
+          <TableRow className="hover:bg-transparent">
+            <TableHead title={IN_PRODUCTION_HELP} className={cn(thNum, sep)}>
+              В производстве
+            </TableHead>
+            <TableHead title={PRODUCED_HELP} className={thNum}>
+              Выпущено
+            </TableHead>
+            <TableHead className={thNum}>В пути</TableHead>
+            {warehouseIds.map((warehouseId, index) => (
+              <TableHead key={warehouseId} className={cn(thNum, index === 0 && sep)}>
+                <Link
+                  href={hrefForWarehouse(warehouseId)}
+                  className="font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  {warehouseCode(snapshot, warehouseId)}
+                </Link>
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {lines.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableHead className={cn(headClass, "sticky left-0 z-20 min-w-44 max-w-56 bg-muted text-left")}>
-                Товар
-              </TableHead>
-              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Заказано</TableHead>
-              <TableHead
-                title={IN_PRODUCTION_HELP}
-                className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}
-              >
-                В производстве
-              </TableHead>
-              <TableHead
-                title={PRODUCED_HELP}
-                className={cn(headClass, "bg-muted/30 text-center text-muted-foreground")}
-              >
-                Выпущено
-              </TableHead>
-              <TableHead className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}>
-                В пути
-              </TableHead>
-              {warehouseIds.map((warehouseId) => (
-                <TableHead
-                  key={warehouseId}
-                  className={cn(headClass, "bg-muted/40 text-center text-muted-foreground")}
-                >
-                  <Link
-                    href={hrefForWarehouse(warehouseId)}
-                    className="whitespace-nowrap font-semibold text-muted-foreground hover:underline"
-                  >
-                    {warehouseCode(snapshot, warehouseId)}
-                  </Link>
-                </TableHead>
-              ))}
-              <TableHead className={cn(headClass, "bg-muted text-center text-foreground")}>Отгружено</TableHead>
+              <TableCell colSpan={colSpan} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                В этом заказе нет товаров.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {lines.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={6 + warehouseIds.length}
-                  className="px-3 py-8 text-center text-sm text-muted-foreground"
-                >
-                  В этом заказе нет товаров.
-                </TableCell>
-              </TableRow>
-            ) : (
-              lines.map((line) => {
-                const product = productById(snapshot, line.productId);
-                const productName = line.productName || product?.name || line.productId;
-                const reserved = reservedPlacesForLine(balances, line);
-                const freePlaces = freePlacesForProduct(balances, line.productId);
-                const shippedQty = sumShippedForLine(balances, line);
-                const producedQty = sumProducedForLine(snapshot, line);
-                const locations = lineLocationAllocations(balances, line, snapshot);
-                const toReserve = remainingToReserveForLine(line, balances);
-                const warehouseReserved = reserved.filter((place) => place.locationType === "warehouse");
-                const canReserve = canAct && toReserve > 0 && freePlaces.length > 0;
-                const canShip = canAct && warehouseReserved.length > 0;
-                const complete = isLineFullyShipped(line.quantity, shippedQty);
-                const completeCell = complete ? "bg-emerald-50" : undefined;
-                const bookendCell = complete ? completeCell : "bg-muted/30";
-                const locationCell = complete ? completeCell : "bg-muted/10";
-                const productCell = complete ? "bg-emerald-50" : "bg-card";
+          ) : (
+            lines.map((line) => {
+              const product = productById(snapshot, line.productId);
+              const productName = line.productName || product?.name || line.productId;
+              const reserved = reservedPlacesForLine(balances, line);
+              const freePlaces = freePlacesForProduct(balances, line.productId);
+              const shippedQty = sumShippedForLine(balances, line);
+              const producedQty = sumProducedForLine(snapshot, line);
+              const locations = lineLocationAllocations(balances, line, snapshot);
+              const toReserve = remainingToReserveForLine(line, balances);
+              const warehouseReserved = reserved.filter((place) => place.locationType === "warehouse");
+              const canReserve = canAct && toReserve > 0 && freePlaces.length > 0;
+              const canShipLine = canAct && warehouseReserved.length > 0;
+              const complete = isLineFullyShipped(line.quantity, shippedQty);
+              const pct = Math.min(100, Math.round((shippedQty / Math.max(line.quantity, 1)) * 100));
 
-                return (
-                  <TableRow
-                    key={line.id}
-                    className={cn("hover:bg-transparent", complete && "bg-emerald-50 hover:bg-emerald-50")}
-                  >
-                    <TableCell
-                      className={cn(cellClass, "sticky left-0 z-10 min-w-44 max-w-56 text-left", productCell)}
-                    >
-                      <div className="flex min-w-0 items-center gap-1">
-                        <div className="min-w-0 flex-1 overflow-hidden">
-                          <CompactProduct
-                            snapshot={snapshot}
-                            productId={line.productId}
-                            productName={line.productName}
-                            productSku={line.productSku}
-                          />
-                        </div>
-                        {canAct ? (
-                          <LineActionsMenu
-                            productName={productName}
-                            canReserve={canReserve}
-                            canShip={canShip}
-                            releasePlaces={reserved.map((place) => {
-                              const identity = locationIdentity(snapshot, place.locationType, place.locationId);
-                              return {
-                                locationType: place.locationType,
-                                locationId: place.locationId,
-                                title: identity.title,
-                                hint: identity.hint,
-                                quantity: place.quantity,
-                              };
-                            })}
-                            onReserve={() => onReserve(line)}
-                            onShip={onShip}
-                            onRelease={(place) => onRelease({ line, ...place })}
-                          />
-                        ) : null}
-                      </div>
+              return (
+                <TableRow key={line.id} className="group/row hover:bg-muted/40">
+                  <TableCell className={cn(td, "sticky left-0 z-10 min-w-44 bg-card")}>
+                    <div className="flex items-center justify-between gap-2">
+                      <CompactProduct
+                        snapshot={snapshot}
+                        productId={line.productId}
+                        productName={line.productName}
+                      />
+                      {canAct ? (
+                        <LineActionsMenu
+                          productName={productName}
+                          canReserve={canReserve}
+                          canShip={canShipLine}
+                          releasePlaces={reserved.map((place) => {
+                            const identity = locationIdentity(snapshot, place.locationType, place.locationId);
+                            return {
+                              locationType: place.locationType,
+                              locationId: place.locationId,
+                              title: identity.title,
+                              hint: identity.hint,
+                              quantity: place.quantity,
+                            };
+                          })}
+                          onReserve={() => onReserve(line)}
+                          onShip={onShip}
+                          onRelease={(place) => onRelease({ line, ...place })}
+                        />
+                      ) : null}
+                    </div>
+                  </TableCell>
+                  <TableCell className={cn(tdNum, book)}>
+                    <span className="font-semibold tabular-nums">{formatQuantity(line.quantity)}</span>
+                  </TableCell>
+                  <TableCell className={cn(tdNum, sep)}>
+                    <Qty quantity={locations.inProduction} />
+                  </TableCell>
+                  <TableCell className={tdNum}>
+                    <Qty quantity={producedQty} className="font-medium text-muted-foreground" />
+                  </TableCell>
+                  <TableCell className={tdNum}>
+                    <Qty quantity={locations.inTransit} />
+                  </TableCell>
+                  {warehouseIds.map((warehouseId, index) => (
+                    <TableCell key={warehouseId} className={cn(tdNum, index === 0 && sep)}>
+                      <Qty quantity={locations.byWarehouseId[warehouseId] ?? 0} />
                     </TableCell>
-                    <TableCell className={cn(cellClass, bookendCell)}>
-                      <Qty quantity={line.quantity} className="text-sm font-extrabold" />
-                    </TableCell>
-                    <TableCell className={cn(cellClass, locationCell)}>
-                      <Qty quantity={locations.inProduction} />
-                    </TableCell>
-                    <TableCell className={cn(cellClass, complete ? completeCell : "bg-muted/5")}>
-                      <Qty quantity={producedQty} className="font-medium text-muted-foreground" />
-                    </TableCell>
-                    <TableCell className={cn(cellClass, locationCell)}>
-                      <Qty quantity={locations.inTransit} />
-                    </TableCell>
-                    {warehouseIds.map((warehouseId) => (
-                      <TableCell key={warehouseId} className={cn(cellClass, locationCell)}>
-                        <Qty quantity={locations.byWarehouseId[warehouseId] ?? 0} />
-                      </TableCell>
-                    ))}
-                    <TableCell
+                  ))}
+                  <TableCell className={cn(tdNum, book, sep)}>
+                    <div
                       className={cn(
-                        cellClass,
-                        complete ? "bg-emerald-50 text-emerald-800" : bookendCell,
+                        "flex flex-col items-end gap-1",
+                        complete && "text-green-700",
                       )}
                     >
-                      <span className="inline-flex items-center justify-center gap-1">
-                        <Qty
-                          quantity={shippedQty}
-                          className={cn("text-sm font-extrabold", complete && "text-emerald-800")}
-                        />
+                      <span className="inline-flex items-center gap-1 font-semibold tabular-nums">
                         {complete ? <Check className="size-3.5" aria-label="Выполнено" /> : null}
+                        {formatQuantity(shippedQty)}{" "}
+                        <span className="font-normal text-muted-foreground">из {formatQuantity(line.quantity)}</span>
                       </span>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                      <span className="h-1 w-16 overflow-hidden rounded-full bg-muted" aria-hidden>
+                        <span
+                          className={cn("block h-full rounded-full", complete ? "bg-green-700" : "bg-foreground/70")}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
+
+  if (bare) {
+    return table;
+  }
+
+  return <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">{table}</div>;
 };

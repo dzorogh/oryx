@@ -30,9 +30,9 @@ export const CatalogQuickSearchControl = ({ value, onChange, className }: Catalo
       <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Поиск по названию или артикулу"
+        placeholder="Поиск по названию или коду"
         className="pl-8"
-        aria-label="Быстрый поиск по названию или артикулу"
+        aria-label="Быстрый поиск по названию или коду"
       />
     </div>
   </label>

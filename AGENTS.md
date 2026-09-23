@@ -64,3 +64,9 @@ When the active model is Grok, quality outranks speed, token count, and smallest
 
 - Do not skip verification (`lint` / `typecheck` / `build` / `check:deps` / `check:docs` / `check:static-images` as applicable), browser checks for UI, or questions that would change the design.
 - Do not use the project token-saver MCP in `active` (suppression) mode on Grok. Leave it `off`.
+
+## Subagents
+
+Outside the managed block on purpose: keep this section when refreshing `bmad-project-context`.
+
+Delegate well-defined technical tasks — writing code to a clear spec, and codebase or web research — to subagents running the latest Grok model. Prefer Grok 4.7 medium fast; if that tier is not offered, use the newest available Grok slug (for example `grok-4.7-high-fast`). Keep design decisions, ambiguous requirements, and final review/verification in the parent agent. Give each subagent full context (it cannot see the chat), and check its result before reporting it as done.

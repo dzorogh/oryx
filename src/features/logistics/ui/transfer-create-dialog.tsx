@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { freeAtPlace, onHandAtPlace, reservedAtPlaceForOwner } from "@/features/logistics/logistics-availability";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
+import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { customerOrderById, productById, warehouseCode, warehouseSelectItems } from "@/features/logistics/logistics-lookups";
 import type { CustomerOrderLine, LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
@@ -256,7 +257,7 @@ export const TransferCreateDialog = ({
       <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl max-md:top-auto max-md:bottom-0 max-md:translate-y-0 max-md:rounded-b-none max-md:max-w-full">
         <DialogHeader className="gap-1 border-b px-5 py-4">
           {context.kind === "order" ? (
-            <p className="text-[10px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+            <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
               Заказ клиента {orderNumber}
             </p>
           ) : null}
@@ -335,7 +336,7 @@ export const TransferCreateDialog = ({
           </div>
 
           <div className="mt-3 overflow-hidden rounded-lg border border-border">
-            <div className="hidden grid-cols-[minmax(12rem,1.8fr)_5.75rem_5.75rem_7.5rem_2.25rem] bg-[#F8FAFC] text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:grid">
+            <div className="hidden grid-cols-[minmax(12rem,1.8fr)_5.75rem_5.75rem_7.5rem_2.25rem] bg-[#F8FAFC] text-xs font-bold tracking-[0.05em] text-muted-foreground uppercase md:grid">
               <div className="px-2.5 py-2">Товар</div>
               <div className="px-2.5 py-2 text-right">На складе</div>
               <div className="px-2.5 py-2 text-right">Доступно</div>
@@ -352,7 +353,7 @@ export const TransferCreateDialog = ({
                 .filter((item) => item.id === line.productId || !usedProductIds.includes(item.id))
                 .map((item) => ({
                   value: item.id,
-                  label: item.sku ? `${item.name} · ${item.sku}` : item.name,
+                  label: `${item.name} · ${formatLogisticsCode("product", item.id)}`,
                 }));
               const errorId = `${liveId}-${line.key}-error`;
               return (
@@ -389,20 +390,24 @@ export const TransferCreateDialog = ({
                         disabled={submitting || !fromId}
                         autoFocus={focusKey === line.key}
                       />
-                      {product?.sku ? <p className="mt-1 hidden text-[10px] text-muted-foreground md:block">{product.sku}</p> : null}
+                      {product ? (
+                        <p className="mt-1 hidden text-xs text-muted-foreground md:block">
+                          {formatLogisticsCode("product", product.id)}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex items-center justify-between text-sm tabular-nums md:block md:px-2.5 md:py-2 md:text-right">
-                      <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">На складе</span>
+                      <span className="text-xs font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">На складе</span>
                       <span className="text-xs font-medium">
                         {line.productId && fromId ? formatUnits(onHand, product?.unit) : "—"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm tabular-nums md:block md:px-2.5 md:py-2 md:text-right">
-                      <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">Доступно</span>
+                      <span className="text-xs font-bold tracking-[0.05em] text-muted-foreground uppercase md:hidden">Доступно</span>
                       <span className={cn("text-xs font-semibold", over > 0 && "text-[#B91C1C]")}>
                         {line.productId && fromId ? formatUnits(available, product?.unit) : "—"}
                         {line.productId && fromId ? (
-                          <span className="block text-[10px] font-normal text-muted-foreground">
+                          <span className="block text-xs font-normal text-muted-foreground">
                             {context.kind === "order" ? "резерв" : "свободно"}
                           </span>
                         ) : null}
@@ -410,7 +415,7 @@ export const TransferCreateDialog = ({
                     </div>
                     <div className="md:px-2.5 md:py-2 md:text-right">
                       <label className="flex items-center justify-between gap-2 md:block">
-                        <span className="text-[10px] font-bold tracking-[0.05em] text-muted-foreground uppercase md:sr-only">Переместить</span>
+                        <span className="text-xs font-bold tracking-[0.05em] text-muted-foreground uppercase md:sr-only">Переместить</span>
                         <Input
                           type="number"
                           min={0}
@@ -428,7 +433,7 @@ export const TransferCreateDialog = ({
                         />
                       </label>
                       {over > 0 ? (
-                        <p id={errorId} className="mt-1 text-[10px] font-semibold text-[#B91C1C]">
+                        <p id={errorId} className="mt-1 text-xs font-semibold text-[#B91C1C]">
                           превышает доступное на {formatQuantity(over)}
                         </p>
                       ) : null}

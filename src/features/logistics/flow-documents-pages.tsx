@@ -22,6 +22,7 @@ import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-g
 import {
   hrefForCustomerOrder,
   hrefForDocument,
+  hrefForOwner,
   hrefForWarehouse,
   producedForProductionProduct,
   remainingToOutputForLine,
@@ -32,13 +33,14 @@ import {
 import { AdjustmentForm, ReservationForm, ShipmentForm } from "@/features/logistics/logistics-forms";
 import {
   ADJUSTMENT_OPERATION_LABELS,
-  DOCUMENT_TYPE_LABELS,
-  SHIPMENT_DIRECTION_LABELS,
-  expectedEndMeta,
+  FREE_OWNER_LABEL,
+  OWNER_TYPE_LABELS,
   formatExpectedEnd,
   formatQuantity,
   formatSignedQuantity,
+  formatMetaTimestamp,
   OUTPUT_STATUS_LABELS,
+  signedQuantityClassName,
 } from "@/features/logistics/logistics-labels";
 import { adjustmentSignedQuantity } from "@/features/logistics/logistics-adjustments";
 import {
@@ -53,7 +55,7 @@ import { DocumentProductLines } from "@/features/logistics/ui/document-product-l
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
-import { relatedOrderItem, relatedOrdersForOutput } from "@/features/logistics/logistics-related";
+import { relatedOrderItem } from "@/features/logistics/logistics-related";
 import {
   assertEnoughStock,
   assertProductionOutputLines,
@@ -72,16 +74,25 @@ import {
   type OutputStatus,
   matchDocumentParam,
   type ShipmentDirection,
+  isFreeOwner,
 } from "@/features/logistics/logistics-types";
-import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { isAllowedQuantity } from "@/features/logistics/ui/quantity-field";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
+import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
+import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
+import { DocumentHistory } from "@/features/logistics/ui/document/document-history";
+import { DocumentMetaDateInput, DocumentMetaEmpty, overdueDays } from "@/features/logistics/ui/document/document-meta-field";
+import { DocumentSection } from "@/features/logistics/ui/document/document-section";
+import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
+import { StatusPill } from "@/features/logistics/ui/status-badge";
+import type { LucideIcon } from "lucide-react";
+import { PackageCheck, SlidersHorizontal, Truck } from "lucide-react";
+import type { ReactNode } from "react";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { LogisticsMetaField, LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
-import { RelatedDocuments } from "@/features/logistics/ui/related-documents";
+import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { DocumentStatusBadge, OutputStatusBadge, ShipmentDirectionBadge } from "@/features/logistics/ui/status-badge";
@@ -91,6 +102,8 @@ import {
   loadShipmentList,
 } from "@/features/logistics/logistics-api";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { CustomerOrderStatusBadge } from "@/features/logistics/ui/status-badge";
+import { ProductionStatusBadge } from "@/features/logistics/ui/status-badge";
 
 const STATUS_FILTERS: Array<{ id: "all" | DocumentStatus; label: string }> = [
   { id: "all", label: "Все" },
@@ -249,12 +262,29 @@ export const ShipmentDetailPage = () => {
   const lines = doc
     ? store.snapshot.shipmentLines.filter((line) => line.shipmentId === doc.id)
     : [];
-  const order = doc ? relatedOrderItem(store.snapshot, doc.customerOrderId) : null;
+  const order = doc ? store.snapshot.customerOrders.find((item) => item.id === doc.customerOrderId) : null;
+  const orderRelated = doc ? relatedOrderItem(store.snapshot, doc.customerOrderId) : null;
   const direction = doc ? shipmentDirection(doc.fromLocationType, doc.toLocationType) : null;
   const warehouseId = doc ? shipmentWarehouseId(doc) : "";
   const cancelGuidance = doc && direction
     ? projectDocumentCancelGuidance({ type: direction, id: doc.id }, store.snapshot, store.balances)
     : null;
+  const historyEntries = doc
+    ? buildDocumentTimeline(store.snapshot, {
+        documentId: doc.id,
+        mode: "posted",
+        createdAt: doc.createdAt,
+        createdBy: doc.createdBy,
+        postedAt: doc.createdAt,
+      })
+    : [];
+  const movementCount = doc
+    ? store.snapshot.transactions.filter(
+        (entry) =>
+          (entry.documentType === "shipment" || entry.documentType === "return") &&
+          entry.documentId === doc.id,
+      ).length
+    : 0;
 
   if (store.isLoading || store.error || !doc || !direction) {
     return (
@@ -264,6 +294,8 @@ export const ShipmentDetailPage = () => {
     );
   }
 
+  const kindLabel = direction === "shipment" ? "Отгрузка" : "Возврат";
+
   return (
     <>
       <LogisticsPageShell
@@ -272,11 +304,14 @@ export const ShipmentDetailPage = () => {
           { label: doc.number },
         ]}
       >
-        <LogisticsToolbar
-          title={doc.number}
+        <DocumentHeader
+          kind={kindLabel}
+          icon={Truck}
+          number={doc.number}
+          status={<DocumentStatusBadge status="posted" />}
           actions={
             <>
-              {order && store.snapshot.customerOrders.find((item) => item.id === doc.customerOrderId)?.status === "open" ? (
+              {order && order.status === "open" ? (
                 <Button
                   type="button"
                   size="sm"
@@ -307,74 +342,142 @@ export const ShipmentDetailPage = () => {
               ) : null}
             </>
           }
-        >
-          <LogisticsMetaField label="Тип">
-            <ShipmentDirectionBadge direction={direction} />
-          </LogisticsMetaField>
-          <LogisticsMetaField label="Маршрут">
-            <span className="text-sm">
-              {direction === "shipment" ? "Склад → заказ клиента" : "Заказ клиента → склад"}
-            </span>
-          </LogisticsMetaField>
-        </LogisticsToolbar>
-        {order ? <RelatedDocuments title="Заказ клиента" items={[order]} /> : null}
-        <RelatedDocuments
-          title="Склад"
-          items={[
+          meta={[
             {
-              id: warehouseId,
-              href: hrefForWarehouse(warehouseId),
-              label: warehouseCode(store.snapshot, warehouseId),
-              meta: SHIPMENT_DIRECTION_LABELS[direction],
+              label: "Тип",
+              value: <ShipmentDirectionBadge direction={direction} />,
+            },
+            {
+              label: direction === "shipment" ? "Со склада" : "На склад",
+              value: (
+                <LogisticsCodeBadge
+                  code={warehouseCode(store.snapshot, warehouseId)}
+                  href={hrefForWarehouse(warehouseId)}
+                />
+              ),
+            },
+            {
+              label: "Заказ клиента",
+              value: orderRelated ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <LogisticsCodeBadge
+                    code={orderRelated.label}
+                    href={orderRelated.href}
+                  />
+                  {order ? <CustomerOrderStatusBadge status={order.status} /> : null}
+                </span>
+              ) : (
+                <DocumentMetaEmpty />
+              ),
+            },
+            {
+              label: "Проведён",
+              value: formatMetaTimestamp(doc.createdAt),
+            },
+            {
+              label: "Автор",
+              value:
+                store.snapshot.users.find((user) => user.id === doc.createdBy)?.name ?? "—",
             },
           ]}
         />
-        <LogisticsTableCard headers={["Товар", "Количество", "Назначение", "Место"]} isEmpty={lines.length === 0}>
-          {lines.map((line) => {
-            const orderLine = store.snapshot.customerOrderLines.find(
-              (item) => item.orderId === doc.customerOrderId && item.productId === line.productId,
-            );
-            const remainingShip = orderLine ? remainingToShipForLine(orderLine, store.balances, warehouseId) : 0;
-            const remainingReturn = remainingToReturnForOrderProduct(
-              store.balances,
-              doc.customerOrderId,
-              line.productId,
-            );
-            return (
-              <TableRow key={line.id}>
-                <TableCell className="px-3 py-2">
-                  <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
-                </TableCell>
-                <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(line.quantity)}</TableCell>
-                <TableCell className="px-3 py-2 text-sm">
-                  {line.toOwnerType
-                    ? ownerLabel(store.snapshot, line.toOwnerType, line.toOwnerId)
-                    : "Свободно"}
-                </TableCell>
-                <TableCell className="px-3 py-2 text-sm">
-                  <LogisticsCodeBadge
-                    code={warehouseCode(store.snapshot, warehouseId)}
-                    href={hrefForWarehouse(warehouseId)}
+        <DocumentTabs
+          tabs={[
+            {
+              id: "products",
+              label: "Товары",
+              count: lines.length,
+              panel: (
+                <DocumentSection title="Товары">
+                  <LogisticsTableCard
+                    embedded
+                    headers={[
+                      "Товар",
+                      "Количество",
+                      "Заказ клиента",
+                      direction === "shipment" ? "Со склада" : "На склад",
+                      direction === "shipment" ? "Ещё можно отгрузить" : "Ещё можно вернуть",
+                    ]}
+                    numericColumns={[1, 4]}
+                    isEmpty={lines.length === 0}
+                  >
+                    {lines.map((line) => {
+                      const product = productById(store.snapshot, line.productId);
+                      const orderLine = store.snapshot.customerOrderLines.find(
+                        (item) => item.orderId === doc.customerOrderId && item.productId === line.productId,
+                      );
+                      const remainingShip = orderLine
+                        ? remainingToShipForLine(orderLine, store.balances, warehouseId)
+                        : 0;
+                      const remainingReturn = remainingToReturnForOrderProduct(
+                        store.balances,
+                        doc.customerOrderId,
+                        line.productId,
+                      );
+                      const remaining = direction === "shipment" ? remainingShip : remainingReturn;
+                      return (
+                        <TableRow key={line.id}>
+                          <TableCell className="px-3 py-2">
+                            <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right text-sm font-medium tabular-nums">
+                            {formatQuantity(line.quantity, line.productUnit || product?.unit)}
+                          </TableCell>
+                          <TableCell className="px-3 py-2">
+                            {orderRelated ? (
+                              <LogisticsCodeBadge
+                                code={orderRelated.label}
+                                href={orderRelated.href}
+                              />
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-3 py-2">
+                            <LogisticsCodeBadge
+                              code={warehouseCode(store.snapshot, warehouseId)}
+                              href={hrefForWarehouse(warehouseId)}
+                            />
+                          </TableCell>
+                          <TableCell
+                            className={`px-3 py-2 text-right text-sm tabular-nums ${remaining === 0 ? "text-muted-foreground/50" : ""}`}
+                          >
+                            {remaining === 0
+                              ? formatQuantity(0, line.productUnit || product?.unit)
+                              : formatQuantity(remaining, line.productUnit || product?.unit)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </LogisticsTableCard>
+                </DocumentSection>
+              ),
+            },
+            {
+              id: "movements",
+              label: "Движения",
+              count: movementCount,
+              panel: (
+                <DocumentSection title="Движения">
+                  <DocumentLedger
+                    bare
+                    snapshot={store.snapshot}
+                    hide="document"
+                    filter={(entry) =>
+                      (entry.documentType === "shipment" || entry.documentType === "return") &&
+                      entry.documentId === doc.id
+                    }
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {direction === "shipment"
-                      ? `Ещё можно отгрузить ${formatQuantity(remainingShip)}`
-                      : `Ещё можно вернуть ${formatQuantity(remainingReturn)}`}
-                  </p>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </LogisticsTableCard>
-        {lines[0]?.productId ? (
-          <AvailabilityPanel snapshot={store.snapshot} balances={store.balances} productId={lines[0].productId} />
-        ) : null}
-        <DocumentLedger
-          snapshot={store.snapshot}
-          hide="document"
-          filter={(entry) =>
-            (entry.documentType === "shipment" || entry.documentType === "return") && entry.documentId === doc.id
-          }
+                </DocumentSection>
+              ),
+            },
+            {
+              id: "history",
+              label: "История",
+              count: historyEntries.length,
+              panel: <DocumentHistory entries={historyEntries} />,
+            },
+          ]}
         />
       </LogisticsPageShell>
       <ShipmentForm
@@ -471,6 +574,51 @@ export const AdjustmentDetailPage = () => {
       documentType="adjustment"
       sourceId={doc?.id}
       description={doc?.explanation}
+      kindLabel="Корректировка"
+      kindIcon={SlidersHorizontal}
+      historyMode="posted"
+      createdAt={doc?.createdAt}
+      createdBy={doc?.createdBy}
+      postedAt={doc?.createdAt}
+      lineVariant="adjustment"
+      meta={[
+        {
+          label: "Склад",
+          value: warehouse ? (
+            <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
+          ) : (
+            <DocumentMetaEmpty />
+          ),
+        },
+        {
+          label: "Операция",
+          value: doc ? (
+            <StatusPill status="neutral" label={ADJUSTMENT_OPERATION_LABELS[doc.operation]} />
+          ) : (
+            <DocumentMetaEmpty />
+          ),
+        },
+        {
+          label: "Основание",
+          value:
+            doc && sourceHref && sourceLabel ? (
+              <LogisticsCodeBadge code={sourceLabel} href={sourceHref} />
+            ) : (
+              <DocumentMetaEmpty />
+            ),
+        },
+        {
+          label: "Проведён",
+          value: doc ? formatMetaTimestamp(doc.createdAt) : <DocumentMetaEmpty />,
+        },
+        {
+          label: "Автор",
+          value:
+            doc && store.snapshot.users.find((user) => user.id === doc.createdBy)?.name
+              ? store.snapshot.users.find((user) => user.id === doc.createdBy)!.name
+              : "—",
+        },
+      ]}
       cancelSubject={doc ? { type: "adjustment", id: doc.id } : undefined}
       onCancelFollowUp={(action, guidance) => {
         if (action.id === "open-adjustment") {
@@ -478,51 +626,25 @@ export const AdjustmentDetailPage = () => {
           setAdjustOpen(true);
         }
       }}
-      related={
-        <>
-          {warehouse ? (
-            <RelatedDocuments
-              title="Склад"
-              items={[
-                {
-                  id: warehouse.id,
-                  href: hrefForWarehouse(warehouse.id),
-                  label: warehouse.code,
-                  meta: doc ? ADJUSTMENT_OPERATION_LABELS[doc.operation] : "",
-                },
-              ]}
-            />
-          ) : null}
-          {doc && sourceHref && sourceLabel && doc.sourceDocumentId ? (
-            <RelatedDocuments
-              title="Исходный документ"
-              items={[
-                {
-                  id: doc.sourceDocumentId,
-                  href: sourceHref,
-                  label: sourceLabel,
-                  meta: doc.sourceDocumentType ? DOCUMENT_TYPE_LABELS[doc.sourceDocumentType] : "",
-                },
-              ]}
-            />
-          ) : null}
-        </>
-      }
-      lines={lines.map((line) => ({
-        id: line.id,
-        productId: line.productId,
-        quantity: line.quantity,
-        quantityLabel: formatSignedQuantity(
-          doc ? adjustmentSignedQuantity(doc.operation === "mixed" ? "decrease" : doc.operation, line.quantity) : line.quantity,
-          productById(store.snapshot, line.productId)?.unit,
-        ),
-        place: warehouse ? (
-          <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
-        ) : (
-          "Склад"
-        ),
-        hint: doc?.explanation,
-      }))}
+      lines={lines.map((line) => {
+        const signed = doc
+          ? adjustmentSignedQuantity(doc.operation === "mixed" ? "decrease" : doc.operation, line.quantity)
+          : line.quantity;
+        return {
+          id: line.id,
+          productId: line.productId,
+          quantity: signed,
+          quantityLabel: formatSignedQuantity(
+            signed,
+            productById(store.snapshot, line.productId)?.unit,
+          ),
+          place: warehouse ? (
+            <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
+          ) : (
+            "Склад"
+          ),
+        };
+      })}
     />
     {adjustOpen ? (
       <AdjustmentForm
@@ -808,10 +930,60 @@ export const OutputDetailPage = () => {
   const doc = matchDocumentParam(store.snapshot.outputs, params.id);
   const lines = doc ? store.snapshot.outputLines.filter((line) => line.outputId === doc.id) : [];
   const production = doc ? productionOrderById(store.snapshot, doc.productionOrderId) : undefined;
-  const allocations = doc ? relatedOrdersForOutput(store.snapshot, doc.id) : [];
   const cancelGuidance = doc
     ? projectDocumentCancelGuidance({ type: "output", id: doc.id }, store.snapshot, store.balances)
     : null;
+  const completedAt = doc ? documentCompletedAt(store.snapshot, doc.id) : null;
+  const historyEntries = doc
+    ? buildDocumentTimeline(store.snapshot, {
+        documentId: doc.id,
+        mode: "lifecycle",
+        createdAt: doc.createdAt,
+        createdBy: doc.createdBy,
+        postedAt: completedAt,
+      })
+    : [];
+  const movementCount = doc
+    ? store.snapshot.transactions.filter(
+        (entry) => entry.documentType === "output" && entry.documentId === doc.id,
+      ).length
+    : 0;
+
+  const assignedMeta = (() => {
+    const seen = new Map<string, { type: NonNullable<(typeof lines)[number]["toOwnerType"]>; id: string }>();
+    for (const line of lines) {
+      if (isFreeOwner(line.toOwnerType, line.toOwnerId) || !line.toOwnerType || !line.toOwnerId) {
+        continue;
+      }
+      const key = `${line.toOwnerType}:${line.toOwnerId}`;
+      if (!seen.has(key)) {
+        seen.set(key, { type: line.toOwnerType, id: line.toOwnerId });
+      }
+    }
+    const owners = [...seen.values()];
+    if (owners.length === 0) {
+      return <span>{FREE_OWNER_LABEL}</span>;
+    }
+    const allSameKind = owners.every((owner) => owner.type === owners[0].type);
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1.5">
+        {allSameKind ? (
+          <span className="font-medium text-foreground">{OWNER_TYPE_LABELS[owners[0].type]}</span>
+        ) : null}
+        {owners.map((owner) => (
+          <span key={`${owner.type}:${owner.id}`} className="inline-flex items-center gap-1.5">
+            {!allSameKind ? (
+              <span className="font-medium text-foreground">{OWNER_TYPE_LABELS[owner.type]}</span>
+            ) : null}
+            <LogisticsCodeBadge
+              code={ownerLabel(store.snapshot, owner.type, owner.id)}
+              href={hrefForOwner(owner.type, owner.id, store.snapshot) ?? undefined}
+            />
+          </span>
+        ))}
+      </span>
+    );
+  })();
 
   if (store.isLoading || store.error || !doc) {
     return (
@@ -823,8 +995,11 @@ export const OutputDetailPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Выпуски", href: "/store/logistics/outputs" }, { label: doc.number }]}>
-      <LogisticsToolbar
-        title={doc.number}
+      <DocumentHeader
+        kind="Выпуск"
+        icon={PackageCheck}
+        number={doc.number}
+        status={<OutputStatusBadge status={doc.status} />}
         actions={
           <>
             {doc.status === "planned" ? (
@@ -852,71 +1027,129 @@ export const OutputDetailPage = () => {
             ) : null}
           </>
         }
-      >
-        <LogisticsMetaField label="Статус">
-          <OutputStatusBadge status={doc.status} />
-        </LogisticsMetaField>
-        <ExpectedEndField
-          layout="inline"
-          value={doc.expectedEndOn ?? ""}
-          onChange={(value) => {
-            void runLogisticsAction(
-              () => updateExpectedEnd(doc.id, value || null),
-              "Срок выпуска обновлён",
-              store.reload,
-            );
-          }}
-        />
-      </LogisticsToolbar>
-      {production ? (
-        <RelatedDocuments
-          title="Заказ на производство"
-          items={[
-            {
-              id: production.id,
-              href: `/store/logistics/production-orders/${production.sequenceNumber}`,
-              label: production.number,
-              meta: expectedEndMeta(production.status, production.expectedEndOn),
-            },
-          ]}
-        />
-      ) : null}
-      <RelatedDocuments title="Под заказы клиента" items={allocations} />
-      <LogisticsTableCard headers={["Товар", "Количество", "Место", "Лимит"]} isEmpty={lines.length === 0}>
-        {lines.map((line) => {
-          const planned = store.snapshot.productionOrderLines.find((item) => item.id === line.productionOrderLineId);
-          return {
-            line,
-            hint: `Осталось выпустить по плану ${formatQuantity(
-              Math.max(
-                0,
-                remainingToOutputForLine(store.snapshot, line.productionOrderLineId, planned?.quantity ?? line.quantity),
-              ),
-            )}`,
-          };
-        }).map(({ line, hint }) => (
-          <TableRow key={line.id}>
-            <TableCell className="px-3 py-2">
-              <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
-            </TableCell>
-            <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(line.quantity)}</TableCell>
-            <TableCell className="px-3 py-2 text-sm">{production?.number ?? "Заказ на производство"}</TableCell>
-            <TableCell className="px-3 py-2 text-xs text-muted-foreground">{hint}</TableCell>
-          </TableRow>
-        ))}
-      </LogisticsTableCard>
-      {[...new Set(lines.map((line) => line.productId))].map((productId) => (
-        <AvailabilityPanel
-          key={productId}
-          snapshot={store.snapshot}
-          balances={store.balances}
-          productId={productId}
-        />
-      ))}
-      <DocumentLedger
-        snapshot={store.snapshot}
-        hide="document"
-        filter={(entry) => entry.documentType === "output" && entry.documentId === doc.id}
+        meta={[
+          {
+            label: "Заказ на производство",
+            value: production ? (
+              <span className="inline-flex items-center gap-1.5">
+                <LogisticsCodeBadge
+                  code={production.number}
+                  href={`/store/logistics/production-orders/${production.sequenceNumber}`}
+                />
+                <ProductionStatusBadge status={production.status} />
+              </span>
+            ) : (
+              <DocumentMetaEmpty />
+            ),
+          },
+          { label: "Закреплено за", value: assignedMeta },
+          {
+            label: "Ожидаемое окончание",
+            value: (
+              <DocumentMetaDateInput
+                value={doc.expectedEndOn ?? ""}
+                aria-label="Ожидаемое окончание"
+                overdueDays={doc.status !== "done" ? overdueDays(doc.expectedEndOn) : 0}
+                onChange={(value) => {
+                  void runLogisticsAction(
+                    () => updateExpectedEnd(doc.id, value || null),
+                    "Срок выпуска обновлён",
+                    store.reload,
+                  );
+                }}
+              />
+            ),
+          },
+          { label: "Создан", value: formatMetaTimestamp(doc.createdAt) },
+          {
+            label: "Завершён",
+            value: completedAt ? formatMetaTimestamp(completedAt) : <DocumentMetaEmpty />,
+          },
+        ]}
+      />
+      <DocumentTabs
+        tabs={[
+          {
+            id: "products",
+            label: "Товары",
+            count: lines.length,
+            panel: (
+              <DocumentSection title="Товары">
+                <LogisticsTableCard
+                  embedded
+                  headers={["Товар", "Количество", "Место", "Осталось по плану"]}
+                  numericColumns={[1, 3]}
+                  isEmpty={lines.length === 0}
+                >
+                  {lines.map((line) => {
+                    const product = productById(store.snapshot, line.productId);
+                    const unit = line.productUnit || product?.unit;
+                    const planned = store.snapshot.productionOrderLines.find(
+                      (item) => item.id === line.productionOrderLineId,
+                    );
+                    const remaining = Math.max(
+                      0,
+                      remainingToOutputForLine(
+                        store.snapshot,
+                        line.productionOrderLineId,
+                        planned?.quantity ?? line.quantity,
+                      ),
+                    );
+                    return (
+                      <TableRow key={line.id}>
+                        <TableCell className="px-3 py-2">
+                          <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right text-sm font-medium tabular-nums">
+                          {formatQuantity(line.quantity, unit)}
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-sm">
+                          {production ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="text-foreground font-medium">Заказ на производство</span>
+                              <LogisticsCodeBadge
+                                code={production.number}
+                                href={`/store/logistics/production-orders/${production.sequenceNumber}`}
+                              />
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell
+                          className={`px-3 py-2 text-right text-sm tabular-nums ${remaining === 0 ? "text-muted-foreground/50" : ""}`}
+                        >
+                          {remaining === 0 ? formatQuantity(0, unit) : formatQuantity(remaining, unit)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </LogisticsTableCard>
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "movements",
+            label: "Движения",
+            count: movementCount,
+            panel: (
+              <DocumentSection title="Движения">
+                <DocumentLedger
+                  bare
+                  snapshot={store.snapshot}
+                  hide="document"
+                  filter={(entry) => entry.documentType === "output" && entry.documentId === doc.id}
+                />
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "history",
+            label: "История",
+            count: historyEntries.length,
+            panel: <DocumentHistory entries={historyEntries} />,
+          },
+        ]}
       />
       {adjustOpen ? (
         <AdjustmentForm
@@ -943,7 +1176,6 @@ type ListRow = {
     productId: string;
     quantity: number;
     productName?: string | null;
-    productSku?: string | null;
     productUnit?: string | null;
   }>;
   status: DocumentStatus;
@@ -1024,6 +1256,14 @@ const DocumentDetail = ({
   extraActions,
   related,
   lines,
+  kindLabel,
+  kindIcon,
+  meta,
+  historyMode = "posted",
+  createdAt,
+  createdBy,
+  postedAt,
+  lineVariant = "output",
 }: {
   store: ReturnType<typeof useLogisticsStore>;
   title: string;
@@ -1035,16 +1275,25 @@ const DocumentDetail = ({
   onPost?: () => Promise<unknown>;
   cancelSubject?: { type: "shipment" | "return" | "adjustment"; id: string };
   onCancelFollowUp?: (action: CancelGuidanceAction, guidance: CancelGuidance) => void;
-  extraActions?: React.ReactNode;
-  related?: React.ReactNode;
+  extraActions?: ReactNode;
+  related?: ReactNode;
   lines: Array<{
     id: string;
     productId: string;
     quantity: number;
     quantityLabel?: string;
-    place: React.ReactNode;
+    productUnit?: string | null;
+    place: ReactNode;
     hint?: string;
   }>;
+  kindLabel: string;
+  kindIcon?: LucideIcon;
+  meta: Array<{ label: string; value: ReactNode }>;
+  historyMode?: "posted" | "lifecycle" | "reservation";
+  createdAt?: string;
+  createdBy?: string | null;
+  postedAt?: string | null;
+  lineVariant?: "output" | "adjustment";
 }) => {
   const postAction =
     status === "draft" && onPost
@@ -1062,10 +1311,34 @@ const DocumentDetail = ({
     );
   }
 
+  const historyEntries = sourceId
+    ? buildDocumentTimeline(store.snapshot, {
+        documentId: sourceId,
+        mode: historyMode,
+        createdAt: createdAt ?? new Date().toISOString(),
+        createdBy,
+        postedAt,
+      })
+    : [];
+  const movementCount =
+    sourceId && documentType
+      ? store.snapshot.transactions.filter(
+          (entry) => entry.documentType === documentType && entry.documentId === sourceId,
+        ).length
+      : 0;
+
+  const isAdjustment = lineVariant === "adjustment";
+  const lineHeaders = isAdjustment
+    ? ["Товар", "Изменение", "Место"]
+    : ["Товар", "Количество", "Место", "Осталось по плану"];
+
   return (
     <LogisticsPageShell crumbs={crumbs}>
-      <LogisticsToolbar
-        title={title}
+      <DocumentHeader
+        kind={kindLabel}
+        icon={kindIcon}
+        number={title}
+        status={<DocumentStatusBadge status={status} />}
         description={description}
         actions={
           <>
@@ -1084,34 +1357,83 @@ const DocumentDetail = ({
             ) : null}
           </>
         }
-      >
-        <DocumentStatusBadge status={status} />
-      </LogisticsToolbar>
+        meta={meta}
+      />
       {related}
-      <LogisticsTableCard headers={["Товар", "Количество", "Место", "Лимит"]} isEmpty={lines.length === 0}>
-        {lines.map((line) => (
-          <TableRow key={line.id}>
-            <TableCell className="px-3 py-2">
-              <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
-            </TableCell>
-            <TableCell className="px-3 py-2 text-sm tabular-nums">
-              {line.quantityLabel ?? formatQuantity(line.quantity)}
-            </TableCell>
-            <TableCell className="px-3 py-2 text-sm">{line.place}</TableCell>
-            <TableCell className="px-3 py-2 text-xs text-muted-foreground">{line.hint ?? "—"}</TableCell>
-          </TableRow>
-        ))}
-      </LogisticsTableCard>
-      {lines[0]?.productId ? (
-        <AvailabilityPanel snapshot={store.snapshot} balances={store.balances} productId={lines[0].productId} />
-      ) : null}
-      {sourceId && documentType ? (
-        <DocumentLedger
-          snapshot={store.snapshot}
-          hide="document"
-          filter={(entry) => entry.documentType === documentType && entry.documentId === sourceId}
-        />
-      ) : null}
+      <DocumentTabs
+        tabs={[
+          {
+            id: "products",
+            label: "Товары",
+            count: lines.length,
+            panel: (
+              <DocumentSection title="Товары">
+                <LogisticsTableCard
+                  embedded
+                  headers={lineHeaders}
+                  numericColumns={[1]}
+                  isEmpty={lines.length === 0}
+                >
+                  {lines.map((line) => {
+                    const unit =
+                      line.productUnit || productById(store.snapshot, line.productId)?.unit;
+                    const qtyText =
+                      line.quantityLabel ??
+                      (isAdjustment
+                        ? formatSignedQuantity(line.quantity, unit)
+                        : formatQuantity(line.quantity, unit));
+                    return (
+                    <TableRow key={line.id}>
+                      <TableCell className="px-3 py-2">
+                        <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
+                      </TableCell>
+                      <TableCell
+                        className={`px-3 py-2 text-right text-sm tabular-nums ${
+                          isAdjustment ? signedQuantityClassName(line.quantity) : "font-medium"
+                        }`}
+                      >
+                        {qtyText}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-sm">{line.place}</TableCell>
+                      {isAdjustment ? null : (
+                        <TableCell className="px-3 py-2 text-right text-sm text-muted-foreground tabular-nums">
+                          {line.hint ?? <span className="text-muted-foreground/50">—</span>}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                    );
+                  })}
+                </LogisticsTableCard>
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "movements",
+            label: "Движения",
+            count: movementCount,
+            panel: (
+              <DocumentSection title="Движения">
+                {sourceId && documentType ? (
+                  <DocumentLedger
+                    bare
+                    snapshot={store.snapshot}
+                    hide="document"
+                    filter={(entry) => entry.documentType === documentType && entry.documentId === sourceId}
+                  />
+                ) : (
+                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">Движений пока нет.</p>
+                )}
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "history",
+            label: "История",
+            count: historyEntries.length,
+            panel: <DocumentHistory entries={historyEntries} />,
+          },
+        ]}
+      />
     </LogisticsPageShell>
   );
 };

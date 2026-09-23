@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oryx · Документы магазина — макет редизайна</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f5f6;--card:#fff;--fg:#18181b;--fg2:#3f3f46;--muted:#71717a;--faint:#a1a1aa;
+  --line:#e6e6e9;--line2:#f0f0f2;--soft:#f8f8f9;--hover:#fafafa;
+  --primary:#18181b;--nav:#141b33;--lime:#c9f56a;
+  --blue:#2563eb;--bluebg:#eff4ff;--green:#15803d;--greenbg:#effaf2;--amber:#b45309;--amberbg:#fff7ea;--red:#b91c1c;--redbg:#fef2f2;
+  --r:12px;--shadow:0 1px 2px rgb(16 24 40 / .04),0 1px 3px rgb(16 24 40 / .03);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#e9eaee;color:var(--fg);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+.num,td.n,th.n{font-variant-numeric:tabular-nums}
+
+/* switcher */
+.switcher{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 20px;background:rgb(233 234 238 / .85);backdrop-filter:blur(8px);border-bottom:1px solid #dcdde2}
+.switcher b{font-size:12px;color:var(--muted);font-weight:600;margin-right:6px}
+.switcher button{border:1px solid #d6d7dc;background:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;color:var(--fg2)}
+.switcher button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.notes{width:min(1440px,calc(100vw - 40px));margin:14px auto 0;background:#fff;border:1px solid #dcdde2;border-radius:12px;padding:12px 16px;font-size:13px;color:var(--fg2)}
+.notes h3{margin:0 0 6px;font-size:13px}
+.notes ul{margin:0;padding-left:18px}.notes li{margin:2px 0}
+
+/* frame */
+.frame{width:min(1440px,calc(100vw - 40px));margin:14px auto 40px;border:1px solid #d7d9df;border-radius:16px;overflow:hidden;box-shadow:0 20px 50px rgb(17 24 39 / .08);background:var(--bg)}
+.app{display:grid;grid-template-columns:48px 212px minmax(0,1fr);min-height:900px}
+.rail{background:var(--nav);display:flex;flex-direction:column;align-items:center;gap:18px;padding:12px 0}
+.rail .logo{width:26px;height:26px;border-radius:7px;background:var(--lime);display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--nav)}
+.rail .ic{width:18px;height:18px;border:1.6px solid #9aa3bd;border-radius:5px;opacity:.8}
+.rail .ic.on{border-color:var(--lime)}
+
+/* grouped sidebar */
+.side{background:#fff;border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.side .mod{display:flex;justify-content:space-between;align-items:center;padding:0 8px 2px;font-weight:650;font-size:14.5px}
+.side .grp{display:flex;flex-direction:column;gap:1px}
+.side .grp-t{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding:0 9px 5px}
+.side a{display:flex;align-items:center;gap:9px;padding:6.5px 9px;border-radius:8px;font-size:13px;color:#52525b}
+.side a:hover{background:var(--soft)}
+.side a.on{background:#f1f1f3;color:var(--fg);font-weight:600}
+.side a svg{width:15px;height:15px;flex:none;color:#a1a1aa}
+.side a.on svg{color:var(--fg)}
+.side .spacer{flex:1}
+
+/* main */
+.main{min-width:0;padding:14px 22px 36px}
+.crumbs{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.crumbs b{color:var(--fg);font-weight:600}
+.crumbs i{font-style:normal;color:#c4c4ca}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+
+/* document header */
+.dh{padding:18px 20px 0}
+.dh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.eyebrow{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.eyebrow svg{width:14px;height:14px}
+.dh-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dh h1{margin:0;font-size:26px;line-height:1.15;font-weight:650;letter-spacing:-.02em}
+.dh-desc{margin:5px 0 0;color:var(--muted);font-size:13px}
+.dh-actions{display:flex;gap:8px;align-items:center;flex:none}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:16px -20px 0;border-top:1px solid var(--line2)}
+/* tabs */
+.tabs{display:flex;gap:2px;margin:18px 0 12px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{position:relative;display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;padding:9px 12px 11px;font-size:13.5px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs button:hover{color:var(--fg)}
+.tabs button[aria-selected=true]{color:var(--fg);font-weight:600}
+.tabs button[aria-selected=true]::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;border-radius:2px;background:var(--fg)}
+.tabs .tc{font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--muted);background:#ececef;border-radius:999px;padding:0 7px;line-height:18px}
+.tabs button[aria-selected=true] .tc{background:var(--fg);color:#fff}
+.panel[hidden]{display:none}
+.meta>div{padding:11px 20px 13px;border-left:1px solid var(--line2);min-width:0}
+.meta>div:first-child{border-left:0}
+.meta dt{font-size:11.5px;color:var(--muted);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta dd{margin:0;font-size:13.5px;font-weight:550;display:flex;align-items:center;gap:6px;height:32px;white-space:nowrap;overflow:hidden}
+.meta dd .code{height:24px;padding:0 8px;font-size:12px}
+.meta dd .pill{height:24px}
+.meta .ent{flex-direction:row;align-items:center;gap:6px}
+.meta .ent span{font-size:13.5px;color:var(--fg);font-weight:550}
+.p-warn{background:var(--amberbg);color:var(--amber);border-color:#fbe3bf}
+.meta dd small{font-weight:400;color:var(--muted);font-size:12px}
+
+.meta .wide{grid-column:span 2}
+.edit{display:inline-flex;align-items:center;gap:7px;height:32px;margin-left:-8px;padding:0 8px;border:1px solid transparent;border-radius:8px;font-weight:550;cursor:pointer}
+.edit:hover,.sel:hover{background:var(--soft);border-color:var(--line)}
+.edit svg{width:12px;height:12px;color:var(--faint)}
+.sel{display:inline-flex;align-items:center;gap:6px;height:32px;margin-left:-8px;padding:0 6px 0 8px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.sel svg{width:12px;height:12px;color:var(--muted)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:550;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--soft)}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.pri:hover{background:#27272a}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.btn.icon{width:34px;padding:0;justify-content:center}
+.btn.sm.icon{width:28px}
+.btn svg{width:14px;height:14px}
+
+/* pills & codes */
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:550;border:1px solid transparent;white-space:nowrap}
+.pill i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-draft{background:#f4f4f5;color:#52525b;border-color:#e4e4e7}
+.p-work{background:var(--bluebg);color:var(--blue);border-color:#dbe6fe}
+.p-done{background:var(--greenbg);color:var(--green);border-color:#d3f0dc}
+.p-cancel{background:var(--redbg);color:var(--red);border-color:#fbdcdc}
+.p-neutral{background:#fff;color:var(--fg2);border-color:var(--line)}
+.code{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:1px solid var(--line);border-radius:6px;background:#fff;font:500 11px/1 ui-monospace,"SF Mono",Menlo,monospace;color:#52525b;letter-spacing:.01em;white-space:nowrap}
+a.code:hover{border-color:#c9c9cf;color:var(--fg)}
+
+/* journey (customer order) — separate card under the header */
+.jcard{margin-top:12px;overflow:hidden}
+.journey{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.jcard .related{margin:0;border-radius:0}
+.rel-panel{display:none;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--line2)}
+.jcard.open .rel-panel{display:grid}
+.jcard.open .related .push svg{transform:rotate(180deg)}
+.related .push svg{width:14px;height:14px;transition:transform .15s}
+.related .push{border:0;background:transparent;font-size:12.5px;padding:4px 6px;border-radius:6px}
+.related .push:hover{background:#ececef}
+.stage{padding:14px 16px 16px 20px;border-left:1px solid var(--line2);position:relative;min-width:0}
+.stage:first-child{border-left:0}
+.st-h{display:flex;align-items:center;gap:9px}
+.st-dot{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;border:1.5px solid #d4d4d8;color:#fff;font-size:10px;font-weight:700}
+.st-dot.done{background:var(--green);border-color:var(--green)}
+.st-dot.cur{border-color:var(--blue);background:radial-gradient(circle,var(--blue) 0 4px,#fff 4.5px)}
+.st-dot svg{width:11px;height:11px}
+.st-t{font-weight:600;font-size:13.5px}
+.st-c{font-size:12px;color:var(--muted)}
+.st-h .btn{margin-left:auto}
+.st-docs{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.st-doc{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"code pill" "cap cap";align-items:center;gap:4px 8px;padding:7px 9px;border:1px solid var(--line2);border-radius:8px;background:var(--soft);font-size:12px}
+.st-doc .code{grid-area:code}.st-doc .pill{grid-area:pill;justify-self:end}
+.st-doc .grow{grid-area:cap;color:var(--muted)}
+.st-empty{margin-top:10px;font-size:12px;color:var(--faint)}
+.related{border-top:1px solid var(--line2);padding:8px 14px 8px 20px;display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--muted);background:var(--soft)}
+.related b{color:var(--fg2);font-weight:600}
+.related .chipset{display:flex;gap:6px;align-items:center}
+.related .push{margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--fg2);cursor:pointer}
+.dh-foot{height:0}
+
+/* route (transfer) */
+.route{display:flex;align-items:center;gap:10px}
+.route .node{display:flex;flex-direction:column;gap:3px}
+.route .node small{font-size:11px;color:var(--muted);font-weight:400}
+.route .arrow{color:#c4c4ca;font-size:16px}
+.route .now{padding:4px 10px;border-radius:8px;background:var(--greenbg);border:1px solid #d3f0dc}
+
+/* sections */
+.canvas{display:flex;flex-direction:column;gap:16px;min-width:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.sec{overflow:hidden;scroll-margin-top:70px}
+.sec-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line2)}
+.sec-h h2{margin:0;font-size:14.5px;font-weight:620;letter-spacing:-.005em}
+.sec-h .cnt{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;background:#f4f4f5;border-radius:999px;padding:1px 7px}
+.sec-h .tools{margin-left:auto;display:flex;align-items:center;gap:8px}
+.sec-f{padding:10px 16px;border-top:1px solid var(--line2);display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted)}
+.pager{display:flex;gap:4px}
+.pager span{min-width:28px;height:28px;display:grid;place-items:center;border-radius:7px;border:1px solid transparent;font-variant-numeric:tabular-nums}
+.pager span.on{border-color:var(--line);color:var(--fg);background:#fff}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg2)}
+.toggle i{width:30px;height:18px;border-radius:999px;background:var(--primary);position:relative}
+.toggle i::after{content:"";position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+
+/* tables */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+th{font-size:11.5px;font-weight:550;color:var(--muted);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fff}
+td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--hover)}
+th:first-child,td:first-child{padding-left:16px}
+th:last-child,td:last-child{padding-right:16px}
+.n{text-align:right}
+.c{text-align:center}
+.zero{color:#c4c4ca}
+.strong{font-weight:650}
+.prod{display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-width:0}
+.prod a{font-weight:550;color:var(--fg)}
+.prod a:hover{text-decoration:underline;text-underline-offset:2px}
+.ent{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.ent span{font-size:12.5px;color:var(--fg2)}
+.delta{font-weight:650;font-variant-numeric:tabular-nums}
+.delta.plus{color:var(--green)}
+.delta.minus{color:var(--fg2)}
+.time{color:var(--muted);white-space:nowrap}
+.muted{color:var(--muted)}
+.row-act{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.disc{width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;border:0;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.disc:hover{background:#f1f1f3}
+.disc svg{width:14px;height:14px;transition:transform .15s}
+.disc[aria-expanded=true] svg{transform:rotate(90deg)}
+.pline{display:flex;align-items:center;gap:8px}
+
+/* grouped header (customer order lines) */
+.lines th.g{text-align:center;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border-bottom:0;padding:10px 12px 0}
+.lines .sticky{position:sticky;left:0;z-index:2;background:#fff}
+.lines tbody tr:hover .sticky{background:var(--hover)}
+.lines .book{background:#fcfcfc}
+.lines tbody tr:hover .book{background:#f7f7f8}
+.lines th.book{background:#fcfcfc}
+.lines .sep{border-left:1px solid var(--line2)}
+.ship{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.ship .bar{width:64px;height:4px;border-radius:999px;background:#ececef;overflow:hidden}
+.ship .bar i{display:block;height:100%;background:var(--fg2);border-radius:999px}
+.ship.ok{color:var(--green)}
+.ship.ok .bar i{background:var(--green)}
+.okmark{display:inline-flex;align-items:center;gap:4px}
+.okmark svg{width:13px;height:13px}
+
+/* production order breakdown rows (previous layout) */
+tr.brk td{background:var(--soft)!important;padding-top:7px;padding-bottom:7px;font-size:12.5px}
+tr.brk .ent span{font-size:12.5px}
+tr.details>td{padding:0;background:var(--soft)!important;border-bottom:1px solid var(--line2)}
+.rlist{width:100%;border-collapse:collapse;font-size:12.5px}
+.rlist caption{text-align:left;padding:8px 16px 2px 46px;color:var(--muted);font-size:11px}
+.rlist th,.rlist td{padding:6px 16px;border:0;background:transparent!important}
+.rlist th{font-size:11px;color:var(--muted);font-weight:500}
+.rlist th:first-child,.rlist td:first-child{padding-left:46px}
+.rlist tr:last-child td{padding-bottom:10px}
+
+/* transfer products grouped by owner */
+.own{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+td.grp{vertical-align:top;border-right:1px solid var(--line2);background:#fcfcfc}
+.subtotal{font-size:12px;color:var(--muted);margin-top:4px}
+.route-inline{display:inline-flex;align-items:center;gap:8px}
+.route-inline .arrow{color:var(--faint)}
+
+/* history timeline */
+.tl{list-style:none;margin:0;padding:14px 16px 6px}
+.tl li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;position:relative;padding-bottom:16px}
+.tl li::before{content:"";position:absolute;left:13.5px;top:26px;bottom:2px;width:1px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl .ico{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:#fff;color:var(--muted)}
+.tl .ico svg{width:14px;height:14px}
+.tl .ico.done{background:var(--greenbg);border-color:#d3f0dc;color:var(--green)}
+.tl .ico.work{background:var(--bluebg);border-color:#dbe6fe;color:var(--blue)}
+.tl .ico.cancel{background:var(--redbg);border-color:#fbdcdc;color:var(--red)}
+.tl .t{font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px}
+.tl .d{font-size:12.5px;color:var(--muted);margin-top:2px}
+.tl .d s{color:var(--faint)}
+.tl .w{font-size:12px;color:var(--muted);text-align:right;padding-top:5px;white-space:nowrap}
+.tl .w b{display:block;font-weight:500;color:var(--fg2)}
+.tl .future .ico{border-style:dashed;background:transparent}
+.tl .future .t{color:var(--muted);font-weight:500}
+
+/* change list inside a history entry */
+.chg{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin-top:6px;font-size:12.5px}
+.chg dt{color:var(--muted)}
+.chg dd{margin:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--fg2)}
+.chg s{color:var(--faint)}
+.chg .to{color:var(--fg);font-weight:550}
+
+/* stock page */
+.toolbar{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.toolbar h1{margin:0;font-size:18px;font-weight:650;letter-spacing:-.01em}
+.tb-row{display:flex;gap:10px;align-items:center}
+.seg{display:inline-flex;padding:3px;background:#f4f4f5;border-radius:9px;gap:2px}
+.seg span{padding:5px 12px;border-radius:7px;font-size:12.5px;color:var(--muted);font-weight:500}
+.seg span.on{background:#fff;color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.search{flex:1;height:34px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--faint);font-size:13px}
+.search svg{width:14px;height:14px}
+.stock th.g{text-align:center;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border-bottom:0;padding-bottom:0}
+.stock th.g span{display:block;border-bottom:1px solid var(--line);padding-bottom:6px}
+.stock .sep{border-left:1px solid var(--line2)}
+.stock .tot{background:#fcfcfc}
+.stock .c-free{background:#f7f7f8}
+.stock .c-reg{background:#f4f7ff}
+.stock .c-ord{background:#eef3fe}
+.stock tbody tr:hover .c-free{background:#f1f1f3}
+.stock tbody tr:hover .c-reg{background:#ecf1fe}
+.stock tbody tr:hover .c-ord{background:#e5ecfd}
+.stock th .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:0}
+.stock td.n .u{color:var(--faint);font-weight:400;margin-left:3px;font-size:12px}
+.mini{display:flex;gap:2px;height:4px;width:84px;border-radius:999px;overflow:hidden;background:#ececef;margin-left:auto;margin-top:5px}
+.mini i{display:block;height:100%}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
+</style>
+</head>
+<body>
+<nav class="switcher" id="switcher"><b>Экран:</b></nav>
+<div class="notes" id="notes"></div>
+<section class="frame"><div class="app">
+  <aside class="rail" aria-hidden="true"><div class="logo">Y</div><div class="ic"></div><div class="ic"></div><div class="ic"></div><div class="ic on"></div><div class="ic"></div><div style="flex:1"></div><div class="ic"></div></aside>
+  <nav class="side" id="side" aria-label="Навигация магазина"></nav>
+  <main class="main" id="main"></main>
+</div></section>
+
+<script>
+/* ---------- icons ---------- */
+const svg = (d, w = 1.8) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const I = {
+  chev: svg('<path d="m9 6 6 6-6 6"/>', 2),
+  down: svg('<path d="m6 9 6 6 6-6"/>', 2),
+  check: svg('<path d="M20 6 9 17l-5-5"/>', 3),
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
+  cal: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', 2),
+  plus: svg('<path d="M12 5v14M5 12h14"/>', 2),
+  file: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>', 2),
+  play: svg('<circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4Z"/>', 2),
+  x: svg('<path d="M18 6 6 18M6 6l12 12"/>', 2.4),
+  edit: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 2),
+  search: svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>', 2),
+  filter: svg('<path d="M3 6h18M7 12h10M10 18h4"/>', 2),
+  box: svg('<path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/>'),
+  tag: svg('<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/>'),
+  cart: svg('<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/>'),
+  truck: svg('<path d="M1 6h13v10H1zM14 10h4l4 4v2h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>'),
+  lock: svg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+  factory: svg('<path d="M2 20V9l6 4V9l6 4V4h8v16Z"/>'),
+  out: svg('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>'),
+  layers: svg('<path d="m12 2 10 6-10 6L2 8Z"/><path d="m2 16 10 6 10-6"/>'),
+  swap: svg('<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>'),
+  sliders: svg('<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>'),
+  book: svg('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/>'),
+  home: svg('<path d="M3 10 12 3l9 7v11H3z"/>'),
+  map: svg('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'),
+  io: svg('<path d="M12 3v12M8 11l4 4 4-4M4 21h16"/>'),
+  back: svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'),
+};
+
+/* ---------- atoms ---------- */
+const code = (c) => `<a class="code" href="#">${c}</a>`;
+const pill = (label, tone) => `<span class="pill ${tone}"><i></i>${label}</span>`;
+const prod = (name, sku) => `<div class="prod"><a href="#">${name}</a>${code(sku)}</div>`;
+const ent = (label, c) => c ? `<div class="ent"><span>${label}</span>${code(c)}</div>` : `<span class="strong">${label}</span>`;
+const q = (v, u = '') => v ? `<span class="num">${v}${u ? ' ' + u : ''}</span>` : `<span class="zero">—</span>`;
+const edit = (v) => `<span class="edit">${I.cal}${v}</span>`;
+const sel = (v) => `<span class="sel">${v}${I.down}</span>`;
+const moreBtn = (label) => `<button class="btn sm icon" aria-label="${label}">${I.more}</button>`;
+const none = '<span class="zero">—</span>';
+
+/* ---------- grouped sidebar ---------- */
+const NAV = [
+  { title: 'Каталог', items: [['products', 'Товары', I.box], ['pricelists', 'Прайс-листы', I.tag]] },
+  { title: 'Продажи', items: [['co', 'Заказы клиента', I.cart], ['shp', 'Отгрузки и возвраты', I.truck], ['rsv', 'Резервы', I.lock]] },
+  { title: 'Производство', items: [['po', 'Заказы на производство', I.factory], ['out', 'Выпуски', I.out]] },
+  { title: 'Склад', items: [['stock', 'Остатки', I.layers], ['tr', 'Перемещения', I.swap], ['adj', 'Корректировки', I.sliders], ['ledger', 'Журнал', I.book]] },
+  { title: 'Справочники', items: [['wh', 'Склады', I.home], ['reg', 'Регионы', I.map], ['plt', 'Заводы', I.factory]] },
+];
+const renderSide = (active) => `
+  <div class="mod">Магазин</div>
+  ${NAV.map((g) => `<div class="grp"><div class="grp-t">${g.title}</div>${g.items.map(([id, l, ic]) => `<a href="#" class="${id === active ? 'on' : ''}" ${id === active ? 'aria-current="page"' : ''}>${ic}${l}</a>`).join('')}</div>`).join('')}
+  <div class="spacer"></div>
+  <div class="grp"><a href="#">${I.io}Импорт/Экспорт</a><a href="#">${I.gear}Настройки</a></div>`;
+
+/* ---------- document shell ---------- */
+const crumbs = (list, current) => `<nav class="crumbs">Магазин <i>›</i> Логистика <i>›</i> ${list} <i>›</i> <b>${current}</b></nav>`;
+
+const docHead = ({ kind, icon, number, status, desc, actions, meta }) => `
+<header class="card dh">
+  <div class="dh-top">
+    <div>
+      <div class="eyebrow">${icon}${kind}</div>
+      <div class="dh-title"><h1>${number}</h1>${status}</div>
+      ${desc ? `<p class="dh-desc">${desc}</p>` : ''}
+    </div>
+    <div class="dh-actions">${actions}</div>
+  </div>
+  <dl class="meta">${meta.map(([dt, dd, cls]) => `<div class="${cls || ''}"><dt>${dt}</dt><dd>${dd}</dd></div>`).join('')}</dl>
+</header>`;
+
+/* tabs: one section visible at a time, hash keeps the tab */
+const tabs = (sections) => `
+<div class="tabs" role="tablist" aria-label="Разделы документа">
+  ${sections.map((s, i) => `<button role="tab" id="tab-${s.id}" aria-controls="panel-${s.id}" aria-selected="${i === 0}" onclick="selectTab('${s.id}')">${s.label}${s.count != null ? `<span class="tc">${s.count}</span>` : ''}</button>`).join('')}
+</div>
+${sections.map((s, i) => `<div class="panel" role="tabpanel" id="panel-${s.id}" aria-labelledby="tab-${s.id}" ${i === 0 ? '' : 'hidden'}>${s.html}</div>`).join('')}`;
+window.selectTab = (id) => {
+  document.querySelectorAll('.tabs [role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t.id === `tab-${id}`)));
+  document.querySelectorAll('[role=tabpanel]').forEach((p) => { p.hidden = p.id !== `panel-${id}`; });
+};
+
+const section = ({ title, count, tools = '', body, foot = '' }) => `
+<section class="card sec">
+  <h2 class="sr-only">${title}</h2>
+  ${tools ? `<div class="sec-h"><div class="tools">${tools}</div></div>` : ''}
+  ${body}
+  ${foot ? `<div class="sec-f">${foot}</div>` : ''}
+</section>`;
+
+const simpleTable = (cols, rows) => `<div class="tw"><table>
+  <thead><tr>${cols.map((c) => `<th class="${c[1] || ''}">${c[0]}</th>`).join('')}</tr></thead>
+  <tbody>${rows.map((r) => `<tr>${r.map((cell, j) => `<td class="${cols[j][1] || ''}">${cell}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+
+/* ---------- movements ---------- */
+const movements = (rows, { hideDoc = false, total, pages } = {}) => section({
+  title: 'Движения', count: total ?? rows.length,
+  body: `<div class="tw"><table>
+    <thead><tr><th>Время</th><th class="n">Изменение</th><th>Товар</th><th>Место</th><th>Закреплено за</th>${hideDoc ? '' : '<th>Документ</th>'}</tr></thead>
+    <tbody>${rows.map((r) => `<tr>
+      <td class="time">${r[0]}</td>
+      <td class="n"><span class="delta ${r[1].startsWith('+') ? 'plus' : 'minus'}">${r[1]}</span></td>
+      <td>${prod(r[2], r[3])}</td>
+      <td>${ent(r[4], r[5])}</td>
+      <td>${ent(r[6], r[7])}</td>
+      ${hideDoc ? '' : `<td>${ent(r[8], r[9])}</td>`}
+    </tr>`).join('')}</tbody></table></div>`,
+  foot: `<span>Показано ${rows.length} из ${total ?? rows.length}</span>${pages ? `<div class="pager"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>›</span></div>` : ''}`,
+});
+
+/* ---------- universal history ----------
+   One entry = one history snapshot. Every field that differs from the previous
+   snapshot becomes one change line, so a simultaneous status + date change is ONE entry. */
+const TL_ICON = { create: I.file, work: I.play, done: I.check, cancel: I.x, date: I.cal, post: I.check, edit: I.edit, future: I.check };
+const TL_TONE = { done: 'done', post: 'done', work: 'work', cancel: 'cancel' };
+const change = ([label, from, to]) => `<dt>${label}</dt><dd>${from != null ? `<s>${from}</s> → ` : ''}<span class="to">${to}</span></dd>`;
+const historySection = (events) => section({
+  title: 'История', count: events.filter((e) => e.kind !== 'future').length,
+  body: `<ol class="tl">${events.map((e) => `<li class="${e.kind === 'future' ? 'future' : ''}">
+    <span class="ico ${TL_TONE[e.kind] || ''}">${TL_ICON[e.kind]}</span>
+    <div><div class="t">${e.title}</div>${e.changes ? `<dl class="chg">${e.changes.map(change).join('')}</dl>` : ''}${e.detail ? `<div class="d">${e.detail}</div>` : ''}</div>
+    <div class="w">${e.at ? `<b>${e.at}</b>${e.by || ''}` : ''}</div>
+  </li>`).join('')}</ol>`,
+});
+
+/* ======================================================
+   SCREENS
+   ====================================================== */
+const S = {};
+
+/* ---------- Заказ клиента ---------- */
+S.co = {
+  nav: 'co', label: 'Заказ клиента',
+  notes: [
+    'Шапка — только паспорт документа: тип, номер, статус, ключевые даты и итоги.',
+    'Ход заказа «Производство → Выпуски → Перемещения → Отгрузки» — отдельная карточка под шапкой. «Показать» раскрывает связанные этапы «Резервы» и «Возвраты» с их документами и действиями.',
+    'Разделы — вкладки (Товары / Движения / История), выбранная вкладка хранится в адресе. Вкладок со временем может стать больше — строка вкладок скроллится.',
+    'Таблица товаров: те же колонки; группы «Поток» и «Резерв на складах» — одна подпись без второго подчёркивания, разделители по вертикали.',
+    'История — лента без повторения шапки. Одна запись = одно сохранение документа: всё, что поменялось в нём, — строки «было → стало». Статус и дата, изменённые одновременно, — одна запись с двумя строками.',
+  ],
+  render() {
+    const lines = [
+      ['Cross 180 RX', 'PRD-2', 6, 0, 6, 0, {}, 6],
+      ['FX 350 Ultra', 'PRD-24', 2, 0, 0, 0, { 'WH-6': 2 }, 0],
+      ['RST 240 Ultra', 'PRD-25', 2, 2, 0, 0, {}, 0],
+      ['GP 1100 Ultra', 'PRD-34', 2, 0, 0, 1, { 'WH-6': 1 }, 0],
+      ['Activator 280 RX', 'PRD-3', 2, 0, 0, 0, { 'WH-5': 2 }, 0],
+      ['Power Max 250', 'PRD-16', 2, 0, 0, 0, { 'WH-11': 2 }, 0],
+      ['GL 300 Dubai', 'PRD-36', 2, 0, 0, 0, { 'WH-17': 2 }, 0],
+      ['Enduro 351', 'PRD-70', 3, 0, 0, 0, { 'WH-17': 3 }, 1],
+    ];
+    const whs = ['WH-5', 'WH-6', 'WH-11', 'WH-17'];
+    const table = `<div class="tw"><table class="lines">
+      <thead>
+        <tr><th class="sticky" rowspan="2" style="vertical-align:bottom">Товар</th><th class="n book" rowspan="2" style="vertical-align:bottom">Заказано</th>
+          <th class="g sep" colspan="3">Поток</th><th class="g sep" colspan="${whs.length}">Резерв на складах</th>
+          <th class="n book sep" rowspan="2" style="vertical-align:bottom">Отгружено</th><th rowspan="2"></th></tr>
+        <tr><th class="n sep">В производстве</th><th class="n">Выпущено</th><th class="n">В пути</th>${whs.map((w, i) => `<th class="n ${i === 0 ? 'sep' : ''}"><a class="code" href="#">${w}</a></th>`).join('')}</tr>
+      </thead>
+      <tbody>${lines.map((l) => {
+        const pct = Math.min(100, Math.round((l[7] / l[2]) * 100)); const ok = l[7] >= l[2];
+        return `<tr>
+        <td class="sticky">${prod(l[0], l[1])}</td>
+        <td class="n book"><span class="strong num">${l[2]}</span></td>
+        <td class="n sep">${q(l[3])}</td><td class="n muted">${q(l[4])}</td><td class="n">${q(l[5])}</td>
+        ${whs.map((w, i) => `<td class="n ${i === 0 ? 'sep' : ''}">${q(l[6][w])}</td>`).join('')}
+        <td class="n book sep"><div class="ship ${ok ? 'ok' : ''}"><span class="strong num okmark">${ok ? I.check : ''}${l[7] || '0'} <span class="muted" style="font-weight:400">из ${l[2]}</span></span><span class="bar"><i style="width:${pct}%"></i></span></div></td>
+        <td><div class="row-act">${moreBtn('Действия для ' + l[0])}</div></td></tr>`;
+      }).join('')}
+      </tbody></table></div>`;
+    const stage = (title, dot, caption, docs) => `<div class="stage">
+      <div class="st-h"><span class="st-dot ${dot}">${dot === 'done' ? I.check : ''}</span><div><div class="st-t">${title}</div><div class="st-c">${caption}</div></div>${moreBtn('Действия: ' + title)}</div>
+      ${docs.length ? `<div class="st-docs">${docs.map((d) => `<div class="st-doc">${code(d[0])}<span class="grow">${d[2]}</span>${pill(d[1], d[3])}</div>`).join('')}</div>` : `<div class="st-empty">Документов пока нет</div>`}
+    </div>`;
+    const journey = `<section class="card jcard" id="jcard" aria-label="Ход заказа">
+      <div class="journey">
+        ${stage('Производство', 'done', 'Пройдено', [['PO-904', 'Готов', '100% заказа', 'p-done']])}
+        ${stage('Выпуски', 'done', '1 завершён', [['OUT-911', 'Готов', '6 шт', 'p-done']])}
+        ${stage('Перемещения', 'cur', '1 в пути', [['TR-903', 'В пути', '2 шт · до 25.09', 'p-work']])}
+        ${stage('Отгрузки', 'cur', '2 проведено', [['SHP-903', 'Проведён', '75% заказа', 'p-done'], ['SHP-910', 'Проведён', '8% заказа', 'p-done']])}
+      </div>
+      <div class="related"><b>Связанные</b><span class="chipset">Резервы ${code('RSV-903')} ${code('RSV-915')} ${code('RSV-925')}</span><span class="chipset">Возвраты <span class="zero">нет</span></span>
+        <button class="push" aria-expanded="false" aria-controls="rel-panel" onclick="const c=document.getElementById('jcard');const o=c.classList.toggle('open');this.setAttribute('aria-expanded',o);this.firstChild.textContent=o?'Скрыть ':'Показать '">Показать ${I.down}</button></div>
+      <div class="rel-panel" id="rel-panel">
+        ${stage('Резервы', 'done', '3 проведено', [['RSV-903', 'Проведён', '6 шт · WH-5', 'p-done'], ['RSV-915', 'Проведён', '2 шт · WH-5', 'p-done'], ['RSV-925', 'Проведён', '2 шт · WH-1', 'p-done']])}
+        ${stage('Возвраты', '', 'Не начато', [])}
+      </div>
+    </section>`;
+    return crumbs('Заказы клиента', 'OMS-903') + docHead({
+      kind: 'Заказ клиента', icon: I.cart, number: 'OMS-903', status: pill('Открыт', 'p-work'),
+      desc: 'Демо: Cross 180 со склада Taotao',
+      actions: `<button class="btn">Отменить…</button><button class="btn pri">Закрыть заказ клиента</button>`,
+      meta: [['Создан', '1 сент. 2026, 10:14'], ['Ожидаемое окончание', edit('18.09.2026') + '<span class="pill p-warn" title="Просрочен на 5 дней">−5 дн.</span>'], ['Завершён', none], ['Товаров', '8 позиций <small>· 21 шт</small>'], ['Отгружено', '7 из 21 шт <small>· 33%</small>']],
+    }) + journey + tabs([
+      { id: 'products', label: 'Товары', count: 8, html: section({ title: 'Товары', count: 8, tools: `<button class="btn sm">Зарезервировать</button><button class="btn sm pri">Отгрузить</button>`, body: table }) },
+      { id: 'movements', label: 'Движения', count: 42, html: movements([
+        ['22 сент. 2026, 21:22', '+2 шт', 'Cross 180 RX', 'PRD-2', 'Заказ клиента', 'OMS-903', 'Заказ клиента', 'OMS-903', 'Отгрузка', 'SHP-910'],
+        ['22 сент. 2026, 21:22', '−2 шт', 'Cross 180 RX', 'PRD-2', 'Склад', 'WH-1', 'Заказ клиента', 'OMS-903', 'Отгрузка', 'SHP-910'],
+        ['22 сент. 2026, 21:22', '+2 шт', 'Cross 180 RX', 'PRD-2', 'Склад', 'WH-1', 'Заказ клиента', 'OMS-903', 'Резерв', 'RSV-925'],
+        ['22 сент. 2026, 21:22', '−2 шт', 'Cross 180 RX', 'PRD-2', 'Склад', 'WH-1', 'Свободно', '', 'Резерв', 'RSV-925'],
+        ['21 сент. 2026, 18:05', '+6 шт', 'Cross 180 RX', 'PRD-2', 'Заказ клиента', 'OMS-903', 'Заказ клиента', 'OMS-903', 'Отгрузка', 'SHP-903'],
+      ], { total: 42, pages: true }) },
+      { id: 'history', label: 'История', count: 3, html: historySection([
+        { kind: 'create', title: `Создан ${pill('Черновик', 'p-draft')}`, at: '1 сент., 10:14', by: 'Демо-пользователь' },
+        { kind: 'work', title: 'Изменены статус и ожидаемое окончание', changes: [['Статус', 'Черновик', pill('Открыт', 'p-work')], ['Ожидаемое окончание', '—', '12.09.2026']], at: '2 сент., 09:30', by: 'Демо-пользователь' },
+        { kind: 'date', title: 'Изменено ожидаемое окончание', changes: [['Ожидаемое окончание', '12.09.2026', '18.09.2026']], at: '10 сент., 16:02', by: 'Демо-пользователь' },
+      ]) },
+    ]);
+  },
+};
+
+/* ---------- Заказ на производство ---------- */
+S.po = {
+  nav: 'po', label: 'Заказ на производство',
+  notes: [
+    'Шапка-паспорт: завод, статус, ожидаемое окончание, создан, завершён — все значения одной высоты на одной линии. Редактируемые (статус, дата) выглядят как текст с иконкой и подсвечиваются полем при наведении.',
+    'Резервы товара — прежняя компоновка: под товаром приглушённые строки разбивки (каждый владелец резерва, «Свободно», «Выпущено»), выровненные по колонкам «План / Свободно / В резерве / Выпущено».',
+    'Выпуски: колонка «Закреплено за» — заказ клиента или регион; добавлена «Завершён».',
+    'Вкладки вместо левого оглавления: Товары / Выпуски / Движения / История.',
+  ],
+  render() {
+    const sub = (label, plan, free, reserved, done) => `<tr class="brk"><td><div class="pline"><span style="width:22px;flex:none"></span>${label}</div></td><td class="n">${plan}</td><td class="n ${free ? 'strong' : ''}">${free || '0'}</td><td class="n ${reserved ? 'strong' : ''}">${reserved || '0'}</td><td class="n ${done ? 'strong' : ''}">${done || '0'}</td><td></td></tr>`;
+    return crumbs('Заказы на производство', 'PO-904') + docHead({
+      kind: 'Заказ на производство', icon: I.factory, number: 'PO-904', status: pill('В работе', 'p-work'),
+      actions: `<button class="btn">Отменить…</button><button class="btn pri">Закрыть заказ</button>`,
+      meta: [['Завод', code('PLT-14')], ['Статус', sel(pill('В работе', 'p-work'))], ['Ожидаемое окончание', edit('25.09.2026')], ['Создан', '3 сент. 2026, 11:40'], ['Завершён', none]],
+    }) + tabs([
+      { id: 'products', label: 'Товары', count: 2, html: section({ title: 'Товары', count: 2, tools: `<button class="btn sm">${I.plus}Добавить товар</button>`, body: `<div class="tw"><table>
+        <thead><tr><th>Товар</th><th class="n">План</th><th class="n">Свободно</th><th class="n">В резерве</th><th class="n">Выпущено</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><div class="pline"><button class="disc" aria-expanded="true" aria-label="Свернуть резервы Cross 180 RX">${I.chev}</button>${prod('Cross 180 RX', 'PRD-2')}</div></td><td class="n strong">10 шт</td><td class="n">1</td><td class="n">3</td><td class="n">6</td><td><div class="row-act"><button class="btn sm">Зарезервировать</button></div></td></tr>
+          ${sub(ent('Заказ клиента', 'OMS-903'), '2 шт', 0, '2 шт', 0)}
+          ${sub(ent('Регион', 'REG-3'), '1 шт', 0, '1 шт', 0)}
+          ${sub('<span class="muted">Свободно</span>', '1 шт', '1 шт', 0, 0)}
+          ${sub('<span class="muted">Выпущено</span>', '6 шт', 0, 0, '6 шт')}
+          <tr><td><div class="pline"><span style="width:22px;flex:none"></span>${prod('Enduro 250', 'PRD-20')}</div></td><td class="n strong">4 шт</td><td class="n">4</td><td class="n">0</td><td class="n">0</td><td><div class="row-act"><button class="btn sm">Зарезервировать</button></div></td></tr>
+        </tbody></table></div>` }) },
+      { id: 'outputs', label: 'Выпуски', count: 3, html: section({ title: 'Выпуски', count: 3, tools: `<button class="btn sm pri">${I.plus}Новый выпуск</button>`, body: simpleTable(
+        [['Номер'], ['Товары'], ['Количество', 'n'], ['Закреплено за'], ['Статус'], ['Ожидаемое окончание'], ['Завершён']],
+        [
+          [code('OUT-908'), prod('Cross 180 RX', 'PRD-2'), '4 шт', ent('Заказ клиента', 'OMS-903'), pill('Готов', 'p-done'), none, '<span class="time">12 сент. 2026</span>'],
+          [code('OUT-909'), prod('Cross 180 RX', 'PRD-2'), '2 шт', ent('Регион', 'REG-3'), pill('Готов', 'p-done'), none, '<span class="time">15 сент. 2026</span>'],
+          [code('OUT-910'), prod('Enduro 250', 'PRD-20'), '4 шт', '<span class="muted">Свободно</span>', pill('Черновик', 'p-draft'), '28.09.2026', none],
+        ]) }) },
+      { id: 'movements', label: 'Движения', count: 2, html: movements([
+        ['22 сент. 2026, 21:22', '+2 шт', 'Cross 180 RX', 'PRD-2', 'Заказ на производство', 'PO-904', 'Заказ клиента', 'OMS-903', 'Резерв', 'RSV-930'],
+        ['22 сент. 2026, 21:22', '−2 шт', 'Cross 180 RX', 'PRD-2', 'Заказ на производство', 'PO-904', 'Свободно', '', 'Резерв', 'RSV-930'],
+      ]) },
+      { id: 'history', label: 'История', count: 3, html: historySection([
+        { kind: 'create', title: `Создан ${pill('Черновик', 'p-draft')}`, at: '3 сент., 11:40', by: 'Демо-пользователь' },
+        { kind: 'work', title: 'Изменён статус', changes: [['Статус', 'Черновик', pill('В работе', 'p-work')]], at: '4 сент., 08:15', by: 'Демо-пользователь' },
+        { kind: 'date', title: 'Изменено ожидаемое окончание', changes: [['Ожидаемое окончание', '20.09.2026', '25.09.2026']], at: '14 сент., 12:00', by: 'Демо-пользователь' },
+      ]) },
+    ]);
+  },
+};
+
+/* ---------- Перемещение ---------- */
+S.tr = {
+  nav: 'tr', label: 'Перемещение',
+  notes: [
+    'Маршрут — три обычных поля шапки: «Откуда», «Куда», «Сейчас» (где физически товар). Без схемы со стрелками-блоками.',
+    'Даты «Отправлено» / «Доставлено» — одной строкой «22 сент. 2026, 21:22».',
+    '«Товары и резервы» — плоская таблица «Товар / Закреплено за / Количество». Переключатель «Группировать по резерву» объединяет строки одного владельца в общую ячейку с подытогом.',
+    'Правый блок «История документа» убран — универсальная вкладка «История».',
+  ],
+  render() {
+    const grouped = [
+      ['Свободно', '', '7 шт', [['Enduro 250', 'PRD-20', '6 шт'], ['Cross 180 RX', 'PRD-2', '1 шт']]],
+      ['Заказ клиента', 'OMS-904', '3 шт', [['Force 1100 EFI', 'PRD-1', '2 шт'], ['GP 1100 Ultra', 'PRD-34', '1 шт']]],
+    ];
+    const body = `<div class="tw"><table>
+      <thead><tr><th style="width:28%">Закреплено за</th><th>Товар</th><th class="n">Количество</th></tr></thead>
+      <tbody>${grouped.map((g) => g[3].map((p, i) => `<tr>
+        ${i === 0 ? `<td class="grp" rowspan="${g[3].length}"><div class="own">${ent(g[0], g[1])}<span class="subtotal">Итого ${g[2]}</span></div></td>` : ''}
+        <td>${prod(p[0], p[1])}</td><td class="n strong">${p[2]}</td></tr>`).join('')).join('')}
+      </tbody></table></div>`;
+    return crumbs('Перемещения', 'TR-901') + docHead({
+      kind: 'Перемещение', icon: I.swap, number: 'TR-901', status: pill('Доставлено', 'p-done'),
+      actions: `<button class="btn">${I.back}Обратное перемещение</button><button class="btn">Отменить…</button>`,
+      meta: [['Откуда', code('WH-15')], ['Куда', code('WH-1')], ['Сейчас', 'на складе ' + code('WH-1')], ['Ожидалось', edit('10.09.2026')], ['Отправлено', '22 сент. 2026, 21:22'], ['Доставлено', '22 сент. 2026, 21:22']],
+    }) + tabs([
+      { id: 'products', label: 'Товары и резервы', count: 4, html: section({ title: 'Товары и резервы', count: 4, tools: `<span class="toggle">Группировать по резерву <i></i></span>`, body }) },
+      { id: 'movements', label: 'Движения', count: 4, html: movements([
+        ['22 сент. 2026, 21:22', '+6 шт', 'Enduro 250', 'PRD-20', 'Склад', 'WH-1', 'Свободно', ''],
+        ['22 сент. 2026, 21:22', '−6 шт', 'Enduro 250', 'PRD-20', 'Перемещение', 'TR-901', 'Свободно', ''],
+        ['22 сент. 2026, 21:22', '+6 шт', 'Enduro 250', 'PRD-20', 'Перемещение', 'TR-901', 'Свободно', ''],
+        ['22 сент. 2026, 21:22', '−6 шт', 'Enduro 250', 'PRD-20', 'Склад завода', 'WH-15', 'Свободно', ''],
+      ], { hideDoc: true }) },
+      { id: 'history', label: 'История', count: 2, html: historySection([
+        { kind: 'work', title: 'Создан и отправлен', changes: [['Статус', null, pill('В пути', 'p-work')], ['Ожидаемое окончание', null, '10.09.2026']], at: '20 сент., 09:40', by: 'Демо-пользователь' },
+        { kind: 'done', title: 'Изменён статус', changes: [['Статус', 'В пути', pill('Доставлено', 'p-done')]], at: '22 сент., 21:22', by: 'Демо-пользователь' },
+      ]) },
+    ]);
+  },
+};
+
+/* ---------- простые документы: отгрузка, выпуск, резерв, корректировка ---------- */
+const flatDoc = ({ list, kind, icon, number, status, desc, actions, meta, cols, rows, mov, hist, notes, nav, label }) => ({
+  nav, label, notes,
+  render() {
+    return crumbs(list, number) + docHead({ kind, icon, number, status, desc, actions, meta }) + tabs([
+      { id: 'products', label: 'Товары', count: rows.length, html: section({ title: 'Товары', count: rows.length, body: simpleTable(cols, rows) }) },
+      { id: 'movements', label: 'Движения', count: mov.length, html: movements(mov) },
+      { id: 'history', label: 'История', count: hist.length, html: historySection(hist) },
+    ]);
+  },
+});
+
+S.shp = flatDoc({
+  nav: 'shp', label: 'Отгрузка', list: 'Отгрузки и возвраты', kind: 'Отгрузка', icon: I.truck, number: 'SHP-901', status: pill('Проведён', 'p-done'),
+  notes: [
+    'Три отдельные карточки (тип/маршрут, заказ клиента, склад) сведены в шапку.',
+    'Блока «Где лежит …» больше нет, раскрытия наличия в строке тоже нет — только товары документа.',
+    'История: у отгрузок нет статусного цикла — одна запись «Создан и проведён».',
+  ],
+  actions: `<button class="btn">Отменить…</button>`,
+  meta: [['Тип', pill('Отгрузка', 'p-neutral') + '<small>склад → клиент</small>'], ['Склад', code('WH-15')], ['Заказ клиента', code('OMS-901') + pill('Закрыт', 'p-done')], ['Проведён', '22 сент. 2026, 21:22'], ['Автор', 'Демо-пользователь']],
+  cols: [['Товар'], ['Количество', 'n'], ['Заказ клиента'], ['Со склада'], ['Ещё можно отгрузить', 'n']],
+  rows: [[prod('Enduro 250', 'PRD-20'), '<span class="strong">4 шт</span>', code('OMS-901'), code('WH-15'), '<span class="zero">0</span>'], [prod('Force 1100 EFI', 'PRD-1'), '<span class="strong">2 шт</span>', code('OMS-901'), code('WH-15'), '1 шт']],
+  mov: [['22 сент. 2026, 21:22', '+4 шт', 'Enduro 250', 'PRD-20', 'Заказ клиента', 'OMS-901', 'Заказ клиента', 'OMS-901', 'Отгрузка', 'SHP-901'], ['22 сент. 2026, 21:22', '−4 шт', 'Enduro 250', 'PRD-20', 'Склад завода', 'WH-15', 'Заказ клиента', 'OMS-901', 'Отгрузка', 'SHP-901']],
+  hist: [{ kind: 'post', title: `Создан и проведён ${pill('Проведён', 'p-done')}`, detail: `6 шт со склада ${code('WH-15')} по заказу ${code('OMS-901')}`, at: '22 сент., 21:22', by: 'Демо-пользователь' }],
+});
+
+S.out = flatDoc({
+  nav: 'out', label: 'Выпуск', list: 'Выпуски', kind: 'Выпуск', icon: I.out, number: 'OUT-912', status: pill('Готов', 'p-done'),
+  notes: [
+    'Заказ на производство, «Закреплено за» (заказ клиента или регион), ожидаемое окончание, создан, завершён — поля шапки вместо трёх карточек.',
+    'Колонка «Лимит» → «Осталось по плану». Блока наличия нет.',
+  ],
+  actions: `<button class="btn">Отменить…</button>`,
+  meta: [['Заказ на производство', code('PO-912') + pill('Закрыт', 'p-done')], ['Закреплено за', ent('Регион', 'REG-3')], ['Ожидаемое окончание', edit('—')], ['Создан', '10 сент. 2026, 09:12'], ['Завершён', '12 сент. 2026, 14:05']],
+  cols: [['Товар'], ['Количество', 'n'], ['Место'], ['Осталось по плану', 'n']],
+  rows: [[prod('Cross 180 RX', 'PRD-2'), '<span class="strong">6 шт</span>', ent('Заказ на производство', 'PO-912'), '<span class="zero">0</span>']],
+  mov: [['12 сент. 2026, 14:05', '+6 шт', 'Cross 180 RX', 'PRD-2', 'Заказ на производство', 'PO-912', 'Регион', 'REG-3', 'Выпуск', 'OUT-912']],
+  hist: [
+    { kind: 'create', title: `Создан ${pill('Черновик', 'p-draft')}`, at: '10 сент., 09:12', by: 'Демо-пользователь' },
+    { kind: 'done', title: 'Изменён статус', changes: [['Статус', 'Черновик', pill('Готов', 'p-done')]], at: '12 сент., 14:05', by: 'Демо-пользователь' },
+  ],
+});
+
+S.rsv = flatDoc({
+  nav: 'rsv', label: 'Резерв', list: 'Резервы', kind: 'Резерв', icon: I.lock, number: 'RSV-901', status: pill('Проведён', 'p-done'),
+  notes: [
+    'Операция и назначение — поля шапки; английское «order» заменено на русскую подпись.',
+    'Из строк убраны комментарий и блок наличия.',
+    'История: «Создан» → «Проведён» (дата проведения).',
+  ],
+  actions: `<button class="btn">Отменить…</button>`,
+  meta: [['Операция', pill('Переназначение', 'p-neutral')], ['Назначение', ent('Заказ клиента', 'OMS-901')], ['Создан', '22 сент. 2026, 21:20'], ['Проведён', '22 сент. 2026, 21:22'], ['Автор', 'Демо-пользователь']],
+  cols: [['Товар'], ['Источник'], ['Количество', 'n'], ['Место'], ['Сейчас доступно', 'n']],
+  rows: [[prod('Enduro 250', 'PRD-20'), 'Свободно', '<span class="strong">4 шт</span>', ent('Склад завода', 'WH-15'), '<span class="zero">0</span>']],
+  mov: [['22 сент. 2026, 21:22', '+4 шт', 'Enduro 250', 'PRD-20', 'Склад завода', 'WH-15', 'Заказ клиента', 'OMS-901', 'Резерв', 'RSV-901'], ['22 сент. 2026, 21:22', '−4 шт', 'Enduro 250', 'PRD-20', 'Склад завода', 'WH-15', 'Свободно', '', 'Резерв', 'RSV-901']],
+  hist: [
+    { kind: 'create', title: `Создан ${pill('Черновик', 'p-draft')}`, at: '22 сент., 21:20', by: 'Демо-пользователь' },
+    { kind: 'post', title: `Проведён ${pill('Проведён', 'p-done')}`, detail: `4 шт закреплены за ${code('OMS-901')}`, at: '22 сент., 21:22', by: 'Демо-пользователь' },
+  ],
+});
+
+S.adj = flatDoc({
+  nav: 'adj', label: 'Корректировка', list: 'Корректировки', kind: 'Корректировка', icon: I.sliders, number: 'ADJ-901', status: pill('Проведён', 'p-done'),
+  desc: 'Начальный остаток Shineray для демо-историй',
+  notes: [
+    'Склад, операция и основание — поля шапки вместо карточки «Склад».',
+    'Пояснение живёт в описании документа, в строках его нет. Блока наличия нет.',
+  ],
+  actions: `<button class="btn">Отменить…</button>`,
+  meta: [['Склад', code('WH-15')], ['Операция', pill('Увеличение', 'p-neutral')], ['Основание', none], ['Проведён', '22 сент. 2026, 21:22'], ['Автор', 'Демо-пользователь']],
+  cols: [['Товар'], ['Изменение', 'n'], ['Место']],
+  rows: [[prod('Enduro 250', 'PRD-20'), '<span class="delta plus">+40 шт</span>', code('WH-15')], [prod('Force 1100 EFI', 'PRD-1'), '<span class="delta plus">+8 шт</span>', code('WH-15')]],
+  mov: [['22 сент. 2026, 21:22', '+8 шт', 'Force 1100 EFI', 'PRD-1', 'Склад завода', 'WH-15', 'Свободно', '', 'Корректировка', 'ADJ-901'], ['22 сент. 2026, 21:22', '+40 шт', 'Enduro 250', 'PRD-20', 'Склад завода', 'WH-15', 'Свободно', '', 'Корректировка', 'ADJ-901']],
+  hist: [{ kind: 'post', title: `Создан и проведён ${pill('Проведён', 'p-done')}`, detail: `+48 шт на ${code('WH-15')}`, at: '22 сент., 21:22', by: 'Демо-пользователь' }],
+});
+
+/* ---------- Остатки ---------- */
+S.stock = {
+  nav: 'stock', label: 'Остатки',
+  notes: [
+    'Колонки «Закреплено за» подкрашены теми же цветами, что и полоса распределения в «Всего»: свободно — нейтральный, резерв региона — светло-синий, резерв заказа — синий.',
+    'Единицы «шт» вместо «pcs», нули приглушены, группы колонок разделены вертикальными линиями.',
+  ],
+  render() {
+    const rows = [['5000 2+2 Seater', 'PRD-13', 10, 0, 2, 12, 0, 0], ['Activator 280 RX', 'PRD-3', 14, 0, 2, 16, 0, 0], ['Cross 180 RX', 'PRD-2', 25, 3, 2, 30, 0, 0], ['Enduro 250', 'PRD-20', 45, 5, 2, 52, 0, 0], ['Force 1100 EFI', 'PRD-1', 37, 4, 3, 41, 0, 3], ['GL 300 Dubai', 'PRD-36', 11, 2, 2, 15, 0, 0], ['GP 1100 Ultra', 'PRD-34', 7, 0, 1, 8, 0, 0], ['Power Max 250', 'PRD-16', 12, 2, 2, 16, 0, 0], ['RST 501 Zooma', 'PRD-82', 12, 0, 2, 14, 0, 0]];
+    const v = (x) => (x ? `${x}<span class="u">шт</span>` : `<span class="zero">0</span>`);
+    const C = { free: '#3f3f46', reg: '#93b4fb', ord: '#2563eb' };
+    return `<nav class="crumbs">Магазин <i>›</i> Логистика <i>›</i> <b>Остатки</b></nav>
+    <div class="card toolbar"><h1>Остатки</h1>
+      <div class="tb-row"><div class="seg"><span class="on">Товары</span><span>Склады</span><span>Регионы</span></div><div class="search">${I.search}Поиск по названию или артикулу</div><button class="btn">${I.filter}Фильтры</button></div>
+    </div>
+    <div class="card sec" style="margin-top:16px">
+      <div class="sec-h"><h2>Товары</h2><span class="cnt">25</span></div>
+      <div class="tw"><table class="stock">
+        <thead>
+          <tr><th rowspan="2" style="vertical-align:bottom">Товар</th><th class="g sep" colspan="3"><span>Закреплено за</span></th><th class="g sep" colspan="3"><span>Место</span></th><th rowspan="2" class="n sep tot" style="vertical-align:bottom">Всего</th></tr>
+          <tr><th class="n sep c-free"><span class="sw" style="background:${C.free}"></span>Свободно</th><th class="n c-reg"><span class="sw" style="background:${C.reg}"></span>Резерв региона</th><th class="n c-ord"><span class="sw" style="background:${C.ord}"></span>Резерв заказа</th><th class="n sep">Склады</th><th class="n">Производство</th><th class="n">Перемещения</th></tr>
+        </thead>
+        <tbody>${rows.map((r) => { const t = r[5] + r[6] + r[7]; return `<tr>
+          <td>${prod(r[0], r[1])}</td>
+          <td class="n sep strong c-free">${v(r[2])}</td><td class="n c-reg">${v(r[3])}</td><td class="n c-ord">${v(r[4])}</td>
+          <td class="n sep">${v(r[5])}</td><td class="n">${v(r[6])}</td><td class="n">${v(r[7])}</td>
+          <td class="n sep tot"><span class="strong num">${t}</span><span class="u" style="color:var(--faint);margin-left:3px;font-size:12px">шт</span><div class="mini"><i style="width:${(r[2] / t) * 100}%;background:${C.free}"></i><i style="width:${(r[3] / t) * 100}%;background:${C.reg}"></i><i style="width:${(r[4] / t) * 100}%;background:${C.ord}"></i></div></td>
+        </tr>`; }).join('')}</tbody>
+      </table></div>
+    </div>`;
+  },
+};
+
+/* ---------- mount ---------- */
+const ORDER = ['co', 'po', 'tr', 'shp', 'out', 'rsv', 'adj', 'stock'];
+const sw = document.getElementById('switcher');
+ORDER.forEach((k) => { const b = document.createElement('button'); b.textContent = S[k].label; b.dataset.k = k; b.onclick = () => { location.hash = k; }; sw.appendChild(b); });
+function show(k) {
+  const s = S[k];
+  document.getElementById('side').innerHTML = renderSide(s.nav);
+  document.getElementById('main').innerHTML = s.render();
+  document.getElementById('notes').innerHTML = `<h3>${s.label}: что изменилось</h3><ul>${s.notes.map((n) => `<li>${n}</li>`).join('')}</ul>`;
+  [...sw.querySelectorAll('button')].forEach((b) => b.classList.toggle('on', b.dataset.k === k));
+}
+const fromHash = () => { const [k, tab] = location.hash.slice(1).split(':'); show(ORDER.includes(k) ? k : 'co'); if (tab) selectTab(tab); };
+window.addEventListener('hashchange', fromHash);
+fromHash();
+</script>
+</body>
+</html>

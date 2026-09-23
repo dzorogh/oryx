@@ -49,8 +49,7 @@ const withDoc = <T extends { id: string; number?: string }>(row: T, series = "X"
 
 const withLineSnap = <T extends { productId?: string }>(row: T) => ({
   productName: "Товар",
-  productSku: "SKU",
-  productUnit: "шт",
+    productUnit: "шт",
   plantId: null,
   plantName: null,
   plantCode: null,
@@ -388,8 +387,7 @@ describe("помощник отмены складских документов"
       productId: "7",
       quantity: 10,
       productName: "Товар",
-      productSku: "SKU",
-      productUnit: "шт",
+            productUnit: "шт",
       toOwnerType: null,
       toOwnerId: null,
     }];

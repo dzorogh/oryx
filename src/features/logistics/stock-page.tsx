@@ -4,7 +4,6 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
@@ -145,19 +144,28 @@ const StockPageContent = () => {
         title="Остатки"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Группировка остатков">
+          <div
+            className="inline-flex gap-0.5 rounded-[9px] bg-muted p-[3px]"
+            role="tablist"
+            aria-label="Группировка остатков"
+          >
             {GROUP_TABS.map((item) => (
-              <HomeFilterChip
+              <button
                 key={item.id}
+                type="button"
                 id={stockTabId(item.id)}
-                active={filters.group === item.id}
                 role="tab"
                 aria-selected={filters.group === item.id}
                 aria-controls={STOCK_TABPANEL_ID}
                 onClick={() => replaceFilters(stockFilterForGroup(filtersRef.current, item.id))}
+                className={
+                  filters.group === item.id
+                    ? "rounded-[7px] bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm"
+                    : "rounded-[7px] px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+                }
               >
                 {item.label}
-              </HomeFilterChip>
+              </button>
             ))}
           </div>
           {hasActiveFilters ? (
@@ -176,7 +184,7 @@ const StockPageContent = () => {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="min-w-0 flex-1">
-            <span className="sr-only">Поиск по названию или артикулу</span>
+            <span className="sr-only">Поиск по названию или коду</span>
             <div className="relative">
               <Search
                 aria-hidden
@@ -185,9 +193,9 @@ const StockPageContent = () => {
               <Input
                 value={filters.query}
                 onChange={(event) => updateFilters({ query: event.target.value })}
-                placeholder="Поиск по названию или артикулу"
+                placeholder="Поиск по названию или коду"
                 className="pl-8"
-                aria-label="Поиск остатков по названию или артикулу"
+                aria-label="Поиск остатков по названию или коду"
               />
             </div>
           </label>

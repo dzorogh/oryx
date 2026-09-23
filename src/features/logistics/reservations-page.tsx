@@ -6,13 +6,12 @@ import { toast } from "sonner";
 import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { getBalanceQuantity } from "@/features/logistics/logistics-balances";
 import { addReservationLine, loadReservationList, postReservation } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { hrefForOwner, reservationCapForOwner } from "@/features/logistics/logistics-availability";
 import { emptyReservationLine, ReservationForm, ReservationLineFields } from "@/features/logistics/logistics-forms";
-import { FREE_OWNER_LABEL, RESERVATION_DIRECTION_LABELS, formatQuantity } from "@/features/logistics/logistics-labels";
+import { FREE_OWNER_LABEL, OWNER_TYPE_LABELS, RESERVATION_DIRECTION_LABELS, formatMetaTimestamp, formatQuantity } from "@/features/logistics/logistics-labels";
 import { ownerLabel, productById } from "@/features/logistics/logistics-lookups";
 import { LocationLink } from "@/features/logistics/ui/location-link";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
@@ -32,7 +31,12 @@ import {
   type ReservationDirection,
   type ReservationStatus,
 } from "@/features/logistics/logistics-types";
-import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
+import { buildDocumentTimeline } from "@/features/logistics/document-timeline";
+import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
+import { DocumentHistory } from "@/features/logistics/ui/document/document-history";
+import { DocumentMetaEmpty } from "@/features/logistics/ui/document/document-meta-field";
+import { DocumentSection } from "@/features/logistics/ui/document/document-section";
+import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -41,10 +45,10 @@ import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logist
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
-import { RelatedDocuments } from "@/features/logistics/ui/related-documents";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
-import { DocumentStatusBadge } from "@/features/logistics/ui/status-badge";
+import { DocumentStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { Lock } from "lucide-react";
 
 const DIRECTION_FILTERS: Array<{ id: "all" | ReservationDirection; label: string }> = [
   { id: "all", label: "Все" },
@@ -175,7 +179,6 @@ export const ReservationDetailPage = () => {
     [doc, snapshot.reservationLines],
   );
   const direction = doc ? reservationDirection(doc, lines) : "reserve";
-  const productIds = [...new Set(lines.map((line) => line.productId).filter(Boolean))];
 
   if (isLoading || error || !doc || !found) {
     return (
@@ -187,12 +190,29 @@ export const ReservationDetailPage = () => {
 
   const destLabel = ownerLabel(snapshot, doc.toOwnerType, doc.toOwnerId);
   const destHref = hrefForOwner(doc.toOwnerType, doc.toOwnerId);
+  const destKindLabel = isFreeOwner(doc.toOwnerType, doc.toOwnerId)
+    ? FREE_OWNER_LABEL
+    : OWNER_TYPE_LABELS[doc.toOwnerType!];
   const cancelGuidance = projectDocumentCancelGuidance({ type: "reservation", id: doc.id }, snapshot, balances);
+  const historyEntries = buildDocumentTimeline(snapshot, {
+    documentId: doc.id,
+    mode: "reservation",
+    createdAt: doc.createdAt,
+    createdBy: doc.createdBy,
+    postedAt: doc.postedAt,
+  });
+  const movementCount = snapshot.transactions.filter(
+    (entry) => entry.documentType === "reservation" && entry.documentId === doc.id,
+  ).length;
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Резервы", href: "/store/logistics/reservations" }, { label: doc.number }]}>
-      <LogisticsToolbar
-        title={doc.number}
+      <DocumentHeader
+        kind="Резерв"
+        icon={Lock}
+        number={doc.number}
+        status={<DocumentStatusBadge status={doc.status as ReservationStatus} />}
+        description={doc.description || doc.note || undefined}
         actions={
           <>
             {doc.status === "draft" ? (
@@ -217,74 +237,131 @@ export const ReservationDetailPage = () => {
             />
           </>
         }
-      >
-        <DocumentStatusBadge status={doc.status as ReservationStatus} />
-        <span className="text-sm text-muted-foreground">{RESERVATION_DIRECTION_LABELS[direction]}</span>
-      </LogisticsToolbar>
-      <RelatedDocuments
-        title="Назначение"
-        items={
-          destHref
-            ? [{ id: doc.toOwnerId ?? destLabel, href: destHref, label: destLabel, meta: doc.toOwnerType ?? FREE_OWNER_LABEL }]
-            : [{ id: "free", href: "/store/logistics/reservations", label: FREE_OWNER_LABEL, meta: "назначение" }]
-        }
+        meta={[
+          {
+            label: "Операция",
+            value: (
+              <StatusPill status="neutral" label={RESERVATION_DIRECTION_LABELS[direction]} />
+            ),
+          },
+          {
+            label: "Назначение",
+            value: (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-foreground font-medium">{destKindLabel}</span>
+                {destHref ? (
+                  <LogisticsCodeBadge code={destLabel} href={destHref} />
+                ) : isFreeOwner(doc.toOwnerType, doc.toOwnerId) ? null : (
+                  <span>{destLabel}</span>
+                )}
+              </span>
+            ),
+          },
+          { label: "Создан", value: formatMetaTimestamp(doc.createdAt) },
+          {
+            label: "Проведён",
+            value: doc.postedAt ? formatMetaTimestamp(doc.postedAt) : <DocumentMetaEmpty />,
+          },
+          {
+            label: "Автор",
+            value: snapshot.users.find((user) => user.id === doc.createdBy)?.name ?? "—",
+          },
+        ]}
       />
-      <LogisticsTableCard
-        title="Строки"
-        action={
-          doc.status === "draft" ? (
-            <Button type="button" size="sm" onClick={() => setLineOpen(true)}>
-              Добавить строку
-            </Button>
-          ) : undefined
-        }
-        headers={["Товар", "Источник", "Количество", "Место", "Сейчас доступно", "Комментарий"]}
-      >
-        {lines.map((line, index) => {
-          const product = productById(snapshot, line.productId);
-          const qty = getBalanceQuantity(balances, {
-            productId: line.productId,
-            locationType: doc.locationType,
-            locationId: doc.locationId,
-            stockState: isFreeOwner(line.fromOwnerType, line.fromOwnerId) ? "free" : "reserved",
-            ownerType: line.fromOwnerType,
-            ownerId: line.fromOwnerId,
-          });
-          const sourceHref = hrefForOwner(line.fromOwnerType, line.fromOwnerId);
-          const sourceLabel = ownerLabel(snapshot, line.fromOwnerType, line.fromOwnerId);
-          return (
-            <TableRow key={line.id}>
-              <TableCell className="px-3 py-2">
-                <ProductIdentity snapshot={snapshot} productId={line.productId} />
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm">
-                {sourceHref ? <LogisticsCodeBadge code={sourceLabel} href={sourceHref} /> : sourceLabel}
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm tabular-nums">
-                {formatQuantity(line.quantity, product?.unit)}
-              </TableCell>
-              {index === 0 ? (
-                <TableCell className="px-3 py-2 text-sm" rowSpan={lines.length}>
-                  <LocationLink snapshot={snapshot} locationType={doc.locationType} locationId={doc.locationId} showKind />
-                </TableCell>
-              ) : null}
-              <TableCell className="px-3 py-2 text-sm tabular-nums">{formatQuantity(qty)}</TableCell>
-              {index === 0 ? (
-                <TableCell className="px-3 py-2 text-sm" rowSpan={lines.length}>
-                  {doc.note || "—"}
-                </TableCell>
-              ) : null}
-            </TableRow>
-          );
-        })}
-      </LogisticsTableCard>
-      {productIds.map((productId) => (
-        <AvailabilityPanel key={productId} snapshot={snapshot} balances={balances} productId={productId} />
-      ))}
-      <DocumentLedger
-        snapshot={snapshot}
-        hide="document"
-        filter={(entry) => entry.documentType === "reservation" && entry.documentId === doc.id}
+      <DocumentTabs
+        tabs={[
+          {
+            id: "products",
+            label: "Товары",
+            count: lines.length,
+            panel: (
+              <DocumentSection
+                title="Товары"
+                tools={
+                  doc.status === "draft" ? (
+                    <Button type="button" size="sm" onClick={() => setLineOpen(true)}>
+                      Добавить строку
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <LogisticsTableCard
+                  embedded
+                  headers={["Товар", "Источник", "Место", "Количество"]}
+                  numericColumns={[3]}
+                  isEmpty={lines.length === 0}
+                >
+                  {lines.map((line, index) => {
+                    const product = productById(snapshot, line.productId);
+                    const sourceHref = hrefForOwner(line.fromOwnerType, line.fromOwnerId);
+                    const sourceLabel = isFreeOwner(line.fromOwnerType, line.fromOwnerId)
+                      ? FREE_OWNER_LABEL
+                      : ownerLabel(snapshot, line.fromOwnerType, line.fromOwnerId);
+                    const sourceKind = isFreeOwner(line.fromOwnerType, line.fromOwnerId)
+                      ? null
+                      : OWNER_TYPE_LABELS[line.fromOwnerType!];
+                    return (
+                      <TableRow key={line.id}>
+                        <TableCell className="px-3 py-2">
+                          <ProductIdentity snapshot={snapshot} productId={line.productId} />
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-sm">
+                          {sourceHref ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              {sourceKind ? (
+                                <span className="text-foreground font-medium">{sourceKind}</span>
+                              ) : null}
+                              <LogisticsCodeBadge
+                                code={sourceLabel}
+                                href={sourceHref}
+                              />
+                            </span>
+                          ) : (
+                            sourceLabel
+                          )}
+                        </TableCell>
+                        {index === 0 ? (
+                          <TableCell className="px-3 py-2 text-sm" rowSpan={lines.length}>
+                            <LocationLink
+                              snapshot={snapshot}
+                              locationType={doc.locationType}
+                              locationId={doc.locationId}
+                              showKind
+                            />
+                          </TableCell>
+                        ) : null}
+                        <TableCell className="px-3 py-2 text-right text-sm font-medium tabular-nums">
+                          {formatQuantity(line.quantity, product?.unit)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </LogisticsTableCard>
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "movements",
+            label: "Движения",
+            count: movementCount,
+            panel: (
+              <DocumentSection title="Движения">
+                <DocumentLedger
+                  bare
+                  snapshot={snapshot}
+                  hide="document"
+                  filter={(entry) => entry.documentType === "reservation" && entry.documentId === doc.id}
+                />
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "history",
+            label: "История",
+            count: historyEntries.length,
+            panel: <DocumentHistory entries={historyEntries} />,
+          },
+        ]}
       />
       <LogisticsDialog
         open={lineOpen}
@@ -319,7 +396,14 @@ export const ReservationDetailPage = () => {
               }
               const fromOwnerType = newLine.fromOwnerKind === "free" ? null : (newLine.fromOwnerKind as OwnerType);
               const fromOwnerId = newLine.fromOwnerKind === "free" ? null : newLine.fromOwnerId;
-              if (lines.some((line) => line.productId === newLine.productId && line.fromOwnerType === fromOwnerType && line.fromOwnerId === fromOwnerId)) {
+              if (
+                lines.some(
+                  (line) =>
+                    line.productId === newLine.productId &&
+                    line.fromOwnerType === fromOwnerType &&
+                    line.fromOwnerId === fromOwnerId,
+                )
+              ) {
                 toast.error("Этот источник и товар уже есть в документе");
                 return;
               }

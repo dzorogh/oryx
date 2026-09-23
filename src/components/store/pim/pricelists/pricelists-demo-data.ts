@@ -268,7 +268,7 @@ const getSeedDimensions = (row: PricelistRow): { length: number; width: number; 
 const formatDimension = (value: number): string =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
 
-export const getSeedPlantModelName = (row: PricelistRow): string => `${row.family} ${row.sku}`;
+export const getSeedPlantModelName = (row: PricelistRow): string => `${row.family} ${row.name}`;
 
 export const getSeedDimension = (row: PricelistRow): string => {
   const { length, width, height } = getSeedDimensions(row);

@@ -193,3 +193,15 @@
 - source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-logistics-list-scoped-data.md`
   summary: `AGENTS.md` не включает `npm test` в проверки перед сдачей.
   evidence: `AGENTS.md` называет только lint/typecheck/build/check:*; правка агентских файлов вынесена из задачи.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-store-document-screens-redesign.md`
+  summary: На карточке перемещения кнопки «Отметить доставленным» и «Зарезервировать в пути» показываются только при статусе `sent`, а в демо-БД перемещения в пути имеют статус `in_progress`.
+  evidence: `transfers-page.tsx` проверяет `doc.status === "sent"`, `canReserveInTransit` тоже; та же проверка была в базовой `transfer-detail-header.tsx:79`; в БД статусы перемещений — `in_progress`/`done`.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-store-document-screens-redesign.md`
+  summary: На карточке отгрузки действие по связанному заказу клиента показывается только при `status === "open"`, а у открытых заказов в БД статус `in_progress`.
+  evidence: `flow-documents-pages.tsx:313`; так же в базовой версии (строка 279); в БД 35 заказов клиента `in_progress`, ни одного `open`.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-store-document-screens-redesign.md`
+  summary: Ошибка действия на карточке перемещения выводится только в `sr-only` live-region — зрячий пользователь её не видит.
+  evidence: `transfers-page.tsx` ~429; так же в базовой `transfer-detail-header.tsx:144`; можно перевести действия на `runLogisticsAction` (toast).

@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   hrefForDocument,
+  outputtedForProductionLine,
   productionLineReservationBreakdown,
+  remainingToOutputForLine,
 } from "@/features/logistics/logistics-availability";
 import { lineLocationAllocations } from "@/features/logistics/allocation-atlas";
 import {
@@ -59,7 +61,6 @@ const reservationLine = (
   fromOwnerType: null,
   fromOwnerId: null,
   productName: "Снимок",
-  productSku: "SKU-7",
   productUnit: "шт",
   ...overrides,
 });
@@ -130,7 +131,6 @@ describe("универсальные товарные строки", () => {
           productId: "7",
           quantity: 3,
           productName: "Снимок",
-          productSku: "SKU-7",
           productUnit: "шт",
           toOwnerType: null,
           toOwnerId: null,
@@ -159,5 +159,62 @@ describe("универсальные товарные строки", () => {
       view,
     );
     assert.equal(allocation.inProduction, 4);
+  });
+
+  it("outputtedForProductionLine без строки плана считает только done-выпуски по productionOrderLineId", () => {
+    const view = snapshot({
+      productionOrderLines: [],
+      outputs: [
+        {
+          id: "out-done",
+          series: "OUT",
+          sequenceNumber: "1",
+          number: "OUT-1",
+          productionOrderId: "2000001",
+          status: "done",
+          createdAt: "2026-09-22T00:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+        {
+          id: "out-draft",
+          series: "OUT",
+          sequenceNumber: "2",
+          number: "OUT-2",
+          productionOrderId: "2000001",
+          status: "planned",
+          createdAt: "2026-09-22T01:00:00Z",
+          createdBy: "1",
+          expectedEndOn: null,
+        },
+      ],
+      outputLines: [
+        {
+          id: "ol1",
+          outputId: "out-done",
+          productionOrderLineId: "missing-plan-line",
+          productId: "7",
+          quantity: 4,
+          productName: "Снимок",
+          productUnit: "шт",
+          toOwnerType: null,
+          toOwnerId: null,
+        },
+        {
+          id: "ol2",
+          outputId: "out-draft",
+          productionOrderLineId: "missing-plan-line",
+          productId: "7",
+          quantity: 9,
+          productName: "Снимок",
+          productUnit: "шт",
+          toOwnerType: null,
+          toOwnerId: null,
+        },
+      ],
+    });
+
+    assert.equal(outputtedForProductionLine(view, "missing-plan-line"), 4);
+    assert.equal(remainingToOutputForLine(view, "missing-plan-line", 10), 6);
   });
 });

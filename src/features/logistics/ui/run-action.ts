@@ -43,7 +43,6 @@ const ERROR_TRANSLATIONS: Array<[RegExp, string]> = [
   [/Delivered transfers are kept as history/i, "Доставленное перемещение остаётся в истории"],
   [/Unknown document kind/i, "Неизвестный вид документа"],
   [/Unknown product/i, "Неизвестный товар"],
-  [/duplicate key value.*sku/i, "Товар с таким артикулом уже есть"],
   [/duplicate key value/i, "Такая запись уже есть"],
   [/Supabase is not configured/i, "Supabase не настроен"],
   [/Supabase returned no data/i, "Supabase не вернул данные"],

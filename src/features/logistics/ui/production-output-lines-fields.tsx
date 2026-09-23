@@ -3,7 +3,6 @@
 
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { QuantityField } from "@/features/logistics/ui/quantity-field";
-import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import {
   customerOrderById,
@@ -91,7 +90,6 @@ export const ProductionOutputLinesFields = ({
                 `осталось ${formatQuantity(remaining)}`,
               )}
             </p>
-            <AvailabilityPanel snapshot={snapshot} balances={balances} productId={draft.productId} />
             <QuantityField
               value={draft.quantity}
               onChange={(value) => patch({ quantity: value })}

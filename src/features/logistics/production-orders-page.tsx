@@ -1,7 +1,8 @@
 // english-ui:ignore-file
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Factory } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { HomeFilterChip } from "@/components/home/home-filter-chip";
@@ -35,7 +36,12 @@ import {
   setProductionStatus,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
-import { formatExpectedEnd, formatQuantity, PRODUCTION_STATUS_LABELS } from "@/features/logistics/logistics-labels";
+import {
+  formatExpectedEnd,
+  formatQuantity,
+  formatMetaTimestamp,
+  PRODUCTION_STATUS_LABELS,
+} from "@/features/logistics/logistics-labels";
 import {
   customerOrderById,
   plantIdsForProducts,
@@ -60,13 +66,19 @@ import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card
 import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
-import { ProductionStatusBadge } from "@/features/logistics/ui/status-badge";
+import { ProductionStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { ProductionOrderCloseDialog } from "@/features/logistics/ui/production-order-close-dialog";
-import { ProductionOrderDocumentHeader } from "@/features/logistics/ui/production-order-document-header";
 import { ProductionOrderMovements } from "@/features/logistics/ui/production-order-movements";
 import { ProductionOrderOutputs } from "@/features/logistics/ui/production-order-outputs";
 import { ProductionOrderProductManifest } from "@/features/logistics/ui/production-order-product-manifest";
-import { ProductionOrderSectionIndex } from "@/features/logistics/ui/production-order-section-index";
+import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
+import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
+import { DocumentHistory } from "@/features/logistics/ui/document/document-history";
+import { DocumentMetaDateInput, DocumentMetaEmpty, overdueDays } from "@/features/logistics/ui/document/document-meta-field";
+import { DocumentSection } from "@/features/logistics/ui/document/document-section";
+import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
+import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
+import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { documentLedgerRows } from "@/features/logistics/ui/document-ledger";
 
@@ -322,10 +334,6 @@ export const ProductionOrderDetailPage = () => {
 
   const [statusPending, setStatusPending] = useState(false);
   const [datePending, setDatePending] = useState(false);
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const [dateError, setDateError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [dateMessage, setDateMessage] = useState<string | null>(null);
 
   const order = matchDocumentParam(snapshot.productionOrders, params.orderId);
   const lines = useMemo(
@@ -403,18 +411,19 @@ export const ProductionOrderDetailPage = () => {
     ? productsForPlant(snapshot, order.plantId ?? "")
     : [];
   const canMutate = Boolean(order && order.status !== "closed" && order.status !== "cancelled");
-
-  useEffect(() => {
-    if (isLoading || error || !order) {
-      return;
-    }
-    const hash = typeof window !== "undefined" ? window.location.hash.replace("#", "") : "";
-    if (!hash || !["products", "outputs", "movements"].includes(hash)) {
-      return;
-    }
-    const heading = document.querySelector<HTMLElement>(`#${hash} h2`);
-    heading?.focus();
-  }, [error, isLoading, order]);
+  const cancelGuidance = order
+    ? projectDocumentCancelGuidance({ type: "production_order", id: order.id }, snapshot, balances)
+    : null;
+  const historyEntries = order
+    ? buildDocumentTimeline(snapshot, {
+        documentId: order.id,
+        createdAt: order.createdAt,
+        createdBy: order.createdBy,
+        statusLabels: PRODUCTION_STATUS_LABELS,
+      })
+    : [];
+  const completedAt = order ? documentCompletedAt(snapshot, order.id) : null;
+  const workflowStatuses = (["draft", "planned", "in_progress", "done"] as const) satisfies readonly ProductionStatus[];
 
   const createOutputFromProduction = async (complete: boolean) => {
     if (!order || !canSubmitOutput) {
@@ -518,114 +527,232 @@ export const ProductionOrderDetailPage = () => {
     <LogisticsPageShell crumbs={[{ label: "Заказы на производство", href: "/store/logistics/production-orders" }, { label: order.number }]}>
       <p ref={closeAnnounceRef} role="status" aria-live="polite" className="sr-only" />
       <div className="flex flex-col gap-4">
-        <ProductionOrderDocumentHeader
-          snapshot={snapshot}
-          order={order}
-          statusRef={statusRef}
-          statusPending={statusPending}
-          datePending={datePending}
-          statusError={statusError}
-          dateError={dateError}
-          statusMessage={statusMessage}
-          dateMessage={dateMessage}
-          onStatusChange={(status) => {
-            setStatusPending(true);
-            setStatusError(null);
-            setStatusMessage(null);
-            void (async () => {
-              try {
-                await setProductionStatus(order.id, status);
-                await reload();
-                setStatusMessage("Статус сохранён.");
-              } catch (caught) {
-                setStatusError(translateLogisticsError(caught instanceof Error ? caught.message : "Не удалось сохранить статус"));
-              } finally {
-                setStatusPending(false);
-              }
-            })();
-          }}
-          onExpectedEndChange={(value) => {
-            setDatePending(true);
-            setDateError(null);
-            setDateMessage(null);
-            void (async () => {
-              try {
-                await updateExpectedEnd(order.id, value || null);
-                await reload();
-                setDateMessage("Ожидаемое окончание сохранено.");
-              } catch (caught) {
-                setDateError(
-                  translateLogisticsError(caught instanceof Error ? caught.message : "Не удалось сохранить дату"),
-                );
-              } finally {
-                setDatePending(false);
-              }
-            })();
-          }}
-          closeDisabled={statusPending || datePending}
-          onClose={
-            canMutate
-              ? () => {
-                  setCloseError(null);
-                  setCloseOpen(true);
-                }
-              : undefined
+        <DocumentHeader
+          kind="Заказ на производство"
+          icon={Factory}
+          number={order.number}
+          status={<ProductionStatusBadge status={order.status} />}
+          actions={
+            <>
+              {cancelGuidance ? (
+                <DocumentCancelControl
+                  guidance={cancelGuidance}
+                  reload={reload}
+                  onFollowUp={(action) => {
+                    if (action.id === "close-production-order") {
+                      setCloseOpen(true);
+                    }
+                  }}
+                />
+              ) : null}
+              {canMutate ? (
+                <Button
+                  type="button"
+                  disabled={statusPending || datePending}
+                  onClick={() => {
+                    setCloseError(null);
+                    setCloseOpen(true);
+                  }}
+                >
+                  Закрыть заказ
+                </Button>
+              ) : null}
+            </>
           }
+          meta={[
+            {
+              label: "Завод",
+              value: (
+                <PlantLink
+                  snapshot={snapshot}
+                  plantId={order.plantId ?? ""}
+                />
+              ),
+            },
+            {
+              label: "Статус",
+              value: (
+                <div ref={statusRef} tabIndex={canMutate ? undefined : -1} aria-busy={statusPending || undefined}>
+                  {canMutate ? (
+                    <Select
+                      items={workflowStatuses.map((status) => ({
+                        value: status,
+                        label: PRODUCTION_STATUS_LABELS[status] ?? status,
+                      }))}
+                      value={order.status}
+                      disabled={statusPending}
+                      onValueChange={(value) => {
+                        if (!value || statusPending) {
+                          return;
+                        }
+                        setStatusPending(true);
+                        void runLogisticsAction(
+                          () => setProductionStatus(order.id, value as ProductionStatus),
+                          "Статус сохранён",
+                          reload,
+                        ).finally(() => setStatusPending(false));
+                      }}
+                    >
+                      <SelectTrigger
+                        className="-ml-2 h-8 w-auto gap-1.5 border-transparent bg-transparent px-2 shadow-none hover:border-border hover:bg-muted/50 data-[size=default]:h-8"
+                        aria-label="Статус"
+                      >
+                        <ProductionStatusBadge status={order.status} />
+                        <SelectValue className="sr-only" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {workflowStatuses.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {PRODUCTION_STATUS_LABELS[status]}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <ProductionStatusBadge status={order.status} />
+                  )}
+                </div>
+              ),
+            },
+            {
+              label: "Ожидаемое окончание",
+              value: (
+                <DocumentMetaDateInput
+                  value={order.expectedEndOn ?? ""}
+                  aria-label="Ожидаемое окончание"
+                  disabled={datePending}
+                  overdueDays={canMutate ? overdueDays(order.expectedEndOn) : 0}
+                  onChange={(value) => {
+                    setDatePending(true);
+                    void runLogisticsAction(
+                      () => updateExpectedEnd(order.id, value || null),
+                      "Ожидаемое окончание сохранено",
+                      reload,
+                    ).finally(() => setDatePending(false));
+                  }}
+                />
+              ),
+            },
+            { label: "Создан", value: formatMetaTimestamp(order.createdAt) },
+            {
+              label: "Завершён",
+              value: completedAt ? formatMetaTimestamp(completedAt) : <DocumentMetaEmpty />,
+            },
+          ]}
         />
 
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[11rem_minmax(0,1fr)]">
-          <ProductionOrderSectionIndex
-            counts={{
-              products: lines.length,
-              outputs: outputs.length,
-              movements: movementCount,
-            }}
-          />
-          <div className="flex min-w-0 flex-col gap-4">
-            <ProductionOrderProductManifest
-              snapshot={snapshot}
-              balances={balances}
-              lines={lines}
-              doneByLine={doneByLine}
-              canMutate={canMutate}
-              onAddProduct={() => {
-                setProductError(null);
-                setProductOpen(true);
-              }}
-              onReserve={(lineId) => {
-                const line = lines.find((item) => item.id === lineId);
-                if (!line) {
-                  return;
-                }
-                const breakdown = productionLineReservationBreakdown(line, snapshot);
-                const eligible = openOrderLinesForProduct(snapshot, balances, line.productId);
-                const first = eligible.length === 1 ? eligible[0] : undefined;
-                const cap = first
-                  ? Math.min(breakdown.free, remainingToReserveForLine(first, balances))
-                  : breakdown.free;
-                setReserveLineId(line.id);
-                setReserveOrderLineId(first?.id ?? "");
-                setReserveQuantity(String(cap > 0 ? cap : 1));
-                setReserveError(null);
-                setReserveOpen(true);
-              }}
-            />
-            <ProductionOrderOutputs
-              snapshot={snapshot}
-              outputs={outputs}
-              canMutate={canMutate}
-              onCreate={() => {
-                setOutputError(null);
-                setOutputDrafts(
-                  buildProductionOutputDrafts(outputEligibleLines, (lineId) => remainingForOutput(lineId)),
-                );
-                setOutputExpectedEndOn("");
-                setOutputOpen(true);
-              }}
-            />
-            <ProductionOrderMovements snapshot={snapshot} filter={movementFilter} />
-          </div>
-        </div>
+        <DocumentTabs
+          tabs={[
+            {
+              id: "products",
+              label: "Товары",
+              count: lines.length,
+              panel: (
+                <DocumentSection
+                  title="Товары"
+                  tools={
+                    canMutate ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setProductError(null);
+                          setProductOpen(true);
+                        }}
+                      >
+                        Добавить товар
+                      </Button>
+                    ) : null
+                  }
+                >
+                  <ProductionOrderProductManifest
+                    snapshot={snapshot}
+                    balances={balances}
+                    lines={lines}
+                    doneByLine={doneByLine}
+                    canMutate={canMutate}
+                    bare
+                    onReserve={(lineId) => {
+                      const line = lines.find((item) => item.id === lineId);
+                      if (!line) {
+                        return;
+                      }
+                      const breakdown = productionLineReservationBreakdown(line, snapshot);
+                      const eligible = openOrderLinesForProduct(snapshot, balances, line.productId);
+                      const first = eligible.length === 1 ? eligible[0] : undefined;
+                      const cap = first
+                        ? Math.min(breakdown.free, remainingToReserveForLine(first, balances))
+                        : breakdown.free;
+                      setReserveLineId(line.id);
+                      setReserveOrderLineId(first?.id ?? "");
+                      setReserveQuantity(String(cap > 0 ? cap : 1));
+                      setReserveError(null);
+                      setReserveOpen(true);
+                    }}
+                  />
+                </DocumentSection>
+              ),
+            },
+            {
+              id: "outputs",
+              label: "Выпуски",
+              count: outputs.length,
+              panel: (
+                <DocumentSection
+                  title="Выпуски"
+                  tools={
+                    canMutate ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setOutputError(null);
+                          setOutputDrafts(
+                            buildProductionOutputDrafts(outputEligibleLines, (lineId) => remainingForOutput(lineId)),
+                          );
+                          setOutputExpectedEndOn("");
+                          setOutputOpen(true);
+                        }}
+                      >
+                        Новый выпуск
+                      </Button>
+                    ) : null
+                  }
+                >
+                  <ProductionOrderOutputs snapshot={snapshot} outputs={outputs} canMutate={false} bare />
+                </DocumentSection>
+              ),
+            },
+            {
+              id: "movements",
+              label: "Движения",
+              count: movementCount,
+              panel: (
+                <DocumentSection title="Движения">
+                  <ProductionOrderMovements snapshot={snapshot} filter={movementFilter} bare />
+                </DocumentSection>
+              ),
+            },
+            {
+              id: "history",
+              label: "История",
+              count: historyEntries.length,
+              panel: (
+                <DocumentHistory
+                  entries={historyEntries}
+                  renderStatus={(statusKey) => (
+                    <StatusPill
+                      status={statusKey}
+                      label={PRODUCTION_STATUS_LABELS[statusKey as ProductionStatus]}
+                    />
+                  )}
+                />
+              ),
+            },
+          ]}
+        />
       </div>
 
       <LogisticsDialog
@@ -962,11 +1089,11 @@ export const ProductionOrderDetailPage = () => {
               try {
                 await reload();
               } catch (reloadError) {
-                setStatusError(
-                  translateLogisticsError(
-                    reloadError instanceof Error ? reloadError.message : "Заказ закрыт, но страница не обновилась",
+                toast.error("Заказ закрыт, но страница не обновилась", {
+                  description: translateLogisticsError(
+                    reloadError instanceof Error ? reloadError.message : "Попробуйте обновить страницу",
                   ),
-                );
+                });
               }
             } catch (caught) {
               setCloseError(

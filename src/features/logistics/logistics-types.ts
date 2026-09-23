@@ -126,7 +126,6 @@ export type LogisticsProduct = {
   id: string;
   productId: string;
   code: string;
-  sku: string;
   name: string;
   unit: string;
   imageUrl?: string | null;
@@ -172,7 +171,6 @@ export type DocumentProductLine = {
   currencyId: string | null;
   productId: string;
   productName: string;
-  productSku: string;
   productUnit: string;
   plantId: string | null;
   plantName: string | null;
@@ -204,7 +202,6 @@ export type CustomerOrderLine = {
   productId: string;
   quantity: number;
   productName: string;
-  productSku: string;
   productUnit: string;
   plantId?: string | null;
   plantName?: string | null;
@@ -232,7 +229,6 @@ export type ProductionOrderLine = {
   productId: string;
   quantity: number;
   productName: string;
-  productSku: string;
   productUnit: string;
   plantId: string | null;
   plantName: string | null;
@@ -272,7 +268,6 @@ export type ReservationLine = {
   fromOwnerId: string | null;
   fromOwnerType: OwnerType | null;
   productName: string;
-  productSku: string;
   productUnit: string;
 };
 
@@ -298,7 +293,6 @@ export type TransferLine = {
   productId: string;
   quantity: number;
   productName: string;
-  productSku: string;
   productUnit: string;
 };
 
@@ -340,7 +334,6 @@ export type ShipmentLine = {
   toOwnerType: OwnerType | null;
   fromOwnerType: OwnerType | null;
   productName: string;
-  productSku: string;
   productUnit: string;
 };
 
@@ -365,7 +358,6 @@ export type ProductionOutputLine = {
   productId: string;
   quantity: number;
   productName: string;
-  productSku: string;
   productUnit: string;
   toOwnerId: string | null;
   toOwnerType: OwnerType | null;
@@ -405,7 +397,6 @@ export type StockAdjustmentLine = {
   productId: string;
   quantity: number;
   productName: string;
-  productSku: string;
   productUnit: string;
 };
 
@@ -497,7 +488,8 @@ const emptyId = (id: string | null | undefined): boolean => id == null || id ===
 export const isFreeOwner = (
   ownerType: OwnerType | null | undefined,
   ownerId: string | null | undefined,
-): boolean => ownerType == null && emptyId(ownerId);
+): boolean =>
+  ownerType == null && (emptyId(ownerId) || ownerId === FREE_OWNER_ID);
 
 export const ownersEqual = (
   aType: OwnerType | null | undefined,

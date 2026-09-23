@@ -104,7 +104,7 @@ export const matchesSearchQuery = (item: StoreCatalogItem, query: string) => {
     return true;
   }
 
-  return `${item.name} ${getDisplayProductName(item.name)} ${item.code} ${item.sku}`.toLowerCase().includes(query);
+  return `${item.name} ${getDisplayProductName(item.name)} ${item.code}`.toLowerCase().includes(query);
 };
 
 export const CATALOG_DEALER_STATUS_LABELS: Record<DealerStatus, string> = {

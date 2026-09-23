@@ -32,13 +32,13 @@ describe("mapCustomerOrderListRow", () => {
       status: "in_progress",
       expectedEndOn: "2026-10-01",
       createdAt: "2026-09-01T10:00:00+00:00",
-      products: [{ id: 1, productId: 7, quantity: 5, productName: "Sport 250", productSku: "SP-250", productUnit: "шт" }],
+      products: [{ id: 1, productId: 7, quantity: 5, productName: "Sport 250", productUnit: "шт" }],
       reserved: 2,
       shipped: 1,
       openToReserve: 2,
     });
     assert.deepEqual(row.products, [
-      { productId: "7", quantity: 5, productName: "Sport 250", productSku: "SP-250", productUnit: "шт" },
+      { productId: "7", quantity: 5, productName: "Sport 250", productUnit: "шт" },
     ]);
     assert.equal(row.reserved, 2);
     assert.equal(row.openToReserve, 2);

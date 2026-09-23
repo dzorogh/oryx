@@ -464,10 +464,19 @@ export const productionLineReservationBreakdown = (
 
 export const outputtedForProductionLine = (snapshot: LogisticsSnapshot, productionOrderLineId: string): number => {
   const planLine = snapshot.productionOrderLines.find((line) => line.id === productionOrderLineId);
-  if (!planLine) {
-    return 0;
+  if (planLine) {
+    return producedForProductionProduct(snapshot, planLine.orderId, planLine.productId);
   }
-  return producedForProductionProduct(snapshot, planLine.orderId, planLine.productId);
+  // Output detail context may omit sibling plan lines — still count done outputs for this line id.
+  return snapshot.outputLines
+    .filter((line) => {
+      if (line.productionOrderLineId !== productionOrderLineId) {
+        return false;
+      }
+      const doc = snapshot.outputs.find((item) => item.id === line.outputId);
+      return doc?.status === "done";
+    })
+    .reduce((sum, line) => sum + line.quantity, 0);
 };
 
 export const remainingToOutputForLine = (

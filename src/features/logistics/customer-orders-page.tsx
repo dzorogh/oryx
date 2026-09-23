@@ -1,6 +1,7 @@
 // english-ui:ignore-file
 "use client";
 
+import { ShoppingCart } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -21,7 +22,12 @@ import {
   ReserveOnTransferForm,
   TransferReservedForm,
 } from "@/features/logistics/order-action-forms";
-import { formatExpectedEnd, formatQuantity } from "@/features/logistics/logistics-labels";
+import {
+  CUSTOMER_ORDER_STATUS_LABELS,
+  formatExpectedEnd,
+  formatQuantity,
+  formatMetaTimestamp,
+} from "@/features/logistics/logistics-labels";
 import { productIdentityLabel } from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import {
@@ -43,12 +49,24 @@ import {
   type CustomerOrderLine,
   type CustomerOrderStatus,
   type LocationType,
+  type StockTransaction,
 } from "@/features/logistics/logistics-types";
 import type { CustomerOrderListRow } from "@/features/logistics/logistics-list-types";
-import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
+import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
+import { sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
+import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
+import { DocumentHistory } from "@/features/logistics/ui/document/document-history";
+import {
+  DocumentMetaDateInput,
+  DocumentMetaEmpty,
+  pluralPositions,
+  overdueDays,
+} from "@/features/logistics/ui/document/document-meta-field";
+import { DocumentSection } from "@/features/logistics/ui/document/document-section";
+import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
@@ -57,7 +75,7 @@ import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { OrderProgressTracker } from "@/features/logistics/ui/order-progress-tracker";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
-import { CustomerOrderStatusBadge } from "@/features/logistics/ui/status-badge";
+import { CustomerOrderStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { compareCustomerOrdersNewestFirst } from "@/features/logistics/customer-orders-sort";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
@@ -178,9 +196,6 @@ const CustomerOrderCreateDialog = ({
                   />
                 </label>
               </div>
-              {line.productId ? (
-                <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} />
-              ) : null}
             </div>
           ))}
           <Button
@@ -345,160 +360,260 @@ export const CustomerOrderDetailPage = () => {
   const canAct = isOpenCustomerOrderStatus(order.status);
   const coverage = calculateOrderDocumentCoverage(snapshot, order.id);
   const cancelGuidance = projectDocumentCancelGuidance({ type: "customer_order", id: order.id }, snapshot, balances);
+  const completedAt = documentCompletedAt(snapshot, order.id);
+  const overdue = canAct ? overdueDays(order.expectedEndOn) : 0;
+  const orderedQty = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const shippedQty = lines.reduce((sum, line) => sum + sumShippedForLine(balances, line), 0);
+  const shipPct = orderedQty > 0 ? Math.min(100, Math.floor((shippedQty / orderedQty) * 100)) : 0;
+  const movementFilter = (entry: StockTransaction) =>
+    documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
+      documentKey(entry.documentType, entry.documentId),
+    );
+  const movementCount = snapshot.transactions.filter(movementFilter).length;
+  const historyEntries = buildDocumentTimeline(snapshot, {
+    documentId: order.id,
+    createdAt: order.createdAt,
+    createdBy: order.createdBy,
+    statusLabels: CUSTOMER_ORDER_STATUS_LABELS,
+  });
+
+  const primaryStages = [
+    {
+      id: "production",
+      title: "Производство",
+      href: "/store/logistics/production-orders",
+      items: withOrderCoverage(
+        relatedProductionsForOrder(snapshot, order.id, balances),
+        coverage.production,
+      ),
+      doneStatuses: ["done", "closed"] as const,
+      actions: canAct
+        ? [
+            { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
+            { label: "Зарезервировать в заказе на производство", onClick: () => setReserveOnProductionOpen(true) },
+          ]
+        : undefined,
+    },
+    {
+      id: "output",
+      title: "Выпуски",
+      href: "/store/logistics/outputs",
+      items: withOrderCoverage(relatedOutputsForOrder(snapshot, order.id), coverage.output),
+      doneStatuses: ["done"] as const,
+      actions: canAct ? [{ label: "Выпустить", onClick: () => setOutputOpen(true) }] : undefined,
+    },
+    {
+      id: "transfer",
+      title: "Перемещения",
+      href: "/store/logistics/transfers",
+      items: withOrderCoverage(relatedTransfersForOrder(snapshot, order.id), coverage.transfer),
+      doneStatuses: ["delivered"] as const,
+      actions: canAct
+        ? [
+            { label: "Переместить занятое", onClick: () => setTransferOpen(true) },
+            { label: "Зарезервировать в пути", onClick: () => setReserveOnTransferOpen(true) },
+          ]
+        : undefined,
+    },
+    {
+      id: "shipment",
+      title: "Отгрузки",
+      href: "/store/logistics/shipments",
+      items: withOrderCoverage(relatedShipments(snapshot, order.id), coverage.shipment),
+      doneStatuses: ["posted"] as const,
+      actions: canAct ? [{ label: "Отгрузить", onClick: () => setShipOpen(true) }] : undefined,
+    },
+  ];
+
+  const secondaryStages = [
+    {
+      id: "reservations",
+      title: "Резервы",
+      href: "/store/logistics/reservations",
+      items: withOrderCoverage(relatedReservations(snapshot, order.id), coverage.reservation),
+      doneStatuses: ["posted"] as const,
+      actions: canAct
+        ? [
+            {
+              label: "Зарезервировать",
+              onClick: () => {
+                setReserveLine(null);
+                setReserveOpen(true);
+              },
+            },
+          ]
+        : undefined,
+    },
+    {
+      id: "returns",
+      title: "Возвраты",
+      href: "/store/logistics/shipments?direction=return",
+      items: withOrderCoverage(relatedReturnsForOrder(snapshot, order.id), coverage.return),
+      doneStatuses: ["posted"] as const,
+    },
+  ];
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: order.number }]}>
-      <OrderProgressTracker
-        orderNumber={order.number}
-        status={order.status}
-        expectedEndOn={order.expectedEndOn}
-        description={order.description}
-        canAct={canAct}
-        toolbarExtra={
-          <DocumentCancelControl
-            guidance={cancelGuidance}
-            reload={reload}
-            onFollowUp={(action) => {
-              if (action.id === "close-customer-order") {
-                void runLogisticsAction(
-                  () => closeCustomerOrder(order.id),
-                  "Открытые резервы сняты, заказ клиента закрыт",
-                  reload,
-                );
-              }
-            }}
-          />
+      <DocumentHeader
+        kind="Заказ клиента"
+        icon={ShoppingCart}
+        number={order.number}
+        status={<CustomerOrderStatusBadge status={order.status} />}
+        description={order.description || null}
+        actions={
+          <>
+            <DocumentCancelControl
+              guidance={cancelGuidance}
+              reload={reload}
+              onFollowUp={(action) => {
+                if (action.id === "close-customer-order") {
+                  void runLogisticsAction(
+                    () => closeCustomerOrder(order.id),
+                    "Открытые резервы сняты, заказ клиента закрыт",
+                    reload,
+                  );
+                }
+              }}
+            />
+            {canAct ? (
+              <Button
+                type="button"
+                onClick={() => {
+                  void runLogisticsAction(
+                    () => closeCustomerOrder(order.id),
+                    "Открытые резервы сняты, заказ клиента закрыт",
+                    reload,
+                  );
+                }}
+              >
+                Закрыть заказ клиента
+              </Button>
+            ) : null}
+          </>
         }
-        onCloseOrder={() => {
-          void runLogisticsAction(
-            () => closeCustomerOrder(order.id),
-            "Открытые резервы сняты, заказ клиента закрыт",
-            reload,
-          );
-        }}
-        onExpectedEndChange={(value) => {
-          void runLogisticsAction(
-            () => updateExpectedEnd(order.id, value || null),
-            "Срок заказа клиента обновлён",
-            reload,
-          );
-        }}
-        primaryStages={[
+        meta={[
+          { label: "Создан", value: formatMetaTimestamp(order.createdAt) },
           {
-            id: "production",
-            title: "Производство",
-            href: "/store/logistics/production-orders",
-            items: withOrderCoverage(
-              relatedProductionsForOrder(snapshot, order.id, balances),
-              coverage.production,
+            label: "Ожидаемое окончание",
+            value: (
+              <DocumentMetaDateInput
+                value={order.expectedEndOn ?? ""}
+                aria-label="Ожидаемое окончание"
+                overdueDays={overdue}
+                onChange={(value) => {
+                  void runLogisticsAction(
+                    () => updateExpectedEnd(order.id, value || null),
+                    "Срок заказа клиента обновлён",
+                    reload,
+                  );
+                }}
+              />
             ),
-            doneStatuses: ["done", "closed"],
-            actions: canAct
-              ? [
-                  { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
-                  { label: "Зарезервировать в заказе на производство", onClick: () => setReserveOnProductionOpen(true) },
-                ]
-              : undefined,
           },
           {
-            id: "output",
-            title: "Выпуски",
-            href: "/store/logistics/outputs",
-            items: withOrderCoverage(
-              relatedOutputsForOrder(snapshot, order.id),
-              coverage.output,
-            ),
-            doneStatuses: ["done"],
-            actions: canAct
-              ? [{ label: "Выпустить", onClick: () => setOutputOpen(true) }]
-              : undefined,
+            label: "Завершён",
+            value: completedAt ? formatMetaTimestamp(completedAt) : <DocumentMetaEmpty />,
           },
           {
-            id: "transfer",
-            title: "Перемещения",
-            href: "/store/logistics/transfers",
-            items: withOrderCoverage(
-              relatedTransfersForOrder(snapshot, order.id),
-              coverage.transfer,
+            label: "Товаров",
+            value: (
+              <span>
+                {pluralPositions(lines.length)}{" "}
+                <small className="font-normal text-muted-foreground">· {formatQuantity(orderedQty)} шт</small>
+              </span>
             ),
-            doneStatuses: ["delivered"],
-            actions: canAct
-              ? [
-                  { label: "Переместить занятое", onClick: () => setTransferOpen(true) },
-                  { label: "Зарезервировать в пути", onClick: () => setReserveOnTransferOpen(true) },
-                ]
-              : undefined,
           },
           {
-            id: "shipment",
-            title: "Отгрузки",
-            href: "/store/logistics/shipments",
-            items: withOrderCoverage(relatedShipments(snapshot, order.id), coverage.shipment),
-            doneStatuses: ["posted"],
-            actions: canAct
-              ? [{ label: "Отгрузить", onClick: () => setShipOpen(true) }]
-              : undefined,
-          },
-        ]}
-        secondaryStages={[
-          {
-            id: "reservations",
-            title: "Резервы",
-            href: "/store/logistics/reservations",
-            items: withOrderCoverage(
-              relatedReservations(snapshot, order.id),
-              coverage.reservation,
+            label: "Отгружено",
+            value: (
+              <span>
+                {formatQuantity(shippedQty)} из {formatQuantity(orderedQty)} шт{" "}
+                <small className="font-normal text-muted-foreground">· {shipPct}%</small>
+              </span>
             ),
-            doneStatuses: ["posted"],
-            actions: canAct
-              ? [
-                  {
-                    label: "Зарезервировать",
-                    onClick: () => {
-                      setReserveLine(null);
-                      setReserveOpen(true);
-                    },
-                  },
-                ]
-              : undefined,
-          },
-          {
-            id: "returns",
-            title: "Возвраты",
-            href: "/store/logistics/shipments?direction=return",
-            items: withOrderCoverage(
-              relatedReturnsForOrder(snapshot, order.id),
-              coverage.return,
-            ),
-            doneStatuses: ["posted"],
           },
         ]}
       />
 
-      <CustomerOrderLinesTable
-        snapshot={snapshot}
-        balances={balances}
-        lines={lines}
-        canAct={canAct}
-        onReserve={(line) => {
-          setReserveLine(line);
-          setReserveOpen(true);
-        }}
-        onShip={() => setShipOpen(true)}
-        onRelease={(place) => {
-          setReleasePlace(place);
-          setReleaseOpen(true);
-        }}
-      />
+      <OrderProgressTracker canAct={canAct} primaryStages={primaryStages} secondaryStages={secondaryStages} />
 
-      <DocumentLedger
-        snapshot={snapshot}
-        filter={(entry) =>
-          documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
-            documentKey(entry.documentType, entry.documentId),
-          )
-        }
-        title="Движения"
+      <DocumentTabs
+        tabs={[
+          {
+            id: "products",
+            label: "Товары",
+            count: lines.length,
+            panel: (
+              <DocumentSection
+                title="Товары"
+                tools={
+                  canAct ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setReserveLine(null);
+                          setReserveOpen(true);
+                        }}
+                      >
+                        Зарезервировать
+                      </Button>
+                      <Button type="button" size="sm" onClick={() => setShipOpen(true)}>
+                        Отгрузить
+                      </Button>
+                    </>
+                  ) : null
+                }
+              >
+                <CustomerOrderLinesTable
+                  bare
+                  snapshot={snapshot}
+                  balances={balances}
+                  lines={lines}
+                  canAct={canAct}
+                  onReserve={(line) => {
+                    setReserveLine(line);
+                    setReserveOpen(true);
+                  }}
+                  onShip={() => setShipOpen(true)}
+                  onRelease={(place) => {
+                    setReleasePlace(place);
+                    setReleaseOpen(true);
+                  }}
+                />
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "movements",
+            label: "Движения",
+            count: movementCount,
+            panel: (
+              <DocumentSection title="Движения">
+                <DocumentLedger bare snapshot={snapshot} filter={movementFilter} />
+              </DocumentSection>
+            ),
+          },
+          {
+            id: "history",
+            label: "История",
+            count: historyEntries.length,
+            panel: (
+              <DocumentHistory
+                entries={historyEntries}
+                renderStatus={(statusKey) => (
+                  <StatusPill
+                    status={statusKey}
+                    label={CUSTOMER_ORDER_STATUS_LABELS[statusKey as CustomerOrderStatus]}
+                  />
+                )}
+              />
+            ),
+          },
+        ]}
       />
 
       <ReservationForm

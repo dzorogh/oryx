@@ -4,7 +4,7 @@
 import { Fragment } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ASSIGNED_TO_LABEL } from "@/features/logistics/logistics-labels";
+import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { productById, regionById, regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import type { StockGroup } from "@/features/logistics/stock-filters";
@@ -18,24 +18,28 @@ import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { cn } from "@/lib/utils";
 
 const QUANTITY_HEAD =
-  "h-8 min-w-[4.5rem] px-3 text-right text-xs font-medium text-muted-foreground";
+  "min-w-[4.5rem] px-3 pt-2 pb-2 text-right text-xs font-medium text-muted-foreground align-bottom";
 const QUANTITY_CELL = "px-3 py-2 text-right text-sm";
-const IDENTITY_HEAD = "sticky left-0 z-20 min-w-44 bg-card px-3 text-left text-xs font-medium";
+const IDENTITY_HEAD =
+  "sticky left-0 z-20 min-w-44 bg-card px-3 pt-2 pb-2 text-left text-xs font-medium align-bottom";
 const IDENTITY_CELL = "sticky left-0 z-10 min-w-44 bg-card px-3 py-2";
+const GROUP_HEAD =
+  "border-l border-border/60 px-3 pt-2 pb-0 text-center text-xs font-medium tracking-[0.06em] text-muted-foreground/70 uppercase";
 
-const formatStockQuantity = (quantity: number, unit?: string): string => {
-  const normalized = Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
-  return unit ? `${normalized} ${unit}` : normalized;
-};
+const OWNER_COLORS = {
+  free: "#3f3f46",
+  region: "#93b4fb",
+  order: "#2563eb",
+} as const;
 
 const StockQty = ({ quantity, unit }: { quantity: number; unit?: string }) => (
   <span
     className={cn(
       "tabular-nums",
-      quantity < 0 ? "text-destructive" : quantity === 0 ? "text-muted-foreground" : "font-medium text-foreground",
+      quantity < 0 ? "text-destructive" : quantity === 0 ? "text-muted-foreground/50" : "font-medium text-foreground",
     )}
   >
-    {formatStockQuantity(quantity, unit)}
+    {formatQuantity(quantity, unit)}
   </span>
 );
 
@@ -74,31 +78,49 @@ const ProductsMatrixTable = ({
   <Table className="w-max min-w-full">
     <TableHeader>
       <TableRow className="hover:bg-transparent">
-        <TableHead scope="col" rowSpan={2} className={cn(IDENTITY_HEAD, "align-bottom")}>
+        <TableHead scope="col" rowSpan={2} className={IDENTITY_HEAD}>
           Товар
         </TableHead>
-        <TableHead scope="colgroup" colSpan={3} className="h-8 px-3 text-center text-xs font-medium">
-          {ASSIGNED_TO_LABEL}
+        <TableHead scope="colgroup" colSpan={3} className={GROUP_HEAD}>
+          Закреплено за
+        </TableHead>
+        <TableHead scope="colgroup" colSpan={3} className={GROUP_HEAD}>
+          Место
         </TableHead>
         <TableHead
-          scope="colgroup"
-          colSpan={3}
-          className="h-8 border-l-2 border-border px-3 text-center text-xs font-medium"
+          scope="col"
+          rowSpan={2}
+          className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#fcfcfc]")}
         >
-          Место
+          Всего
         </TableHead>
       </TableRow>
       <TableRow className="hover:bg-transparent">
-        <TableHead scope="col" className={QUANTITY_HEAD}>
+        <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#f7f7f8]")}>
+          <span
+            className="mr-1.5 inline-block size-2 rounded-sm align-middle"
+            style={{ background: OWNER_COLORS.free }}
+            aria-hidden
+          />
           Свободно
         </TableHead>
-        <TableHead scope="col" className={QUANTITY_HEAD}>
+        <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#f4f7ff]")}>
+          <span
+            className="mr-1.5 inline-block size-2 rounded-sm align-middle"
+            style={{ background: OWNER_COLORS.region }}
+            aria-hidden
+          />
           Резерв региона
         </TableHead>
-        <TableHead scope="col" className={QUANTITY_HEAD}>
+        <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#eef3fe]")}>
+          <span
+            className="mr-1.5 inline-block size-2 rounded-sm align-middle"
+            style={{ background: OWNER_COLORS.order }}
+            aria-hidden
+          />
           Резерв заказа
         </TableHead>
-        <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l-2 border-border")}>
+        <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60")}>
           Склады
         </TableHead>
         <TableHead scope="col" className={QUANTITY_HEAD}>
@@ -111,25 +133,29 @@ const ProductsMatrixTable = ({
     </TableHeader>
     <TableBody>
       {rows.length === 0 ? (
-        <MatrixEmpty colSpan={7} message={empty} />
+        <MatrixEmpty colSpan={8} message={empty} />
       ) : (
         rows.map((row) => {
           const unit = unitFor(snapshot, row.productId);
+          const total =
+            row.location.warehouses + row.location.production + row.location.transfers;
+          const ownerTotal =
+            row.owner.free + row.owner.regionReserve + row.owner.orderReserve || 1;
           return (
-            <TableRow key={row.productId}>
+            <TableRow key={row.productId} className="hover:bg-muted/40">
               <TableCell className={IDENTITY_CELL}>
                 <ProductIdentity snapshot={snapshot} productId={row.productId} />
               </TableCell>
-              <TableCell className={QUANTITY_CELL}>
+              <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#f7f7f8]")}>
                 <StockQty quantity={row.owner.free} unit={unit} />
               </TableCell>
-              <TableCell className={QUANTITY_CELL}>
+              <TableCell className={cn(QUANTITY_CELL, "bg-[#f4f7ff]")}>
                 <StockQty quantity={row.owner.regionReserve} unit={unit} />
               </TableCell>
-              <TableCell className={QUANTITY_CELL}>
+              <TableCell className={cn(QUANTITY_CELL, "bg-[#eef3fe]")}>
                 <StockQty quantity={row.owner.orderReserve} unit={unit} />
               </TableCell>
-              <TableCell className={cn(QUANTITY_CELL, "border-l-2 border-border")}>
+              <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60")}>
                 <StockQty quantity={row.location.warehouses} unit={unit} />
               </TableCell>
               <TableCell className={QUANTITY_CELL}>
@@ -137,6 +163,39 @@ const ProductsMatrixTable = ({
               </TableCell>
               <TableCell className={QUANTITY_CELL}>
                 <StockQty quantity={row.location.transfers} unit={unit} />
+              </TableCell>
+              <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#fcfcfc]")}>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="font-semibold tabular-nums">
+                    {formatQuantity(total, unit)}
+                  </span>
+                  <span
+                    className="flex h-1 w-[84px] overflow-hidden rounded-full bg-muted"
+                    aria-hidden
+                  >
+                    <i
+                      className="block h-full"
+                      style={{
+                        width: `${(row.owner.free / ownerTotal) * 100}%`,
+                        background: OWNER_COLORS.free,
+                      }}
+                    />
+                    <i
+                      className="block h-full"
+                      style={{
+                        width: `${(row.owner.regionReserve / ownerTotal) * 100}%`,
+                        background: OWNER_COLORS.region,
+                      }}
+                    />
+                    <i
+                      className="block h-full"
+                      style={{
+                        width: `${(row.owner.orderReserve / ownerTotal) * 100}%`,
+                        background: OWNER_COLORS.order,
+                      }}
+                    />
+                  </span>
+                </div>
               </TableCell>
             </TableRow>
           );

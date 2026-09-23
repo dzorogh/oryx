@@ -76,7 +76,7 @@ const VariantMenu = ({ variants, activeVariantId, onSelect }: VariantMenuProps) 
               ) : null}
             </div>
             <p className="truncate text-xs text-muted-foreground">
-              {(variant.sku ?? "—") + " · " + formatCatalogPrice(variant.dealerPrice)}
+              {(variant.code ?? "—") + " · " + formatCatalogPrice(variant.dealerPrice)}
             </p>
           </div>
         </button>

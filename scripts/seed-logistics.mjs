@@ -43,7 +43,7 @@ const hashSeed = (seed) => {
   return Math.abs(hash);
 };
 
-const inferDealer = (sku) => 2490 + (hashSeed(sku) % 90) * 100;
+const inferDealer = (seed) => 2490 + (hashSeed(seed) % 90) * 100;
 
 const CURRENCIES = [
   { code: "USD", name: "Доллар США" },
@@ -264,7 +264,6 @@ const regionList = [...regionIdByCode.entries()];
 for (const row of snapshot.products) {
   const plantId = row.plant_id != null ? plantIdByOld.get(String(row.plant_id)) : null;
   const created = await rpc("store_create_product_variant", {
-    p_sku: row.sku,
     p_name: row.name,
     p_unit: row.unit || "шт",
     p_plant_id: plantId ? Number(plantId) : null,
@@ -274,7 +273,7 @@ for (const row of snapshot.products) {
   const variantId = Number(created.variant_id);
   variantIdByOldProduct.set(String(row.id), String(variantId));
 
-  const dealerUsd = row.dealer_price != null ? Number(row.dealer_price) : inferDealer(row.sku);
+  const dealerUsd = row.dealer_price != null ? Number(row.dealer_price) : inferDealer(`${row.id}:${row.name}`);
   const retailUsd = row.retail_price != null ? Number(row.retail_price) : Math.round(dealerUsd * 1.18);
   const purchaseUsd = Math.round(dealerUsd * 0.72);
 
@@ -290,7 +289,7 @@ for (const row of snapshot.products) {
   for (const [regionCode, regionId] of regionList) {
     const regionIndex = REGIONS.findIndex((item) => item.code === regionCode);
     const markupSteps = [10, 15, 20, 25, 30, 35, 40];
-    const step = markupSteps[(hashSeed(`${row.sku}:${regionCode}`) + regionIndex) % markupSteps.length];
+    const step = markupSteps[(hashSeed(`${row.id}:${row.name}:${regionCode}`) + regionIndex) % markupSteps.length];
     const dealerAmount = Math.max(1, Math.round((purchaseUsd * (1 + step / 100)) / 0.1466));
     const retailCur = currencyIdByCode.get(REGIONS[regionIndex].retail);
     const retailRate =
@@ -394,3 +393,41 @@ const stories = await seedLogisticsStories({
 console.log(
   `seed_ok products=${snapshot.products.length} plants=${snapshot.plants.length} warehouses=${snapshot.warehouses.length} customer_orders=${seededOrders} regions=${regionIdByCode.size} prices=${priceRows.length} statuses=${statusRows.length} story_orders=${stories.orders}`,
 );
+
+/** Spread history changed_at monotonically after each document's created_at, at most ~2 days apart, never past now (deterministic). */
+const historyBackfillSql = `
+begin;
+alter table public.store_document_history disable trigger store_document_history_no_update;
+with ranked as (
+  select
+    h.id,
+    d.created_at as doc_created_at,
+    row_number() over (partition by h.document_id order by h.id) as rn,
+    count(*) over (partition by h.document_id) as cnt
+  from public.store_document_history h
+  join public.store_document d on d.id = h.document_id
+)
+update public.store_document_history h
+set changed_at = case
+  when r.cnt <= 1 then r.doc_created_at
+  else r.doc_created_at
+    + (r.rn - 1) * least((now() - r.doc_created_at) / (r.cnt - 1), interval '2 days 3 hours')
+end
+from ranked r
+where h.id = r.id;
+alter table public.store_document_history enable trigger store_document_history_no_update;
+commit;
+`;
+
+const historyBackfill = spawnSync(
+  "python3",
+  [resolve(root, "scripts/oryx_supabase.py"), "sql", historyBackfillSql],
+  { cwd: root, encoding: "utf8" },
+);
+if (historyBackfill.status !== 0) {
+  throw new Error(
+    `history backfill failed: ${(historyBackfill.stderr || historyBackfill.stdout || "").slice(0, 400)}`,
+  );
+}
+console.log("seed_ok history_timestamps_backfilled");
+

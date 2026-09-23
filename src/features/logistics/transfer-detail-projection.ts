@@ -1,4 +1,4 @@
-import { hrefForOwner, hrefForSource } from "@/features/logistics/logistics-availability";
+import { hrefForOwner } from "@/features/logistics/logistics-availability";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
 import { FREE_OWNER_LABEL } from "@/features/logistics/logistics-labels";
 import {
@@ -11,18 +11,14 @@ import {
 import {
   isFreeOwner,
   ownerKey,
-  reservationDirection,
   type LogisticsSnapshot,
   type OwnerType,
-  type ReservationDirection,
   type StockBalance,
   type StockTransaction,
   type Transfer,
 } from "@/features/logistics/logistics-types";
 
 const POSITIVE = 1e-9;
-const isTransferDocument = (entry: StockTransaction, transferId: string): boolean =>
-  entry.documentType === "transfer" && entry.documentId === transferId;
 
 export type TransferOwnerKind = "free" | "order" | "region";
 export type TransferProjectionSource = "live" | "history" | "document";
@@ -73,15 +69,6 @@ export type TransferRouteProjection = {
   currentKind: TransferCurrentKind;
 };
 
-export type TransferActivityEvent = {
-  id: string;
-  occurredAt: string;
-  title: string;
-  detail: string | null;
-  refLabel: string | null;
-  href: string | null;
-};
-
 export type TransferDetailProjection = {
   transfer: Transfer;
   route: TransferRouteProjection;
@@ -89,7 +76,6 @@ export type TransferDetailProjection = {
   products: TransferProductRow[];
   freeTotal: number;
   canReserveInTransit: boolean;
-  activity: TransferActivityEvent[];
   source: TransferProjectionSource;
 };
 
@@ -101,22 +87,6 @@ type OwnerQuantity = {
 };
 
 const isPositive = (quantity: number): boolean => quantity > POSITIVE;
-
-const reservationTitle = (direction: ReservationDirection, ownerType: OwnerType | null): string => {
-  if (direction === "release") {
-    return "Резерв снят";
-  }
-  if (direction === "reassign") {
-    return "Резерв переназначен";
-  }
-  if (ownerType === "region") {
-    return "Создан резерв региона";
-  }
-  if (ownerType === "order") {
-    return "Создан резерв заказа";
-  }
-  return "Резерв проведён";
-};
 
 export const transferOwnerRef = (
   snapshot: LogisticsSnapshot,
@@ -440,7 +410,7 @@ const projectRoute = (
   const transferValue = `Перемещение ${transfer.number}`;
 
   let currentKind: TransferCurrentKind = "transfer";
-  if (transfer.status === "delivered") {
+  if (transfer.status === "delivered" || transfer.status === "done") {
     currentKind = "destination";
   } else if (transfer.status === "cancelled") {
     currentKind = source === "live" ? "transfer" : "origin";
@@ -481,105 +451,6 @@ const projectRoute = (
   };
 };
 
-const firstCreatedAt = (entries: StockTransaction[]): string | undefined =>
-  [...entries].sort((left, right) => left.createdAt.localeCompare(right.createdAt))[0]?.createdAt;
-
-const transferPhaseKey = (entry: StockTransaction, transferId: string): string | null => {
-  if (isTransferDocument(entry, transferId)) {
-    if (entry.locationType === "transfer" && entry.quantity > 0) {
-      return `transfer:${transferId}:send`;
-    }
-    if (entry.locationType === "transfer" && entry.quantity < 0) {
-      return `transfer:${transferId}:complete`;
-    }
-    return null;
-  }
-  if (entry.documentType === "reservation" && entry.locationType === "transfer" && entry.locationId === transferId) {
-    return `reservation:${entry.documentId}`;
-  }
-  return null;
-};
-
-const projectActivity = (snapshot: LogisticsSnapshot, transfer: Transfer): TransferActivityEvent[] => {
-  const groups = new Map<string, StockTransaction[]>();
-  for (const entry of snapshot.transactions) {
-    const key = transferPhaseKey(entry, transfer.id);
-    if (!key) {
-      continue;
-    }
-    const current = groups.get(key);
-    if (current) {
-      current.push(entry);
-      continue;
-    }
-    groups.set(key, [entry]);
-  }
-
-  const events: TransferActivityEvent[] = [];
-  for (const [id, entries] of groups) {
-    const occurredAt = firstCreatedAt(entries);
-    if (!occurredAt) {
-      continue;
-    }
-
-    if (id.endsWith(":send")) {
-      events.push({
-        id,
-        occurredAt,
-        title: "Перемещение отправлено",
-        detail: `${warehouseCode(snapshot, transfer.fromWarehouseId)} → Перемещение ${transfer.number}`,
-        refLabel: transfer.number,
-        href: hrefForSource("transfer", transfer.id),
-      });
-      continue;
-    }
-
-    if (id.endsWith(":complete")) {
-      events.push({
-        id,
-        occurredAt,
-        title: "Перемещение доставлено",
-        detail: `Перемещение ${transfer.number} → ${warehouseCode(snapshot, transfer.toWarehouseId)}`,
-        refLabel: transfer.number,
-        href: hrefForSource("transfer", transfer.id),
-      });
-      continue;
-    }
-
-    const documentId = id.slice("reservation:".length);
-    const reservation = snapshot.reservations.find((item) => item.id === documentId);
-    const reservationLines = snapshot.reservationLines.filter((line) => line.reservationId === documentId);
-    const direction = reservation ? reservationDirection(reservation, reservationLines) : "reserve";
-    const firstLine = reservationLines[0];
-    const product = firstLine ? productById(snapshot, firstLine.productId) : undefined;
-    const detail =
-      reservationLines.length === 1 && firstLine
-        ? `${product?.name ?? firstLine.productId} · ${
-            Number.isInteger(firstLine.quantity) ? String(firstLine.quantity) : firstLine.quantity.toFixed(2)
-          }`
-        : reservationLines.length > 1
-          ? `${reservationLines.length} товаров`
-          : null;
-
-    events.push({
-      id,
-      occurredAt,
-      title: reservationTitle(direction, reservation?.toOwnerType ?? null),
-      detail,
-      refLabel: reservation?.number ?? documentId,
-      href: hrefForSource("reservation", documentId),
-    });
-  }
-
-  return events.sort((left, right) => {
-    const byTime = left.occurredAt.localeCompare(right.occurredAt);
-    if (byTime !== 0) {
-      return byTime;
-    }
-    return left.id.localeCompare(right.id);
-  });
-};
-
 export const projectTransferDetail = (
   snapshot: LogisticsSnapshot,
   balances: StockBalance[],
@@ -597,7 +468,6 @@ export const projectTransferDetail = (
     products,
     freeTotal,
     canReserveInTransit: transfer.status === "sent" && isPositive(freeTotal),
-    activity: projectActivity(snapshot, transfer),
     source,
   };
 };

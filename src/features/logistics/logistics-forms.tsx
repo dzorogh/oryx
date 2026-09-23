@@ -69,7 +69,6 @@ import {
   type ReservationLocationType,
   type StockBalance,
 } from "@/features/logistics/logistics-types";
-import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
 import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
@@ -308,7 +307,6 @@ export const ReservationLineFields = ({
         placeholder="Выберите товар"
         disabled={!locationType || !locationId}
       />
-      {line.productId ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} /> : null}
       <QuantityField
         label="Количество"
         emptyLabel="Нет доступного количества"
@@ -1084,7 +1082,6 @@ export const ShipmentForm = ({
               return (
                 <div key={item.line.id} className="space-y-2">
                   <ProductIdentity snapshot={snapshot} productId={item.line.productId} nameAs="text" />
-                  <AvailabilityPanel snapshot={snapshot} balances={balances} productId={item.line.productId} />
                   <QuantityField
                     value={quantities[item.line.id] ?? String(item.reserved)}
                     onChange={(value) => setQuantities((current) => ({ ...current, [item.line.id]: value }))}
@@ -1250,9 +1247,6 @@ export const ShipmentForm = ({
                         )
                       }
                     />
-                  ) : null}
-                  {line.productId ? (
-                    <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} />
                   ) : null}
                   <QuantityField
                     value={line.quantity}
@@ -1507,7 +1501,6 @@ export const AdjustmentForm = ({
                 placeholder="Выберите товар"
                 disabled={!warehouseId}
               />
-              {line.productId ? <AvailabilityPanel snapshot={snapshot} balances={balances} productId={line.productId} /> : null}
               <QuantityField
                 value={line.quantity}
                 onChange={(value) =>

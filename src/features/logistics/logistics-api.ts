@@ -397,7 +397,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       id,
       productId: str(row.product_id),
       code: formatLogisticsCode("product", id),
-      sku: str(row.sku),
       name: str(row.name),
       unit: str(row.unit ?? "шт"),
       imageUrl: preferKorportalMediaConversion(row.image_url ? str(row.image_url) : null),
@@ -596,7 +595,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       currencyId: strOrNull(row.currency_id),
       productId: variantId,
       productName: str(row.variant_name),
-      productSku: variant ? str(variant.sku) : "",
       productUnit: variant ? str(variant.unit ?? "шт") : "шт",
       plantId,
       plantName: plantId ? plantName.get(plantId) ?? null : null,
@@ -615,7 +613,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
-    productSku: line.productSku,
     productUnit: line.productUnit,
     plantId: line.plantId,
     plantName: line.plantName,
@@ -628,7 +625,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
-    productSku: line.productSku,
     productUnit: line.productUnit,
     plantId: line.plantId,
     plantName: line.plantName,
@@ -643,7 +639,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     fromOwnerId: line.fromOwnerId,
     fromOwnerType: line.fromOwnerType,
     productName: line.productName,
-    productSku: line.productSku,
     productUnit: line.productUnit,
   }));
 
@@ -656,7 +651,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       productId: line.productId,
       quantity: line.quantity,
       productName: line.productName,
-      productSku: line.productSku,
       productUnit: line.productUnit,
     });
     if (line.fromOwnerType && line.fromOwnerId) {
@@ -683,7 +677,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     toOwnerType: line.toOwnerType,
     fromOwnerType: line.fromOwnerType,
     productName: line.productName,
-    productSku: line.productSku,
     productUnit: line.productUnit,
   }));
 
@@ -694,7 +687,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
-    productSku: line.productSku,
     productUnit: line.productUnit,
     toOwnerId: line.toOwnerId,
     toOwnerType: line.toOwnerType,
@@ -708,7 +700,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
-    productSku: line.productSku,
     productUnit: line.productUnit,
   }));
 
@@ -808,7 +799,6 @@ const mapListProducts = (raw: unknown): LogisticsListProductLine[] => {
       productId: str(row.productId ?? row.product_variant_id ?? ""),
       quantity: Number(row.quantity ?? 0),
       productName: strOrNull(row.productName ?? row.variant_name),
-      productSku: strOrNull(row.productSku ?? row.sku) ?? "",
       productUnit: strOrNull(row.productUnit ?? row.unit) ?? "шт",
     };
   });
@@ -1282,9 +1272,8 @@ export const insertReturningId = async () => {
   throw new Error("Прямая запись в таблицы Store запрещена");
 };
 
-export const createProduct = async (args: { sku: string; name: string; unit: string; plantId?: string }) => {
+export const createProduct = async (args: { name: string; unit: string; plantId?: string }) => {
   const created = await rpcJson<{ product_id: number; variant_id: number }>("store_create_product_variant", {
-    p_sku: args.sku,
     p_name: args.name,
     p_unit: args.unit,
     p_plant_id: args.plantId ? Number(args.plantId) : null,

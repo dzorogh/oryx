@@ -158,7 +158,7 @@ const CATEGORY_DESCRIPTION_BUILDERS: Record<string, CategoryDescriptionBuilder> 
 
 const buildFallbackDescriptions = (context: DescriptionContext): ProductDescriptions => ({
   shortDescription: `${context.displayName} — продукт Sharmax категории «${context.category}» семейства ${context.family}, готов к дилерскому и розничному каналам.`,
-  description: `${context.displayName} числится в категории «${context.category}», семейство ${context.family}, сборка на ${context.productionSite}. Артикул поддерживает стандартную гарантию, логистические данные и цены вариантов в каталоге магазина. ${pick(CLOSING_LINES, context.seed)}`,
+  description: `${context.displayName} числится в категории «${context.category}», семейство ${context.family}, сборка на ${context.productionSite}. Код товара поддерживает стандартную гарантию, логистические данные и цены вариантов в каталоге магазина. ${pick(CLOSING_LINES, context.seed)}`,
 });
 
 export const buildProductDescriptions = (item: StoreCatalogItem): ProductDescriptions => {

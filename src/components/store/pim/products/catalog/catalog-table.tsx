@@ -88,11 +88,11 @@ const ProductThumbnailPreview = ({
 
 const ProductNameCell = ({
   item,
-  showSkuSubline,
+  showCodeSubline,
   listingMode,
 }: {
   item: StoreCatalogItem;
-  showSkuSubline: boolean;
+  showCodeSubline: boolean;
   listingMode: CatalogListingMode;
 }) => {
   const displayName = getDisplayProductName(item.name);
@@ -103,7 +103,7 @@ const ProductNameCell = ({
       <ProductThumbnailPreview item={item} productHref={productHref} displayName={displayName} />
       <div className="min-w-0 flex-1 basis-0 overflow-hidden">
         <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-        {showSkuSubline ? (
+        {showCodeSubline ? (
           <p className="truncate text-xs text-muted-foreground" title={item.code}>
             {item.code}
           </p>
@@ -207,7 +207,7 @@ type ColumnRenderContext = {
   item: StoreCatalogItem;
   showBuyButton: boolean;
   priceFromPrefix: boolean;
-  showSkuSubline: boolean;
+  showCodeSubline: boolean;
   listingMode: CatalogListingMode;
 };
 
@@ -217,10 +217,8 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
   switch (columnId) {
     case "name":
       return (
-        <ProductNameCell item={item} showSkuSubline={context.showSkuSubline} listingMode={listingMode} />
+        <ProductNameCell item={item} showCodeSubline={context.showCodeSubline} listingMode={listingMode} />
       );
-    case "sku":
-      return <span className="text-sm font-medium">{item.sku}</span>;
     case "brand":
       return <Badge variant="outline">{item.brand}</Badge>;
     case "category":
@@ -246,7 +244,7 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
   }
 };
 
-const renderColumnSkeleton = (columnId: CatalogColumnId, showBuyButton: boolean, showSkuSubline: boolean) => {
+const renderColumnSkeleton = (columnId: CatalogColumnId, showBuyButton: boolean, showCodeSubline: boolean) => {
   switch (columnId) {
     case "name":
       return (
@@ -254,12 +252,10 @@ const renderColumnSkeleton = (columnId: CatalogColumnId, showBuyButton: boolean,
           <Skeleton className="size-9 shrink-0 rounded-lg" />
           <div className="min-w-0 flex-1 space-y-1.5">
             <Skeleton className="h-3.5 w-3/4" />
-            {showSkuSubline ? <Skeleton className="h-3 w-12" /> : null}
+            {showCodeSubline ? <Skeleton className="h-3 w-12" /> : null}
           </div>
         </div>
       );
-    case "sku":
-      return <Skeleton className="h-3.5 w-14" />;
     case "brand":
       return <Skeleton className="h-5 w-16 rounded-md" />;
     case "category":
@@ -300,7 +296,7 @@ type CatalogTableRowProps = {
   visibleColumnIds: CatalogColumnId[];
   showBuyButton: boolean;
   priceFromPrefix: boolean;
-  showSkuSubline: boolean;
+  showCodeSubline: boolean;
 };
 
 const CatalogTableRow = ({
@@ -309,7 +305,7 @@ const CatalogTableRow = ({
   visibleColumnIds,
   showBuyButton,
   priceFromPrefix,
-  showSkuSubline,
+  showCodeSubline,
 }: CatalogTableRowProps) => {
   const displayName = getDisplayProductName(item.name);
   const productHref = getCatalogItemDetailHref(item.id, listingMode);
@@ -330,7 +326,7 @@ const CatalogTableRow = ({
               item,
               showBuyButton,
               priceFromPrefix,
-              showSkuSubline,
+              showCodeSubline,
               listingMode,
             })}
           </div>
@@ -356,7 +352,7 @@ export const CatalogTable = ({
   const showBuyButton = listingMode === "variants";
   const priceFromPrefix = listingMode === "products";
   const columnCount = visibleColumnIds.length;
-  const showSkuSubline = true;
+  const showCodeSubline = true;
 
   return (
     <TooltipProvider delay={200}>
@@ -387,7 +383,7 @@ export const CatalogTable = ({
                   <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
                     {visibleColumnIds.map((columnId) => (
                       <TableCell key={columnId} className={getColumnCellClassName(columnId)}>
-                        {renderColumnSkeleton(columnId, showBuyButton, showSkuSubline)}
+                        {renderColumnSkeleton(columnId, showBuyButton, showCodeSubline)}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -407,7 +403,7 @@ export const CatalogTable = ({
                     visibleColumnIds={visibleColumnIds}
                     showBuyButton={showBuyButton}
                     priceFromPrefix={priceFromPrefix}
-                    showSkuSubline={showSkuSubline}
+                    showCodeSubline={showCodeSubline}
                   />
                 ))
               )}

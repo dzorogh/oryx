@@ -4,9 +4,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Check, ChevronDown, MoreHorizontal } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { RelatedDocumentItem } from "@/features/logistics/logistics-related";
-import type { CustomerOrderStatus } from "@/features/logistics/logistics-types";
 import {
   CUSTOMER_ORDER_STATUS_LABELS,
   DOCUMENT_STATUS_LABELS,
@@ -29,8 +27,8 @@ import {
   TRANSFER_STATUS_LABELS,
   formatExpectedEnd,
 } from "@/features/logistics/logistics-labels";
-import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
+import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +49,6 @@ export type OrderProgressStage = {
 
 export type StageMarker = "done" | "current" | "pending";
 
-const ORDER_STATUS_LABELS = CUSTOMER_ORDER_STATUS_LABELS;
-
 const STATUS_LABELS: Record<string, string> = {
   ...DOCUMENT_STATUS_LABELS,
   ...TRANSFER_STATUS_LABELS,
@@ -62,30 +58,6 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const OPERATION_LABELS = RESERVATION_OPERATION_LABELS;
-
-const statusTone = (statusKey: string): "outline" | "secondary" | "default" | "destructive" => {
-  if (statusKey === "cancelled") {
-    return "destructive";
-  }
-  if (
-    statusKey === "posted" ||
-    statusKey === "delivered" ||
-    statusKey === "closed" ||
-    statusKey === "done"
-  ) {
-    return "default";
-  }
-  if (
-    statusKey === "sent" ||
-    statusKey === "in_progress" ||
-    statusKey === "reserved" ||
-    statusKey === "open" ||
-    statusKey === "planned"
-  ) {
-    return "secondary";
-  }
-  return "outline";
-};
 
 export const parseTrackerMeta = (
   meta: string,
@@ -185,34 +157,30 @@ const StageTitle = ({ title, href }: { title: string; href?: string }) =>
     <span className="block truncate whitespace-nowrap text-sm font-semibold text-foreground">{title}</span>
   );
 
-const StageIndex = ({ marker, index }: { marker: StageMarker; index: number }) => {
+const StageIndex = ({ marker }: { marker: StageMarker }) => {
   if (marker === "done") {
     return (
       <span
-        className="flex size-5 shrink-0 items-center justify-center rounded-full bg-foreground text-background"
+        className="grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] border-green-700 bg-green-700 text-white"
         aria-hidden
       >
-        <Check className="size-3" strokeWidth={3} />
+        <Check className="size-[11px]" strokeWidth={3} />
       </span>
     );
   }
   if (marker === "current") {
     return (
       <span
-        className="flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-primary text-[10px] font-semibold text-primary"
+        className="grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] border-blue-600 bg-[radial-gradient(circle,theme(colors.blue.600)_0_4px,white_4.5px)]"
         aria-hidden
-      >
-        {index + 1}
-      </span>
+      />
     );
   }
   return (
     <span
-      className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border text-[10px] font-semibold text-muted-foreground"
+      className="grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] border-zinc-300 bg-transparent"
       aria-hidden
-    >
-      {index + 1}
-    </span>
+    />
   );
 };
 
@@ -231,7 +199,7 @@ const StageOverflow = ({
           variant="ghost"
           size="icon-sm"
           aria-label={`Действия: ${title}`}
-          className="text-muted-foreground"
+          className="ml-auto text-muted-foreground"
         />
       }
     >
@@ -247,14 +215,21 @@ const StageOverflow = ({
   </DropdownMenu>
 );
 
-const documentDateLabel = (item: RelatedDocumentItem, extra?: string): string | undefined => {
+const documentCaption = (item: RelatedDocumentItem, parsedExtra?: string): string | null => {
+  if (typeof item.coveragePercent === "number") {
+    return `${item.coveragePercent}% заказа`;
+  }
   if (item.expectedEndOn) {
-    return formatExpectedEnd(item.expectedEndOn);
+    const date = formatExpectedEnd(item.expectedEndOn);
+    if (parsedExtra && /\d/.test(parsedExtra) && !STATUS_LABELS[parsedExtra.split(" · ")[0] ?? ""]) {
+      return `${parsedExtra} · до ${date}`;
+    }
+    return `до ${date}`;
   }
-  if (!extra || /занято|выпущено/.test(extra) || !/\d/.test(extra) || /^[A-Z]{2,4}-\d+/.test(extra)) {
-    return undefined;
+  if (parsedExtra && !/^[A-Z]{2,4}-\d+$/.test(parsedExtra) && !(parsedExtra in STATUS_LABELS)) {
+    return parsedExtra;
   }
-  return extra;
+  return null;
 };
 
 const DocumentCard = ({
@@ -268,42 +243,24 @@ const DocumentCard = ({
   const statusKey = item.statusKey ?? parsed.statusKey;
   const statusLabel =
     parsed.statusLabel ?? (statusKey && statusKey in STATUS_LABELS ? STATUS_LABELS[statusKey] : undefined);
-  const active = isDocumentActive(item, doneStatuses);
-  const dateLabel = documentDateLabel(item, parsed.extra);
-  const coverage =
-    typeof item.coveragePercent === "number" ? `${item.coveragePercent}% заказа` : null;
+  const caption = documentCaption(item, parsed.extra);
+  const showStatus = Boolean(statusLabel && statusKey && statusKey !== "posted");
 
   return (
-    <li className="min-w-0">
-      <Link
-        href={item.href}
-        className={cn(
-          "block min-w-0 rounded-lg border p-2 transition-colors hover:bg-muted/40",
-          active
-            ? "border-primary/40 bg-background shadow-[inset_0_-2px_0_0] shadow-primary/70"
-            : "border-border/70 bg-background/70 text-muted-foreground",
-        )}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <LogisticsCodeBadge code={item.label} className={cn(!active && "opacity-80")} />
-          {statusLabel ? (
-            <Badge variant={statusTone(statusKey ?? "")}>{statusLabel}</Badge>
-          ) : null}
-        </div>
-        <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] tabular-nums">
-          <span className="whitespace-nowrap">{coverage}</span>
-          {dateLabel ? <span className="whitespace-nowrap">{dateLabel}</span> : null}
-        </div>
-        {active && typeof item.coveragePercent === "number" ? (
-          <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${Math.min(100, Math.max(0, item.coveragePercent))}%` }}
-            />
-          </div>
-        ) : null}
-      </Link>
-    </li>
+    <Link
+      href={item.href}
+      className="flex min-h-9 min-w-0 items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted/60"
+    >
+      <LogisticsCodeBadge code={item.label} className="shrink-0" />
+      <span className="min-w-0 flex-1 truncate text-muted-foreground" title={caption ?? undefined}>
+        {caption}
+      </span>
+      {showStatus && statusKey ? (
+        <span className="shrink-0">
+          <StatusPill status={statusKey} label={statusLabel} />
+        </span>
+      ) : null}
+    </Link>
   );
 };
 
@@ -319,174 +276,154 @@ const stageCaption = (
   if (activeCount > 0) {
     return `${activeCount} в работе`;
   }
-  return `${items.length} завершено`;
+  const allPosted = items.every(
+    (item) => (item.statusKey ?? parseTrackerMeta(item.meta).statusKey) === "posted",
+  );
+  if (allPosted) {
+    return `${items.length} проведено`;
+  }
+  const doneCount = items.filter((item) => isDocumentDone(item, doneStatuses)).length;
+  if (doneCount === items.length) {
+    return `${items.length} ${items.length === 1 ? "завершён" : "завершено"}`;
+  }
+  const n = items.length;
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  let word = "документов";
+  if (mod10 === 1 && mod100 !== 11) {
+    word = "документ";
+  } else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    word = "документа";
+  }
+  return `${n} ${word}`;
 };
 
 const JourneyStage = ({
   stage,
   marker,
-  index,
   showActions,
-  quiet,
 }: {
   stage: OrderProgressStage;
   marker: StageMarker;
-  index: number;
   showActions: boolean;
-  quiet?: boolean;
 }) => {
   const actions = showActions && stage.actions && stage.actions.length > 0 ? stage.actions : null;
   const items = sortStageItems(stage.items, stage.doneStatuses);
   const caption = stageCaption(marker, stage.items, stage.doneStatuses);
 
   return (
-    <li
-      className={cn(
-        "min-w-0",
-        quiet
-          ? "py-1"
-          : cn(
-            "border-b border-[var(--corportal-border-grey)] p-3.5 last:border-b-0 lg:border-r lg:border-b-0 lg:last:border-r-0",
-            marker === "current" && "bg-primary/5",
-          ),
-      )}
+    <div
+      className="min-w-0 border-l border-border/60 px-4 py-3.5 first:border-l-0"
       aria-current={marker === "current" ? "step" : undefined}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          {quiet ? null : <StageIndex marker={marker} index={index} />}
-          <div className="min-w-0">
-            <StageTitle title={stage.title} href={stage.href} />
-            <p className="text-[11px] text-muted-foreground">{caption}</p>
-          </div>
+      <div className="flex items-center gap-2.5">
+        <StageIndex marker={marker} />
+        <div className="min-w-0">
+          <StageTitle title={stage.title} href={stage.href} />
+          <p className="text-xs text-muted-foreground">{caption}</p>
         </div>
         {actions ? <StageOverflow title={stage.title} actions={actions} /> : null}
       </div>
 
       {items.length > 0 ? (
-        <ul className="mt-3 grid gap-1.5">
+        <div className="mt-2.5 flex flex-col divide-y divide-border/60 overflow-hidden rounded-lg border border-border/70 bg-muted/30">
           {items.map((item) => (
             <DocumentCard key={item.id} item={item} doneStatuses={stage.doneStatuses} />
           ))}
-        </ul>
-      ) : null}
-    </li>
+        </div>
+      ) : (
+        <p className="mt-2.5 text-xs text-muted-foreground/70">Документов пока нет</p>
+      )}
+    </div>
   );
 };
 
 type OrderProgressTrackerProps = {
-  orderNumber: string;
-  status: CustomerOrderStatus;
-  expectedEndOn: string | null;
-  description?: string | null;
   canAct: boolean;
-  onCloseOrder: () => void;
-  onExpectedEndChange: (value: string) => void;
   primaryStages: OrderProgressStage[];
   secondaryStages: OrderProgressStage[];
-  toolbarExtra?: ReactNode;
 };
 
+/**
+ * Customer-order journey card (Производство → … → Отгрузки) with collapsible related stages.
+ * Document passport lives in DocumentHeader — this is only the flow strip.
+ */
 export const OrderProgressTracker = ({
-  orderNumber,
-  status,
-  expectedEndOn,
-  description,
   canAct,
-  onCloseOrder,
-  onExpectedEndChange,
   primaryStages,
   secondaryStages,
-  toolbarExtra,
 }: OrderProgressTrackerProps) => {
   const primaryMarkers = resolveStageMarkers(primaryStages);
   const secondaryMarkers = resolveStageMarkers(secondaryStages);
 
+  const secondarySummary = secondaryStages.map((stage) => {
+    if (stage.items.length === 0) {
+      return (
+        <span key={stage.id} className="inline-flex items-center gap-1.5">
+          {stage.title} <span className="text-muted-foreground/50">нет</span>
+        </span>
+      );
+    }
+    return (
+      <span key={stage.id} className="inline-flex flex-wrap items-center gap-1.5">
+        {stage.title}{" "}
+        {stage.items.map((item) => (
+          <LogisticsCodeBadge key={item.id} code={item.label} href={item.href} />
+        ))}
+      </span>
+    );
+  });
+
   return (
-    <Card size="sm" className={logisticsCardClass}>
-      <CardHeader className="gap-0 space-y-3 pb-0">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-semibold text-foreground">{orderNumber}</h1>
-              <Badge variant={status === "closed" ? "default" : "secondary"}>
-                {ORDER_STATUS_LABELS[status]}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <ExpectedEndField
-              layout="inline"
-              label="Ожидаемое окончание"
-              value={expectedEndOn ?? ""}
-              onChange={onExpectedEndChange}
-            />
-            {!expectedEndOn ? (
-              <span className="text-xs text-muted-foreground" data-testid="expected-end-unset">
-                Не задано
-              </span>
-            ) : null}
-            {toolbarExtra}
-            {canAct ? (
-              <Button type="button" size="sm" onClick={onCloseOrder} className="shrink-0">
-                Закрыть заказ клиента
-              </Button>
-            ) : null}
-          </div>
-        </div>
+    <Card size="sm" className={cn(logisticsCardClass, "mt-3 gap-0 overflow-hidden py-0 shadow-sm data-[size=sm]:gap-0 data-[size=sm]:py-0")} aria-label="Ход заказа">
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+        aria-label="Ход заказа клиента"
+      >
+        {primaryStages.map((stage, index) => (
+          <JourneyStage
+            key={stage.id}
+            stage={stage}
+            marker={primaryMarkers[index] ?? "pending"}
+            showActions={canAct}
+          />
+        ))}
+      </div>
 
-        {description ? (
-          <p className="max-w-3xl text-sm text-muted-foreground">{description}</p>
-        ) : null}
-
-        <div className="-mx-3 border-t border-[var(--corportal-border-grey)]" aria-hidden />
-
-        <ol
-          className="grid grid-cols-1 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] lg:grid-cols-4"
-          aria-label="Ход заказа клиента"
-        >
-          {primaryStages.map((stage, index) => (
-            <JourneyStage
-              key={stage.id}
-              stage={stage}
-              marker={primaryMarkers[index] ?? "pending"}
-              index={index}
-              showActions={canAct}
-            />
-          ))}
-        </ol>
-
-        {secondaryStages.length > 0 ? (
-          <Collapsible defaultOpen={false} className="group rounded-lg bg-muted/30">
+      {secondaryStages.length > 0 ? (
+        <Collapsible defaultOpen={false} className="group border-t border-border/60 bg-muted/30">
+          <div className="flex flex-wrap items-center gap-3.5 px-5 py-2 text-sm text-muted-foreground">
+            <b className="font-semibold text-foreground/80">Связанные</b>
+            <div className="flex flex-wrap items-center gap-3">{secondarySummary as ReactNode}</div>
             <CollapsibleTrigger
               type="button"
-              className="flex w-full items-center justify-between gap-2 rounded-lg px-3.5 py-3 text-left outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+              className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm text-foreground/80 hover:bg-muted"
             >
-              <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                Связанные
-              </span>
+              <span className="group-data-[open]:hidden">Показать</span>
+              <span className="hidden group-data-[open]:inline">Скрыть</span>
               <ChevronDown
-                className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[open]:rotate-180"
+                className="size-3.5 shrink-0 transition-transform duration-150 group-data-[open]:rotate-180"
                 aria-hidden
               />
             </CollapsibleTrigger>
-            <CollapsibleContent>
-              <ol className="grid grid-cols-2 items-start gap-x-8 px-3.5 pb-3" aria-label="Связанные документы">
-                {secondaryStages.map((stage, index) => (
-                  <JourneyStage
-                    key={stage.id}
-                    stage={stage}
-                    marker={secondaryMarkers[index] ?? "pending"}
-                    index={index}
-                    showActions={canAct}
-                    quiet
-                  />
-                ))}
-              </ol>
-            </CollapsibleContent>
-          </Collapsible>
-        ) : null}
-      </CardHeader>
+          </div>
+          <CollapsibleContent>
+            <div
+              className="grid grid-cols-1 border-t border-border/60 sm:grid-cols-2"
+              aria-label="Связанные документы"
+            >
+              {secondaryStages.map((stage, index) => (
+                <JourneyStage
+                  key={stage.id}
+                  stage={stage}
+                  marker={secondaryMarkers[index] ?? "pending"}
+                  showActions={canAct}
+                />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      ) : null}
     </Card>
   );
 };

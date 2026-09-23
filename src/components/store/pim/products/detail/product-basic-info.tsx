@@ -88,7 +88,7 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
         <div className="space-y-5">
           <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <Field label="Название">{product.displayName}</Field>
-            <Field label="Артикул">{product.sku ?? "—"}</Field>
+            <Field label="Код">{product.code ?? "—"}</Field>
             <Field label="Бренд">
               <Link href="/store/pim/products" className="text-primary hover:underline">
                 {product.brand}

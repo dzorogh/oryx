@@ -61,19 +61,17 @@ import { ProductPhoto } from "@/features/store/product-photo";
 export const ProductsPage = () => {
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({ kind: "stock" });
   const [open, setOpen] = useState(false);
-  const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("шт");
 
   const create = async () => {
-    if (!sku.trim() || !name.trim() || !unit.trim()) {
-      toast.error("Заполните артикул, название и единицу");
+    if (!name.trim() || !unit.trim()) {
+      toast.error("Заполните название и единицу");
       return;
     }
     const ok = await runLogisticsAction(
       () =>
         createProduct({
-          sku: sku.trim(),
           name: name.trim(),
           unit: unit.trim(),
         }),
@@ -82,7 +80,6 @@ export const ProductsPage = () => {
     );
     if (ok) {
       setOpen(false);
-      setSku("");
       setName("");
       setUnit("шт");
     }
@@ -98,16 +95,11 @@ export const ProductsPage = () => {
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
       {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Код", "Артикул", "Название", "Ед.", "Свободно"]} isEmpty={snapshot.products.length === 0}>
+        <LogisticsTableCard headers={["Код", "Название", "Ед.", "Свободно"]} isEmpty={snapshot.products.length === 0}>
           {snapshot.products.map((product) => (
             <TableRow key={product.id}>
               <TableCell className="px-3 py-2">
                 <LogisticsCodeBadge code={product.code} href={hrefForProduct(product.id)} />
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm text-muted-foreground">
-                <Link href={hrefForProduct(product.id)} className="hover:underline">
-                  {product.sku}
-                </Link>
               </TableCell>
               <TableCell className="px-3 py-2 text-sm">
                 <Link href={hrefForProduct(product.id)} className="text-primary hover:underline">
@@ -129,10 +121,6 @@ export const ProductsPage = () => {
         title="Новый товар"
       >
         <div className="flex flex-col gap-3">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Артикул</span>
-            <Input value={sku} onChange={(event) => setSku(event.target.value)} placeholder="CHAIR-OAK" />
-          </label>
           <label className="space-y-1 text-sm">
             <span className="font-medium">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Дубовый стул" />

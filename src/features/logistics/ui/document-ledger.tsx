@@ -10,6 +10,7 @@ import {
   LEDGER_ASSIGNED_TO_KIND_LABELS,
   LEDGER_DOCUMENT_KIND_LABELS,
   locationKindLabel,
+  signedQuantityClassName,
 } from "@/features/logistics/logistics-labels";
 import { documentLabel, locationIdentity, ownerLabel, productById } from "@/features/logistics/logistics-lookups";
 import { isFreeOwner } from "@/features/logistics/logistics-types";
@@ -149,19 +150,18 @@ export const DocumentLedger = ({
   filter,
   hide,
   title = "Движения",
+  bare = false,
 }: {
   snapshot: LogisticsSnapshot;
   filter: (entry: StockTransaction) => boolean;
   hide?: DocumentLedgerHide;
   title?: string;
+  /** When true, omit the outer title card chrome (DocumentSection / tabs provide it). */
+  bare?: boolean;
 }) => {
   const [page, setPage] = useState(1);
   const rows = useMemo(() => documentLedgerRows(snapshot.transactions, filter), [filter, snapshot.transactions]);
   const paged = useMemo(() => paginateLedgerRows(rows, page), [page, rows]);
-
-  if (rows.length === 0) {
-    return null;
-  }
 
   const headers = [
     COLUMN_LABELS.time,
@@ -172,72 +172,87 @@ export const DocumentLedger = ({
     ...(hide === "document" ? [] : [COLUMN_LABELS.document]),
   ];
 
-  return (
-    <LogisticsTableCard
-      title={title}
-      headers={headers}
-      footer={
-        <LedgerPager
-          shownCount={paged.shownCount}
-          totalCount={paged.total}
-          visiblePage={paged.visiblePage}
-          totalPages={paged.totalPages}
-          onPageChange={setPage}
-        />
-      }
-    >
-      {paged.pageRows.map((entry) => {
-        const product = productById(snapshot, entry.productId);
-        const place = locationIdentity(snapshot, entry.locationType, entry.locationId);
-        return (
-          <TableRow key={entry.id}>
-            <TableCell className="px-3 py-2 text-xs text-muted-foreground">
-              {formatTimestamp(entry.createdAt)}
-            </TableCell>
-            <TableCell className="px-3 py-2 text-sm tabular-nums">
-              {formatSignedQuantity(entry.quantity, product?.unit)}
-            </TableCell>
-            {hide === "product" ? null : (
-              <TableCell className="px-3 py-2">
-                <ProductIdentity snapshot={snapshot} productId={entry.productId} />
+  const body =
+    rows.length === 0 ? (
+      <p className="px-4 py-8 text-center text-sm text-muted-foreground">Движений пока нет.</p>
+    ) : (
+      <LogisticsTableCard
+        title={bare ? undefined : title}
+        embedded={bare}
+        headers={headers}
+        numericColumns={[1]}
+        footer={
+          <LedgerPager
+            shownCount={paged.shownCount}
+            totalCount={paged.total}
+            visiblePage={paged.visiblePage}
+            totalPages={paged.totalPages}
+            onPageChange={setPage}
+          />
+        }
+      >
+        {paged.pageRows.map((entry) => {
+          const product = productById(snapshot, entry.productId);
+          const place = locationIdentity(snapshot, entry.locationType, entry.locationId);
+          return (
+            <TableRow key={entry.id}>
+              <TableCell className="px-3 py-2 text-xs text-muted-foreground">
+                {formatTimestamp(entry.createdAt)}
               </TableCell>
-            )}
-            {hide === "location" ? null : (
-              <TableCell className="px-3 py-2">
-                <LedgerEntityIdentity
-                  kind={locationKindLabel(entry.locationType, place.isPlantWarehouse)}
-                  code={place.title}
-                  href={hrefForLocation(snapshot, entry.locationType, entry.locationId)}
-                />
+              <TableCell className={`px-3 py-2 text-right text-sm tabular-nums ${signedQuantityClassName(entry.quantity)}`}>
+                {formatSignedQuantity(entry.quantity, product?.unit)}
               </TableCell>
-            )}
-            {hide === "assignedTo" ? null : (
-              <TableCell className="px-3 py-2">
-                {isFreeOwner(entry.assignedToType, entry.assignedToId) ? (
-                  <LedgerEntityIdentity kind={LEDGER_ASSIGNED_TO_KIND_LABELS.free} />
-                ) : (
+              {hide === "product" ? null : (
+                <TableCell className="px-3 py-2">
+                  <ProductIdentity snapshot={snapshot} productId={entry.productId} />
+                </TableCell>
+              )}
+              {hide === "location" ? null : (
+                <TableCell className="px-3 py-2">
                   <LedgerEntityIdentity
-                    kind={LEDGER_ASSIGNED_TO_KIND_LABELS[entry.assignedToType ?? "free"]}
-                    code={ownerLabel(snapshot, entry.assignedToType, entry.assignedToId)}
-                    href={hrefForOwner(entry.assignedToType, entry.assignedToId, snapshot)}
+                    kind={locationKindLabel(entry.locationType, place.isPlantWarehouse)}
+                    code={place.title}
+                    href={hrefForLocation(snapshot, entry.locationType, entry.locationId)}
                   />
-                )}
-              </TableCell>
-            )}
-            {hide === "document" ? null : (
-              <TableCell className="px-3 py-2">
-                <LedgerEntityIdentity
-                  kind={LEDGER_DOCUMENT_KIND_LABELS[entry.documentType]}
-                  code={documentLabel(snapshot, entry.documentType, entry.documentId)}
-                  href={hrefForDocument(entry.documentType, entry.documentId, snapshot)}
-                />
-              </TableCell>
-            )}
-          </TableRow>
-        );
-      })}
-    </LogisticsTableCard>
-  );
+                </TableCell>
+              )}
+              {hide === "assignedTo" ? null : (
+                <TableCell className="px-3 py-2">
+                  {isFreeOwner(entry.assignedToType, entry.assignedToId) ? (
+                    <LedgerEntityIdentity kind={LEDGER_ASSIGNED_TO_KIND_LABELS.free} />
+                  ) : (
+                    <LedgerEntityIdentity
+                      kind={LEDGER_ASSIGNED_TO_KIND_LABELS[entry.assignedToType ?? "free"]}
+                      code={ownerLabel(snapshot, entry.assignedToType, entry.assignedToId)}
+                      href={hrefForOwner(entry.assignedToType, entry.assignedToId, snapshot)}
+                    />
+                  )}
+                </TableCell>
+              )}
+              {hide === "document" ? null : (
+                <TableCell className="px-3 py-2">
+                  <LedgerEntityIdentity
+                    kind={LEDGER_DOCUMENT_KIND_LABELS[entry.documentType]}
+                    code={documentLabel(snapshot, entry.documentType, entry.documentId)}
+                    href={hrefForDocument(entry.documentType, entry.documentId, snapshot)}
+                  />
+                </TableCell>
+              )}
+            </TableRow>
+          );
+        })}
+      </LogisticsTableCard>
+    );
+
+  if (bare) {
+    return body;
+  }
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return body;
 };
 
 export { LedgerPager };

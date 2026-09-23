@@ -12,7 +12,6 @@ export const ProductIdentity = ({
   nameAs = "link",
   name,
   productName,
-  productSku,
 }: {
   snapshot?: LogisticsSnapshot;
   productId: string;
@@ -20,13 +19,10 @@ export const ProductIdentity = ({
   name?: ReactNode;
   /** Historical line snapshot — preferred over live catalog. */
   productName?: string | null;
-  productSku?: string | null;
 }) => {
   const product = snapshot ? productById(snapshot, productId) : undefined;
   const label = productName || product?.name || productId;
-  const code =
-    productSku ||
-    (snapshot ? productCode(snapshot, productId) : formatLogisticsCode("product", productId));
+  const code = snapshot ? productCode(snapshot, productId) : formatLogisticsCode("product", productId);
   const title =
     name ??
     (nameAs === "link" && productId ? (
@@ -43,7 +39,7 @@ export const ProductIdentity = ({
       {code ? (
         <div className="mt-0.5">
           <LogisticsCodeBadge
-            code={productSku ? productSku : code}
+            code={code}
             href={nameAs === "link" && productId ? hrefForProduct(productId) : undefined}
           />
         </div>

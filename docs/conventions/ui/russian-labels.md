@@ -20,7 +20,7 @@ placeholder="Search by name or SKU"
 
 // Хорошо
 <TableHead>Название</TableHead>
-placeholder="Поиск по названию или артикулу"
+placeholder="Поиск по названию или коду"
 ```
 
 Префикс цены у базовых товаров: `от` (например `от 11 990 ₽`), не `from`.

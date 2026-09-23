@@ -1,29 +1,62 @@
-import type { ModuleSubnavItem } from "@/components/layout/module-subnav";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeftRight,
+  BookOpen,
+  Factory,
+  Layers,
+  Lock,
+  MapPin,
+  Package,
+  PackageCheck,
+  ShoppingCart,
+  SlidersHorizontal,
+  Truck,
+  Warehouse,
+} from "lucide-react";
+import type { ModuleSubnavGroup, ModuleSubnavItem } from "@/components/layout/module-subnav";
 import { LOGISTICS_PATHS } from "@/features/logistics/logistics-paths";
 
-export const LOGISTICS_OVERVIEW_NAV_ITEMS: ModuleSubnavItem[] = [
-  { href: LOGISTICS_PATHS.stock, label: "Остатки" },
-  { href: LOGISTICS_PATHS.customerOrders, label: "Заказы клиента" },
+const item = (href: string, label: string, icon: LucideIcon): ModuleSubnavItem => ({
+  href,
+  label,
+  icon,
+});
+
+export const LOGISTICS_SALES_NAV_ITEMS: ModuleSubnavItem[] = [
+  item(LOGISTICS_PATHS.customerOrders, "Заказы клиента", ShoppingCart),
+  item(LOGISTICS_PATHS.shipments, "Отгрузки и возвраты", Truck),
+  item(LOGISTICS_PATHS.reservations, "Резервы", Lock),
 ];
 
-export const LOGISTICS_FLOW_NAV_ITEMS: ModuleSubnavItem[] = [
-  { href: LOGISTICS_PATHS.productionOrders, label: "Заказы на производство" },
-  { href: LOGISTICS_PATHS.transfers, label: "Перемещения" },
-  { href: LOGISTICS_PATHS.shipments, label: "Отгрузки и возвраты" },
+export const LOGISTICS_PRODUCTION_NAV_ITEMS: ModuleSubnavItem[] = [
+  item(LOGISTICS_PATHS.productionOrders, "Заказы на производство", Factory),
+  item(LOGISTICS_PATHS.outputs, "Выпуски", PackageCheck),
 ];
 
-export const LOGISTICS_MORE_NAV_ITEMS: ModuleSubnavItem[] = [
-  { href: LOGISTICS_PATHS.outputs, label: "Выпуски" },
-  { href: LOGISTICS_PATHS.reservations, label: "Резервы" },
-  { href: LOGISTICS_PATHS.adjustments, label: "Корректировки" },
-  { href: LOGISTICS_PATHS.warehouses, label: "Склады" },
-  { href: LOGISTICS_PATHS.regions, label: "Регионы" },
-  { href: LOGISTICS_PATHS.plants, label: "Заводы" },
-  { href: LOGISTICS_PATHS.ledger, label: "Журнал" },
+export const LOGISTICS_WAREHOUSE_NAV_ITEMS: ModuleSubnavItem[] = [
+  item(LOGISTICS_PATHS.stock, "Остатки", Layers),
+  item(LOGISTICS_PATHS.transfers, "Перемещения", ArrowLeftRight),
+  item(LOGISTICS_PATHS.adjustments, "Корректировки", SlidersHorizontal),
+  item(LOGISTICS_PATHS.ledger, "Журнал", BookOpen),
 ];
 
+export const LOGISTICS_DIRECTORY_NAV_ITEMS: ModuleSubnavItem[] = [
+  item(LOGISTICS_PATHS.warehouses, "Склады", Warehouse),
+  item(LOGISTICS_PATHS.regions, "Регионы", MapPin),
+  item(LOGISTICS_PATHS.plants, "Заводы", Factory),
+];
+
+/** Flat list for layouts that still pass `subnavItems` (no icons — serializable). */
 export const LOGISTICS_SUBNAV_ITEMS: ModuleSubnavItem[] = [
-  ...LOGISTICS_OVERVIEW_NAV_ITEMS,
-  ...LOGISTICS_FLOW_NAV_ITEMS,
-  ...LOGISTICS_MORE_NAV_ITEMS,
+  ...LOGISTICS_SALES_NAV_ITEMS,
+  ...LOGISTICS_PRODUCTION_NAV_ITEMS,
+  ...LOGISTICS_WAREHOUSE_NAV_ITEMS,
+  ...LOGISTICS_DIRECTORY_NAV_ITEMS,
+].map(({ href, label, exact }) => ({ href, label, exact }));
+
+export const LOGISTICS_NAV_GROUPS: ModuleSubnavGroup[] = [
+  { title: "Продажи", items: LOGISTICS_SALES_NAV_ITEMS },
+  { title: "Производство", items: LOGISTICS_PRODUCTION_NAV_ITEMS },
+  { title: "Склад", items: LOGISTICS_WAREHOUSE_NAV_ITEMS },
+  { title: "Справочники", items: LOGISTICS_DIRECTORY_NAV_ITEMS },
 ];

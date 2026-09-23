@@ -1,5 +1,5 @@
 // english-ui:ignore-file
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   CUSTOMER_ORDER_STATUS_LABELS,
   DOCUMENT_STATUS_LABELS,
@@ -19,43 +19,101 @@ import type {
   TransferStatus,
 } from "@/features/logistics/logistics-types";
 
-const tone = (value: string): "outline" | "secondary" | "default" | "destructive" => {
+type PillTone = "draft" | "work" | "done" | "cancel" | "neutral";
+
+const toneFor = (value: string): PillTone => {
   if (value === "cancelled") {
-    return "destructive";
+    return "cancel";
   }
-  if (value === "posted" || value === "delivered" || value === "closed" || value === "shipped" || value === "done") {
-    return "default";
+  if (
+    value === "posted" ||
+    value === "delivered" ||
+    value === "closed" ||
+    value === "shipped" ||
+    value === "done"
+  ) {
+    return "done";
   }
-  if (value === "sent" || value === "reserved" || value === "in_progress" || value === "planned") {
-    return "secondary";
+  if (
+    value === "sent" ||
+    value === "reserved" ||
+    value === "in_progress" ||
+    value === "planned" ||
+    value === "open"
+  ) {
+    return "work";
   }
-  return "outline";
+  if (value === "draft") {
+    return "draft";
+  }
+  return "neutral";
+};
+
+const TONE_CLASS: Record<PillTone, string> = {
+  draft: "border-zinc-200 bg-zinc-100 text-zinc-600",
+  work: "border-blue-200 bg-blue-50 text-blue-600",
+  done: "border-green-200 bg-green-50 text-green-700",
+  cancel: "border-red-200 bg-red-50 text-red-700",
+  neutral: "border-border bg-background text-foreground/80",
+};
+
+export const StatusPill = ({
+  status,
+  label,
+  className,
+}: {
+  status: string;
+  label?: string;
+  className?: string;
+}) => {
+  const tone = toneFor(status);
+  const text =
+    label ??
+    DOCUMENT_STATUS_LABELS[status as DocumentStatus] ??
+    CUSTOMER_ORDER_STATUS_LABELS[status as CustomerOrderStatus] ??
+    PRODUCTION_STATUS_LABELS[status as ProductionStatus] ??
+    TRANSFER_STATUS_LABELS[status as TransferStatus] ??
+    OUTPUT_STATUS_LABELS[status as OutputStatus] ??
+    status;
+  return (
+    <span
+      data-slot="status-pill"
+      className={cn(
+        "inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-xs font-medium whitespace-nowrap",
+        TONE_CLASS[tone],
+        className,
+      )}
+    >
+      <i className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden />
+      {text}
+    </span>
+  );
 };
 
 export const DocumentStatusBadge = ({ status }: { status: DocumentStatus | "draft" | "posted" }) => (
-  <Badge variant={tone(status)}>{DOCUMENT_STATUS_LABELS[status as DocumentStatus] ?? status}</Badge>
+  <StatusPill status={status} />
 );
 
 export const ShipmentDirectionBadge = ({ direction }: { direction: ShipmentDirection }) => (
-  <Badge variant={direction === "return" ? "secondary" : "default"}>{SHIPMENT_DIRECTION_LABELS[direction]}</Badge>
+  <StatusPill status={direction === "return" ? "reserved" : "neutral"} label={SHIPMENT_DIRECTION_LABELS[direction]} />
 );
 
 export const TransferStatusBadge = ({ status }: { status: TransferStatus }) => (
-  <Badge variant={tone(status)}>{TRANSFER_STATUS_LABELS[status]}</Badge>
+  <StatusPill status={status} label={TRANSFER_STATUS_LABELS[status]} />
 );
 
 export const CustomerOrderStatusBadge = ({ status }: { status: CustomerOrderStatus }) => (
-  <Badge variant={tone(status)}>{CUSTOMER_ORDER_STATUS_LABELS[status]}</Badge>
+  <StatusPill status={status} label={CUSTOMER_ORDER_STATUS_LABELS[status]} />
 );
 
 export const ProductionStatusBadge = ({ status }: { status: ProductionStatus }) => (
-  <Badge variant={tone(status)}>{PRODUCTION_STATUS_LABELS[status]}</Badge>
+  <StatusPill status={status} label={PRODUCTION_STATUS_LABELS[status]} />
 );
 
 export const OutputStatusBadge = ({ status }: { status: OutputStatus }) => (
-  <Badge variant={tone(status)}>{OUTPUT_STATUS_LABELS[status]}</Badge>
+  <StatusPill status={status} label={OUTPUT_STATUS_LABELS[status]} />
 );
 
 export const StockStateBadge = ({ state }: { state: StockState }) => (
-  <Badge variant={tone(state)}>{STOCK_STATE_LABELS[state]}</Badge>
+  <StatusPill status={state} label={STOCK_STATE_LABELS[state]} />
 );

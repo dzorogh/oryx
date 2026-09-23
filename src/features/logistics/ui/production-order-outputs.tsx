@@ -4,12 +4,60 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatExpectedEnd, formatQuantity } from "@/features/logistics/logistics-labels";
-import { productById, productCode } from "@/features/logistics/logistics-lookups";
-import { relatedOrdersForOutput } from "@/features/logistics/logistics-related";
-import type { LogisticsSnapshot, ProductionOutput } from "@/features/logistics/logistics-types";
+import { hrefForOwner } from "@/features/logistics/logistics-availability";
+import { OWNER_TYPE_LABELS, formatExpectedEnd, formatQuantity, formatTimestamp } from "@/features/logistics/logistics-labels";
+import { ownerLabel, productById, productCode } from "@/features/logistics/logistics-lookups";
+import type { LogisticsSnapshot, OwnerType, ProductionOutput, ProductionOutputLine } from "@/features/logistics/logistics-types";
+import { isFreeOwner } from "@/features/logistics/logistics-types";
+import { documentCompletedAt } from "@/features/logistics/document-timeline";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { OutputStatusBadge } from "@/features/logistics/ui/status-badge";
+import { DOCUMENT_TABLE_HEAD_CLASS } from "@/features/logistics/ui/logistics-table-card";
+import { cn } from "@/lib/utils";
+
+const distinctOutputOwners = (
+  lines: ProductionOutputLine[],
+): Array<{ type: OwnerType; id: string }> => {
+  const seen = new Map<string, { type: OwnerType; id: string }>();
+  for (const line of lines) {
+    if (isFreeOwner(line.toOwnerType, line.toOwnerId) || !line.toOwnerType || !line.toOwnerId) {
+      continue;
+    }
+    const key = `${line.toOwnerType}:${line.toOwnerId}`;
+    if (!seen.has(key)) {
+      seen.set(key, { type: line.toOwnerType, id: line.toOwnerId });
+    }
+  }
+  return [...seen.values()];
+};
+
+const AssignedOwners = ({
+  snapshot,
+  lines,
+}: {
+  snapshot: LogisticsSnapshot;
+  lines: ProductionOutputLine[];
+}) => {
+  const owners = distinctOutputOwners(lines);
+  if (owners.length === 0) {
+    return <span className="text-muted-foreground/50">Свободно</span>;
+  }
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      {owners.map((owner) => (
+        <span key={`${owner.type}:${owner.id}`} className="inline-flex items-center gap-1.5">
+          {owner.type === "region" ? (
+            <span className="font-medium text-foreground">{OWNER_TYPE_LABELS.region}</span>
+          ) : null}
+          <LogisticsCodeBadge
+            code={ownerLabel(snapshot, owner.type, owner.id)}
+            href={hrefForOwner(owner.type, owner.id, snapshot) ?? undefined}
+          />
+        </span>
+      ))}
+    </span>
+  );
+};
 
 const OutputLinesGroup = ({
   snapshot,
@@ -48,27 +96,38 @@ export const ProductionOrderOutputs = ({
   outputs,
   canMutate,
   onCreate,
+  bare = false,
 }: {
   snapshot: LogisticsSnapshot;
   outputs: ProductionOutput[];
   canMutate: boolean;
   onCreate?: () => void;
+  bare?: boolean;
 }) => {
   const action: ReactNode =
-    canMutate && onCreate ? (
+    !bare && canMutate && onCreate ? (
       <Button type="button" size="sm" className="h-7 px-2.5 text-xs" onClick={onCreate}>
         Новый выпуск
       </Button>
     ) : null;
 
   return (
-    <section id="outputs" className="scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
-        <h2 tabIndex={-1} className="text-base font-semibold outline-none">
-          Выпуски
-        </h2>
-        {action}
-      </div>
+    <section
+      id="outputs"
+      className={
+        bare
+          ? undefined
+          : "scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card"
+      }
+    >
+      {bare ? null : (
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
+          <h2 tabIndex={-1} className="text-base font-semibold outline-none">
+            Выпуски
+          </h2>
+          {action}
+        </div>
+      )}
 
       {outputs.length === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-muted-foreground">Выпусков пока нет.</p>
@@ -77,19 +136,20 @@ export const ProductionOrderOutputs = ({
           <div className="hidden lg:block">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="px-3">Номер</TableHead>
-                  <TableHead className="px-3">Товары</TableHead>
-                  <TableHead className="px-3">Количество</TableHead>
-                  <TableHead className="px-3">Под заказ клиента</TableHead>
-                  <TableHead className="px-3">Статус</TableHead>
-                  <TableHead className="px-3">Ожидаемое окончание</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Номер</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Товары</TableHead>
+                  <TableHead className={cn(DOCUMENT_TABLE_HEAD_CLASS, "text-right")}>Количество</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Закреплено за</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Статус</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Ожидаемое окончание</TableHead>
+                  <TableHead className={DOCUMENT_TABLE_HEAD_CLASS}>Завершён</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {outputs.map((item) => {
                   const itemLines = snapshot.outputLines.filter((line) => line.outputId === item.id);
-                  const orders = relatedOrdersForOutput(snapshot, item.id);
+                  const completed = documentCompletedAt(snapshot, item.id);
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="px-3 py-2 align-top">
@@ -103,7 +163,7 @@ export const ProductionOrderOutputs = ({
                           visualQuantityColumn
                         />
                       </TableCell>
-                      <TableCell className="px-3 py-2 align-top" aria-hidden="true">
+                      <TableCell className="px-3 py-2 align-top text-right" aria-hidden="true">
                         <div className="grid gap-1.5">
                           {itemLines.map((line) => {
                             const product = productById(snapshot, line.productId);
@@ -116,21 +176,16 @@ export const ProductionOrderOutputs = ({
                         </div>
                       </TableCell>
                       <TableCell className="px-3 py-2 align-top">
-                        {orders.length === 0 ? (
-                          "—"
-                        ) : (
-                          <span className="inline-flex flex-wrap items-center gap-1.5">
-                            {orders.map((order) => (
-                              <LogisticsCodeBadge key={order.id} code={order.label} href={order.href} />
-                            ))}
-                          </span>
-                        )}
+                        <AssignedOwners snapshot={snapshot} lines={itemLines} />
                       </TableCell>
                       <TableCell className="px-3 py-2 align-top">
                         <OutputStatusBadge status={item.status} />
                       </TableCell>
                       <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
                         {formatExpectedEnd(item.expectedEndOn)}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 align-top text-sm tabular-nums text-muted-foreground">
+                        {completed ? formatTimestamp(completed) : <span className="text-muted-foreground/50">—</span>}
                       </TableCell>
                     </TableRow>
                   );
@@ -142,7 +197,6 @@ export const ProductionOrderOutputs = ({
           <ul className="divide-y divide-border lg:hidden">
             {outputs.map((item) => {
               const itemLines = snapshot.outputLines.filter((line) => line.outputId === item.id);
-              const orders = relatedOrdersForOutput(snapshot, item.id);
               return (
                 <li key={item.id} className="px-4 py-3">
                   <article aria-labelledby={`output-heading-${item.id}`}>
@@ -151,34 +205,35 @@ export const ProductionOrderOutputs = ({
                     </h3>
                     <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Номер</dt>
+                        <dt className="text-xs text-muted-foreground">Номер</dt>
                         <dd>
                           <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.sequenceNumber}`} />
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Статус</dt>
+                        <dt className="text-xs text-muted-foreground">Статус</dt>
                         <dd>
                           <OutputStatusBadge status={item.status} />
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Под заказ клиента</dt>
+                        <dt className="text-xs text-muted-foreground">Закреплено за</dt>
                         <dd>
-                          {orders.length === 0 ? (
-                            "—"
-                          ) : (
-                            <span className="inline-flex flex-wrap items-center gap-1.5">
-                              {orders.map((order) => (
-                                <LogisticsCodeBadge key={order.id} code={order.label} href={order.href} />
-                              ))}
-                            </span>
-                          )}
+                          <AssignedOwners snapshot={snapshot} lines={itemLines} />
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[10px] text-muted-foreground">Ожидаемое окончание</dt>
+                        <dt className="text-xs text-muted-foreground">Ожидаемое окончание</dt>
                         <dd className="text-sm tabular-nums">{formatExpectedEnd(item.expectedEndOn)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Завершён</dt>
+                        <dd className="text-sm tabular-nums text-muted-foreground">
+                          {(() => {
+                            const completed = documentCompletedAt(snapshot, item.id);
+                            return completed ? formatTimestamp(completed) : "—";
+                          })()}
+                        </dd>
                       </div>
                     </dl>
                     <div className="mt-3">

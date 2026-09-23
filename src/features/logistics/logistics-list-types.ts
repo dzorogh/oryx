@@ -16,7 +16,6 @@ export type LogisticsListProductLine = {
   productId: string;
   quantity: number;
   productName?: string | null;
-  productSku?: string | null;
   productUnit?: string | null;
 };
 

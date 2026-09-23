@@ -25,10 +25,10 @@ const CATEGORY_BY_TOKEN: Array<{ tokens: string[]; categoryId: string; category:
 ];
 
 export const inferCatalogCategory = (
-  sku: string,
+  id: string,
   name: string,
 ): { categoryId: string; category: string; family: string } => {
-  const haystack = `${sku} ${name}`.toUpperCase();
+  const haystack = `${id} ${name}`.toUpperCase();
   const match = CATEGORY_BY_TOKEN.find((entry) => entry.tokens.some((token) => haystack.includes(token)));
   if (match) {
     const family = name.split(/\s+/)[0] || match.family;
@@ -38,15 +38,14 @@ export const inferCatalogCategory = (
   return { categoryId: "atv-4x4", category: "4x4", family };
 };
 
-export const inferDemoDealerPrice = (sku: string): number => 2490 + (hashSeed(sku) % 90) * 100;
+export const inferDemoDealerPrice = (seed: string): number => 2490 + (hashSeed(seed) % 90) * 100;
 
-export const productImageUrl = (_sku: string, imageUrl?: string | null): string | null =>
+export const productImageUrl = (_seed: string, imageUrl?: string | null): string | null =>
   preferKorportalMediaConversion(imageUrl);
 
 type VariantRow = {
   id: string | number;
   product_id: string | number;
-  sku: string;
   name: string;
   image_url?: string | null;
   plant_id?: string | number | null;
@@ -79,14 +78,13 @@ export const mapLogisticsProductToCatalogItem = (
   dealerPrice: number,
   retailPrice: number,
 ): StoreCatalogItem => {
-  const inferred = inferCatalogCategory(row.sku, row.name);
   const id = String(row.id);
+  const inferred = inferCatalogCategory(id, row.name);
   return {
     id,
     name: row.name,
-    sku: row.sku,
     code: formatLogisticsCode("product", id),
-    imageSrc: productImageUrl(row.sku, row.image_url) ?? "",
+    imageSrc: productImageUrl(id, row.image_url) ?? "",
     imageAlt: row.name,
     categoryId: inferred.categoryId,
     category: inferred.category,
@@ -116,7 +114,7 @@ export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> =
     loadLogisticsSettings(),
     client
       .from("store_product_variant")
-      .select("id,product_id,sku,name,image_url,plant_id")
+      .select("id,product_id,name,image_url,plant_id")
       .is("deleted_at", null)
       .order("id", { ascending: true }),
     client
@@ -144,7 +142,7 @@ export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> =
 
   return (variantsResult.data as VariantRow[]).map((row) => {
     const id = String(row.id);
-    const dealer = dealerByVariant.get(id) ?? inferDemoDealerPrice(row.sku);
+    const dealer = dealerByVariant.get(id) ?? inferDemoDealerPrice(`${id}:${row.name}`);
     const retail = retailByVariant.get(id) ?? Math.round(dealer * 1.18);
     return mapLogisticsProductToCatalogItem(
       row,

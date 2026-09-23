@@ -47,7 +47,6 @@ const shipment = (overrides: Partial<Shipment> & Pick<Shipment, "id" | "fromLoca
 
 const lineSnap = {
   productName: "Товар",
-  productSku: "SKU",
   productUnit: "шт",
   plantId: null as string | null,
   plantName: null as string | null,
@@ -78,8 +77,8 @@ const snapshotWithDocs = (): LogisticsSnapshot => ({
     shipment({ id: "r1", fromLocationType: "customer_order", toLocationType: "warehouse", toLocationId: "w9" }),
   ],
   shipmentLines: [
-    { id: "sl1", shipmentId: "s1", productId: "7", quantity: 4, toOwnerType: "order", toOwnerId: "12", fromOwnerType: "order", fromOwnerId: "12", productName: "Товар", productSku: "SKU", productUnit: "шт" },
-    { id: "rl1", shipmentId: "r1", productId: "7", quantity: 2, toOwnerType: null, toOwnerId: null, fromOwnerType: null, fromOwnerId: null, productName: "Товар", productSku: "SKU", productUnit: "шт" },
+    { id: "sl1", shipmentId: "s1", productId: "7", quantity: 4, toOwnerType: "order", toOwnerId: "12", fromOwnerType: "order", fromOwnerId: "12", productName: "Товар", productUnit: "шт" },
+    { id: "rl1", shipmentId: "r1", productId: "7", quantity: 2, toOwnerType: null, toOwnerId: null, fromOwnerType: null, fromOwnerId: null, productName: "Товар", productUnit: "шт" },
   ],
   outputs: [],
   outputLines: [],
@@ -120,7 +119,6 @@ describe("единый документ отгрузки и возврата", (
       productId: "7",
       quantity: 6,
       productName: "Товар",
-      productSku: "SKU",
       productUnit: "шт",
       plantId: null,
       plantName: null,
