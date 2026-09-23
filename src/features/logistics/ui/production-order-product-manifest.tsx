@@ -18,6 +18,7 @@ import type { LogisticsSnapshot, ProductionOrderLine } from "@/features/logistic
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DOCUMENT_TABLE_HEAD_CLASS } from "@/features/logistics/ui/logistics-table-card";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import type { OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { OutputStatusBadge } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +84,31 @@ const reservedTotal = (row: ProductionProductOutputRow) =>
 const NUM_CELL = "px-3 py-1.5 text-right text-sm tabular-nums";
 const MUTED_ZERO = "text-muted-foreground/50";
 
+type ReleaseHandler = (row: ProductionProductOutputRow, item: ProductionLineReservation) => void;
+
+const ReleaseButton = ({
+  row,
+  item,
+  onRelease,
+  className,
+}: {
+  row: ProductionProductOutputRow;
+  item: ProductionLineReservation;
+  onRelease?: ReleaseHandler;
+  className?: string;
+}) =>
+  onRelease && row.output.status === "draft" ? (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      className={cn("h-7 shrink-0 px-2.5 text-xs", className)}
+      onClick={() => onRelease(row, item)}
+    >
+      Снять
+    </Button>
+  ) : null;
+
 const OutputsTable = ({
   snapshot,
   lineId,
@@ -90,6 +116,7 @@ const OutputsTable = ({
   unit,
   expandedOutputs,
   onToggleOutput,
+  onRelease,
 }: {
   snapshot: LogisticsSnapshot;
   lineId: string;
@@ -97,6 +124,7 @@ const OutputsTable = ({
   unit?: string;
   expandedOutputs: Set<string>;
   onToggleOutput: (key: string) => void;
+  onRelease?: ReleaseHandler;
 }) => {
   const q = (n: number) => formatQuantity(n, unit);
   if (rows.length === 0) {
@@ -148,11 +176,14 @@ const OutputsTable = ({
                       className="bg-muted/40 hover:bg-muted/40"
                     >
                       <TableCell className="py-1.5 pl-14 pr-3" colSpan={3}>
-                        <ReservationOwner
-                          snapshot={snapshot}
-                          assignment={item}
-                          released={row.output.status === "done"}
-                        />
+                        <div className="flex items-center justify-between gap-2">
+                          <ReservationOwner
+                            snapshot={snapshot}
+                            assignment={item}
+                            released={row.output.status === "done"}
+                          />
+                          <ReleaseButton row={row} item={item} onRelease={onRelease} />
+                        </div>
                       </TableCell>
                       <TableCell className={cn(NUM_CELL, MUTED_ZERO)}>—</TableCell>
                       <TableCell className={cn(NUM_CELL, "font-semibold")}>{q(item.quantity)}</TableCell>
@@ -183,6 +214,7 @@ const OutputsList = ({
   unit,
   expandedOutputs,
   onToggleOutput,
+  onRelease,
 }: {
   snapshot: LogisticsSnapshot;
   lineId: string;
@@ -190,6 +222,7 @@ const OutputsList = ({
   unit?: string;
   expandedOutputs: Set<string>;
   onToggleOutput: (key: string) => void;
+  onRelease?: ReleaseHandler;
 }) => {
   const q = (n: number) => formatQuantity(n, unit);
   if (rows.length === 0) {
@@ -236,7 +269,10 @@ const OutputsList = ({
                       assignment={item}
                       released={row.output.status === "done"}
                     />
-                    <span className="text-sm font-semibold tabular-nums">{q(item.quantity)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold tabular-nums">{q(item.quantity)}</span>
+                      <ReleaseButton row={row} item={item} onRelease={onRelease} className="h-11" />
+                    </div>
                   </li>
                 ))}
                 {row.reserved.length === 0 || row.free > 0 ? (
@@ -260,6 +296,7 @@ export const ProductionOrderProductManifest = ({
   canMutate,
   onAddProduct,
   onReserve,
+  onReleaseReservation,
   bare = false,
 }: {
   snapshot: LogisticsSnapshot;
@@ -267,6 +304,7 @@ export const ProductionOrderProductManifest = ({
   canMutate: boolean;
   onAddProduct?: () => void;
   onReserve: (lineId: string) => void;
+  onReleaseReservation?: (target: OutputReleaseTarget) => void;
   bare?: boolean;
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -301,11 +339,24 @@ export const ProductionOrderProductManifest = ({
     const outputs = productionProductOutputs(snapshot, line.orderId, line.productId);
     const planRoom = remainingPlanForProductionProduct(snapshot, line.orderId, line.productId, line.quantity);
     const draftFree = outputs.rows.some((row) => row.output.status === "draft" && row.free > 0);
+    const onRelease: ReleaseHandler | undefined =
+      canMutate && onReleaseReservation
+        ? (row, item) =>
+            onReleaseReservation({
+              outputId: row.output.id,
+              outputNumber: row.output.number,
+              ownerType: item.ownerType,
+              ownerId: item.ownerId,
+              productId: line.productId,
+              quantity: item.quantity,
+            })
+        : undefined;
     return {
       unit,
       name,
       code,
       outputs,
+      onRelease,
       showReserve: canMutate && (planRoom > 0 || draftFree),
       q: (n: number) => formatQuantity(n, unit),
     };
@@ -384,6 +435,7 @@ export const ProductionOrderProductManifest = ({
                               unit={view.unit}
                               expandedOutputs={expandedOutputs}
                               onToggleOutput={toggleOutput}
+                              onRelease={view.onRelease}
                             />
                           </div>
                         </TableCell>
@@ -451,6 +503,7 @@ export const ProductionOrderProductManifest = ({
                       unit={view.unit}
                       expandedOutputs={expandedOutputs}
                       onToggleOutput={toggleOutput}
+                      onRelease={view.onRelease}
                     />
                   </div>
                 ) : null}

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { buildCreateProductionOutputRpcArgs } from "@/features/logistics/logistics-api";
 import { assertProductionOutputLines } from "@/features/logistics/logistics-rules";
 import {
+  draftOutputHoldsForOrderProduct,
   freeInDraftOutput,
   productionProductOutputs,
   remainingPlanForProductionProduct,
@@ -196,6 +197,13 @@ describe("резерв в активных выпусках", () => {
 
   it("свободно в черновике — строки без владельца", () => {
     assert.equal(freeInDraftOutput(view, "out-draft", "7"), 2);
+  });
+
+  it("резерв для снятия — только черновики выпусков, по одному на выпуск", () => {
+    assert.deepEqual(draftOutputHoldsForOrderProduct(view, "12", "7"), [
+      { outputId: "out-draft", outputNumber: "OUT-1", quantity: 4 },
+    ]);
+    assert.deepEqual(draftOutputHoldsForOrderProduct(view, "13", "7"), []);
   });
 
   it("разбивка товара заказа на производство по выпускам", () => {

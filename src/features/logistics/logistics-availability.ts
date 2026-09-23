@@ -402,6 +402,37 @@ export const reservedInActiveOutputsForOrderProduct = (
   return total;
 };
 
+export type DraftOutputHold = {
+  outputId: string;
+  outputNumber: string;
+  quantity: number;
+};
+
+/** Qty held for a CO product in draft outputs, one entry per output. */
+export const draftOutputHoldsForOrderProduct = (
+  snapshot: LogisticsSnapshot,
+  orderId: string,
+  productId: string,
+): DraftOutputHold[] => {
+  const byOutput = new Map<string, DraftOutputHold>();
+  for (const line of snapshot.outputLines) {
+    if (line.productId !== productId || !ownersEqual(line.toOwnerType, line.toOwnerId, "order", orderId)) {
+      continue;
+    }
+    const output = snapshot.outputs.find((item) => item.id === line.outputId);
+    if (!output || output.status !== "draft") {
+      continue;
+    }
+    const current = byOutput.get(output.id);
+    if (current) {
+      current.quantity += line.quantity;
+    } else {
+      byOutput.set(output.id, { outputId: output.id, outputNumber: output.number, quantity: line.quantity });
+    }
+  }
+  return [...byOutput.values()].filter((item) => item.quantity > 1e-9);
+};
+
 /** Free (unowned) qty of a product inside one draft output. */
 export const freeInDraftOutput = (
   snapshot: LogisticsSnapshot,

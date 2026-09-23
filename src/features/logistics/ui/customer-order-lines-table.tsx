@@ -18,11 +18,13 @@ import {
   warehouseIdsWithReservedForOrder,
 } from "@/features/logistics/allocation-atlas";
 import {
+  draftOutputHoldsForOrderProduct,
   freePlacesForProduct,
   hrefForProduct,
   hrefForWarehouse,
   remainingToReserveForLine,
   reservedPlacesForLine,
+  type DraftOutputHold,
 } from "@/features/logistics/logistics-availability";
 import { sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
@@ -81,9 +83,11 @@ const LineActionsMenu = ({
   canReserve,
   canShip,
   releasePlaces,
+  outputHolds,
   onReserve,
   onShip,
   onRelease,
+  onReleaseOutput,
 }: {
   productName: string;
   canReserve: boolean;
@@ -95,11 +99,13 @@ const LineActionsMenu = ({
     hint: string | null;
     quantity: number;
   }>;
+  outputHolds: DraftOutputHold[];
   onReserve: () => void;
   onShip: () => void;
   onRelease: (place: { locationType: LocationType; locationId: string }) => void;
+  onReleaseOutput: (hold: DraftOutputHold) => void;
 }) => {
-  if (!canReserve && !canShip && releasePlaces.length === 0) {
+  if (!canReserve && !canShip && releasePlaces.length === 0 && outputHolds.length === 0) {
     return null;
   }
 
@@ -141,6 +147,11 @@ const LineActionsMenu = ({
             </DropdownMenuItem>
           );
         })}
+        {outputHolds.map((hold) => (
+          <DropdownMenuItem key={`output:${hold.outputId}`} onClick={() => onReleaseOutput(hold)}>
+            Снять в выпуске {hold.outputNumber} · {formatQuantity(hold.quantity)}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -163,6 +174,7 @@ export const CustomerOrderLinesTable = ({
   onReserve,
   onShip,
   onRelease,
+  onReleaseOutput,
   bare = false,
 }: {
   snapshot: LogisticsSnapshot;
@@ -176,6 +188,7 @@ export const CustomerOrderLinesTable = ({
     locationType: LocationType;
     locationId: string;
   }) => void;
+  onReleaseOutput: (line: CustomerOrderLine, hold: DraftOutputHold) => void;
   /** When true, render only the table (DocumentSection provides the card). */
   bare?: boolean;
 }) => {
@@ -273,9 +286,11 @@ export const CustomerOrderLinesTable = ({
                               quantity: place.quantity,
                             };
                           })}
+                          outputHolds={draftOutputHoldsForOrderProduct(snapshot, line.orderId, line.productId)}
                           onReserve={() => onReserve(line)}
                           onShip={onShip}
                           onRelease={(place) => onRelease({ line, ...place })}
+                          onReleaseOutput={(hold) => onReleaseOutput(line, hold)}
                         />
                       ) : null}
                     </div>

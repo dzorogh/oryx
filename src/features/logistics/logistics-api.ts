@@ -1198,6 +1198,24 @@ export const reserveInProductionOutput = async (args: {
   });
 };
 
+export const releaseInProductionOutput = async (args: {
+  outputId: string;
+  ownerType: OwnerType;
+  ownerId: string;
+  lines: Array<{ productId: string; quantity: number }>;
+}): Promise<void> => {
+  const ownerStockId = await resolveOwnerId(args.ownerType, args.ownerId);
+  await rpc("store_move_in_production_output", {
+    p_output_id: Number(args.outputId),
+    p_from_owner_id: Number(ownerStockId),
+    p_to_owner_id: null,
+    p_lines: args.lines.map((line) => ({
+      product_variant_id: Number(line.productId),
+      quantity: line.quantity,
+    })),
+  });
+};
+
 export type AdjustmentCreateResult = {
   id: string;
   status: "posted";

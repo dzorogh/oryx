@@ -56,6 +56,7 @@ import type { CustomerOrderListRow } from "@/features/logistics/logistics-list-t
 import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
 import { sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
+import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
@@ -478,6 +479,7 @@ export const CustomerOrderDetailPage = () => {
   const [reserveOpen, setReserveOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
+  const [outputReleaseTarget, setOutputReleaseTarget] = useState<OutputReleaseTarget | null>(null);
   const [productionOpen, setProductionOpen] = useState(false);
   const [reserveOnProductionOpen, setReserveOnProductionOpen] = useState(false);
   const [outputOpen, setOutputOpen] = useState(false);
@@ -745,6 +747,16 @@ export const CustomerOrderDetailPage = () => {
                     setReleasePlace(place);
                     setReleaseOpen(true);
                   }}
+                  onReleaseOutput={(line, hold) =>
+                    setOutputReleaseTarget({
+                      outputId: hold.outputId,
+                      outputNumber: hold.outputNumber,
+                      ownerType: "order",
+                      ownerId: order.id,
+                      productId: line.productId,
+                      quantity: hold.quantity,
+                    })
+                  }
                 />
               </DocumentSection>
             ),
@@ -817,6 +829,12 @@ export const CustomerOrderDetailPage = () => {
           locationType: releasePlace?.locationType === "customer_order" || releasePlace?.locationType === "production_order" ? undefined : releasePlace?.locationType as "warehouse" | "transfer" | undefined,
           locationId: releasePlace?.locationId,
         }}
+      />
+      <OutputReleaseDialog
+        snapshot={snapshot}
+        target={outputReleaseTarget}
+        onClose={() => setOutputReleaseTarget(null)}
+        reload={reload}
       />
       <ProductionFromOrderForm
         snapshot={snapshot}

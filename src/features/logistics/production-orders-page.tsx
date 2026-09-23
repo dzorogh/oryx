@@ -76,6 +76,7 @@ import { ProductionOrderCloseDialog } from "@/features/logistics/ui/production-o
 import { ProductionOrderMovements } from "@/features/logistics/ui/production-order-movements";
 import { ProductionOrderOutputs } from "@/features/logistics/ui/production-order-outputs";
 import { ProductionOrderProductManifest } from "@/features/logistics/ui/production-order-product-manifest";
+import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
 import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
 import { DocumentHistory } from "@/features/logistics/ui/document/document-history";
@@ -403,6 +404,7 @@ export const ProductionOrderDetailPage = () => {
   const [reserveOrderLineId, setReserveOrderLineId] = useState("");
   const [reserveQuantity, setReserveQuantity] = useState("1");
   const [reserveTargetKey, setReserveTargetKey] = useState("");
+  const [outputReleaseTarget, setOutputReleaseTarget] = useState<OutputReleaseTarget | null>(null);
 
   const [outputOpen, setOutputOpen] = useState(false);
   const [outputPending, setOutputPending] = useState(false);
@@ -788,6 +790,7 @@ export const ProductionOrderDetailPage = () => {
                     snapshot={snapshot}
                     lines={lines}
                     canMutate={canMutate}
+                    onReleaseReservation={setOutputReleaseTarget}
                     bare
                     onReserve={(lineId) => {
                       const line = lines.find((item) => item.id === lineId);
@@ -997,6 +1000,13 @@ export const ProductionOrderDetailPage = () => {
           </div>
         </div>
       </LogisticsDialog>
+
+      <OutputReleaseDialog
+        snapshot={snapshot}
+        target={outputReleaseTarget}
+        onClose={() => setOutputReleaseTarget(null)}
+        reload={reload}
+      />
 
       <LogisticsDialog
         open={reserveOpen}
