@@ -339,7 +339,7 @@ export const TeamDirectoryPage = () => {
           </Sheet>
 
           <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)]">
-            <CardContent className="hidden px-0 md:block">
+            <CardContent className="hidden px-0 group-data-[size=sm]/card:px-0 md:block [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">

@@ -15,6 +15,7 @@ import type {
 } from "@/features/logistics/stock-product-matrix";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
+import { FLUSH_TABLE_CLASS } from "@/features/logistics/ui/logistics-table-card";
 import { cn } from "@/lib/utils";
 
 const QUANTITY_HEAD =
@@ -366,14 +367,17 @@ export const StockProductsMatrix = ({
         ? warehouseSections.reduce((sum, section) => sum + section.rows.length, 0)
         : regionSections.reduce((sum, section) => sum + section.rows.length, 0);
   return (
-    <Card size="sm" className={logisticsCardClass}>
-      <div className="px-3">
+    <Card
+      size="sm"
+      className={cn(logisticsCardClass, "gap-0 overflow-hidden py-0 data-[size=sm]:gap-0 data-[size=sm]:py-0")}
+    >
+      <div className="border-b border-border/60 px-4 py-3">
         <h2 className="text-sm font-semibold">
           {title}
           {count > 0 ? <span className="font-normal text-muted-foreground"> · {count}</span> : null}
         </h2>
       </div>
-      <CardContent className="px-0">
+      <CardContent className={cn("px-0 group-data-[size=sm]/card:px-0", FLUSH_TABLE_CLASS)}>
         {group === "products" ? (
           <ProductsMatrixTable snapshot={snapshot} rows={productRows} empty={empty} />
         ) : group === "warehouses" ? (

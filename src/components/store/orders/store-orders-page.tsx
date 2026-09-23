@@ -34,8 +34,11 @@ export const StoreOrdersPage = () => (
 
         <StoreOrdersToolbar />
 
-        <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)]">
-          <CardContent className="px-0">
+        <Card
+          size="sm"
+          className="gap-0 overflow-hidden py-0 ring-1 ring-[var(--corportal-border-grey)] data-[size=sm]:gap-0 data-[size=sm]:py-0"
+        >
+          <CardContent className="px-0 group-data-[size=sm]/card:px-0 [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
