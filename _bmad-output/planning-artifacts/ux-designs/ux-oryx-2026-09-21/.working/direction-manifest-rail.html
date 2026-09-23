@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Направление 1 — Манифест и журнал</title>
+  <style>
+    :root{--bg:#f6f7f9;--panel:#fff;--text:#18181b;--muted:#71717a;--line:#e4e4e7;--soft:#f4f4f5;--ink:#202124;--accent:#c9f56a;--nav:#161d36}
+    *{box-sizing:border-box} body{margin:0;background:#eef0f3;color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,select{font:inherit;color:inherit}.frame{width:min(1440px,calc(100vw - 40px));min-width:1040px;margin:20px auto;border:1px solid #d8dbe1;border-radius:18px;overflow:hidden;background:var(--bg);box-shadow:0 18px 45px #11182718}
+    .app{display:grid;grid-template-columns:48px 190px 1fr;min-height:880px}.rail{background:var(--nav);color:#fff;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:18px}.mark{width:25px;height:25px;border-radius:7px;background:var(--accent);color:#172033;display:grid;place-items:center;font-weight:800}.rail i{width:18px;height:18px;border:1.5px solid #b9c0d2;border-radius:5px;display:block}.rail .active{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--nav),0 0 0 1px var(--accent)}.rail .spacer{flex:1}
+    .side{background:#fff;border-right:1px solid var(--line);padding:15px 12px}.brand{font-size:16px;font-weight:700;margin:1px 0 17px}.nav-group{padding:10px 8px 5px;color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.nav-item{display:block;padding:8px 9px;border-radius:8px;color:#71717a;text-decoration:none;font-size:13px}.nav-item.on{background:var(--soft);color:var(--text);font-weight:650}.rule{height:1px;background:var(--line);margin:8px 0}
+    main{min-width:0;padding:18px 22px 28px}.crumbs{color:var(--muted);font-size:13px;margin:0 0 14px}.crumbs b{color:#3f3f46;font-weight:550}.dochead{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}.headrow{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px}.titleline{display:flex;align-items:center;gap:9px}.titleline h1{font-size:24px;line-height:1.2;margin:0}.badge,.code{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:12px;background:#fff}.badge{background:#f7f7f8}.actions{display:flex;gap:8px;align-items:center}.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;font-weight:600;white-space:nowrap}.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}.btn.small{padding:5px 9px;font-size:12px}.meta{display:flex;gap:34px;margin-top:15px;padding-top:14px;border-top:1px solid var(--line)}.meta div{display:grid;gap:2px}.label{font-size:12px;color:var(--muted)}.value{font-weight:600;font-variant-numeric:tabular-nums}
+    .work{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(300px,.9fr);gap:14px;margin-top:14px;align-items:start}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}.panelhead{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-bottom:1px solid var(--line)}.panelhead h2{font-size:15px;margin:0}.hint{color:var(--muted);font-size:12px}.manifest-head,.product{display:grid;grid-template-columns:minmax(230px,1.5fr) repeat(4,minmax(66px,.62fr)) 116px;align-items:center}.manifest-head{background:#fafafa;color:var(--muted);font-size:11px;font-weight:600;padding:8px 13px;border-bottom:1px solid var(--line)}.product{padding:10px 13px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}.product:last-child{border-bottom:0}.identity{display:flex;gap:9px;align-items:center;min-width:0}.chev{font-size:16px;color:#71717a}.name{font-weight:650}.sub{color:var(--muted);font-size:12px;margin-top:1px}.num{white-space:nowrap}.row-action{text-align:right}.breakdown{background:#fafafa;border-bottom:1px solid var(--line);padding:8px 13px 10px 44px}.break-title{font-size:11px;color:var(--muted);margin-bottom:6px}.owner{display:grid;grid-template-columns:1fr 100px 100px;padding:6px 0;border-top:1px dashed #dedee2;font-size:12px}.owner:first-of-type{border-top:0}.owner span:not(:first-child){font-variant-numeric:tabular-nums}.section-note{padding:11px 14px;color:var(--muted);font-size:12px;background:#fcfcfc;border-top:1px solid var(--line)}
+    .sidepanel{margin-bottom:14px}.output{padding:11px 14px}.out-top{display:flex;justify-content:space-between;align-items:center}.out-body{display:grid;grid-template-columns:1fr auto;gap:5px;margin-top:8px;color:#52525b;font-size:12px}.ledger-row{padding:10px 14px;border-top:1px solid var(--line)}.ledger-row:first-of-type{border-top:0}.ledger-top{display:flex;justify-content:space-between;gap:8px}.delta{font-weight:700;font-variant-numeric:tabular-nums}.ledger-meta{color:var(--muted);font-size:12px;margin-top:3px}.more{padding:10px 14px;border-top:1px solid var(--line);color:#52525b;text-align:center;font-size:12px}
+    .explain{margin:14px 0 0;padding:13px 15px;border-left:3px solid #27272a;background:#fff;border-radius:0 10px 10px 0;color:#52525b}.explain strong{color:#18181b}.tablet-wrap{margin:18px auto 24px;width:min(920px,calc(100vw - 40px))}.preview-label{font-size:12px;color:#52525b;margin:0 0 8px}.tablet{width:860px;max-width:100%;margin:auto;background:var(--bg);border:8px solid #27272a;border-radius:22px;padding:16px;box-shadow:0 12px 30px #11182716}.t-head{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}.t-head h3{margin:0;font-size:18px}.t-stack{display:grid;gap:10px;margin-top:10px}.t-card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}.t-product{padding:12px;border-bottom:1px solid var(--line)}.t-product:last-child{border:0}.t-id{display:flex;justify-content:space-between;gap:12px}.t-qty{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}.t-qty div{border-left:1px solid var(--line);padding-left:8px}.t-qty div:first-child{border:0;padding-left:0}.t-qty span{display:block;font-size:10px;color:var(--muted)}.t-qty b{font-size:13px;font-variant-numeric:tabular-nums}.tablet-proof{font-size:11px;color:var(--muted);margin:9px 2px 0}
+    @media(max-width:1050px){.frame{display:none}.tablet-wrap{margin-top:24px}.tablet{width:calc(100vw - 32px)}}
+  </style>
+</head>
+<body>
+  <section class="frame" aria-label="Настольный макет шириной 1440 пикселей">
+    <div class="app">
+      <aside class="rail" aria-label="Основная навигация"><div class="mark">Y</div><i></i><i></i><i class="active"></i><i></i><div class="spacer"></div><i></i></aside>
+      <nav class="side" aria-label="Навигация магазина">
+        <div class="brand">Магазин</div>
+        <a class="nav-item" href="#">Товары</a><a class="nav-item" href="#">Прайс-листы</a><a class="nav-item" href="#">Остатки</a><a class="nav-item" href="#">Заказы клиента</a>
+        <div class="rule"></div><a class="nav-item on" href="#">Заказы на производство</a><a class="nav-item" href="#">Перемещения</a><a class="nav-item" href="#">Отгрузки</a>
+        <div class="rule"></div><a class="nav-item" href="#">Выпуски</a><a class="nav-item" href="#">Резервы</a><a class="nav-item" href="#">Возвраты</a><a class="nav-item" href="#">Корректировки</a><a class="nav-item" href="#">Склады</a><a class="nav-item" href="#">Регионы</a><a class="nav-item" href="#">Производители</a><a class="nav-item" href="#">Журнал</a>
+      </nav>
+      <main>
+        <div class="crumbs">Магазин　›　Логистика　›　Заказы на производство　›　<b>PO-1</b></div>
+        <header class="dochead">
+          <div class="headrow">
+            <div><div class="eyebrow">Заказ на производство</div><div class="titleline"><h1>PO-1</h1><span class="badge">Черновик</span></div></div>
+            <div class="actions"><button class="btn">Отменить</button><button class="btn dark">Закрыть заказ</button></div>
+          </div>
+          <div class="meta"><div><span class="label">Производитель</span><span class="value"><span class="code">SH-7</span></span></div><div><span class="label">Ожидаемое окончание</span><span class="value">19.09.2026</span></div></div>
+        </header>
+        <div class="work">
+          <section class="panel">
+            <div class="panelhead"><div><h2>Товары</h2><span class="hint">Производственный манифест</span></div><button class="btn dark small">Добавить товар</button></div>
+            <div class="manifest-head"><span>Товар</span><span>План</span><span>Свободно</span><span>В резерве</span><span>Выпущено</span><span></span></div>
+            <div class="product"><div class="identity"><span class="chev">›</span><div><div class="name">CR 125</div><div class="sub">PRD-108</div></div></div><span class="num">44 шт</span><span class="num">0</span><span class="num">0</span><span class="num">22</span><span class="row-action"></span></div>
+            <div class="product"><div class="identity"><span class="chev">⌄</span><div><div class="name">Enduro 125</div><div class="sub">PRD-75</div></div></div><span class="num">45 шт</span><span class="num">2</span><span class="num">0</span><span class="num">0</span><span class="row-action"><button class="btn small">Зарезервировать</button></span></div>
+            <div class="breakdown"><div class="break-title">Распределение строки</div><div class="owner"><span>Свободно</span><span>2 шт</span><span>Доступно</span></div><div class="owner"><span>Заказы клиента</span><span>0 шт</span><span>В резерве</span></div></div>
+            <div class="product"><div class="identity"><span class="chev">›</span><div><div class="name">Force 1000 Ranger</div><div class="sub">PRD-117</div></div></div><span class="num">1 шт</span><span class="num">0</span><span class="num">0</span><span class="num">0</span><span class="row-action"></span></div>
+            <div class="section-note">Раскрытие остаётся внутри таблицы: итог строки и его распределение читаются вместе.</div>
+          </section>
+          <aside>
+            <section class="panel sidepanel"><div class="panelhead"><h2>Выпуски</h2><button class="btn dark small">Новый выпуск</button></div><div class="output"><div class="out-top"><span class="code">OUT-1</span><span class="badge">Готов</span></div><div class="out-body"><span>CR 125 · PRD-108</span><b>22 шт</b><span>Под заказ клиента</span><b>22 шт</b></div></div></section>
+            <section class="panel"><div class="panelhead"><div><h2>Движения</h2><span class="hint">Все события</span></div><button class="btn small">Фильтр</button></div>
+              <div class="ledger-row"><div class="ledger-top"><b>Enduro 125</b><span class="delta">+10 шт</span></div><div class="ledger-meta">18 сент. 2026, 12:57 · PO-1</div></div>
+              <div class="ledger-row"><div class="ledger-top"><b>Enduro 125</b><span class="delta">−10 шт</span></div><div class="ledger-meta">18 сент. 2026, 12:57 · PO-1</div></div>
+              <div class="ledger-row"><div class="ledger-top"><b>Enduro 125</b><span class="delta">+12 шт</span></div><div class="ledger-meta">17 сент. 2026, 16:22 · PO-1</div></div>
+              <div class="ledger-row"><div class="ledger-top"><b>Enduro 125</b><span class="delta">−12 шт</span></div><div class="ledger-meta">17 сент. 2026, 16:22 · PO-1</div></div><div class="more">Показано 4 из 4</div>
+            </section>
+          </aside>
+        </div>
+        <div class="explain"><strong>Направление «Манифест и журнал».</strong> Основная ширина отдана товарам, а выпуск и движения собраны в аудиторской колонке. Оптимизирует ежедневную сверку плана и факта; компромисс — узкая правая колонка подходит для просмотра, но не для сложного редактирования.</div>
+      </main>
+    </div>
+  </section>
+  <section class="tablet-wrap" aria-label="Планшетная адаптация">
+    <div class="preview-label">Планшет · 860 px · таблица превращается в строки без горизонтальной прокрутки</div>
+    <div class="tablet">
+      <div class="t-head"><div><span class="label">Заказ на производство</span><h3>PO-1 <span class="badge">Черновик</span></h3></div><button class="btn dark small">Закрыть заказ</button></div>
+      <div class="t-stack"><div class="t-card">
+        <div class="panelhead"><h2>Товары</h2><button class="btn small">Добавить товар</button></div>
+        <div class="t-product"><div class="t-id"><div><b>CR 125</b><div class="sub">PRD-108</div></div><span class="code">План 44 шт</span></div><div class="t-qty"><div><span>Свободно</span><b>0</b></div><div><span>В резерве</span><b>0</b></div><div><span>Выпущено</span><b>22</b></div><div><span>Действие</span><b>Нет</b></div></div></div>
+        <div class="t-product"><div class="t-id"><div><b>Enduro 125</b><div class="sub">PRD-75 · распределение раскрыто</div></div><span class="code">План 45 шт</span></div><div class="t-qty"><div><span>Свободно</span><b>2</b></div><div><span>В резерве</span><b>0</b></div><div><span>Выпущено</span><b>0</b></div><div><span>Действие</span><b>Резерв</b></div></div></div>
+        <div class="t-product"><div class="t-id"><div><b>Force 1000 Ranger</b><div class="sub">PRD-117</div></div><span class="code">План 1 шт</span></div><div class="t-qty"><div><span>Свободно</span><b>0</b></div><div><span>В резерве</span><b>0</b></div><div><span>Выпущено</span><b>0</b></div><div><span>Действие</span><b>Нет</b></div></div></div>
+      </div></div><div class="tablet-proof">Выпуски и движения следуют ниже одним столбцом; все количества и действия остаются видимыми.</div>
+    </div>
+  </section>
+</body>
+</html>

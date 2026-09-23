@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Резервы — отдельные строки</title>
+  <style>
+    :root{--bg:#f7f7f8;--text:#19191c;--muted:#73737c;--line:#e3e3e7;--soft:#f3f3f4;--dark:#202124;--lime:#c9f56a;--nav:#17203a}
+    *{box-sizing:border-box}body{margin:0;background:#eceef1;color:var(--text);font:14px/1.42 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,select,input{font:inherit}
+    .frame{width:min(1440px,calc(100vw - 40px));min-width:1040px;margin:20px auto;background:var(--bg);border:1px solid #d7dae0;border-radius:18px;overflow:hidden;box-shadow:0 18px 45px #11182714}
+    .app{display:grid;grid-template-columns:46px 184px 1fr;min-height:720px}.rail{background:var(--nav);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:17px}.logo{display:grid;place-items:center;width:25px;height:25px;background:var(--lime);border-radius:7px;font-weight:800}.dot{width:17px;height:17px;border:1.5px solid #bfc5d6;border-radius:50%}.dot.on{border-color:var(--lime);box-shadow:inset 0 0 0 4px var(--nav)}.push{flex:1}
+    .nav{background:#fff;border-right:1px solid var(--line);padding:15px 11px}.nav h2{font-size:15px;margin:0 8px 16px}.nav a{display:block;color:#74747d;text-decoration:none;padding:7px 9px;border-radius:8px;font-size:12.5px}.nav a.on{background:var(--soft);color:#1e1e21;font-weight:650}.rule{border-top:1px solid var(--line);margin:8px}
+    .main{min-width:0}.crumbs{padding:16px 22px 12px;color:var(--muted);font-size:12px}.crumbs b{color:#3f3f46}
+    .passport{background:#fff;border-block:1px solid var(--line);padding:15px 22px;display:grid;grid-template-columns:minmax(190px,1.1fr) minmax(105px,.55fr) minmax(135px,.7fr) minmax(155px,.78fr) auto;gap:14px;align-items:end}
+    .id small,.field span,.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.id h1{font-size:25px;margin:0}.field b{font-size:13px}
+    .field-control{width:100%;height:34px;border:1px solid #d8d8dd;background:#fff;border-radius:8px;padding:0 9px;font-weight:600}
+    .code{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:#fff;font-size:12px;line-height:1.2}.field .code{width:100%;height:34px;border-radius:8px;padding:0 9px;font-weight:600}
+    .btn{border:1px solid var(--line);background:#fff;padding:7px 11px;border-radius:8px;font-weight:650}.btn.dark{background:var(--dark);color:#fff;border-color:var(--dark)}.btn.small{font-size:12px;padding:5px 8px}
+    .workspace{display:grid;grid-template-columns:178px minmax(0,1fr);gap:18px;padding:18px 22px 28px}.index-inner{background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px}.index a{display:flex;justify-content:space-between;color:#5c5c64;text-decoration:none;padding:9px;border-radius:7px;font-size:12px}.index a.on{background:#f1f1f2;color:#19191c;font-weight:650}.count{color:#92929b;font-variant-numeric:tabular-nums}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden}.panel-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}.panel-head h2{margin:0;font-size:15px}
+    .cols{display:grid;grid-template-columns:minmax(240px,1.55fr) 78px 86px 92px 86px 104px;gap:10px;align-items:center}
+    .head{padding:8px 14px;background:#fafafa;color:var(--muted);font-size:11px;font-weight:650}
+    .line{min-height:54px;padding:10px 14px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}.identity b{display:block}.product-code{display:inline-flex;width:max-content;margin-top:4px;padding:2px 6px;color:var(--muted);font-size:10px}.right{text-align:right}.muted{color:var(--muted)}
+    .reserve{min-height:32px;padding:5px 14px;background:#fafafa;border-top:1px solid #efeff2;color:#3f3f46;font-size:12px;font-variant-numeric:tabular-nums}.reserve b{font-weight:700}
+    .who{display:flex;align-items:center;gap:8px;padding-left:16px}.who .code{padding:1px 6px;font-size:11px}.kind{color:var(--muted)}
+    .more{justify-self:start;margin-left:16px;border:0;background:transparent;padding:0;color:#3f3f46;font-size:12px;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+    .tablet-wrap{width:min(820px,calc(100vw - 40px));margin:0 auto 28px}.tablet{background:var(--bg);border:8px solid #28282c;border-radius:22px;padding:14px}
+    .t-card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}.t-line{display:flex;justify-content:space-between;gap:12px;padding:12px}.t-reserve{display:flex;justify-content:space-between;padding:7px 12px 7px 28px;background:#fafafa;border-top:1px solid #efeff2;font-size:12px}.t-reserve .who{padding-left:0}
+    @media(max-width:1050px){.frame{display:none}}
+  </style>
+</head>
+<body>
+  <section class="frame" aria-label="Настольный макет">
+    <div class="app">
+      <aside class="rail"><div class="logo">Y</div><div class="dot"></div><div class="dot on"></div><div class="push"></div><div class="dot"></div></aside>
+      <nav class="nav"><h2>Магазин</h2><a href="#">Товары</a><a href="#">Остатки</a><a href="#">Заказы клиента</a><div class="rule"></div><a class="on" href="#">Заказы на производство</a></nav>
+      <main class="main">
+        <div class="crumbs">Магазин　›　Логистика　›　Заказы на производство　›　<b>PO-1</b></div>
+        <header class="passport">
+          <div class="id"><small>Заказ на производство</small><h1>PO-1</h1></div>
+          <div class="field"><span>Производитель</span><b class="code">SH-7</b></div>
+          <div class="field"><label for="status">Статус</label><select class="field-control" id="status"><option>Черновик</option></select></div>
+          <div class="field"><label for="date">Ожидаемое окончание</label><input class="field-control" id="date" value="19.09.2026"></div>
+          <button class="btn dark">Закрыть заказ</button>
+        </header>
+        <div class="workspace">
+          <aside class="index"><div class="index-inner"><a class="on" href="#products"><span>Товары</span><span class="count">3</span></a></div></aside>
+          <section class="panel" id="products">
+            <div class="panel-head"><h2>Товары</h2><button class="btn dark small">Добавить товар</button></div>
+            <div class="cols head"><span>Товар</span><span>План</span><span>Свободно</span><span>В резерве</span><span>Выпущено</span><span></span></div>
+            <div class="cols line"><div class="identity"><b>CR 125</b><span class="code product-code">PRD-108</span></div><span>44 шт</span><span>0</span><span>0</span><span>22</span><span class="right muted">Нет действий</span></div>
+            <div class="cols line"><div class="identity"><b>Enduro 125</b><span class="code product-code">PRD-75</span></div><span>45 шт</span><span>1</span><b>6</b><span>0</span><span class="right"><button class="btn small">Резерв</button></span></div>
+            <div class="cols reserve"><div class="who"><span class="kind">Заказ клиента</span><span class="code">OMS-12</span></div><span></span><span></span><b>1 шт</b><span></span><span></span></div>
+            <div class="cols reserve"><div class="who"><span class="kind">Заказ клиента</span><span class="code">OMS-905</span></div><span></span><span></span><b>2 шт</b><span></span><span></span></div>
+            <div class="cols reserve"><div class="who"><span class="kind">Заказ клиента</span><span class="code">OMS-18</span></div><span></span><span></span><b>2 шт</b><span></span><span></span></div>
+            <div class="cols reserve"><div class="who"><span class="kind">Регион</span><span class="code">RG-3</span></div><span></span><span></span><b>1 шт</b><span></span><span></span></div>
+            <div class="cols line"><div class="identity"><b>Force 1000 Ranger</b><span class="code product-code">PRD-117</span></div><span>12 шт</span><span>0</span><b>8</b><span>0</span><span class="right"><button class="btn small">Резерв</button></span></div>
+            <div class="cols reserve"><div class="who"><span class="kind">Заказ клиента</span><span class="code">OMS-12</span></div><span></span><span></span><b>3 шт</b><span></span><span></span></div>
+            <div class="cols reserve"><div class="who"><span class="kind">Заказ клиента</span><span class="code">OMS-44</span></div><span></span><span></span><b>2 шт</b><span></span><span></span></div>
+            <div class="cols reserve"><button class="more" type="button">Ещё 3 резерва</button><span></span><span></span><b>3 шт</b><span></span><span></span></div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </section>
+  <section class="tablet-wrap" aria-label="Планшет">
+    <div class="tablet"><div class="t-card">
+      <div class="t-line"><div><b>Enduro 125</b><span class="code product-code">PRD-75</span></div><b>В резерве 6</b></div>
+      <div class="t-reserve"><span class="who"><span class="kind">Заказ клиента</span><span class="code">OMS-12</span></span><b>1 шт</b></div>
+      <div class="t-reserve"><span class="who"><span class="kind">Заказ клиента</span><span class="code">OMS-905</span></span><b>2 шт</b></div>
+      <div class="t-reserve"><span class="who"><span class="kind">Регион</span><span class="code">RG-3</span></span><b>1 шт</b></div>
+    </div></div>
+  </section>
+</body>
+</html>
