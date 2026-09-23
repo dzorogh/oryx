@@ -34,7 +34,6 @@ import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { projectTransferDetail } from "@/features/logistics/transfer-detail-projection";
 import {
   freeTransferPayload,
-  newTransferRequestKey,
   openSentTransfer,
 } from "@/features/logistics/transfer-direct-send";
 
@@ -50,7 +49,6 @@ export const TransfersPage = () => {
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
   const [open, setOpen] = useState(false);
-  const [requestKey, setRequestKey] = useState(newTransferRequestKey);
 
   const rows = snapshot.transfers.filter((item) => status === "all" || item.status === status);
 
@@ -64,7 +62,6 @@ export const TransfersPage = () => {
       async () => {
         const created = await createAndSendTransfer(
           freeTransferPayload({
-            requestKey,
             fromWarehouseId: value.fromWarehouseId,
             toWarehouseId: value.toWarehouseId,
             expectedEndOn: value.expectedEndOn,
@@ -76,9 +73,6 @@ export const TransfersPage = () => {
       "Перемещение отправлено",
       reload,
     );
-    if (ok) {
-      setRequestKey(newTransferRequestKey());
-    }
     return ok;
   };
 
@@ -269,7 +263,7 @@ export const TransferDetailPage = () => {
           onExpectedEndChange={(value) => {
             void runDetailAction(
               "expected",
-              () => updateExpectedEnd("store_transfer", doc.id, value || null),
+              () => updateExpectedEnd(doc.id, value || null),
               "Дата обновлена",
             );
           }}
@@ -304,7 +298,6 @@ export const TransferDetailPage = () => {
             () =>
               createAndSendTransfer(
                 freeTransferPayload({
-                  requestKey: newTransferRequestKey(),
                   fromWarehouseId: value.fromWarehouseId,
                   toWarehouseId: value.toWarehouseId,
                   expectedEndOn: value.expectedEndOn,

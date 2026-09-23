@@ -35,10 +35,10 @@ import type { PricelistColumnDefinition } from "./pricelists-columns";
 import {
   getInfoFieldValue,
   getRegionById,
+  getPricelistRegions,
   getSeedCellValue,
   getSeedDealerStatus,
   getSeedRetailStatus,
-  PRICELIST_REGIONS,
   type PricelistRow,
   type PricelistScope,
 } from "./pricelists-demo-data";
@@ -98,7 +98,7 @@ const ProductNameCell = ({ row }: { row: PricelistRow }) => {
 };
 
 // Read-only source columns (Plant Model Name, Plant, Dimension, …). Plant is a
-// code only — full factory names stay on the manufacturer catalog.
+// code only — full factory names stay on the plant catalog.
 const InfoCell = ({
   row,
   column,
@@ -119,7 +119,7 @@ const InfoCell = ({
 };
 
 const countAvailableRegions = (row: PricelistRow, collab: PricelistsCollab): number =>
-  PRICELIST_REGIONS.reduce((available, region) => {
+  getPricelistRegions().reduce((available, region) => {
     const status = collab.getStatus(buildStatusCellId(region.id, row.id)) ?? getSeedDealerStatus(row, region.id);
     return status === "available" ? available + 1 : available;
   }, 0);
@@ -139,7 +139,7 @@ const DealerStatusSummaryCell = ({
   isExpanded,
   onToggleExpand,
 }: DealerStatusSummaryCellProps) => {
-  const total = PRICELIST_REGIONS.length;
+  const total = getPricelistRegions().length;
   const available = countAvailableRegions(row, collab);
   const ratio = total === 0 ? 0 : available / total;
   const percent = Math.round(ratio * 100);

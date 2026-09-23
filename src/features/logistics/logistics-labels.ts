@@ -44,34 +44,54 @@ export const STOCK_STATE_LABELS: Record<StockState, string> = {
   shipped: "Отгружено",
 };
 
-export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
+export const DOCUMENT_STATUS_LABELS: Partial<Record<DocumentStatus, string>> = {
   draft: "Черновик",
+  in_progress: "В работе",
+  done: "Готов",
   posted: "Проведён",
   cancelled: "Отменён",
+  open: "Открыт",
+  closed: "Закрыт",
+  planned: "Запланирован",
+  sent: "Отправлен",
+  delivered: "Доставлен",
 };
 
-export const CUSTOMER_ORDER_STATUS_LABELS: Record<CustomerOrderStatus, string> = {
+export const CUSTOMER_ORDER_STATUS_LABELS: Partial<Record<CustomerOrderStatus, string>> = {
+  draft: "Черновик",
+  in_progress: "Открыт",
+  done: "Закрыт",
+  cancelled: "Отменён",
   open: "Открыт",
   closed: "Закрыт",
 };
 
-export const PRODUCTION_STATUS_LABELS: Record<ProductionStatus, string> = {
+export const PRODUCTION_STATUS_LABELS: Partial<Record<ProductionStatus, string>> = {
   draft: "Черновик",
   planned: "Запланирован",
   in_progress: "В работе",
   done: "Готов",
   closed: "Закрыт",
   cancelled: "Отменён",
-};
-
-export const TRANSFER_STATUS_LABELS: Record<TransferStatus, string> = {
+  open: "Открыт",
+  posted: "Проведён",
   sent: "Отправлен",
   delivered: "Доставлен",
-  cancelled: "Отменён",
 };
 
-export const OUTPUT_STATUS_LABELS: Record<OutputStatus, string> = {
+export const TRANSFER_STATUS_LABELS: Partial<Record<TransferStatus, string>> = {
+  draft: "Черновик",
+  in_progress: "Отправлен",
+  done: "Доставлен",
+  cancelled: "Отменён",
+  sent: "Отправлен",
+  delivered: "Доставлен",
+};
+
+export const OUTPUT_STATUS_LABELS: Partial<Record<OutputStatus, string>> = {
+  draft: "Черновик",
   planned: "Запланирован",
+  in_progress: "В работе",
   done: "Готов",
   cancelled: "Отменён",
 };
@@ -97,8 +117,10 @@ export const LEDGER_DOCUMENT_KIND_LABELS: Record<DocumentType, string> = {
   return: "Возврат",
   transfer: "Перемещение",
   production_order: "Заказ на производство",
+  production_output: "Выпуск",
   output: "Выпуск",
   adjustment: "Корректировка",
+  customer_order: "Заказ клиента",
 };
 
 export const SHIPMENT_DIRECTION_LABELS: Record<ShipmentDirection, string> = {
@@ -120,14 +142,17 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   return: "Возврат",
   transfer: "Перемещение",
   production_order: "Заказ на производство",
+  production_output: "Выпуск",
   output: "Выпуск",
   adjustment: "Корректировка",
+  customer_order: "Заказ клиента",
 };
 
-export const ADJUSTMENT_OPERATION_LABELS: Record<AdjustmentOperation, string> = {
+export const ADJUSTMENT_OPERATION_LABELS: Record<AdjustmentOperation | "mixed", string> = {
   write_off: "Списание",
   decrease: "Корректировка −",
   increase: "Корректировка +",
+  mixed: "Корректировка",
 };
 
 export const SOURCE_TYPE_LABELS: Record<SourceType, string> = DOCUMENT_TYPE_LABELS;

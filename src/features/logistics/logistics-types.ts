@@ -1,25 +1,85 @@
 import type { LogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
 
-export const LOCATION_TYPES = ["warehouse", "production_order", "transfer", "customer_order"] as const;
-export type LocationType = (typeof LOCATION_TYPES)[number];
+export const LOCATION_KINDS = ["warehouse", "production_order", "transfer", "customer_order"] as const;
+export const LOCATION_TYPES = LOCATION_KINDS;
+export type LocationKind = (typeof LOCATION_KINDS)[number];
+/** @deprecated Use LocationKind */
+export type LocationType = LocationKind;
+
+export const OWNER_KINDS = ["free", "customer_order", "region"] as const;
+export type OwnerKind = (typeof OWNER_KINDS)[number];
+
+/** UI owner projection: free = null pair; customer_order → order */
+export const OWNER_TYPES = ["order", "region"] as const;
+export type OwnerType = (typeof OWNER_TYPES)[number];
 
 export const STOCK_STATES = ["free", "reserved", "shipped"] as const;
 export type StockState = (typeof STOCK_STATES)[number];
 
-export const DOCUMENT_STATUSES = ["draft", "posted", "cancelled"] as const;
-export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+export const LIFECYCLE_STATUSES = ["draft", "in_progress", "done", "cancelled"] as const;
+/** Legacy UI values still compared in screens; map to lifecycle in API/DB. */
+export const LEGACY_LIFECYCLE_STATUSES = [
+  "open",
+  "closed",
+  "planned",
+  "posted",
+  "sent",
+  "delivered",
+] as const;
+export type LifecycleStatus =
+  | (typeof LIFECYCLE_STATUSES)[number]
+  | (typeof LEGACY_LIFECYCLE_STATUSES)[number];
+export type DocumentStatus = LifecycleStatus;
 
-export const CUSTOMER_ORDER_STATUSES = ["open", "closed"] as const;
-export type CustomerOrderStatus = (typeof CUSTOMER_ORDER_STATUSES)[number];
+export const DOCUMENT_KINDS = [
+  "customer_order",
+  "production_order",
+  "reservation",
+  "shipment",
+  "adjustment",
+  "transfer",
+  "production_output",
+  /** @deprecated alias of production_output */
+  "output",
+  /** @deprecated shipment direction, not a kind */
+  "return",
+] as const;
+export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
+/** @deprecated Use DocumentKind */
+export type DocumentType = DocumentKind;
+export const DOCUMENT_TYPES = DOCUMENT_KINDS;
+export const SOURCE_TYPES = DOCUMENT_TYPES;
+export type SourceType = DocumentType;
+export const HISTORY_DOCUMENT_TYPES = DOCUMENT_TYPES;
+export type HistoryDocumentType = DocumentType;
 
-export const PRODUCTION_STATUSES = ["draft", "planned", "in_progress", "done", "closed", "cancelled"] as const;
-export type ProductionStatus = (typeof PRODUCTION_STATUSES)[number];
+export const CUSTOMER_ORDER_STATUSES = LIFECYCLE_STATUSES;
+export type CustomerOrderStatus = LifecycleStatus;
 
-export const TRANSFER_STATUSES = ["sent", "delivered", "cancelled"] as const;
-export type TransferStatus = (typeof TRANSFER_STATUSES)[number];
+export const PRODUCTION_STATUSES = LIFECYCLE_STATUSES;
+export type ProductionStatus = LifecycleStatus;
 
-export const OUTPUT_STATUSES = ["planned", "done", "cancelled"] as const;
-export type OutputStatus = (typeof OUTPUT_STATUSES)[number];
+export const TRANSFER_STATUSES = LIFECYCLE_STATUSES;
+export type TransferStatus = LifecycleStatus;
+
+export const OUTPUT_STATUSES = LIFECYCLE_STATUSES;
+export type OutputStatus = LifecycleStatus;
+
+export const RESERVATION_DIRECTIONS = ["reserve", "release", "reassign"] as const;
+export type ReservationDirection = (typeof RESERVATION_DIRECTIONS)[number];
+export const RESERVATION_OPERATIONS = RESERVATION_DIRECTIONS;
+export type ReservationOperation = ReservationDirection;
+
+export const RESERVATION_ORIGINS = ["manual", "customer_order_close", "production_order_close"] as const;
+export type ReservationOrigin = (typeof RESERVATION_ORIGINS)[number];
+export const RESERVATION_STATUSES = ["draft", "posted"] as const;
+export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
+
+export const RESERVATION_LOCATION_KINDS = ["warehouse", "production_order", "transfer"] as const;
+export type ReservationLocationType = (typeof RESERVATION_LOCATION_KINDS)[number];
+
+export const SHIPMENT_DIRECTIONS = ["shipment", "return"] as const;
+export type ShipmentDirection = (typeof SHIPMENT_DIRECTIONS)[number];
 
 export const ADJUSTMENT_OPERATIONS = ["write_off", "decrease", "increase"] as const;
 export type AdjustmentOperation = (typeof ADJUSTMENT_OPERATIONS)[number];
@@ -27,84 +87,53 @@ export type AdjustmentOperation = (typeof ADJUSTMENT_OPERATIONS)[number];
 export const ADJUSTMENT_STATUSES = ["posted"] as const;
 export type AdjustmentStatus = (typeof ADJUSTMENT_STATUSES)[number];
 
-export const OWNER_TYPES = ["order", "region"] as const;
-export type OwnerType = (typeof OWNER_TYPES)[number];
-
-export const RESERVATION_DIRECTIONS = ["reserve", "release", "reassign"] as const;
-export type ReservationDirection = (typeof RESERVATION_DIRECTIONS)[number];
-
-/** Derived list-filter values. `?operation=release` still means the release direction. */
-export const RESERVATION_OPERATIONS = RESERVATION_DIRECTIONS;
-export type ReservationOperation = ReservationDirection;
-
-export const RESERVATION_ORIGINS = ["manual", "order_close"] as const;
-export type ReservationOrigin = (typeof RESERVATION_ORIGINS)[number];
-
-export const RESERVATION_STATUSES = ["draft", "posted"] as const;
-export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
-
-export const RESERVATION_LOCATION_TYPES = ["warehouse", "production_order", "transfer"] as const;
-export type ReservationLocationType = (typeof RESERVATION_LOCATION_TYPES)[number];
-
-export const DOCUMENT_TYPES = [
-  "reservation",
-  "shipment",
-  "return",
-  "transfer",
-  "production_order",
-  "output",
-  "adjustment",
-] as const;
-export type DocumentType = (typeof DOCUMENT_TYPES)[number];
-
-/** @deprecated Use DocumentType. Kept so leftover source filters compile during the cutover. */
-export const SOURCE_TYPES = DOCUMENT_TYPES;
-export type SourceType = DocumentType;
-
-export const HISTORY_DOCUMENT_TYPES = [
-  "reservation",
-  "shipment",
-  "return",
-  "transfer",
-  "production_order",
-  "output",
-  "adjustment",
-  "customer_order",
-] as const;
-export type HistoryDocumentType = (typeof HISTORY_DOCUMENT_TYPES)[number];
-
-export const DOCUMENT_HISTORY_EVENT_TYPES = ["created", "status_changed", "expected_end_changed"] as const;
-export type DocumentHistoryEventType = (typeof DOCUMENT_HISTORY_EVENT_TYPES)[number];
-
 export const STORE_CURRENT_USER_ID = "1";
+export const FREE_OWNER_ID = "1";
 
-export type StoreUser = {
+export type AppUser = {
   id: string;
   name: string;
 };
+/** @deprecated Use AppUser */
+export type StoreUser = AppUser;
 
 export type DocumentHistoryEntry = {
   id: string;
-  documentType: HistoryDocumentType;
   documentId: string;
-  eventType: DocumentHistoryEventType;
-  status: string;
+  status: string | null;
   expectedEndOn: string | null;
-  createdAt: string;
-  createdBy: string;
+  changedAt: string;
+  changedBy: string;
+  /** @deprecated */
+  documentType?: DocumentKind | string;
+  /** @deprecated */
+  eventType?: string;
+  createdAt?: string;
+  createdBy?: string;
+};
+
+export type StockLocation = {
+  id: string;
+  kind: LocationKind;
+};
+
+export type StockOwner = {
+  id: string;
+  kind: OwnerKind;
 };
 
 export type LogisticsProduct = {
   id: string;
+  productId: string;
   code: string;
   sku: string;
   name: string;
   unit: string;
   imageUrl?: string | null;
-  manufacturerId: string | null;
+  plantId: string | null;
 };
 
-export type LogisticsManufacturer = {
+export type LogisticsPlant = {
   id: string;
   code: string;
   name: string;
@@ -115,13 +144,15 @@ export type LogisticsWarehouse = {
   id: string;
   code: string;
   name: string;
-  manufacturerId: string | null;
+  stockLocationId: string;
+  plantId: string | null;
 };
 
 export type LogisticsRegion = {
   id: string;
   code: string;
   name: string;
+  stockOwnerId: string;
 };
 
 export type LogisticsSetting = {
@@ -129,48 +160,38 @@ export type LogisticsSetting = {
   codePrefixes: LogisticsCodePrefixes;
 };
 
-export type DocumentProductLineRegionSnapshot = {
-  id: string;
-  lineId: string;
-  regionId: string | null;
-  regionCode: string;
-  regionName: string;
-  purchasePrice: number | null;
-  purchaseCurrency: string | null;
-  dealerPrice: number | null;
-  dealerCurrency: string | null;
-  retailPrice: number | null;
-  retailCurrency: string | null;
-  dealerStatus: string | null;
-  retailStatus: string | null;
-};
-
-/** Universal product line shared by every document kind. */
 export type DocumentProductLine = {
   id: string;
   documentId: string;
-  productId: string | null;
-  manufacturerId: string | null;
+  productVariantId: string;
   quantity: number;
-  fromOwnerType: OwnerType | null;
   fromOwnerId: string | null;
-  toOwnerType: OwnerType | null;
   toOwnerId: string | null;
+  variantName: string;
+  unitPrice: number | null;
+  currencyId: string | null;
+  productId: string;
   productName: string;
   productSku: string;
   productUnit: string;
-  variant: string | null;
-  manufacturerName: string | null;
-  manufacturerCode: string | null;
-  regionSnapshots: DocumentProductLineRegionSnapshot[];
+  plantId: string | null;
+  plantName: string | null;
+  plantCode: string | null;
+  fromOwnerType: OwnerType | null;
+  toOwnerType: OwnerType | null;
 };
 
 export type CustomerOrder = {
   id: string;
+  numberPrefix?: string;
+  /** @deprecated Use numberPrefix */
   series: string;
   sequenceNumber: string;
   number: string;
   status: CustomerOrderStatus;
+  regionId: string;
+  stockLocationId: string;
+  stockOwnerId: string;
   createdAt: string;
   createdBy: string;
   expectedEndOn: string | null;
@@ -185,17 +206,20 @@ export type CustomerOrderLine = {
   productName: string;
   productSku: string;
   productUnit: string;
-  manufacturerId: string | null;
-  manufacturerName: string | null;
-  manufacturerCode: string | null;
+  plantId?: string | null;
+  plantName?: string | null;
+  plantCode?: string | null;
 };
 
 export type ProductionOrder = {
   id: string;
+  numberPrefix?: string;
+  /** @deprecated Use numberPrefix */
   series: string;
   sequenceNumber: string;
   number: string;
-  manufacturerId: string;
+  plantId?: string;
+  stockLocationId?: string;
   status: ProductionStatus;
   createdAt: string;
   createdBy: string;
@@ -210,25 +234,34 @@ export type ProductionOrderLine = {
   productName: string;
   productSku: string;
   productUnit: string;
-  manufacturerId: string | null;
-  manufacturerName: string | null;
-  manufacturerCode: string | null;
+  plantId: string | null;
+  plantName: string | null;
+  plantCode: string | null;
 };
 
 export type Reservation = {
   id: string;
+  numberPrefix?: string;
+  /** @deprecated Use numberPrefix */
   series: string;
   sequenceNumber: string;
   number: string;
+  /** Stock location registry id */
+  stockLocationId?: string;
+  /** Entity id (warehouse / PO / transfer) for UI */
   locationType: ReservationLocationType;
   locationId: string;
+  ownerId: string;
   toOwnerType: OwnerType | null;
   toOwnerId: string | null;
-  status: ReservationStatus;
-  origin: ReservationOrigin;
-  note: string;
+  postedAt: string | null;
+  creationSource: ReservationOrigin;
+  description: string;
   createdAt: string;
   createdBy: string;
+  status: "draft" | "posted";
+  origin: ReservationOrigin;
+  note: string;
 };
 
 export type ReservationLine = {
@@ -236,8 +269,8 @@ export type ReservationLine = {
   reservationId: string;
   productId: string;
   quantity: number;
-  fromOwnerType: OwnerType | null;
   fromOwnerId: string | null;
+  fromOwnerType: OwnerType | null;
   productName: string;
   productSku: string;
   productUnit: string;
@@ -245,11 +278,14 @@ export type ReservationLine = {
 
 export type Transfer = {
   id: string;
+  numberPrefix?: string;
+  /** @deprecated Use numberPrefix */
   series: string;
   sequenceNumber: string;
   number: string;
   fromWarehouseId: string;
   toWarehouseId: string;
+  stockLocationId: string;
   status: TransferStatus;
   createdAt: string;
   createdBy: string;
@@ -274,19 +310,22 @@ export type TransferAllocation = {
   quantity: number;
 };
 
-export const SHIPMENT_DIRECTIONS = ["shipment", "return"] as const;
-export type ShipmentDirection = (typeof SHIPMENT_DIRECTIONS)[number];
-
 export type Shipment = {
   id: string;
+  numberPrefix?: string;
+  /** @deprecated Use numberPrefix */
   series: string;
   sequenceNumber: string;
   number: string;
-  customerOrderId: string;
-  fromLocationType: LocationType;
+  /** Stock location registry ids */
+  fromStockLocationId?: string;
+  toStockLocationId?: string;
+  /** Entity ids (warehouse / customer order) for UI */
+  fromLocationType: LocationKind;
   fromLocationId: string;
-  toLocationType: LocationType;
+  toLocationType: LocationKind;
   toLocationId: string;
+  customerOrderId: string;
   createdAt: string;
   createdBy: string;
 };
@@ -296,10 +335,10 @@ export type ShipmentLine = {
   shipmentId: string;
   productId: string;
   quantity: number;
-  toOwnerType: OwnerType | null;
   toOwnerId: string | null;
-  fromOwnerType: OwnerType | null;
   fromOwnerId: string | null;
+  toOwnerType: OwnerType | null;
+  fromOwnerType: OwnerType | null;
   productName: string;
   productSku: string;
   productUnit: string;
@@ -307,6 +346,8 @@ export type ShipmentLine = {
 
 export type ProductionOutput = {
   id: string;
+  numberPrefix?: string;
+  /** @deprecated Use numberPrefix */
   series: string;
   sequenceNumber: string;
   number: string;
@@ -320,15 +361,14 @@ export type ProductionOutput = {
 export type ProductionOutputLine = {
   id: string;
   outputId: string;
-  /** @deprecated No line-level provenance; kept empty for leftover callers. */
   productionOrderLineId: string;
   productId: string;
   quantity: number;
   productName: string;
   productSku: string;
   productUnit: string;
-  toOwnerType: OwnerType | null;
   toOwnerId: string | null;
+  toOwnerType: OwnerType | null;
 };
 
 export type ProductionOutputAllocation = {
@@ -341,17 +381,22 @@ export type ProductionOutputAllocation = {
 
 export type StockAdjustment = {
   id: string;
+  numberPrefix?: string;
+  /** @deprecated Use numberPrefix */
   series: string;
   sequenceNumber: string;
   number: string;
-  operation: AdjustmentOperation;
+  locationId: string;
   warehouseId: string;
-  explanation: string;
-  sourceDocumentType: DocumentType | null;
-  sourceDocumentId: string | null;
-  status: AdjustmentStatus;
+  description: string;
   createdAt: string;
   createdBy: string;
+  /** Derived for UI that still groups by sign */
+  operation: AdjustmentOperation | "mixed";
+  explanation: string;
+  sourceDocumentType: DocumentKind | null;
+  sourceDocumentId: string | null;
+  status: "posted";
 };
 
 export type StockAdjustmentLine = {
@@ -367,36 +412,47 @@ export type StockAdjustmentLine = {
 export type StockTransaction = {
   id: string;
   createdAt: string;
+  productVariantId: string;
   productId: string;
   quantity: number;
-  locationType: LocationType;
+  stockLocationId: string;
+  stockOwnerId: string;
+  documentId: string;
+  documentKind: DocumentKind;
+  locationType: LocationKind;
   locationId: string;
+  ownerKind: OwnerKind;
+  stockState: StockState;
   assignedToType: OwnerType | null;
   assignedToId: string | null;
-  documentType: DocumentType;
-  documentId: string;
-  stockState: StockState;
+  documentType: DocumentKind;
   ownerType: OwnerType | null;
   ownerId: string | null;
 };
 
 export type StockBalance = {
   productId: string;
-  locationType: LocationType;
+  stockLocationId?: string;
+  stockOwnerId?: string;
+  locationType: LocationKind;
   locationId: string;
+  ownerKind?: OwnerKind;
+  stockState: StockState;
+  quantity: number;
   assignedToType?: OwnerType | null;
   assignedToId?: string | null;
-  stockState: StockState;
   ownerType: OwnerType | null;
   ownerId: string | null;
-  quantity: number;
 };
 
 export type LogisticsSnapshot = {
   products: LogisticsProduct[];
-  manufacturers: LogisticsManufacturer[];
+  plants: LogisticsPlant[];
   warehouses: LogisticsWarehouse[];
   regions: LogisticsRegion[];
+  stockLocations: StockLocation[];
+  stockOwners: StockOwner[];
+  freeOwnerId: string;
   settings: LogisticsSetting;
   documentProductLines: DocumentProductLine[];
   customerOrders: CustomerOrder[];
@@ -416,12 +472,12 @@ export type LogisticsSnapshot = {
   adjustments: StockAdjustment[];
   adjustmentLines: StockAdjustmentLine[];
   transactions: StockTransaction[];
-  users: StoreUser[];
+  users: AppUser[];
   documentHistory: DocumentHistoryEntry[];
 };
 
-export const documentNumber = (series: string, sequenceNumber: string | number): string =>
-  `${series}-${sequenceNumber}`;
+export const documentNumber = (prefix: string, sequenceNumber: string | number): string =>
+  `${prefix}-${sequenceNumber}`;
 
 export const matchDocumentParam = <T extends { id: string; sequenceNumber: string }>(
   items: T[],
@@ -461,9 +517,15 @@ export const ownerKey = (
   ownerId: string | null | undefined,
 ): string => (isFreeOwner(ownerType, ownerId) ? "free" : `${ownerType}:${ownerId}`);
 
+export const ownerKindToType = (kind: OwnerKind): OwnerType | null => {
+  if (kind === "free") return null;
+  if (kind === "customer_order") return "order";
+  return "region";
+};
+
 export const shipmentDirection = (
-  fromLocationType: LocationType,
-  toLocationType: LocationType,
+  fromLocationType: LocationKind,
+  toLocationType: LocationKind,
 ): ShipmentDirection => {
   if (fromLocationType === "warehouse" && toLocationType === "customer_order") {
     return "shipment";
@@ -474,8 +536,9 @@ export const shipmentDirection = (
   throw new Error("Допустимы только маршруты склад → заказ клиента и заказ клиента → склад");
 };
 
-export const shipmentWarehouseId = (doc: Pick<Shipment, "fromLocationType" | "fromLocationId" | "toLocationType" | "toLocationId">): string =>
-  doc.fromLocationType === "warehouse" ? doc.fromLocationId : doc.toLocationId;
+export const shipmentWarehouseId = (
+  doc: Pick<Shipment, "fromLocationType" | "fromLocationId" | "toLocationType" | "toLocationId">,
+): string => (doc.fromLocationType === "warehouse" ? doc.fromLocationId : doc.toLocationId);
 
 export const reservationDirection = (
   doc: Pick<Reservation, "toOwnerType" | "toOwnerId">,
@@ -500,7 +563,8 @@ export const reservationTouchesOrder = (
   }
   return lines.some(
     (line) =>
-      line.reservationId === doc.id && ownersEqual(line.fromOwnerType, line.fromOwnerId, "order", orderId),
+      line.reservationId === doc.id &&
+      ownersEqual(line.fromOwnerType, line.fromOwnerId, "order", orderId),
   );
 };
 
@@ -517,29 +581,32 @@ export const isOrderOwner = (
 ): ownerType is "order" => ownerType === "order" && !emptyId(ownerId);
 
 export const derivedStockState = (
-  locationType: LocationType,
-  assignedToType: OwnerType | null | undefined,
-  assignedToId?: string | null,
+  locationKind: LocationKind,
+  ownerKind: OwnerKind,
 ): StockState => {
-  if (locationType === "customer_order") {
+  if (locationKind === "customer_order") {
     return "shipped";
   }
-  if (isFreeOwner(assignedToType, assignedToId)) {
+  if (ownerKind === "free") {
     return "free";
   }
   return "reserved";
 };
 
-export const documentKey = (documentType: DocumentType, documentId: string): string =>
+export const documentKey = (documentType: DocumentKind, documentId: string): string =>
   `${documentType}:${documentId}`;
 
 export const documentKeysForAssignedEntity = (
-  transactions: Array<Pick<StockTransaction, "assignedToType" | "assignedToId" | "documentType" | "documentId">>,
+  transactions: Array<
+    Pick<StockTransaction, "assignedToType" | "assignedToId" | "documentType" | "documentId">
+  >,
   assignedToType: OwnerType,
   assignedToId: string,
 ): Set<string> =>
   new Set(
     transactions
-      .filter((entry) => ownersEqual(entry.assignedToType, entry.assignedToId, assignedToType, assignedToId))
+      .filter((entry) =>
+        ownersEqual(entry.assignedToType, entry.assignedToId, assignedToType, assignedToId),
+      )
       .map((entry) => documentKey(entry.documentType, entry.documentId)),
   );

@@ -51,9 +51,9 @@ const withLineSnap = <T extends { productId?: string }>(row: T) => ({
   productName: "Товар",
   productSku: "SKU",
   productUnit: "шт",
-  manufacturerId: null,
-  manufacturerName: null,
-  manufacturerCode: null,
+  plantId: null,
+  plantName: null,
+  plantCode: null,
   fromOwnerType: null,
   fromOwnerId: null,
   ...row,
@@ -61,8 +61,8 @@ const withLineSnap = <T extends { productId?: string }>(row: T) => ({
 
 const emptySnapshot = (): LogisticsSnapshot => ({
   products: [],
-  manufacturers: [{ id: "m1", code: "PLT-1", name: "Завод", warehouseId: "w1" }],
-  warehouses: [{ id: "w1", code: "WH-1", name: "Склад", manufacturerId: "m1" }],
+  plants: [{ id: "m1", code: "PLT-1", name: "Завод", warehouseId: "w1" }],
+  warehouses: [{ id: "w1", code: "WH-1", name: "Склад", plantId: "m1" }],
   regions: [],
   settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },
   documentProductLines: [],
@@ -368,7 +368,7 @@ describe("помощник отмены складских документов"
         expectedEndOn: null,
       },
     ];
-    snapshot.warehouses.push({ id: "w2", code: "WH-2", name: "Другой", manufacturerId: null });
+    snapshot.warehouses.push({ id: "w2", code: "WH-2", name: "Другой", plantId: null });
     snapshot.transferLines = [{ id: "tl1", transferId: "t1", productId: "7", quantity: 8 }];
     snapshot.outputs = [
       {
@@ -397,7 +397,7 @@ describe("помощник отмены складских документов"
       {
         id: "p1",
         number: "PO-1",
-        manufacturerId: "m1",
+        plantId: "m1",
         status: "done",
         createdAt: "",
         createdBy: "1",
@@ -539,7 +539,7 @@ describe("помощник отмены складских документов"
         expectedEndOn: null,
       },
     ];
-    snapshot.warehouses.push({ id: "w2", code: "WH-2", name: "Другой", manufacturerId: null });
+    snapshot.warehouses.push({ id: "w2", code: "WH-2", name: "Другой", plantId: null });
     snapshot.transferLines = [{ id: "tl-reserved", transferId: "t-reserved", productId: "7", quantity: 8 }];
     snapshot.customerOrders = [
       {
@@ -565,7 +565,7 @@ describe("помощник отмены складских документов"
       {
         id: "p-open",
         number: "PO-2",
-        manufacturerId: "m1",
+        plantId: "m1",
         status: "in_progress",
         createdAt: "",
         createdBy: "1",
@@ -574,7 +574,7 @@ describe("помощник отмены складских документов"
       {
         id: "p-closed",
         number: "PO-3",
-        manufacturerId: "m1",
+        plantId: "m1",
         status: "closed",
         createdAt: "",
         createdBy: "1",

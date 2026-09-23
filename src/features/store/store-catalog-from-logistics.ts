@@ -43,49 +43,43 @@ export const inferDemoDealerPrice = (sku: string): number => 2490 + (hashSeed(sk
 export const productImageUrl = (_sku: string, imageUrl?: string | null): string | null =>
   preferKorportalMediaConversion(imageUrl);
 
-type LogisticsProductRow = {
+type VariantRow = {
   id: string | number;
+  product_id: string | number;
   sku: string;
   name: string;
   image_url?: string | null;
-  dealer_price?: number | string | null;
-  retail_price?: number | string | null;
-  category?: string | null;
-  family?: string | null;
-  manufacturer_id?: string | number | null;
+  plant_id?: string | number | null;
 };
 
-type ManufacturerRow = {
-  id: string | number;
-  code?: string | null;
-  name: string;
+type PriceRow = {
+  product_variant_id: string | number;
+  price_kind: string;
+  amount: number | string;
+  active: boolean;
 };
 
 const toNumber = (value: number | string | null | undefined): number | null => {
-  if (value == null || value === "") {
-    return null;
-  }
+  if (value == null || value === "") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
 
 export const catalogProductionSite = (
-  manufacturerId: string | number | null | undefined,
-  plants: ReadonlyMap<string, string>,
+  plantId: string | number | null | undefined,
 ): string => {
-  if (manufacturerId == null || manufacturerId === "") {
-    return "—";
-  }
-  return plants.get(String(manufacturerId)) || "—";
+  if (plantId == null || plantId === "") return "—";
+  // Outside the plant catalog, show code only (place-codes convention).
+  return formatLogisticsCode("plant", plantId);
 };
 
 export const mapLogisticsProductToCatalogItem = (
-  row: LogisticsProductRow,
+  row: VariantRow,
   productionSite: string,
+  dealerPrice: number,
+  retailPrice: number,
 ): StoreCatalogItem => {
   const inferred = inferCatalogCategory(row.sku, row.name);
-  const dealerPrice = toNumber(row.dealer_price) ?? inferDemoDealerPrice(row.sku);
-  const retailPrice = toNumber(row.retail_price) ?? Math.round(dealerPrice * 1.18);
   const id = String(row.id);
   return {
     id,
@@ -95,8 +89,8 @@ export const mapLogisticsProductToCatalogItem = (
     imageSrc: productImageUrl(row.sku, row.image_url) ?? "",
     imageAlt: row.name,
     categoryId: inferred.categoryId,
-    category: row.category?.trim() || inferred.category,
-    family: row.family?.trim() || inferred.family,
+    category: inferred.category,
+    family: inferred.family,
     brand: "Oryx",
     stock: 0,
     updatedAt: "2026-09-01T00:00:00.000Z",
@@ -108,7 +102,7 @@ export const mapLogisticsProductToCatalogItem = (
   };
 };
 
-/** Loads the shared logistics/store product list. Returns null when Supabase is unset. */
+/** Loads variants + relational prices. Returns null when Supabase is unset. */
 export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> => {
   if (!isSupabaseConfigured()) {
     return null;
@@ -118,30 +112,45 @@ export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> =
     return null;
   }
 
-  const [, productsResult, manufacturersResult] = await Promise.all([
+  const [, variantsResult, pricesResult] = await Promise.all([
     loadLogisticsSettings(),
     client
-      .from("store_product")
-      .select("id,sku,name,image_url,dealer_price,retail_price,category,family,manufacturer_id")
+      .from("store_product_variant")
+      .select("id,product_id,sku,name,image_url,plant_id")
+      .is("deleted_at", null)
       .order("id", { ascending: true }),
-    client.from("store_manufacturer").select("id,name"),
+    client
+      .from("store_product_price")
+      .select("product_variant_id,price_kind,amount,active")
+      .eq("active", true),
   ]);
 
-  if (productsResult.error) {
-    throw new Error(productsResult.error.message);
+  if (variantsResult.error) {
+    throw new Error(variantsResult.error.message);
   }
-  if (!productsResult.data) {
+  if (!variantsResult.data) {
     return [];
   }
 
-  const manufacturers = new Map(
-    ((manufacturersResult.data ?? []) as ManufacturerRow[]).map((row) => [
-      String(row.id),
-      String(row.code || row.name || row.id),
-    ]),
-  );
+  const dealerByVariant = new Map<string, number>();
+  const retailByVariant = new Map<string, number>();
+  for (const row of (pricesResult.data ?? []) as PriceRow[]) {
+    const amount = toNumber(row.amount);
+    if (amount == null) continue;
+    const key = String(row.product_variant_id);
+    if (row.price_kind === "dealer") dealerByVariant.set(key, amount);
+    if (row.price_kind === "retail") retailByVariant.set(key, amount);
+  }
 
-  return (productsResult.data as LogisticsProductRow[]).map((row) =>
-    mapLogisticsProductToCatalogItem(row, catalogProductionSite(row.manufacturer_id, manufacturers)),
-  );
+  return (variantsResult.data as VariantRow[]).map((row) => {
+    const id = String(row.id);
+    const dealer = dealerByVariant.get(id) ?? inferDemoDealerPrice(row.sku);
+    const retail = retailByVariant.get(id) ?? Math.round(dealer * 1.18);
+    return mapLogisticsProductToCatalogItem(
+      row,
+      catalogProductionSite(row.plant_id),
+      dealer,
+      retail,
+    );
+  });
 };

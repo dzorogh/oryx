@@ -11,7 +11,6 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import {
   completeOutput,
   createProductionOutput,
-  newProductionOutputRequestKey,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
 import {
@@ -505,7 +504,7 @@ export const AdjustmentDetailPage = () => {
         productId: line.productId,
         quantity: line.quantity,
         quantityLabel: formatSignedQuantity(
-          doc ? adjustmentSignedQuantity(doc.operation, line.quantity) : line.quantity,
+          doc ? adjustmentSignedQuantity(doc.operation === "mixed" ? "decrease" : doc.operation, line.quantity) : line.quantity,
           productById(store.snapshot, line.productId)?.unit,
         ),
         place: warehouse ? (
@@ -533,7 +532,7 @@ export const AdjustmentDetailPage = () => {
 
 const OUTPUT_FILTERS: Array<{ id: "all" | OutputStatus; label: string }> = [
   { id: "all", label: "Все" },
-  ...OUTPUT_STATUSES.map((status) => ({ id: status, label: OUTPUT_STATUS_LABELS[status] })),
+  ...OUTPUT_STATUSES.map((status) => ({ id: status, label: OUTPUT_STATUS_LABELS[status] ?? String(status) })),
 ];
 
 export const OutputsPage = () => {
@@ -544,7 +543,6 @@ export const OutputsPage = () => {
   const [orderId, setOrderId] = useState("");
   const [drafts, setDrafts] = useState<ProductionOutputDraftLine[]>([]);
   const [expectedEndOn, setExpectedEndOn] = useState("");
-  const requestKeyRef = useRef(newProductionOutputRequestKey());
   const creatingRef = useRef(false);
   const rows = snapshot.outputs.filter((item) => status === "all" || item.status === status);
   const prodLines = snapshot.productionOrderLines.filter((line) => line.orderId === orderId);
@@ -560,10 +558,6 @@ export const OutputsPage = () => {
     Boolean(orderId) &&
     selectedDrafts.length > 0 &&
     selectedDrafts.every((draft) => isAllowedQuantity(draft.quantity, remainingFor(draft.productionLineId)));
-
-  const renewOutputKey = () => {
-    requestKeyRef.current = newProductionOutputRequestKey();
-  };
 
   const resetDraftsForOrder = (nextOrderId: string) => {
     const lines = snapshot.productionOrderLines.filter((line) => line.orderId === nextOrderId);
@@ -622,7 +616,6 @@ export const OutputsPage = () => {
     const ok = await runLogisticsAction(
       () =>
         createProductionOutput({
-          requestKey: requestKeyRef.current,
           orderId,
           expectedEndOn: expectedEndOn || null,
           complete,
@@ -648,7 +641,6 @@ export const OutputsPage = () => {
     creatingRef.current = false;
     setPending(false);
     if (ok) {
-      renewOutputKey();
       setOpen(false);
       setOrderId("");
       setDrafts([]);
@@ -662,7 +654,6 @@ export const OutputsPage = () => {
         title="Выпуски"
         actionLabel="Новый выпуск"
         onAction={() => {
-          renewOutputKey();
           setOrderId("");
           setDrafts([]);
           setExpectedEndOn("");
@@ -722,7 +713,6 @@ export const OutputsPage = () => {
           }
           setOpen(next);
           if (!next) {
-            renewOutputKey();
           }
         }}
         title="Новый выпуск"
@@ -738,7 +728,6 @@ export const OutputsPage = () => {
             onChange={(value) => {
               setOrderId(value);
               resetDraftsForOrder(value);
-              renewOutputKey();
             }}
           />
           {orderId ? (
@@ -749,7 +738,6 @@ export const OutputsPage = () => {
               remainingByLineId={remainingFor}
               disabled={pending || eligibleLines.length === 0}
               onChange={setDrafts}
-              onRenewKey={renewOutputKey}
             />
           ) : null}
           <ExpectedEndField
@@ -757,7 +745,6 @@ export const OutputsPage = () => {
             disabled={pending || !orderId}
             onChange={(value) => {
               setExpectedEndOn(value);
-              renewOutputKey();
             }}
           />
           {pending ? (
@@ -857,7 +844,7 @@ export const OutputDetailPage = () => {
           value={doc.expectedEndOn ?? ""}
           onChange={(value) => {
             void runLogisticsAction(
-              () => updateExpectedEnd("store_output", doc.id, value || null),
+              () => updateExpectedEnd(doc.id, value || null),
               "Срок выпуска обновлён",
               store.reload,
             );

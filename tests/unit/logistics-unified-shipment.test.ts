@@ -9,7 +9,7 @@ import { assertShipmentCapacity, assertShipmentOwnerIsOrder } from "@/features/l
 import {
   assertUniqueReturnDestinations,
   reserveThenShipNextAction,
-  shipmentCreateRpcArgs,
+  shipmentCreateRpcArgsSync,
   shipmentIntentionAfterBack,
   shipmentsForAdjustmentSource,
 } from "@/features/logistics/shipment-direct-post";
@@ -49,14 +49,17 @@ const lineSnap = {
   productName: "Товар",
   productSku: "SKU",
   productUnit: "шт",
-  manufacturerId: null as string | null,
-  manufacturerName: null as string | null,
-  manufacturerCode: null as string | null,
+  plantId: null as string | null,
+  plantName: null as string | null,
+  plantCode: null as string | null,
 };
 
 const snapshotWithDocs = (): LogisticsSnapshot => ({
   products: [],
-  manufacturers: [],
+  plants: [],
+  stockLocations: [],
+  stockOwners: [],
+  freeOwnerId: "1",
   warehouses: [],
   regions: [],
   settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },
@@ -119,9 +122,9 @@ describe("единый документ отгрузки и возврата", (
       productName: "Товар",
       productSku: "SKU",
       productUnit: "шт",
-      manufacturerId: null,
-      manufacturerName: null,
-      manufacturerCode: null,
+      plantId: null,
+      plantName: null,
+      plantCode: null,
     };
     assert.doesNotThrow(() => assertShipmentOwnerIsOrder("order", "12"));
     assert.throws(() => assertShipmentOwnerIsOrder(null, null), /резерв заказа/);
@@ -190,8 +193,7 @@ describe("единый документ отгрузки и возврата", (
   });
 
   it("передаёт destination owner в RPC без потерь", () => {
-    const mapped = shipmentCreateRpcArgs({
-      requestKey: "k1",
+    const mapped = shipmentCreateRpcArgsSync({
       customerOrderId: "12",
       fromLocationType: "customer_order",
       fromLocationId: "12",
@@ -203,8 +205,8 @@ describe("единый документ отгрузки и возврата", (
       ],
     });
     assert.deepEqual(mapped.p_lines, [
-      { product_id: 7, quantity: 1, to_owner_type: "region", to_owner_id: 3 },
-      { product_id: 8, quantity: 2, to_owner_type: null, to_owner_id: null },
+      { product_variant_id: 7, quantity: 1, to_owner_id: 3 },
+      { product_variant_id: 8, quantity: 2, to_owner_id: null },
     ]);
   });
 

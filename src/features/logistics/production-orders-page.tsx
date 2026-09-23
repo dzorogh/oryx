@@ -31,22 +31,21 @@ import {
   createAndPostReservation,
   createProductionOrder,
   createProductionOutput,
-  newProductionOutputRequestKey,
   setProductionStatus,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
 import { formatExpectedEnd, formatQuantity, PRODUCTION_STATUS_LABELS } from "@/features/logistics/logistics-labels";
 import {
   customerOrderById,
-  manufacturerIdsForProducts,
-  manufacturerSelectItems,
+  plantIdsForProducts,
+  plantSelectItems,
   productById,
   productIdentityLabel,
-  productsForManufacturer,
+  productsForPlant,
 } from "@/features/logistics/logistics-lookups";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
-import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
+import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { matchDocumentParam, PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
 import {
   buildProductionOutputDrafts,
@@ -76,7 +75,7 @@ export const ProductionOrdersPage = () => {
   const { snapshot, isLoading, error, reload } = useLogisticsStore();
   const [status, setStatus] = useState<"all" | ProductionStatus>("all");
   const [open, setOpen] = useState(false);
-  const [manufacturerId, setManufacturerId] = useState("");
+  const [plantId, setPlantId] = useState("");
   const [lines, setLines] = useState<Array<{ productId: string; quantity: string }>>([
     { productId: "", quantity: "1" },
   ]);
@@ -84,17 +83,17 @@ export const ProductionOrdersPage = () => {
 
   const rows = snapshot.productionOrders.filter((item) => status === "all" || item.status === status);
   const selectedProductIds = lines.map((line) => line.productId);
-  const allowedPlantIds = manufacturerIdsForProducts(
+  const allowedPlantIds = plantIdsForProducts(
     snapshot,
     selectedProductIds.filter(Boolean),
   );
-  const resolvedManufacturerId =
-    manufacturerId && allowedPlantIds && !allowedPlantIds.includes(manufacturerId)
+  const resolvedPlantId =
+    plantId && allowedPlantIds && !allowedPlantIds.includes(plantId)
       ? ""
-      : manufacturerId;
-  const plantItems = manufacturerSelectItems(snapshot, selectedProductIds);
-  const productSource = resolvedManufacturerId
-    ? productsForManufacturer(snapshot, resolvedManufacturerId)
+      : plantId;
+  const plantItems = plantSelectItems(snapshot, selectedProductIds);
+  const productSource = resolvedPlantId
+    ? productsForPlant(snapshot, resolvedPlantId)
     : snapshot.products;
   const productItems = productSource.map((product) => ({
     value: product.id,
@@ -103,14 +102,14 @@ export const ProductionOrdersPage = () => {
 
   const create = async () => {
     const validLines = lines.filter((line) => line.productId && Number(line.quantity) > 0);
-    if (!resolvedManufacturerId || validLines.length === 0) {
+    if (!resolvedPlantId || validLines.length === 0) {
       toast.error("Выберите производителя и хотя бы один товар");
       return;
     }
     const ok = await runLogisticsAction(
       () =>
         createProductionOrder({
-          manufacturerId: resolvedManufacturerId,
+          plantId: resolvedPlantId,
           expectedEndOn: expectedEndOn || null,
           lines: validLines.map((line) => ({
             productId: line.productId,
@@ -122,7 +121,7 @@ export const ProductionOrdersPage = () => {
     );
     if (ok) {
       setOpen(false);
-      setManufacturerId("");
+      setPlantId("");
       setExpectedEndOn("");
       setLines([{ productId: "", quantity: "1" }]);
     }
@@ -147,7 +146,7 @@ export const ProductionOrdersPage = () => {
               aria-selected={status === item}
               onClick={() => setStatus(item)}
             >
-              {PRODUCTION_STATUS_LABELS[item]}
+              {(PRODUCTION_STATUS_LABELS[item] ?? "")}
             </HomeFilterChip>
           ))}
         </div>
@@ -155,7 +154,7 @@ export const ProductionOrdersPage = () => {
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
       {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Номер", "Производитель", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
+        <LogisticsTableCard headers={["Номер", "Завод", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
           {rows.map((item) => {
             const orderLines = snapshot.productionOrderLines.filter((line) => line.orderId === item.id);
             return (
@@ -167,7 +166,7 @@ export const ProductionOrdersPage = () => {
                   />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top text-sm">
-                  <ManufacturerLink snapshot={snapshot} manufacturerId={item.manufacturerId} />
+                  <PlantLink snapshot={snapshot} plantId={item.plantId ?? ""} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
                   <DocumentProductLines snapshot={snapshot} lines={orderLines} />
@@ -191,13 +190,13 @@ export const ProductionOrdersPage = () => {
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
-            <span className="font-medium">Производитель</span>
+            <span className="font-medium">Завод</span>
             <Select
               items={plantItems}
-              value={resolvedManufacturerId}
-              onValueChange={(value) => setManufacturerId(value ?? "")}
+              value={resolvedPlantId}
+              onValueChange={(value) => setPlantId(value ?? "")}
             >
-              <SelectTrigger className="w-full bg-background" aria-label="Производитель">
+              <SelectTrigger className="w-full bg-background" aria-label="Завод">
                 <SelectValue placeholder={plantItems.length === 0 ? "Нет общего завода" : "Выберите производителя"} />
               </SelectTrigger>
               <SelectContent>
@@ -272,7 +271,7 @@ export const ProductionOrdersPage = () => {
           >
             Добавить товар
           </Button>
-          <Button type="button" disabled={!resolvedManufacturerId || plantItems.length === 0} onClick={() => void create()}>
+          <Button type="button" disabled={!resolvedPlantId || plantItems.length === 0} onClick={() => void create()}>
             Создать
           </Button>
         </div>
@@ -286,7 +285,6 @@ export const ProductionOrderDetailPage = () => {
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
   const statusRef = useRef<HTMLDivElement>(null);
   const closeAnnounceRef = useRef<HTMLParagraphElement>(null);
-  const outputKeyRef = useRef(newProductionOutputRequestKey());
   const outputLockRef = useRef(false);
 
   const [productOpen, setProductOpen] = useState(false);
@@ -391,7 +389,9 @@ export const ProductionOrderDetailPage = () => {
       isAllowedQuantity(draft.quantity, remainingForOutput(draft.productionLineId)),
     );
 
-  const manufacturerProducts = order ? productsForManufacturer(snapshot, order.manufacturerId) : [];
+  const plantProducts = order
+    ? productsForPlant(snapshot, order.plantId ?? "")
+    : [];
   const canMutate = Boolean(order && order.status !== "closed" && order.status !== "cancelled");
 
   useEffect(() => {
@@ -405,10 +405,6 @@ export const ProductionOrderDetailPage = () => {
     const heading = document.querySelector<HTMLElement>(`#${hash} h2`);
     heading?.focus();
   }, [error, isLoading, order]);
-
-  const renewOutputKey = () => {
-    outputKeyRef.current = newProductionOutputRequestKey();
-  };
 
   const createOutputFromProduction = async (complete: boolean) => {
     if (!order || !canSubmitOutput) {
@@ -454,7 +450,6 @@ export const ProductionOrderDetailPage = () => {
     setOutputError(null);
     try {
       await createProductionOutput({
-        requestKey: outputKeyRef.current,
         orderId: order.id,
         expectedEndOn: outputExpectedEndOn || null,
         complete,
@@ -474,7 +469,6 @@ export const ProductionOrderDetailPage = () => {
           };
         }),
       });
-      renewOutputKey();
       setOutputOpen(false);
       setOutputDrafts([]);
       setOutputExpectedEndOn("");
@@ -546,7 +540,7 @@ export const ProductionOrderDetailPage = () => {
             setDateMessage(null);
             void (async () => {
               try {
-                await updateExpectedEnd("store_production_order", order.id, value || null);
+                await updateExpectedEnd(order.id, value || null);
                 await reload();
                 setDateMessage("Ожидаемое окончание сохранено.");
               } catch (caught) {
@@ -612,7 +606,6 @@ export const ProductionOrderDetailPage = () => {
               canMutate={canMutate}
               onCreate={() => {
                 setOutputError(null);
-                renewOutputKey();
                 setOutputDrafts(
                   buildProductionOutputDrafts(outputEligibleLines, (lineId) => remainingForOutput(lineId)),
                 );
@@ -639,13 +632,13 @@ export const ProductionOrderDetailPage = () => {
         title="Добавить товар"
       >
         <div className="flex flex-col gap-3">
-          {manufacturerProducts.length === 0 ? (
+          {plantProducts.length === 0 ? (
             <p className="text-sm text-muted-foreground">Для этого производителя нет доступных товаров.</p>
           ) : (
             <label className="space-y-1 text-sm">
               <span className="font-medium">Товар</span>
               <Select
-                items={manufacturerProducts.map((item) => ({
+                items={plantProducts.map((item) => ({
                   value: item.id,
                   label: productIdentityLabel(item, item.id),
                 }))}
@@ -658,7 +651,7 @@ export const ProductionOrderDetailPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {manufacturerProducts.map((item) => (
+                    {plantProducts.map((item) => (
                       <SelectItem key={item.id} value={item.id}>
                         {productIdentityLabel(item, item.id)}
                       </SelectItem>
@@ -674,7 +667,7 @@ export const ProductionOrderDetailPage = () => {
               type="number"
               min={1}
               value={newQuantity}
-              disabled={productPending || manufacturerProducts.length === 0}
+              disabled={productPending || plantProducts.length === 0}
               aria-invalid={productError ? true : undefined}
               onChange={(event) => setNewQuantity(event.target.value)}
               aria-label="Количество нового товара"
@@ -696,7 +689,7 @@ export const ProductionOrderDetailPage = () => {
             </Button>
             <Button
               type="button"
-              disabled={productPending || manufacturerProducts.length === 0}
+              disabled={productPending || plantProducts.length === 0}
               onClick={() => {
                 if (!newProductId || !(Number(newQuantity) > 0)) {
                   setProductError("Выберите товар и количество");
@@ -862,7 +855,6 @@ export const ProductionOrderDetailPage = () => {
           }
           setOutputOpen(next);
           if (!next) {
-            renewOutputKey();
             setOutputError(null);
           }
         }}
@@ -876,14 +868,12 @@ export const ProductionOrderDetailPage = () => {
             remainingByLineId={remainingForOutput}
             disabled={outputPending || outputEligibleLines.length === 0}
             onChange={setOutputDrafts}
-            onRenewKey={renewOutputKey}
           />
           <ExpectedEndField
             value={outputExpectedEndOn}
             disabled={outputPending || outputEligibleLines.length === 0}
             onChange={(value) => {
               setOutputExpectedEndOn(value);
-              renewOutputKey();
             }}
           />
           {outputPending ? (

@@ -1,19 +1,17 @@
 import type {
-  AdjustmentOperation,
-  AdjustmentStatus,
+  AppUser,
   CustomerOrder,
   CustomerOrderLine,
   DocumentHistoryEntry,
+  DocumentKind,
   DocumentProductLine,
-  DocumentProductLineRegionSnapshot,
-  DocumentType,
-  HistoryDocumentType,
-  LogisticsManufacturer,
+  LogisticsPlant,
   LogisticsProduct,
   LogisticsRegion,
   LogisticsSetting,
   LogisticsSnapshot,
   LogisticsWarehouse,
+  OwnerKind,
   OwnerType,
   ProductionOrder,
   ProductionOrderLine,
@@ -24,14 +22,14 @@ import type {
   Reservation,
   ReservationLine,
   ReservationLocationType,
-  ReservationStatus,
   Shipment,
   ShipmentLine,
   StockAdjustment,
   StockAdjustmentLine,
   StockBalance,
+  StockLocation,
+  StockOwner,
   StockTransaction,
-  StoreUser,
   Transfer,
   TransferAllocation,
   TransferLine,
@@ -44,16 +42,20 @@ import {
 import {
   derivedStockState,
   documentNumber,
-  isFreeOwner,
+  FREE_OWNER_ID,
+  ownerKindToType,
   STORE_CURRENT_USER_ID,
 } from "@/features/logistics/logistics-types";
 import {
+  DOCUMENT_KIND_TO_PREFIX_FIELD,
+  DOCUMENT_PREFIX_FIELDS,
   formatLogisticsCode,
   mergeLogisticsCodePrefixes,
   setActiveLogisticsCodePrefixes,
   type LogisticsCodePrefixes,
 } from "@/features/logistics/logistics-codes";
 import { assertDocumentCanBeCancelled } from "@/features/logistics/logistics-rules";
+import { resolveOwnerId, resolveStockLocationId } from "@/features/logistics/logistics-resolve";
 import {
   shipmentCreateRpcArgs,
   type ShipmentCreateAndPostInput,
@@ -85,281 +87,22 @@ const requireData = <T>(data: T | null, error: { message: string } | null): T =>
   return data;
 };
 
-const mapProduct = (row: Record<string, unknown>): LogisticsProduct => {
-  const id = String(row.id);
-  return {
-    id,
-    code: formatLogisticsCode("product", id),
-    sku: String(row.sku),
-    name: String(row.name),
-    unit: String(row.unit),
-    imageUrl: preferKorportalMediaConversion(row.image_url ? String(row.image_url) : null),
-    manufacturerId: row.manufacturer_id ? String(row.manufacturer_id) : null,
-  };
-};
-
-const mapWarehouse = (row: Record<string, unknown>): LogisticsWarehouse => {
-  const id = String(row.id);
-  return {
-    id,
-    code: formatLogisticsCode("warehouse", id),
-    name: String(row.name),
-    manufacturerId: row.manufacturer_id ? String(row.manufacturer_id) : null,
-  };
-};
-
-const mapManufacturer = (row: Record<string, unknown>): LogisticsManufacturer => {
-  const id = String(row.id);
-  return {
-    id,
-    code: formatLogisticsCode("manufacturer", id),
-    name: String(row.name),
-    warehouseId: String(row.warehouse_id),
-  };
-};
-
-const mapOwnerType = (value: unknown): OwnerType | null => {
-  if (value === "order" || value === "region") {
-    return value;
-  }
-  return null;
-};
-
-const mapOwnerId = (value: unknown): string | null => (value == null || value === "" ? null : String(value));
-
-const mapRegion = (row: Record<string, unknown>): LogisticsRegion => {
-  const id = String(row.id);
-  return {
-    id,
-    code: formatLogisticsCode("region", id),
-    name: String(row.name),
-  };
-};
-
-const mapSetting = (row: Record<string, unknown>): LogisticsSetting => ({
-  id: String(row.id),
-  codePrefixes: mergeLogisticsCodePrefixes(
-    row.code_prefixes && typeof row.code_prefixes === "object" && !Array.isArray(row.code_prefixes)
-      ? (row.code_prefixes as Record<string, unknown>)
-      : null,
-  ),
-});
-
 const dateOrNull = (value: unknown): string | null => (value ? String(value) : null);
+const str = (value: unknown): string => String(value);
+const strOrNull = (value: unknown): string | null =>
+  value == null || value === "" ? null : String(value);
 
 type DocRegistryRow = {
   id: string;
   kind: string;
-  series: string;
-  sequence_number: string | number;
+  sequence_number: string;
+  description: string;
+  status: string | null;
+  expected_end_on: string | null;
   created_at: string;
-  created_by: string | number | null;
+  created_by: string;
+  number_prefix: string;
 };
-
-const attachDoc = (
-  docs: Map<string, DocRegistryRow>,
-  row: { id: string },
-  kind: string,
-): DocRegistryRow => {
-  const doc = docs.get(String(row.id));
-  if (!doc) {
-    throw new Error(`store_document missing for ${kind} ${row.id}`);
-  }
-  return doc;
-};
-
-const mapCustomerOrder = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): CustomerOrder => {
-  const doc = attachDoc(docs, { id: String(row.id) }, "customer_order");
-  return {
-    id: doc.id,
-    series: doc.series,
-    sequenceNumber: String(doc.sequence_number),
-    number: documentNumber(doc.series, doc.sequence_number),
-    status: row.status as CustomerOrder["status"],
-    createdAt: String(doc.created_at),
-    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
-    expectedEndOn: dateOrNull(row.expected_end_on),
-    description: row.description ? String(row.description) : "",
-  };
-};
-
-const mapProductionOrder = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): ProductionOrder => {
-  const doc = attachDoc(docs, { id: String(row.id) }, "production_order");
-  return {
-    id: doc.id,
-    series: doc.series,
-    sequenceNumber: String(doc.sequence_number),
-    number: documentNumber(doc.series, doc.sequence_number),
-    manufacturerId: String(row.manufacturer_id),
-    status: row.status as ProductionOrder["status"],
-    createdAt: String(doc.created_at),
-    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
-    expectedEndOn: dateOrNull(row.expected_end_on),
-  };
-};
-
-const mapReservation = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): Reservation => {
-  const doc = attachDoc(docs, { id: String(row.id) }, "reservation");
-  return {
-    id: doc.id,
-    series: doc.series,
-    sequenceNumber: String(doc.sequence_number),
-    number: documentNumber(doc.series, doc.sequence_number),
-    locationType: row.location_type as ReservationLocationType,
-    locationId: String(row.location_id),
-    toOwnerType: mapOwnerType(row.to_owner_type),
-    toOwnerId: mapOwnerId(row.to_owner_id),
-    status: row.status as ReservationStatus,
-    origin: row.origin as Reservation["origin"],
-    note: row.note ? String(row.note) : "",
-    createdAt: String(doc.created_at),
-    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
-  };
-};
-
-const mapTransfer = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): Transfer => {
-  const doc = attachDoc(docs, { id: String(row.id) }, "transfer");
-  return {
-    id: doc.id,
-    series: doc.series,
-    sequenceNumber: String(doc.sequence_number),
-    number: documentNumber(doc.series, doc.sequence_number),
-    fromWarehouseId: String(row.from_warehouse_id),
-    toWarehouseId: String(row.to_warehouse_id),
-    status: row.status as Transfer["status"],
-    createdAt: String(doc.created_at),
-    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
-    expectedEndOn: dateOrNull(row.expected_end_on),
-  };
-};
-
-const mapShipment = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): Shipment => {
-  const doc = attachDoc(docs, { id: String(row.id) }, "shipment");
-  return {
-    id: doc.id,
-    series: doc.series,
-    sequenceNumber: String(doc.sequence_number),
-    number: documentNumber(doc.series, doc.sequence_number),
-    customerOrderId: String(row.customer_order_id),
-    fromLocationType: row.from_location_type as Shipment["fromLocationType"],
-    fromLocationId: String(row.from_location_id),
-    toLocationType: row.to_location_type as Shipment["toLocationType"],
-    toLocationId: String(row.to_location_id),
-    createdAt: String(doc.created_at),
-    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
-  };
-};
-
-const mapOutput = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): ProductionOutput => {
-  const doc = attachDoc(docs, { id: String(row.id) }, "output");
-  return {
-    id: doc.id,
-    series: doc.series,
-    sequenceNumber: String(doc.sequence_number),
-    number: documentNumber(doc.series, doc.sequence_number),
-    productionOrderId: String(row.production_order_id),
-    status: row.status as ProductionOutput["status"],
-    createdAt: String(doc.created_at),
-    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
-    expectedEndOn: dateOrNull(row.expected_end_on),
-  };
-};
-
-const mapAdjustment = (docs: Map<string, DocRegistryRow>, row: Record<string, unknown>): StockAdjustment => {
-  const doc = attachDoc(docs, { id: String(row.id) }, "adjustment");
-  return {
-    id: doc.id,
-    series: doc.series,
-    sequenceNumber: String(doc.sequence_number),
-    number: documentNumber(doc.series, doc.sequence_number),
-    operation: row.operation as AdjustmentOperation,
-    warehouseId: String(row.warehouse_id),
-    explanation: row.explanation == null ? "" : String(row.explanation),
-    sourceDocumentType: (row.source_document_type as DocumentType | null) ?? null,
-    sourceDocumentId: row.source_document_id ? String(row.source_document_id) : null,
-    status: row.status as AdjustmentStatus,
-    createdAt: String(doc.created_at),
-    createdBy: doc.created_by ? String(doc.created_by) : STORE_CURRENT_USER_ID,
-  };
-};
-
-const mapRegionSnapshot = (row: Record<string, unknown>): DocumentProductLineRegionSnapshot => ({
-  id: String(row.id),
-  lineId: String(row.line_id),
-  regionId: row.region_id == null ? null : String(row.region_id),
-  regionCode: String(row.region_code),
-  regionName: String(row.region_name),
-  purchasePrice: row.purchase_price == null ? null : Number(row.purchase_price),
-  purchaseCurrency: row.purchase_currency == null ? null : String(row.purchase_currency),
-  dealerPrice: row.dealer_price == null ? null : Number(row.dealer_price),
-  dealerCurrency: row.dealer_currency == null ? null : String(row.dealer_currency),
-  retailPrice: row.retail_price == null ? null : Number(row.retail_price),
-  retailCurrency: row.retail_currency == null ? null : String(row.retail_currency),
-  dealerStatus: row.dealer_status == null ? null : String(row.dealer_status),
-  retailStatus: row.retail_status == null ? null : String(row.retail_status),
-});
-
-const mapDocumentProductLine = (
-  row: Record<string, unknown>,
-  snapshotsByLine: Map<string, DocumentProductLineRegionSnapshot[]>,
-): DocumentProductLine => {
-  const id = String(row.id);
-  return {
-    id,
-    documentId: String(row.document_id),
-    productId: row.product_id == null ? null : String(row.product_id),
-    manufacturerId: row.manufacturer_id == null ? null : String(row.manufacturer_id),
-    quantity: Number(row.quantity),
-    fromOwnerType: mapOwnerType(row.from_owner_type),
-    fromOwnerId: mapOwnerId(row.from_owner_id),
-    toOwnerType: mapOwnerType(row.to_owner_type),
-    toOwnerId: mapOwnerId(row.to_owner_id),
-    productName: String(row.product_name),
-    productSku: String(row.product_sku),
-    productUnit: String(row.product_unit),
-    variant: row.variant == null ? null : String(row.variant),
-    manufacturerName: row.manufacturer_name == null ? null : String(row.manufacturer_name),
-    manufacturerCode: row.manufacturer_code == null ? null : String(row.manufacturer_code),
-    regionSnapshots: snapshotsByLine.get(id) ?? [],
-  };
-};
-
-const mapTransaction = (row: Record<string, unknown>): StockTransaction => {
-  const locationType = row.location_type as StockTransaction["locationType"];
-  const assignedToType = mapOwnerType(row.assigned_to_type);
-  const assignedToId = mapOwnerId(row.assigned_to_id);
-  return {
-    id: String(row.id),
-    createdAt: String(row.created_at),
-    productId: String(row.product_id),
-    quantity: Number(row.quantity),
-    locationType,
-    locationId: String(row.location_id),
-    assignedToType,
-    assignedToId,
-    documentType: row.document_type as DocumentType,
-    documentId: String(row.document_id),
-    stockState: derivedStockState(locationType, assignedToType, assignedToId),
-    ownerType: assignedToType,
-    ownerId: assignedToId,
-  };
-};
-
-const mapUser = (row: Record<string, unknown>): StoreUser => ({
-  id: String(row.id),
-  name: String(row.name),
-});
-
-const mapDocumentHistory = (row: Record<string, unknown>): DocumentHistoryEntry => ({
-  id: String(row.id),
-  documentType: row.document_type as HistoryDocumentType,
-  documentId: String(row.document_id),
-  eventType: row.event_type as DocumentHistoryEntry["eventType"],
-  status: String(row.status),
-  expectedEndOn: dateOrNull(row.expected_end_on),
-  createdAt: String(row.created_at),
-  createdBy: String(row.created_by),
-});
 
 const selectAll = async <T>(
   table: string,
@@ -372,179 +115,517 @@ const selectAll = async <T>(
   return requireData(data, error).map((row) => map(row as unknown as Record<string, unknown>));
 };
 
-const DEFAULT_SETTING: LogisticsSetting = {
-  id: "1",
-  codePrefixes: mergeLogisticsCodePrefixes(),
+const rpc = async (name: string, args: Record<string, unknown>): Promise<string> => {
+  const client = requireClient();
+  const { data, error } = await client.rpc(name, args);
+  if (error) {
+    throw new Error(error.message);
+  }
+  return String(data ?? "ok");
+};
+
+const rpcJson = async <T>(name: string, args: Record<string, unknown>): Promise<T> => {
+  const client = requireClient();
+  const { data, error } = await client.rpc(name, args);
+  return requireData(data as T | null, error);
+};
+
+type EntityLoc = { kind: StockLocation["kind"]; entityId: string };
+type EntityOwner = { kind: OwnerKind; entityId: string | null };
+
+const prefixesFromKinds = (
+  kinds: Array<{ code: string; number_prefix: string }>,
+): LogisticsCodePrefixes => {
+  const overrides: Record<string, string> = {};
+  for (const kind of kinds) {
+    const field = DOCUMENT_KIND_TO_PREFIX_FIELD[kind.code];
+    if (field) {
+      overrides[field] = kind.number_prefix;
+    }
+  }
+  return mergeLogisticsCodePrefixes(overrides);
 };
 
 export const loadLogisticsSettings = async (): Promise<LogisticsSetting> => {
-  const rows = await selectAll(
-    "store_setting",
-    "id,code_prefixes",
-    mapSetting,
-    "id",
+  const kinds = await selectAll(
+    "store_document_kind",
+    "code,number_prefix",
+    (row) => ({ code: str(row.code), number_prefix: str(row.number_prefix) }),
+    "code",
   );
-  const settings = rows[0] ?? DEFAULT_SETTING;
-  setActiveLogisticsCodePrefixes(settings.codePrefixes);
-  return settings;
+  const codePrefixes = prefixesFromKinds(kinds);
+  setActiveLogisticsCodePrefixes(codePrefixes);
+  return { id: "1", codePrefixes };
 };
 
 export const saveLogisticsCodePrefixes = async (
   prefixes: LogisticsCodePrefixes,
 ): Promise<LogisticsSetting> => {
-  const current = await loadLogisticsSettings();
   const next = mergeLogisticsCodePrefixes(prefixes);
-  await updateRow("store_setting", current.id, { code_prefixes: next });
+  for (const field of DOCUMENT_PREFIX_FIELDS) {
+    await rpc("store_update_document_kind_prefix", {
+      p_kind: field.documentKind,
+      p_prefix: next[field.kind],
+    });
+  }
   setActiveLogisticsCodePrefixes(next);
-  return { ...current, codePrefixes: next };
+  return { id: "1", codePrefixes: next };
 };
 
 export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
   const settings = await loadLogisticsSettings();
   const client = requireClient();
 
+  const { data: kindRows, error: kindError } = await client
+    .from("store_document_kind")
+    .select("code,number_prefix");
+  const kindPrefix = new Map(
+    requireData(kindRows, kindError).map((row) => [str((row as { code: string }).code), str((row as { number_prefix: string }).number_prefix)]),
+  );
+
   const { data: docRows, error: docError } = await client
     .from("store_document")
-    .select("id,kind,series,sequence_number,created_at,created_by")
+    .select("id,kind,sequence_number,description,status,expected_end_on,created_at,created_by")
     .order("id", { ascending: true });
-  const documents = requireData(docRows, docError) as unknown as DocRegistryRow[];
+  const documents = requireData(docRows, docError) as unknown as Array<Record<string, unknown>>;
   const docs = new Map<string, DocRegistryRow>();
-  for (const doc of documents) {
-    docs.set(String(doc.id), {
-      ...doc,
-      id: String(doc.id),
-      sequence_number: String(doc.sequence_number),
-      created_by: doc.created_by == null ? null : String(doc.created_by),
+  for (const row of documents) {
+    const id = str(row.id);
+    const kind = str(row.kind);
+    docs.set(id, {
+      id,
+      kind,
+      sequence_number: str(row.sequence_number),
+      description: row.description ? str(row.description) : "",
+      status: row.status == null ? null : str(row.status),
+      expected_end_on: dateOrNull(row.expected_end_on),
+      created_at: str(row.created_at),
+      created_by: row.created_by == null ? STORE_CURRENT_USER_ID : str(row.created_by),
+      number_prefix: kindPrefix.get(kind) ?? kind.toUpperCase(),
     });
   }
 
-  const kindByDocumentId = new Map(documents.map((doc) => [String(doc.id), String(doc.kind)]));
-
   const [
+    variants,
     products,
     warehouses,
-    manufacturers,
+    plants,
     regions,
-    customerOrders,
-    productionOrders,
-    reservations,
-    transfers,
-    shipments,
-    outputs,
-    adjustments,
+    stockLocations,
+    stockOwners,
+    customerOrdersRaw,
+    productionOrdersRaw,
+    reservationsRaw,
+    transfersRaw,
+    shipmentsRaw,
+    outputsRaw,
+    adjustmentsRaw,
     rawLines,
-    rawSnapshots,
-    transactions,
+    transactionsRaw,
     users,
     documentHistory,
   ] = await Promise.all([
-    selectAll("store_product", "id,sku,name,unit,image_url,manufacturer_id", mapProduct, "id"),
-    selectAll("store_warehouse", "id,name,manufacturer_id", mapWarehouse, "id"),
-    selectAll("store_manufacturer", "id,name,warehouse_id", mapManufacturer, "id"),
-    selectAll("store_region", "id,name", mapRegion, "id"),
-    selectAll("store_customer_order", "id,status,expected_end_on,description", (row) => mapCustomerOrder(docs, row), "id"),
-    selectAll("store_production_order", "id,manufacturer_id,status,expected_end_on", (row) => mapProductionOrder(docs, row), "id"),
+    selectAll(
+      "store_product_variant",
+      "id,product_id,sku,name,unit,image_url,plant_id",
+      (row) => row,
+      "id",
+    ),
+    selectAll("store_product", "id,name", (row) => row, "id"),
+    selectAll("store_warehouse", "id,name,stock_location_id", (row) => row, "id"),
+    selectAll("store_plant", "id,name,warehouse_id", (row) => row, "id"),
+    selectAll("store_region", "id,code,name,stock_owner_id", (row) => row, "id"),
+    selectAll("store_stock_location", "id,kind", (row) => row, "id"),
+    selectAll("store_stock_owner", "id,kind", (row) => row, "id"),
+    selectAll("store_customer_order", "id,region_id,stock_location_id,stock_owner_id", (row) => row, "id"),
+    selectAll("store_production_order", "id,plant_id,stock_location_id", (row) => row, "id"),
     selectAll(
       "store_reservation",
-      "id,location_type,location_id,to_owner_type,to_owner_id,status,origin,note",
-      (row) => mapReservation(docs, row),
-      "id",
-    ),
-    selectAll(
-      "store_transfer",
-      "id,from_warehouse_id,to_warehouse_id,status,expected_end_on",
-      (row) => mapTransfer(docs, row),
-      "id",
-    ),
-    selectAll(
-      "store_shipment",
-      "id,customer_order_id,from_location_type,from_location_id,to_location_type,to_location_id",
-      (row) => mapShipment(docs, row),
-      "id",
-    ),
-    selectAll("store_output", "id,production_order_id,status,expected_end_on", (row) => mapOutput(docs, row), "id"),
-    selectAll(
-      "store_adjustment",
-      "id,operation,warehouse_id,explanation,source_document_type,source_document_id,status",
-      (row) => mapAdjustment(docs, row),
-      "id",
-    ),
-    selectAll(
-      "store_document_product_line",
-      "id,document_id,product_id,manufacturer_id,quantity,from_owner_type,from_owner_id,to_owner_type,to_owner_id,product_name,product_sku,product_unit,variant,manufacturer_name,manufacturer_code",
+      "id,location_id,owner_id,creation_source,posted_at",
       (row) => row,
       "id",
     ),
     selectAll(
-      "store_document_product_line_region_snapshot",
-      "id,line_id,region_id,region_code,region_name,purchase_price,purchase_currency,dealer_price,dealer_currency,retail_price,retail_currency,dealer_status,retail_status",
-      mapRegionSnapshot,
+      "store_transfer",
+      "id,from_warehouse_id,to_warehouse_id,stock_location_id",
+      (row) => row,
+      "id",
+    ),
+    selectAll("store_shipment", "id,from_location_id,to_location_id", (row) => row, "id"),
+    selectAll("store_production_output", "id,production_order_id", (row) => row, "id"),
+    selectAll("store_adjustment", "id,location_id", (row) => row, "id"),
+    selectAll(
+      "store_document_product_line",
+      "id,document_id,product_variant_id,quantity,from_owner_id,to_owner_id,variant_name,unit_price,currency_id",
+      (row) => row,
       "id",
     ),
     selectAll(
       "store_stock_transaction",
-      "id,created_at,product_id,quantity,location_type,location_id,assigned_to_type,assigned_to_id,document_type,document_id",
-      mapTransaction,
+      "id,created_at,product_variant_id,quantity,location_id,owner_id,document_id",
+      (row) => row,
       "created_at",
     ),
-    selectAll("store_user", "id,name", mapUser, "id"),
+    selectAll("app_user", "id,name", (row) => ({ id: str(row.id), name: str(row.name) }) as AppUser, "id"),
     selectAll(
       "store_document_history",
-      "id,document_type,document_id,event_type,status,expected_end_on,created_at,created_by",
-      mapDocumentHistory,
+      "id,document_id,status,expected_end_on,changed_at,changed_by",
+      (row) =>
+        ({
+          id: str(row.id),
+          documentId: str(row.document_id),
+          status: row.status == null ? null : str(row.status),
+          expectedEndOn: dateOrNull(row.expected_end_on),
+          changedAt: str(row.changed_at),
+          changedBy: str(row.changed_by),
+        }) as DocumentHistoryEntry,
       "id",
     ),
   ]);
 
-  const snapshotsByLine = new Map<string, DocumentProductLineRegionSnapshot[]>();
-  for (const snap of rawSnapshots) {
-    const list = snapshotsByLine.get(snap.lineId) ?? [];
-    list.push(snap);
-    snapshotsByLine.set(snap.lineId, list);
+  const plantByWarehouse = new Map<string, string>();
+  for (const plant of plants) {
+    plantByWarehouse.set(str(plant.warehouse_id), str(plant.id));
   }
 
-  const documentProductLines = (rawLines as unknown as Record<string, unknown>[]).map((row) =>
-    mapDocumentProductLine(row, snapshotsByLine),
+  const logisticsPlants: LogisticsPlant[] = plants.map((row) => {
+    const id = str(row.id);
+    return {
+      id,
+      code: formatLogisticsCode("plant", id),
+      name: str(row.name),
+      warehouseId: str(row.warehouse_id),
+    };
+  });
+  const plantName = new Map(logisticsPlants.map((p) => [p.id, p.name]));
+  const plantCode = new Map(logisticsPlants.map((p) => [p.id, p.code]));
+
+  const logisticsWarehouses: LogisticsWarehouse[] = warehouses.map((row) => {
+    const id = str(row.id);
+    return {
+      id,
+      code: formatLogisticsCode("warehouse", id),
+      name: str(row.name),
+      stockLocationId: str(row.stock_location_id),
+      plantId: plantByWarehouse.get(id) ?? null,
+    };
+  });
+
+  const logisticsRegions: LogisticsRegion[] = regions.map((row) => {
+    const id = str(row.id);
+    return {
+      id,
+      code: row.code ? str(row.code) : formatLogisticsCode("region", id),
+      name: str(row.name),
+      stockOwnerId: str(row.stock_owner_id),
+    };
+  });
+
+  const stockLocationList: StockLocation[] = stockLocations.map((row) => ({
+    id: str(row.id),
+    kind: str(row.kind) as StockLocation["kind"],
+  }));
+  const stockOwnerList: StockOwner[] = stockOwners.map((row) => ({
+    id: str(row.id),
+    kind: str(row.kind) as OwnerKind,
+  }));
+
+  const locEntity = new Map<string, EntityLoc>();
+  for (const wh of logisticsWarehouses) {
+    locEntity.set(wh.stockLocationId, { kind: "warehouse", entityId: wh.id });
+  }
+  for (const row of customerOrdersRaw) {
+    locEntity.set(str(row.stock_location_id), { kind: "customer_order", entityId: str(row.id) });
+  }
+  for (const row of productionOrdersRaw) {
+    locEntity.set(str(row.stock_location_id), { kind: "production_order", entityId: str(row.id) });
+  }
+  for (const row of transfersRaw) {
+    locEntity.set(str(row.stock_location_id), { kind: "transfer", entityId: str(row.id) });
+  }
+
+  const ownerEntity = new Map<string, EntityOwner>();
+  for (const owner of stockOwnerList) {
+    if (owner.kind === "free") {
+      ownerEntity.set(owner.id, { kind: "free", entityId: null });
+    }
+  }
+  for (const row of customerOrdersRaw) {
+    ownerEntity.set(str(row.stock_owner_id), { kind: "customer_order", entityId: str(row.id) });
+  }
+  for (const row of logisticsRegions) {
+    ownerEntity.set(row.stockOwnerId, { kind: "region", entityId: row.id });
+  }
+
+  const resolveOwnerProjection = (
+    ownerId: string | null,
+  ): { ownerType: OwnerType | null; ownerId: string | null; ownerKind: OwnerKind } => {
+    if (ownerId == null) {
+      return { ownerType: null, ownerId: null, ownerKind: "free" };
+    }
+    const info = ownerEntity.get(ownerId);
+    if (!info || info.kind === "free") {
+      return { ownerType: null, ownerId: null, ownerKind: "free" };
+    }
+    return {
+      ownerType: ownerKindToType(info.kind),
+      ownerId: info.entityId,
+      ownerKind: info.kind,
+    };
+  };
+
+  const variantById = new Map(variants.map((row) => [str(row.id), row]));
+  const logisticsProducts: LogisticsProduct[] = variants.map((row) => {
+    const id = str(row.id);
+    return {
+      id,
+      productId: str(row.product_id),
+      code: formatLogisticsCode("product", id),
+      sku: str(row.sku),
+      name: str(row.name),
+      unit: str(row.unit ?? "шт"),
+      imageUrl: preferKorportalMediaConversion(row.image_url ? str(row.image_url) : null),
+      plantId: strOrNull(row.plant_id),
+    };
+  });
+
+  const attachDoc = (id: string, kind: string): DocRegistryRow => {
+    const doc = docs.get(id);
+    if (!doc) {
+      throw new Error(`store_document missing for ${kind} ${id}`);
+    }
+    return doc;
+  };
+
+  const customerOrders: CustomerOrder[] = customerOrdersRaw.map((row) => {
+    const doc = attachDoc(str(row.id), "customer_order");
+    return {
+      id: doc.id,
+      numberPrefix: doc.number_prefix,
+      series: doc.number_prefix,
+      sequenceNumber: doc.sequence_number,
+      number: documentNumber(doc.number_prefix, doc.sequence_number),
+      status: (doc.status ?? "in_progress") as CustomerOrder["status"],
+      regionId: str(row.region_id),
+      stockLocationId: str(row.stock_location_id),
+      stockOwnerId: str(row.stock_owner_id),
+      createdAt: doc.created_at,
+      createdBy: doc.created_by,
+      expectedEndOn: doc.expected_end_on,
+      description: doc.description,
+    };
+  });
+
+  const productionOrders: ProductionOrder[] = productionOrdersRaw.map((row) => {
+    const doc = attachDoc(str(row.id), "production_order");
+    return {
+      id: doc.id,
+      numberPrefix: doc.number_prefix,
+      series: doc.number_prefix,
+      sequenceNumber: doc.sequence_number,
+      number: documentNumber(doc.number_prefix, doc.sequence_number),
+      plantId: str(row.plant_id),
+      stockLocationId: str(row.stock_location_id),
+      status: (doc.status ?? "draft") as ProductionOrder["status"],
+      createdAt: doc.created_at,
+      createdBy: doc.created_by,
+      expectedEndOn: doc.expected_end_on,
+    };
+  });
+
+  const reservations: Reservation[] = reservationsRaw.map((row) => {
+    const doc = attachDoc(str(row.id), "reservation");
+    const loc = locEntity.get(str(row.location_id));
+    const dest = resolveOwnerProjection(str(row.owner_id));
+    const locationType = (loc?.kind ?? "warehouse") as ReservationLocationType;
+    return {
+      id: doc.id,
+      numberPrefix: doc.number_prefix,
+      series: doc.number_prefix,
+      sequenceNumber: doc.sequence_number,
+      number: documentNumber(doc.number_prefix, doc.sequence_number),
+      stockLocationId: str(row.location_id),
+      locationType,
+      locationId: loc?.entityId ?? str(row.location_id),
+      ownerId: str(row.owner_id),
+      toOwnerType: dest.ownerType,
+      toOwnerId: dest.ownerId,
+      postedAt: dateOrNull(row.posted_at),
+      creationSource: str(row.creation_source) as Reservation["creationSource"],
+      description: doc.description,
+      createdAt: doc.created_at,
+      createdBy: doc.created_by,
+      status: row.posted_at ? "posted" : "draft",
+      origin: str(row.creation_source) as Reservation["origin"],
+      note: doc.description,
+    };
+  });
+
+  const transfers: Transfer[] = transfersRaw.map((row) => {
+    const doc = attachDoc(str(row.id), "transfer");
+    return {
+      id: doc.id,
+      numberPrefix: doc.number_prefix,
+      series: doc.number_prefix,
+      sequenceNumber: doc.sequence_number,
+      number: documentNumber(doc.number_prefix, doc.sequence_number),
+      fromWarehouseId: str(row.from_warehouse_id),
+      toWarehouseId: str(row.to_warehouse_id),
+      stockLocationId: str(row.stock_location_id),
+      status: (doc.status ?? "in_progress") as Transfer["status"],
+      createdAt: doc.created_at,
+      createdBy: doc.created_by,
+      expectedEndOn: doc.expected_end_on,
+    };
+  });
+
+  const orderByLocation = new Map(
+    customerOrders.map((order) => [order.stockLocationId, order.id]),
   );
+
+  const shipments: Shipment[] = shipmentsRaw.map((row) => {
+    const doc = attachDoc(str(row.id), "shipment");
+    const from = locEntity.get(str(row.from_location_id));
+    const to = locEntity.get(str(row.to_location_id));
+    const customerOrderId =
+      orderByLocation.get(str(row.from_location_id)) ??
+      orderByLocation.get(str(row.to_location_id)) ??
+      "";
+    return {
+      id: doc.id,
+      numberPrefix: doc.number_prefix,
+      series: doc.number_prefix,
+      sequenceNumber: doc.sequence_number,
+      number: documentNumber(doc.number_prefix, doc.sequence_number),
+      fromStockLocationId: str(row.from_location_id),
+      toStockLocationId: str(row.to_location_id),
+      fromLocationType: from?.kind ?? "warehouse",
+      fromLocationId: from?.entityId ?? str(row.from_location_id),
+      toLocationType: to?.kind ?? "customer_order",
+      toLocationId: to?.entityId ?? str(row.to_location_id),
+      customerOrderId,
+      createdAt: doc.created_at,
+      createdBy: doc.created_by,
+    };
+  });
+
+  const outputs: ProductionOutput[] = outputsRaw.map((row) => {
+    const doc = attachDoc(str(row.id), "production_output");
+    return {
+      id: doc.id,
+      numberPrefix: doc.number_prefix,
+      series: doc.number_prefix,
+      sequenceNumber: doc.sequence_number,
+      number: documentNumber(doc.number_prefix, doc.sequence_number),
+      productionOrderId: str(row.production_order_id),
+      status: (doc.status ?? "draft") as ProductionOutput["status"],
+      createdAt: doc.created_at,
+      createdBy: doc.created_by,
+      expectedEndOn: doc.expected_end_on,
+    };
+  });
+
+  const warehouseByLocation = new Map(
+    logisticsWarehouses.map((wh) => [wh.stockLocationId, wh.id]),
+  );
+
+  const adjustments: StockAdjustment[] = adjustmentsRaw.map((row) => {
+    const doc = attachDoc(str(row.id), "adjustment");
+    return {
+      id: doc.id,
+      numberPrefix: doc.number_prefix,
+      series: doc.number_prefix,
+      sequenceNumber: doc.sequence_number,
+      number: documentNumber(doc.number_prefix, doc.sequence_number),
+      locationId: str(row.location_id),
+      warehouseId: warehouseByLocation.get(str(row.location_id)) ?? str(row.location_id),
+      description: doc.description,
+      createdAt: doc.created_at,
+      createdBy: doc.created_by,
+      operation: "mixed",
+      explanation: doc.description,
+      sourceDocumentType: null,
+      sourceDocumentId: null,
+      status: "posted",
+    };
+  });
+
+  const kindByDocumentId = new Map([...docs.values()].map((doc) => [doc.id, doc.kind]));
+
+  const mapLineOwners = (fromOwnerId: string | null, toOwnerId: string | null) => {
+    const from = resolveOwnerProjection(fromOwnerId);
+    const to = resolveOwnerProjection(toOwnerId);
+    return {
+      fromOwnerId,
+      toOwnerId,
+      fromOwnerType: from.ownerType,
+      toOwnerType: to.ownerType,
+    };
+  };
+
+  const documentProductLines: DocumentProductLine[] = rawLines.map((row) => {
+    const variantId = str(row.product_variant_id);
+    const variant = variantById.get(variantId);
+    const plantId = variant?.plant_id ? str(variant.plant_id) : null;
+    const owners = mapLineOwners(strOrNull(row.from_owner_id), strOrNull(row.to_owner_id));
+    return {
+      id: str(row.id),
+      documentId: str(row.document_id),
+      productVariantId: variantId,
+      quantity: Number(row.quantity),
+      fromOwnerId: owners.fromOwnerId,
+      toOwnerId: owners.toOwnerId,
+      variantName: str(row.variant_name),
+      unitPrice: row.unit_price == null ? null : Number(row.unit_price),
+      currencyId: strOrNull(row.currency_id),
+      productId: variantId,
+      productName: str(row.variant_name),
+      productSku: variant ? str(variant.sku) : "",
+      productUnit: variant ? str(variant.unit ?? "шт") : "шт",
+      plantId,
+      plantName: plantId ? plantName.get(plantId) ?? null : null,
+      plantCode: plantId ? plantCode.get(plantId) ?? null : null,
+      fromOwnerType: owners.fromOwnerType,
+      toOwnerType: owners.toOwnerType,
+    };
+  });
 
   const linesByKind = (kind: string) =>
     documentProductLines.filter((line) => kindByDocumentId.get(line.documentId) === kind);
 
-  const productIdOf = (line: DocumentProductLine): string => line.productId ?? "";
-
   const customerOrderLines: CustomerOrderLine[] = linesByKind("customer_order").map((line) => ({
     id: line.id,
     orderId: line.documentId,
-    productId: productIdOf(line),
+    productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
     productSku: line.productSku,
     productUnit: line.productUnit,
-    manufacturerId: line.manufacturerId,
-    manufacturerName: line.manufacturerName,
-    manufacturerCode: line.manufacturerCode,
+    plantId: line.plantId,
+    plantName: line.plantName,
+    plantCode: line.plantCode,
   }));
 
   const productionOrderLines: ProductionOrderLine[] = linesByKind("production_order").map((line) => ({
     id: line.id,
     orderId: line.documentId,
-    productId: productIdOf(line),
+    productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
     productSku: line.productSku,
     productUnit: line.productUnit,
-    manufacturerId: line.manufacturerId,
-    manufacturerName: line.manufacturerName,
-    manufacturerCode: line.manufacturerCode,
+    plantId: line.plantId,
+    plantName: line.plantName,
+    plantCode: line.plantCode,
   }));
 
   const reservationLines: ReservationLine[] = linesByKind("reservation").map((line) => ({
     id: line.id,
     reservationId: line.documentId,
-    productId: productIdOf(line),
+    productId: line.productId,
     quantity: line.quantity,
-    fromOwnerType: line.fromOwnerType,
     fromOwnerId: line.fromOwnerId,
+    fromOwnerType: line.fromOwnerType,
     productName: line.productName,
     productSku: line.productSku,
     productUnit: line.productUnit,
@@ -556,48 +637,51 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     transferLines.push({
       id: line.id,
       transferId: line.documentId,
-      productId: productIdOf(line),
+      productId: line.productId,
       quantity: line.quantity,
       productName: line.productName,
       productSku: line.productSku,
       productUnit: line.productUnit,
     });
-    if (!isFreeOwner(line.fromOwnerType, line.fromOwnerId) && line.fromOwnerType && line.fromOwnerId) {
-      transferAllocations.push({
-        id: line.id,
-        lineId: line.id,
-        ownerType: line.fromOwnerType,
-        ownerId: line.fromOwnerId,
-        quantity: line.quantity,
-      });
+    if (line.fromOwnerType && line.fromOwnerId) {
+      const proj = resolveOwnerProjection(line.fromOwnerId);
+      if (proj.ownerType && proj.ownerId) {
+        transferAllocations.push({
+          id: line.id,
+          lineId: line.id,
+          ownerType: proj.ownerType,
+          ownerId: proj.ownerId,
+          quantity: line.quantity,
+        });
+      }
     }
   }
 
   const shipmentLines: ShipmentLine[] = linesByKind("shipment").map((line) => ({
     id: line.id,
     shipmentId: line.documentId,
-    productId: productIdOf(line),
+    productId: line.productId,
     quantity: line.quantity,
-    toOwnerType: line.toOwnerType,
     toOwnerId: line.toOwnerId,
-    fromOwnerType: line.fromOwnerType,
     fromOwnerId: line.fromOwnerId,
+    toOwnerType: line.toOwnerType,
+    fromOwnerType: line.fromOwnerType,
     productName: line.productName,
     productSku: line.productSku,
     productUnit: line.productUnit,
   }));
 
-  const outputLines: ProductionOutputLine[] = linesByKind("output").map((line) => ({
+  const outputLines: ProductionOutputLine[] = linesByKind("production_output").map((line) => ({
     id: line.id,
     outputId: line.documentId,
     productionOrderLineId: "",
-    productId: productIdOf(line),
+    productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
     productSku: line.productSku,
     productUnit: line.productUnit,
-    toOwnerType: line.toOwnerType,
     toOwnerId: line.toOwnerId,
+    toOwnerType: line.toOwnerType,
   }));
 
   const outputAllocations: ProductionOutputAllocation[] = [];
@@ -605,18 +689,68 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
   const adjustmentLines: StockAdjustmentLine[] = linesByKind("adjustment").map((line) => ({
     id: line.id,
     adjustmentId: line.documentId,
-    productId: productIdOf(line),
+    productId: line.productId,
     quantity: line.quantity,
     productName: line.productName,
     productSku: line.productSku,
     productUnit: line.productUnit,
   }));
 
+  for (const adj of adjustments) {
+    const lines = adjustmentLines.filter((line) => line.adjustmentId === adj.id);
+    const signs = new Set(lines.map((line) => Math.sign(line.quantity)));
+    if (signs.size === 1 && signs.has(-1)) {
+      adj.operation = "write_off";
+    } else if (signs.size === 1 && signs.has(1)) {
+      adj.operation = "increase";
+    } else {
+      adj.operation = "mixed";
+    }
+  }
+
+  const docKindById = new Map([...docs.values()].map((doc) => [doc.id, doc.kind as DocumentKind]));
+
+  const transactions: StockTransaction[] = transactionsRaw.map((row) => {
+    const stockLocationId = str(row.location_id);
+    const stockOwnerId = str(row.owner_id);
+    const loc = locEntity.get(stockLocationId);
+    const owner = resolveOwnerProjection(stockOwnerId);
+    const locationType = loc?.kind ?? "warehouse";
+    const documentId = str(row.document_id);
+    const documentKind = docKindById.get(documentId) ?? "adjustment";
+    const ownerKind = ownerEntity.get(stockOwnerId)?.kind ?? "free";
+    return {
+      id: str(row.id),
+      createdAt: str(row.created_at),
+      productVariantId: str(row.product_variant_id),
+      productId: str(row.product_variant_id),
+      quantity: Number(row.quantity),
+      stockLocationId,
+      stockOwnerId,
+      documentId,
+      documentKind,
+      locationType,
+      locationId: loc?.entityId ?? stockLocationId,
+      ownerKind,
+      stockState: derivedStockState(locationType, ownerKind),
+      assignedToType: owner.ownerType,
+      assignedToId: owner.ownerId,
+      documentType: documentKind,
+      ownerType: owner.ownerType,
+      ownerId: owner.ownerId,
+    };
+  });
+
+  void products;
+
   return {
-    products,
-    warehouses,
-    manufacturers,
-    regions,
+    products: logisticsProducts,
+    plants: logisticsPlants,
+    warehouses: logisticsWarehouses,
+    regions: logisticsRegions,
+    stockLocations: stockLocationList,
+    stockOwners: stockOwnerList,
+    freeOwnerId: FREE_OWNER_ID,
     settings,
     documentProductLines,
     customerOrders,
@@ -641,27 +775,6 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
   };
 };
 
-const rpc = async (name: string, args: Record<string, unknown>): Promise<string> => {
-  const client = requireClient();
-  const { data, error } = await client.rpc(name, args);
-  if (error) {
-    throw new Error(error.message);
-  }
-  return String(data ?? "ok");
-};
-
-const rpcJson = async <T>(name: string, args: Record<string, unknown>): Promise<T> => {
-  const client = requireClient();
-  const { data, error } = await client.rpc(name, args);
-  return requireData(data as T | null, error);
-};
-
-export const insertReturningId = async (table: string, row: Record<string, unknown>): Promise<string> => {
-  const client = requireClient();
-  const { data, error } = await client.from(table).insert(row).select("id").single();
-  return String(requireData(data, error).id);
-};
-
 export const postReservation = (id: string) => rpc("store_post_reservation", { p_id: id });
 
 export type ReservationLineInput = {
@@ -669,6 +782,32 @@ export type ReservationLineInput = {
   quantity: number;
   fromOwnerType?: OwnerType | null;
   fromOwnerId?: string | null;
+};
+
+const reservationRpcArgs = async (args: {
+  locationType: ReservationLocationType;
+  locationId: string;
+  toOwnerType?: OwnerType | null;
+  toOwnerId?: string | null;
+  note?: string;
+  lines: ReservationLineInput[];
+}) => {
+  const locationId = await resolveStockLocationId(args.locationType, args.locationId);
+  const ownerId = await resolveOwnerId(args.toOwnerType ?? null, args.toOwnerId ?? null);
+  const lines = await Promise.all(
+    args.lines.map(async (line) => ({
+      product_variant_id: Number(line.productId),
+      quantity: line.quantity,
+      from_owner_id: Number(await resolveOwnerId(line.fromOwnerType ?? null, line.fromOwnerId ?? null)),
+    })),
+  );
+  return {
+    p_location_id: Number(locationId),
+    p_owner_id: Number(ownerId),
+    p_description: args.note ?? "",
+    p_creation_source: "manual",
+    p_lines: lines,
+  };
 };
 
 export const createReservationDraft = async (args: {
@@ -679,22 +818,9 @@ export const createReservationDraft = async (args: {
   note?: string;
   lines: ReservationLineInput[];
 }) => {
-  const created = await rpcJson<{ id: number | string; status: string }>(
+  const created = await rpcJson<{ id: number | string }>(
     "store_create_reservation_draft",
-    {
-      p_location_type: args.locationType,
-      p_location_id: Number(args.locationId),
-      p_to_owner_type: args.toOwnerType ?? null,
-      p_to_owner_id: args.toOwnerId ? Number(args.toOwnerId) : null,
-      p_note: args.note ?? "",
-      p_origin: "manual",
-      p_lines: args.lines.map((line) => ({
-        product_id: Number(line.productId),
-        quantity: line.quantity,
-        from_owner_type: line.fromOwnerType ?? null,
-        from_owner_id: line.fromOwnerId ? Number(line.fromOwnerId) : null,
-      })),
-    },
+    await reservationRpcArgs(args),
   );
   return String(created.id);
 };
@@ -707,63 +833,38 @@ export const createAndPostReservation = async (args: {
   note?: string;
   lines: ReservationLineInput[];
 }) => {
-  const created = await rpcJson<{ id: number | string; status: string }>(
+  const created = await rpcJson<{ id: number | string }>(
     "store_create_and_post_reservation",
-    {
-      p_location_type: args.locationType,
-      p_location_id: Number(args.locationId),
-      p_to_owner_type: args.toOwnerType ?? null,
-      p_to_owner_id: args.toOwnerId ? Number(args.toOwnerId) : null,
-      p_note: args.note ?? "",
-      p_origin: "manual",
-      p_lines: args.lines.map((line) => ({
-        product_id: Number(line.productId),
-        quantity: line.quantity,
-        from_owner_type: line.fromOwnerType ?? null,
-        from_owner_id: line.fromOwnerId ? Number(line.fromOwnerId) : null,
-      })),
-    },
+    await reservationRpcArgs(args),
   );
   return String(created.id);
 };
 
 export const addReservationLine = async (args: ReservationLineInput & { reservationId: string }) => {
-  const client = requireClient();
-  const { data, error } = await client.rpc("store_add_document_product_line", {
+  const fromOwnerId = await resolveOwnerId(args.fromOwnerType ?? null, args.fromOwnerId ?? null);
+  const data = await rpcJson<number | string>("store_add_document_product_line", {
     p_document_id: Number(args.reservationId),
-    p_product_id: Number(args.productId),
+    p_product_variant_id: Number(args.productId),
     p_quantity: args.quantity,
-    p_from_owner_type: args.fromOwnerType ?? null,
-    p_from_owner_id: args.fromOwnerId ? Number(args.fromOwnerId) : null,
-    p_to_owner_type: null,
+    p_from_owner_id: Number(fromOwnerId),
     p_to_owner_id: null,
   });
-  if (error) {
-    throw new Error(error.message);
-  }
   return String(data);
 };
 
-export const completeOutput = (id: string) => rpc("store_complete_output", { p_id: id });
+export const completeOutput = (id: string) => rpc("store_complete_production_output", { p_id: id });
 
 export const createAndPostShipment = async (
   input: ShipmentCreateAndPostInput,
 ): Promise<ShipmentCreateAndPostResult> => {
   const created = await rpcJson<{ id: number | string; direction: string }>(
     "store_create_and_post_shipment",
-    shipmentCreateRpcArgs(input),
+    await shipmentCreateRpcArgs(input),
   );
   if (created.direction !== "shipment" && created.direction !== "return") {
     throw new Error("Ожидался документ отгрузки или возврата");
   }
   return { id: String(created.id), direction: created.direction };
-};
-
-export const newProductionOutputRequestKey = (): string => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `out-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
 export type ProductionOutputLineInput = {
@@ -777,11 +878,12 @@ export type ProductionOutputLineInput = {
 };
 
 export const buildCreateProductionOutputRpcArgs = (args: {
-  requestKey: string;
   orderId: string;
   lines: ProductionOutputLineInput[];
   expectedEndOn?: string | null;
   complete?: boolean;
+  /** Pre-resolved stock owner ids keyed by productId (optional; tests omit). */
+  resolvedAllocationOwnerIds?: Record<string, number | null>;
 }) => {
   for (const line of args.lines) {
     if (line.allocation && line.allocation.quantity > 0 && line.allocation.quantity > line.quantity) {
@@ -789,14 +891,13 @@ export const buildCreateProductionOutputRpcArgs = (args: {
     }
   }
   return {
-    p_request_key: args.requestKey,
     p_production_order_id: Number(args.orderId),
     p_lines: args.lines.map((line) => ({
-      product_id: Number(line.productId),
+      product_variant_id: Number(line.productId),
       quantity: line.quantity,
-      allocation_owner_type: line.allocation?.quantity ? line.allocation.ownerType : null,
-      allocation_owner_id: line.allocation?.quantity ? Number(line.allocation.ownerId) : null,
-      allocation_quantity: line.allocation?.quantity ?? null,
+      allocation_owner_id: line.allocation?.quantity
+        ? (args.resolvedAllocationOwnerIds?.[line.productId] ?? Number(line.allocation.ownerId))
+        : null,
     })),
     p_expected_end_on: args.expectedEndOn || null,
     p_complete: args.complete !== false,
@@ -804,32 +905,40 @@ export const buildCreateProductionOutputRpcArgs = (args: {
 };
 
 export const createProductionOutput = async (args: {
-  requestKey: string;
   orderId: string;
   lines: ProductionOutputLineInput[];
   expectedEndOn?: string | null;
   complete?: boolean;
 }): Promise<string> => {
+  const resolved: Record<string, number | null> = {};
+  for (const line of args.lines) {
+    if (line.allocation?.quantity) {
+      resolved[line.productId] = Number(
+        await resolveOwnerId(line.allocation.ownerType, line.allocation.ownerId),
+      );
+    }
+  }
   const created = await rpcJson<{ id: number | string }>(
     "store_create_production_output",
-    buildCreateProductionOutputRpcArgs(args),
+    buildCreateProductionOutputRpcArgs({ ...args, resolvedAllocationOwnerIds: resolved }),
   );
   return String(created.id);
 };
 
 export const createProductionForOrder = async (args: {
-  manufacturerId: string;
+  plantId?: string;
   customerOrderId: string;
   expectedEndOn?: string | null;
   lines: Array<{ productId: string; quantity: number }>;
 }) => {
+  const plantId = args.plantId;
+  if (!plantId) {
+    throw new Error("Нужен plantId");
+  }
   const created = await createProductionOrder({
-    manufacturerId: args.manufacturerId,
+    plantId,
     expectedEndOn: args.expectedEndOn,
-    lines: args.lines.map((line) => ({
-      productId: line.productId,
-      quantity: line.quantity,
-    })),
+    lines: args.lines,
   });
   await createAndPostReservation({
     locationType: "production_order",
@@ -857,23 +966,16 @@ export const createAndPostAdjustment = async (
 ): Promise<AdjustmentCreateResult> => {
   const explanation = assertAdjustmentExplanation(draft.explanation);
   const lines = assertAdjustmentLines(draft, balances);
-  const created = await rpcJson<{ id: number | string; status: string }>(
-    "store_create_and_post_adjustment",
-    {
-      p_operation: draft.operation,
-      p_warehouse_id: Number(draft.warehouseId),
-      p_explanation: explanation,
-      p_source_document_type: draft.sourceDocumentType ?? null,
-      p_source_document_id: draft.sourceDocumentId ? Number(draft.sourceDocumentId) : null,
-      p_lines: lines.map((line) => ({
-        product_id: Number(line.productId),
-        quantity: line.quantity,
-      })),
-    },
-  );
-  if (created.status !== "posted") {
-    throw new Error("Ожидалась проведённая корректировка");
-  }
+  const locationId = await resolveStockLocationId("warehouse", draft.warehouseId);
+  const { adjustmentSignedQuantity } = await import("@/features/logistics/logistics-adjustments");
+  const created = await rpcJson<{ id: number | string }>("store_create_and_post_adjustment", {
+    p_location_id: Number(locationId),
+    p_description: explanation,
+    p_lines: lines.map((line) => ({
+      product_variant_id: Number(line.productId),
+      quantity: adjustmentSignedQuantity(draft.operation, line.quantity),
+    })),
+  });
   return { id: String(created.id), status: "posted" };
 };
 
@@ -882,30 +984,39 @@ export const createAndSendTransfer = async (
 ): Promise<TransferCreateAndSendResult> => {
   const created = await rpcJson<{ id: number | string; status: string }>(
     "store_create_and_send_transfer",
-    transferCreateRpcArgs(input),
+    await transferCreateRpcArgs(input),
   );
-  if (created.status !== "sent") {
-    throw new Error(`Expected sent transfer, received ${String(created.status)}`);
+  if (created.status !== "in_progress" && created.status !== "sent") {
+    throw new Error(`Ожидалось перемещение in_progress, получено ${String(created.status)}`);
   }
   return { id: String(created.id), status: "sent" };
 };
+
 export const sendTransfer = (id: string) => rpc("store_send_transfer", { p_id: id });
 export const completeTransfer = (id: string) => rpc("store_complete_transfer", { p_id: id });
 export const closeCustomerOrder = (id: string) => rpc("store_close_customer_order", { p_id: id });
 
 export const createCustomerOrder = async (args: {
+  regionId?: string;
   description?: string;
   expectedEndOn?: string | null;
   lines: Array<{ productId: string; quantity: number }>;
 }) => {
-  const created = await rpcJson<{
-    id: number | string;
-    lines: Array<{ id: number | string; product_id: number | string }>;
-  }>("store_create_customer_order", {
+  let regionId = args.regionId;
+  if (!regionId) {
+    const regions = await selectAll("store_region", "id", (r) => r, "id");
+    if (!regions.length) {
+      regionId = await createRegion({ name: "Основной" });
+    } else {
+      regionId = String(regions[0].id);
+    }
+  }
+  const created = await rpcJson<{ id: number | string; lines: unknown }>("store_create_customer_order", {
+    p_region_id: Number(regionId),
     p_description: args.description ?? "",
     p_expected_end_on: args.expectedEndOn || null,
     p_lines: args.lines.map((line) => ({
-      product_id: Number(line.productId),
+      product_variant_id: Number(line.productId),
       quantity: line.quantity,
     })),
   });
@@ -913,109 +1024,94 @@ export const createCustomerOrder = async (args: {
 };
 
 export const closeProductionOrder = (id: string) => rpc("store_close_production_order", { p_id: id });
-export const setProductionStatus = (id: string, status: ProductionStatus) =>
-  rpc("store_set_production_status", { p_id: id, p_status: status });
+export const setProductionStatus = (id: string, status: ProductionStatus) => {
+  const raw = String(status);
+  const mapped = raw === "planned" ? "draft" : raw === "closed" ? "done" : raw;
+  return rpc("store_set_production_status", { p_id: id, p_status: mapped });
+};
+
 export const createProductionOrder = async (args: {
-  manufacturerId: string;
+  plantId?: string;
   expectedEndOn?: string | null;
   lines: Array<{ productId: string; quantity: number }>;
 }) => {
-  const created = await rpcJson<{ id: number | string; lines: Array<{ id: number | string; product_id: number | string }> }>(
-    "store_create_production_order",
-    {
-      p_manufacturer_id: Number(args.manufacturerId),
-      p_lines: args.lines.map((line) => ({
-        product_id: Number(line.productId),
-        quantity: line.quantity,
-      })),
-    },
-  );
-  const id = String(created.id);
-  if (args.expectedEndOn) {
-    await updateExpectedEnd("store_production_order", id, args.expectedEndOn);
-  }
-  return { id, lines: created.lines };
+  const plantId = args.plantId;
+  if (!plantId) throw new Error("Нужен plantId");
+  const created = await rpcJson<{ id: number | string; lines: unknown }>("store_create_production_order", {
+    p_plant_id: Number(plantId),
+    p_expected_end_on: args.expectedEndOn || null,
+    p_lines: args.lines.map((line) => ({
+      product_variant_id: Number(line.productId),
+      quantity: line.quantity,
+    })),
+  });
+  return { id: String(created.id), lines: created.lines };
 };
+
 export const addProductionLine = (args: { orderId: string; productId: string; quantity: number }) =>
   rpc("store_add_production_line", {
     p_id: Number(args.orderId),
-    p_product_id: Number(args.productId),
+    p_product_variant_id: Number(args.productId),
     p_quantity: args.quantity,
   });
-/** @deprecated Production orders no longer materialize WIP; kept as no-op for leftover callers. */
+
 export const syncProductionStock = async (_id: string) => "ok";
-/** Status-only cancel for unposted drafts already supported by the domain. Posted documents use the cancel helper. */
+
 export const cancelDocument = (kind: string, id: string, status?: string | null) => {
-  assertDocumentCanBeCancelled(kind, status);
-  return rpc("store_cancel_document", { p_kind: kind, p_id: id });
+  const normalized = kind === "output" ? "production_output" : kind;
+  assertDocumentCanBeCancelled(normalized, status);
+  return rpc("store_cancel_document", { p_kind: normalized, p_id: id });
 };
 
-export const insertRows = async (table: string, rows: Record<string, unknown> | Record<string, unknown>[]) => {
-  const client = requireClient();
-  const { error } = await client.from(table).insert(rows);
-  if (error) {
-    throw new Error(error.message);
-  }
-};
-
-export const updateRow = async (table: string, id: string, values: Record<string, unknown>) => {
-  const client = requireClient();
-  const { error } = await client.from(table).update(values).eq("id", id);
-  if (error) {
-    throw new Error(error.message);
-  }
-};
-
-export const updateExpectedEnd = (table: string, id: string, expectedEndOn: string | null) =>
-  updateRow(table, id, { expected_end_on: expectedEndOn || null });
-
-export const deleteRows = async (table: string, column: string, value: string) => {
-  const client = requireClient();
-  const { error } = await client.from(table).delete().eq(column, value);
-  if (error) {
-    throw new Error(error.message);
-  }
-};
-
-export const createProduct = (args: { sku: string; name: string; unit: string }) =>
-  insertRows("store_product", {
-    sku: args.sku,
-    name: args.name,
-    unit: args.unit,
+export const updateExpectedEnd = (documentId: string, expectedEndOn: string | null) =>
+  rpc("store_update_expected_end", {
+    p_id: Number(documentId),
+    p_expected_end_on: expectedEndOn || null,
   });
+
+/** @deprecated Direct table writes removed — use RPCs. */
+export const insertRows = async () => {
+  throw new Error("Прямая запись в таблицы Store запрещена");
+};
+export const updateRow = async () => {
+  throw new Error("Прямая запись в таблицы Store запрещена");
+};
+export const deleteRows = async () => {
+  throw new Error("Прямое удаление в таблицах Store запрещено");
+};
+export const insertReturningId = async () => {
+  throw new Error("Прямая запись в таблицы Store запрещена");
+};
+
+export const createProduct = async (args: { sku: string; name: string; unit: string; plantId?: string }) => {
+  const created = await rpcJson<{ product_id: number; variant_id: number }>("store_create_product_variant", {
+    p_sku: args.sku,
+    p_name: args.name,
+    p_unit: args.unit,
+    p_plant_id: args.plantId ? Number(args.plantId) : null,
+    p_image_url: null,
+    p_product_id: null,
+  });
+  return String(created.variant_id);
+};
 
 export const createWarehouse = (args: { name: string }) =>
-  insertReturningId("store_warehouse", {
-    name: args.name,
-    manufacturer_id: null,
-  });
+  rpcJson<number | string>("store_create_warehouse", { p_name: args.name }).then(String);
 
 export const updateWarehouse = (args: { id: string; name: string }) =>
-  updateRow("store_warehouse", args.id, { name: args.name });
+  rpc("store_update_warehouse", { p_id: Number(args.id), p_name: args.name });
 
 export const createRegion = (args: { name: string }) =>
-  insertReturningId("store_region", {
-    name: args.name,
-  });
+  rpcJson<number | string>("store_create_region", { p_name: args.name, p_code: null }).then(String);
 
 export const updateRegion = (args: { id: string; name: string }) =>
-  updateRow("store_region", args.id, { name: args.name });
+  rpc("store_update_region", { p_id: Number(args.id), p_name: args.name });
 
-export const createManufacturer = async (args: { name: string }) => {
-  const warehouseId = await insertReturningId("store_warehouse", {
-    name: args.name,
-    manufacturer_id: null,
-  });
-  const id = await insertReturningId("store_manufacturer", {
-    name: args.name,
-    warehouse_id: warehouseId,
-  });
-  await updateRow("store_warehouse", warehouseId, { manufacturer_id: id });
-  return id;
-};
+export const createPlant = (args: { name: string }) =>
+  rpcJson<number | string>("store_create_plant", { p_name: args.name }).then(String);
 
-export const updateManufacturer = async (args: { id: string; name: string }) => {
-  await updateRow("store_manufacturer", args.id, { name: args.name });
-};
+export const updatePlant = (args: { id: string; name: string }) =>
+  rpc("store_update_plant", { p_id: Number(args.id), p_name: args.name });
 
 export { isSupabaseConfigured };
+export { resolveOwnerId, resolveStockLocationId } from "@/features/logistics/logistics-resolve";

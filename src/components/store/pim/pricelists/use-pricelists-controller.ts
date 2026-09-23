@@ -59,8 +59,12 @@ export const usePricelistsController = (
   scope: PricelistScope,
   regionId: string,
   availability: AvailabilityFilter,
+  dataEpoch = 0,
 ): PricelistsController => {
-  const sourceItems = useMemo(() => getPricelistRows(), []);
+  const sourceItems = useMemo(() => {
+    void dataEpoch;
+    return getPricelistRows();
+  }, [dataEpoch]);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");

@@ -7,4 +7,4 @@ alwaysApply: true
 
 **Canonical doc:** [docs/conventions/ui/place-codes.md](../../docs/conventions/ui/place-codes.md)
 
-Do not show warehouse or manufacturer/plant names outside those two catalogs. Do not duplicate this rule here — edit the markdown file above.
+Do not show warehouse or plant names outside those two catalogs. Do not duplicate this rule here — edit the markdown file above.

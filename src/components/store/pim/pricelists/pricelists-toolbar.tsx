@@ -16,7 +16,7 @@ import { CatalogCategoryTreeFilter } from "../products/catalog/catalog-category-
 import { CatalogQuickSearchControl } from "../products/catalog/catalog-filters";
 import { PricelistsPresence } from "./pricelists-presence";
 import {
-  PRICELIST_REGIONS,
+  getPricelistRegions,
   PRICELIST_SCOPE_DESCRIPTIONS,
   PRICELIST_SCOPE_LABELS,
   PRICELIST_SCOPES,
@@ -61,7 +61,9 @@ export const PricelistsToolbar = ({
   onOpenColumns,
   onExport,
   isExporting,
-}: PricelistsToolbarProps) => (
+}: PricelistsToolbarProps) => {
+  const regions = getPricelistRegions();
+  return (
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
     <CardHeader className="gap-0 space-y-2 pb-0">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
@@ -108,7 +110,7 @@ export const PricelistsToolbar = ({
 
             {scopeHasRegion(scope) ? (
               <Select
-                items={PRICELIST_REGIONS.map((region) => ({
+                items={regions.map((region) => ({
                   value: region.id,
                   label: region.label,
                 }))}
@@ -128,7 +130,7 @@ export const PricelistsToolbar = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {PRICELIST_REGIONS.map((region) => (
+                    {regions.map((region) => (
                       <SelectItem key={region.id} value={region.id}>
                         {region.label}
                       </SelectItem>
@@ -251,4 +253,5 @@ export const PricelistsToolbar = ({
       </TooltipProvider>
     </CardHeader>
   </Card>
-);
+  );
+};

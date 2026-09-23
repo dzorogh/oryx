@@ -341,7 +341,7 @@ export const CustomerOrderDetailPage = () => {
         }}
         onExpectedEndChange={(value) => {
           void runLogisticsAction(
-            () => updateExpectedEnd("store_customer_order", order.id, value || null),
+            () => updateExpectedEnd(order.id, value || null),
             "Срок заказа клиента обновлён",
             reload,
           );

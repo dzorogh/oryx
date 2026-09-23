@@ -8,7 +8,10 @@ import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logis
 
 export const EMPTY_SNAPSHOT: LogisticsSnapshot = {
   products: [],
-  manufacturers: [],
+  plants: [],
+  stockLocations: [],
+  stockOwners: [],
+  freeOwnerId: "1",
   warehouses: [],
   regions: [],
   settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },

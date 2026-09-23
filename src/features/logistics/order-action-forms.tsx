@@ -20,10 +20,8 @@ import {
   createAndSendTransfer,
   createProductionForOrder,
   createProductionOutput,
-  newProductionOutputRequestKey,
 } from "@/features/logistics/logistics-api";
 import {
-  newTransferRequestKey,
   openSentTransfer,
   orderOwnedTransferPayload,
 } from "@/features/logistics/transfer-direct-send";
@@ -41,11 +39,11 @@ import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import {
   locationLabel,
   customerOrderById,
-  manufacturerIdsForProducts,
-  manufacturerSelectItems,
+  plantIdsForProducts,
+  plantSelectItems,
   productById,
   productIdentityLabel,
-  productsForManufacturer,
+  productsForPlant,
   productionOrderById,
   warehouseCode,
 } from "@/features/logistics/logistics-lookups";
@@ -123,12 +121,12 @@ const plantsForOpenLines = (snapshot: LogisticsSnapshot, productIds: string[]) =
   if (productIds.length === 0) {
     return [] as Array<{ value: string; label: string }>;
   }
-  const perProduct = productIds.map((productId) => manufacturerIdsForProducts(snapshot, [productId]));
+  const perProduct = productIds.map((productId) => plantIdsForProducts(snapshot, [productId]));
   if (perProduct.some((ids) => ids === null)) {
-    return manufacturerSelectItems(snapshot);
+    return plantSelectItems(snapshot);
   }
   const union = new Set(perProduct.flatMap((ids) => ids ?? []));
-  return snapshot.manufacturers
+  return snapshot.plants
     .filter((item) => union.has(item.id))
     .map((item) => ({ value: item.id, label: item.code }));
 };
@@ -142,7 +140,7 @@ export const ProductionFromOrderForm = ({
   customerOrderId,
   lines,
 }: ActionFormProps) => {
-  const [manufacturerId, setManufacturerId] = useState("");
+  const [plantId, setPlantId] = useState("");
   const [expectedEndOn, setExpectedEndOn] = useState("");
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const didOpen = useRef(false);
@@ -156,12 +154,12 @@ export const ProductionFromOrderForm = ({
     [openLines, snapshot],
   );
   const plantLines = useMemo(() => {
-    if (!manufacturerId) {
+    if (!plantId) {
       return [] as CustomerOrderLine[];
     }
-    const allowed = new Set(productsForManufacturer(snapshot, manufacturerId).map((product) => product.id));
+    const allowed = new Set(productsForPlant(snapshot, plantId).map((product) => product.id));
     return openLines.filter((line) => allowed.has(line.productId));
-  }, [manufacturerId, openLines, snapshot]);
+  }, [plantId, openLines, snapshot]);
 
   const seedQuantities = (nextLines: CustomerOrderLine[]) =>
     Object.fromEntries(nextLines.map((line) => [line.id, String(remainingToReserveForLine(line, balances))]));
@@ -176,23 +174,23 @@ export const ProductionFromOrderForm = ({
     }
     didOpen.current = true;
     const defaultPlant = plantItems.length === 1 ? plantItems[0].value : "";
-    setManufacturerId(defaultPlant);
+    setPlantId(defaultPlant);
     setExpectedEndOn("");
     if (!defaultPlant) {
       setQuantities({});
       return;
     }
-    const allowed = new Set(productsForManufacturer(snapshot, defaultPlant).map((product) => product.id));
+    const allowed = new Set(productsForPlant(snapshot, defaultPlant).map((product) => product.id));
     setQuantities(seedQuantities(openLines.filter((line) => allowed.has(line.productId))));
   }, [open, openLines, plantItems, snapshot, balances]);
 
-  const selectManufacturer = (nextId: string) => {
-    setManufacturerId(nextId);
+  const selectPlant = (nextId: string) => {
+    setPlantId(nextId);
     if (!nextId) {
       setQuantities({});
       return;
     }
-    const allowed = new Set(productsForManufacturer(snapshot, nextId).map((product) => product.id));
+    const allowed = new Set(productsForPlant(snapshot, nextId).map((product) => product.id));
     setQuantities(seedQuantities(openLines.filter((line) => allowed.has(line.productId))));
   };
 
@@ -216,7 +214,7 @@ export const ProductionFromOrderForm = ({
     }))
     .filter((line) => line.quantity > 0);
   const customerOrderNumber = customerOrderById(snapshot, customerOrderId)?.number ?? customerOrderId;
-  const manufacturerLabel = plantItems.find((item) => item.value === manufacturerId)?.label;
+  const plantLabel = plantItems.find((item) => item.value === plantId)?.label;
   const selectedLineCount = payload.length;
   const selectedTotal = payload.reduce((sum, line) => sum + line.quantity, 0);
   const selectedUnits = payload.map((line) => productById(snapshot, line.productId)?.unit ?? "");
@@ -228,25 +226,25 @@ export const ProductionFromOrderForm = ({
     ? openLines.length === 0
       ? "Этот заказ уже полностью закрыт."
       : "Нет доступного производителя."
-    : !manufacturerId || selectedLineCount === 0
+    : !plantId || selectedLineCount === 0
       ? "Выберите производителя и количество"
       : [
         `${selectedLineCount} ${selectedLineCount === 1 ? "товар" : "товара"}`,
         sharedUnit ? plannerQuantity(selectedTotal, sharedUnit) : null,
-        manufacturerLabel,
+        plantLabel,
       ]
         .filter(Boolean)
         .join(" · ");
 
   const submit = async () => {
-    if (!manufacturerId || payload.length === 0) {
+    if (!plantId || payload.length === 0) {
       toast.error("Выберите производителя и количество");
       return;
     }
     const ok = await runLogisticsAction(
       () =>
         createProductionForOrder({
-          manufacturerId,
+          plantId,
           customerOrderId,
           expectedEndOn: expectedEndOn || null,
           lines: payload,
@@ -270,10 +268,10 @@ export const ProductionFromOrderForm = ({
       <div className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <FieldSelect
-            label="Производитель"
-            value={manufacturerId}
+            label="Завод"
+            value={plantId}
             items={plantItems}
-            onChange={selectManufacturer}
+            onChange={selectPlant}
             placeholder="Выберите завод"
             emptyLabel={openLines.length === 0 ? "Нечего производить" : "Ни один завод не выпускает эти товары"}
           />
@@ -290,7 +288,7 @@ export const ProductionFromOrderForm = ({
           <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
             {openLines.length === 0 ? "Этот заказ уже полностью закрыт." : "Нет доступного производителя."}
           </div>
-        ) : !manufacturerId ? (
+        ) : !plantId ? (
           <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
             Выберите производителя, чтобы задать количества.
           </div>
@@ -370,7 +368,7 @@ export const ProductionFromOrderForm = ({
           </Button>
           <Button
             type="button"
-            disabled={!manufacturerId || payload.length === 0 || plantItems.length === 0}
+            disabled={!plantId || payload.length === 0 || plantItems.length === 0}
             onClick={() => void submit()}
           >
             {productionDraftActionLabel(payload, snapshot)}
@@ -533,7 +531,6 @@ export const OutputFromOrderForm = ({
   const [productionLineId, setProductionLineId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [expectedEndOn, setExpectedEndOn] = useState("");
-  const requestKeyRef = useRef(newProductionOutputRequestKey());
   const creatingRef = useRef(false);
   const orderLine = lines.find((line) => line.id === orderLineId);
   const candidates = useMemo(() => {
@@ -587,7 +584,6 @@ export const OutputFromOrderForm = ({
     setProductionLineId("");
     setQuantity("1");
     setExpectedEndOn("");
-    requestKeyRef.current = newProductionOutputRequestKey();
   };
 
   const submit = async () => {
@@ -609,7 +605,6 @@ export const OutputFromOrderForm = ({
     const ok = await runLogisticsAction(
       () =>
         createProductionOutput({
-          requestKey: requestKeyRef.current,
           orderId: production.id,
           expectedEndOn: expectedEndOn || null,
           lines: [
@@ -632,7 +627,6 @@ export const OutputFromOrderForm = ({
     );
     creatingRef.current = false;
     if (ok) {
-      requestKeyRef.current = newProductionOutputRequestKey();
       onOpenChange(false);
     }
   };
@@ -645,7 +639,6 @@ export const OutputFromOrderForm = ({
         if (next) {
           reset();
         } else {
-          requestKeyRef.current = newProductionOutputRequestKey();
         }
       }}
       title="Выпустить под заказ клиента"
@@ -661,7 +654,6 @@ export const OutputFromOrderForm = ({
           onChange={(value) => {
             setOrderLineId(value);
             setProductionLineId("");
-            requestKeyRef.current = newProductionOutputRequestKey();
           }}
         />
         <FieldSelect
@@ -673,7 +665,6 @@ export const OutputFromOrderForm = ({
           }))}
           onChange={(value) => {
             setProductionLineId(value);
-            requestKeyRef.current = newProductionOutputRequestKey();
             const next = candidates.find((item) => item.line.id === value);
             const cap = next
               ? Math.min(
@@ -691,7 +682,6 @@ export const OutputFromOrderForm = ({
           value={quantity}
           onChange={(value) => {
             setQuantity(value);
-            requestKeyRef.current = newProductionOutputRequestKey();
           }}
           max={selected ? max : undefined}
         />
@@ -699,7 +689,6 @@ export const OutputFromOrderForm = ({
           value={expectedEndOn}
           onChange={(value) => {
             setExpectedEndOn(value);
-            requestKeyRef.current = newProductionOutputRequestKey();
           }}
         />
         <Button type="button" disabled={!selected || !isAllowedQuantity(quantity, max)} onClick={() => void submit()}>
@@ -720,7 +709,6 @@ export const TransferReservedForm = ({
   lines,
 }: ActionFormProps) => {
   const router = useRouter();
-  const [requestKey, setRequestKey] = useState(newTransferRequestKey);
 
   return (
     <TransferCreateDialog
@@ -734,7 +722,6 @@ export const TransferReservedForm = ({
           async () => {
             const created = await createAndSendTransfer(
               orderOwnedTransferPayload({
-                requestKey,
                 fromWarehouseId: value.fromWarehouseId,
                 toWarehouseId: value.toWarehouseId,
                 expectedEndOn: value.expectedEndOn,
@@ -747,9 +734,6 @@ export const TransferReservedForm = ({
           "Перемещение отправлено",
           reload,
         );
-        if (ok) {
-          setRequestKey(newTransferRequestKey());
-        }
         return ok;
       }}
     />

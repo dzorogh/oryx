@@ -22,7 +22,7 @@ import {
 } from "@/features/logistics/logistics-related";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
-import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
+import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +69,7 @@ const ActivityRow = ({
 }) => {
   const details = [
     formatQuantity(row.quantity, unit),
-    row.manufacturerId ? null : row.hint,
+    row.plantId ? null : row.hint,
     row.hasExpectedEnd
       ? row.expectedEndOn
         ? `Ожидаемое окончание ${formatExpectedEnd(row.expectedEndOn)}`
@@ -84,10 +84,10 @@ const ActivityRow = ({
           <LogisticsCodeBadge code={row.number} href={row.href} />
           <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
             {details[0] ? <span className="tabular-nums">{details[0]}</span> : null}
-            {row.manufacturerId ? (
+            {row.plantId ? (
               <>
                 <span aria-hidden>·</span>
-                <ManufacturerLink snapshot={snapshot} manufacturerId={row.manufacturerId} />
+                <PlantLink snapshot={snapshot} plantId={row.plantId} />
               </>
             ) : null}
             {details.slice(1).map((part) => (

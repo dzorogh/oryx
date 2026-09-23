@@ -580,7 +580,7 @@ export const hrefForCustomerOrder = (id: string, snapshot?: LogisticsSnapshot): 
 export const hrefForProduct = (id: string): string => hrefForStoreProduct(id);
 export const hrefForWarehouse = (id: string): string => logisticsPath("warehouses", id);
 export const hrefForRegion = (id: string): string => logisticsPath("regions", id);
-export const hrefForManufacturer = (id: string): string => logisticsPath("manufacturers", id);
+export const hrefForPlant = (id: string): string => logisticsPath("plants", id);
 export const hrefForTransfer = (id: string, snapshot?: LogisticsSnapshot): string =>
   logisticsPath("transfers", resolveDocumentPublicId(snapshot, "transfer", id));
 export const hrefForProductionOrder = (id: string, snapshot?: LogisticsSnapshot): string =>

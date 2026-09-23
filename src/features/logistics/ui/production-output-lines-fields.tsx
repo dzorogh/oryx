@@ -40,7 +40,6 @@ export const ProductionOutputLinesFields = ({
   remainingByLineId,
   disabled,
   onChange,
-  onRenewKey,
 }: {
   snapshot: LogisticsSnapshot;
   balances: StockBalance[];
@@ -48,7 +47,6 @@ export const ProductionOutputLinesFields = ({
   remainingByLineId: (lineId: string) => number;
   disabled?: boolean;
   onChange: (next: ProductionOutputDraftLine[]) => void;
-  onRenewKey: () => void;
 }) => {
   if (drafts.length === 0) {
     return (
@@ -79,7 +77,6 @@ export const ProductionOutputLinesFields = ({
           onChange(
             drafts.map((item, itemIndex) => (itemIndex === index ? { ...item, ...partial } : item)),
           );
-          onRenewKey();
         };
 
         return (

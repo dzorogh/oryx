@@ -5,7 +5,7 @@ import {
   reservedAtPlaceForOwner,
 } from "@/features/logistics/logistics-availability";
 import { freeWarehouseQuantity, type AdjustmentSourceDocumentType } from "@/features/logistics/logistics-adjustments";
-import { manufacturerById } from "@/features/logistics/logistics-lookups";
+import { plantById } from "@/features/logistics/logistics-lookups";
 import {
   reservationDirection,
   shipmentDirection,
@@ -521,7 +521,7 @@ export const cancelGuidanceFactsFromSnapshot = (
       status: doc.status,
       availableQuantity,
       reservedQuantity: 0,
-      adjustmentOperation: doc.operation,
+      adjustmentOperation: doc.operation === "mixed" ? "decrease" : doc.operation,
     };
   }
 
@@ -646,7 +646,9 @@ const outputStockPlace = (
     return { locationType: added.locationType, locationId: added.locationId };
   }
   const production = snapshot.productionOrders.find((item) => item.id === productionOrderId);
-  const warehouseId = production ? manufacturerById(snapshot, production.manufacturerId)?.warehouseId : undefined;
+  const warehouseId = production
+    ? plantById(snapshot, production.plantId ?? "")?.warehouseId
+    : undefined;
   if (warehouseId) {
     return { locationType: "warehouse", locationId: warehouseId };
   }
@@ -755,7 +757,7 @@ const attachPresets = (
     if (!doc) {
       return guidance;
     }
-    const opposite = oppositeAdjustmentOperation(doc.operation);
+    const opposite = oppositeAdjustmentOperation(doc.operation === "mixed" ? "decrease" : doc.operation);
     const chosen =
       opposite === "increase"
         ? adjustmentLines[0]

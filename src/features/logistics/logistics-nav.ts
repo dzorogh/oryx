@@ -18,7 +18,7 @@ export const LOGISTICS_MORE_NAV_ITEMS: ModuleSubnavItem[] = [
   { href: LOGISTICS_PATHS.adjustments, label: "Корректировки" },
   { href: LOGISTICS_PATHS.warehouses, label: "Склады" },
   { href: LOGISTICS_PATHS.regions, label: "Регионы" },
-  { href: LOGISTICS_PATHS.manufacturers, label: "Производители" },
+  { href: LOGISTICS_PATHS.plants, label: "Заводы" },
   { href: LOGISTICS_PATHS.ledger, label: "Журнал" },
 ];
 

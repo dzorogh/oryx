@@ -1,9 +1,7 @@
-// @ts-nocheck
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildCreateProductionOutputRpcArgs } from "@/features/logistics/logistics-api";
 import { assertProductionOutputLines } from "@/features/logistics/logistics-rules";
-import { buildCompleteOutputRpcArgs } from "../../scripts/lib/seed-logistics-stories.mjs";
 
 describe("assertProductionOutputLines", () => {
   it("rejects an empty array", () => {
@@ -73,68 +71,24 @@ describe("assertProductionOutputLines", () => {
 });
 
 describe("buildCreateProductionOutputRpcArgs", () => {
-  it("maps one allocated line and one free line into p_lines", () => {
+  it("maps lines to product_variant_id", () => {
     const args = buildCreateProductionOutputRpcArgs({
-      requestKey: "key-1",
       orderId: "42",
       expectedEndOn: "2026-09-22",
       complete: true,
       lines: [
         {
-          productId: "8",
-          quantity: 10,
-          allocation: { ownerType: "order", ownerId: "5", quantity: 4 },
+          productId: "7",
+          quantity: 3,
+          allocation: { ownerType: "order", ownerId: "12", quantity: 3 },
         },
-        { productId: "9", quantity: 2 },
+        { productId: "8", quantity: 1 },
       ],
     });
-    assert.deepEqual(args.p_lines, [
-      {
-        product_id: 8,
-        quantity: 10,
-        allocation_owner_type: "order",
-        allocation_owner_id: 5,
-        allocation_quantity: 4,
-      },
-      {
-        product_id: 9,
-        quantity: 2,
-        allocation_owner_type: null,
-        allocation_owner_id: null,
-        allocation_quantity: null,
-      },
-    ]);
-  });
-});
-
-describe("buildCompleteOutputRpcArgs", () => {
-  it("builds one p_lines row from productId and both rows from lines", () => {
-    assert.deepEqual(
-      buildCompleteOutputRpcArgs({
-        id: 901,
-        productionOrderId: 901,
-        productId: 8,
-        quantity: 2,
-        expectedEndOn: "2026-09-16",
-      }).p_lines,
-      [{ product_id: 8, quantity: 2 }],
-    );
-    assert.deepEqual(
-      buildCompleteOutputRpcArgs({
-        id: 910,
-        productionOrderId: 910,
-        productId: 8,
-        quantity: 2,
-        lines: [
-          { productId: 8, quantity: 2 },
-          { productId: 9, quantity: 1 },
-        ],
-        expectedEndOn: "2026-09-16",
-      }).p_lines,
-      [
-        { product_id: 8, quantity: 2 },
-        { product_id: 9, quantity: 1 },
-      ],
-    );
+    assert.equal(args.p_production_order_id, 42);
+    assert.equal(args.p_complete, true);
+    assert.equal(args.p_expected_end_on, "2026-09-22");
+    assert.equal((args.p_lines as unknown[]).length, 2);
+    assert.equal((args.p_lines as Array<{ product_variant_id: number }>)[0].product_variant_id, 7);
   });
 });

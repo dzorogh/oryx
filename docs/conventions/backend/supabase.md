@@ -19,7 +19,7 @@ Kong is the only public entry (`/rest/v1`, `/auth/v1`, Studio). Isolated deploym
 ## Auth model (demo)
 
 - **No user login.** The browser uses the **anon** JWT from `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- Demo tables enable RLS and allow `anon` + `authenticated` `SELECT/INSERT/UPDATE/DELETE` (`USING (true) WITH CHECK (true)`).
+- Demo tables enable RLS. Pulse Thanks keeps open anon DML. **Store** is read-only for anon/authenticated (SELECT + command RPCs only); mutations go through `store_*` security definer functions. No open-all Store policies and no public reset RPC.
 - PostgREST still requires the `apikey` header (anon key). A request with no key gets `401` from Kong. That is expected.
 - Do not persist Auth sessions in the client (`persistSession: false` in `src/lib/supabase/client.ts`).
 - **Anon key is publishable** (it is in the client bundle). **Service role, JWT secret, Postgres password, Studio password** stay in Dokploy → compose `supabase` → **Environment**. Never commit them or paste them in chat.
@@ -75,11 +75,12 @@ In chat report HTTP status, row counts, and table names only. After a live probe
 1. Add `supabase/migrations/<timestamp>_<name>.sql`:
    - `create table public.<name> (...)`
    - `alter table ... enable row level security`
-   - `create policy ... for all to anon, authenticated using (true) with check (true)`
-   - `grant select, insert, update, delete on table public.<name> to anon, authenticated, service_role`
+   - For demo Pulse-style tables: open SELECT/INSERT policy may be appropriate
+   - For **Store** tables: SELECT-only for anon/authenticated; mutations via security definer RPCs; revoke EXECUTE on internal helpers
+   - `grant` accordingly (`service_role` keeps full access)
 2. Apply the SQL on **this** instance via MCP `apply_migration` / `execute_sql` (or Studio SQL on the Oryx Kong URL). Do not apply it on Capacity/YNAPB.
 3. Add a feature API module that uses `getSupabaseBrowserClient()`.
-4. Seed via PostgREST + anon key (see `scripts/seed-thanks.mjs` / `npm run seed:thanks`) or a new script. Prefer `on_conflict=id` + `Prefer: resolution=merge-duplicates`.
+4. Seed via PostgREST. Thanks may use anon; **Store logistics** uses privileged service_role (`npm run seed:logistics`, keys from `~/.config/oryx/supabase.env`). Prefer `on_conflict=id` + `Prefer: resolution=merge-duplicates` where upserts apply.
 5. Confirm without printing keys: HTTP status and `content-range` / row count only.
 
 ## Checks (no secrets in output)

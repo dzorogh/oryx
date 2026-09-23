@@ -4,7 +4,7 @@ import {
   hrefForTransfer,
   productionDemandAssigned,
 } from "@/features/logistics/logistics-availability";
-import { manufacturerCode, warehouseCode } from "@/features/logistics/logistics-lookups";
+import { plantCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
 import {
   expectedEndMeta,
@@ -361,12 +361,12 @@ export const relatedAdjustmentsForWarehouse = (
       meta: statusMeta(item.status),
     }));
 
-export const relatedProductionsForManufacturer = (
+export const relatedProductionsForPlant = (
   snapshot: LogisticsSnapshot,
-  manufacturerId: string,
+  plantId: string,
 ): RelatedDocumentItem[] =>
   snapshot.productionOrders
-    .filter((item) => item.manufacturerId === manufacturerId)
+    .filter((item) => item.plantId === plantId)
     .map((item) => ({
       id: item.id,
       href: `/store/logistics/production-orders/${publicDocumentParam(item)}`,
@@ -378,11 +378,11 @@ export const relatedProductionsForWarehouse = (
   snapshot: LogisticsSnapshot,
   warehouseId: string,
 ): RelatedDocumentItem[] => {
-  const manufacturer = snapshot.manufacturers.find((item) => item.warehouseId === warehouseId);
-  if (!manufacturer) {
+  const plant = snapshot.plants.find((item) => item.warehouseId === warehouseId);
+  if (!plant) {
     return [];
   }
-  return relatedProductionsForManufacturer(snapshot, manufacturer.id);
+  return relatedProductionsForPlant(snapshot, plant.id);
 };
 
 export const relatedOrderItem = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem | null => {
@@ -417,7 +417,7 @@ export type ProductActivityRow = {
   expectedEndOn: string | null;
   hasExpectedEnd: boolean;
   hint: string | null;
-  manufacturerId: string | null;
+  plantId: string | null;
 };
 
 export type ProductActivityGroup = {
@@ -490,7 +490,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
       expectedEndOn: item.expectedEndOn,
       hasExpectedEnd: true,
       hint: null,
-      manufacturerId: null,
+      plantId: null,
     }))
     .sort(sortActivityRows);
 
@@ -504,8 +504,8 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
       status: item.status,
       expectedEndOn: item.expectedEndOn,
       hasExpectedEnd: true,
-      hint: manufacturerCode(snapshot, item.manufacturerId),
-      manufacturerId: item.manufacturerId,
+      hint: plantCode(snapshot, item.plantId ?? ""),
+      plantId: item.plantId ?? "",
     }))
     .sort(sortActivityRows);
 
@@ -520,7 +520,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
       expectedEndOn: item.expectedEndOn,
       hasExpectedEnd: true,
       hint: `${warehouseCode(snapshot, item.fromWarehouseId)} → ${warehouseCode(snapshot, item.toWarehouseId)}`,
-      manufacturerId: null,
+      plantId: null,
     }))
     .sort(sortActivityRows);
 
@@ -537,7 +537,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
         expectedEndOn: item.expectedEndOn,
         hasExpectedEnd: true,
         hint: production ? production.number : null,
-        manufacturerId: null,
+        plantId: null,
       };
     })
     .sort(sortActivityRows);
@@ -555,7 +555,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
         expectedEndOn: null,
         hasExpectedEnd: false,
         hint: `${SHIPMENT_DIRECTION_LABELS[shipmentDirection(item.fromLocationType, item.toLocationType)]}${order ? ` · ${order.number}` : ""}`,
-        manufacturerId: null,
+        plantId: null,
       };
     })
     .sort(sortActivityRows);

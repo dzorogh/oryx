@@ -1,6 +1,6 @@
 # Store PIM — каталог товаров
 
-Единая страница **Products** (`/store/pim/products`): просмотр товаров в таблице, фильтрация, настройка колонок, пагинация. Источник — таблица `store_product` в demo Supabase (тот же список, что документы логистики). Пока запрос не завершён, таблица показывает скелетоны. Если Supabase не настроен, запрос вернул `null` или упал с ошибкой, список пустой — локальный demo-массив на этой странице не используется.
+Единая страница **Products** (`/store/pim/products`): просмотр вариантов в таблице, фильтрация, настройка колонок, пагинация. Источник — `store_product_variant` (+ `store_product` / `store_plant` / `store_product_price`) в demo Supabase. Пока запрос не завершён, таблица показывает скелетоны. Если Supabase не настроен, запрос вернул `null` или упал с ошибкой, список пустой — локальный demo-массив на этой странице не используется.
 
 Логистика живёт в том же разделе Store (`/store/logistics/...`). Отдельного каталога товаров у логистики нет.
 
@@ -12,12 +12,12 @@
 |-----|-----------|
 | `/store/pim/products` | Каталог; режим по умолчанию — base products |
 | `/store/pim/products?listing=variants` | Тот же каталог в режиме product variants |
-| `/store/pim/products/[productId]` | Карточка: demo PIM UI для старых `bike-*` id, иначе логистическая карточка того же товара. Код товара — `PRD-{id}` (`formatLogisticsCode`), фото из `store_product.image_url` (Корпортал Spatie medium `/s3/media/.../conversions/{stem}-medium.webp`). |
+| `/store/pim/products/[productId]` | Карточка: demo PIM UI для старых `bike-*` id, иначе логистическая карточка того же варианта. Код — `PRD-{id}` (`formatLogisticsCode`), фото из `store_product_variant.image_url` (Корпортал Spatie medium `/s3/media/.../conversions/{stem}-medium.webp`). |
 | `/store/logistics/...` | Заказы клиента, остатки, заказы на производство — см. [logistics.md](logistics.md) |
 
 - Страница: `app/store/pim/products/page.tsx` → `StoreCatalogPage`
 - Subnav Store: **Products** / **Pricelists** / **Orders** / **Stock**, затем движение, затем справочники, **Ledger**, импорт/экспорт и настройки (`src/features/store/store-nav.ts`)
-- Карточка товара: `/store/pim/products/[productId]` — тот же `id`, что в `store_product` / строках заказов
+- Карточка товара: `/store/pim/products/[productId]` — тот же `id`, что в `store_product_variant` / строках заказов
 
 ## Переключатель listing mode
 
@@ -43,7 +43,7 @@
 
 | Режим | Источник | Содержимое |
 |-------|----------|------------|
-| Base products / variants | `loadDbCatalogItems()` → `store_product` | Те же товары, что в логистике (цены/фото из колонок; завод с `manufacturer_id`) |
+| Base products / variants | `loadDbCatalogItems()` → `store_product_variant` + relational `store_product_price` | Те же варианты, что в логистике; завод как код `PLT-n`; цены из `store_product_price` |
 | Нет Supabase / ошибка / `null` | пустой массив | Скелетоны до ответа, затем пустое состояние |
 
 Ссылки с варианта ведут на карточку **родительского** товара (`getCatalogItemDetailHref`).
@@ -129,7 +129,7 @@ src/components/store/pim/products/
 
 ## Подключение к бэкенду
 
-Каталог читает `store_product` через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Завод товара — nullable `store_product.manufacturer_id`. Карточка товара с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
+Каталог читает `store_product_variant` (+ relational `store_product_price`) через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Завод варианта — nullable `store_product_variant.plant_id` (в UI — код `PLT-n`). Карточка с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
 
 ## Локальная проверка
 

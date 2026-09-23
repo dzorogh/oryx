@@ -54,8 +54,9 @@ export const assertDocumentCanBeCancelled = (kind: string, status?: string | nul
     );
   }
   const posted =
-    ((kind === "production_output" || kind === "output") && status === "done") ||
-    (kind === "transfer" && (status === "sent" || status === "delivered"));
+    ((kind === "production_output" || kind === "output") &&
+      (status === "done" || status === "in_progress")) ||
+    (kind === "transfer" && (status === "in_progress" || status === "done" || status === "sent" || status === "delivered"));
   if (posted) {
     throw new Error(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
   }

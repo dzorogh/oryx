@@ -3,11 +3,11 @@ import { getDisplayProductName } from "../products/catalog/catalog-helpers";
 import type { MarkupBasis, PricelistColumnDefinition } from "./pricelists-columns";
 import {
   getInfoFieldValue,
+  getPricelistRegions,
   getRegionById,
   getSeedCellValue,
   getSeedDealerStatus,
   getSeedRetailStatus,
-  PRICELIST_REGIONS,
   scopeHasRegion,
   type PricelistRow,
   type PricelistScope,
@@ -65,7 +65,7 @@ const numberCell = (value: number, format: string): Cell => ({ type: Number, val
 const stringCell = (value: string): Cell => ({ type: String, value });
 
 const countAvailableRegions = (row: PricelistRow, collab: ExportCollab): number =>
-  PRICELIST_REGIONS.reduce((available, region) => {
+  getPricelistRegions().reduce((available, region) => {
     const status = collab.getStatus(buildStatusCellId(region.id, row.id)) ?? getSeedDealerStatus(row, region.id);
     return status === "available" ? available + 1 : available;
   }, 0);
@@ -125,7 +125,7 @@ const resolveCellForColumn = (
     }
     case "statusSummary": {
       const available = countAvailableRegions(row, collab);
-      return stringCell(`Продаётся в ${available} из ${PRICELIST_REGIONS.length} регионов`);
+      return stringCell(`Продаётся в ${available} из ${getPricelistRegions().length} регионов`);
     }
     case "usd": {
       // Synthetic conversion column: follows the view-wide display currency

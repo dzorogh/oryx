@@ -14,7 +14,7 @@ import {
 import { PRODUCTION_STATUS_LABELS } from "@/features/logistics/logistics-labels";
 import type { LogisticsSnapshot, ProductionOrder, ProductionStatus } from "@/features/logistics/logistics-types";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
-import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
+import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { ProductionStatusBadge } from "@/features/logistics/ui/status-badge";
 
 const WORKFLOW_STATUSES = (["draft", "planned", "in_progress", "done"] as const) satisfies readonly ProductionStatus[];
@@ -51,7 +51,7 @@ export const ProductionOrderDocumentHeader = ({
   const terminal = order.status === "closed" || order.status === "cancelled";
   const statusItems = WORKFLOW_STATUSES.map((status) => ({
     value: status,
-    label: PRODUCTION_STATUS_LABELS[status],
+    label: (PRODUCTION_STATUS_LABELS[status] ?? ""),
   }));
   const terminalNote =
     order.status === "closed"
@@ -83,11 +83,11 @@ export const ProductionOrderDocumentHeader = ({
 
       <div className="mt-4 grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
         <div className="min-w-0">
-          <span className="mb-1 block text-xs leading-4 text-muted-foreground">Производитель</span>
+          <span className="mb-1 block text-xs leading-4 text-muted-foreground">Завод</span>
           <div className={controlClass}>
-            <ManufacturerLink
+            <PlantLink
               snapshot={snapshot}
-              manufacturerId={order.manufacturerId}
+              plantId={order.plantId ?? ""}
               className="h-auto rounded-none border-0 bg-transparent px-0 text-sm font-medium shadow-none"
             />
           </div>

@@ -1,6 +1,6 @@
 export const LOGISTICS_CODE_PREFIXES = {
   product: "PRD",
-  manufacturer: "PLT",
+  plant: "PLT",
   warehouse: "WH",
   region: "REG",
   customerOrder: "OMS",
@@ -8,43 +8,42 @@ export const LOGISTICS_CODE_PREFIXES = {
   reservation: "RSV",
   transfer: "TR",
   shipment: "SHP",
-  output: "OUT",
-  return: "SHP",
+  productionOutput: "OUT",
   adjustment: "ADJ",
-  customerOrderLine: "COL",
-  productionOrderLine: "POL",
-  reservationLine: "RSVL",
-  transferLine: "TRL",
-  transferAllocation: "TRA",
-  shipmentLine: "SHL",
-  outputLine: "OUTL",
-  outputAllocation: "OUA",
-  returnLine: "SHL",
-  adjustmentLine: "ADJL",
   stockTransaction: "TXN",
-  setting: "SET",
 } as const;
 
 export type LogisticsCodeKind = keyof typeof LOGISTICS_CODE_PREFIXES;
 export type LogisticsCodePrefixes = { [K in LogisticsCodeKind]: string };
 
+/** Map DB document kind → code prefix field */
+export const DOCUMENT_KIND_TO_PREFIX_FIELD: Record<string, LogisticsCodeKind> = {
+  customer_order: "customerOrder",
+  production_order: "productionOrder",
+  reservation: "reservation",
+  transfer: "transfer",
+  shipment: "shipment",
+  production_output: "productionOutput",
+  adjustment: "adjustment",
+};
+
+/** Document kinds only — catalog codes (PLT/WH/PRD/REG) are fixed, not editable. */
 export const DOCUMENT_PREFIX_FIELDS: Array<{
   kind: LogisticsCodeKind;
   label: string;
   exampleId: string;
+  documentKind: string;
 }> = [
-  { kind: "customerOrder", label: "Заказы клиента", exampleId: "12" },
-  { kind: "productionOrder", label: "Заказы на производство", exampleId: "1" },
-  { kind: "reservation", label: "Резервы", exampleId: "1" },
-  { kind: "transfer", label: "Перемещения", exampleId: "1" },
-  { kind: "shipment", label: "Отгрузки и возвраты", exampleId: "1" },
-  { kind: "output", label: "Выпуски", exampleId: "1" },
-  { kind: "adjustment", label: "Корректировки", exampleId: "1" },
-  { kind: "product", label: "Товары", exampleId: "1" },
-  { kind: "manufacturer", label: "Производители", exampleId: "7" },
-  { kind: "warehouse", label: "Склады", exampleId: "1" },
-  { kind: "region", label: "Регионы", exampleId: "1" },
+  { kind: "customerOrder", label: "Заказы клиента", exampleId: "12", documentKind: "customer_order" },
+  { kind: "productionOrder", label: "Заказы на производство", exampleId: "1", documentKind: "production_order" },
+  { kind: "reservation", label: "Резервы", exampleId: "1", documentKind: "reservation" },
+  { kind: "transfer", label: "Перемещения", exampleId: "1", documentKind: "transfer" },
+  { kind: "shipment", label: "Отгрузки и возвраты", exampleId: "1", documentKind: "shipment" },
+  { kind: "productionOutput", label: "Выпуски", exampleId: "1", documentKind: "production_output" },
+  { kind: "adjustment", label: "Корректировки", exampleId: "1", documentKind: "adjustment" },
 ];
+
+const CATALOG_CODE_KINDS = new Set<LogisticsCodeKind>(["product", "plant", "warehouse", "region"]);
 
 const clonePrefixes = (prefixes: LogisticsCodePrefixes): LogisticsCodePrefixes => ({ ...prefixes });
 
@@ -61,7 +60,9 @@ export const mergeLogisticsCodePrefixes = (
     return next;
   }
   for (const kind of Object.keys(LOGISTICS_CODE_PREFIXES) as LogisticsCodeKind[]) {
-    const raw = overrides[kind];
+    const raw =
+      overrides[kind] ??
+      (kind === "productionOutput" ? overrides.output : undefined);
     if (typeof raw !== "string") {
       continue;
     }
@@ -91,5 +92,6 @@ export const formatLogisticsCode = (
   if (id == null || id === "") {
     return "";
   }
-  return `${prefixes[kind]}-${id}`;
+  const prefix = CATALOG_CODE_KINDS.has(kind) ? LOGISTICS_CODE_PREFIXES[kind] : prefixes[kind];
+  return `${prefix}-${id}`;
 };

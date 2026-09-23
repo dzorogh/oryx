@@ -1,687 +1,844 @@
 /**
- * Dedicated OMS-901..906 demo stories with a full logistics chain.
- * Uses existing logistics tables and post RPCs. Does not print secrets.
+ * Rich demo logistics stories for the clean Store baseline.
+ * Privileged service_role client only. Uses command RPCs; balances stay non-negative.
  */
 
 export const STORY_LO = 901;
 export const STORY_HI = 999;
 
 const PRODUCT = {
-  enduro250: 22,
-  force1100: 1,
-  cross180: 17,
-  hummer320: 46,
-  cruiser300: 36,
+  enduro250: "22",
+  force1100: "1",
+  cross180: "17",
+  hummer320: "46",
+  cruiser300: "36",
+  fx350: "26",
+  rst240: "30",
+  rst322: "32",
+  rst422: "33",
+  rst750: "34",
+  gp401: "42",
+  gp881: "43",
+  gp1100: "44",
+  activator280: "29",
+  crossE200: "207",
+  seater2: "9",
+  seater4: "10",
+  cross130: "50",
+  powerMax250: "12",
+  powerMax320: "14",
+  powerMax145: "129",
+  powerMax190: "130",
+  gl300: "47",
+  enduro351: "77",
+  rst501: "89",
 };
 
-export const PLANT = {
-  shineray: { id: 6, warehouseId: 7 },
-  qianjiang: { id: 38, warehouseId: 41 },
-  taotao: { id: 34, warehouseId: 40 },
-  sunyee: { id: 12, warehouseId: 33 },
-  koolcnchet: { id: 2, warehouseId: 3 },
-  dayun: { id: 8, warehouseId: 9 },
+const PLANT = {
+  shineray: { id: "6", warehouseId: "7" },
+  qianjiang: { id: "38", warehouseId: "41" },
+  taotao: { id: "34", warehouseId: "40" },
+  sunyee: { id: "12", warehouseId: "33" },
+  koolcnchet: { id: "2", warehouseId: "3" },
+  dayun: { id: "8", warehouseId: "9" },
 };
 
-const DUBAI_HUB = 11;
+const DUBAI_HUB = "11";
 
-export const STORY_ORDERS = [
-  {
-    id: 901,
-    createdAt: "2026-09-02T08:10:00+00:00",
-    expectedEndOn: "2026-09-15",
-    description:
-      "We built extra Enduro stock last month. This order took 4 of the leftover bikes; 8 stay free at the plant.",
-  },
-  {
-    id: 902,
-    createdAt: "2026-09-01T09:00:00+00:00",
-    expectedEndOn: "2026-09-20",
-    description:
-      "The dealer signed first. We opened a build for these 3 Force 1100s, reserved them on the line, then shipped after they reached the plant.",
-  },
-  {
-    id: 903,
-    createdAt: "2026-09-05T10:15:00+00:00",
-    expectedEndOn: "2026-09-18",
-    description:
-      "Ten Cross 180s were already finished and sitting at the plant. We reserved 6 for this dealer and shipped them from there; 4 are still free.",
-  },
-  {
-    id: 904,
-    createdAt: "2026-09-02T11:40:00+00:00",
-    expectedEndOn: "2026-09-22",
-    description:
-      "We reserved all 8 Hummers the dealer asked for. They cut the deal to 5, so we released 3 back to free stock and shipped the rest.",
-  },
-  {
-    id: 905,
-    createdAt: "2026-08-20T07:30:00+00:00",
-    expectedEndOn: "2026-09-16",
-    description:
-      "All 6 Cruisers went out to the dealer. They sent 2 back the next week; those two are free again at the plant.",
-  },
-];
-
-export const MIXED_DEMO_ORDER = {
-  id: 906,
-  createdAt: "2026-09-18T16:00:00+00:00",
-  expectedEndOn: "2026-10-10",
-  description:
-    "Twenty mixed SKUs for Allocation Atlas. Eighteen are reserved at the plant warehouse; two finished bikes sit free at their factories with no RSV on this order.",
-  lines: [
-    { id: 906, productId: 26, quantity: 2, plant: "qianjiang", reserve: true },
-    { id: 907, productId: 30, quantity: 2, plant: "qianjiang", reserve: true },
-    { id: 908, productId: 32, quantity: 2, plant: "qianjiang", reserve: true },
-    { id: 909, productId: 33, quantity: 2, plant: "qianjiang", reserve: true },
-    { id: 910, productId: 34, quantity: 2, plant: "qianjiang", reserve: true },
-    { id: 911, productId: 42, quantity: 2, plant: "qianjiang", reserve: true },
-    { id: 912, productId: 43, quantity: 2, plant: "qianjiang", reserve: true },
-    { id: 913, productId: 44, quantity: 2, plant: "qianjiang", reserve: false },
-    { id: 914, productId: 29, quantity: 2, plant: "taotao", reserve: true },
-    { id: 915, productId: 207, quantity: 2, plant: "taotao", reserve: true },
-    { id: 916, productId: 9, quantity: 2, plant: "taotao", reserve: true },
-    { id: 917, productId: 10, quantity: 2, plant: "taotao", reserve: true },
-    { id: 918, productId: 50, quantity: 2, plant: "taotao", reserve: false },
-    { id: 919, productId: 12, quantity: 2, plant: "koolcnchet", reserve: true },
-    { id: 920, productId: 14, quantity: 2, plant: "koolcnchet", reserve: true },
-    { id: 921, productId: 129, quantity: 2, plant: "koolcnchet", reserve: true },
-    { id: 922, productId: 130, quantity: 2, plant: "koolcnchet", reserve: true },
-    { id: 923, productId: 47, quantity: 2, plant: "dayun", reserve: true },
-    { id: 924, productId: 77, quantity: 2, plant: "dayun", reserve: true },
-    { id: 925, productId: 89, quantity: 2, plant: "dayun", reserve: true },
-  ],
-};
-
-export const mixedDemoLinesByWarehouse = (lines = MIXED_DEMO_ORDER.lines) => {
-  const groups = new Map();
-  for (const line of lines) {
-    const plant = PLANT[line.plant];
-    if (!plant) {
-      throw new Error(`Unknown plant ${line.plant} for mixed demo line ${line.id}`);
-    }
-    const current = groups.get(plant.warehouseId) ?? {
-      manufacturerId: plant.id,
-      warehouseId: plant.warehouseId,
-      plant: line.plant,
-      lines: [],
-    };
-    current.lines.push(line);
-    groups.set(plant.warehouseId, current);
+const rpc = async (url, key, name, args) => {
+  const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`rpc ${name} failed: ${res.status} (${body.slice(0, 240)})`);
   }
-  return [...groups.values()];
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 };
 
-const createClient = (url, anon) => {
-  const jsonHeaders = {
-    apikey: anon,
-    Authorization: `Bearer ${anon}`,
-    "Content-Type": "application/json",
-  };
+const restGet = async (url, key, path) => {
+  const res = await fetch(`${url}/rest/v1/${path}`, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`GET ${path} failed: ${res.status}`);
+  }
+  return res.json();
+};
 
-  const request = async (method, path, { body, prefer } = {}) => {
-    const res = await fetch(`${url}/rest/v1/${path}`, {
-      method,
-      headers: {
-        ...jsonHeaders,
-        ...(prefer ? { Prefer: prefer } : {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+const restPatch = async (url, key, path, body) => {
+  const res = await fetch(`${url}/rest/v1/${path}`, {
+    method: "PATCH",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
     const text = await res.text();
-    if (!res.ok) {
-      throw new Error(`${method} ${path} failed: ${res.status} (${text.length} bytes)`);
-    }
-    return text ? JSON.parse(text) : null;
-  };
-
-  return {
-    get: (path) => request("GET", path),
-    insert: (table, row) =>
-      request("POST", table, { body: row, prefer: "return=minimal" }),
-    rpc: (name, args) => request("POST", `rpc/${name}`, { body: args, prefer: "return=representation" }),
-    remove: (path) => request("DELETE", path, { prefer: "return=minimal" }),
-  };
-};
-
-const resetStories = async (client) => {
-  await client.rpc("store_reset_logistics_stories", { p_lo: STORY_LO, p_hi: STORY_HI });
-};
-
-/** Shared document PK offsets (must match migration remapping). Sequence stays the story number. */
-const DOC_ID = {
-  po: (n) => 2_000_000 + n,
-  rsv: (n) => 3_000_000 + n,
-  tr: (n) => 4_000_000 + n,
-  shp: (n) => 5_000_000 + n,
-  out: (n) => 6_000_000 + n,
-};
-
-const insertCustomerOrderLines = async (client, story, lines) => {
-  await client.rpc("store_create_customer_order", {
-    p_description: story.description,
-    p_expected_end_on: story.expectedEndOn,
-    p_sequence_number: story.id,
-    p_id: story.id,
-    p_created_at: story.createdAt,
-    p_lines: lines.map((line) => ({
-      product_id: line.productId,
-      quantity: line.quantity,
-    })),
-  });
-};
-
-const insertCustomerOrder = async (client, story, productId, quantity) => {
-  await insertCustomerOrderLines(client, story, [{ id: story.id, productId, quantity }]);
-};
-
-const insertProduction = async (client, { id, manufacturerId, productId, quantity, lines, createdAt, expectedEndOn, status }) => {
-  const resolvedLines = lines ?? [{ id, productId, quantity }];
-  const docId = DOC_ID.po(id);
-  await client.rpc("store_create_production_order", {
-    p_manufacturer_id: manufacturerId,
-    p_lines: resolvedLines.map((line) => ({
-      product_id: line.productId,
-      quantity: line.quantity,
-    })),
-    p_sequence_number: id,
-    p_id: docId,
-    p_created_at: createdAt,
-    p_expected_end_on: expectedEndOn,
-    p_status: status && status !== "draft" ? status : "draft",
-  });
-  return docId;
-};
-
-export const resolveOutputSeedLines = ({ productId, quantity, lines }) => {
-  if (Array.isArray(lines) && lines.length > 0) {
-    return lines.map((line) => ({
-      product_id: line.productId,
-      quantity: line.quantity,
-    }));
+    throw new Error(`PATCH ${path} failed: ${res.status} (${text.slice(0, 240)})`);
   }
-  return [{ product_id: productId, quantity }];
 };
 
-export const buildCompleteOutputRpcArgs = ({
-  id,
-  productionOrderId,
-  productId,
-  quantity,
-  lines,
-  expectedEndOn,
-}) => {
-  const poId = productionOrderId > 2_000_000 ? productionOrderId : DOC_ID.po(productionOrderId);
-  return {
-    p_request_key: `seed:output:${id}`,
-    p_production_order_id: poId,
-    p_lines: resolveOutputSeedLines({ productId, quantity, lines }),
-    p_expected_end_on: expectedEndOn,
+/**
+ * @param {{
+ *   url: string,
+ *   serviceKey: string,
+ *   regionId: string,
+ *   variantIdByOldProduct: Map<string, string>,
+ *   plantIdByOld: Map<string, string>,
+ *   warehouseIdByOld: Map<string, string>,
+ * }} args
+ */
+export const seedLogisticsStories = async (args) => {
+  const { url, serviceKey, regionId, variantIdByOldProduct, plantIdByOld, warehouseIdByOld } = args;
+  const call = (name, body) => rpc(url, serviceKey, name, body);
+  const get = (path) => restGet(url, serviceKey, path);
+  const patch = (path, body) => restPatch(url, serviceKey, path, body);
+
+  const v = (key) => {
+    const id = variantIdByOldProduct.get(PRODUCT[key] ?? key);
+    if (!id) throw new Error(`variant missing for ${key}`);
+    return Number(id);
+  };
+  const plant = (key) => {
+    const cfg = PLANT[key];
+    const id = plantIdByOld.get(cfg.id);
+    if (!id) throw new Error(`plant missing for ${key}`);
+    return Number(id);
+  };
+  const wh = (keyOrOldId) => {
+    const oldId = PLANT[keyOrOldId]?.warehouseId ?? String(keyOrOldId);
+    const id = warehouseIdByOld.get(oldId);
+    if (!id) throw new Error(`warehouse missing for ${keyOrOldId}`);
+    return Number(id);
+  };
+  const whLoc = async (warehouseId) => {
+    const rows = await get(`store_warehouse?id=eq.${warehouseId}&select=stock_location_id`);
+    const loc = rows?.[0]?.stock_location_id;
+    if (!loc) throw new Error(`warehouse location missing for ${warehouseId}`);
+    return Number(loc);
+  };
+  const orderMeta = async (orderId) => {
+    const rows = await get(
+      `store_customer_order?id=eq.${orderId}&select=stock_owner_id,stock_location_id`,
+    );
+    if (!rows?.[0]) throw new Error(`customer order ${orderId} missing`);
+    return {
+      ownerId: Number(rows[0].stock_owner_id),
+      locationId: Number(rows[0].stock_location_id),
+    };
+  };
+
+  const required = [
+    "enduro250",
+    "force1100",
+    "cross180",
+    "hummer320",
+    "cruiser300",
+    "fx350",
+    "rst240",
+    "powerMax250",
+    "gl300",
+  ];
+  for (const key of required) {
+    if (!variantIdByOldProduct.get(PRODUCT[key])) {
+      console.log(`story_skip missing_variant ${key}`);
+      return { orders: 0 };
+    }
+  }
+  for (const key of Object.keys(PLANT)) {
+    if (!plantIdByOld.get(PLANT[key].id) || !warehouseIdByOld.get(PLANT[key].warehouseId)) {
+      console.log(`story_skip missing_plant ${key}`);
+      return { orders: 0 };
+    }
+  }
+  if (!warehouseIdByOld.get(DUBAI_HUB)) {
+    console.log("story_skip missing_dubai_hub");
+    return { orders: 0 };
+  }
+
+  const shinerayWh = wh("shineray");
+  const qianjiangWh = wh("qianjiang");
+  const taotaoWh = wh("taotao");
+  const sunyeeWh = wh("sunyee");
+  const koolWh = wh("koolcnchet");
+  const dayunWh = wh("dayun");
+  const dubaiWh = wh(DUBAI_HUB);
+
+  const shinerayLoc = await whLoc(shinerayWh);
+  const qianjiangLoc = await whLoc(qianjiangWh);
+  const taotaoLoc = await whLoc(taotaoWh);
+  const sunyeeLoc = await whLoc(sunyeeWh);
+  const koolLoc = await whLoc(koolWh);
+  const dayunLoc = await whLoc(dayunWh);
+  const dubaiLoc = await whLoc(dubaiWh);
+
+  // ---------------------------------------------------------------------------
+  // Bootstrap free stock (signed adjustment can mix +/−; opener is all positive)
+  // ---------------------------------------------------------------------------
+  await call("store_create_and_post_adjustment", {
+    p_location_id: shinerayLoc,
+    p_description: "Начальный остаток Shineray для демо-историй",
+    p_sequence_number: 901,
+    p_lines: [
+      { product_variant_id: v("enduro250"), quantity: 40 },
+      { product_variant_id: v("force1100"), quantity: 8 },
+    ],
+  });
+  await call("store_create_and_post_adjustment", {
+    p_location_id: qianjiangLoc,
+    p_description: "Начальный остаток Qianjiang",
+    p_sequence_number: 902,
+    p_lines: [
+      { product_variant_id: v("force1100"), quantity: 30 },
+      { product_variant_id: v("fx350"), quantity: 20 },
+      { product_variant_id: v("rst240"), quantity: 20 },
+      { product_variant_id: v("rst322"), quantity: 16 },
+      { product_variant_id: v("rst422"), quantity: 16 },
+      { product_variant_id: v("rst750"), quantity: 12 },
+      { product_variant_id: v("gp401"), quantity: 12 },
+      { product_variant_id: v("gp881"), quantity: 10 },
+      { product_variant_id: v("gp1100"), quantity: 8 },
+    ],
+  });
+  await call("store_create_and_post_adjustment", {
+    p_location_id: taotaoLoc,
+    p_description: "Начальный остаток Taotao",
+    p_sequence_number: 903,
+    p_lines: [
+      { product_variant_id: v("cross180"), quantity: 24 },
+      { product_variant_id: v("cruiser300"), quantity: 18 },
+      { product_variant_id: v("activator280"), quantity: 16 },
+      { product_variant_id: v("crossE200"), quantity: 14 },
+      { product_variant_id: v("seater2"), quantity: 12 },
+      { product_variant_id: v("seater4"), quantity: 12 },
+      { product_variant_id: v("cross130"), quantity: 10 },
+    ],
+  });
+  await call("store_create_and_post_adjustment", {
+    p_location_id: sunyeeLoc,
+    p_description: "Начальный остаток Sunyee",
+    p_sequence_number: 904,
+    p_lines: [{ product_variant_id: v("hummer320"), quantity: 20 }],
+  });
+  await call("store_create_and_post_adjustment", {
+    p_location_id: koolLoc,
+    p_description: "Начальный остаток Koolcnchet",
+    p_sequence_number: 905,
+    p_lines: [
+      { product_variant_id: v("powerMax250"), quantity: 16 },
+      { product_variant_id: v("powerMax320"), quantity: 14 },
+      { product_variant_id: v("powerMax145"), quantity: 12 },
+      { product_variant_id: v("powerMax190"), quantity: 12 },
+    ],
+  });
+  await call("store_create_and_post_adjustment", {
+    p_location_id: dayunLoc,
+    p_description: "Начальный остаток Dayun",
+    p_sequence_number: 906,
+    p_lines: [
+      { product_variant_id: v("gl300"), quantity: 14 },
+      { product_variant_id: v("enduro351"), quantity: 12 },
+      { product_variant_id: v("rst501"), quantity: 10 },
+    ],
+  });
+  // Positive stock at Dubai hub, then a separate signed write-off
+  await call("store_create_and_post_adjustment", {
+    p_location_id: dubaiLoc,
+    p_description: "Начальный остаток Dubai Hub",
+    p_sequence_number: 910,
+    p_lines: [
+      { product_variant_id: v("enduro250"), quantity: 10 },
+      { product_variant_id: v("cross180"), quantity: 8 },
+      { product_variant_id: v("force1100"), quantity: 6 },
+    ],
+  });
+  await call("store_create_and_post_adjustment", {
+    p_location_id: dubaiLoc,
+    p_description: "Инвентаризация Dubai Hub: списание Enduro",
+    p_sequence_number: 911,
+    p_lines: [{ product_variant_id: v("enduro250"), quantity: -2 }],
+  });
+
+  const regions = await get(`store_region?id=eq.${regionId}&select=stock_owner_id`);
+  const regionOwner = Number(regions?.[0]?.stock_owner_id);
+
+  // ---------------------------------------------------------------------------
+  // Customer story orders OMS-901..906
+  // ---------------------------------------------------------------------------
+  const order901 = await call("store_create_customer_order", {
+    p_region_id: Number(regionId),
+    p_description: "Демо: Enduro со склада завода — 4 из свободного остатка",
+    p_expected_end_on: "2026-09-15",
+    p_sequence_number: 901,
+    p_created_at: "2026-09-02T08:10:00+00:00",
+    p_lines: [{ product_variant_id: v("enduro250"), quantity: 4 }],
+  });
+  const order902 = await call("store_create_customer_order", {
+    p_region_id: Number(regionId),
+    p_description: "Демо: производство Force 1100 под заказ дилера",
+    p_expected_end_on: "2026-09-20",
+    p_sequence_number: 902,
+    p_created_at: "2026-09-01T09:00:00+00:00",
+    p_lines: [{ product_variant_id: v("force1100"), quantity: 3 }],
+  });
+  const order903 = await call("store_create_customer_order", {
+    p_region_id: Number(regionId),
+    p_description: "Демо: Cross 180 со склада Taotao",
+    p_expected_end_on: "2026-09-18",
+    p_sequence_number: 903,
+    p_created_at: "2026-09-05T10:15:00+00:00",
+    p_lines: [{ product_variant_id: v("cross180"), quantity: 6 }],
+  });
+  const order904 = await call("store_create_customer_order", {
+    p_region_id: Number(regionId),
+    p_description: "Демо: Hummer — резерв, частичный отпуск, отгрузка",
+    p_expected_end_on: "2026-09-22",
+    p_sequence_number: 904,
+    p_created_at: "2026-09-02T11:40:00+00:00",
+    p_lines: [{ product_variant_id: v("hummer320"), quantity: 8 }],
+  });
+  const order905 = await call("store_create_customer_order", {
+    p_region_id: Number(regionId),
+    p_description: "Демо: Cruiser с возвратом двух единиц",
+    p_expected_end_on: "2026-09-16",
+    p_sequence_number: 905,
+    p_created_at: "2026-08-20T07:30:00+00:00",
+    p_lines: [{ product_variant_id: v("cruiser300"), quantity: 6 }],
+  });
+  const order906 = await call("store_create_customer_order", {
+    p_region_id: Number(regionId),
+    p_description: "Демо: смешанный заказ для атласа аллокаций",
+    p_expected_end_on: "2026-10-10",
+    p_sequence_number: 906,
+    p_created_at: "2026-09-18T16:00:00+00:00",
+    p_lines: [
+      { product_variant_id: v("fx350"), quantity: 2 },
+      { product_variant_id: v("rst240"), quantity: 2 },
+      { product_variant_id: v("rst322"), quantity: 2 },
+      { product_variant_id: v("rst422"), quantity: 2 },
+      { product_variant_id: v("rst750"), quantity: 2 },
+      { product_variant_id: v("gp401"), quantity: 2 },
+      { product_variant_id: v("gp881"), quantity: 2 },
+      { product_variant_id: v("gp1100"), quantity: 2 },
+      { product_variant_id: v("activator280"), quantity: 2 },
+      { product_variant_id: v("crossE200"), quantity: 2 },
+      { product_variant_id: v("seater2"), quantity: 2 },
+      { product_variant_id: v("seater4"), quantity: 2 },
+      { product_variant_id: v("cross130"), quantity: 2 },
+      { product_variant_id: v("powerMax250"), quantity: 2 },
+      { product_variant_id: v("powerMax320"), quantity: 2 },
+      { product_variant_id: v("powerMax145"), quantity: 2 },
+      { product_variant_id: v("powerMax190"), quantity: 2 },
+      { product_variant_id: v("gl300"), quantity: 2 },
+      { product_variant_id: v("enduro351"), quantity: 2 },
+      { product_variant_id: v("rst501"), quantity: 2 },
+    ],
+  });
+
+  const meta901 = await orderMeta(order901.id);
+  const meta902 = await orderMeta(order902.id);
+  const meta903 = await orderMeta(order903.id);
+  const meta904 = await orderMeta(order904.id);
+  const meta905 = await orderMeta(order905.id);
+  const meta906 = await orderMeta(order906.id);
+
+  // ---------------------------------------------------------------------------
+  // Production orders (~13) in draft / in_progress / done + outputs (~10)
+  // ---------------------------------------------------------------------------
+  const poDraft1 = await call("store_create_production_order", {
+    p_plant_id: plant("shineray"),
+    p_status: "draft",
+    p_expected_end_on: "2026-10-05",
+    p_sequence_number: 901,
+    p_description: "Черновик: Enduro на Shineray",
+    p_lines: [{ product_variant_id: v("enduro250"), quantity: 5 }],
+  });
+  const poDraft2 = await call("store_create_production_order", {
+    p_plant_id: plant("taotao"),
+    p_status: "draft",
+    p_expected_end_on: "2026-10-08",
+    p_sequence_number: 902,
+    p_description: "Черновик: Cross 180",
+    p_lines: [{ product_variant_id: v("cross180"), quantity: 4 }],
+  });
+  const poDraft3 = await call("store_create_production_order", {
+    p_plant_id: plant("koolcnchet"),
+    p_status: "draft",
+    p_expected_end_on: "2026-10-12",
+    p_sequence_number: 903,
+    p_description: "Черновик: Power Max",
+    p_lines: [
+      { product_variant_id: v("powerMax250"), quantity: 3 },
+      { product_variant_id: v("powerMax320"), quantity: 2 },
+    ],
+  });
+
+  const poOpen1 = await call("store_create_production_order", {
+    p_plant_id: plant("qianjiang"),
+    p_status: "in_progress",
+    p_expected_end_on: "2026-09-25",
+    p_sequence_number: 904,
+    p_description: "В работе: Force под OMS-902",
+    p_lines: [{ product_variant_id: v("force1100"), quantity: 6 }],
+  });
+  const poOpen2 = await call("store_create_production_order", {
+    p_plant_id: plant("taotao"),
+    p_status: "in_progress",
+    p_expected_end_on: "2026-09-28",
+    p_sequence_number: 905,
+    p_description: "В работе: Cruiser",
+    p_lines: [{ product_variant_id: v("cruiser300"), quantity: 5 }],
+  });
+  const poOpen3 = await call("store_create_production_order", {
+    p_plant_id: plant("sunyee"),
+    p_status: "in_progress",
+    p_expected_end_on: "2026-09-30",
+    p_sequence_number: 906,
+    p_description: "В работе: Hummer",
+    p_lines: [{ product_variant_id: v("hummer320"), quantity: 4 }],
+  });
+  const poOpen4 = await call("store_create_production_order", {
+    p_plant_id: plant("dayun"),
+    p_status: "in_progress",
+    p_expected_end_on: "2026-10-02",
+    p_sequence_number: 907,
+    p_description: "В работе: Dayun mix",
+    p_lines: [
+      { product_variant_id: v("gl300"), quantity: 3 },
+      { product_variant_id: v("enduro351"), quantity: 2 },
+    ],
+  });
+
+  // Partial output on open PO (leaves PO in_progress)
+  await call("store_create_production_output", {
+    p_production_order_id: Number(poOpen1.id),
     p_complete: true,
+    p_sequence_number: 901,
+    p_description: "Частичный выпуск Force",
+    p_lines: [{ product_variant_id: v("force1100"), quantity: 3, allocation_owner_id: 1 }],
+  });
+  await call("store_create_production_output", {
+    p_production_order_id: Number(poOpen2.id),
+    p_complete: true,
+    p_sequence_number: 902,
+    p_description: "Частичный выпуск Cruiser",
+    p_lines: [{ product_variant_id: v("cruiser300"), quantity: 2, allocation_owner_id: 1 }],
+  });
+  await call("store_create_production_output", {
+    p_production_order_id: Number(poOpen3.id),
+    p_complete: true,
+    p_sequence_number: 903,
+    p_description: "Частичный выпуск Hummer",
+    p_lines: [{ product_variant_id: v("hummer320"), quantity: 2, allocation_owner_id: 1 }],
+  });
+  await call("store_create_production_output", {
+    p_production_order_id: Number(poOpen4.id),
+    p_complete: true,
+    p_sequence_number: 904,
+    p_description: "Частичный выпуск Dayun mix",
+    p_lines: [
+      { product_variant_id: v("gl300"), quantity: 1, allocation_owner_id: 1 },
+      { product_variant_id: v("enduro351"), quantity: 1, allocation_owner_id: 1 },
+    ],
+  });
+
+  const doneSpecs = [
+    {
+      seq: 910,
+      plant: "shineray",
+      desc: "Закрыт: Enduro batch",
+      lines: [{ product_variant_id: v("enduro250"), quantity: 8 }],
+      outSeq: 910,
+      outQty: 8,
+    },
+    {
+      seq: 911,
+      plant: "qianjiang",
+      desc: "Закрыт: FX/RST batch",
+      lines: [
+        { product_variant_id: v("fx350"), quantity: 4 },
+        { product_variant_id: v("rst240"), quantity: 4 },
+      ],
+      outSeq: 911,
+      multiOut: true,
+    },
+    {
+      seq: 912,
+      plant: "taotao",
+      desc: "Закрыт: Cross batch",
+      lines: [{ product_variant_id: v("cross180"), quantity: 6 }],
+      outSeq: 912,
+      outQty: 6,
+      variant: "cross180",
+    },
+    {
+      seq: 913,
+      plant: "sunyee",
+      desc: "Закрыт: Hummer batch",
+      lines: [{ product_variant_id: v("hummer320"), quantity: 5 }],
+      outSeq: 913,
+      outQty: 5,
+      variant: "hummer320",
+    },
+    {
+      seq: 914,
+      plant: "koolcnchet",
+      desc: "Закрыт: Power Max batch",
+      lines: [
+        { product_variant_id: v("powerMax145"), quantity: 3 },
+        { product_variant_id: v("powerMax190"), quantity: 3 },
+      ],
+      outSeq: 914,
+      multiOut: true,
+    },
+    {
+      seq: 915,
+      plant: "dayun",
+      desc: "Закрыт: RST-501",
+      lines: [{ product_variant_id: v("rst501"), quantity: 4 }],
+      outSeq: 915,
+      outQty: 4,
+      variant: "rst501",
+    },
+  ];
+
+  for (const spec of doneSpecs) {
+    const po = await call("store_create_production_order", {
+      p_plant_id: plant(spec.plant),
+      p_status: "in_progress",
+      p_expected_end_on: "2026-09-12",
+      p_sequence_number: spec.seq,
+      p_description: spec.desc,
+      p_lines: spec.lines,
+    });
+    await call("store_create_production_output", {
+      p_production_order_id: Number(po.id),
+      p_complete: true,
+      p_sequence_number: spec.outSeq,
+      p_description: `Выпуск ${spec.desc}`,
+      p_lines: spec.lines.map((line) => ({
+        product_variant_id: line.product_variant_id,
+        quantity: line.quantity,
+        allocation_owner_id: 1,
+      })),
+    });
+    await call("store_close_production_order", { p_id: Number(po.id) });
+  }
+
+  // Extra open PO without output yet
+  await call("store_create_production_order", {
+    p_plant_id: plant("qianjiang"),
+    p_status: "in_progress",
+    p_expected_end_on: "2026-10-15",
+    p_sequence_number: 920,
+    p_description: "В работе: GP серия без выпуска",
+    p_lines: [
+      { product_variant_id: v("gp401"), quantity: 5 },
+      { product_variant_id: v("gp881"), quantity: 4 },
+    ],
+  });
+
+  void poDraft1;
+  void poDraft2;
+  void poDraft3;
+  void poOpen3;
+  void poOpen4;
+
+  // ---------------------------------------------------------------------------
+  // Reservations (~26): free→order, free→region, release back to free
+  // ---------------------------------------------------------------------------
+  let rsvSeq = 901;
+  const reserve = async ({ locationId, ownerId, description, lines }) => {
+    const seq = rsvSeq;
+    rsvSeq += 1;
+    return call("store_create_and_post_reservation", {
+      p_location_id: locationId,
+      p_owner_id: ownerId,
+      p_description: description,
+      p_creation_source: "manual",
+      p_sequence_number: seq,
+      p_lines: lines,
+    });
   };
-};
 
-const completeOutput = async (client, args) => {
-  const docId = DOC_ID.out(args.id);
-  await client.rpc("store_create_production_output", buildCompleteOutputRpcArgs(args));
-  // Force sequence/id for story display when RPC auto-assigns: acceptable if numbers differ;
-  // stories look up by relationships. Prefer explicit id via follow-up if needed.
-  void docId;
-  void args.createdAt;
-};
+  // OMS-901: reserve then ship Enduro
+  await reserve({
+    locationId: shinerayLoc,
+    ownerId: meta901.ownerId,
+    description: "Резерв Enduro для OMS-901",
+    lines: [{ product_variant_id: v("enduro250"), quantity: 4, from_owner_id: 1 }],
+  });
+  await call("store_create_and_post_shipment", {
+    p_from_location_id: shinerayLoc,
+    p_to_location_id: meta901.locationId,
+    p_description: "Отгрузка OMS-901",
+    p_sequence_number: 901,
+    p_lines: [{ product_variant_id: v("enduro250"), quantity: 4 }],
+  });
 
-const postReservation = async (client, {
-  id,
-  orderId,
-  productId,
-  quantity,
-  locationType,
-  locationId,
-  createdAt,
-  operation = "reserve",
-  toOwnerType,
-  toOwnerId,
-  fromOwnerType,
-  fromOwnerId,
-  note = "",
-  lines,
-}) => {
-  const isRelease = operation === "release";
-  const destType = toOwnerType !== undefined ? toOwnerType : isRelease ? null : "order";
-  const destId = toOwnerId !== undefined ? toOwnerId : isRelease ? null : orderId;
-  const sourceType = fromOwnerType !== undefined ? fromOwnerType : isRelease ? "order" : null;
-  const sourceId = fromOwnerId !== undefined ? fromOwnerId : isRelease ? orderId : null;
-  const resolvedLines = lines ?? [{ id, productId, quantity, fromOwnerType: sourceType, fromOwnerId: sourceId }];
-  const docId = DOC_ID.rsv(id);
-  const resolvedLocationId =
-    locationType === "production_order" && locationId < 2_000_000
-      ? DOC_ID.po(locationId)
-      : locationType === "transfer" && locationId < 4_000_000
-        ? DOC_ID.tr(locationId)
-        : locationId;
-  await client.rpc("store_create_and_post_reservation", {
-    p_location_type: locationType,
-    p_location_id: resolvedLocationId,
-    p_to_owner_type: destType,
-    p_to_owner_id: destId,
-    p_note: note,
-    p_origin: "manual",
-    p_sequence_number: id,
-    p_id: docId,
-    p_created_at: createdAt,
-    p_lines: resolvedLines.map((line) => ({
-      product_id: line.productId ?? productId,
-      quantity: line.quantity,
-      from_owner_type: line.fromOwnerType !== undefined ? line.fromOwnerType : sourceType,
-      from_owner_id: line.fromOwnerId !== undefined ? line.fromOwnerId : sourceId,
-    })),
+  // OMS-902: reserve Force after production output, ship
+  await reserve({
+    locationId: qianjiangLoc,
+    ownerId: meta902.ownerId,
+    description: "Резерв Force для OMS-902",
+    lines: [{ product_variant_id: v("force1100"), quantity: 3, from_owner_id: 1 }],
   });
-  return docId;
-};
+  await call("store_create_and_post_shipment", {
+    p_from_location_id: qianjiangLoc,
+    p_to_location_id: meta902.locationId,
+    p_description: "Отгрузка OMS-902",
+    p_sequence_number: 902,
+    p_lines: [{ product_variant_id: v("force1100"), quantity: 3 }],
+  });
 
-const postRelease = async (client, { id, orderId, productId, quantity, locationType, locationId, reason, createdAt }) => {
-  await postReservation(client, {
-    id,
-    orderId,
-    productId,
-    quantity,
-    locationType,
-    locationId,
-    createdAt,
-    operation: "release",
-    note: reason ?? "",
+  // OMS-903
+  await reserve({
+    locationId: taotaoLoc,
+    ownerId: meta903.ownerId,
+    description: "Резерв Cross для OMS-903",
+    lines: [{ product_variant_id: v("cross180"), quantity: 6, from_owner_id: 1 }],
   });
-};
+  await call("store_create_and_post_shipment", {
+    p_from_location_id: taotaoLoc,
+    p_to_location_id: meta903.locationId,
+    p_description: "Отгрузка OMS-903",
+    p_sequence_number: 903,
+    p_lines: [{ product_variant_id: v("cross180"), quantity: 6 }],
+  });
 
-const deliverTransfer = async (client, { id, fromWarehouseId, toWarehouseId, orderId, productId, quantity, createdAt, expectedEndOn }) => {
-  const docId = DOC_ID.tr(id);
-  await client.rpc("store_create_and_send_transfer", {
-    p_request_key: `seed:transfer:${id}`,
-    p_from_warehouse_id: fromWarehouseId,
-    p_to_warehouse_id: toWarehouseId,
-    p_expected_end_on: expectedEndOn,
-    p_id: docId,
-    p_created_at: createdAt,
-    p_lines: [
-      {
-        product_id: productId,
-        quantity,
-        owner_type: "order",
-        owner_id: orderId,
-      },
-    ],
+  // OMS-904: reserve 8, release 3 back to free, ship 5
+  await reserve({
+    locationId: sunyeeLoc,
+    ownerId: meta904.ownerId,
+    description: "Резерв Hummer для OMS-904 (8)",
+    lines: [{ product_variant_id: v("hummer320"), quantity: 8, from_owner_id: 1 }],
   });
-  await client.rpc("store_complete_transfer", { p_id: docId });
-};
+  await reserve({
+    locationId: sunyeeLoc,
+    ownerId: 1,
+    description: "Снятие 3 Hummer с OMS-904 обратно в свободный",
+    lines: [{ product_variant_id: v("hummer320"), quantity: 3, from_owner_id: meta904.ownerId }],
+  });
+  await call("store_create_and_post_shipment", {
+    p_from_location_id: sunyeeLoc,
+    p_to_location_id: meta904.locationId,
+    p_description: "Отгрузка OMS-904 (5 из 8)",
+    p_sequence_number: 904,
+    p_lines: [{ product_variant_id: v("hummer320"), quantity: 5 }],
+  });
 
-const postShipment = async (client, { id, orderId, warehouseId, productId, quantity, createdAt }) => {
-  await client.rpc("store_create_and_post_shipment", {
-    p_request_key: `seed:shipment:${id}`,
-    p_customer_order_id: orderId,
-    p_from_location_type: "warehouse",
-    p_from_location_id: warehouseId,
-    p_to_location_type: "customer_order",
-    p_to_location_id: orderId,
-    p_id: DOC_ID.shp(id),
-    p_created_at: createdAt,
-    p_lines: [
-      {
-        product_id: productId,
-        quantity,
-        to_owner_type: "order",
-        to_owner_id: orderId,
-      },
-    ],
+  // OMS-905: ship 6, return 2
+  await reserve({
+    locationId: taotaoLoc,
+    ownerId: meta905.ownerId,
+    description: "Резерв Cruiser для OMS-905",
+    lines: [{ product_variant_id: v("cruiser300"), quantity: 6, from_owner_id: 1 }],
   });
-};
+  await call("store_create_and_post_shipment", {
+    p_from_location_id: taotaoLoc,
+    p_to_location_id: meta905.locationId,
+    p_description: "Отгрузка OMS-905",
+    p_sequence_number: 905,
+    p_lines: [{ product_variant_id: v("cruiser300"), quantity: 6 }],
+  });
+  await call("store_create_and_post_shipment", {
+    p_from_location_id: meta905.locationId,
+    p_to_location_id: taotaoLoc,
+    p_description: "Возврат 2 Cruiser по OMS-905",
+    p_sequence_number: 906,
+    p_lines: [{ product_variant_id: v("cruiser300"), quantity: 2, to_owner_id: 1 }],
+  });
 
-const postReturn = async (client, { id, orderId, warehouseId, productId, quantity, createdAt }) => {
-  await client.rpc("store_create_and_post_shipment", {
-    p_request_key: `seed:return:${id}`,
-    p_customer_order_id: orderId,
-    p_from_location_type: "customer_order",
-    p_from_location_id: orderId,
-    p_to_location_type: "warehouse",
-    p_to_location_id: warehouseId,
-    p_id: DOC_ID.shp(id),
-    p_created_at: createdAt,
-    p_lines: [
-      {
-        product_id: productId,
-        quantity,
-        to_owner_type: null,
-        to_owner_id: null,
-      },
-    ],
+  // Region reservations
+  await reserve({
+    locationId: shinerayLoc,
+    ownerId: regionOwner,
+    description: "Региональный резерв Enduro",
+    lines: [{ product_variant_id: v("enduro250"), quantity: 5, from_owner_id: 1 }],
   });
-};
+  await reserve({
+    locationId: dubaiLoc,
+    ownerId: regionOwner,
+    description: "Региональный резерв Cross на Dubai Hub",
+    lines: [{ product_variant_id: v("cross180"), quantity: 3, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: qianjiangLoc,
+    ownerId: regionOwner,
+    description: "Региональный резерв Force",
+    lines: [{ product_variant_id: v("force1100"), quantity: 4, from_owner_id: 1 }],
+  });
 
-const seedSurplusThenReserve = async (client) => {
-  const story = STORY_ORDERS[0];
-  await insertProduction(client, {
-    id: 901,
-    manufacturerId: PLANT.shineray.id,
-    productId: PRODUCT.enduro250,
-    quantity: 12,
-    createdAt: "2026-08-12T06:00:00+00:00",
-    expectedEndOn: "2026-08-28",
-    status: "in_progress",
-  });
-  await completeOutput(client, {
-    id: 901,
-    productionOrderId: 901,
-    productId: PRODUCT.enduro250,
-    quantity: 12,
-    createdAt: "2026-08-20T08:00:00+00:00",
-    expectedEndOn: "2026-08-20",
-  });
-  await client.rpc("store_set_production_status", { p_id: DOC_ID.po(901), p_status: "done" });
-  await insertCustomerOrder(client, story, PRODUCT.enduro250, 4);
-  await postReservation(client, {
-    id: 901,
-    orderId: 901,
-    productId: PRODUCT.enduro250,
-    quantity: 4,
-    locationType: "warehouse",
-    locationId: PLANT.shineray.warehouseId,
-    createdAt: "2026-09-03T08:30:00+00:00",
-  });
-  await deliverTransfer(client, {
-    id: 901,
-    fromWarehouseId: PLANT.shineray.warehouseId,
-    toWarehouseId: DUBAI_HUB,
-    orderId: 901,
-    productId: PRODUCT.enduro250,
-    quantity: 4,
-    createdAt: "2026-09-05T07:00:00+00:00",
-    expectedEndOn: "2026-09-08",
-  });
-  await postShipment(client, {
-    id: 901,
-    orderId: 901,
-    warehouseId: DUBAI_HUB,
-    productId: PRODUCT.enduro250,
-    quantity: 4,
-    createdAt: "2026-09-08T10:00:00+00:00",
-  });
-};
-
-const seedOrderThenProduce = async (client) => {
-  const story = STORY_ORDERS[1];
-  await insertCustomerOrder(client, story, PRODUCT.force1100, 3);
-  await insertProduction(client, {
-    id: 902,
-    manufacturerId: PLANT.qianjiang.id,
-    productId: PRODUCT.force1100,
-    quantity: 3,
-    createdAt: "2026-09-02T06:20:00+00:00",
-    expectedEndOn: "2026-09-12",
-    status: "in_progress",
-  });
-  await postReservation(client, {
-    id: 902,
-    orderId: 902,
-    productId: PRODUCT.force1100,
-    quantity: 3,
-    locationType: "production_order",
-    locationId: 902,
-    createdAt: "2026-09-02T06:25:00+00:00",
-  });
-  await completeOutput(client, {
-    id: 902,
-    productionOrderId: 902,
-    productId: PRODUCT.force1100,
-    quantity: 3,
-    createdAt: "2026-09-10T09:00:00+00:00",
-    expectedEndOn: "2026-09-10",
-  });
-  await client.rpc("store_set_production_status", { p_id: DOC_ID.po(902), p_status: "done" });
-  await deliverTransfer(client, {
-    id: 902,
-    fromWarehouseId: PLANT.qianjiang.warehouseId,
-    toWarehouseId: DUBAI_HUB,
-    orderId: 902,
-    productId: PRODUCT.force1100,
-    quantity: 3,
-    createdAt: "2026-09-11T07:30:00+00:00",
-    expectedEndOn: "2026-09-14",
-  });
-  await postShipment(client, {
-    id: 902,
-    orderId: 902,
-    warehouseId: DUBAI_HUB,
-    productId: PRODUCT.force1100,
-    quantity: 3,
-    createdAt: "2026-09-14T11:00:00+00:00",
-  });
-};
-
-const seedLeftoverAtPlant = async (client) => {
-  const story = STORY_ORDERS[2];
-  await insertProduction(client, {
-    id: 903,
-    manufacturerId: PLANT.taotao.id,
-    productId: PRODUCT.cross180,
-    quantity: 10,
-    createdAt: "2026-07-15T05:00:00+00:00",
-    expectedEndOn: "2026-08-01",
-    status: "in_progress",
-  });
-  await completeOutput(client, {
-    id: 903,
-    productionOrderId: 903,
-    productId: PRODUCT.cross180,
-    quantity: 10,
-    createdAt: "2026-08-01T08:00:00+00:00",
-    expectedEndOn: "2026-08-01",
-  });
-  await client.rpc("store_set_production_status", { p_id: DOC_ID.po(903), p_status: "done" });
-  await insertCustomerOrder(client, story, PRODUCT.cross180, 6);
-  await postReservation(client, {
-    id: 903,
-    orderId: 903,
-    productId: PRODUCT.cross180,
-    quantity: 6,
-    locationType: "warehouse",
-    locationId: PLANT.taotao.warehouseId,
-    createdAt: "2026-09-06T08:00:00+00:00",
-  });
-  await postShipment(client, {
-    id: 903,
-    orderId: 903,
-    warehouseId: PLANT.taotao.warehouseId,
-    productId: PRODUCT.cross180,
-    quantity: 6,
-    createdAt: "2026-09-09T09:20:00+00:00",
-  });
-};
-
-const seedReleaseHeavy = async (client) => {
-  const story = STORY_ORDERS[3];
-  await insertProduction(client, {
-    id: 904,
-    manufacturerId: PLANT.sunyee.id,
-    productId: PRODUCT.hummer320,
-    quantity: 8,
-    createdAt: "2026-08-25T06:00:00+00:00",
-    expectedEndOn: "2026-09-02",
-    status: "in_progress",
-  });
-  await completeOutput(client, {
-    id: 904,
-    productionOrderId: 904,
-    productId: PRODUCT.hummer320,
-    quantity: 8,
-    createdAt: "2026-09-01T08:00:00+00:00",
-    expectedEndOn: "2026-09-01",
-  });
-  await client.rpc("store_set_production_status", { p_id: DOC_ID.po(904), p_status: "done" });
-  await insertCustomerOrder(client, story, PRODUCT.hummer320, 8);
-  await postReservation(client, {
-    id: 904,
-    orderId: 904,
-    productId: PRODUCT.hummer320,
-    quantity: 8,
-    locationType: "warehouse",
-    locationId: PLANT.sunyee.warehouseId,
-    createdAt: "2026-09-03T09:00:00+00:00",
-  });
-  await postRelease(client, {
-    id: 934,
-    orderId: 904,
-    productId: PRODUCT.hummer320,
-    quantity: 3,
-    locationType: "warehouse",
-    locationId: PLANT.sunyee.warehouseId,
-    reason: "Dealer cut the order to five this month.",
-    createdAt: "2026-09-07T10:00:00+00:00",
-  });
-  await deliverTransfer(client, {
-    id: 904,
-    fromWarehouseId: PLANT.sunyee.warehouseId,
-    toWarehouseId: DUBAI_HUB,
-    orderId: 904,
-    productId: PRODUCT.hummer320,
-    quantity: 5,
-    createdAt: "2026-09-08T07:00:00+00:00",
-    expectedEndOn: "2026-09-10",
-  });
-  await postShipment(client, {
-    id: 904,
-    orderId: 904,
-    warehouseId: DUBAI_HUB,
-    productId: PRODUCT.hummer320,
-    quantity: 5,
-    createdAt: "2026-09-10T12:00:00+00:00",
-  });
-};
-
-const seedReturnHeavy = async (client) => {
-  const story = STORY_ORDERS[4];
-  await insertCustomerOrder(client, story, PRODUCT.cruiser300, 6);
-  await insertProduction(client, {
-    id: 905,
-    manufacturerId: PLANT.taotao.id,
-    productId: PRODUCT.cruiser300,
-    quantity: 6,
-    createdAt: "2026-08-21T06:00:00+00:00",
-    expectedEndOn: "2026-09-04",
-    status: "in_progress",
-  });
-  await postReservation(client, {
-    id: 905,
-    orderId: 905,
-    productId: PRODUCT.cruiser300,
-    quantity: 6,
-    locationType: "production_order",
-    locationId: 905,
-    createdAt: "2026-08-21T06:10:00+00:00",
-  });
-  await completeOutput(client, {
-    id: 905,
-    productionOrderId: 905,
-    productId: PRODUCT.cruiser300,
-    quantity: 6,
-    createdAt: "2026-09-04T08:30:00+00:00",
-    expectedEndOn: "2026-09-04",
-  });
-  await client.rpc("store_set_production_status", { p_id: DOC_ID.po(905), p_status: "done" });
-  await postShipment(client, {
-    id: 905,
-    orderId: 905,
-    warehouseId: PLANT.taotao.warehouseId,
-    productId: PRODUCT.cruiser300,
-    quantity: 6,
-    createdAt: "2026-09-06T09:00:00+00:00",
-  });
-  await postReturn(client, {
-    id: 915,
-    orderId: 905,
-    warehouseId: PLANT.taotao.warehouseId,
-    productId: PRODUCT.cruiser300,
-    quantity: 2,
-    createdAt: "2026-09-13T08:45:00+00:00",
-  });
-};
-
-export const seedMixedDemoOrder = async (client) => {
-  const story = MIXED_DEMO_ORDER;
-  await insertCustomerOrderLines(client, story, story.lines);
-  const groups = mixedDemoLinesByWarehouse(story.lines);
-  let documentId = story.id;
-  for (const group of groups) {
-    const poId = documentId;
-    const outputId = documentId;
-    const reservationId = documentId;
-    documentId += 1;
-    await insertProduction(client, {
-      id: poId,
-      manufacturerId: group.manufacturerId,
-      lines: group.lines.map((line) => ({
-        id: line.id,
-        productId: line.productId,
-        quantity: line.quantity,
-      })),
-      createdAt: "2026-09-10T06:00:00+00:00",
-      expectedEndOn: "2026-09-16",
-      status: "in_progress",
-    });
-    await completeOutput(client, {
-      id: outputId,
-      productionOrderId: poId,
-      lines: group.lines.map((line) => ({
-        id: line.id,
-        productionOrderLineId: line.id,
-        productId: line.productId,
-        quantity: line.quantity,
-      })),
-      createdAt: "2026-09-16T08:00:00+00:00",
-      expectedEndOn: "2026-09-16",
-    });
-    await client.rpc("store_set_production_status", { p_id: poId, p_status: "done" });
-    const reserved = group.lines.filter((line) => line.reserve);
-    if (reserved.length === 0) {
-      continue;
-    }
-    await postReservation(client, {
-      id: reservationId,
-      orderId: story.id,
-      locationType: "warehouse",
-      locationId: group.warehouseId,
-      createdAt: "2026-09-18T16:30:00+00:00",
-      lines: reserved.map((line) => ({
-        id: line.id,
-        productId: line.productId,
-        quantity: line.quantity,
-      })),
+  // OMS-906 mixed reserves across plants (18 of 20 lines)
+  const mixedReserves = [
+    { loc: qianjiangLoc, lines: [
+      { product_variant_id: v("fx350"), quantity: 2 },
+      { product_variant_id: v("rst240"), quantity: 2 },
+      { product_variant_id: v("rst322"), quantity: 2 },
+      { product_variant_id: v("rst422"), quantity: 2 },
+      { product_variant_id: v("rst750"), quantity: 2 },
+      { product_variant_id: v("gp401"), quantity: 2 },
+      { product_variant_id: v("gp881"), quantity: 2 },
+    ]},
+    { loc: taotaoLoc, lines: [
+      { product_variant_id: v("activator280"), quantity: 2 },
+      { product_variant_id: v("crossE200"), quantity: 2 },
+      { product_variant_id: v("seater2"), quantity: 2 },
+      { product_variant_id: v("seater4"), quantity: 2 },
+    ]},
+    { loc: koolLoc, lines: [
+      { product_variant_id: v("powerMax250"), quantity: 2 },
+      { product_variant_id: v("powerMax320"), quantity: 2 },
+      { product_variant_id: v("powerMax145"), quantity: 2 },
+      { product_variant_id: v("powerMax190"), quantity: 2 },
+    ]},
+    { loc: dayunLoc, lines: [
+      { product_variant_id: v("gl300"), quantity: 2 },
+      { product_variant_id: v("enduro351"), quantity: 2 },
+      { product_variant_id: v("rst501"), quantity: 2 },
+    ]},
+  ];
+  for (const group of mixedReserves) {
+    await reserve({
+      locationId: group.loc,
+      ownerId: meta906.ownerId,
+      description: "Резерв строк OMS-906",
+      lines: group.lines.map((line) => ({ ...line, from_owner_id: 1 })),
     });
   }
-};
 
-export const seedLogisticsStories = async ({ url, anon }) => {
-  const client = createClient(url, anon);
-  await resetStories(client);
-  await seedSurplusThenReserve(client);
-  await seedOrderThenProduce(client);
-  await seedLeftoverAtPlant(client);
-  await seedReleaseHeavy(client);
-  await seedReturnHeavy(client);
-  await seedMixedDemoOrder(client);
-  await postReservation(client, {
-    id: 930,
-    productId: PRODUCT.enduro250,
-    quantity: 2,
-    locationType: "warehouse",
-    locationId: PLANT.shineray.warehouseId,
-    createdAt: "2026-09-18T18:00:00+00:00",
-    toOwnerType: "region",
-    toOwnerId: 1,
-    fromOwnerType: null,
-    fromOwnerId: null,
-    note: "Regional pool for reassign demos",
+  // Extra reservations on open JSON-ish story stock for list density
+  await reserve({
+    locationId: dubaiLoc,
+    ownerId: meta901.ownerId,
+    description: "Доп. резерв Enduro на Dubai для OMS-901",
+    lines: [{ product_variant_id: v("enduro250"), quantity: 2, from_owner_id: 1 }],
   });
-  const orders = await client.get(
-    `store_customer_order?id=gte.${STORY_LO}&id=lte.${STORY_HI}&select=id&order=id.asc`,
-  );
-  return { orders: orders?.length ?? 0 };
+  await reserve({
+    locationId: taotaoLoc,
+    ownerId: meta903.ownerId,
+    description: "Доп. резерв Cross на Taotao",
+    lines: [{ product_variant_id: v("cross180"), quantity: 2, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: koolLoc,
+    ownerId: regionOwner,
+    description: "Региональный резерв Power Max",
+    lines: [{ product_variant_id: v("powerMax250"), quantity: 2, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: dayunLoc,
+    ownerId: regionOwner,
+    description: "Региональный резерв GL-300",
+    lines: [{ product_variant_id: v("gl300"), quantity: 2, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: shinerayLoc,
+    ownerId: meta902.ownerId,
+    description: "Резерв Force на Shineray для OMS-902",
+    lines: [{ product_variant_id: v("force1100"), quantity: 2, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: sunyeeLoc,
+    ownerId: meta904.ownerId,
+    description: "Доп. резерв Hummer для OMS-904",
+    lines: [{ product_variant_id: v("hummer320"), quantity: 1, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: taotaoLoc,
+    ownerId: meta905.ownerId,
+    description: "Доп. резерв Cruiser для OMS-905",
+    lines: [{ product_variant_id: v("cruiser300"), quantity: 1, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: dubaiLoc,
+    ownerId: meta906.ownerId,
+    description: "Резерв Force на Dubai для OMS-906",
+    lines: [{ product_variant_id: v("force1100"), quantity: 1, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: qianjiangLoc,
+    ownerId: meta906.ownerId,
+    description: "Доп. резерв GP-1100 для OMS-906",
+    lines: [{ product_variant_id: v("gp1100"), quantity: 1, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: dayunLoc,
+    ownerId: meta906.ownerId,
+    description: "Доп. резерв Enduro-351 для OMS-906",
+    lines: [{ product_variant_id: v("enduro351"), quantity: 1, from_owner_id: 1 }],
+  });
+  await reserve({
+    locationId: koolLoc,
+    ownerId: meta901.ownerId,
+    description: "Резерв Power Max для OMS-901",
+    lines: [{ product_variant_id: v("powerMax320"), quantity: 1, from_owner_id: 1 }],
+  });
+
+  // ---------------------------------------------------------------------------
+  // Transfers: 2 done, 1 in progress
+  // ---------------------------------------------------------------------------
+  const tr1 = await call("store_create_and_send_transfer", {
+    p_from_warehouse_id: shinerayWh,
+    p_to_warehouse_id: dubaiWh,
+    p_expected_end_on: "2026-09-10",
+    p_description: "Shineray → Dubai Hub (доставлено)",
+    p_sequence_number: 901,
+    p_lines: [{ product_variant_id: v("enduro250"), quantity: 6, owner_id: 1 }],
+  });
+  await call("store_complete_transfer", { p_id: Number(tr1.id) });
+
+  const tr2 = await call("store_create_and_send_transfer", {
+    p_from_warehouse_id: taotaoWh,
+    p_to_warehouse_id: dubaiWh,
+    p_expected_end_on: "2026-09-12",
+    p_description: "Taotao → Dubai Hub (доставлено)",
+    p_sequence_number: 902,
+    p_lines: [{ product_variant_id: v("cross180"), quantity: 4, owner_id: 1 }],
+  });
+  await call("store_complete_transfer", { p_id: Number(tr2.id) });
+
+  await call("store_create_and_send_transfer", {
+    p_from_warehouse_id: qianjiangWh,
+    p_to_warehouse_id: dubaiWh,
+    p_expected_end_on: "2026-09-28",
+    p_description: "Qianjiang → Dubai Hub (в пути)",
+    p_sequence_number: 903,
+    p_lines: [{ product_variant_id: v("force1100"), quantity: 3, owner_id: 1 }],
+  });
+
+  // Extra shipment Dubai → order for density
+  await reserve({
+    locationId: dubaiLoc,
+    ownerId: meta903.ownerId,
+    description: "Резерв Cross на Dubai под OMS-903",
+    lines: [{ product_variant_id: v("cross180"), quantity: 2, from_owner_id: 1 }],
+  });
+  await call("store_create_and_post_shipment", {
+    p_from_location_id: dubaiLoc,
+    p_to_location_id: meta903.locationId,
+    p_description: "Доп. отгрузка OMS-903 с Dubai Hub",
+    p_sequence_number: 910,
+    p_lines: [{ product_variant_id: v("cross180"), quantity: 2 }],
+  });
+
+  // Mark one story order done for lifecycle variety
+  await patch(`store_document?id=eq.${order901.id}`, { status: "done" });
+
+  return { orders: 6 };
 };

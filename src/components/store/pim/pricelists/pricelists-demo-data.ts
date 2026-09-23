@@ -1,7 +1,11 @@
 // english-ui:ignore-file
 import { getVariantCatalogItems } from "../products/detail/product-detail-demo-data";
 import type { StoreCatalogItem } from "../products/store-catalog-demo-data";
+import type { PricelistDbBootstrap } from "@/features/store/store-pricelists-from-db";
 import {
+  buildPriceCellId,
+  buildRetailStatusCellId,
+  buildStatusCellId,
   CURRENCY_USD_RATE,
   RETAIL_STATUSES,
   type CurrencyCode,
@@ -38,7 +42,7 @@ export type PricelistRegionGroup = {
   label: string;
 };
 
-export const PRICELIST_REGION_GROUPS: PricelistRegionGroup[] = [
+const FALLBACK_REGION_GROUPS: PricelistRegionGroup[] = [
   { id: "cis", label: "СНГ" },
   { id: "mena", label: "Ближний Восток и Северная Африка" },
   { id: "europe", label: "Европа" },
@@ -46,19 +50,15 @@ export const PRICELIST_REGION_GROUPS: PricelistRegionGroup[] = [
   { id: "apac", label: "Азиатско-Тихоокеанский регион" },
 ];
 
-export const getRegionGroupById = (groupId: string): PricelistRegionGroup =>
-  PRICELIST_REGION_GROUPS.find((group) => group.id === groupId) ?? PRICELIST_REGION_GROUPS[0];
-
 export type PricelistRegion = {
   id: string;
   label: string;
   currency: CurrencyCode;
-  /** Region group this region belongs to (references PRICELIST_REGION_GROUPS). */
+  /** Region group this region belongs to (references region groups). */
   group: string;
 };
 
-/** First region is selected by default. Currency = the region's default retail currency. */
-export const PRICELIST_REGIONS: PricelistRegion[] = [
+const FALLBACK_REGIONS: PricelistRegion[] = [
   { id: "ae", label: "ОАЭ", currency: "AED", group: "mena" },
   { id: "ru", label: "Россия", currency: "RUB", group: "cis" },
   { id: "kz", label: "Казахстан", currency: "KZT", group: "cis" },
@@ -71,28 +71,63 @@ export const PRICELIST_REGIONS: PricelistRegion[] = [
   { id: "om", label: "Оман", currency: "OMR", group: "mena" },
 ];
 
-export const DEFAULT_REGION_ID = PRICELIST_REGIONS[0].id;
+let dbBootstrap: PricelistDbBootstrap | null = null;
+let pricelistRowsCache: PricelistRow[] | null = null;
+
+/** Apply relational Store pricing catalogs; clears row cache. */
+export const applyPricelistDbBootstrap = (bootstrap: PricelistDbBootstrap | null) => {
+  dbBootstrap = bootstrap;
+  pricelistRowsCache = null;
+};
+
+export const getPricelistRegionGroups = (): PricelistRegionGroup[] =>
+  dbBootstrap?.groups.length ? dbBootstrap.groups : FALLBACK_REGION_GROUPS;
+
+/** Offline fallback list; prefer getPricelistRegionGroups() at runtime. */
+export const PRICELIST_REGION_GROUPS = FALLBACK_REGION_GROUPS;
+
+export const getRegionGroupById = (groupId: string): PricelistRegionGroup =>
+  getPricelistRegionGroups().find((group) => group.id === groupId) ?? getPricelistRegionGroups()[0];
+
+export const getPricelistRegions = (): PricelistRegion[] =>
+  dbBootstrap?.regions.length
+    ? dbBootstrap.regions.map(({ id, label, currency, group }) => ({ id, label, currency, group }))
+    : FALLBACK_REGIONS;
+
+/** Offline fallback list; prefer getPricelistRegions() at runtime. */
+export const PRICELIST_REGIONS = FALLBACK_REGIONS;
+
+export const DEFAULT_REGION_ID = FALLBACK_REGIONS[0].id;
 
 export const getRegionById = (regionId: string): PricelistRegion =>
-  PRICELIST_REGIONS.find((region) => region.id === regionId) ?? PRICELIST_REGIONS[0];
+  getPricelistRegions().find((region) => region.id === regionId) ?? getPricelistRegions()[0];
 
 /** Regions clustered by their group, preserving both group and region order. */
 export const getRegionsByGroup = (): { group: PricelistRegionGroup; regions: PricelistRegion[] }[] =>
-  PRICELIST_REGION_GROUPS.map((group) => ({
-    group,
-    regions: PRICELIST_REGIONS.filter((region) => region.group === group.id),
-  })).filter((entry) => entry.regions.length > 0);
+  getPricelistRegionGroups()
+    .map((group) => ({
+      group,
+      regions: getPricelistRegions().filter((region) => region.group === group.id),
+    }))
+    .filter((entry) => entry.regions.length > 0);
 
-export const parseRegionId = (value: string | null | undefined): string =>
-  PRICELIST_REGIONS.some((region) => region.id === value) ? (value as string) : DEFAULT_REGION_ID;
+export const parseRegionId = (value: string | null | undefined): string => {
+  const regions = getPricelistRegions();
+  return regions.some((region) => region.id === value)
+    ? (value as string)
+    : (regions[0]?.id ?? DEFAULT_REGION_ID);
+};
 
 export type PricelistRow = StoreCatalogItem & { numericId: number };
-
-let pricelistRowsCache: PricelistRow[] | null = null;
 
 /** Variant rows enriched with a stable numeric id shown in the Name column. */
 export const getPricelistRows = (): PricelistRow[] => {
   if (pricelistRowsCache) {
+    return pricelistRowsCache;
+  }
+
+  if (dbBootstrap?.rows.length) {
+    pricelistRowsCache = dbBootstrap.rows;
     return pricelistRowsCache;
   }
 
@@ -125,7 +160,8 @@ const getRowBaseUsd = (row: PricelistRow): number => {
 export const getDefaultCurrency = (field: PriceField, regionCurrency: CurrencyCode): CurrencyCode =>
   field === "retail" ? regionCurrency : "CNY";
 
-const REGION_INDEX = new Map(PRICELIST_REGIONS.map((region, index) => [region.id, index]));
+const regionIndexMap = (): Map<string, number> =>
+  new Map(getPricelistRegions().map((region, index) => [region.id, index]));
 
 /** Deterministic pseudo-random value in [0, 1) from two integer seeds. */
 const hashUnit = (a: number, b: number): number => {
@@ -142,7 +178,7 @@ const DEALER_MARKUP_STEPS = [10, 15, 20, 25, 30, 35, 40];
 
 /** Deterministic per product + region dealer markup over purchase, in [10, 40]%. */
 const getDealerMarkupFactor = (row: PricelistRow, regionId: string): number => {
-  const regionIndex = REGION_INDEX.get(regionId) ?? 0;
+  const regionIndex = regionIndexMap().get(regionId) ?? 0;
   const stepIndex = Math.min(
     DEALER_MARKUP_STEPS.length - 1,
     Math.floor(hashUnit(row.numericId, regionIndex + 991) * DEALER_MARKUP_STEPS.length),
@@ -154,42 +190,39 @@ const getDealerMarkupFactor = (row: PricelistRow, regionId: string): number => {
 const getSeedUsdAmount = (row: PricelistRow, field: PriceField, regionId: string): number => {
   const baseUsd = getRowBaseUsd(row);
   if (field === "dealer") {
-    // Dealer price is derived from the purchase price plus a regional markup so
-    // the Markup column reads back as a clean 10–40% premium.
     return baseUsd * FIELD_FACTOR.purchase * getDealerMarkupFactor(row, regionId);
   }
   return baseUsd * FIELD_FACTOR[field];
 };
 
 /**
- * Deterministic seed value used until a cell is edited. Pure function of the
- * row, field, and region so every client sees identical defaults. The dealer
- * price varies per region (10–40% above purchase); purchase is region-agnostic.
+ * Relational Store price when present; otherwise deterministic offline seed.
+ * Collab overlays still win at call sites via `collab.getCell(...) ?? getSeed…`.
  */
 export const getSeedCellValue = (
   row: PricelistRow,
   field: PriceField,
   region: PricelistRegion,
 ): PricelistCellValue => {
+  const fromDb = dbBootstrap?.prices.get(
+    buildPriceCellId(field === "purchase" ? null : region.id, row.id, field),
+  );
+  if (fromDb) {
+    return fromDb;
+  }
   const currency = getDefaultCurrency(field, region.currency);
   const usd = getSeedUsdAmount(row, field, region.id);
   const amount = Math.max(1, Math.round(usd / CURRENCY_USD_RATE[currency]));
   return { amount, currency };
 };
 
-/**
- * Deterministic default dealer status per product + region.
- *
- * Each product gets its own "availability level" (0..10) derived from its id,
- * so the catalog spans the full range: some products are sold in no region at
- * all (level 0), some in every region (level 10), and the rest in between. For
- * a given product, a per-region hash decides whether that region clears the
- * product's availability threshold; regions that fall short are "unavailable".
- * Pure function of row + region so every client renders identical defaults
- * until the value is edited.
- */
+/** Relational dealer status when present; otherwise deterministic offline seed. */
 export const getSeedDealerStatus = (row: PricelistRow, regionId: string): DealerStatus => {
-  const regionIndex = REGION_INDEX.get(regionId) ?? 0;
+  const fromDb = dbBootstrap?.dealerStatuses.get(buildStatusCellId(regionId, row.id));
+  if (fromDb) {
+    return fromDb;
+  }
+  const regionIndex = regionIndexMap().get(regionId) ?? 0;
   const availabilityThreshold = (row.numericId % 11) / 10;
 
   if (hashUnit(row.numericId, regionIndex) < availabilityThreshold) {
@@ -199,13 +232,13 @@ export const getSeedDealerStatus = (row: PricelistRow, regionId: string): Dealer
   return "unavailable";
 };
 
-/**
- * Deterministic default retail status per product + region. Weighted toward the
- * common "Available for sale" / "Draft" states so the demo looks realistic,
- * while still spanning the full dictionary. Pure function of row + region.
- */
+/** Relational retail status when present; otherwise deterministic offline seed. */
 export const getSeedRetailStatus = (row: PricelistRow, regionId: string): RetailStatus => {
-  const regionIndex = REGION_INDEX.get(regionId) ?? 0;
+  const fromDb = dbBootstrap?.retailStatuses.get(buildRetailStatusCellId(regionId, row.id));
+  if (fromDb) {
+    return fromDb;
+  }
+  const regionIndex = regionIndexMap().get(regionId) ?? 0;
   const index = Math.floor(hashUnit(row.numericId + 17, regionIndex + 31) * RETAIL_STATUSES.length);
   return RETAIL_STATUSES[Math.min(index, RETAIL_STATUSES.length - 1)].value;
 };

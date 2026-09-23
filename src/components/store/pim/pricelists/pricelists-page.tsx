@@ -24,6 +24,7 @@ import { PricelistsFiltersSheet } from "./pricelists-filters-sheet";
 import { PricelistsTable, type PricelistsTableHandle } from "./pricelists-table";
 import { PricelistsToolbar } from "./pricelists-toolbar";
 import {
+  applyPricelistDbBootstrap,
   getSeedDealerStatus,
   parsePricelistScope,
   parseRegionId,
@@ -35,6 +36,7 @@ import { usePricelistColumns } from "./use-pricelist-columns";
 import { usePricelistDisplayCurrency } from "./use-pricelist-display-currency";
 import { usePricelistParameters } from "./use-pricelist-parameters";
 import { usePricelistsController, type AvailabilityFilter } from "./use-pricelists-controller";
+import { loadPricelistDbBootstrap } from "@/features/store/store-pricelists-from-db";
 
 const PricelistsPageFallback = () => (
   <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Загрузка прайс-листов" />
@@ -42,6 +44,7 @@ const PricelistsPageFallback = () => (
 
 const PricelistsPageContent = () => {
   const searchParams = useSearchParams();
+  const [dataEpoch, setDataEpoch] = useState(0);
 
   // With `output: "export"` the Next router does not update useSearchParams on
   // client-side router.replace (a no-op after a hard reload), so we own the
@@ -53,6 +56,25 @@ const PricelistsPageContent = () => {
     parseRegionId(searchParams.get(REGION_QUERY_PARAM)),
   );
 
+  useEffect(() => {
+    let cancelled = false;
+    void loadPricelistDbBootstrap()
+      .then((bootstrap) => {
+        if (cancelled) return;
+        applyPricelistDbBootstrap(bootstrap);
+        setRegionId((current) => parseRegionId(current));
+        setDataEpoch((value) => value + 1);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        applyPricelistDbBootstrap(null);
+        setDataEpoch((value) => value + 1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const collab = useYjsPricelists();
   const deps = useRecalcDeps(collab);
   // One client (the leader) acts as the pricing backend and owns the shared
@@ -61,6 +83,7 @@ const PricelistsPageContent = () => {
 
   const getStatus = collab.getStatus;
   const availability = useMemo<AvailabilityFilter>(() => {
+    void dataEpoch;
     if (!scopeHasRegion(scope)) {
       return { enabled: false, isAvailable: () => true };
     }
@@ -70,9 +93,9 @@ const PricelistsPageContent = () => {
         (getStatus(buildStatusCellId(regionId, row.id)) ?? getSeedDealerStatus(row, regionId)) ===
         "available",
     };
-  }, [scope, regionId, getStatus]);
+  }, [scope, regionId, getStatus, dataEpoch]);
 
-  const controller = usePricelistsController(scope, regionId, availability);
+  const controller = usePricelistsController(scope, regionId, availability, dataEpoch);
   const columns = usePricelistColumns(scope);
   const { displayCurrency, setDisplayCurrency } = usePricelistDisplayCurrency();
   const tableRef = useRef<PricelistsTableHandle>(null);

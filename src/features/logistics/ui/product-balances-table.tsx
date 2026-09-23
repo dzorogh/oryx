@@ -14,7 +14,7 @@ import { formatQuantity, locationKindLabel } from "@/features/logistics/logistic
 import { locationIdentity, ownerLabel } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
-import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
+import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { cn } from "@/lib/utils";
 
@@ -168,13 +168,13 @@ export const ProductBalancesTable = ({
                     <p className="text-xs text-muted-foreground">{kind}</p>
                     <p className="text-sm font-medium">
                       {title}
-                      {identity.manufacturerId &&
+                      {identity.plantId &&
                       (place.locationType === "production_order" || identity.hint) ? (
                         <>
                           <span className="font-normal text-muted-foreground"> · </span>
-                          <ManufacturerLink
+                          <PlantLink
                             snapshot={snapshot}
-                            manufacturerId={identity.manufacturerId}
+                            plantId={identity.plantId}
                             className="font-normal"
                           />
                         </>

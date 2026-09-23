@@ -1,4 +1,4 @@
-import { PRICELIST_REGIONS } from "./pricelists-demo-data";
+import { getPricelistRegions } from "./pricelists-demo-data";
 
 /**
  * A parameter is a dynamic, table-wide column added per region (shared across
@@ -39,7 +39,7 @@ const SEED_PARAMETER_BLUEPRINTS: { id: string; label: string; slug: string; base
 const SEED_PARAMETER_IDS = new Set(SEED_PARAMETER_BLUEPRINTS.map((blueprint) => blueprint.id));
 
 const getRegionIndex = (regionId: string): number => {
-  const index = PRICELIST_REGIONS.findIndex((region) => region.id === regionId);
+  const index = getPricelistRegions().findIndex((region) => region.id === regionId);
   return index >= 0 ? index : 0;
 };
 

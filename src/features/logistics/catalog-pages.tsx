@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  hrefForManufacturer,
+  hrefForPlant,
   hrefForProduct,
   hrefForWarehouse,
   sumFreeForProduct,
@@ -19,7 +19,7 @@ import { warehouseOwnerLabel } from "@/features/logistics/logistics-lookups";
 import { stockHref } from "@/features/logistics/stock-filters";
 import {
   relatedAdjustmentsForWarehouse,
-  relatedProductionsForManufacturer,
+  relatedProductionsForPlant,
   relatedProductionsForWarehouse,
   relatedShipmentsForWarehouse,
   relatedTransfersForWarehouse,
@@ -31,23 +31,23 @@ import { RelatedDocuments, RelatedDocumentsBoard } from "@/features/logistics/ui
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
-  createManufacturer,
+  createPlant,
   createProduct,
   createProductionOrder,
   createWarehouse,
-  updateManufacturer,
+  updatePlant,
   updateWarehouse,
 } from "@/features/logistics/logistics-api";
 import {
-  linkedManufacturersForProduct,
-  manufacturerSelectItems,
+  linkedPlantsForProduct,
+  plantSelectItems,
   productById,
   warehouseById,
 } from "@/features/logistics/logistics-lookups";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
-import { ManufacturerLink } from "@/features/logistics/ui/manufacturer-link";
+import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
@@ -155,30 +155,30 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
   const resolvedProductId = productId ?? params.productId ?? params.id;
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
   const [productionOpen, setProductionOpen] = useState(false);
-  const [manufacturerId, setManufacturerId] = useState("");
+  const [plantId, setPlantId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [expectedEndOn, setExpectedEndOn] = useState("");
   const product = snapshot.products.find((item) => item.id === resolvedProductId);
-  const plants = product ? linkedManufacturersForProduct(snapshot, product.id) : [];
-  const plantItems = product ? manufacturerSelectItems(snapshot, [product.id]) : [];
+  const plants = product ? linkedPlantsForProduct(snapshot, product.id) : [];
+  const plantItems = product ? plantSelectItems(snapshot, [product.id]) : [];
   const productCode = product?.code;
 
   const openProduction = () => {
-    setManufacturerId(plantItems.length === 1 ? plantItems[0].value : "");
+    setPlantId(plantItems.length === 1 ? plantItems[0].value : "");
     setQuantity("1");
     setExpectedEndOn("");
     setProductionOpen(true);
   };
 
   const createProduction = async () => {
-    if (!product || !manufacturerId || !(Number(quantity) > 0)) {
+    if (!product || !plantId || !(Number(quantity) > 0)) {
       toast.error("Выберите завод и количество");
       return;
     }
     const ok = await runLogisticsAction(
       () =>
         createProductionOrder({
-          manufacturerId,
+          plantId,
           expectedEndOn: expectedEndOn || null,
           lines: [{ productId: product.id, quantity: Number(quantity) }],
         }),
@@ -187,7 +187,7 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
     );
     if (ok) {
       setProductionOpen(false);
-      setManufacturerId("");
+      setPlantId("");
       setQuantity("1");
       setExpectedEndOn("");
     }
@@ -226,12 +226,12 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
         }
       >
         {plants.length > 0 ? (
-          <LogisticsMetaField label="Производители">
+          <LogisticsMetaField label="Заводы">
             <span className="text-sm">
               {plants.map((plant, index) => (
                 <span key={plant.id}>
                   {index > 0 ? ", " : null}
-                  <ManufacturerLink snapshot={snapshot} manufacturerId={plant.id} />
+                  <PlantLink snapshot={snapshot} plantId={plant.id} />
                 </span>
               ))}
             </span>
@@ -257,7 +257,7 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
         onOpenChange={(next) => {
           setProductionOpen(next);
           if (next) {
-            setManufacturerId(plantItems.length === 1 ? plantItems[0].value : "");
+            setPlantId(plantItems.length === 1 ? plantItems[0].value : "");
             setQuantity("1");
             setExpectedEndOn("");
           }
@@ -266,10 +266,10 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
       >
         <div className="flex flex-col gap-3">
           <FieldSelect
-            label="Производитель"
-            value={manufacturerId}
+            label="Завод"
+            value={plantId}
             items={plantItems}
-            onChange={setManufacturerId}
+            onChange={setPlantId}
             placeholder="Выберите производителя"
           />
           {plants.length > 0 ? (
@@ -288,7 +288,7 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
               aria-label="Количество"
             />
           </label>
-          <Button type="button" disabled={!manufacturerId || !(Number(quantity) > 0)} onClick={() => void createProduction()}>
+          <Button type="button" disabled={!plantId || !(Number(quantity) > 0)} onClick={() => void createProduction()}>
             Создать
           </Button>
         </div>
@@ -328,7 +328,7 @@ export const WarehousesPage = () => {
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
       {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Код", "Название", "Производитель"]} isEmpty={snapshot.warehouses.length === 0}>
+        <LogisticsTableCard headers={["Код", "Название", "Завод"]} isEmpty={snapshot.warehouses.length === 0}>
           {snapshot.warehouses.map((warehouse) => (
             <TableRow key={warehouse.id}>
               <TableCell className="px-3 py-2">
@@ -340,8 +340,8 @@ export const WarehousesPage = () => {
                 </Link>
               </TableCell>
               <TableCell className="px-3 py-2 text-sm text-muted-foreground">
-                {warehouse.manufacturerId ? (
-                  <ManufacturerLink snapshot={snapshot} manufacturerId={warehouse.manufacturerId} />
+                {warehouse.plantId ? (
+                  <PlantLink snapshot={snapshot} plantId={warehouse.plantId} />
                 ) : (
                   warehouseOwnerLabel(snapshot, warehouse.id)
                 )}
@@ -431,9 +431,9 @@ export const WarehouseDetailPage = () => {
             >
               Остатки склада
             </Link>
-            {warehouse.manufacturerId ? (
+            {warehouse.plantId ? (
               <Link
-                href={hrefForManufacturer(warehouse.manufacturerId)}
+                href={hrefForPlant(warehouse.plantId)}
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 {owner}
@@ -499,7 +499,7 @@ export const WarehouseDetailPage = () => {
             <span className="font-medium">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Dubai Hub" />
           </label>
-          <p className="text-sm text-muted-foreground">Производитель: {owner}</p>
+          <p className="text-sm text-muted-foreground">Завод: {owner}</p>
           <Button type="button" onClick={() => void save()}>
             Сохранить
           </Button>
@@ -509,7 +509,7 @@ export const WarehouseDetailPage = () => {
   );
 };
 
-export const ManufacturersPage = () => {
+export const PlantsPage = () => {
   const { snapshot, isLoading, error, reload } = useLogisticsStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -520,8 +520,8 @@ export const ManufacturersPage = () => {
       return;
     }
     const ok = await runLogisticsAction(
-      () => createManufacturer({ name: name.trim() }),
-      "Производитель добавлен",
+      () => createPlant({ name: name.trim() }),
+      "Завод добавлен",
       reload,
     );
     if (ok) {
@@ -531,28 +531,28 @@ export const ManufacturersPage = () => {
   };
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Производители" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Заводы" }]}>
       <LogisticsToolbar
-        title="Производители"
-        actionLabel="Новый производитель"
+        title="Заводы"
+        actionLabel="Новый завод"
         onAction={() => setOpen(true)}
       />
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
       {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Код", "Название", "Склад"]} isEmpty={snapshot.manufacturers.length === 0}>
-          {snapshot.manufacturers.map((manufacturer) => (
-            <TableRow key={manufacturer.id}>
+        <LogisticsTableCard headers={["Код", "Название", "Склад"]} isEmpty={snapshot.plants.length === 0}>
+          {snapshot.plants.map((plant) => (
+            <TableRow key={plant.id}>
               <TableCell className="px-3 py-2">
-                <LogisticsCodeBadge code={manufacturer.code} href={hrefForManufacturer(manufacturer.id)} />
+                <LogisticsCodeBadge code={plant.code} href={hrefForPlant(plant.id)} />
               </TableCell>
               <TableCell className="px-3 py-2 text-sm">
-                <Link href={hrefForManufacturer(manufacturer.id)} className="text-primary hover:underline">
-                  {manufacturer.name}
+                <Link href={hrefForPlant(plant.id)} className="text-primary hover:underline">
+                  {plant.name}
                 </Link>
               </TableCell>
               <TableCell className="px-3 py-2 text-sm">
-                <WarehouseLink snapshot={snapshot} warehouseId={manufacturer.warehouseId} />
+                <WarehouseLink snapshot={snapshot} warehouseId={plant.warehouseId} />
               </TableCell>
             </TableRow>
           ))}
@@ -562,7 +562,7 @@ export const ManufacturersPage = () => {
       <LogisticsDialog
         open={open}
         onOpenChange={setOpen}
-        title="Новый производитель"
+        title="Новый завод"
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
@@ -578,11 +578,11 @@ export const ManufacturersPage = () => {
   );
 };
 
-export const ManufacturerDetailPage = () => {
+export const PlantDetailPage = () => {
   const params = useParams<{ id: string }>();
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
-  const manufacturer = snapshot.manufacturers.find((item) => item.id === params.id);
-  const warehouse = manufacturer ? warehouseById(snapshot, manufacturer.warehouseId) : undefined;
+  const plant = snapshot.plants.find((item) => item.id === params.id);
+  const warehouse = plant ? warehouseById(snapshot, plant.warehouseId) : undefined;
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState("");
 
@@ -592,25 +592,25 @@ export const ManufacturerDetailPage = () => {
       stockState: "all",
     })
     : [];
-  const productions = manufacturer ? relatedProductionsForManufacturer(snapshot, manufacturer.id) : [];
+  const productions = plant ? relatedProductionsForPlant(snapshot, plant.id) : [];
 
   const openEdit = () => {
-    setName(manufacturer?.name ?? "");
+    setName(plant?.name ?? "");
     setEditOpen(true);
   };
 
   const save = async () => {
-    if (!manufacturer || !name.trim()) {
+    if (!plant || !name.trim()) {
       toast.error("Укажите название производителя");
       return;
     }
     const ok = await runLogisticsAction(
       () =>
-        updateManufacturer({
-          id: manufacturer.id,
+        updatePlant({
+          id: plant.id,
           name: name.trim(),
         }),
-      "Производитель обновлён",
+      "Завод обновлён",
       reload,
     );
     if (ok) {
@@ -618,19 +618,19 @@ export const ManufacturerDetailPage = () => {
     }
   };
 
-  if (isLoading || error || !manufacturer) {
+  if (isLoading || error || !plant) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Производители", href: "/store/logistics/manufacturers" }, { label: "Производитель" }]}>
-        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Производитель не найден."} />}
+      <LogisticsPageShell crumbs={[{ label: "Заводы", href: "/store/logistics/plants" }, { label: "Завод" }]}>
+        {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Завод не найден."} />}
       </LogisticsPageShell>
     );
   }
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Производители", href: "/store/logistics/manufacturers" }, { label: manufacturer.name }]}>
+    <LogisticsPageShell crumbs={[{ label: "Заводы", href: "/store/logistics/plants" }, { label: plant.name }]}>
       <LogisticsToolbar
-        title={manufacturer.name}
-        titleMeta={<LogisticsCodeBadge code={manufacturer.code} />}
+        title={plant.name}
+        titleMeta={<LogisticsCodeBadge code={plant.code} />}
         actions={
           <>
             {warehouse ? (
@@ -694,11 +694,11 @@ export const ManufacturerDetailPage = () => {
       <LogisticsDialog
         open={editOpen}
         onOpenChange={setEditOpen}
-        title="Производитель"
+        title="Завод"
       >
         <div className="flex flex-col gap-3">
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            Код: <LogisticsCodeBadge code={manufacturer.code} />
+            Код: <LogisticsCodeBadge code={plant.code} />
           </p>
           <label className="space-y-1 text-sm">
             <span className="font-medium">Название</span>
@@ -709,7 +709,7 @@ export const ManufacturerDetailPage = () => {
             {warehouse ? (
               <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
             ) : (
-              manufacturer.warehouseId
+              plant.warehouseId
             )}
           </p>
           <Button type="button" onClick={() => void save()}>

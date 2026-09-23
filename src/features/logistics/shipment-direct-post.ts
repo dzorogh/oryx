@@ -5,6 +5,7 @@ import {
   type Shipment,
   type ShipmentDirection,
 } from "@/features/logistics/logistics-types";
+import { resolveOwnerId, resolveStockLocationId } from "@/features/logistics/logistics-resolve";
 
 export type ShipmentLineInput = {
   productId: string;
@@ -14,7 +15,6 @@ export type ShipmentLineInput = {
 };
 
 export type ShipmentCreateAndPostInput = {
-  requestKey: string;
   customerOrderId: string;
   fromLocationType: LocationType;
   fromLocationId: string;
@@ -30,15 +30,9 @@ export type ShipmentCreateAndPostResult = {
   direction: ShipmentDirection;
 };
 
-export const newShipmentRequestKey = (): string => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `shipment-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
-
-export const returnDestinationKey = (line: Pick<ShipmentLineInput, "productId" | "toOwnerType" | "toOwnerId">): string =>
-  `${line.productId}:${line.toOwnerType ?? ""}:${line.toOwnerId ?? ""}`;
+export const returnDestinationKey = (
+  line: Pick<ShipmentLineInput, "productId" | "toOwnerType" | "toOwnerId">,
+): string => `${line.productId}:${line.toOwnerType ?? ""}:${line.toOwnerId ?? ""}`;
 
 export const assertUniqueReturnDestinations = (lines: ShipmentLineInput[]): void => {
   const seen = new Set<string>();
@@ -72,19 +66,37 @@ export const shipmentsForAdjustmentSource = (
     .filter((item) => shipmentDirection(item.fromLocationType, item.toLocationType) === kind)
     .map((item) => ({ value: item.id, label: item.number }));
 
-export const shipmentCreateRpcArgs = (input: ShipmentCreateAndPostInput): Record<string, unknown> => ({
-  p_request_key: input.requestKey,
-  p_customer_order_id: Number(input.customerOrderId),
-  p_from_location_type: input.fromLocationType,
+export const shipmentCreateRpcArgs = async (
+  input: ShipmentCreateAndPostInput,
+): Promise<Record<string, unknown>> => {
+  shipmentDirection(input.fromLocationType, input.toLocationType);
+  const fromLocationId = await resolveStockLocationId(input.fromLocationType, input.fromLocationId);
+  const toLocationId = await resolveStockLocationId(input.toLocationType, input.toLocationId);
+  const lines = await Promise.all(
+    input.lines.map(async (line) => ({
+      product_variant_id: Number(line.productId),
+      quantity: line.quantity,
+      to_owner_id: line.toOwnerId
+        ? Number(await resolveOwnerId(line.toOwnerType ?? null, line.toOwnerId))
+        : null,
+    })),
+  );
+  return {
+    p_from_location_id: Number(fromLocationId),
+    p_to_location_id: Number(toLocationId),
+    p_lines: lines,
+    p_id: input.id ? Number(input.id) : null,
+    p_created_at: input.createdAt || null,
+  };
+};
+
+/** Test helper: build args without resolving stock ids (entity ids passed as location ids). */
+export const shipmentCreateRpcArgsSync = (input: ShipmentCreateAndPostInput): Record<string, unknown> => ({
   p_from_location_id: Number(input.fromLocationId),
-  p_to_location_type: input.toLocationType,
   p_to_location_id: Number(input.toLocationId),
-  p_id: input.id ? Number(input.id) : null,
-  p_created_at: input.createdAt || null,
   p_lines: input.lines.map((line) => ({
-    product_id: Number(line.productId),
+    product_variant_id: Number(line.productId),
     quantity: line.quantity,
-    to_owner_type: line.toOwnerType ?? null,
     to_owner_id: line.toOwnerId ? Number(line.toOwnerId) : null,
   })),
 });

@@ -14,7 +14,6 @@ import {
 } from "@/features/logistics/logistics-api";
 import {
   assertUniqueReturnDestinations,
-  newShipmentRequestKey,
   reserveThenShipNextAction,
   shipmentIntentionAfterBack,
   shipmentsForAdjustmentSource,
@@ -669,7 +668,6 @@ export const ShipmentForm = ({
   const [shipmentError, setShipmentError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
-  const shipmentKeyRef = useRef(newShipmentRequestKey());
 
   const selectedOrderId = preset?.customerOrderId ?? orderId;
   const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === selectedOrderId);
@@ -717,7 +715,6 @@ export const ShipmentForm = ({
     setReservationId(null);
     setShipmentError(null);
     setSubmitting(false);
-    shipmentKeyRef.current = newShipmentRequestKey();
   };
 
   const reset = () => {
@@ -845,7 +842,6 @@ export const ShipmentForm = ({
       const shipped = await runLogisticsAction(
         () =>
           createAndPostShipment({
-            requestKey: shipmentKeyRef.current,
             customerOrderId: selectedOrderId,
             fromLocationType: "warehouse",
             fromLocationId: warehouseId,
@@ -906,7 +902,6 @@ export const ShipmentForm = ({
       const ok = await runLogisticsAction(
         () =>
           createAndPostShipment({
-            requestKey: shipmentKeyRef.current,
             customerOrderId: selectedOrderId,
             fromLocationType: "customer_order",
             fromLocationId: selectedOrderId,
@@ -1033,7 +1028,6 @@ export const ShipmentForm = ({
               setQuantities({});
               setReturnLines([emptyReturnLine()]);
               setReserveSources([]);
-              shipmentKeyRef.current = newShipmentRequestKey();
             }}
           />
         ) : null}
@@ -1070,7 +1064,6 @@ export const ShipmentForm = ({
                 fillReserveSources(value);
                 setReservationId(null);
                 setShipmentError(null);
-                shipmentKeyRef.current = newShipmentRequestKey();
               }}
               placeholder="Выберите склад"
               emptyLabel="Нет складов"
@@ -1184,7 +1177,6 @@ export const ShipmentForm = ({
               items={snapshot.warehouses.map((item) => ({ value: item.id, label: item.code }))}
               onChange={(value) => {
                 setWarehouseId(value);
-                shipmentKeyRef.current = newShipmentRequestKey();
               }}
               placeholder="Выберите склад"
             />

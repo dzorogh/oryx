@@ -36,19 +36,19 @@ export const warehouseById = (snapshot: LogisticsSnapshot, id: string) =>
 
 export const warehouseOwnerLabel = (snapshot: LogisticsSnapshot, warehouseId: string): string => {
   const warehouse = warehouseById(snapshot, warehouseId);
-  if (!warehouse?.manufacturerId) {
+  if (!warehouse?.plantId) {
     return "Общий / РЦ";
   }
-  return manufacturerCode(snapshot, warehouse.manufacturerId);
+  return plantCode(snapshot, warehouse.plantId ?? "");
 };
 
-export const manufacturerById = (snapshot: LogisticsSnapshot, id: string) =>
-  snapshot.manufacturers.find((item) => item.id === id);
+export const plantById = (snapshot: LogisticsSnapshot, id: string) =>
+  snapshot.plants.find((item) => item.id === id);
 
-export const manufacturerCode = (snapshot: LogisticsSnapshot, id: string): string =>
-  manufacturerById(snapshot, id)?.code ?? id;
+export const plantCode = (snapshot: LogisticsSnapshot, id: string): string =>
+  plantById(snapshot, id)?.code ?? id;
 
-export const manufacturerIdsForProducts = (
+export const plantIdsForProducts = (
   snapshot: LogisticsSnapshot,
   productIds: string[],
 ): string[] | null => {
@@ -59,7 +59,7 @@ export const manufacturerIdsForProducts = (
   let allowed: Set<string> | null = null;
   for (const productId of selected) {
     const plants = new Set(
-      [productById(snapshot, productId)?.manufacturerId].filter((id): id is string => Boolean(id)),
+      [productById(snapshot, productId)?.plantId].filter((id): id is string => Boolean(id)),
     );
     if (plants.size === 0) {
       continue;
@@ -73,30 +73,30 @@ export const manufacturerIdsForProducts = (
   return allowed ? [...allowed] : null;
 };
 
-export const manufacturerSelectItems = (snapshot: LogisticsSnapshot, productIds?: string[]) => {
-  const allowed = productIds ? manufacturerIdsForProducts(snapshot, productIds) : null;
-  return snapshot.manufacturers
+export const plantSelectItems = (snapshot: LogisticsSnapshot, productIds?: string[]) => {
+  const allowed = productIds ? plantIdsForProducts(snapshot, productIds) : null;
+  return snapshot.plants
     .filter((item) => !allowed || allowed.includes(item.id))
     .map((item) => ({ value: item.id, label: item.code }));
 };
 
-export const productsForManufacturer = (snapshot: LogisticsSnapshot, manufacturerId: string) =>
-  snapshot.products.filter((product) => !product.manufacturerId || product.manufacturerId === manufacturerId);
+export const productsForPlant = (snapshot: LogisticsSnapshot, plantId: string) =>
+  snapshot.products.filter((product) => !product.plantId || product.plantId === plantId);
 
-export const manufacturersForProduct = (snapshot: LogisticsSnapshot, productId: string) => {
-  const allowed = manufacturerIdsForProducts(snapshot, [productId]);
+export const plantsForProduct = (snapshot: LogisticsSnapshot, productId: string) => {
+  const allowed = plantIdsForProducts(snapshot, [productId]);
   if (!allowed) {
-    return snapshot.manufacturers;
+    return snapshot.plants;
   }
-  return snapshot.manufacturers.filter((item) => allowed.includes(item.id));
+  return snapshot.plants.filter((item) => allowed.includes(item.id));
 };
 
-export const linkedManufacturersForProduct = (snapshot: LogisticsSnapshot, productId: string) => {
-  const plantId = productById(snapshot, productId)?.manufacturerId;
+export const linkedPlantsForProduct = (snapshot: LogisticsSnapshot, productId: string) => {
+  const plantId = productById(snapshot, productId)?.plantId;
   if (!plantId) {
     return [];
   }
-  return snapshot.manufacturers.filter((item) => item.id === plantId);
+  return snapshot.plants.filter((item) => item.id === plantId);
 };
 
 export const warehouseCode = (snapshot: LogisticsSnapshot, id: string): string =>
@@ -194,7 +194,7 @@ export const productionOrderIdForLocation = (snapshot: LogisticsSnapshot, locati
 export type LocationIdentity = {
   title: string;
   hint: string | null;
-  manufacturerId: string | null;
+  plantId: string | null;
   isPlantWarehouse: boolean;
 };
 
@@ -205,15 +205,15 @@ export const locationIdentity = (
 ): LocationIdentity => {
   if (type === "warehouse") {
     const warehouse = warehouseById(snapshot, id);
-    const plantCode = warehouse?.manufacturerId
-      ? manufacturerCode(snapshot, warehouse.manufacturerId)
+    const linkedPlantCode = warehouse?.plantId
+      ? plantCode(snapshot, warehouse.plantId)
       : null;
     const title = warehouseCode(snapshot, id);
     return {
       title,
-      hint: plantCode && plantCode !== title ? plantCode : null,
-      manufacturerId: warehouse?.manufacturerId ?? null,
-      isPlantWarehouse: Boolean(warehouse?.manufacturerId),
+      hint: linkedPlantCode && linkedPlantCode !== title ? linkedPlantCode : null,
+      plantId: warehouse?.plantId ?? null,
+      isPlantWarehouse: Boolean(warehouse?.plantId),
     };
   }
   if (type === "transfer") {
@@ -223,7 +223,7 @@ export const locationIdentity = (
       hint: transfer
         ? `${warehouseCode(snapshot, transfer.fromWarehouseId)} → ${warehouseCode(snapshot, transfer.toWarehouseId)}`
         : null,
-      manufacturerId: null,
+      plantId: null,
       isPlantWarehouse: false,
     };
   }
@@ -231,8 +231,8 @@ export const locationIdentity = (
     const order = productionOrderById(snapshot, productionOrderIdForLocation(snapshot, id) ?? id);
     return {
       title: order?.number ?? id,
-      hint: order ? manufacturerCode(snapshot, order.manufacturerId) : null,
-      manufacturerId: order?.manufacturerId ?? null,
+      hint: order ? plantCode(snapshot, order.plantId ?? "") : null,
+      plantId: order?.plantId ?? null,
       isPlantWarehouse: false,
     };
   }
@@ -240,11 +240,11 @@ export const locationIdentity = (
     return {
       title: customerOrderById(snapshot, id)?.number ?? id,
       hint: null,
-      manufacturerId: null,
+      plantId: null,
       isPlantWarehouse: false,
     };
   }
-  return { title: id, hint: null, manufacturerId: null, isPlantWarehouse: false };
+  return { title: id, hint: null, plantId: null, isPlantWarehouse: false };
 };
 
 export const locationLabel = (snapshot: LogisticsSnapshot, type: LocationType, id: string): string => {
