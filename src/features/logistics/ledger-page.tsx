@@ -21,7 +21,7 @@ const DOCUMENT_FILTERS: Array<{ id: "all" | DocumentType; label: string }> = [
 ];
 
 export const LedgerPage = () => {
-  const { snapshot, isLoading, error } = useLogisticsStore();
+  const { snapshot, isLoading, error } = useLogisticsStore({ kind: "ledger" });
   const [documentFilter, setDocumentFilter] = useState<(typeof DOCUMENT_FILTERS)[number]["id"]>("all");
 
   const filter = useMemo(

@@ -34,6 +34,16 @@ import type {
   TransferAllocation,
   TransferLine,
 } from "@/features/logistics/logistics-types";
+import type {
+  AdjustmentListRow,
+  CustomerOrderListRow,
+  LogisticsListProductLine,
+  OutputListRow,
+  ProductionOrderListRow,
+  ReservationListRow,
+  ShipmentListRow,
+  TransferListRow,
+} from "@/features/logistics/logistics-list-types";
 import {
   assertAdjustmentExplanation,
   assertAdjustmentLines,
@@ -44,6 +54,7 @@ import {
   documentNumber,
   FREE_OWNER_ID,
   ownerKindToType,
+  reservationDirection,
   STORE_CURRENT_USER_ID,
 } from "@/features/logistics/logistics-types";
 import {
@@ -172,22 +183,105 @@ export const saveLogisticsCodePrefixes = async (
   return { id: "1", codePrefixes: next };
 };
 
-export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
-  const settings = await loadLogisticsSettings();
-  const client = requireClient();
+type SnapshotRow = Record<string, unknown>;
 
-  const { data: kindRows, error: kindError } = await client
-    .from("store_document_kind")
-    .select("code,number_prefix");
-  const kindPrefix = new Map(
-    requireData(kindRows, kindError).map((row) => [str((row as { code: string }).code), str((row as { number_prefix: string }).number_prefix)]),
+export type LogisticsPayload = {
+  document_kinds?: SnapshotRow[];
+  documents?: SnapshotRow[];
+  product_variants?: SnapshotRow[];
+  warehouses?: SnapshotRow[];
+  plants?: SnapshotRow[];
+  regions?: SnapshotRow[];
+  stock_locations?: SnapshotRow[];
+  stock_owners?: SnapshotRow[];
+  customer_orders?: SnapshotRow[];
+  production_orders?: SnapshotRow[];
+  reservations?: SnapshotRow[];
+  transfers?: SnapshotRow[];
+  shipments?: SnapshotRow[];
+  production_outputs?: SnapshotRow[];
+  adjustments?: SnapshotRow[];
+  document_product_lines?: SnapshotRow[];
+  stock_transactions?: SnapshotRow[];
+  users?: SnapshotRow[];
+  document_history?: SnapshotRow[];
+  balances?: SnapshotRow[];
+  found?: boolean;
+};
+
+export type MappedLogistics = {
+  snapshot: LogisticsSnapshot;
+  /** When present, prefer over computeStockBalances(transactions). */
+  balances: StockBalance[] | null;
+  found: boolean;
+};
+
+const mapBalanceRow = (row: SnapshotRow): StockBalance => {
+  const ownerKind = str(row.owner_kind) as OwnerKind;
+  const locationType = str(row.location_kind) as StockLocation["kind"];
+  const ownerType =
+    ownerKind === "customer_order" ? "order" : ownerKind === "region" ? "region" : null;
+  const ownerId = row.owner_entity_id == null ? null : str(row.owner_entity_id);
+  return {
+    productId: str(row.product_variant_id),
+    stockLocationId: str(row.stock_location_id),
+    stockOwnerId: str(row.stock_owner_id),
+    locationType,
+    locationId: str(row.location_entity_id ?? row.stock_location_id),
+    ownerKind,
+    stockState: str(row.stock_state) as StockBalance["stockState"],
+    quantity: Number(row.quantity),
+    assignedToType: ownerType,
+    assignedToId: ownerId,
+    ownerType,
+    ownerId,
+  };
+};
+
+/**
+ * Maps a read-RPC payload to a snapshot: optional keys default to [], SQL balances pass through.
+ * When the payload has `document_kinds`, also updates the active document code prefixes.
+ */
+export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics => {
+  const {
+    document_kinds: kinds = [],
+    documents = [],
+    product_variants: variants = [],
+    warehouses = [],
+    plants = [],
+    regions = [],
+    stock_locations: stockLocations = [],
+    stock_owners: stockOwners = [],
+    customer_orders: customerOrdersRaw = [],
+    production_orders: productionOrdersRaw = [],
+    reservations: reservationsRaw = [],
+    transfers: transfersRaw = [],
+    shipments: shipmentsRaw = [],
+    production_outputs: outputsRaw = [],
+    adjustments: adjustmentsRaw = [],
+    document_product_lines: rawLines = [],
+    stock_transactions: transactionsRaw = [],
+  } = payload;
+
+  const codePrefixes = prefixesFromKinds(
+    kinds.map((row) => ({ code: str(row.code), number_prefix: str(row.number_prefix) })),
   );
+  if (kinds.length > 0) {
+    setActiveLogisticsCodePrefixes(codePrefixes);
+  }
+  const settings: LogisticsSetting = { id: "1", codePrefixes };
+  const kindPrefix = new Map(kinds.map((row) => [str(row.code), str(row.number_prefix)]));
 
-  const { data: docRows, error: docError } = await client
-    .from("store_document")
-    .select("id,kind,sequence_number,description,status,expected_end_on,created_at,created_by")
-    .order("id", { ascending: true });
-  const documents = requireData(docRows, docError) as unknown as Array<Record<string, unknown>>;
+  const users: AppUser[] = (payload.users ?? []).map((row) => ({ id: str(row.id), name: str(row.name) }));
+  const documentHistory: DocumentHistoryEntry[] = (payload.document_history ?? []).map((row) => ({
+    id: str(row.id),
+    documentId: str(row.document_id),
+    status: row.status == null ? null : str(row.status),
+    expectedEndOn: dateOrNull(row.expected_end_on),
+    changedAt: str(row.changed_at),
+    changedBy: str(row.changed_by),
+  }));
+
   const docs = new Map<string, DocRegistryRow>();
   for (const row of documents) {
     const id = str(row.id);
@@ -204,84 +298,6 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
       number_prefix: kindPrefix.get(kind) ?? kind.toUpperCase(),
     });
   }
-
-  const [
-    variants,
-    products,
-    warehouses,
-    plants,
-    regions,
-    stockLocations,
-    stockOwners,
-    customerOrdersRaw,
-    productionOrdersRaw,
-    reservationsRaw,
-    transfersRaw,
-    shipmentsRaw,
-    outputsRaw,
-    adjustmentsRaw,
-    rawLines,
-    transactionsRaw,
-    users,
-    documentHistory,
-  ] = await Promise.all([
-    selectAll(
-      "store_product_variant",
-      "id,product_id,sku,name,unit,image_url,plant_id",
-      (row) => row,
-      "id",
-    ),
-    selectAll("store_product", "id,name", (row) => row, "id"),
-    selectAll("store_warehouse", "id,name,stock_location_id", (row) => row, "id"),
-    selectAll("store_plant", "id,name,warehouse_id", (row) => row, "id"),
-    selectAll("store_region", "id,code,name,stock_owner_id", (row) => row, "id"),
-    selectAll("store_stock_location", "id,kind", (row) => row, "id"),
-    selectAll("store_stock_owner", "id,kind", (row) => row, "id"),
-    selectAll("store_customer_order", "id,region_id,stock_location_id,stock_owner_id", (row) => row, "id"),
-    selectAll("store_production_order", "id,plant_id,stock_location_id", (row) => row, "id"),
-    selectAll(
-      "store_reservation",
-      "id,location_id,owner_id,creation_source,posted_at",
-      (row) => row,
-      "id",
-    ),
-    selectAll(
-      "store_transfer",
-      "id,from_warehouse_id,to_warehouse_id,stock_location_id",
-      (row) => row,
-      "id",
-    ),
-    selectAll("store_shipment", "id,from_location_id,to_location_id", (row) => row, "id"),
-    selectAll("store_production_output", "id,production_order_id", (row) => row, "id"),
-    selectAll("store_adjustment", "id,location_id", (row) => row, "id"),
-    selectAll(
-      "store_document_product_line",
-      "id,document_id,product_variant_id,quantity,from_owner_id,to_owner_id,variant_name,unit_price,currency_id",
-      (row) => row,
-      "id",
-    ),
-    selectAll(
-      "store_stock_transaction",
-      "id,created_at,product_variant_id,quantity,location_id,owner_id,document_id",
-      (row) => row,
-      "created_at",
-    ),
-    selectAll("app_user", "id,name", (row) => ({ id: str(row.id), name: str(row.name) }) as AppUser, "id"),
-    selectAll(
-      "store_document_history",
-      "id,document_id,status,expected_end_on,changed_at,changed_by",
-      (row) =>
-        ({
-          id: str(row.id),
-          documentId: str(row.document_id),
-          status: row.status == null ? null : str(row.status),
-          expectedEndOn: dateOrNull(row.expected_end_on),
-          changedAt: str(row.changed_at),
-          changedBy: str(row.changed_by),
-        }) as DocumentHistoryEntry,
-      "id",
-    ),
-  ]);
 
   const plantByWarehouse = new Map<string, string>();
   for (const plant of plants) {
@@ -741,9 +757,7 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     };
   });
 
-  void products;
-
-  return {
+  const snapshot: LogisticsSnapshot = {
     products: logisticsProducts,
     plants: logisticsPlants,
     warehouses: logisticsWarehouses,
@@ -773,7 +787,192 @@ export const loadLogisticsSnapshot = async (): Promise<LogisticsSnapshot> => {
     users,
     documentHistory,
   };
+
+  const balances =
+    payload.balances != null ? payload.balances.map(mapBalanceRow) : null;
+
+  return {
+    snapshot,
+    balances,
+    found: payload.found !== false,
+  };
 };
+
+const mapListProducts = (raw: unknown): LogisticsListProductLine[] => {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw.map((item) => {
+    const row = item as Record<string, unknown>;
+    return {
+      productId: str(row.productId ?? row.product_variant_id ?? ""),
+      quantity: Number(row.quantity ?? 0),
+      productName: strOrNull(row.productName ?? row.variant_name),
+      productSku: strOrNull(row.productSku ?? row.sku) ?? "",
+      productUnit: strOrNull(row.productUnit ?? row.unit) ?? "шт",
+    };
+  });
+};
+
+const loadListRpc = async <T>(name: string, map: (row: Record<string, unknown>) => T): Promise<T[]> => {
+  const data = await rpcJson<unknown>(name, {});
+  if (!Array.isArray(data)) {
+    return [];
+  }
+  return data.map((item) => map(item as Record<string, unknown>));
+};
+
+export const mapCustomerOrderListRow = (row: Record<string, unknown>): CustomerOrderListRow => ({
+  id: str(row.id),
+  sequenceNumber: str(row.sequenceNumber),
+  number: str(row.number),
+  status: str(row.status) as CustomerOrderListRow["status"],
+  expectedEndOn: dateOrNull(row.expectedEndOn),
+  createdAt: str(row.createdAt),
+  description: row.description ? str(row.description) : "",
+  products: mapListProducts(row.products),
+  reserved: Number(row.reserved ?? 0),
+  shipped: Number(row.shipped ?? 0),
+  openToReserve: Number(row.openToReserve ?? 0),
+});
+
+export const loadCustomerOrderList = () =>
+  loadListRpc<CustomerOrderListRow>("store_customer_order_list", mapCustomerOrderListRow);
+
+export const loadProductionOrderList = () =>
+  loadListRpc<ProductionOrderListRow>("store_production_order_list", (row) => ({
+    id: str(row.id),
+    sequenceNumber: str(row.sequenceNumber),
+    number: str(row.number),
+    status: str(row.status) as ProductionOrderListRow["status"],
+    expectedEndOn: dateOrNull(row.expectedEndOn),
+    createdAt: str(row.createdAt),
+    plantId: str(row.plantId),
+    products: mapListProducts(row.products),
+  }));
+
+export const loadTransferList = () =>
+  loadListRpc<TransferListRow>("store_transfer_list", (row) => ({
+    id: str(row.id),
+    sequenceNumber: str(row.sequenceNumber),
+    number: str(row.number),
+    status: str(row.status) as TransferListRow["status"],
+    expectedEndOn: dateOrNull(row.expectedEndOn),
+    createdAt: str(row.createdAt),
+    fromWarehouseId: str(row.fromWarehouseId),
+    toWarehouseId: str(row.toWarehouseId),
+    products: mapListProducts(row.products),
+  }));
+
+export const loadShipmentList = () =>
+  loadListRpc<ShipmentListRow>("store_shipment_list", (row) => ({
+    id: str(row.id),
+    sequenceNumber: str(row.sequenceNumber),
+    number: str(row.number),
+    createdAt: str(row.createdAt),
+    fromLocationType: str(row.fromLocationType),
+    fromLocationId: str(row.fromLocationId),
+    toLocationType: str(row.toLocationType),
+    toLocationId: str(row.toLocationId),
+    direction: str(row.direction) as ShipmentListRow["direction"],
+    customerOrderId: str(row.customerOrderId ?? ""),
+    customerOrderNumber: str(row.customerOrderNumber ?? ""),
+    products: mapListProducts(row.products),
+  }));
+
+export const loadOutputList = () =>
+  loadListRpc<OutputListRow>("store_output_list", (row) => ({
+    id: str(row.id),
+    sequenceNumber: str(row.sequenceNumber),
+    number: str(row.number),
+    status: str(row.status) as OutputListRow["status"],
+    expectedEndOn: dateOrNull(row.expectedEndOn),
+    createdAt: str(row.createdAt),
+    productionOrderId: str(row.productionOrderId),
+    productionOrderNumber: str(row.productionOrderNumber ?? ""),
+    productionOrderSequenceNumber: str(row.productionOrderSequenceNumber ?? ""),
+    products: mapListProducts(row.products),
+  }));
+
+export const loadAdjustmentList = () =>
+  loadListRpc<AdjustmentListRow>("store_adjustment_list", (row) => ({
+    id: str(row.id),
+    sequenceNumber: str(row.sequenceNumber),
+    number: str(row.number),
+    createdAt: str(row.createdAt),
+    description: row.description ? str(row.description) : "",
+    warehouseId: str(row.warehouseId ?? ""),
+    products: mapListProducts(row.products),
+    signedQuantity: Number(row.signedQuantity ?? 0),
+    operation: str(row.operation ?? "mixed") as AdjustmentListRow["operation"],
+  }));
+
+const ownerTypeOrNull = (value: unknown): OwnerType | null =>
+  value == null ? null : (str(value) as OwnerType);
+
+export const loadReservationList = () =>
+  loadListRpc<ReservationListRow>("store_reservation_list", (row) => {
+    const lines = Array.isArray(row.lines)
+      ? row.lines.map((item) => {
+          const line = item as Record<string, unknown>;
+          return {
+            id: str(line.id),
+            productId: str(line.productId),
+            quantity: Number(line.quantity ?? 0),
+            fromOwnerType: ownerTypeOrNull(line.fromOwnerType),
+            fromOwnerId: strOrNull(line.fromOwnerId),
+            fromOwnerNumber: strOrNull(line.fromOwnerNumber),
+            productName: strOrNull(line.productName),
+            productUnit: strOrNull(line.productUnit) ?? "шт",
+          };
+        })
+      : [];
+    const toOwnerType = ownerTypeOrNull(row.toOwnerType);
+    const toOwnerId = strOrNull(row.toOwnerId);
+    return {
+      id: str(row.id),
+      sequenceNumber: str(row.sequenceNumber),
+      number: str(row.number),
+      status: str(row.status) as ReservationListRow["status"],
+      postedAt: dateOrNull(row.postedAt),
+      createdAt: str(row.createdAt),
+      description: row.description ? str(row.description) : "",
+      creationSource: str(row.creationSource ?? "manual"),
+      locationType: str(row.locationType) as ReservationListRow["locationType"],
+      locationId: str(row.locationId),
+      locationNumber: strOrNull(row.locationNumber),
+      locationSequence: strOrNull(row.locationSequence),
+      locationIsPlantWarehouse: row.locationIsPlantWarehouse === true,
+      toOwnerType,
+      toOwnerId,
+      toOwnerNumber: strOrNull(row.toOwnerNumber),
+      lines,
+      direction: reservationDirection({ toOwnerType, toOwnerId }, lines),
+    };
+  });
+
+const loadMappedRpc = async (name: string, args: Record<string, unknown>): Promise<MappedLogistics> => {
+  const payload = await rpcJson<LogisticsPayload>(name, args);
+  return mapLogisticsPayload(payload);
+};
+
+export const loadDocumentContext = (kind: string, ref: string) =>
+  loadMappedRpc("store_document_context", { p_kind: kind, p_ref: ref });
+
+export const loadPlaceContext = (kind: string, id: string) =>
+  loadMappedRpc("store_place_context", { p_kind: kind, p_id: id });
+
+export const loadProductContext = (variantId: string) =>
+  loadMappedRpc("store_product_context", { p_variant_id: variantId });
+
+export const loadFormContext = (form: string) =>
+  loadMappedRpc("store_form_context", { p_form: form });
+
+export const loadStockPage = () => loadMappedRpc("store_stock_page", {});
+
+export const loadLedgerPage = () => loadMappedRpc("store_ledger_page", {});
+
+export const loadCatalogPage = () => loadMappedRpc("store_catalog_page", {});
 
 export const postReservation = (id: string) => rpc("store_post_reservation", { p_id: id });
 

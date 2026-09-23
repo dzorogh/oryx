@@ -59,7 +59,7 @@ import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { ProductPhoto } from "@/features/store/product-photo";
 
 export const ProductsPage = () => {
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({ kind: "stock" });
   const [open, setOpen] = useState(false);
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
@@ -153,7 +153,10 @@ export const ProductsPage = () => {
 export const ProductDetailPage = ({ productId }: { productId?: string } = {}) => {
   const params = useParams<{ id?: string; productId?: string }>();
   const resolvedProductId = productId ?? params.productId ?? params.id;
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+    kind: "product",
+    variantId: String(resolvedProductId ?? ""),
+  });
   const [productionOpen, setProductionOpen] = useState(false);
   const [plantId, setPlantId] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -298,7 +301,7 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
 };
 
 export const WarehousesPage = () => {
-  const { snapshot, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
 
@@ -372,7 +375,11 @@ export const WarehousesPage = () => {
 
 export const WarehouseDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+    kind: "place",
+    placeKind: "warehouse",
+    id: String(params.id ?? ""),
+  });
   const warehouse = snapshot.warehouses.find((item) => item.id === params.id);
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState("");
@@ -510,7 +517,7 @@ export const WarehouseDetailPage = () => {
 };
 
 export const PlantsPage = () => {
-  const { snapshot, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
 
@@ -580,7 +587,11 @@ export const PlantsPage = () => {
 
 export const PlantDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+    kind: "place",
+    placeKind: "plant",
+    id: String(params.id ?? ""),
+  });
   const plant = snapshot.plants.find((item) => item.id === params.id);
   const warehouse = plant ? warehouseById(snapshot, plant.warehouseId) : undefined;
   const [editOpen, setEditOpen] = useState(false);

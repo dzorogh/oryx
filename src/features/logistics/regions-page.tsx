@@ -27,7 +27,7 @@ import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 
 export const RegionsPage = () => {
-  const { snapshot, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
 
@@ -98,7 +98,11 @@ export const RegionsPage = () => {
 
 export const RegionDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+    kind: "place",
+    placeKind: "region",
+    id: String(params.id ?? ""),
+  });
   const region = snapshot.regions.find((item) => item.id === params.id);
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState("");

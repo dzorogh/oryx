@@ -52,7 +52,7 @@ const compareProductName = (snapshot: LogisticsSnapshot, leftId: string, rightId
 };
 
 const StockPageContent = () => {
-  const { snapshot, balances, isLoading, error } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error } = useLogisticsStore({ kind: "stock" });
   const searchParams = useSearchParams();
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);

@@ -7,7 +7,7 @@ import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { getBalanceQuantity } from "@/features/logistics/logistics-balances";
-import { addReservationLine, postReservation } from "@/features/logistics/logistics-api";
+import { addReservationLine, loadReservationList, postReservation } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { hrefForOwner, reservationCapForOwner } from "@/features/logistics/logistics-availability";
@@ -16,7 +16,12 @@ import { FREE_OWNER_LABEL, RESERVATION_DIRECTION_LABELS, formatQuantity } from "
 import { ownerLabel, productById } from "@/features/logistics/logistics-lookups";
 import { LocationLink } from "@/features/logistics/ui/location-link";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
-import { HOLD_STATUS_FILTERS, ReservationHoldTable } from "@/features/logistics/ui/reservation-hold-list";
+import {
+  HOLD_STATUS_FILTERS,
+  ReservationHoldTable,
+  holdOwnerBadge,
+  holdPlace,
+} from "@/features/logistics/ui/reservation-hold-list";
 import { assertCustomerCapacity, assertEnoughStock } from "@/features/logistics/logistics-rules";
 import {
   isFreeOwner,
@@ -39,7 +44,7 @@ import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { RelatedDocuments } from "@/features/logistics/ui/related-documents";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { DocumentStatusBadge } from "@/features/logistics/ui/status-badge";
-import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const DIRECTION_FILTERS: Array<{ id: "all" | ReservationDirection; label: string }> = [
   { id: "all", label: "Все" },
@@ -54,17 +59,17 @@ const parseDirectionFilter = (value: string | null): "all" | ReservationDirectio
   value === "reserve" || value === "release" || value === "reassign" ? value : "all";
 
 export const ReservationsPage = () => {
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { rows, isLoading, error, reload } = useLogisticsList(loadReservationList);
   const searchParams = useSearchParams();
   const [direction, setDirection] = useState<"all" | ReservationDirection>(
     parseDirectionFilter(searchParams.get("operation")),
   );
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
   const [open, setOpen] = useState(false);
-  const rows = snapshot.reservations.filter((item) => {
-    const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
-    const itemDirection = reservationDirection(item, lines);
-    if (direction !== "all" && itemDirection !== direction) {
+  const formStore = useLogisticsStore({ kind: "form", form: "reservation", enabled: open });
+
+  const visible = rows.filter((item) => {
+    if (direction !== "all" && item.direction !== direction) {
       return false;
     }
     if (status !== "all" && item.status !== status) {
@@ -111,34 +116,31 @@ export const ReservationsPage = () => {
       {error ? <LogisticsError message={error} /> : null}
       {!isLoading && !error ? (
         <ReservationHoldTable
-          snapshot={snapshot}
           placeHeader="Место"
-          rows={rows.map((item) => {
-            const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
-            return {
-              id: item.id,
-              number: item.number,
-              href: `/store/logistics/reservations/${item.sequenceNumber}`,
-              status: item.status,
-              direction: reservationDirection(item, lines),
-              toOwnerType: item.toOwnerType,
-              toOwnerId: item.toOwnerId,
-              locationType: item.locationType,
-              locationId: item.locationId,
-              lines: lines.map((line) => ({
-                id: line.id,
-                productId: line.productId,
-                quantity: line.quantity,
-                fromOwnerType: line.fromOwnerType,
-                fromOwnerId: line.fromOwnerId,
-              })),
-            };
-          })}
+          rows={visible.map((item) => ({
+            id: item.id,
+            number: item.number,
+            href: `/store/logistics/reservations/${item.sequenceNumber}`,
+            status: item.status,
+            direction: item.direction,
+            destination: holdOwnerBadge(item.toOwnerType, item.toOwnerId, item.toOwnerNumber),
+            place: holdPlace(item),
+            lines: item.lines.map((line) => ({
+              id: line.id,
+              productId: line.productId,
+              quantity: line.quantity,
+              productName: line.productName,
+              productUnit: line.productUnit,
+              source: holdOwnerBadge(line.fromOwnerType, line.fromOwnerId, line.fromOwnerNumber),
+            })),
+          }))}
         />
       ) : null}
       <ReservationForm
-        snapshot={snapshot}
-        balances={balances}
+        snapshot={formStore.snapshot}
+        balances={formStore.balances}
+        loading={formStore.isLoading}
+        loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
         reload={reload}
@@ -157,10 +159,16 @@ export const ReservationsPage = () => {
 
 export const ReservationDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload, found } = useLogisticsStore({
+    kind: "document",
+    documentKind: "reservation",
+    ref: String(params.id ?? ""),
+  });
   const [lineOpen, setLineOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [newLine, setNewLine] = useState(emptyReservationLine());
+  const lineForm = useLogisticsStore({ kind: "form", form: "reservation", enabled: lineOpen });
+  const followUpForm = useLogisticsStore({ kind: "form", form: "reservation", enabled: followUpOpen });
   const doc = matchDocumentParam(snapshot.reservations, params.id);
   const lines = useMemo(
     () => (doc ? snapshot.reservationLines.filter((line) => line.reservationId === doc.id) : []),
@@ -169,7 +177,7 @@ export const ReservationDetailPage = () => {
   const direction = doc ? reservationDirection(doc, lines) : "reserve";
   const productIds = [...new Set(lines.map((line) => line.productId).filter(Boolean))];
 
-  if (isLoading || error || !doc) {
+  if (isLoading || error || !doc || !found) {
     return (
       <LogisticsPageShell crumbs={[{ label: "Резервы", href: "/store/logistics/reservations" }, { label: "Резерв" }]}>
         {isLoading ? <LogisticsLoading /> : <LogisticsError message={error ?? "Резерв не найден."} />}
@@ -287,11 +295,13 @@ export const ReservationDetailPage = () => {
           }
         }}
         title="Добавить строку"
+        loading={lineForm.isLoading}
+        error={lineForm.error}
       >
         <div className="flex flex-col gap-3">
           <ReservationLineFields
-            snapshot={snapshot}
-            balances={balances}
+            snapshot={lineForm.snapshot}
+            balances={lineForm.balances}
             destKind={doc.toOwnerType ?? "free"}
             destOwnerId={doc.toOwnerId ?? ""}
             locationType={doc.locationType}
@@ -315,10 +325,10 @@ export const ReservationDetailPage = () => {
               }
               const orderLine =
                 doc.toOwnerType === "order" && doc.toOwnerId
-                  ? orderLineForProduct(snapshot.customerOrderLines, doc.toOwnerId, newLine.productId)
+                  ? orderLineForProduct(lineForm.snapshot.customerOrderLines, doc.toOwnerId, newLine.productId)
                   : undefined;
               const max = reservationCapForOwner(
-                balances,
+                lineForm.balances,
                 newLine.productId,
                 doc.locationType,
                 doc.locationId,
@@ -336,7 +346,7 @@ export const ReservationDetailPage = () => {
               try {
                 assertEnoughStock(max, qty, isFreeOwner(fromOwnerType, fromOwnerId) ? "free" : "reserved");
                 if (orderLine) {
-                  assertCustomerCapacity(orderLine, balances, qty);
+                  assertCustomerCapacity(orderLine, lineForm.balances, qty);
                 }
               } catch (caught) {
                 toast.error(caught instanceof Error ? caught.message : "Недостаточно остатка");
@@ -367,8 +377,10 @@ export const ReservationDetailPage = () => {
       </LogisticsDialog>
       {followUpOpen ? (
         <ReservationForm
-          snapshot={snapshot}
-          balances={balances}
+          snapshot={followUpForm.snapshot}
+          balances={followUpForm.balances}
+          loading={followUpForm.isLoading}
+          loadError={followUpForm.error}
           open
           onOpenChange={setFollowUpOpen}
           reload={reload}

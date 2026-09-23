@@ -49,7 +49,8 @@ export const DocumentProductLines = ({
   empty = "—",
   previewLimit = DOCUMENT_PRODUCT_LINE_PREVIEW,
 }: {
-  snapshot: LogisticsSnapshot;
+  /** Optional: used only as fallback when line has no productName/unit. */
+  snapshot?: LogisticsSnapshot;
   lines: DocumentProductLine[];
   empty?: string;
   previewLimit?: number;
@@ -68,7 +69,7 @@ export const DocumentProductLines = ({
     <div className="flex min-w-0 flex-col gap-1">
       <ul id={listId} className="flex flex-col gap-1">
         {visible.map((line, index) => {
-          const product = productById(snapshot, line.productId);
+          const product = snapshot ? productById(snapshot, line.productId) : undefined;
           const name = line.productName || product?.name || line.productId;
           return (
             <li key={`${line.productId || line.productName}-${index}`} className="flex items-start justify-between gap-3">

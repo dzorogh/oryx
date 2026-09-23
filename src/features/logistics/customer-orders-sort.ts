@@ -1,6 +1,6 @@
-import type { CustomerOrder, CustomerOrderStatus } from "@/features/logistics/logistics-types";
+import type { CustomerOrder } from "@/features/logistics/logistics-types";
 
-export type CustomerOrderListFilter = "all" | CustomerOrderStatus;
+type SortableOrder = Pick<CustomerOrder, "id" | "createdAt">;
 
 const createdAtMs = (value: string) => {
   const parsed = Date.parse(value);
@@ -12,7 +12,7 @@ const numericId = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-export const compareCustomerOrdersNewestFirst = (a: CustomerOrder, b: CustomerOrder): number => {
+export const compareCustomerOrdersNewestFirst = (a: SortableOrder, b: SortableOrder): number => {
   const byCreated = createdAtMs(b.createdAt) - createdAtMs(a.createdAt);
   if (byCreated !== 0) {
     return byCreated;
@@ -24,12 +24,3 @@ export const compareCustomerOrdersNewestFirst = (a: CustomerOrder, b: CustomerOr
   }
   return b.id.localeCompare(a.id);
 };
-
-export const visibleCustomerOrders = (
-  orders: CustomerOrder[],
-  status: CustomerOrderListFilter,
-): CustomerOrder[] =>
-  orders
-    .filter((order) => status === "all" || order.status === status)
-    .slice()
-    .sort(compareCustomerOrdersNewestFirst);

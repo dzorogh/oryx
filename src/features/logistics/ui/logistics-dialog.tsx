@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { cn } from "@/lib/utils";
 
 export const LogisticsDialog = ({
@@ -18,6 +19,8 @@ export const LogisticsDialog = ({
   description,
   children,
   className,
+  loading = false,
+  error = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +28,10 @@ export const LogisticsDialog = ({
   description?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Dialog data is still loading: show the skeleton instead of the body. */
+  loading?: boolean;
+  /** Dialog data failed to load: show the error instead of the body. */
+  error?: string | null;
 }) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className={cn("max-h-[85vh] overflow-y-auto sm:max-w-md", className)}>
@@ -34,7 +41,7 @@ export const LogisticsDialog = ({
           {description ?? title}
         </DialogDescription>
       </DialogHeader>
-      {children}
+      {loading ? <LogisticsLoading /> : error ? <LogisticsError message={error} /> : children}
     </DialogContent>
   </Dialog>
 );

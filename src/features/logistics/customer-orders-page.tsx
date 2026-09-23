@@ -9,14 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
-import { closeCustomerOrder, createCustomerOrder, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { closeCustomerOrder, createCustomerOrder, loadCustomerOrderList, updateExpectedEnd } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
-import {
-  remainingToReserveForLine,
-  sumFreeForProduct,
-} from "@/features/logistics/logistics-availability";
+import { sumFreeForProduct } from "@/features/logistics/logistics-availability";
 import { ReservationForm, ShipmentForm } from "@/features/logistics/logistics-forms";
 import {
   OutputFromOrderForm,
@@ -48,6 +44,7 @@ import {
   type CustomerOrderStatus,
   type LocationType,
 } from "@/features/logistics/logistics-types";
+import type { CustomerOrderListRow } from "@/features/logistics/logistics-list-types";
 import { AvailabilityPanel } from "@/features/logistics/ui/availability-panel";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -61,29 +58,38 @@ import { OrderProgressTracker } from "@/features/logistics/ui/order-progress-tra
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { CustomerOrderStatusBadge } from "@/features/logistics/ui/status-badge";
-import { visibleCustomerOrders } from "@/features/logistics/customer-orders-sort";
-import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { compareCustomerOrdersNewestFirst } from "@/features/logistics/customer-orders-sort";
+import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const STATUS_FILTERS: Array<{ id: "all" | CustomerOrderStatus; label: string }> = [
   { id: "all", label: "Все" },
-  { id: "open", label: "Открыт" },
-  { id: "closed", label: "Закрыт" },
+  { id: "in_progress", label: "Открыт" },
+  { id: "done", label: "Закрыт" },
 ];
 
-export const CustomerOrdersPage = () => {
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
-  const [open, setOpen] = useState(false);
+const isOpenCustomerOrderStatus = (status: string) =>
+  status === "open" || status === "in_progress";
+
+const CustomerOrderCreateDialog = ({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => Promise<void>;
+}) => {
+  const { snapshot, balances, isLoading, error } = useLogisticsStore({
+    kind: "form",
+    form: "customer_order",
+    enabled: open,
+  });
   const [lines, setLines] = useState<Array<{ productId: string; quantity: string }>>([
     { productId: "", quantity: "1" },
   ]);
   const [expectedEndOn, setExpectedEndOn] = useState("");
   const [description, setDescription] = useState("");
 
-  const rows = useMemo(
-    () => visibleCustomerOrders(snapshot.customerOrders, status),
-    [snapshot.customerOrders, status],
-  );
   const productItems = snapshot.products.map((product) => ({
     value: product.id,
     label: productIdentityLabel(
@@ -102,6 +108,7 @@ export const CustomerOrdersPage = () => {
     const ok = await runLogisticsAction(
       async () => {
         await createCustomerOrder({
+          regionId: snapshot.regions[0]?.id,
           description: description.trim(),
           expectedEndOn: expectedEndOn || null,
           lines: validLines.map((line) => ({
@@ -111,10 +118,10 @@ export const CustomerOrdersPage = () => {
         });
       },
       "Заказ клиента создан",
-      reload,
+      onCreated,
     );
     if (ok) {
-      setOpen(false);
+      onOpenChange(false);
       setExpectedEndOn("");
       setDescription("");
       setLines([{ productId: "", quantity: "1" }]);
@@ -122,74 +129,10 @@ export const CustomerOrdersPage = () => {
   };
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Заказы клиента" }]}>
-      <LogisticsToolbar
-        title="Заказы клиента"
-        actionLabel="Новый заказ клиента"
-        onAction={() => setOpen(true)}
-      >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус заказа клиента">
-          {STATUS_FILTERS.map((item) => (
-            <HomeFilterChip
-              key={item.id}
-              active={status === item.id}
-              role="tab"
-              aria-selected={status === item.id}
-              onClick={() => setStatus(item.id)}
-            >
-              {item.label}
-            </HomeFilterChip>
-          ))}
-        </div>
-      </LogisticsToolbar>
-
+    <LogisticsDialog open={open} onOpenChange={onOpenChange} title="Новый заказ клиента">
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
-
       {!isLoading && !error ? (
-        <LogisticsTableCard
-          headers={["Номер", "Статус", "Ожидаемое окончание", "Товары", "Занято", "Отгружено", "Открыто к резерву", "Создан"]}
-          isEmpty={rows.length === 0}
-        >
-          {rows.map((order) => {
-            const orderLines = snapshot.customerOrderLines.filter((line) => line.orderId === order.id);
-            const reserved = orderLines.reduce((sum, line) => sum + sumReservedForLine(balances, line), 0);
-            const shipped = orderLines.reduce((sum, line) => sum + sumShippedForLine(balances, line), 0);
-            const openQty = orderLines.reduce((sum, line) => sum + remainingToReserveForLine(line, balances), 0);
-            return (
-              <TableRow key={order.id}>
-                <TableCell className="px-3 py-2 align-top text-sm font-medium">
-                  <LogisticsCodeBadge
-                    code={order.number}
-                    href={`/store/logistics/customer-orders/${order.sequenceNumber}`}
-                  />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <CustomerOrderStatusBadge status={order.status} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                  {formatExpectedEnd(order.expectedEndOn)}
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <DocumentProductLines snapshot={snapshot} lines={orderLines} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">{formatQuantity(reserved)}</TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">{formatQuantity(shipped)}</TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">{formatQuantity(openQty)}</TableCell>
-                <TableCell className="px-3 py-2 align-top text-xs text-muted-foreground">
-                  {new Date(order.createdAt).toLocaleDateString("ru-RU")}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </LogisticsTableCard>
-      ) : null}
-
-      <LogisticsDialog
-        open={open}
-        onOpenChange={setOpen}
-        title="Новый заказ клиента"
-      >
         <div className="flex flex-col gap-3">
           <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
           <label className="space-y-1 text-sm">
@@ -252,14 +195,108 @@ export const CustomerOrdersPage = () => {
             Создать заказ клиента
           </Button>
         </div>
-      </LogisticsDialog>
+      ) : null}
+    </LogisticsDialog>
+  );
+};
+
+export const CustomerOrdersPage = () => {
+  const { rows, isLoading, error, reload } = useLogisticsList(loadCustomerOrderList);
+  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
+  const [open, setOpen] = useState(false);
+
+  const visible = useMemo(() => {
+    const filtered =
+      status === "all"
+        ? rows
+        : rows.filter((order) => {
+            if (status === "in_progress") {
+              return isOpenCustomerOrderStatus(order.status);
+            }
+            if (status === "done") {
+              return order.status === "done" || order.status === "closed";
+            }
+            return order.status === status;
+          });
+    return [...filtered].sort(compareCustomerOrdersNewestFirst);
+  }, [rows, status]);
+
+  return (
+    <LogisticsPageShell crumbs={[{ label: "Заказы клиента" }]}>
+      <LogisticsToolbar
+        title="Заказы клиента"
+        actionLabel="Новый заказ клиента"
+        onAction={() => setOpen(true)}
+      >
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус заказа клиента">
+          {STATUS_FILTERS.map((item) => (
+            <HomeFilterChip
+              key={item.id}
+              active={status === item.id}
+              role="tab"
+              aria-selected={status === item.id}
+              onClick={() => setStatus(item.id)}
+            >
+              {item.label}
+            </HomeFilterChip>
+          ))}
+        </div>
+      </LogisticsToolbar>
+
+      {isLoading ? <LogisticsLoading /> : null}
+      {error ? <LogisticsError message={error} /> : null}
+
+      {!isLoading && !error ? (
+        <LogisticsTableCard
+          headers={["Номер", "Статус", "Ожидаемое окончание", "Товары", "Занято", "Отгружено", "Открыто к резерву", "Создан"]}
+          isEmpty={visible.length === 0}
+        >
+          {visible.map((order: CustomerOrderListRow) => (
+            <TableRow key={order.id}>
+              <TableCell className="px-3 py-2 align-top text-sm font-medium">
+                <LogisticsCodeBadge
+                  code={order.number}
+                  href={`/store/logistics/customer-orders/${order.sequenceNumber}`}
+                />
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top">
+                <CustomerOrderStatusBadge status={order.status} />
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
+                {formatExpectedEnd(order.expectedEndOn)}
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top">
+                <DocumentProductLines lines={order.products} />
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
+                {formatQuantity(order.reserved)}
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
+                {formatQuantity(order.shipped)}
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
+                {formatQuantity(order.openToReserve)}
+              </TableCell>
+              <TableCell className="px-3 py-2 align-top text-xs text-muted-foreground">
+                {new Date(order.createdAt).toLocaleDateString("ru-RU")}
+              </TableCell>
+            </TableRow>
+          ))}
+        </LogisticsTableCard>
+      ) : null}
+
+      <CustomerOrderCreateDialog open={open} onOpenChange={setOpen} onCreated={reload} />
     </LogisticsPageShell>
   );
 };
 
 export const CustomerOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload, found } = useLogisticsStore({
+    kind: "document",
+    documentKind: "customer_order",
+    ref: String(params.orderId ?? ""),
+  });
   const order = matchDocumentParam(snapshot.customerOrders, params.orderId);
   const [reserveOpen, setReserveOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
@@ -297,7 +334,7 @@ export const CustomerOrderDetailPage = () => {
     );
   }
 
-  if (!order) {
+  if (!order || !found) {
     return (
       <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: "Нет заказа клиента" }]}>
         <LogisticsError message="Заказ клиента не найден." />
@@ -305,7 +342,7 @@ export const CustomerOrderDetailPage = () => {
     );
   }
 
-  const canAct = order.status === "open";
+  const canAct = isOpenCustomerOrderStatus(order.status);
   const coverage = calculateOrderDocumentCoverage(snapshot, order.id);
   const cancelGuidance = projectDocumentCancelGuidance({ type: "customer_order", id: order.id }, snapshot, balances);
 

@@ -8,7 +8,7 @@ import { HomeFilterChip } from "@/components/home/home-filter-chip";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { completeTransfer, createAndSendTransfer, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { completeTransfer, createAndSendTransfer, loadTransferList, updateExpectedEnd } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
@@ -30,7 +30,7 @@ import { TransferStatusBadge } from "@/features/logistics/ui/status-badge";
 import { TransferActivity } from "@/features/logistics/ui/transfer-activity";
 import { TransferDetailHeader, type TransferDetailPendingAction } from "@/features/logistics/ui/transfer-detail-header";
 import { TransferProductManifest } from "@/features/logistics/ui/transfer-product-manifest";
-import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { projectTransferDetail } from "@/features/logistics/transfer-detail-projection";
 import {
   freeTransferPayload,
@@ -46,11 +46,17 @@ const STATUS_FILTERS: Array<{ id: "all" | TransferStatus; label: string }> = [
 
 export const TransfersPage = () => {
   const router = useRouter();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadTransferList);
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
   const [open, setOpen] = useState(false);
+  const formStore = useLogisticsStore({ kind: "form", form: "transfer", enabled: open });
 
-  const rows = snapshot.transfers.filter((item) => status === "all" || item.status === status);
+  const rows = listRows.filter((item) => {
+    if (status === "all") return true;
+    if (status === "sent") return item.status === "sent" || item.status === "in_progress";
+    if (status === "delivered") return item.status === "delivered" || item.status === "done";
+    return item.status === status;
+  });
 
   const create = async (value: {
     fromWarehouseId: string;
@@ -102,20 +108,19 @@ export const TransfersPage = () => {
       {!isLoading && !error ? (
         <LogisticsTableCard headers={["Номер", "Откуда", "Куда", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
           {rows.map((item) => {
-            const itemLines = snapshot.transferLines.filter((line) => line.transferId === item.id);
             return (
               <TableRow key={item.id}>
                 <TableCell className="px-3 py-2 align-top">
                   <LogisticsCodeBadge code={item.number} href={hrefForTransfer(item.sequenceNumber)} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top text-sm">
-                  <WarehouseLink snapshot={snapshot} warehouseId={item.fromWarehouseId} />
+                  <WarehouseLink warehouseId={item.fromWarehouseId} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top text-sm">
-                  <WarehouseLink snapshot={snapshot} warehouseId={item.toWarehouseId} />
+                  <WarehouseLink warehouseId={item.toWarehouseId} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
-                  <DocumentProductLines snapshot={snapshot} lines={itemLines} />
+                  <DocumentProductLines lines={item.products} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
                   <TransferStatusBadge status={item.status} />
@@ -132,8 +137,10 @@ export const TransfersPage = () => {
       <TransferCreateDialog
         open={open}
         onOpenChange={setOpen}
-        snapshot={snapshot}
-        balances={balances}
+        snapshot={formStore.snapshot}
+        balances={formStore.balances}
+        loading={formStore.isLoading}
+        loadError={formStore.error}
         context={{ kind: "free" }}
         onSubmit={create}
       />
@@ -169,7 +176,11 @@ const TransferDetailSkeleton = () => (
 
 export const TransferDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+    kind: "document",
+    documentKind: "transfer",
+    ref: String(params.id ?? ""),
+  });
   const doc = matchDocumentParam(snapshot.transfers, params.id);
   const projection = useMemo(
     () => (doc ? projectTransferDetail(snapshot, balances, doc) : null),

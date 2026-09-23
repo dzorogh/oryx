@@ -482,7 +482,8 @@ export const documentNumber = (prefix: string, sequenceNumber: string | number):
 export const matchDocumentParam = <T extends { id: string; sequenceNumber: string }>(
   items: T[],
   param: string,
-): T | undefined => items.find((item) => item.sequenceNumber === param || item.id === param);
+): T | undefined =>
+  items.find((item) => item.sequenceNumber === param) ?? items.find((item) => item.id === param);
 
 export const publicDocumentParam = (doc: { sequenceNumber: string }): string => doc.sequenceNumber;
 

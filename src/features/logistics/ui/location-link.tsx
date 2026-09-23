@@ -4,23 +4,37 @@ import { locationIdentity } from "@/features/logistics/logistics-lookups";
 import type { LocationType, LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 
+type LocationSource =
+  | { snapshot: LogisticsSnapshot; label?: never; href?: never; isPlantWarehouse?: never }
+  | { snapshot?: never; label: string; href: string | null; isPlantWarehouse?: boolean };
+
+const resolveLocation = (source: LocationSource, locationType: LocationType, locationId: string) => {
+  if (!source.snapshot) {
+    return { label: source.label, href: source.href, isPlantWarehouse: source.isPlantWarehouse ?? false };
+  }
+  const identity = locationIdentity(source.snapshot, locationType, locationId);
+  return {
+    label: identity.title,
+    href: hrefForLocation(source.snapshot, locationType, locationId),
+    isPlantWarehouse: identity.isPlantWarehouse,
+  };
+};
+
 export const LocationLink = ({
-  snapshot,
   locationType,
   locationId,
   className,
   showKind = false,
-}: {
-  snapshot: LogisticsSnapshot;
+  ...source
+}: LocationSource & {
   locationType: LocationType;
   locationId: string;
   className?: string;
   showKind?: boolean;
 }) => {
-  const identity = locationIdentity(snapshot, locationType, locationId);
-  const href = hrefForLocation(snapshot, locationType, locationId);
+  const resolved = resolveLocation(source, locationType, locationId);
   const code = (
-    <LogisticsCodeBadge code={identity.title} href={href} className={className} />
+    <LogisticsCodeBadge code={resolved.label} href={resolved.href ?? undefined} className={className} />
   );
   if (!showKind) {
     return code;
@@ -28,7 +42,7 @@ export const LocationLink = ({
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
       <span className="text-xs text-muted-foreground">
-        {locationKindLabel(locationType, identity.isPlantWarehouse)}
+        {locationKindLabel(locationType, resolved.isPlantWarehouse)}
       </span>
       {code}
     </span>

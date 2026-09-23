@@ -42,7 +42,6 @@ import {
 } from "@/features/logistics/logistics-labels";
 import { adjustmentSignedQuantity } from "@/features/logistics/logistics-adjustments";
 import {
-  customerOrderById,
   documentLabel,
   ownerLabel,
   productById,
@@ -53,6 +52,7 @@ import {
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
 import { relatedOrderItem, relatedOrdersForOutput } from "@/features/logistics/logistics-related";
 import {
   assertEnoughStock,
@@ -69,7 +69,6 @@ import {
   shipmentWarehouseId,
   type DocumentStatus,
   type DocumentType,
-  type LogisticsSnapshot,
   type OutputStatus,
   matchDocumentParam,
   type ShipmentDirection,
@@ -86,7 +85,12 @@ import { RelatedDocuments } from "@/features/logistics/ui/related-documents";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { DocumentStatusBadge, OutputStatusBadge, ShipmentDirectionBadge } from "@/features/logistics/ui/status-badge";
-import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import {
+  loadAdjustmentList,
+  loadOutputList,
+  loadShipmentList,
+} from "@/features/logistics/logistics-api";
+import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const STATUS_FILTERS: Array<{ id: "all" | DocumentStatus; label: string }> = [
   { id: "all", label: "Все" },
@@ -126,7 +130,7 @@ const DIRECTION_FILTERS: Array<{ id: "all" | ShipmentDirection; label: string }>
 ];
 
 export const ShipmentsPage = () => {
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadShipmentList);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -135,6 +139,7 @@ export const ShipmentsPage = () => {
     directionParam === "shipment" || directionParam === "return" ? directionParam : "all";
   const [direction, setDirection] = useState<"all" | ShipmentDirection>(parsedDirection);
   const [open, setOpen] = useState(false);
+  const formStore = useLogisticsStore({ kind: "form", form: "shipment", enabled: open });
 
   useEffect(() => {
     setDirection(parsedDirection);
@@ -153,13 +158,13 @@ export const ShipmentsPage = () => {
   };
   const rows = useMemo(
     () =>
-      snapshot.shipments.filter((item) => {
+      listRows.filter((item) => {
         if (direction === "all") {
           return true;
         }
-        return shipmentDirection(item.fromLocationType, item.toLocationType) === direction;
+        return item.direction === direction;
       }),
-    [direction, snapshot.shipments],
+    [direction, listRows],
   );
 
   return (
@@ -184,30 +189,33 @@ export const ShipmentsPage = () => {
       {!isLoading && !error ? (
         <LogisticsTableCard headers={["Номер", "Тип", "Заказ / склад", "Товары"]} isEmpty={rows.length === 0}>
           {rows.map((item) => {
-            const itemDirection = shipmentDirection(item.fromLocationType, item.toLocationType);
-            const warehouseId = shipmentWarehouseId(item);
+            const warehouseId =
+              item.fromLocationType === "warehouse"
+                ? item.fromLocationId
+                : item.toLocationType === "warehouse"
+                  ? item.toLocationId
+                  : "";
             return (
               <TableRow key={item.id}>
                 <TableCell className="px-3 py-2 align-top">
                   <LogisticsCodeBadge code={item.number} href={`/store/logistics/shipments/${item.sequenceNumber}`} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
-                  <ShipmentDirectionBadge direction={itemDirection} />
+                  <ShipmentDirectionBadge direction={item.direction} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
                   <span className="inline-flex flex-wrap items-center gap-1.5">
-                    <LogisticsCodeBadge
-                      code={customerOrderById(snapshot, item.customerOrderId)?.number ?? item.customerOrderId}
-                      href={hrefForCustomerOrder(item.customerOrderId)}
-                    />
-                    <LogisticsCodeBadge code={warehouseCode(snapshot, warehouseId)} href={hrefForWarehouse(warehouseId)} />
+                    {item.customerOrderId ? (
+                      <LogisticsCodeBadge
+                        code={item.customerOrderNumber || item.customerOrderId}
+                        href={hrefForCustomerOrder(item.customerOrderId)}
+                      />
+                    ) : null}
+                    {warehouseId ? <WarehouseLink warehouseId={warehouseId} /> : null}
                   </span>
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
-                  <DocumentProductLines
-                    snapshot={snapshot}
-                    lines={snapshot.shipmentLines.filter((line) => line.shipmentId === item.id)}
-                  />
+                  <DocumentProductLines lines={item.products} />
                 </TableCell>
               </TableRow>
             );
@@ -215,8 +223,10 @@ export const ShipmentsPage = () => {
         </LogisticsTableCard>
       ) : null}
       <ShipmentForm
-        snapshot={snapshot}
-        balances={balances}
+        snapshot={formStore.snapshot}
+        balances={formStore.balances}
+        loading={formStore.isLoading}
+        loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
         reload={reload}
@@ -228,7 +238,11 @@ export const ShipmentsPage = () => {
 
 export const ShipmentDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const store = useLogisticsStore();
+  const store = useLogisticsStore({
+    kind: "document",
+    documentKind: "shipment",
+    ref: String(params.id ?? ""),
+  });
   const [formOpen, setFormOpen] = useState(false);
   const [formIntention, setFormIntention] = useState<ShipmentDirection>("return");
   const doc = matchDocumentParam(store.snapshot.shipments, params.id);
@@ -378,17 +392,17 @@ export const ShipmentDetailPage = () => {
 };
 
 export const AdjustmentsPage = () => {
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadAdjustmentList);
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
   const [open, setOpen] = useState(false);
-  const rows = snapshot.adjustments.filter((item) => status === "all" || item.status === status);
+  const formStore = useLogisticsStore({ kind: "form", form: "adjustment", enabled: open });
+  const rows = status === "all" || status === "posted" ? listRows : [];
 
   return (
     <DocumentList
       title="Корректировки"
       crumbs="Корректировки"
       actionLabel="Новая корректировка"
-      snapshot={snapshot}
       path="/store/logistics/adjustments"
       rows={rows.map((item) => ({
         id: item.id,
@@ -397,22 +411,11 @@ export const AdjustmentsPage = () => {
         extra: (
           <span className="inline-flex flex-wrap items-center gap-1.5">
             <span>{ADJUSTMENT_OPERATION_LABELS[item.operation]}</span>
-            <LogisticsCodeBadge
-              code={warehouseCode(snapshot, item.warehouseId)}
-              href={hrefForWarehouse(item.warehouseId)}
-            />
+            <WarehouseLink warehouseId={item.warehouseId} />
           </span>
         ),
-        products: snapshot.adjustmentLines
-          .filter((line) => line.adjustmentId === item.id)
-          .map((line) => ({
-            productId: line.productId,
-            quantity: line.quantity,
-            productName: line.productName,
-            productSku: line.productSku,
-            productUnit: line.productUnit,
-          })),
-        status: item.status,
+        products: item.products,
+        status: "posted",
       }))}
       extraHeader="Операция / склад"
       isLoading={isLoading}
@@ -422,8 +425,10 @@ export const AdjustmentsPage = () => {
       onCreate={() => setOpen(true)}
     >
       <AdjustmentForm
-        snapshot={snapshot}
-        balances={balances}
+        snapshot={formStore.snapshot}
+        balances={formStore.balances}
+        loading={formStore.isLoading}
+        loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
         reload={reload}
@@ -435,7 +440,11 @@ export const AdjustmentsPage = () => {
 
 export const AdjustmentDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const store = useLogisticsStore();
+  const store = useLogisticsStore({
+    kind: "document",
+    documentKind: "adjustment",
+    ref: String(params.id ?? ""),
+  });
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
   const doc = matchDocumentParam(store.snapshot.adjustments, params.id);
@@ -536,7 +545,7 @@ const OUTPUT_FILTERS: Array<{ id: "all" | OutputStatus; label: string }> = [
 ];
 
 export const OutputsPage = () => {
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadOutputList);
   const [status, setStatus] = useState<(typeof OUTPUT_FILTERS)[number]["id"]>("all");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -544,7 +553,10 @@ export const OutputsPage = () => {
   const [drafts, setDrafts] = useState<ProductionOutputDraftLine[]>([]);
   const [expectedEndOn, setExpectedEndOn] = useState("");
   const creatingRef = useRef(false);
-  const rows = snapshot.outputs.filter((item) => status === "all" || item.status === status);
+  const formStore = useLogisticsStore({ kind: "form", form: "output", enabled: open });
+  const snapshot = formStore.snapshot;
+  const balances = formStore.balances;
+  const rows = listRows.filter((item) => status === "all" || item.status === status);
   const prodLines = snapshot.productionOrderLines.filter((line) => line.orderId === orderId);
   const eligibleLines = prodLines.filter(
     (line) => remainingToOutputForLine(snapshot, line.id, line.quantity) > 0,
@@ -685,15 +697,12 @@ export const OutputsPage = () => {
               </TableCell>
               <TableCell className="px-3 py-2 align-top">
                 <LogisticsCodeBadge
-                  code={productionOrderById(snapshot, item.productionOrderId)?.number ?? item.productionOrderId}
-                  href={`/store/logistics/production-orders/${productionOrderById(snapshot, item.productionOrderId)?.sequenceNumber ?? item.productionOrderId}`}
+                  code={item.productionOrderNumber || item.productionOrderId}
+                  href={`/store/logistics/production-orders/${item.productionOrderSequenceNumber || item.productionOrderId}`}
                 />
               </TableCell>
               <TableCell className="px-3 py-2 align-top">
-                <DocumentProductLines
-                  snapshot={snapshot}
-                  lines={snapshot.outputLines.filter((line) => line.outputId === item.id)}
-                />
+                <DocumentProductLines lines={item.products} />
               </TableCell>
               <TableCell className="px-3 py-2 align-top">
                 <OutputStatusBadge status={item.status} />
@@ -717,6 +726,9 @@ export const OutputsPage = () => {
         }}
         title="Новый выпуск"
       >
+        {formStore.isLoading ? <LogisticsLoading /> : null}
+        {formStore.error ? <LogisticsError message={formStore.error} /> : null}
+        {!formStore.isLoading && !formStore.error ? (
         <div className="flex flex-col gap-3" aria-busy={pending || undefined}>
           <FieldSelect
             label="Заказ на производство"
@@ -778,6 +790,7 @@ export const OutputsPage = () => {
             </Button>
           </div>
         </div>
+        ) : null}
       </LogisticsDialog>
     </LogisticsPageShell>
   );
@@ -785,7 +798,11 @@ export const OutputsPage = () => {
 
 export const OutputDetailPage = () => {
   const params = useParams<{ id: string }>();
-  const store = useLogisticsStore();
+  const store = useLogisticsStore({
+    kind: "document",
+    documentKind: "production_output",
+    ref: String(params.id ?? ""),
+  });
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
   const doc = matchDocumentParam(store.snapshot.outputs, params.id);
@@ -936,7 +953,6 @@ const DocumentList = ({
   title,
   crumbs,
   path,
-  snapshot,
   rows,
   extraHeader,
   actionLabel,
@@ -950,7 +966,6 @@ const DocumentList = ({
   title: string;
   crumbs: string;
   path: string;
-  snapshot: LogisticsSnapshot;
   rows: ListRow[];
   extraHeader: string;
   actionLabel: string;
@@ -982,7 +997,7 @@ const DocumentList = ({
               )}
             </TableCell>
             <TableCell className="px-3 py-2 align-top">
-              <DocumentProductLines snapshot={snapshot} lines={row.products} />
+              <DocumentProductLines lines={row.products} />
             </TableCell>
             <TableCell className="px-3 py-2 align-top">
               <DocumentStatusBadge status={row.status} />

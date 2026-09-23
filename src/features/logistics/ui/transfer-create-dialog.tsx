@@ -18,6 +18,7 @@ import { customerOrderById, productById, warehouseCode, warehouseSelectItems } f
 import type { CustomerOrderLine, LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
+import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { cn } from "@/lib/utils";
 
 export type TransferCreateLineDraft = {
@@ -51,6 +52,9 @@ type TransferCreateDialogProps = {
   context: TransferCreateContext;
   onSubmit: (value: TransferCreateSubmitValue) => Promise<boolean>;
   preset?: TransferCreatePreset;
+  /** Form data (`store_form_context`) is still loading. */
+  loading?: boolean;
+  loadError?: string | null;
 };
 
 const emptyLine = (): TransferCreateLineDraft => ({
@@ -92,6 +96,8 @@ export const TransferCreateDialog = ({
   context,
   onSubmit,
   preset,
+  loading = false,
+  loadError = null,
 }: TransferCreateDialogProps) => {
   const liveId = useId();
   const [fromId, setFromId] = useState("");
@@ -229,6 +235,21 @@ export const TransferCreateDialog = ({
   const title = "Создать перемещение";
   const primaryLabel =
     context.kind === "order" ? `Создать и отправить для ${orderNumber}` : "Создать и отправить перемещение";
+
+  if (loading || loadError) {
+    return (
+      <LogisticsDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={title}
+        className="sm:max-w-4xl"
+        loading={loading}
+        error={loadError}
+      >
+        {null}
+      </LogisticsDialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

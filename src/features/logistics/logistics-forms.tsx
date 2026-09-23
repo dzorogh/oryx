@@ -83,6 +83,9 @@ type SharedFormProps = {
   onOpenChange: (open: boolean) => void;
   reload: () => Promise<void>;
   mode?: FormMode;
+  /** Form data (`store_form_context`) is still loading. */
+  loading?: boolean;
+  loadError?: string | null;
 };
 
 const placeKey = (type: string, id: string) => `${type}:${id}`;
@@ -328,6 +331,8 @@ export const ReservationForm = ({
   reload,
   mode = "list",
   preset,
+  loading,
+  loadError,
 }: SharedFormProps & {
   preset?: {
     locationType?: ReservationLocationType;
@@ -540,6 +545,8 @@ export const ReservationForm = ({
       }}
       title="Резерв"
       className="sm:max-w-lg"
+      loading={loading}
+      error={loadError}
     >
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
@@ -654,6 +661,8 @@ export const ShipmentForm = ({
   onOpenChange,
   reload,
   preset,
+  loading,
+  loadError,
 }: SharedFormProps & {
   preset?: ShipmentFormPreset;
 }) => {
@@ -985,6 +994,8 @@ export const ShipmentForm = ({
           : "Выберите намерение. Его можно сменить только возвратом на этот шаг."
       }
       className={intention ? undefined : "sm:max-w-xl"}
+      loading={loading}
+      error={loadError}
     >
       <div className="flex flex-col gap-3">
         {intention ? (
@@ -1300,6 +1311,8 @@ export const AdjustmentForm = ({
   onOpenChange,
   reload,
   preset,
+  loading,
+  loadError,
 }: SharedFormProps & {
   preset?: {
     operation?: AdjustmentOperation;
@@ -1430,6 +1443,8 @@ export const AdjustmentForm = ({
       }}
       title="Новая корректировка"
       description="Документ проводится сразу. Проведённую корректировку нельзя отменить."
+      loading={loading}
+      error={loadError}
     >
       <div className="flex flex-col gap-3">
         <FieldSelect

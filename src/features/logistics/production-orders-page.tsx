@@ -31,6 +31,7 @@ import {
   createAndPostReservation,
   createProductionOrder,
   createProductionOutput,
+  loadProductionOrderList,
   setProductionStatus,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
@@ -66,13 +67,13 @@ import { ProductionOrderMovements } from "@/features/logistics/ui/production-ord
 import { ProductionOrderOutputs } from "@/features/logistics/ui/production-order-outputs";
 import { ProductionOrderProductManifest } from "@/features/logistics/ui/production-order-product-manifest";
 import { ProductionOrderSectionIndex } from "@/features/logistics/ui/production-order-section-index";
-import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { documentLedgerRows } from "@/features/logistics/ui/document-ledger";
 
 const LIST_STATUSES = PRODUCTION_STATUSES.filter((status) => status !== "cancelled");
 
 export const ProductionOrdersPage = () => {
-  const { snapshot, isLoading, error, reload } = useLogisticsStore();
+  const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadProductionOrderList);
   const [status, setStatus] = useState<"all" | ProductionStatus>("all");
   const [open, setOpen] = useState(false);
   const [plantId, setPlantId] = useState("");
@@ -80,8 +81,10 @@ export const ProductionOrdersPage = () => {
     { productId: "", quantity: "1" },
   ]);
   const [expectedEndOn, setExpectedEndOn] = useState("");
+  const formStore = useLogisticsStore({ kind: "form", form: "production_order", enabled: open });
+  const snapshot = formStore.snapshot;
 
-  const rows = snapshot.productionOrders.filter((item) => status === "all" || item.status === status);
+  const rows = listRows.filter((item) => status === "all" || item.status === status);
   const selectedProductIds = lines.map((line) => line.productId);
   const allowedPlantIds = plantIdsForProducts(
     snapshot,
@@ -156,7 +159,6 @@ export const ProductionOrdersPage = () => {
       {!isLoading && !error ? (
         <LogisticsTableCard headers={["Номер", "Завод", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
           {rows.map((item) => {
-            const orderLines = snapshot.productionOrderLines.filter((line) => line.orderId === item.id);
             return (
               <TableRow key={item.id}>
                 <TableCell className="px-3 py-2 align-top">
@@ -166,10 +168,10 @@ export const ProductionOrdersPage = () => {
                   />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top text-sm">
-                  <PlantLink snapshot={snapshot} plantId={item.plantId ?? ""} />
+                  <PlantLink plantId={item.plantId ?? ""} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
-                  <DocumentProductLines snapshot={snapshot} lines={orderLines} />
+                  <DocumentProductLines lines={item.products} />
                 </TableCell>
                 <TableCell className="px-3 py-2 align-top">
                   <ProductionStatusBadge status={item.status} />
@@ -188,6 +190,9 @@ export const ProductionOrdersPage = () => {
         onOpenChange={setOpen}
         title="Новый заказ на производство"
       >
+        {formStore.isLoading ? <LogisticsLoading /> : null}
+        {formStore.error ? <LogisticsError message={formStore.error} /> : null}
+        {!formStore.isLoading && !formStore.error ? (
         <div className="flex flex-col gap-3">
           <label className="space-y-1 text-sm">
             <span className="font-medium">Завод</span>
@@ -275,6 +280,7 @@ export const ProductionOrdersPage = () => {
             Создать
           </Button>
         </div>
+        ) : null}
       </LogisticsDialog>
     </LogisticsPageShell>
   );
@@ -282,7 +288,11 @@ export const ProductionOrdersPage = () => {
 
 export const ProductionOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore();
+  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+    kind: "document",
+    documentKind: "production_order",
+    ref: String(params.orderId ?? ""),
+  });
   const statusRef = useRef<HTMLDivElement>(null);
   const closeAnnounceRef = useRef<HTMLParagraphElement>(null);
   const outputLockRef = useRef(false);

@@ -173,3 +173,23 @@
 - source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-outputs-multi-product.md`
   summary: Подсказка «Осталось выпустить по плану» на карточке выпуска считает остаток по пустому `productionOrderLineId`.
   evidence: Загрузка строк выпуска пишет `productionOrderLineId: ""` с универсальных строк, до этой задачи. Подсказка берёт количество строки выпуска, а не остаток плана.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-logistics-list-scoped-data.md`
+  summary: Строки резерва несут сырой `from_owner_id` (id владельца остатка) вместо id заказа/региона: резерв из свободного остатка показан как «Переназначение» с источником «1», источник-заказ — как «85» со ссылкой на чужой заказ.
+  evidence: `mapLineOwners` в `logistics-api.ts` отдаёт сырой id при спроецированном типе; `store_reservation_list` повторяет это (`x.id = l.from_owner_id`). RSV-905 показывает источник «85» вместо OMS-904. Было до задачи; затрагивает и запись (формы передают этот id в `resolveOwnerId`).
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-logistics-list-scoped-data.md`
+  summary: Старые проверки статусов `open` / `sent` / `delivered` не совпадают с жизненным циклом `draft/in_progress/done/cancelled`: пустые пикеры заказа в формах резерва и отгрузки, скрытые подсказки отмены для заказов `in_progress`.
+  evidence: `logistics-forms.tsx:572,1034`, `logistics-availability.ts:275,510`, `production-output-lines-fields.tsx:65`, `flow-documents-pages.tsx:279`, `logistics-cancel-guidance.ts:307`, `transfer-detail-projection.ts:443,599`, `order-action-forms.tsx:759`; в демо-БД заказы только `in_progress`/`done`. Было до задачи.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-logistics-list-scoped-data.md`
+  summary: Тип корректировки выводится по знаку строк: уменьшение (`decrease`) неотличимо от списания и показывается как «Списание».
+  evidence: и старый маппер, и `store_adjustment_list` ставят `write_off` при всех отрицательных строках; операция не хранится в БД. Было до задачи.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-logistics-list-scoped-data.md`
+  summary: Нет автотеста read-RPC (итоги заказов, подписи резервов, скоупы контекстов) — только разовое сравнение скриптом и прямые SQL-проверки.
+  evidence: `npm test` не вызывает Postgres; дефект подписи источника резерва прошёл все гейты.
+
+- source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-logistics-list-scoped-data.md`
+  summary: `AGENTS.md` не включает `npm test` в проверки перед сдачей.
+  evidence: `AGENTS.md` называет только lint/typecheck/build/check:*; правка агентских файлов вынесена из задачи.
