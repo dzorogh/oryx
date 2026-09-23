@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { mapCustomerOrderListRow, mapLogisticsPayload } from "@/features/logistics/logistics-api";
+import {
+  mapCustomerOrderListRow,
+  mapLogisticsPayload,
+  mapOutputListRow,
+} from "@/features/logistics/logistics-api";
 
 describe("mapCustomerOrderListRow", () => {
   it("maps an order without lines to empty products and zero totals", () => {
@@ -43,6 +47,46 @@ describe("mapCustomerOrderListRow", () => {
     assert.equal(row.reserved, 2);
     assert.equal(row.openToReserve, 2);
     assert.equal(row.expectedEndOn, "2026-10-01");
+  });
+
+  it("maps ordered and createdBy from list RPC rows", () => {
+    const row = mapCustomerOrderListRow({
+      id: "3",
+      sequenceNumber: "3",
+      number: "OMS-3",
+      status: "in_progress",
+      expectedEndOn: null,
+      createdAt: "2026-09-01T10:00:00+00:00",
+      products: [],
+      ordered: 12,
+      reserved: 0,
+      shipped: 0,
+      openToReserve: 0,
+      createdBy: "Иван Петров",
+    });
+    assert.equal(row.ordered, 12);
+    assert.equal(row.createdBy, "Иван Петров");
+  });
+});
+
+describe("mapOutputListRow", () => {
+  it("maps plantId from list RPC rows", () => {
+    const row = mapOutputListRow({
+      id: "9",
+      sequenceNumber: "9",
+      number: "OUT-9",
+      status: "planned",
+      expectedEndOn: null,
+      createdAt: "2026-09-01T10:00:00+00:00",
+      productionOrderId: "4",
+      productionOrderNumber: "PRD-4",
+      productionOrderSequenceNumber: "4",
+      plantId: "2",
+      products: [],
+      createdBy: "Мария",
+    });
+    assert.equal(row.plantId, "2");
+    assert.equal(row.createdBy, "Мария");
   });
 });
 

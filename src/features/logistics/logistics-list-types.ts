@@ -28,9 +28,11 @@ export type CustomerOrderListRow = {
   createdAt: string;
   description: string;
   products: LogisticsListProductLine[];
+  ordered: number;
   reserved: number;
   shipped: number;
   openToReserve: number;
+  createdBy: string;
 };
 
 export type ProductionOrderListRow = {
@@ -42,6 +44,7 @@ export type ProductionOrderListRow = {
   createdAt: string;
   plantId: string;
   products: LogisticsListProductLine[];
+  createdBy: string;
 };
 
 export type TransferListRow = {
@@ -54,6 +57,7 @@ export type TransferListRow = {
   fromWarehouseId: string;
   toWarehouseId: string;
   products: LogisticsListProductLine[];
+  createdBy: string;
 };
 
 export type ShipmentListRow = {
@@ -69,6 +73,7 @@ export type ShipmentListRow = {
   customerOrderId: string;
   customerOrderNumber: string;
   products: LogisticsListProductLine[];
+  createdBy: string;
 };
 
 export type OutputListRow = {
@@ -81,7 +86,9 @@ export type OutputListRow = {
   productionOrderId: string;
   productionOrderNumber: string;
   productionOrderSequenceNumber: string;
+  plantId: string;
   products: LogisticsListProductLine[];
+  createdBy: string;
 };
 
 export type AdjustmentListRow = {
@@ -94,6 +101,7 @@ export type AdjustmentListRow = {
   products: LogisticsListProductLine[];
   signedQuantity: number;
   operation: AdjustmentOperation | "mixed";
+  createdBy: string;
 };
 
 export type ReservationListLine = {
@@ -129,4 +137,5 @@ export type ReservationListRow = {
   toOwnerNumber: string | null;
   lines: ReservationListLine[];
   direction: ReservationDirection;
+  createdBy: string;
 };

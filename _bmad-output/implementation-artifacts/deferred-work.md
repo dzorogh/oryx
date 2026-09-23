@@ -205,3 +205,9 @@
 - source_spec: `/Users/dzorogh/Develop/oryx/_bmad-output/implementation-artifacts/spec-store-document-screens-redesign.md`
   summary: Ошибка действия на карточке перемещения выводится только в `sr-only` live-region — зрячий пользователь её не видит.
   evidence: `transfers-page.tsx` ~429; так же в базовой `transfer-detail-header.tsx:144`; можно перевести действия на `runLogisticsAction` (toast).
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-lists-redesign.md`
+  summary: Проверить `store_customer_order_list` на двойной учёт резерва/отгрузки, если в заказе две строки одного товара.
+  evidence: maybe-false — CTE `per_line` соединяет каждую строку с агрегатом по (заказ, товар); логика перенесена без изменений из `20260923120000`. Решает проверка, допускает ли создание заказа дубли товара.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-lists-redesign.md`
+  summary: Добавить `npm test` в обязательные проверки перед сдачей в AGENTS.md (через bmad-project-context).
+  evidence: В `package.json` есть `test` (node --test, 80+ тестов), но AGENTS.md пишет «no automated test suite» и не требует его запускать.

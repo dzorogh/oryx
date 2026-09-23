@@ -3,9 +3,6 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import {
@@ -28,9 +25,13 @@ import {
 } from "@/features/logistics/stock-product-matrix";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
-import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
+import { ListToolbar } from "@/features/logistics/ui/list/list-toolbar";
 import { StockFiltersSheet } from "@/features/logistics/ui/stock-filters-panel";
-import { StockProductsMatrix } from "@/features/logistics/ui/stock-products-matrix";
+import { StockProductsMatrix, type StockMatrixColumnsView } from "@/features/logistics/ui/stock-products-matrix";
+import { ListColumnsSheet } from "@/features/logistics/ui/list/list-columns-sheet";
+import { ListSortMenu } from "@/features/logistics/ui/list/list-view-menu";
+import type { ListColumnDef, ListSortDef } from "@/features/logistics/ui/list/list-types";
+import { useListView } from "@/features/logistics/ui/list/use-list-view";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
 const GROUP_TABS: Array<{ id: StockGroup; label: string }> = [
@@ -39,16 +40,26 @@ const GROUP_TABS: Array<{ id: StockGroup; label: string }> = [
   { id: "regions", label: "Регионы" },
 ];
 
-const STOCK_TABPANEL_ID = "stock-tabpanel";
 const STOCK_FILTERS_PANEL_ID = "stock-filters-panel";
 
-const stockTabId = (group: StockGroup) => `stock-tab-${group}`;
+type StockSortRow = { productId: string; name: string; total: number | null; free: number | null };
 
-const compareProductName = (snapshot: LogisticsSnapshot, leftId: string, rightId: string) => {
-  const name = (productId: string) =>
-    snapshot.products.find((product) => product.id === productId)?.name ?? productId;
-  return name(leftId).localeCompare(name(rightId), "en");
-};
+const STOCK_COLUMNS: ListColumnDef<StockSortRow>[] = [
+  { id: "product", label: "Товар", locked: true, render: () => null },
+  { id: "owner", label: "Закреплено за", render: () => null },
+  { id: "location", label: "Место", render: () => null },
+  { id: "total", label: "Всего", render: () => null },
+];
+
+const STOCK_SORTS: ListSortDef<StockSortRow>[] = [
+  { id: "name", label: "Название", type: "text", value: (row) => row.name },
+  { id: "code", label: "Код", type: "number", defaultDirection: "asc", value: (row) => Number(row.productId) },
+  { id: "total", label: "Всего", type: "number", value: (row) => row.total },
+  { id: "free", label: "Свободно", type: "number", value: (row) => row.free },
+];
+
+const productName = (snapshot: LogisticsSnapshot, productId: string) =>
+  snapshot.products.find((product) => product.id === productId)?.name ?? productId;
 
 const StockPageContent = () => {
   const { snapshot, balances, isLoading, error } = useLogisticsStore({ kind: "stock" });
@@ -86,14 +97,41 @@ const StockPageContent = () => {
     replaceFilters(defaultStockViewFilter(filtersRef.current.group));
   };
 
+  const view = useListView({
+    listId: "stock",
+    columns: STOCK_COLUMNS,
+    sortDefs: STOCK_SORTS,
+  });
+  const [columnsOpen, setColumnsOpen] = useState(false);
+
+  const sortBy = <TRow extends { productId: string }>(
+    rows: TRow[],
+    measure: (row: TRow) => { total: number | null; free: number | null },
+  ) => {
+    const byId = new Map(rows.map((row) => [row.productId, row]));
+    return view
+      .applySortedRows(rows.map((row) => ({ productId: row.productId, name: productName(snapshot, row.productId), ...measure(row) })))
+      .map((row) => byId.get(row.productId)!);
+  };
+
+  const matrixColumns: StockMatrixColumnsView = {
+    isVisible: view.isColumnVisible,
+    isCollapsed: view.isColumnCollapsed,
+    toggleCollapsed: view.toggleCollapsed,
+    hide: view.toggleColumn,
+    expandAll: view.collapsedColumnIds.length > 0 ? view.expandAllColumns : undefined,
+  };
+
   const matrixFilter = stockMatrixFilterForGroup(filters);
   const hasActiveFilters = !isDefaultStockViewFilter(filters);
 
-  const productRows = filterRowsByProductQuery(
-    projectProductStockMatrix(balances, matrixFilter),
-    snapshot,
-    filters.query,
-  ).sort((left, right) => compareProductName(snapshot, left.productId, right.productId));
+  const productRows = sortBy(
+    filterRowsByProductQuery(projectProductStockMatrix(balances, matrixFilter), snapshot, filters.query),
+    (row) => ({
+      total: row.location.warehouses + row.location.production + row.location.transfers,
+      free: row.owner.free,
+    }),
+  );
 
   const warehouseSections = filterSectionsByProductQuery(
     projectWarehouseProductMatrix(balances, matrixFilter),
@@ -102,9 +140,7 @@ const StockPageContent = () => {
   )
     .map((section) => ({
       ...section,
-      rows: [...section.rows].sort((left, right) =>
-        compareProductName(snapshot, left.productId, right.productId),
-      ),
+      rows: sortBy(section.rows, (row) => ({ total: row.onHand, free: row.free })),
     }))
     .sort((left, right) =>
       warehouseCode(snapshot, left.warehouseId).localeCompare(warehouseCode(snapshot, right.warehouseId), "en"),
@@ -117,9 +153,7 @@ const StockPageContent = () => {
   )
     .map((section) => ({
       ...section,
-      rows: [...section.rows].sort((left, right) =>
-        compareProductName(snapshot, left.productId, right.productId),
-      ),
+      rows: sortBy(section.rows, (row) => ({ total: row.warehouses + row.production + row.transfers, free: null })),
     }))
     .sort((left, right) =>
       regionCode(snapshot, left.regionId).localeCompare(regionCode(snapshot, right.regionId), "en"),
@@ -140,92 +174,25 @@ const StockPageContent = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Остатки" }]}>
-      <LogisticsToolbar
+      <ListToolbar
         title="Остатки"
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <div
-            className="inline-flex gap-0.5 rounded-[9px] bg-muted p-[3px]"
-            role="tablist"
-            aria-label="Группировка остатков"
-          >
-            {GROUP_TABS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                id={stockTabId(item.id)}
-                role="tab"
-                aria-selected={filters.group === item.id}
-                aria-controls={STOCK_TABPANEL_ID}
-                onClick={() => replaceFilters(stockFilterForGroup(filtersRef.current, item.id))}
-                className={
-                  filters.group === item.id
-                    ? "rounded-[7px] bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm"
-                    : "rounded-[7px] px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-                }
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          {hasActiveFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={resetFilters}
-              className="ml-auto gap-1 text-muted-foreground"
-              aria-label="Сбросить фильтры остатков"
-            >
-              <X aria-hidden className="size-3.5" />
-              Сбросить
-            </Button>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">Поиск по названию или коду</span>
-            <div className="relative">
-              <Search
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                value={filters.query}
-                onChange={(event) => updateFilters({ query: event.target.value })}
-                placeholder="Поиск по названию или коду"
-                className="pl-8"
-                aria-label="Поиск остатков по названию или коду"
-              />
-            </div>
-          </label>
-          <Button
-            type="button"
-            variant={filtersOpen || hasActiveFilters ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFiltersOpen(true)}
-            disabled={!dataReady}
-            aria-expanded={filtersOpen}
-            aria-controls={STOCK_FILTERS_PANEL_ID}
-            aria-haspopup="dialog"
-            aria-label="Открыть фильтры остатков"
-          >
-            <SlidersHorizontal aria-hidden className="size-3.5" />
-            Фильтры
-          </Button>
-        </div>
-      </LogisticsToolbar>
+        toggleOptions={GROUP_TABS.map((item) => ({ value: item.id, label: item.label }))}
+        toggleValue={filters.group}
+        onToggleChange={(value) => replaceFilters(stockFilterForGroup(filtersRef.current, value as StockGroup))}
+        toggleAriaLabel="Группировка остатков"
+        search={{ value: filters.query, onChange: (value) => updateFilters({ query: value }), placeholder: "Поиск: товар или код" }}
+        viewControls={<ListSortMenu view={view} />}
+        filtersActive={hasActiveFilters}
+        onOpenFilters={dataReady ? () => setFiltersOpen(true) : undefined}
+        columnsActive={view.hasCustomColumns}
+        onOpenColumns={filters.group === "products" ? () => setColumnsOpen(true) : undefined}
+      />
 
       {isLoading ? <LogisticsLoading /> : null}
       {error ? <LogisticsError message={error} /> : null}
 
       {dataReady ? (
-        <div
-          id={STOCK_TABPANEL_ID}
-          role="tabpanel"
-          aria-labelledby={stockTabId(filters.group)}
-          className="min-w-0"
-        >
+        <div className="min-w-0">
           <StockProductsMatrix
             snapshot={snapshot}
             group={filters.group}
@@ -233,6 +200,7 @@ const StockPageContent = () => {
             warehouseSections={warehouseSections}
             regionSections={regionSections}
             empty={emptyMessage}
+            columns={matrixColumns}
           />
         </div>
       ) : null}
@@ -243,6 +211,7 @@ const StockPageContent = () => {
         onOpenChange={setFiltersOpen}
         id={STOCK_FILTERS_PANEL_ID}
       />
+      <ListColumnsSheet open={columnsOpen} onOpenChange={setColumnsOpen} columns={STOCK_COLUMNS} view={view} />
     </LogisticsPageShell>
   );
 };

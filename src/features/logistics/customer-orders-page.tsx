@@ -5,11 +5,12 @@ import { ShoppingCart } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
+import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
-import { TableCell, TableRow } from "@/components/ui/table";
 import { closeCustomerOrder, createCustomerOrder, loadCustomerOrderList, updateExpectedEnd } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
@@ -70,23 +71,119 @@ import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
-import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
+import {
+  deadlineFilterMatch,
+  listAuthorColumn,
+  listCreatedColumn,
+  listDeadlineColumn,
+  listDeadlineGroup,
+  listNumberColumn,
+  listProductsColumn,
+  ListQuantity,
+  matchesProductSearch,
+} from "@/features/logistics/ui/list/list-helpers";
+import type { ListColumnDef, ListGroupDef, ListSortDef } from "@/features/logistics/ui/list/list-types";
+import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { OrderProgressTracker } from "@/features/logistics/ui/order-progress-tracker";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { CustomerOrderStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
-import { compareCustomerOrdersNewestFirst } from "@/features/logistics/customer-orders-sort";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 
-const STATUS_FILTERS: Array<{ id: "all" | CustomerOrderStatus; label: string }> = [
-  { id: "all", label: "Все" },
-  { id: "in_progress", label: "Открыт" },
-  { id: "done", label: "Закрыт" },
-];
+const STATUS_TOGGLE = [
+  { value: "all", label: "Все" },
+  { value: "in_progress", label: "Открыт" },
+  { value: "done", label: "Закрыт" },
+] as const;
 
 const isOpenCustomerOrderStatus = (status: string) =>
   status === "open" || status === "in_progress";
+
+const customerOrderColumns: ListColumnDef<CustomerOrderListRow>[] = [
+  listNumberColumn((row) => `/store/logistics/customer-orders/${row.sequenceNumber}`),
+  {
+    id: "status",
+    label: "Статус",
+    sortType: "text",
+    sortValue: (row) => row.status,
+    render: (row) => <CustomerOrderStatusBadge status={row.status} />,
+  },
+  listProductsColumn<CustomerOrderListRow>(),
+  {
+    id: "ordered",
+    label: "Заказано",
+    align: "right",
+    sortType: "number",
+    sortValue: (row) => row.ordered,
+    render: (row) => <ListQuantity value={row.ordered} />,
+  },
+  {
+    id: "shipped",
+    label: "Отгружено",
+    align: "right",
+    description: "Отгружено клиенту за вычетом возвратов",
+    sortType: "number",
+    sortValue: (row) => row.shipped,
+    render: (row) => <ListQuantity value={row.shipped} />,
+  },
+  {
+    id: "reserved",
+    label: "В резерве",
+    align: "right",
+    description: "Закреплено за заказом на складах, в производстве и в пути",
+    sortType: "number",
+    sortValue: (row) => row.reserved,
+    render: (row) => <ListQuantity value={row.reserved} />,
+  },
+  {
+    id: "unfulfilled",
+    label: "Не обеспечено",
+    align: "right",
+    description: "Заказано − отгружено − в резерве, по каждой строке. Под это количество пока нечего отгрузить.",
+    sortType: "number",
+    sortValue: (row) => (isOpenCustomerOrderStatus(row.status) ? row.openToReserve : null),
+    render: (row) =>
+      isOpenCustomerOrderStatus(row.status) ? (
+        <ListQuantity value={row.openToReserve} tone="warn" />
+      ) : (
+        <span className="text-muted-foreground/60">—</span>
+      ),
+  },
+  listDeadlineColumn<CustomerOrderListRow>(isOpenCustomerOrderStatus),
+  listCreatedColumn<CustomerOrderListRow>(),
+  {
+    id: "description",
+    label: "Описание",
+    defaultHidden: true,
+    sortType: "text",
+    sortValue: (row) => row.description,
+    render: (row) => row.description || "—",
+  },
+  listAuthorColumn<CustomerOrderListRow>(),
+];
+
+const customerOrderSortDefs: ListSortDef<CustomerOrderListRow>[] = [
+  { id: "created", label: "Дата создания", type: "date", value: (row) => row.createdAt },
+  { id: "deadline", label: "Срок", type: "date", value: (row) => row.expectedEndOn },
+  { id: "number", label: "Номер", type: "text", value: (row) => row.number },
+  { id: "unfulfilled", label: "Не обеспечено", type: "number", value: (row) => (isOpenCustomerOrderStatus(row.status) ? row.openToReserve : null) },
+];
+
+const customerOrderGroupDefs: ListGroupDef<CustomerOrderListRow>[] = [
+  {
+    id: "status",
+    label: "Статус",
+    key: (row) => row.status,
+    renderHeader: (key) => CUSTOMER_ORDER_STATUS_LABELS[key as CustomerOrderStatus] ?? key,
+  },
+  listDeadlineGroup<CustomerOrderListRow>(isOpenCustomerOrderStatus),
+  {
+    id: "author",
+    label: "Автор",
+    key: (row) => row.createdBy || "—",
+    renderHeader: (key) => key,
+  },
+];
 
 const CustomerOrderCreateDialog = ({
   open,
@@ -217,88 +314,153 @@ const CustomerOrderCreateDialog = ({
 
 export const CustomerOrdersPage = () => {
   const { rows, isLoading, error, reload } = useLogisticsList(loadCustomerOrderList);
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
   const [open, setOpen] = useState(false);
+  const [statusToggle, setStatusToggle] = useState<(typeof STATUS_TOGGLE)[number]["value"]>("all");
+  const [search, setSearch] = useState("");
+  const [productId, setProductId] = useState(ALL_VALUE);
+  const [deadlineFilter, setDeadlineFilter] = useState<"all" | "overdue" | "week" | "none">("all");
+  const [hasUnfulfilled, setHasUnfulfilled] = useState(false);
+  const [author, setAuthor] = useState(ALL_VALUE);
 
-  const visible = useMemo(() => {
-    const filtered =
-      status === "all"
-        ? rows
-        : rows.filter((order) => {
-            if (status === "in_progress") {
-              return isOpenCustomerOrderStatus(order.status);
-            }
-            if (status === "done") {
-              return order.status === "done" || order.status === "closed";
-            }
-            return order.status === status;
-          });
-    return [...filtered].sort(compareCustomerOrdersNewestFirst);
-  }, [rows, status]);
+  const productOptions = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const line of rows.flatMap((row) => row.products)) {
+      if (line.productId && !names.has(line.productId)) {
+        names.set(line.productId, line.productName ?? line.productId);
+      }
+    }
+    return [...names]
+      .map(([value, label]) => ({ value, label }))
+      .sort((left, right) => left.label.localeCompare(right.label, "ru"));
+  }, [rows]);
+
+  const authorOptions = useMemo(
+    () =>
+      [...new Set(rows.map((row) => row.createdBy).filter(Boolean))]
+        .sort((left, right) => left.localeCompare(right, "ru"))
+        .map((name) => ({ value: name, label: name })),
+    [rows],
+  );
+
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    productId !== ALL_VALUE ||
+    deadlineFilter !== "all" ||
+    hasUnfulfilled ||
+    author !== ALL_VALUE;
+
+  const filtered = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    return rows.filter((order) => {
+      if (statusToggle === "in_progress" && !isOpenCustomerOrderStatus(order.status)) {
+        return false;
+      }
+      if (statusToggle === "done" && order.status !== "done" && order.status !== "closed") {
+        return false;
+      }
+      if (
+        normalizedSearch &&
+        !order.number.toLowerCase().includes(normalizedSearch) &&
+        !order.description.toLowerCase().includes(normalizedSearch) &&
+        !matchesProductSearch(order.products, normalizedSearch)
+      ) {
+        return false;
+      }
+      if (productId !== ALL_VALUE && !order.products.some((line) => line.productId === productId)) {
+        return false;
+      }
+      if (!deadlineFilterMatch(order.expectedEndOn, deadlineFilter, isOpenCustomerOrderStatus(order.status))) {
+        return false;
+      }
+      if (hasUnfulfilled && !(isOpenCustomerOrderStatus(order.status) && order.openToReserve > 0)) {
+        return false;
+      }
+      return author === ALL_VALUE || order.createdBy === author;
+    });
+  }, [author, deadlineFilter, hasUnfulfilled, productId, rows, search, statusToggle]);
+
+  const resetFilters = () => {
+    setSearch("");
+    setProductId(ALL_VALUE);
+    setDeadlineFilter("all");
+    setHasUnfulfilled(false);
+    setAuthor(ALL_VALUE);
+  };
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы клиента" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="customer-orders"
         title="Заказы клиента"
         actionLabel="Новый заказ клиента"
         onAction={() => setOpen(true)}
-      >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус заказа клиента">
-          {STATUS_FILTERS.map((item) => (
-            <HomeFilterChip
-              key={item.id}
-              active={status === item.id}
-              role="tab"
-              aria-selected={status === item.id}
-              onClick={() => setStatus(item.id)}
-            >
-              {item.label}
-            </HomeFilterChip>
-          ))}
-        </div>
-      </LogisticsToolbar>
-
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-
-      {!isLoading && !error ? (
-        <LogisticsTableCard
-          headers={["Номер", "Статус", "Ожидаемое окончание", "Товары", "Занято", "Отгружено", "Открыто к резерву", "Создан"]}
-          isEmpty={visible.length === 0}
-        >
-          {visible.map((order: CustomerOrderListRow) => (
-            <TableRow key={order.id}>
-              <TableCell className="px-3 py-2 align-top text-sm font-medium">
-                <LogisticsCodeBadge
-                  code={order.number}
-                  href={`/store/logistics/customer-orders/${order.sequenceNumber}`}
-                />
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top">
-                <CustomerOrderStatusBadge status={order.status} />
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                {formatExpectedEnd(order.expectedEndOn)}
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top">
-                <DocumentProductLines lines={order.products} />
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                {formatQuantity(order.reserved)}
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                {formatQuantity(order.shipped)}
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                {formatQuantity(order.openToReserve)}
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top text-xs text-muted-foreground">
-                {new Date(order.createdAt).toLocaleDateString("ru-RU")}
-              </TableCell>
-            </TableRow>
-          ))}
-        </LogisticsTableCard>
-      ) : null}
+        columns={customerOrderColumns}
+        sortDefs={customerOrderSortDefs}
+        groupDefs={customerOrderGroupDefs}
+        rows={filtered}
+        rowKey={(row) => row.id}
+        groupQuantity={(row) => row.ordered}
+        isLoading={isLoading}
+        error={error}
+        toggleOptions={[...STATUS_TOGGLE]}
+        toggleValue={statusToggle}
+        onToggleChange={(value) => setStatusToggle(value as (typeof STATUS_TOGGLE)[number]["value"])}
+        toggleAriaLabel="Статус заказа клиента"
+        search={{ value: search, onChange: setSearch }}
+        quickControls={
+          <CatalogQuickSelectControl
+            value={productId}
+            onValueChange={(value) => setProductId(value ?? ALL_VALUE)}
+            ariaLabel="Быстрый фильтр по товару"
+            placeholder="Товар"
+            allLabel="Все товары"
+            options={productOptions}
+            widthClassName="w-[140px] shrink-0 lg:w-[176px]"
+          />
+        }
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={resetFilters}
+        filterSheet={
+          <>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Срок</span>
+              <CatalogQuickSelectControl
+                value={deadlineFilter}
+                onValueChange={(value) => setDeadlineFilter((value ?? "all") as typeof deadlineFilter)}
+                ariaLabel="Фильтр по сроку"
+                placeholder="Любой срок"
+                allLabel="Любой срок"
+                options={[
+                  { value: "overdue", label: "Просрочен" },
+                  { value: "week", label: "Ближайшие 7 дней" },
+                  { value: "none", label: "Без срока" },
+                ]}
+                widthClassName="w-full"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Автор</span>
+              <CatalogQuickSelectControl
+                value={author}
+                onValueChange={(value) => setAuthor(value ?? ALL_VALUE)}
+                ariaLabel="Фильтр по автору"
+                placeholder="Все авторы"
+                allLabel="Все авторы"
+                options={authorOptions}
+                widthClassName="w-full"
+              />
+            </label>
+            <label className="flex items-center gap-3 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2.5">
+              <Checkbox
+                checked={hasUnfulfilled}
+                onCheckedChange={(checked) => setHasUnfulfilled(checked === true)}
+                aria-label="Только с необеспеченным количеством"
+              />
+              <span className="text-sm font-medium">Есть необеспеченное</span>
+            </label>
+          </>
+        }
+      />
 
       <CustomerOrderCreateDialog open={open} onOpenChange={setOpen} onCreated={reload} />
     </LogisticsPageShell>

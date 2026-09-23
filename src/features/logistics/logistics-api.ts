@@ -821,9 +821,11 @@ export const mapCustomerOrderListRow = (row: Record<string, unknown>): CustomerO
   createdAt: str(row.createdAt),
   description: row.description ? str(row.description) : "",
   products: mapListProducts(row.products),
+  ordered: Number(row.ordered ?? 0),
   reserved: Number(row.reserved ?? 0),
   shipped: Number(row.shipped ?? 0),
   openToReserve: Number(row.openToReserve ?? 0),
+  createdBy: str(row.createdBy ?? ""),
 });
 
 export const loadCustomerOrderList = () =>
@@ -839,6 +841,7 @@ export const loadProductionOrderList = () =>
     createdAt: str(row.createdAt),
     plantId: str(row.plantId),
     products: mapListProducts(row.products),
+    createdBy: str(row.createdBy ?? ""),
   }));
 
 export const loadTransferList = () =>
@@ -852,6 +855,7 @@ export const loadTransferList = () =>
     fromWarehouseId: str(row.fromWarehouseId),
     toWarehouseId: str(row.toWarehouseId),
     products: mapListProducts(row.products),
+    createdBy: str(row.createdBy ?? ""),
   }));
 
 export const loadShipmentList = () =>
@@ -868,21 +872,25 @@ export const loadShipmentList = () =>
     customerOrderId: str(row.customerOrderId ?? ""),
     customerOrderNumber: str(row.customerOrderNumber ?? ""),
     products: mapListProducts(row.products),
+    createdBy: str(row.createdBy ?? ""),
   }));
 
-export const loadOutputList = () =>
-  loadListRpc<OutputListRow>("store_output_list", (row) => ({
-    id: str(row.id),
-    sequenceNumber: str(row.sequenceNumber),
-    number: str(row.number),
-    status: str(row.status) as OutputListRow["status"],
-    expectedEndOn: dateOrNull(row.expectedEndOn),
-    createdAt: str(row.createdAt),
-    productionOrderId: str(row.productionOrderId),
-    productionOrderNumber: str(row.productionOrderNumber ?? ""),
-    productionOrderSequenceNumber: str(row.productionOrderSequenceNumber ?? ""),
-    products: mapListProducts(row.products),
-  }));
+export const mapOutputListRow = (row: Record<string, unknown>): OutputListRow => ({
+  id: str(row.id),
+  sequenceNumber: str(row.sequenceNumber),
+  number: str(row.number),
+  status: str(row.status) as OutputListRow["status"],
+  expectedEndOn: dateOrNull(row.expectedEndOn),
+  createdAt: str(row.createdAt),
+  productionOrderId: str(row.productionOrderId),
+  productionOrderNumber: str(row.productionOrderNumber ?? ""),
+  productionOrderSequenceNumber: str(row.productionOrderSequenceNumber ?? ""),
+  plantId: str(row.plantId ?? ""),
+  products: mapListProducts(row.products),
+  createdBy: str(row.createdBy ?? ""),
+});
+
+export const loadOutputList = () => loadListRpc<OutputListRow>("store_output_list", mapOutputListRow);
 
 export const loadAdjustmentList = () =>
   loadListRpc<AdjustmentListRow>("store_adjustment_list", (row) => ({
@@ -895,6 +903,7 @@ export const loadAdjustmentList = () =>
     products: mapListProducts(row.products),
     signedQuantity: Number(row.signedQuantity ?? 0),
     operation: str(row.operation ?? "mixed") as AdjustmentListRow["operation"],
+    createdBy: str(row.createdBy ?? ""),
   }));
 
 const ownerTypeOrNull = (value: unknown): OwnerType | null =>
@@ -938,6 +947,7 @@ export const loadReservationList = () =>
       toOwnerNumber: strOrNull(row.toOwnerNumber),
       lines,
       direction: reservationDirection({ toOwnerType, toOwnerId }, lines),
+      createdBy: str(row.createdBy ?? ""),
     };
   });
 

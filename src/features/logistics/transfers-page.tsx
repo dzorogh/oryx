@@ -5,11 +5,12 @@ import { ArrowLeftRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
+import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TableCell, TableRow } from "@/components/ui/table";
 import { completeTransfer, createAndSendTransfer, loadTransferList, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
@@ -21,16 +22,20 @@ import {
   formatMetaTimestamp,
   TRANSFER_STATUS_LABELS,
 } from "@/features/logistics/logistics-labels";
-import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { LOGISTICS_PATHS } from "@/features/logistics/logistics-paths";
+import {
+  transferColumns,
+  transferGroupDefs,
+  transferSortDefs,
+} from "@/features/logistics/ui/list/document-list-configs";
+import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
+import { deadlineFilterMatch, matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
 import { matchDocumentParam, type TransferStatus } from "@/features/logistics/logistics-types";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { TransferCreateDialog } from "@/features/logistics/ui/transfer-create-dialog";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
-import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { StatusPill, TransferStatusBadge } from "@/features/logistics/ui/status-badge";
 import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
@@ -49,26 +54,69 @@ import { warehouseCode } from "@/features/logistics/logistics-lookups";
 
 type TransferDetailPendingAction = "reserve" | "deliver" | "expected" | null;
 
-const STATUS_FILTERS: Array<{ id: "all" | TransferStatus; label: string }> = [
-  { id: "all", label: "Все" },
-  { id: "sent", label: "Отправлено" },
-  { id: "delivered", label: "Доставлено" },
-  { id: "cancelled", label: "Отменён" },
+const TRANSFER_TOGGLE = [
+  { value: "all", label: "Все" },
+  { value: "sent", label: "Отправлено" },
+  { value: "delivered", label: "Доставлено" },
+  { value: "cancelled", label: "Отменён" },
 ];
 
 export const TransfersPage = () => {
   const router = useRouter();
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadTransferList);
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
+  const [status, setStatus] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [fromFilter, setFromFilter] = useState(ALL_VALUE);
+  const [toFilter, setToFilter] = useState(ALL_VALUE);
+  const [deadlineFilter, setDeadlineFilter] = useState<"all" | "overdue" | "week" | "none">("all");
   const [open, setOpen] = useState(false);
   const formStore = useLogisticsStore({ kind: "form", form: "transfer", enabled: open });
+  const snapshot = formStore.snapshot;
 
-  const rows = listRows.filter((item) => {
-    if (status === "all") return true;
-    if (status === "sent") return item.status === "sent" || item.status === "in_progress";
-    if (status === "delivered") return item.status === "delivered" || item.status === "done";
-    return item.status === status;
-  });
+  const warehouseOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of listRows) {
+      ids.add(row.fromWarehouseId);
+      ids.add(row.toWarehouseId);
+    }
+    return [...ids]
+      .sort((left, right) => Number(left) - Number(right))
+      .map((id) => ({ value: id, label: formatLogisticsCode("warehouse", id) }));
+  }, [listRows]);
+
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    fromFilter !== ALL_VALUE ||
+    toFilter !== ALL_VALUE ||
+    deadlineFilter !== "all";
+
+  const rows = useMemo(
+    () =>
+      listRows.filter((item) => {
+        if (status !== "all") {
+          if (status === "sent" && item.status !== "sent" && item.status !== "in_progress") return false;
+          if (status === "delivered" && item.status !== "delivered" && item.status !== "done") return false;
+          if (status !== "sent" && status !== "delivered" && item.status !== status) return false;
+        }
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
+        }
+        if (fromFilter !== ALL_VALUE && item.fromWarehouseId !== fromFilter) return false;
+        if (toFilter !== ALL_VALUE && item.toWarehouseId !== toFilter) return false;
+        if (
+          !deadlineFilterMatch(
+            item.expectedEndOn,
+            deadlineFilter,
+            item.status === "draft" || item.status === "in_progress" || item.status === "sent",
+          )
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    [deadlineFilter, fromFilter, listRows, search, status, toFilter],
+  );
 
   const create = async (value: {
     fromWarehouseId: string;
@@ -96,55 +144,71 @@ export const TransfersPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Перемещения" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="transfers"
         title="Перемещения"
         actionLabel="Новое перемещение"
         onAction={() => setOpen(true)}
-      >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус перемещения">
-          {STATUS_FILTERS.map((item) => (
-            <HomeFilterChip
-              key={item.id}
-              active={status === item.id}
-              role="tab"
-              aria-selected={status === item.id}
-              onClick={() => setStatus(item.id)}
-            >
-              {item.label}
-            </HomeFilterChip>
-          ))}
-        </div>
-      </LogisticsToolbar>
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Номер", "Откуда", "Куда", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
-          {rows.map((item) => {
-            return (
-              <TableRow key={item.id}>
-                <TableCell className="px-3 py-2 align-top">
-                  <LogisticsCodeBadge code={item.number} href={hrefForTransfer(item.sequenceNumber)} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm">
-                  <WarehouseLink warehouseId={item.fromWarehouseId} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm">
-                  <WarehouseLink warehouseId={item.toWarehouseId} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <DocumentProductLines lines={item.products} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <TransferStatusBadge status={item.status} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                  {formatExpectedEnd(item.expectedEndOn)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </LogisticsTableCard>
-      ) : null}
+        columns={transferColumns}
+        sortDefs={transferSortDefs}
+        groupDefs={transferGroupDefs()}
+        rows={rows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        toggleOptions={TRANSFER_TOGGLE}
+        toggleValue={status}
+        onToggleChange={setStatus}
+        toggleAriaLabel="Статус перемещения"
+        search={{ value: search, onChange: setSearch }}
+        quickControls={
+          <>
+            <CatalogQuickSelectControl
+              value={fromFilter}
+              onValueChange={(value) => setFromFilter(value ?? ALL_VALUE)}
+              ariaLabel="Быстрый фильтр: откуда"
+              placeholder="Откуда"
+              allLabel="Любой склад"
+              options={warehouseOptions}
+              widthClassName="w-[120px] shrink-0 lg:w-[140px]"
+            />
+            <CatalogQuickSelectControl
+              value={toFilter}
+              onValueChange={(value) => setToFilter(value ?? ALL_VALUE)}
+              ariaLabel="Быстрый фильтр: куда"
+              placeholder="Куда"
+              allLabel="Любой склад"
+              options={warehouseOptions}
+              widthClassName="w-[120px] shrink-0 lg:w-[140px]"
+            />
+          </>
+        }
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={() => {
+          setSearch("");
+          setFromFilter(ALL_VALUE);
+          setToFilter(ALL_VALUE);
+          setDeadlineFilter("all");
+        }}
+        filterSheet={
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Срок</span>
+            <CatalogQuickSelectControl
+              value={deadlineFilter}
+              onValueChange={(value) => setDeadlineFilter((value ?? "all") as typeof deadlineFilter)}
+              ariaLabel="Фильтр по сроку"
+              placeholder="Любой срок"
+              allLabel="Любой срок"
+              options={[
+                { value: "overdue", label: "Просрочен" },
+                { value: "week", label: "Ближайшие 7 дней" },
+                { value: "none", label: "Без срока" },
+              ]}
+              widthClassName="w-full"
+            />
+          </label>
+        }
+      />
 
       <TransferCreateDialog
         open={open}

@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
+import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { addReservationLine, loadReservationList, postReservation } from "@/features/logistics/logistics-api";
@@ -16,11 +17,14 @@ import { ownerLabel, productById } from "@/features/logistics/logistics-lookups"
 import { LocationLink } from "@/features/logistics/ui/location-link";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import {
-  HOLD_STATUS_FILTERS,
-  ReservationHoldTable,
-  holdOwnerBadge,
-  holdPlace,
-} from "@/features/logistics/ui/reservation-hold-list";
+  reservationColumns,
+  reservationGroupDefs,
+  reservationSortDefs,
+} from "@/features/logistics/ui/list/document-list-configs";
+import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
+import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
+import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
+import { holdOwnerBadge, holdPlace } from "@/features/logistics/ui/reservation-hold-list";
 import { assertCustomerCapacity, assertEnoughStock } from "@/features/logistics/logistics-rules";
 import {
   isFreeOwner,
@@ -43,21 +47,17 @@ import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge
 import { isAllowedQuantity } from "@/features/logistics/ui/quantity-field";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
-import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { DocumentStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { Lock } from "lucide-react";
 
-const DIRECTION_FILTERS: Array<{ id: "all" | ReservationDirection; label: string }> = [
-  { id: "all", label: "Все" },
-  { id: "reserve", label: RESERVATION_DIRECTION_LABELS.reserve },
-  { id: "release", label: RESERVATION_DIRECTION_LABELS.release },
-  { id: "reassign", label: RESERVATION_DIRECTION_LABELS.reassign },
+const RESERVATION_TOGGLE = [
+  { value: "all", label: "Все" },
+  { value: "reserve", label: RESERVATION_DIRECTION_LABELS.reserve },
+  { value: "release", label: RESERVATION_DIRECTION_LABELS.release },
+  { value: "reassign", label: RESERVATION_DIRECTION_LABELS.reassign },
 ];
-
-const STATUS_FILTERS = HOLD_STATUS_FILTERS.filter((item) => item.id !== "cancelled");
 
 const parseDirectionFilter = (value: string | null): "all" | ReservationDirection =>
   value === "reserve" || value === "release" || value === "reassign" ? value : "all";
@@ -68,78 +68,104 @@ export const ReservationsPage = () => {
   const [direction, setDirection] = useState<"all" | ReservationDirection>(
     parseDirectionFilter(searchParams.get("operation")),
   );
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
+  const [status, setStatus] = useState<"all" | ReservationStatus>("all");
+  const [search, setSearch] = useState("");
+  const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
   const formStore = useLogisticsStore({ kind: "form", form: "reservation", enabled: open });
 
-  const visible = rows.filter((item) => {
-    if (direction !== "all" && item.direction !== direction) {
-      return false;
+  const productOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of rows) {
+      for (const line of row.lines) {
+        if (line.productId) ids.add(line.productId);
+      }
     }
-    if (status !== "all" && item.status !== status) {
-      return false;
-    }
-    return true;
-  });
+    return [...ids].map((id) => {
+      const line = rows.flatMap((row) => row.lines).find((item) => item.productId === id);
+      return { value: id, label: line?.productName ?? id };
+    });
+  }, [rows]);
+
+  const hasActiveFilters = search.trim().length > 0 || productFilter !== ALL_VALUE || status !== "all";
+
+  const visible = useMemo(
+    () =>
+      rows.filter((item) => {
+        if (direction !== "all" && item.direction !== direction) return false;
+        if (status !== "all" && item.status !== status) return false;
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          const products = item.lines.map((line) => ({
+            productId: line.productId,
+            quantity: line.quantity,
+            productName: line.productName,
+          }));
+          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(products, q)) return false;
+        }
+        if (productFilter !== ALL_VALUE && !item.lines.some((line) => line.productId === productFilter)) return false;
+        return true;
+      }),
+    [direction, productFilter, rows, search, status],
+  );
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Резервы" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="reservations"
         title="Резервы"
         actionLabel="Новый резерв"
         onAction={() => setOpen(true)}
-      >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Направление резерва">
-          {DIRECTION_FILTERS.map((item) => (
-            <HomeFilterChip
-              key={item.id}
-              active={direction === item.id}
-              role="tab"
-              aria-selected={direction === item.id}
-              onClick={() => setDirection(item.id)}
-            >
-              {item.label}
-            </HomeFilterChip>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус резерва">
-          {STATUS_FILTERS.map((item) => (
-            <HomeFilterChip
-              key={item.id}
-              active={status === item.id}
-              role="tab"
-              aria-selected={status === item.id}
-              onClick={() => setStatus(item.id)}
-            >
-              {item.label}
-            </HomeFilterChip>
-          ))}
-        </div>
-      </LogisticsToolbar>
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <ReservationHoldTable
-          placeHeader="Место"
-          rows={visible.map((item) => ({
-            id: item.id,
-            number: item.number,
-            href: `/store/logistics/reservations/${item.sequenceNumber}`,
-            status: item.status,
-            direction: item.direction,
-            destination: holdOwnerBadge(item.toOwnerType, item.toOwnerId, item.toOwnerNumber),
-            place: holdPlace(item),
-            lines: item.lines.map((line) => ({
-              id: line.id,
-              productId: line.productId,
-              quantity: line.quantity,
-              productName: line.productName,
-              productUnit: line.productUnit,
-              source: holdOwnerBadge(line.fromOwnerType, line.fromOwnerId, line.fromOwnerNumber),
-            })),
-          }))}
-        />
-      ) : null}
+        columns={reservationColumns}
+        sortDefs={reservationSortDefs}
+        groupDefs={reservationGroupDefs}
+        rows={visible}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        toggleOptions={RESERVATION_TOGGLE}
+        toggleValue={direction}
+        onToggleChange={(value) => setDirection(value as "all" | ReservationDirection)}
+        toggleAriaLabel="Операция резерва"
+        search={{ value: search, onChange: setSearch }}
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={() => {
+          setSearch("");
+          setProductFilter(ALL_VALUE);
+          setStatus("all");
+        }}
+        filterSheet={
+          <>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Товар</span>
+              <CatalogQuickSelectControl
+                value={productFilter}
+                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
+                ariaLabel="Фильтр по товару"
+                placeholder="Все товары"
+                allLabel="Все товары"
+                options={productOptions}
+                widthClassName="w-full"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Статус</span>
+              <CatalogQuickSelectControl
+                value={status}
+                onValueChange={(value) => setStatus((value ?? "all") as typeof status)}
+                ariaLabel="Фильтр по статусу"
+                placeholder="Все статусы"
+                allLabel="Все статусы"
+                options={[
+                  { value: "draft", label: "Черновик" },
+                  { value: "posted", label: "Проведён" },
+                ]}
+                widthClassName="w-full"
+              />
+            </label>
+          </>
+        }
+      />
       <ReservationForm
         snapshot={formStore.snapshot}
         balances={formStore.balances}

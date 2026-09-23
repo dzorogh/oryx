@@ -5,7 +5,8 @@ import { Factory } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
+import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
-import { TableCell, TableRow } from "@/components/ui/table";
 import { remainingToReserve, sumLocationState } from "@/features/logistics/logistics-balances";
 import {
   openOrderLinesForProduct,
@@ -51,8 +51,15 @@ import {
   productsForPlant,
 } from "@/features/logistics/logistics-lookups";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
-import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { PlantLink } from "@/features/logistics/ui/plant-link";
+import {
+  productionOrderColumns,
+  productionOrderGroupDefs,
+  productionOrderSortDefs,
+} from "@/features/logistics/ui/list/document-list-configs";
+import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
+import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { deadlineFilterMatch, matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
 import { matchDocumentParam, PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
 import {
   buildProductionOutputDrafts,
@@ -62,8 +69,6 @@ import {
 import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
-import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { ProductionStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
@@ -84,9 +89,21 @@ import { documentLedgerRows } from "@/features/logistics/ui/document-ledger";
 
 const LIST_STATUSES = PRODUCTION_STATUSES.filter((status) => status !== "cancelled");
 
+const PRODUCTION_TOGGLE = [
+  { value: "all", label: "Все" },
+  ...LIST_STATUSES.map((status) => ({
+    value: status,
+    label: PRODUCTION_STATUS_LABELS[status] ?? status,
+  })),
+];
+
 export const ProductionOrdersPage = () => {
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadProductionOrderList);
-  const [status, setStatus] = useState<"all" | ProductionStatus>("all");
+  const [status, setStatus] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [plantFilter, setPlantFilter] = useState(ALL_VALUE);
+  const [productFilter, setProductFilter] = useState(ALL_VALUE);
+  const [deadlineFilter, setDeadlineFilter] = useState<"all" | "overdue" | "week" | "none">("all");
   const [open, setOpen] = useState(false);
   const [plantId, setPlantId] = useState("");
   const [lines, setLines] = useState<Array<{ productId: string; quantity: string }>>([
@@ -96,7 +113,55 @@ export const ProductionOrdersPage = () => {
   const formStore = useLogisticsStore({ kind: "form", form: "production_order", enabled: open });
   const snapshot = formStore.snapshot;
 
-  const rows = listRows.filter((item) => status === "all" || item.status === status);
+  const plantOptions = useMemo(() => {
+    const ids = [...new Set(listRows.map((row) => row.plantId).filter(Boolean))];
+    return ids
+      .sort((left, right) => Number(left) - Number(right))
+      .map((id) => ({ value: id, label: formatLogisticsCode("plant", id) }));
+  }, [listRows]);
+
+  const productOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of listRows) {
+      for (const line of row.products) {
+        if (line.productId) ids.add(line.productId);
+      }
+    }
+    return [...ids].map((id) => {
+      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
+      return { value: id, label: line?.productName ?? id };
+    });
+  }, [listRows]);
+
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    plantFilter !== ALL_VALUE ||
+    productFilter !== ALL_VALUE ||
+    deadlineFilter !== "all";
+
+  const rows = useMemo(
+    () =>
+      listRows.filter((item) => {
+        if (status !== "all" && item.status !== status) return false;
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
+        }
+        if (plantFilter !== ALL_VALUE && item.plantId !== plantFilter) return false;
+        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
+        if (
+          !deadlineFilterMatch(
+            item.expectedEndOn,
+            deadlineFilter,
+            item.status !== "done" && item.status !== "closed" && item.status !== "cancelled",
+          )
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    [deadlineFilter, listRows, plantFilter, productFilter, search, status],
+  );
   const selectedProductIds = lines.map((line) => line.productId);
   const allowedPlantIds = plantIdsForProducts(
     snapshot,
@@ -144,58 +209,74 @@ export const ProductionOrdersPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы на производство" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="production-orders"
         title="Заказы на производство"
         actionLabel="Новый заказ на производство"
         onAction={() => setOpen(true)}
-      >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус заказа на производство">
-          <HomeFilterChip active={status === "all"} role="tab" aria-selected={status === "all"} onClick={() => setStatus("all")}>
-            Все
-          </HomeFilterChip>
-          {LIST_STATUSES.map((item) => (
-            <HomeFilterChip
-              key={item}
-              active={status === item}
-              role="tab"
-              aria-selected={status === item}
-              onClick={() => setStatus(item)}
-            >
-              {(PRODUCTION_STATUS_LABELS[item] ?? "")}
-            </HomeFilterChip>
-          ))}
-        </div>
-      </LogisticsToolbar>
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Номер", "Завод", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
-          {rows.map((item) => {
-            return (
-              <TableRow key={item.id}>
-                <TableCell className="px-3 py-2 align-top">
-                  <LogisticsCodeBadge
-                    code={item.number}
-                    href={`/store/logistics/production-orders/${item.sequenceNumber}`}
-                  />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm">
-                  <PlantLink plantId={item.plantId ?? ""} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <DocumentProductLines lines={item.products} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <ProductionStatusBadge status={item.status} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                  {formatExpectedEnd(item.expectedEndOn)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </LogisticsTableCard>
-      ) : null}
+        columns={productionOrderColumns}
+        sortDefs={productionOrderSortDefs}
+        groupDefs={productionOrderGroupDefs()}
+        rows={rows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        toggleOptions={PRODUCTION_TOGGLE}
+        toggleValue={status}
+        onToggleChange={setStatus}
+        toggleAriaLabel="Статус заказа на производство"
+        search={{ value: search, onChange: setSearch }}
+        quickControls={
+          <CatalogQuickSelectControl
+            value={plantFilter}
+            onValueChange={(value) => setPlantFilter(value ?? ALL_VALUE)}
+            ariaLabel="Быстрый фильтр по заводу"
+            placeholder="Завод"
+            allLabel="Все заводы"
+            options={plantOptions}
+            widthClassName="w-[120px] shrink-0 lg:w-[160px]"
+          />
+        }
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={() => {
+          setSearch("");
+          setPlantFilter(ALL_VALUE);
+          setProductFilter(ALL_VALUE);
+          setDeadlineFilter("all");
+        }}
+        filterSheet={
+          <>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Товар</span>
+              <CatalogQuickSelectControl
+                value={productFilter}
+                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
+                ariaLabel="Фильтр по товару"
+                placeholder="Все товары"
+                allLabel="Все товары"
+                options={productOptions}
+                widthClassName="w-full"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Срок</span>
+              <CatalogQuickSelectControl
+                value={deadlineFilter}
+                onValueChange={(value) => setDeadlineFilter((value ?? "all") as typeof deadlineFilter)}
+                ariaLabel="Фильтр по сроку"
+                placeholder="Любой срок"
+                allLabel="Любой срок"
+                options={[
+                  { value: "overdue", label: "Просрочен" },
+                  { value: "week", label: "Ближайшие 7 дней" },
+                  { value: "none", label: "Без срока" },
+                ]}
+                widthClassName="w-full"
+              />
+            </label>
+          </>
+        }
+      />
 
       <LogisticsDialog
         open={open}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { hrefForProduct } from "@/features/logistics/logistics-availability";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { productById } from "@/features/logistics/logistics-lookups";
@@ -47,12 +47,14 @@ export const DocumentProductLines = ({
   lines,
   empty = "—",
   previewLimit = DOCUMENT_PRODUCT_LINE_PREVIEW,
+  renderLineExtra,
 }: {
   /** Optional: used only as fallback when line has no productName/unit. */
   snapshot?: LogisticsSnapshot;
   lines: DocumentProductLine[];
   empty?: string;
   previewLimit?: number;
+  renderLineExtra?: (line: DocumentProductLine, index: number) => ReactNode;
 }) => {
   const listId = useId();
   const [expanded, setExpanded] = useState(false);
@@ -70,21 +72,22 @@ export const DocumentProductLines = ({
         {visible.map((line, index) => {
           const product = snapshot ? productById(snapshot, line.productId) : undefined;
           const name = line.productName || product?.name || line.productId;
+          const qty = formatQuantity(line.quantity, line.productUnit || product?.unit);
+          const extra = renderLineExtra?.(line, index);
           return (
-            <li key={`${line.productId || line.productName}-${index}`} className="flex items-start justify-between gap-3">
+            <li key={`${line.productId || line.productName}-${index}`} className="text-sm leading-snug">
               {line.productId ? (
-                <Link
-                  href={hrefForProduct(line.productId)}
-                  className="min-w-0 break-words text-sm font-medium text-primary hover:underline"
-                >
+                <Link href={hrefForProduct(line.productId)} className="break-words font-medium text-primary hover:underline">
                   {name}
                 </Link>
               ) : (
-                <span className="min-w-0 break-words text-sm font-medium">{name}</span>
+                <span className="break-words font-medium">{name}</span>
               )}
-              <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                {formatQuantity(line.quantity, line.productUnit || product?.unit)}
+              <span className="whitespace-nowrap text-muted-foreground">
+                {" · "}
+                {qty}
               </span>
+              {extra ? <span className="text-muted-foreground">{extra}</span> : null}
             </li>
           );
         })}

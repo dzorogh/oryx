@@ -50,6 +50,16 @@ import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge
 import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
+import {
+  mapPlantRows,
+  mapWarehouseRows,
+  plantColumns,
+  plantSortDefs,
+  warehouseColumns,
+  warehouseGroupDefs,
+  warehouseSortDefs,
+} from "@/features/logistics/ui/list/catalog-list-configs";
+import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { LogisticsMetaField, LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
@@ -292,6 +302,15 @@ export const WarehousesPage = () => {
   const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const catalogRows = mapWarehouseRows(snapshot).filter((row) => {
+    const q = search.trim().toLowerCase();
+    if (q && !row.code.toLowerCase().includes(q) && !row.name.toLowerCase().includes(q)) return false;
+    if (typeFilter === "plant" && !row.plantOwned) return false;
+    if (typeFilter === "standalone" && row.plantOwned) return false;
+    return true;
+  });
 
   const create = async () => {
     if (!name.trim()) {
@@ -311,36 +330,28 @@ export const WarehousesPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Склады" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="warehouses"
         title="Склады"
         actionLabel="Новый склад"
         onAction={() => setOpen(true)}
+        columns={warehouseColumns(snapshot)}
+        sortDefs={warehouseSortDefs}
+        groupDefs={warehouseGroupDefs}
+        rows={catalogRows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        search={{ value: search, onChange: setSearch, placeholder: "Поиск: код или название" }}
+        toggleOptions={[
+          { value: "all", label: "Все" },
+          { value: "plant", label: "Заводские" },
+          { value: "standalone", label: "Самостоятельные" },
+        ]}
+        toggleValue={typeFilter}
+        onToggleChange={setTypeFilter}
+        toggleAriaLabel="Тип склада"
       />
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Код", "Название", "Завод"]} isEmpty={snapshot.warehouses.length === 0}>
-          {snapshot.warehouses.map((warehouse) => (
-            <TableRow key={warehouse.id}>
-              <TableCell className="px-3 py-2">
-                <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm">
-                <Link href={hrefForWarehouse(warehouse.id)} className="text-primary hover:underline">
-                  {warehouse.name}
-                </Link>
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm text-muted-foreground">
-                {warehouse.plantId ? (
-                  <PlantLink snapshot={snapshot} plantId={warehouse.plantId} />
-                ) : (
-                  warehouseOwnerLabel(snapshot, warehouse.id)
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </LogisticsTableCard>
-      ) : null}
 
       <LogisticsDialog
         open={open}
@@ -508,6 +519,12 @@ export const PlantsPage = () => {
   const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [search, setSearch] = useState("");
+  const catalogRows = mapPlantRows(snapshot).filter((row) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return row.code.toLowerCase().includes(q) || row.name.toLowerCase().includes(q);
+  });
 
   const create = async () => {
     if (!name.trim()) {
@@ -527,32 +544,19 @@ export const PlantsPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заводы" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="plants"
         title="Заводы"
         actionLabel="Новый завод"
         onAction={() => setOpen(true)}
+        columns={plantColumns}
+        sortDefs={plantSortDefs}
+        rows={catalogRows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        search={{ value: search, onChange: setSearch, placeholder: "Поиск: код или название" }}
       />
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Код", "Название", "Склад"]} isEmpty={snapshot.plants.length === 0}>
-          {snapshot.plants.map((plant) => (
-            <TableRow key={plant.id}>
-              <TableCell className="px-3 py-2">
-                <LogisticsCodeBadge code={plant.code} href={hrefForPlant(plant.id)} />
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm">
-                <Link href={hrefForPlant(plant.id)} className="text-primary hover:underline">
-                  {plant.name}
-                </Link>
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm">
-                <WarehouseLink snapshot={snapshot} warehouseId={plant.warehouseId} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </LogisticsTableCard>
-      ) : null}
 
       <LogisticsDialog
         open={open}

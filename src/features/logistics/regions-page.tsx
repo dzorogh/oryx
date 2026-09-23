@@ -19,6 +19,12 @@ import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
+import {
+  mapRegionRows,
+  regionColumns,
+  regionSortDefs,
+} from "@/features/logistics/ui/list/catalog-list-configs";
+import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { RelatedDocuments } from "@/features/logistics/ui/related-documents";
@@ -30,6 +36,12 @@ export const RegionsPage = () => {
   const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [search, setSearch] = useState("");
+  const rows = mapRegionRows(snapshot).filter((row) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return row.code.toLowerCase().includes(q) || row.name.toLowerCase().includes(q);
+  });
 
   const create = async () => {
     if (!name.trim()) {
@@ -49,33 +61,20 @@ export const RegionsPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Регионы" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="regions"
         title="Регионы"
         actionLabel="Новый регион"
         onAction={() => setOpen(true)}
+        columns={regionColumns}
+        sortDefs={regionSortDefs}
+        rows={rows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        search={{ value: search, onChange: setSearch, placeholder: "Поиск: код или название" }}
+        emptyMessage="Пока нет регионов."
       />
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <LogisticsTableCard
-          headers={["Код", "Название"]}
-          isEmpty={snapshot.regions.length === 0}
-          empty="Пока нет регионов."
-        >
-          {snapshot.regions.map((region) => (
-            <TableRow key={region.id}>
-              <TableCell className="px-3 py-2">
-                <LogisticsCodeBadge code={region.code} href={hrefForRegion(region.id)} />
-              </TableCell>
-              <TableCell className="px-3 py-2 text-sm">
-                <Link href={hrefForRegion(region.id)} className="text-primary hover:underline">
-                  {region.name}
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-        </LogisticsTableCard>
-      ) : null}
 
       <LogisticsDialog
         open={open}

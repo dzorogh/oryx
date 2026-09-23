@@ -16,6 +16,8 @@ import type {
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { FLUSH_TABLE_CLASS } from "@/features/logistics/ui/logistics-table-card";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ListCollapsedColumnHeader, ListColumnHeader } from "@/features/logistics/ui/list/list-column-header";
 import { cn } from "@/lib/utils";
 
 const QUANTITY_HEAD =
@@ -67,144 +69,231 @@ const SectionRow = ({ label, colSpan }: { label: string; colSpan: number }) => (
   </TableRow>
 );
 
+export type StockMatrixGroupId = "owner" | "location" | "total";
+
+export type StockMatrixColumnsView = {
+  isVisible: (id: StockMatrixGroupId) => boolean;
+  isCollapsed: (id: StockMatrixGroupId) => boolean;
+  toggleCollapsed: (id: StockMatrixGroupId) => void;
+  hide: (id: StockMatrixGroupId) => void;
+  expandAll?: () => void;
+};
+
+const GROUP_LABELS: Record<StockMatrixGroupId, string> = {
+  owner: "Закреплено за",
+  location: "Место",
+  total: "Всего",
+};
+
+const CollapsedHead = ({ id, columns }: { id: StockMatrixGroupId; columns: StockMatrixColumnsView }) => (
+  <TableHead scope="col" rowSpan={2} className="border-l border-border/60 p-0 text-center align-middle" style={{ width: 28, minWidth: 28 }}>
+    <ListCollapsedColumnHeader
+      label={GROUP_LABELS[id]}
+      onExpand={() => columns.toggleCollapsed(id)}
+      onHide={() => columns.hide(id)}
+      onExpandAll={columns.expandAll}
+    />
+  </TableHead>
+);
+
+const CollapsedCell = () => <TableCell className="border-l border-border/60 bg-muted/40 p-0" style={{ width: 28 }} aria-hidden />;
+
+const GroupHead = ({
+  id,
+  colSpan,
+  rowSpan,
+  className,
+  columns,
+}: {
+  id: StockMatrixGroupId;
+  colSpan?: number;
+  rowSpan?: number;
+  className: string;
+  columns: StockMatrixColumnsView;
+}) => (
+  <TableHead scope={colSpan ? "colgroup" : "col"} colSpan={colSpan} rowSpan={rowSpan} className={className}>
+    <ListColumnHeader
+      label={GROUP_LABELS[id]}
+      align={id === "total" ? "right" : "left"}
+      onCollapse={() => columns.toggleCollapsed(id)}
+      onHide={() => columns.hide(id)}
+      onExpandAll={columns.expandAll}
+    />
+  </TableHead>
+);
+
 const ProductsMatrixTable = ({
   snapshot,
   rows,
   empty,
+  columns,
 }: {
   snapshot: LogisticsSnapshot;
   rows: StockProductMatrixRow[];
   empty: string;
-}) => (
-  <Table className="w-max min-w-full">
-    <TableHeader>
-      <TableRow className="hover:bg-transparent">
-        <TableHead scope="col" rowSpan={2} className={IDENTITY_HEAD}>
-          Товар
-        </TableHead>
-        <TableHead scope="colgroup" colSpan={3} className={GROUP_HEAD}>
-          Закреплено за
-        </TableHead>
-        <TableHead scope="colgroup" colSpan={3} className={GROUP_HEAD}>
-          Место
-        </TableHead>
-        <TableHead
-          scope="col"
-          rowSpan={2}
-          className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#fcfcfc]")}
-        >
-          Всего
-        </TableHead>
-      </TableRow>
-      <TableRow className="hover:bg-transparent">
-        <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#f7f7f8]")}>
-          <span
-            className="mr-1.5 inline-block size-2 rounded-sm align-middle"
-            style={{ background: OWNER_COLORS.free }}
-            aria-hidden
-          />
-          Свободно
-        </TableHead>
-        <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#f4f7ff]")}>
-          <span
-            className="mr-1.5 inline-block size-2 rounded-sm align-middle"
-            style={{ background: OWNER_COLORS.region }}
-            aria-hidden
-          />
-          Резерв региона
-        </TableHead>
-        <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#eef3fe]")}>
-          <span
-            className="mr-1.5 inline-block size-2 rounded-sm align-middle"
-            style={{ background: OWNER_COLORS.order }}
-            aria-hidden
-          />
-          Резерв заказа
-        </TableHead>
-        <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60")}>
-          Склады
-        </TableHead>
-        <TableHead scope="col" className={QUANTITY_HEAD}>
-          Производство
-        </TableHead>
-        <TableHead scope="col" className={QUANTITY_HEAD}>
-          Перемещения
-        </TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {rows.length === 0 ? (
-        <MatrixEmpty colSpan={8} message={empty} />
-      ) : (
-        rows.map((row) => {
-          const unit = unitFor(snapshot, row.productId);
-          const total =
-            row.location.warehouses + row.location.production + row.location.transfers;
-          const ownerTotal =
-            row.owner.free + row.owner.regionReserve + row.owner.orderReserve || 1;
-          return (
-            <TableRow key={row.productId} className="hover:bg-muted/40">
-              <TableCell className={IDENTITY_CELL}>
-                <ProductIdentity snapshot={snapshot} productId={row.productId} />
-              </TableCell>
-              <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#f7f7f8]")}>
-                <StockQty quantity={row.owner.free} unit={unit} />
-              </TableCell>
-              <TableCell className={cn(QUANTITY_CELL, "bg-[#f4f7ff]")}>
-                <StockQty quantity={row.owner.regionReserve} unit={unit} />
-              </TableCell>
-              <TableCell className={cn(QUANTITY_CELL, "bg-[#eef3fe]")}>
-                <StockQty quantity={row.owner.orderReserve} unit={unit} />
-              </TableCell>
-              <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60")}>
-                <StockQty quantity={row.location.warehouses} unit={unit} />
-              </TableCell>
-              <TableCell className={QUANTITY_CELL}>
-                <StockQty quantity={row.location.production} unit={unit} />
-              </TableCell>
-              <TableCell className={QUANTITY_CELL}>
-                <StockQty quantity={row.location.transfers} unit={unit} />
-              </TableCell>
-              <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#fcfcfc]")}>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-semibold tabular-nums">
-                    {formatQuantity(total, unit)}
-                  </span>
-                  <span
-                    className="flex h-1 w-[84px] overflow-hidden rounded-full bg-muted"
-                    aria-hidden
-                  >
-                    <i
-                      className="block h-full"
-                      style={{
-                        width: `${(row.owner.free / ownerTotal) * 100}%`,
-                        background: OWNER_COLORS.free,
-                      }}
+  columns: StockMatrixColumnsView;
+}) => {
+  const show = (id: StockMatrixGroupId) => columns.isVisible(id) && !columns.isCollapsed(id);
+  const collapsed = (id: StockMatrixGroupId) => columns.isVisible(id) && columns.isCollapsed(id);
+  const colSpan =
+    1 +
+    (["owner", "location"] as const).reduce((sum, id) => sum + (show(id) ? 3 : collapsed(id) ? 1 : 0), 0) +
+    (columns.isVisible("total") ? 1 : 0);
+  const hasSubHeader = show("owner") || show("location");
+
+  return (
+    <TooltipProvider delay={0}>
+      <Table className="w-max min-w-full">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead scope="col" rowSpan={hasSubHeader ? 2 : 1} className={IDENTITY_HEAD}>
+              Товар
+            </TableHead>
+            {(["owner", "location"] as const).map((id) =>
+              show(id) ? (
+                <GroupHead key={id} id={id} colSpan={3} className={GROUP_HEAD} columns={columns} />
+              ) : collapsed(id) ? (
+                <CollapsedHead key={id} id={id} columns={columns} />
+              ) : null,
+            )}
+            {show("total") ? (
+              <GroupHead
+                id="total"
+                rowSpan={hasSubHeader ? 2 : 1}
+                className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#fcfcfc]")}
+                columns={columns}
+              />
+            ) : collapsed("total") ? (
+              <CollapsedHead id="total" columns={columns} />
+            ) : null}
+          </TableRow>
+          {hasSubHeader ? (
+            <TableRow className="hover:bg-transparent">
+              {show("owner") ? (
+                <>
+                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#f7f7f8]")}>
+                    <span
+                      className="mr-1.5 inline-block size-2 rounded-sm align-middle"
+                      style={{ background: OWNER_COLORS.free }}
+                      aria-hidden
                     />
-                    <i
-                      className="block h-full"
-                      style={{
-                        width: `${(row.owner.regionReserve / ownerTotal) * 100}%`,
-                        background: OWNER_COLORS.region,
-                      }}
+                    Свободно
+                  </TableHead>
+                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#f4f7ff]")}>
+                    <span
+                      className="mr-1.5 inline-block size-2 rounded-sm align-middle"
+                      style={{ background: OWNER_COLORS.region }}
+                      aria-hidden
                     />
-                    <i
-                      className="block h-full"
-                      style={{
-                        width: `${(row.owner.orderReserve / ownerTotal) * 100}%`,
-                        background: OWNER_COLORS.order,
-                      }}
+                    Резерв региона
+                  </TableHead>
+                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#eef3fe]")}>
+                    <span
+                      className="mr-1.5 inline-block size-2 rounded-sm align-middle"
+                      style={{ background: OWNER_COLORS.order }}
+                      aria-hidden
                     />
-                  </span>
-                </div>
-              </TableCell>
+                    Резерв заказа
+                  </TableHead>
+                </>
+              ) : null}
+              {show("location") ? (
+                <>
+                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60")}>
+                    Склады
+                  </TableHead>
+                  <TableHead scope="col" className={QUANTITY_HEAD}>
+                    Производство
+                  </TableHead>
+                  <TableHead scope="col" className={QUANTITY_HEAD}>
+                    Перемещения
+                  </TableHead>
+                </>
+              ) : null}
             </TableRow>
-          );
-        })
-      )}
-    </TableBody>
-  </Table>
-);
+          ) : null}
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 ? (
+            <MatrixEmpty colSpan={colSpan} message={empty} />
+          ) : (
+            rows.map((row) => {
+              const unit = unitFor(snapshot, row.productId);
+              const total = row.location.warehouses + row.location.production + row.location.transfers;
+              const ownerTotal = row.owner.free + row.owner.regionReserve + row.owner.orderReserve || 1;
+              return (
+                <TableRow key={row.productId} className="hover:bg-muted/40">
+                  <TableCell className={IDENTITY_CELL}>
+                    <ProductIdentity snapshot={snapshot} productId={row.productId} />
+                  </TableCell>
+                  {show("owner") ? (
+                    <>
+                      <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#f7f7f8]")}>
+                        <StockQty quantity={row.owner.free} unit={unit} />
+                      </TableCell>
+                      <TableCell className={cn(QUANTITY_CELL, "bg-[#f4f7ff]")}>
+                        <StockQty quantity={row.owner.regionReserve} unit={unit} />
+                      </TableCell>
+                      <TableCell className={cn(QUANTITY_CELL, "bg-[#eef3fe]")}>
+                        <StockQty quantity={row.owner.orderReserve} unit={unit} />
+                      </TableCell>
+                    </>
+                  ) : collapsed("owner") ? (
+                    <CollapsedCell />
+                  ) : null}
+                  {show("location") ? (
+                    <>
+                      <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60")}>
+                        <StockQty quantity={row.location.warehouses} unit={unit} />
+                      </TableCell>
+                      <TableCell className={QUANTITY_CELL}>
+                        <StockQty quantity={row.location.production} unit={unit} />
+                      </TableCell>
+                      <TableCell className={QUANTITY_CELL}>
+                        <StockQty quantity={row.location.transfers} unit={unit} />
+                      </TableCell>
+                    </>
+                  ) : collapsed("location") ? (
+                    <CollapsedCell />
+                  ) : null}
+                  {show("total") ? (
+                    <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#fcfcfc]")}>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-semibold tabular-nums">{formatQuantity(total, unit)}</span>
+                        <span className="flex h-1 w-[84px] overflow-hidden rounded-full bg-muted" aria-hidden>
+                          <i
+                            className="block h-full"
+                            style={{ width: `${(row.owner.free / ownerTotal) * 100}%`, background: OWNER_COLORS.free }}
+                          />
+                          <i
+                            className="block h-full"
+                            style={{
+                              width: `${(row.owner.regionReserve / ownerTotal) * 100}%`,
+                              background: OWNER_COLORS.region,
+                            }}
+                          />
+                          <i
+                            className="block h-full"
+                            style={{
+                              width: `${(row.owner.orderReserve / ownerTotal) * 100}%`,
+                              background: OWNER_COLORS.order,
+                            }}
+                          />
+                        </span>
+                      </div>
+                    </TableCell>
+                  ) : collapsed("total") ? (
+                    <CollapsedCell />
+                  ) : null}
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </TooltipProvider>
+  );
+};
 
 const WarehousesMatrixTable = ({
   snapshot,
@@ -350,8 +439,10 @@ export const StockProductsMatrix = ({
   warehouseSections,
   regionSections,
   empty,
+  columns,
 }: {
   snapshot: LogisticsSnapshot;
+  columns: StockMatrixColumnsView;
   group: StockGroup;
   productRows: StockProductMatrixRow[];
   warehouseSections: StockWarehouseSection[];
@@ -377,9 +468,9 @@ export const StockProductsMatrix = ({
           {count > 0 ? <span className="font-normal text-muted-foreground"> · {count}</span> : null}
         </h2>
       </div>
-      <CardContent className={cn("px-0 group-data-[size=sm]/card:px-0", FLUSH_TABLE_CLASS)}>
+      <CardContent className={cn("overflow-x-auto px-0 group-data-[size=sm]/card:px-0", FLUSH_TABLE_CLASS)}>
         {group === "products" ? (
-          <ProductsMatrixTable snapshot={snapshot} rows={productRows} empty={empty} />
+          <ProductsMatrixTable snapshot={snapshot} rows={productRows} empty={empty} columns={columns} />
         ) : group === "warehouses" ? (
           <WarehousesMatrixTable snapshot={snapshot} sections={warehouseSections} empty={empty} />
         ) : (

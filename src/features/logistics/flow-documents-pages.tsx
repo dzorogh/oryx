@@ -4,8 +4,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { HomeFilterChip } from "@/components/home/home-filter-chip";
+import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
@@ -13,6 +15,7 @@ import {
   createProductionOutput,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
+import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import {
   projectDocumentCancelGuidance,
   type CancelGuidance,
@@ -48,6 +51,7 @@ import {
   ownerLabel,
   productById,
   productionOrderById,
+  plantCode,
   warehouseById,
   warehouseCode,
 } from "@/features/logistics/logistics-lookups";
@@ -91,8 +95,20 @@ import { StatusPill } from "@/features/logistics/ui/status-badge";
 import type { LucideIcon } from "lucide-react";
 import { PackageCheck, SlidersHorizontal, Truck } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  adjustmentColumns,
+  adjustmentGroupDefs,
+  adjustmentSortDefs,
+  outputColumns,
+  outputGroupDefs,
+  outputSortDefs,
+  shipmentColumns,
+  shipmentGroupDefs,
+  shipmentSortDefs,
+} from "@/features/logistics/ui/list/document-list-configs";
+import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
-import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
+import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { DocumentStatusBadge, OutputStatusBadge, ShipmentDirectionBadge } from "@/features/logistics/ui/status-badge";
@@ -105,41 +121,22 @@ import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-lo
 import { CustomerOrderStatusBadge } from "@/features/logistics/ui/status-badge";
 import { ProductionStatusBadge } from "@/features/logistics/ui/status-badge";
 
-const STATUS_FILTERS: Array<{ id: "all" | DocumentStatus; label: string }> = [
-  { id: "all", label: "Все" },
-  { id: "draft", label: "Черновик" },
-  { id: "posted", label: "Проведён" },
-  { id: "cancelled", label: "Отменён" },
+const SHIPMENT_TOGGLE = [
+  { value: "all", label: "Все" },
+  { value: "shipment", label: "Отгрузки" },
+  { value: "return", label: "Возвраты" },
 ];
 
-const StatusTabs = ({
-  value,
-  onChange,
-  label,
-}: {
-  value: (typeof STATUS_FILTERS)[number]["id"];
-  onChange: (value: (typeof STATUS_FILTERS)[number]["id"]) => void;
-  label: string;
-}) => (
-  <div className="flex flex-wrap gap-2" role="tablist" aria-label={label}>
-    {STATUS_FILTERS.map((item) => (
-      <HomeFilterChip
-        key={item.id}
-        active={value === item.id}
-        role="tab"
-        aria-selected={value === item.id}
-        onClick={() => onChange(item.id)}
-      >
-        {item.label}
-      </HomeFilterChip>
-    ))}
-  </div>
-);
+const OUTPUT_TOGGLE = [
+  { value: "all", label: "Все" },
+  ...OUTPUT_STATUSES.map((status) => ({ value: status, label: OUTPUT_STATUS_LABELS[status] ?? status })),
+];
 
-const DIRECTION_FILTERS: Array<{ id: "all" | ShipmentDirection; label: string }> = [
-  { id: "all", label: "Все" },
-  { id: "shipment", label: "Отгрузки" },
-  { id: "return", label: "Возвраты" },
+const ADJUSTMENT_TOGGLE = [
+  { value: "all", label: "Все" },
+  { value: "increase", label: ADJUSTMENT_OPERATION_LABELS.increase },
+  { value: "write_off", label: ADJUSTMENT_OPERATION_LABELS.write_off },
+  { value: "mixed", label: ADJUSTMENT_OPERATION_LABELS.mixed },
 ];
 
 export const ShipmentsPage = () => {
@@ -169,72 +166,139 @@ export const ShipmentsPage = () => {
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
+  const [search, setSearch] = useState("");
+  const [warehouseFilter, setWarehouseFilter] = useState(ALL_VALUE);
+  const [orderFilter, setOrderFilter] = useState(ALL_VALUE);
+  const [productFilter, setProductFilter] = useState(ALL_VALUE);
+
+  const warehouseOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of listRows) {
+      if (row.fromLocationType === "warehouse") ids.add(row.fromLocationId);
+      if (row.toLocationType === "warehouse") ids.add(row.toLocationId);
+    }
+    return [...ids]
+      .sort((left, right) => Number(left) - Number(right))
+      .map((id) => ({ value: id, label: formatLogisticsCode("warehouse", id) }));
+  }, [listRows]);
+
+  const orderOptions = useMemo(() => {
+    const ids = [...new Set(listRows.map((row) => row.customerOrderId).filter(Boolean))];
+    return ids.map((id) => {
+      const row = listRows.find((item) => item.customerOrderId === id);
+      return { value: id, label: row?.customerOrderNumber ?? id };
+    });
+  }, [listRows]);
+
+  const productOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of listRows) {
+      for (const line of row.products) {
+        if (line.productId) ids.add(line.productId);
+      }
+    }
+    return [...ids].map((id) => {
+      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
+      return { value: id, label: line?.productName ?? id };
+    });
+  }, [listRows]);
+
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    warehouseFilter !== ALL_VALUE ||
+    orderFilter !== ALL_VALUE ||
+    productFilter !== ALL_VALUE;
+
   const rows = useMemo(
     () =>
       listRows.filter((item) => {
-        if (direction === "all") {
-          return true;
+        if (direction !== "all" && item.direction !== direction) return false;
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
         }
-        return item.direction === direction;
+        if (warehouseFilter !== ALL_VALUE) {
+          const wh =
+            item.fromLocationType === "warehouse"
+              ? item.fromLocationId
+              : item.toLocationType === "warehouse"
+                ? item.toLocationId
+                : "";
+          if (wh !== warehouseFilter) return false;
+        }
+        if (orderFilter !== ALL_VALUE && item.customerOrderId !== orderFilter) return false;
+        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
+        return true;
       }),
-    [direction, listRows],
+    [direction, listRows, orderFilter, productFilter, search, warehouseFilter],
   );
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Отгрузки и возвраты" }]}>
-      <LogisticsToolbar title="Отгрузки и возвраты" actionLabel="Новый документ" onAction={() => setOpen(true)}>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Тип документа">
-          {DIRECTION_FILTERS.map((item) => (
-            <HomeFilterChip
-              key={item.id}
-              active={direction === item.id}
-              role="tab"
-              aria-selected={direction === item.id}
-              onClick={() => setDirectionFilter(item.id)}
-            >
-              {item.label}
-            </HomeFilterChip>
-          ))}
-        </div>
-      </LogisticsToolbar>
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Номер", "Тип", "Заказ / склад", "Товары"]} isEmpty={rows.length === 0}>
-          {rows.map((item) => {
-            const warehouseId =
-              item.fromLocationType === "warehouse"
-                ? item.fromLocationId
-                : item.toLocationType === "warehouse"
-                  ? item.toLocationId
-                  : "";
-            return (
-              <TableRow key={item.id}>
-                <TableCell className="px-3 py-2 align-top">
-                  <LogisticsCodeBadge code={item.number} href={`/store/logistics/shipments/${item.sequenceNumber}`} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <ShipmentDirectionBadge direction={item.direction} />
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <span className="inline-flex flex-wrap items-center gap-1.5">
-                    {item.customerOrderId ? (
-                      <LogisticsCodeBadge
-                        code={item.customerOrderNumber || item.customerOrderId}
-                        href={hrefForCustomerOrder(item.customerOrderId)}
-                      />
-                    ) : null}
-                    {warehouseId ? <WarehouseLink warehouseId={warehouseId} /> : null}
-                  </span>
-                </TableCell>
-                <TableCell className="px-3 py-2 align-top">
-                  <DocumentProductLines lines={item.products} />
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </LogisticsTableCard>
-      ) : null}
+      <LogisticsListPageContent
+        listId="shipments"
+        title="Отгрузки и возвраты"
+        actionLabel="Новый документ"
+        onAction={() => setOpen(true)}
+        columns={shipmentColumns}
+        sortDefs={shipmentSortDefs}
+        groupDefs={shipmentGroupDefs}
+        rows={rows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        toggleOptions={SHIPMENT_TOGGLE}
+        toggleValue={direction}
+        onToggleChange={(value) => setDirectionFilter(value as "all" | ShipmentDirection)}
+        toggleAriaLabel="Тип документа"
+        search={{ value: search, onChange: setSearch }}
+        quickControls={
+          <CatalogQuickSelectControl
+            value={warehouseFilter}
+            onValueChange={(value) => setWarehouseFilter(value ?? ALL_VALUE)}
+            ariaLabel="Быстрый фильтр по складу"
+            placeholder="Склад"
+            allLabel="Все склады"
+            options={warehouseOptions}
+            widthClassName="w-[120px] shrink-0 lg:w-[140px]"
+          />
+        }
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={() => {
+          setSearch("");
+          setWarehouseFilter(ALL_VALUE);
+          setOrderFilter(ALL_VALUE);
+          setProductFilter(ALL_VALUE);
+        }}
+        filterSheet={
+          <>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Заказ клиента</span>
+              <CatalogQuickSelectControl
+                value={orderFilter}
+                onValueChange={(value) => setOrderFilter(value ?? ALL_VALUE)}
+                ariaLabel="Фильтр по заказу"
+                placeholder="Все заказы"
+                allLabel="Все заказы"
+                options={orderOptions}
+                widthClassName="w-full"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Товар</span>
+              <CatalogQuickSelectControl
+                value={productFilter}
+                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
+                ariaLabel="Фильтр по товару"
+                placeholder="Все товары"
+                allLabel="Все товары"
+                options={productOptions}
+                widthClassName="w-full"
+              />
+            </label>
+          </>
+        }
+      />
       <ShipmentForm
         snapshot={formStore.snapshot}
         balances={formStore.balances}
@@ -496,37 +560,108 @@ export const ShipmentDetailPage = () => {
 
 export const AdjustmentsPage = () => {
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadAdjustmentList);
-  const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]["id"]>("all");
+  const [operation, setOperation] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [warehouseFilter, setWarehouseFilter] = useState(ALL_VALUE);
+  const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
   const formStore = useLogisticsStore({ kind: "form", form: "adjustment", enabled: open });
-  const rows = status === "all" || status === "posted" ? listRows : [];
+
+  const warehouseOptions = useMemo(() => {
+    const ids = [...new Set(listRows.map((row) => row.warehouseId).filter(Boolean))];
+    return ids
+      .sort((left, right) => Number(left) - Number(right))
+      .map((id) => ({ value: id, label: formatLogisticsCode("warehouse", id) }));
+  }, [listRows]);
+
+  const productOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of listRows) {
+      for (const line of row.products) {
+        if (line.productId) ids.add(line.productId);
+      }
+    }
+    return [...ids].map((id) => {
+      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
+      return { value: id, label: line?.productName ?? id };
+    });
+  }, [listRows]);
+
+  const hasActiveFilters =
+    search.trim().length > 0 || warehouseFilter !== ALL_VALUE || productFilter !== ALL_VALUE;
+
+  const rows = useMemo(
+    () =>
+      listRows.filter((item) => {
+        if (operation !== "all" && item.operation !== operation) return false;
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          if (
+            !item.number.toLowerCase().includes(q) &&
+            !item.description.toLowerCase().includes(q) &&
+            !matchesProductSearch(item.products, q)
+          ) {
+            return false;
+          }
+        }
+        if (warehouseFilter !== ALL_VALUE && item.warehouseId !== warehouseFilter) return false;
+        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
+        return true;
+      }),
+    [listRows, operation, productFilter, search, warehouseFilter],
+  );
 
   return (
-    <DocumentList
-      title="Корректировки"
-      crumbs="Корректировки"
-      actionLabel="Новая корректировка"
-      path="/store/logistics/adjustments"
-      rows={rows.map((item) => ({
-        id: item.id,
-        sequenceNumber: item.sequenceNumber,
-        number: item.number,
-        extra: (
-          <span className="inline-flex flex-wrap items-center gap-1.5">
-            <span>{ADJUSTMENT_OPERATION_LABELS[item.operation]}</span>
-            <WarehouseLink warehouseId={item.warehouseId} />
-          </span>
-        ),
-        products: item.products,
-        status: "posted",
-      }))}
-      extraHeader="Операция / склад"
-      isLoading={isLoading}
-      error={error}
-      status={status}
-      onStatus={setStatus}
-      onCreate={() => setOpen(true)}
-    >
+    <LogisticsPageShell crumbs={[{ label: "Корректировки" }]}>
+      <LogisticsListPageContent
+        listId="adjustments"
+        title="Корректировки"
+        actionLabel="Новая корректировка"
+        onAction={() => setOpen(true)}
+        columns={adjustmentColumns}
+        sortDefs={adjustmentSortDefs}
+        groupDefs={adjustmentGroupDefs()}
+        rows={rows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        toggleOptions={ADJUSTMENT_TOGGLE}
+        toggleValue={operation}
+        onToggleChange={setOperation}
+        toggleAriaLabel="Операция корректировки"
+        search={{ value: search, onChange: setSearch }}
+        quickControls={
+          <CatalogQuickSelectControl
+            value={warehouseFilter}
+            onValueChange={(value) => setWarehouseFilter(value ?? ALL_VALUE)}
+            ariaLabel="Быстрый фильтр по складу"
+            placeholder="Склад"
+            allLabel="Все склады"
+            options={warehouseOptions}
+            widthClassName="w-[120px] shrink-0 lg:w-[140px]"
+          />
+        }
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={() => {
+          setSearch("");
+          setWarehouseFilter(ALL_VALUE);
+          setProductFilter(ALL_VALUE);
+        }}
+        filterSheet={
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Товар</span>
+            <CatalogQuickSelectControl
+              value={productFilter}
+              onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
+              ariaLabel="Фильтр по товару"
+              placeholder="Все товары"
+              allLabel="Все товары"
+              options={productOptions}
+              widthClassName="w-full"
+            />
+          </label>
+        }
+      />
       <AdjustmentForm
         snapshot={formStore.snapshot}
         balances={formStore.balances}
@@ -537,7 +672,7 @@ export const AdjustmentsPage = () => {
         reload={reload}
         mode="hub"
       />
-    </DocumentList>
+    </LogisticsPageShell>
   );
 };
 
@@ -661,14 +796,13 @@ export const AdjustmentDetailPage = () => {
   );
 };
 
-const OUTPUT_FILTERS: Array<{ id: "all" | OutputStatus; label: string }> = [
-  { id: "all", label: "Все" },
-  ...OUTPUT_STATUSES.map((status) => ({ id: status, label: OUTPUT_STATUS_LABELS[status] ?? String(status) })),
-];
-
 export const OutputsPage = () => {
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadOutputList);
-  const [status, setStatus] = useState<(typeof OUTPUT_FILTERS)[number]["id"]>("all");
+  const [status, setStatus] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [plantFilter, setPlantFilter] = useState(ALL_VALUE);
+  const [productFilter, setProductFilter] = useState(ALL_VALUE);
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [orderId, setOrderId] = useState("");
@@ -678,7 +812,44 @@ export const OutputsPage = () => {
   const formStore = useLogisticsStore({ kind: "form", form: "output", enabled: open });
   const snapshot = formStore.snapshot;
   const balances = formStore.balances;
-  const rows = listRows.filter((item) => status === "all" || item.status === status);
+  const plantOptions = useMemo(() => {
+    const ids = [...new Set(listRows.map((row) => row.plantId).filter(Boolean))];
+    return ids
+      .sort((left, right) => Number(left) - Number(right))
+      .map((id) => ({ value: id, label: formatLogisticsCode("plant", id) }));
+  }, [listRows]);
+
+  const productOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of listRows) {
+      for (const line of row.products) {
+        if (line.productId) ids.add(line.productId);
+      }
+    }
+    return [...ids].map((id) => {
+      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
+      return { value: id, label: line?.productName ?? id };
+    });
+  }, [listRows]);
+
+  const hasActiveFilters =
+    search.trim().length > 0 || plantFilter !== ALL_VALUE || productFilter !== ALL_VALUE || overdueOnly;
+
+  const rows = useMemo(
+    () =>
+      listRows.filter((item) => {
+        if (status !== "all" && item.status !== status) return false;
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
+        }
+        if (plantFilter !== ALL_VALUE && item.plantId !== plantFilter) return false;
+        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
+        if (overdueOnly && !(item.status !== "done" && overdueDays(item.expectedEndOn) > 0)) return false;
+        return true;
+      }),
+    [listRows, overdueOnly, plantFilter, productFilter, search, status],
+  );
   const prodLines = snapshot.productionOrderLines.filter((line) => line.orderId === orderId);
   const eligibleLines = prodLines.filter(
     (line) => remainingToOutputForLine(snapshot, line.id, line.quantity) > 0,
@@ -784,7 +955,8 @@ export const OutputsPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Выпуски" }]}>
-      <LogisticsToolbar
+      <LogisticsListPageContent
+        listId="outputs"
         title="Выпуски"
         actionLabel="Новый выпуск"
         onAction={() => {
@@ -793,49 +965,61 @@ export const OutputsPage = () => {
           setExpectedEndOn("");
           setOpen(true);
         }}
-      >
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Статус выпуска">
-          {OUTPUT_FILTERS.map((item) => (
-            <HomeFilterChip
-              key={item.id}
-              active={status === item.id}
-              role="tab"
-              aria-selected={status === item.id}
-              onClick={() => setStatus(item.id)}
-            >
-              {item.label}
-            </HomeFilterChip>
-          ))}
-        </div>
-      </LogisticsToolbar>
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <LogisticsTableCard headers={["Номер", "Заказ на производство", "Товары", "Статус", "Ожидаемое окончание"]} isEmpty={rows.length === 0}>
-          {rows.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="px-3 py-2 align-top">
-                <LogisticsCodeBadge code={item.number} href={`/store/logistics/outputs/${item.sequenceNumber}`} />
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top">
-                <LogisticsCodeBadge
-                  code={item.productionOrderNumber || item.productionOrderId}
-                  href={`/store/logistics/production-orders/${item.productionOrderSequenceNumber || item.productionOrderId}`}
-                />
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top">
-                <DocumentProductLines lines={item.products} />
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top">
-                <OutputStatusBadge status={item.status} />
-              </TableCell>
-              <TableCell className="px-3 py-2 align-top text-sm tabular-nums">
-                {formatExpectedEnd(item.expectedEndOn)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </LogisticsTableCard>
-      ) : null}
+        columns={outputColumns}
+        sortDefs={outputSortDefs}
+        groupDefs={outputGroupDefs()}
+        rows={rows}
+        rowKey={(row) => row.id}
+        isLoading={isLoading}
+        error={error}
+        toggleOptions={OUTPUT_TOGGLE}
+        toggleValue={status}
+        onToggleChange={setStatus}
+        toggleAriaLabel="Статус выпуска"
+        search={{ value: search, onChange: setSearch }}
+        quickControls={
+          <CatalogQuickSelectControl
+            value={plantFilter}
+            onValueChange={(value) => setPlantFilter(value ?? ALL_VALUE)}
+            ariaLabel="Быстрый фильтр по заводу"
+            placeholder="Завод"
+            allLabel="Все заводы"
+            options={plantOptions}
+            widthClassName="w-[120px] shrink-0 lg:w-[140px]"
+          />
+        }
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={() => {
+          setSearch("");
+          setPlantFilter(ALL_VALUE);
+          setProductFilter(ALL_VALUE);
+          setOverdueOnly(false);
+        }}
+        filterSheet={
+          <>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Товар</span>
+              <CatalogQuickSelectControl
+                value={productFilter}
+                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
+                ariaLabel="Фильтр по товару"
+                placeholder="Все товары"
+                allLabel="Все товары"
+                options={productOptions}
+                widthClassName="w-full"
+              />
+            </label>
+            <label className="flex items-center gap-3 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2.5">
+              <Checkbox
+                checked={overdueOnly}
+                onCheckedChange={(checked) => setOverdueOnly(checked === true)}
+                aria-label="Только просроченные"
+              />
+              <span className="text-sm font-medium">Просрочен</span>
+            </label>
+          </>
+        }
+      />
       <LogisticsDialog
         open={open}
         onOpenChange={(next) => {
@@ -1165,82 +1349,6 @@ export const OutputDetailPage = () => {
     </LogisticsPageShell>
   );
 };
-
-type ListRow = {
-  id: string;
-  sequenceNumber: string;
-  number: string;
-  extra: React.ReactNode;
-  extraHref?: string;
-  products: Array<{
-    productId: string;
-    quantity: number;
-    productName?: string | null;
-    productUnit?: string | null;
-  }>;
-  status: DocumentStatus;
-};
-
-const DocumentList = ({
-  title,
-  crumbs,
-  path,
-  rows,
-  extraHeader,
-  actionLabel,
-  isLoading,
-  error,
-  status,
-  onStatus,
-  onCreate,
-  children,
-}: {
-  title: string;
-  crumbs: string;
-  path: string;
-  rows: ListRow[];
-  extraHeader: string;
-  actionLabel: string;
-  isLoading: boolean;
-  error: string | null;
-  status: (typeof STATUS_FILTERS)[number]["id"];
-  onStatus: (value: (typeof STATUS_FILTERS)[number]["id"]) => void;
-  onCreate: () => void;
-  children: React.ReactNode;
-}) => (
-  <LogisticsPageShell crumbs={[{ label: crumbs }]}>
-    <LogisticsToolbar title={title} actionLabel={actionLabel} onAction={onCreate}>
-      <StatusTabs value={status} onChange={onStatus} label={`Статус: ${title}`} />
-    </LogisticsToolbar>
-    {isLoading ? <LogisticsLoading /> : null}
-    {error ? <LogisticsError message={error} /> : null}
-    {!isLoading && !error ? (
-      <LogisticsTableCard headers={["Номер", extraHeader, "Товары", "Статус"]} isEmpty={rows.length === 0}>
-        {rows.map((row) => (
-          <TableRow key={row.id}>
-            <TableCell className="px-3 py-2 align-top">
-              <LogisticsCodeBadge code={row.number} href={`${path}/${row.sequenceNumber}`} />
-            </TableCell>
-            <TableCell className="px-3 py-2 align-top text-sm">
-              {typeof row.extra === "string" && row.extraHref ? (
-                <LogisticsCodeBadge code={row.extra} href={row.extraHref} />
-              ) : (
-                row.extra
-              )}
-            </TableCell>
-            <TableCell className="px-3 py-2 align-top">
-              <DocumentProductLines lines={row.products} />
-            </TableCell>
-            <TableCell className="px-3 py-2 align-top">
-              <DocumentStatusBadge status={row.status} />
-            </TableCell>
-          </TableRow>
-        ))}
-      </LogisticsTableCard>
-    ) : null}
-    {children}
-  </LogisticsPageShell>
-);
 
 const DocumentDetail = ({
   store,
