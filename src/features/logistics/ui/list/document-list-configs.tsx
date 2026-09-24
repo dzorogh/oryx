@@ -23,7 +23,6 @@ import type {
 } from "@/features/logistics/logistics-list-types";
 import type { OutputStatus, ProductionStatus, TransferStatus } from "@/features/logistics/logistics-types";
 import {
-  DocumentStatusBadge,
   OutputStatusBadge,
   ProductionStatusBadge,
   ShipmentDirectionBadge,
@@ -397,13 +396,6 @@ export const reservationColumns: ListColumnDef<ReservationListRow>[] = [
       const place = holdPlace(row);
       return place.href ? <LogisticsCodeBadge code={place.label} href={place.href} /> : place.label;
     },
-  },
-  {
-    id: "status",
-    label: "Статус",
-    sortType: "text",
-    sortValue: (row) => row.status,
-    render: (row) => <DocumentStatusBadge status={row.status} />,
   },
   listCreatedColumn<ReservationListRow>(),
   listAuthorColumn<ReservationListRow>(),

@@ -68,7 +68,6 @@ export const ReservationsPage = () => {
   const [direction, setDirection] = useState<"all" | ReservationDirection>(
     parseDirectionFilter(searchParams.get("operation")),
   );
-  const [status, setStatus] = useState<"all" | ReservationStatus>("all");
   const [search, setSearch] = useState("");
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
@@ -87,13 +86,12 @@ export const ReservationsPage = () => {
     });
   }, [rows]);
 
-  const hasActiveFilters = search.trim().length > 0 || productFilter !== ALL_VALUE || status !== "all";
+  const hasActiveFilters = search.trim().length > 0 || productFilter !== ALL_VALUE;
 
   const visible = useMemo(
     () =>
       rows.filter((item) => {
         if (direction !== "all" && item.direction !== direction) return false;
-        if (status !== "all" && item.status !== status) return false;
         if (search.trim()) {
           const q = search.trim().toLowerCase();
           const products = item.lines.map((line) => ({
@@ -106,7 +104,7 @@ export const ReservationsPage = () => {
         if (productFilter !== ALL_VALUE && !item.lines.some((line) => line.productId === productFilter)) return false;
         return true;
       }),
-    [direction, productFilter, rows, search, status],
+    [direction, productFilter, rows, search],
   );
 
   return (
@@ -132,7 +130,6 @@ export const ReservationsPage = () => {
         onResetFilters={() => {
           setSearch("");
           setProductFilter(ALL_VALUE);
-          setStatus("all");
         }}
         filterSheet={
           <>
@@ -145,21 +142,6 @@ export const ReservationsPage = () => {
                 placeholder="Все товары"
                 allLabel="Все товары"
                 options={productOptions}
-                widthClassName="w-full"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Статус</span>
-              <CatalogQuickSelectControl
-                value={status}
-                onValueChange={(value) => setStatus((value ?? "all") as typeof status)}
-                ariaLabel="Фильтр по статусу"
-                placeholder="Все статусы"
-                allLabel="Все статусы"
-                options={[
-                  { value: "draft", label: "Черновик" },
-                  { value: "posted", label: "Проведён" },
-                ]}
                 widthClassName="w-full"
               />
             </label>
