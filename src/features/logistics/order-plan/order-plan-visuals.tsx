@@ -40,7 +40,7 @@ const MARKER_STYLE: Record<MarkerTone, CSSProperties> = {
   "plan-warehouse": TONE_STYLE["plan-warehouse"],
   "plan-transfer": TONE_STYLE["plan-transfer"],
   "plan-output": TONE_STYLE["plan-output"],
-  production_order: { background: "#f4f4f5", border: "1px dashed #71717a" },
+  production_order: { background: "rgba(124,58,237,.12)", border: "1px dashed #7c3aed" },
   none: TONE_STYLE.none,
 };
 
