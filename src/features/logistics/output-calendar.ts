@@ -516,6 +516,17 @@ const buildNode = (
   };
 };
 
+/** Ids of every subcategory under a group, depth-first, without the group itself. */
+export const descendantCategoryIds = (node: CategoryTreeNode): string[] =>
+  node.children.flatMap((child) => [child.id, ...descendantCategoryIds(child)]);
+
+export const UNCATEGORIZED_GROUP_ID = "__uncategorized";
+
+export const allCategoryGroupIds = (page: Pick<OutputCalendarPage, "categories">): string[] => [
+  ...page.categories.map((category) => category.id),
+  UNCATEGORIZED_GROUP_ID,
+];
+
 export const buildCategoryTree = (
   categories: OutputCalendarCategory[],
   products: OutputCalendarProduct[],

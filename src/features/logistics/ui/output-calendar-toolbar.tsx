@@ -21,7 +21,7 @@ import {
 } from "@/features/logistics/output-calendar";
 import { CalendarMasterCheckbox } from "@/features/logistics/ui/output-calendar-master-checkbox";
 import { cn } from "@/lib/utils";
-import { RefreshCw } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, RefreshCw } from "lucide-react";
 
 type OutputCalendarToolbarProps = {
   page: OutputCalendarPage;
@@ -32,6 +32,8 @@ type OutputCalendarToolbarProps = {
   onTogglePanel: () => void;
   onPlantChange: (plantId: string | null) => void;
   onRefresh: () => void;
+  onCollapseAll: () => void;
+  onExpandAll: () => void;
   refreshing?: boolean;
 };
 
@@ -44,6 +46,8 @@ export const OutputCalendarToolbar = ({
   onTogglePanel,
   onPlantChange,
   onRefresh,
+  onCollapseAll,
+  onExpandAll,
   refreshing,
 }: OutputCalendarToolbarProps) => {
   const changed = ownersChangedCount(filter, page);
@@ -120,6 +124,17 @@ export const OutputCalendarToolbar = ({
             <RefreshCw aria-hidden className={cn("size-3.5", refreshing && "animate-spin")} />
             Обновить
           </Button>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={onCollapseAll} className="gap-1.5">
+              <ChevronsDownUp aria-hidden className="size-3.5" />
+              Свернуть все
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={onExpandAll} className="gap-1.5">
+              <ChevronsUpDown aria-hidden className="size-3.5" />
+              Развернуть все
+            </Button>
+          </div>
         </div>
       </CardHeader>
     </Card>

@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   applyLocalOutput,
+  allCategoryGroupIds,
   buildCategoryTree,
+  descendantCategoryIds,
   buildOwnerSet,
   computeMonthRange,
   defaultOwnerFilter,
@@ -416,5 +418,22 @@ describe("Не распределено", () => {
     assert.ok(plantFilterOptions(page.outputLines, page.openOrders).includes("8"));
     assert.ok(productVisibleForPlant("99", page.outputLines, "8", page.openOrders));
     assert.equal(productVisibleForPlant("99", page.outputLines, "8"), false);
+  });
+});
+
+describe("category collapse helpers", () => {
+  it("lists nested subcategories and all group ids", () => {
+    const page: OutputCalendarPage = {
+      ...pageFixture(),
+      categories: [
+        { id: "2", parentId: null, name: "ATV" },
+        { id: "10", parentId: "2", name: "4x4" },
+        { id: "11", parentId: "10", name: "Sport" },
+      ],
+      products: [{ id: "1", name: "Force", unit: "шт", plantId: "5", categoryIds: ["11"] }],
+    };
+    const { roots } = buildCategoryTree(page.categories, page.products, new Set(["1"]));
+    assert.deepEqual(descendantCategoryIds(roots[0]), ["10", "11"]);
+    assert.deepEqual(allCategoryGroupIds(page), ["2", "10", "11", "__uncategorized"]);
   });
 });

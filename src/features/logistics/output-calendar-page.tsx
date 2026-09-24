@@ -12,6 +12,7 @@ import {
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import {
   applyLocalOutput,
+  allCategoryGroupIds,
   defaultOwnerFilter,
   plantFilterOptions,
   type OutputCalendarOutputLine,
@@ -88,6 +89,17 @@ export const OutputCalendarPage = () => {
     () => (page ? plantFilterOptions(page.outputLines, page.openOrders) : []),
     [page],
   );
+
+  const setCollapsedMany = (ids: string[], nextCollapsed: boolean) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (nextCollapsed) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  };
 
   const toggleCollapse = (id: string) => {
     setCollapsed((prev) => {
@@ -213,6 +225,8 @@ export const OutputCalendarPage = () => {
             onTogglePanel={() => setPanelOpen((v) => !v)}
             onPlantChange={setPlantId}
             onRefresh={() => void load({ soft: true })}
+            onCollapseAll={() => setCollapsed(new Set(allCategoryGroupIds(page)))}
+            onExpandAll={() => setCollapsed(new Set())}
             refreshing={refreshing}
           />
           <OutputCalendarMatrix
@@ -221,6 +235,7 @@ export const OutputCalendarPage = () => {
             plantId={plantId}
             collapsed={collapsed}
             onToggleCollapse={toggleCollapse}
+            onSetCollapsed={setCollapsedMany}
             onCreate={setCreateTarget}
           />
         </div>

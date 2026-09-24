@@ -15,6 +15,8 @@ import {
   buildCategoryTree,
   buildOwnerSet,
   computeMonthRange,
+  descendantCategoryIds,
+  UNCATEGORIZED_GROUP_ID,
   currentYearMonth,
   formatOutputDate,
   formatYearMonthLabel,
@@ -45,7 +47,7 @@ import { logisticsPath } from "@/features/logistics/logistics-paths";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useMemo, type ReactNode } from "react";
 
@@ -68,6 +70,7 @@ type OutputCalendarMatrixProps = {
   plantId: string | null;
   collapsed: Set<string>;
   onToggleCollapse: (id: string) => void;
+  onSetCollapsed: (ids: string[], collapsed: boolean) => void;
   onCreate: (target: CreateDialogTarget) => void;
 };
 
@@ -526,6 +529,7 @@ const GroupRows = ({
   page,
   collapsed,
   onToggleCollapse,
+  onSetCollapsed,
   onCreate,
 }: {
   node: CategoryTreeNode;
@@ -536,14 +540,17 @@ const GroupRows = ({
   page: OutputCalendarPage;
   collapsed: Set<string>;
   onToggleCollapse: (id: string) => void;
+  onSetCollapsed: (ids: string[], collapsed: boolean) => void;
   onCreate: (target: CreateDialogTarget) => void;
 }) => {
   const isCollapsed = collapsed.has(node.id);
+  const descendants = descendantCategoryIds(node);
+  const anyCollapsedInside = isCollapsed || descendants.some((id) => collapsed.has(id));
   const colSpan = 5 + months.length;
   return (
     <Fragment>
       <tr
-        className="cursor-pointer select-none hover:bg-transparent"
+        className="group/category cursor-pointer select-none hover:bg-transparent"
         onClick={() => onToggleCollapse(node.id)}
       >
         <td
@@ -571,7 +578,29 @@ const GroupRows = ({
             </span>
           </button>
         </td>
-        <td className="border-b border-r border-border bg-zinc-50" colSpan={colSpan - 1} />
+        <td className="border-b border-r border-border bg-zinc-50 px-2" colSpan={colSpan - 1}>
+          {descendants.length > 0 ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded px-1 text-xs font-normal text-muted-foreground opacity-0 group-hover/category:opacity-100 hover:bg-zinc-200/70 hover:text-foreground focus-visible:opacity-100"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (anyCollapsedInside) {
+                  onSetCollapsed([node.id, ...descendants], false);
+                } else {
+                  onSetCollapsed(descendants, true);
+                }
+              }}
+            >
+              {anyCollapsedInside ? (
+                <ChevronsUpDown className="size-3" aria-hidden />
+              ) : (
+                <ChevronsDownUp className="size-3" aria-hidden />
+              )}
+              {anyCollapsedInside ? "Развернуть всё" : "Свернуть подкатегории"}
+            </button>
+          ) : null}
+        </td>
       </tr>
       {!isCollapsed ? (
         <>
@@ -599,6 +628,7 @@ const GroupRows = ({
               page={page}
               collapsed={collapsed}
               onToggleCollapse={onToggleCollapse}
+              onSetCollapsed={onSetCollapsed}
               onCreate={onCreate}
             />
           ))}
@@ -614,6 +644,7 @@ export const OutputCalendarMatrix = ({
   plantId,
   collapsed,
   onToggleCollapse,
+  onSetCollapsed,
   onCreate,
 }: OutputCalendarMatrixProps) => {
   const currentYm = currentYearMonth();
@@ -681,13 +712,14 @@ export const OutputCalendarMatrix = ({
               page={page}
               collapsed={collapsed}
               onToggleCollapse={onToggleCollapse}
+              onSetCollapsed={onSetCollapsed}
               onCreate={onCreate}
             />
           ))}
           {uncategorized.length > 0 ? (
             <GroupRows
               node={{
-                id: "__uncategorized",
+                id: UNCATEGORIZED_GROUP_ID,
                 name: "Без категории",
                 depth: 0,
                 productCount: uncategorized.length,
@@ -701,6 +733,7 @@ export const OutputCalendarMatrix = ({
               page={page}
               collapsed={collapsed}
               onToggleCollapse={onToggleCollapse}
+              onSetCollapsed={onSetCollapsed}
               onCreate={onCreate}
             />
           ) : null}
