@@ -1,0 +1,1214 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Календарь выпусков</title>
+  <!--
+    Governing: SPEC-orders-calendar CAP-1..4, CAP-6, CAP-7; calculation-rules.md; table-layout.md
+    Directions: B3 (right side panel), C1 (nested collapsible categories). No demand (CAP-5 removed).
+    Conventions: list-page-toolbar.md, place-codes.md, russian-labels.md
+    Hex: bg #f4f4f5 · card #ffffff · fg #18181b · muted-fg #71717a · border #e5e5e5 ·
+         current-col #fafafa · overdue-bg #fef2f2 · overdue-fg #b91c1c (#b91c1c = red-700) ·
+         accent-btn #18181b · ring #a1a1aa · sticky-bg #ffffff · group-bg #fafafa ·
+         band-bg #f0f0f1 · plus-btn #27272a · chip-bg #f4f4f5 · toast #18181b ·
+         sheet-shadow rgba(24,24,27,.12) · flash-ring #2563eb · switch-off #d4d4d8
+  -->
+  <style>
+    :root {
+      --bg: #f4f4f5;
+      --card: #ffffff;
+      --fg: #18181b;
+      --muted-fg: #71717a;
+      --border: #e5e5e5;
+      --current: #fafafa;
+      --overdue-bg: #fef2f2;
+      --overdue-fg: #b91c1c;
+      --group: #fafafa;
+      --chip: #f4f4f5;
+      --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; }
+    .page { width: 100%; padding: 16px; min-height: 100vh; }
+    .layout { display: flex; gap: 0; align-items: stretch; width: 100%; }
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .crumb {
+      display: flex; gap: 6px; align-items: center;
+      color: var(--muted-fg); font-size: 12px;
+    }
+    .crumb span[aria-current] { color: var(--fg); }
+    .crumb .sep { color: #a1a1aa; }
+    .toolbar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .tb-title {
+      display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+    }
+    .tb-title h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -.01em; }
+    .tb-title p { margin: 2px 0 0; color: var(--muted-fg); font-size: 12px; }
+    .tb-controls {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 10px 14px;
+    }
+    .tb-summary {
+      padding: 0 14px 10px;
+      color: var(--muted-fg); font-size: 12px;
+    }
+    .tb-summary strong { color: #3f3f46; font-weight: 550; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 30px; padding: 0 10px;
+      border: 1px solid var(--border); border-radius: 5px;
+      background: #fff; color: #27272a; font-size: 12px; white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn:hover { background: #fafafa; }
+    .btn.primary { background: #18181b; color: #fff; border-color: #18181b; }
+    .btn.primary:hover { background: #27272a; }
+    .btn.ghost { background: transparent; border-color: transparent; color: var(--muted-fg); }
+    .btn.ghost:hover { background: #f4f4f5; color: var(--fg); }
+    .btn.active { background: #18181b; color: #fff; border-color: #18181b; }
+    .btn .badge-n {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 16px; height: 16px; padding: 0 4px;
+      border-radius: 999px; background: #fff; color: #18181b;
+      font-size: 10px; font-weight: 650;
+    }
+    .btn.active .badge-n { background: #fafafa; }
+    .field-label { color: var(--muted-fg); font-size: 12px; }
+    select.sel {
+      height: 30px; padding: 0 8px; min-width: 10.5rem;
+      border: 1px solid var(--border); border-radius: 5px;
+      background: #fff; color: var(--fg);
+    }
+    .table-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: auto;
+      max-height: calc(100vh - 180px);
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 12px;
+      min-width: 900px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 5px 8px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    th:last-child, td:last-child { border-right: 0; }
+    thead th {
+      background: #fafafa;
+      font-weight: 550;
+      color: #3f3f46;
+      font-size: 11px;
+      position: sticky; top: 0; z-index: 2;
+    }
+    .sticky-col {
+      position: sticky; left: 0; z-index: 1;
+      background: #fff; min-width: 200px; max-width: 240px;
+    }
+    thead .sticky-col { z-index: 3; background: #fafafa; }
+    .group-row .sticky-col { background: var(--group); z-index: 1; }
+    .col-plant { min-width: 72px; color: var(--muted-fg); font-variant-numeric: tabular-nums; }
+    .col-stock, .col-m, .col-ns {
+      text-align: right; font-variant-numeric: tabular-nums;
+      min-width: 56px;
+    }
+    .col-m.cur, th.cur { background: var(--current); }
+    td.cur { background: var(--current); }
+    td.overdue {
+      background: var(--overdue-bg);
+      color: var(--overdue-fg);
+      font-weight: 550;
+    }
+    .prod-name { font-weight: 550; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    .prod-code { color: var(--muted-fg); font-size: 11px; }
+    .group-row td {
+      background: var(--group);
+      font-weight: 600;
+      font-size: 12px;
+      color: #27272a;
+      cursor: pointer;
+      user-select: none;
+    }
+    .group-row .count { color: var(--muted-fg); font-weight: 450; }
+    .chev { display: inline-block; width: 14px; color: var(--muted-fg); font-size: 10px; }
+    .indent-0 { padding-left: 8px !important; }
+    .indent-1 { padding-left: 22px !important; }
+    .indent-2 { padding-left: 36px !important; }
+    .prod-indent-1 { padding-left: 28px !important; }
+    .prod-indent-2 { padding-left: 42px !important; }
+    .cell-wrap { position: relative; min-height: 22px; }
+    .cell-wrap.has-q { cursor: pointer; }
+    td.month-cell:hover .plus-btn { opacity: 1; }
+    .plus-btn {
+      position: absolute; top: 1px; right: 1px;
+      width: 16px; height: 16px; padding: 0;
+      border: 0; border-radius: 3px;
+      background: #27272a; color: #fff;
+      font-size: 12px; line-height: 16px; text-align: center;
+      font-weight: 600; cursor: pointer; opacity: 0;
+    }
+    .plus-btn:hover { background: #18181b; }
+    td.flash {
+      box-shadow: inset 0 0 0 2px #2563eb;
+      animation: flashPulse 2s ease-out;
+    }
+    @keyframes flashPulse {
+      0% { box-shadow: inset 0 0 0 2px #2563eb; }
+      100% { box-shadow: inset 0 0 0 0 transparent; }
+    }
+    /* Side panel B3 */
+    .panel {
+      width: 0; overflow: hidden;
+      background: #fff;
+      border-left: 0 solid var(--border);
+      box-shadow: none;
+      display: flex; flex-direction: column;
+      transition: width .18s ease, box-shadow .18s ease;
+      flex: none;
+    }
+    .panel.open {
+      width: 380px;
+      border-left: 1px solid var(--border);
+      box-shadow: -8px 0 24px rgba(24,24,27,.08);
+    }
+    .panel-inner { width: 380px; display: flex; flex-direction: column; height: 100%; min-height: calc(100vh - 32px); }
+    .panel-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 14px; border-bottom: 1px solid var(--border); flex: none;
+    }
+    .panel-head h2 { margin: 0; font-size: 14px; font-weight: 650; }
+    .panel-body { padding: 12px 14px; flex: 1; overflow: auto; }
+    .panel-foot {
+      padding: 10px 14px; border-top: 1px solid var(--border);
+      display: flex; gap: 8px; flex: none;
+    }
+    .check {
+      display: flex; gap: 8px; align-items: flex-start;
+      padding: 5px 0; font-size: 12px; cursor: pointer;
+    }
+    .check input { margin-top: 2px; flex: none; }
+    .sec-h-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin: 14px 0 6px;
+    }
+    .sec-h-row:first-child { margin-top: 0; }
+    .sec-h {
+      margin: 0; font-size: 11px; color: var(--muted-fg);
+      font-weight: 650; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .btn-xs {
+      height: 24px; padding: 0 7px; font-size: 11px;
+    }
+    .dlg-ctx {
+      margin: -6px 0 10px; font-size: 12px; color: var(--muted-fg);
+    }
+    .dlg-ctx + .dlg-ctx { margin-top: -6px; }
+    .qty-fresh {
+      border-bottom: 1px dashed #71717a;
+      cursor: help;
+    }
+    .qty-fresh::after {
+      content: "";
+      display: inline-block;
+      width: 5px; height: 5px; margin-left: 3px;
+      border-radius: 50%; background: #2563eb;
+      vertical-align: middle;
+    }
+    .switch-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 8px 0 4px; font-size: 12px;
+    }
+    .switch {
+      position: relative; width: 32px; height: 18px; flex: none;
+      border-radius: 999px; background: #d4d4d8; border: 0; cursor: pointer;
+      padding: 0;
+    }
+    .switch.on { background: #18181b; }
+    .switch::after {
+      content: ""; position: absolute; top: 2px; left: 2px;
+      width: 14px; height: 14px; border-radius: 50%; background: #fff;
+      transition: left .15s ease;
+    }
+    .switch.on::after { left: 16px; }
+    .search {
+      width: 100%; height: 30px; margin: 0 0 6px;
+      padding: 0 8px; border: 1px solid var(--border); border-radius: 5px;
+      background: #fff;
+    }
+    .order-list { max-height: 220px; overflow: auto; }
+    /* Dropdown / popover / modal */
+    .menu {
+      position: fixed; z-index: 50;
+      min-width: 260px; max-width: 340px;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 8px 24px rgba(24,24,27,.12);
+      padding: 4px; font-size: 12px;
+    }
+    .menu button {
+      display: block; width: 100%; text-align: left;
+      padding: 7px 10px; border: 0; background: transparent;
+      border-radius: 5px; cursor: pointer; color: var(--fg);
+    }
+    .menu button:hover { background: #f4f4f5; }
+    .menu .sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .pop {
+      position: fixed; z-index: 40;
+      width: 300px;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 8px 24px rgba(24,24,27,.12);
+      padding: 10px; font-size: 12px;
+    }
+    .pop h4 {
+      margin: 0 0 6px; font-size: 11px; font-weight: 650;
+      color: var(--muted-fg); text-transform: uppercase; letter-spacing: .04em;
+    }
+    .pop .line { padding: 3px 0; color: #3f3f46; }
+    .overlay {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(24,24,27,.35);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .dialog {
+      width: 100%; max-width: 400px;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 16px 40px rgba(24,24,27,.18);
+      padding: 16px;
+    }
+    .dialog h3 { margin: 0 0 12px; font-size: 15px; font-weight: 650; }
+    .form-row { margin-bottom: 10px; }
+    .form-row label { display: block; font-size: 12px; color: var(--muted-fg); margin-bottom: 4px; }
+    .form-row input, .form-row select {
+      width: 100%; height: 32px; padding: 0 8px;
+      border: 1px solid var(--border); border-radius: 5px; background: #fff;
+    }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 80; background: #18181b; color: #fff;
+      padding: 8px 14px; border-radius: 6px; font-size: 12px;
+      box-shadow: 0 8px 24px rgba(24,24,27,.2);
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .toast.show { opacity: 1; }
+    .empty-hint { padding: 24px; color: var(--muted-fg); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="layout" id="layout">
+      <div class="main">
+        <nav class="crumb" aria-label="Хлебные крошки">
+          <span>Store</span><span class="sep">›</span>
+          <span>Производство</span><span class="sep">›</span>
+          <span aria-current="page">Календарь выпусков</span>
+        </nav>
+        <div class="toolbar">
+          <div class="tb-title">
+            <div>
+              <h1>Календарь выпусков</h1>
+              <p>Приход по выпускам в статусах «Черновик» и «В работе» · единицы — шт</p>
+            </div>
+          </div>
+          <div class="tb-controls">
+            <button type="button" class="btn" id="btnOwners">Для кого считаем</button>
+            <label class="field-label" for="plantFilter">Завод:</label>
+            <select class="sel" id="plantFilter"></select>
+            <button type="button" class="btn" id="btnRefresh">Обновить</button>
+          </div>
+          <div class="tb-summary" id="summaryLine"></div>
+        </div>
+        <div class="table-card" id="tableWrap"></div>
+      </div>
+      <aside class="panel" id="ownersPanel" aria-hidden="true">
+        <div class="panel-inner">
+          <div class="panel-head">
+            <h2>Для кого считаем</h2>
+            <button type="button" class="btn ghost" id="btnClosePanel">Закрыть</button>
+          </div>
+          <div class="panel-body" id="panelBody"></div>
+          <div class="panel-foot">
+            <button type="button" class="btn" id="btnSelectAll">Выбрать всё</button>
+            <button type="button" class="btn ghost" id="btnReset">Сбросить</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+  <div id="floatLayer"></div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const REF = {"regions":[{"id":1,"code":"ae","name":"ОАЭ"},{"id":2,"code":"ru","name":"Россия"},{"id":3,"code":"kz","name":"Казахстан"},{"id":4,"code":"by","name":"Беларусь"},{"id":5,"code":"uz","name":"Узбекистан"},{"id":6,"code":"mx","name":"Мексика"},{"id":7,"code":"de","name":"Германия"},{"id":8,"code":"us","name":"США"},{"id":9,"code":"in","name":"Индия"},{"id":10,"code":"om","name":"Оман"}],"categories":[{"id":2,"parent":null,"name":"ATV"},{"id":3,"parent":null,"name":"Off Road"},{"id":4,"parent":null,"name":"On Road"},{"id":5,"parent":null,"name":"UTV"},{"id":6,"parent":null,"name":"Golf Cart"},{"id":8,"parent":2,"name":"Electro"},{"id":9,"parent":2,"name":"4x2"},{"id":10,"parent":2,"name":"4x4"},{"id":11,"parent":3,"name":"Enduro"},{"id":12,"parent":3,"name":"Pitbike"},{"id":13,"parent":4,"name":"Cruiser"},{"id":15,"parent":4,"name":"Scooter"},{"id":17,"parent":4,"name":"Naked Bike"},{"id":18,"parent":4,"name":"Super Sport"}],"products":[{"id":1,"name":"Force 1100 EFI","plant":5,"cats":[2,10]},{"id":2,"name":"Cross 180 RX","plant":4,"cats":[2,9]},{"id":3,"name":"Activator 280 RX","plant":4,"cats":[2,9]},{"id":4,"name":"Cruiser 300 FJ","plant":4,"cats":[2,9]},{"id":5,"name":"Hummer 320 RX LTD","plant":2,"cats":[2,9]},{"id":6,"name":"Force 650","plant":1,"cats":[2,10]},{"id":7,"name":"Cross E-200","plant":4,"cats":[2,8]},{"id":8,"name":"Cruiser Race 350 GX","plant":3,"cats":[2,9]},{"id":9,"name":"Cruiser Race 550 GX","plant":3,"cats":[2,9]},{"id":44,"name":"Cross 130","plant":4,"cats":[2,9]},{"id":45,"name":"Raizer 250 Race Cup","plant":2,"cats":[2,9]},{"id":46,"name":"Force 800 EFI Challenger","plant":5,"cats":[2,10]},{"id":149,"name":"FX 125 ADV EU","plant":22,"cats":[2,15]},{"id":190,"name":"Force 525 Supercharger","plant":6,"cats":[2]},{"id":201,"name":"FX 3000 ADV","plant":null,"cats":[8]},{"id":202,"name":"Cargo Pro 2000","plant":null,"cats":[8]},{"id":15,"name":"Sport 250","plant":7,"cats":[3,11]},{"id":16,"name":"Power Max 250","plant":10,"cats":[3,11]},{"id":17,"name":"Power Max 320","plant":10,"cats":[3,11]},{"id":18,"name":"Expert Pro 450","plant":9,"cats":[3,11]},{"id":41,"name":"Power Max 145","plant":10,"cats":[3,12]},{"id":42,"name":"Power Max 190","plant":10,"cats":[3,12]},{"id":51,"name":"Sport 230","plant":7,"cats":[3,11]},{"id":52,"name":"Sport 280","plant":7,"cats":[11]},{"id":53,"name":"Sport 300 Air Ultimatum","plant":9,"cats":[3,11]},{"id":54,"name":"Power Max 300 Air","plant":10,"cats":[3,11]},{"id":19,"name":"Custom 1000 RST Roadster","plant":31,"cats":[4]},{"id":20,"name":"Enduro 250","plant":14,"cats":[4]},{"id":21,"name":"Enduro 300","plant":15,"cats":[4]},{"id":22,"name":"FX 200","plant":17,"cats":[4]},{"id":23,"name":"FX 150 Ultra EFI","plant":17,"cats":[4]},{"id":24,"name":"FX 350 Ultra","plant":5,"cats":[4]},{"id":25,"name":"RST 240 Ultra","plant":5,"cats":[4,17]},{"id":26,"name":"RST 250 Latina","plant":23,"cats":[4,17]},{"id":27,"name":"RST 322 Ultra","plant":5,"cats":[4,17]},{"id":28,"name":"RST 422 Ultra","plant":5,"cats":[4,17]},{"id":29,"name":"RST 750 Ultra","plant":5,"cats":[4,17]},{"id":30,"name":"RR 301 Ultra","plant":31,"cats":[4,13]},{"id":31,"name":"Scooter Tank 150","plant":17,"cats":[4,15]},{"id":32,"name":"GP 401 Ultra","plant":5,"cats":[4,18]},{"id":33,"name":"GP 881 Ultra","plant":5,"cats":[4,18]},{"id":34,"name":"GP 1100 Ultra","plant":5,"cats":[4,18]},{"id":10,"name":"Junior 200","plant":33,"cats":[5]},{"id":11,"name":"Junior 250","plant":33,"cats":[5]},{"id":12,"name":"Predator 420 2 seater","plant":34,"cats":[5]},{"id":49,"name":"XForce 1100 Sport x4","plant":35,"cats":[5]},{"id":50,"name":"XForce 1100 Sport","plant":35,"cats":[5]},{"id":155,"name":"Predator 500","plant":34,"cats":[5]},{"id":179,"name":"Junior 300","plant":24,"cats":[5]},{"id":189,"name":"Junior 300 Pro","plant":null,"cats":[5]},{"id":13,"name":"5000 2+2 Seater","plant":4,"cats":[6]},{"id":14,"name":"5000 4 Seater Pro","plant":4,"cats":[6]},{"id":110,"name":"5000 6 Seater Pro","plant":4,"cats":[6]},{"id":111,"name":"Country Club 4+2 seater","plant":39,"cats":[6]},{"id":112,"name":"Country Club 2+2 Seater","plant":39,"cats":[6]},{"id":113,"name":"Country Club 6 Seater","plant":39,"cats":[6]},{"id":99,"name":"RR 801 Ultra","plant":5,"cats":[]},{"id":100,"name":"RR 611 EU","plant":16,"cats":[]}],"plants":[1,2,3,4,5,6,7,8,9,10,14,15,16,17,22,23,24,31,33,34,35,39]};
+
+  const TODAY = new Date(2026, 8, 24); // 24 Sep 2026
+  const CUR_YM = { y: 2026, m: 9 }; // 1-based month
+  const MONTH_RU = ["", "Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+  const STATUS_RU = { draft: "Черновик", in_progress: "В работе" };
+
+  // ---- seeded PRNG ----
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+  function irand(rng, a, b) { return a + Math.floor(rng() * (b - a + 1)); }
+  function ymKey(y, m) { return y * 12 + m; }
+  function parseYm(key) { return { y: Math.floor((key - 1) / 12), m: ((key - 1) % 12) + 1 }; }
+  function lastDay(y, m) { return new Date(y, m, 0).getDate(); }
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    const [y, mo, d] = iso.split("-");
+    return d + "." + mo + "." + y;
+  }
+  function fmtQty(n) { return String(n); }
+
+  // ---- fixture ----
+  const regions = REF.regions.slice();
+  const products = REF.products.slice();
+  const categories = REF.categories.slice();
+  const plantIds = REF.plants.slice();
+  const catById = Object.fromEntries(categories.map(c => [c.id, c]));
+
+  // ~12 fictional OMS orders with real regions
+  const orderIds = [1, 3, 5, 7, 12, 14, 18, 21, 27, 33, 38, 40];
+  const orders = orderIds.map((id, i) => ({
+    id,
+    number: "OMS-" + id,
+    regionId: regions[i % regions.length].id
+  }));
+  const orderById = Object.fromEntries(orders.map(o => [o.id, o]));
+  const regionById = Object.fromEntries(regions.map(r => [r.id, r]));
+
+  let nextOutId = 100;
+  let nextPoId = 200;
+  const stocks = []; // {productId, ownerType, ownerId?, qty}
+  const outputs = []; // {id, productId, poId, plantId, qty, status, expectedEndOn, ownerType, ownerId?}
+  const productionOrders = []; // {id, productId, plantId, planQty, remaining}
+  const justCreated = new Set(); // session: bypass owner + plant filters until «Обновить»
+
+  function ownerKey(o) {
+    if (o.ownerType === "free") return "free";
+    if (o.ownerType === "region") return "region:" + o.ownerId;
+    return "order:" + o.ownerId;
+  }
+
+  function makeOwner(rng) {
+    const t = rng();
+    if (t < 0.45) return { ownerType: "free" };
+    if (t < 0.75) return { ownerType: "region", ownerId: pick(rng, regions).id };
+    return { ownerType: "order", ownerId: pick(rng, orders).id };
+  }
+
+  function genFixture() {
+    stocks.length = 0;
+    outputs.length = 0;
+    productionOrders.length = 0;
+    nextOutId = 100;
+    nextPoId = 200;
+
+    // Force Jul + Aug overdue outputs to exist
+    const forceJul = products.find(p => p.id === 1) || products[0];
+    const forceAug = products.find(p => p.id === 2) || products[1];
+
+    products.forEach((p, idx) => {
+      const rng = mulberry32(0xC0FFEE ^ (p.id * 2654435761));
+
+      // stock balances split across owners
+      const nOwners = irand(rng, 1, 3);
+      for (let i = 0; i < nOwners; i++) {
+        const ow = makeOwner(rng);
+        stocks.push({ productId: p.id, ...ow, qty: irand(rng, 0, 28) });
+      }
+      // ensure at least one free stock entry (may be 0)
+      if (!stocks.some(s => s.productId === p.id && s.ownerType === "free")) {
+        stocks.push({ productId: p.id, ownerType: "free", qty: irand(rng, 0, 12) });
+      }
+
+      // open POs with remaining
+      const nPo = irand(rng, 0, 2);
+      for (let i = 0; i < nPo; i++) {
+        const plan = irand(rng, 8, 40);
+        const rem = irand(rng, 2, plan);
+        const plant = p.plant || pick(rng, plantIds);
+        productionOrders.push({
+          id: nextPoId++,
+          productId: p.id,
+          plantId: plant,
+          planQty: plan,
+          remaining: rem
+        });
+      }
+
+      // some products with no outputs
+      const noOutputs = idx % 11 === 7;
+      if (noOutputs && p.id !== forceJul.id && p.id !== forceAug.id) return;
+
+      let nOut = irand(rng, 0, 4);
+      if (p.id === forceJul.id || p.id === forceAug.id) nOut = Math.max(nOut, 1);
+
+      for (let i = 0; i < nOut; i++) {
+        const ow = makeOwner(rng);
+        const status = rng() < 0.55 ? "in_progress" : "draft";
+        let plant = p.plant || pick(rng, plantIds);
+        if (rng() < 0.12) plant = pick(rng, plantIds);
+        let expectedEndOn = null;
+        const roll = rng();
+        if (p.id === forceJul.id && i === 0) {
+          expectedEndOn = "2026-07-" + String(irand(rng, 10, 28)).padStart(2, "0");
+        } else if (p.id === forceAug.id && i === 0) {
+          expectedEndOn = "2026-08-" + String(irand(rng, 5, 25)).padStart(2, "0");
+        } else if (roll < 0.08) {
+          expectedEndOn = null; // без срока
+        } else {
+          // Jul 2026 .. Feb 2027
+          const months = [
+            [2026,7],[2026,8],[2026,9],[2026,10],[2026,11],[2026,12],
+            [2027,1],[2027,2]
+          ];
+          const [y, m] = pick(rng, months);
+          expectedEndOn = y + "-" + String(m).padStart(2,"0") + "-" + String(irand(rng, 1, lastDay(y, m))).padStart(2,"0");
+        }
+        const po = productionOrders.find(x => x.productId === p.id);
+        const poId = po ? po.id : nextPoId++;
+        if (!po) {
+          productionOrders.push({
+            id: poId, productId: p.id, plantId: plant,
+            planQty: irand(rng, 10, 40), remaining: irand(rng, 0, 15)
+          });
+        }
+        outputs.push({
+          id: nextOutId++,
+          productId: p.id,
+          poId,
+          plantId: plant,
+          qty: irand(rng, 1, 18),
+          status,
+          expectedEndOn,
+          ...ow
+        });
+      }
+    });
+  }
+
+  genFixture();
+
+  // ---- filter state ----
+  const state = {
+    free: true,
+    regions: new Set(regions.map(r => r.id)),
+    withRegionOrders: true,
+    orders: new Set(orders.map(o => o.id)),
+    plantId: null, // null = all
+    collapsed: new Set(),
+    panelOpen: false,
+    orderSearch: ""
+  };
+
+  function isDefaultOwners() {
+    if (!state.free) return false;
+    if (!state.withRegionOrders) return false;
+    if (state.regions.size !== regions.length) return false;
+    if (state.orders.size !== orders.length) return false;
+    for (const r of regions) if (!state.regions.has(r.id)) return false;
+    for (const o of orders) if (!state.orders.has(o.id)) return false;
+    return true;
+  }
+
+  function ownersChangedCount() {
+    // badge: count of deselected pieces vs default-all
+    let n = 0;
+    if (!state.free) n++;
+    n += regions.length - state.regions.size;
+    if (!state.withRegionOrders) n++;
+    // only count manually deselected orders that aren't covered... simpler: deselected orders
+    n += orders.length - state.orders.size;
+    return n;
+  }
+
+  function buildW() {
+    const W = new Set();
+    if (state.free) W.add("free");
+    for (const rid of state.regions) W.add("region:" + rid);
+    if (state.withRegionOrders) {
+      for (const o of orders) {
+        if (state.regions.has(o.regionId)) W.add("order:" + o.id);
+      }
+    }
+    for (const oid of state.orders) W.add("order:" + oid);
+    return W;
+  }
+
+  function inW(item, W) {
+    return W.has(ownerKey(item));
+  }
+
+  function monthOf(iso) {
+    if (!iso) return null;
+    const [y, m] = iso.split("-").map(Number);
+    return { y, m };
+  }
+
+  function computeMonthRange() {
+    const curKey = ymKey(CUR_YM.y, CUR_YM.m);
+    let earliestOverdue = null;
+    let latest = curKey;
+    for (const o of outputs) {
+      if (o.status !== "draft" && o.status !== "in_progress") continue;
+      if (!o.expectedEndOn) continue;
+      const ym = monthOf(o.expectedEndOn);
+      const k = ymKey(ym.y, ym.m);
+      if (k < curKey) {
+        if (earliestOverdue === null || k < earliestOverdue) earliestOverdue = k;
+      }
+      if (k > latest) latest = k;
+    }
+    const start = earliestOverdue !== null ? earliestOverdue : curKey;
+    const minEnd = ymKey(CUR_YM.y, CUR_YM.m) + 5; // current + 5 = Feb 2027 when cur=Sep
+    const end = Math.max(latest, minEnd);
+    const months = [];
+    for (let k = start; k <= end; k++) months.push(parseYm(k));
+    return months;
+  }
+
+  function stockFor(productId, W) {
+    let s = 0;
+    for (const row of stocks) {
+      if (row.productId !== productId) continue;
+      if (!inW(row, W)) continue;
+      s += row.qty;
+    }
+    return s;
+  }
+
+  function openOutputsFor(productId) {
+    return outputs.filter(o =>
+      o.productId === productId &&
+      (o.status === "draft" || o.status === "in_progress")
+    );
+  }
+
+  function plantCodesFor(productId) {
+    const set = new Set();
+    for (const o of openOutputsFor(productId)) set.add(o.plantId);
+    return Array.from(set).sort((a, b) => a - b);
+  }
+
+  function outputPassesFilters(o, W, plantFilter) {
+    if (justCreated.has(o.id)) return true; // bypass owner + plant until refresh
+    if (!inW(o, W)) return false;
+    if (plantFilter != null && o.plantId !== plantFilter) return false;
+    return true;
+  }
+
+  function monthQty(productId, y, m, W, plantFilter) {
+    let s = 0;
+    const items = [];
+    let hasFresh = false;
+    for (const o of openOutputsFor(productId)) {
+      if (!outputPassesFilters(o, W, plantFilter)) continue;
+      const ym = monthOf(o.expectedEndOn);
+      if (!ym || ym.y !== y || ym.m !== m) continue;
+      s += o.qty;
+      items.push(o);
+      if (justCreated.has(o.id)) hasFresh = true;
+    }
+    return { qty: s, items, hasFresh };
+  }
+
+  function noDateQty(productId, W, plantFilter) {
+    let s = 0;
+    const items = [];
+    let hasFresh = false;
+    for (const o of openOutputsFor(productId)) {
+      if (!outputPassesFilters(o, W, plantFilter)) continue;
+      if (o.expectedEndOn) continue;
+      s += o.qty;
+      items.push(o);
+      if (justCreated.has(o.id)) hasFresh = true;
+    }
+    return { qty: s, items, hasFresh };
+  }
+
+  function productVisibleStrict(p, plantFilter) {
+    if (plantFilter == null) return true;
+    return openOutputsFor(p.id).some(o =>
+      o.plantId === plantFilter || justCreated.has(o.id)
+    );
+  }
+
+  // ---- category tree ----
+  function childrenOf(parentId) {
+    return categories.filter(c => c.parent === parentId).sort((a, b) => a.id - b.id);
+  }
+
+  function productsInCat(catId, visibleIds) {
+    return products.filter(p => visibleIds.has(p.id) && p.cats.includes(catId));
+  }
+
+  function countVisibleInSubtree(catId, visibleIds) {
+    // products directly in this cat only (group label = products shown under this group row)
+    return productsInCat(catId, visibleIds).length;
+  }
+
+  function categoryHasVisible(catId, visibleIds) {
+    if (productsInCat(catId, visibleIds).length) return true;
+    return childrenOf(catId).some(ch => categoryHasVisible(ch.id, visibleIds));
+  }
+
+  function pluralTovar(n) {
+    const n10 = n % 10, n100 = n % 100;
+    if (n10 === 1 && n100 !== 11) return n + " товар";
+    if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return n + " товара";
+    return n + " товаров";
+  }
+
+  // ---- UI helpers ----
+  const $ = (sel, el) => (el || document).querySelector(sel);
+  const floatLayer = $("#floatLayer");
+  const toastEl = $("#toast");
+  let toastTimer = null;
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+  }
+
+  function clearFloat() {
+    floatLayer.innerHTML = "";
+  }
+
+  function closeMenus() { clearFloat(); }
+
+  document.addEventListener("click", (e) => {
+    if (!floatLayer.contains(e.target) && !e.target.closest(".plus-btn") && !e.target.closest(".has-q")) {
+      // keep if clicking inside menu opened from plus — handled per-open
+    }
+  });
+
+  // ---- render panel ----
+  function renderPanel() {
+    const body = $("#panelBody");
+    let html = "";
+    html += '<label class="check"><input type="checkbox" id="chkFree"' + (state.free ? " checked" : "") + "> Свободно</label>";
+    html += '<div class="sec-h-row"><div class="sec-h">Регионы</div>' +
+      '<button type="button" class="btn ghost btn-xs" id="btnAllRegions">Все регионы</button></div>';
+    for (const r of regions) {
+      html += '<label class="check"><input type="checkbox" data-region="' + r.id + '"' +
+        (state.regions.has(r.id) ? " checked" : "") + "> " + r.name + "</label>";
+    }
+    html += '<div class="switch-row"><span>С заказами клиентов региона</span>' +
+      '<button type="button" class="switch' + (state.withRegionOrders ? " on" : "") +
+      '" id="swRegionOrders" aria-pressed="' + state.withRegionOrders + '"></button></div>';
+    html += '<div class="sec-h-row"><div class="sec-h">Заказы клиента</div>' +
+      '<button type="button" class="btn ghost btn-xs" id="btnAllOrders">Все заказы</button></div>';
+    html += '<input class="search" id="orderSearch" placeholder="Поиск OMS…" value="' +
+      state.orderSearch.replace(/"/g, "&quot;") + '">';
+    html += '<div class="order-list">';
+    const q = state.orderSearch.trim().toLowerCase();
+    for (const o of orders) {
+      const rname = regionById[o.regionId].name;
+      const label = o.number + " · " + rname;
+      if (q && label.toLowerCase().indexOf(q) < 0) continue;
+      html += '<label class="check"><input type="checkbox" data-order="' + o.id + '"' +
+        (state.orders.has(o.id) ? " checked" : "") + "> " + label + "</label>";
+    }
+    html += "</div>";
+    body.innerHTML = html;
+
+    $("#chkFree").addEventListener("change", (e) => {
+      state.free = e.target.checked; renderAll();
+    });
+    $("#btnAllRegions").addEventListener("click", () => {
+      state.regions = new Set(regions.map(r => r.id));
+      renderAll();
+    });
+    $("#btnAllOrders").addEventListener("click", () => {
+      state.orders = new Set(orders.map(o => o.id));
+      renderAll();
+    });
+    body.querySelectorAll("[data-region]").forEach(inp => {
+      inp.addEventListener("change", (e) => {
+        const id = +e.target.getAttribute("data-region");
+        if (e.target.checked) state.regions.add(id); else state.regions.delete(id);
+        renderAll();
+      });
+    });
+    $("#swRegionOrders").addEventListener("click", () => {
+      state.withRegionOrders = !state.withRegionOrders;
+      renderAll();
+    });
+    $("#orderSearch").addEventListener("input", (e) => {
+      state.orderSearch = e.target.value;
+      renderPanel();
+    });
+    body.querySelectorAll("[data-order]").forEach(inp => {
+      inp.addEventListener("change", (e) => {
+        const id = +e.target.getAttribute("data-order");
+        if (e.target.checked) state.orders.add(id); else state.orders.delete(id);
+        renderAll(false);
+      });
+    });
+  }
+
+  function renderPlantSelect() {
+    const sel = $("#plantFilter");
+    const used = new Set();
+    for (const o of outputs) {
+      if (o.status === "draft" || o.status === "in_progress") used.add(o.plantId);
+    }
+    const list = Array.from(used).sort((a, b) => a - b);
+    let html = '<option value="">все</option>';
+    for (const id of list) {
+      html += '<option value="' + id + '"' + (state.plantId === id ? " selected" : "") + ">PLT-" + id + "</option>";
+    }
+    sel.innerHTML = html;
+  }
+
+  function summaryText() {
+    const plantPart = state.plantId == null ? "Завод: все" : ("Завод: PLT-" + state.plantId);
+    if (isDefaultOwners()) {
+      return "Считаем: всё — свободно и все резервы · " + plantPart;
+    }
+    const parts = [];
+    if (state.free) parts.push("Свободно");
+    const allRegs = state.regions.size === regions.length;
+    const selRegs = regions.filter(r => state.regions.has(r.id));
+    if (selRegs.length) {
+      let rs = allRegs ? "все регионы" : selRegs.map(r => r.name).join(", ");
+      if (state.withRegionOrders) rs += " (с заказами)";
+      parts.push(rs);
+    }
+    const allOrds = state.orders.size === orders.length;
+    if (allOrds && state.withRegionOrders) {
+      // covered by regions switch — do not list orders
+    } else if (allOrds) {
+      parts.push("все заказы");
+    } else if (state.orders.size > 0) {
+      parts.push(orders.filter(o => state.orders.has(o.id)).map(o => o.number).join(", "));
+    }
+    if (!parts.length) parts.push("ничего не выбрано");
+    return "Считаем: " + parts.join(" + ") + " · " + plantPart;
+  }
+
+  function updateOwnersBtn() {
+    const btn = $("#btnOwners");
+    const n = ownersChangedCount();
+    const open = state.panelOpen;
+    btn.className = "btn" + (open ? " active" : "");
+    btn.innerHTML = "Для кого считаем" + (n > 0 ? ' <span class="badge-n">' + n + "</span>" : "");
+  }
+
+  function setPanel(open) {
+    state.panelOpen = open;
+    const panel = $("#ownersPanel");
+    panel.classList.toggle("open", open);
+    panel.setAttribute("aria-hidden", open ? "false" : "true");
+    updateOwnersBtn();
+  }
+
+  // ---- table ----
+  function renderTable() {
+    const W = buildW();
+    const months = computeMonthRange();
+    const plantFilter = state.plantId;
+    const visibleIds = new Set(
+      products.filter(p => productVisibleStrict(p, plantFilter)).map(p => p.id)
+    );
+
+    const wrap = $("#tableWrap");
+    let html = "<table><thead><tr>";
+    html += '<th class="sticky-col">Товар</th>';
+    html += '<th class="col-plant">Код завода</th>';
+    html += '<th class="col-stock">Остаток</th>';
+    for (const ym of months) {
+      const isCur = ym.y === CUR_YM.y && ym.m === CUR_YM.m;
+      html += '<th class="col-m' + (isCur ? " cur" : "") + '">' + MONTH_RU[ym.m] + " " + ym.y + "</th>";
+    }
+    html += '<th class="col-ns">Без срока</th>';
+    html += "</tr></thead><tbody>";
+
+    const colSpan = 3 + months.length + 1;
+
+    function renderProductRow(p, depth) {
+      const plants = plantCodesFor(p.id);
+      const plantStr = plants.length ? plants.map(id => "PLT-" + id).join(", ") : "—";
+      const stock = stockFor(p.id, W);
+      const indentCls = depth > 0 ? (" prod-indent-" + Math.min(depth, 2)) : "";
+      html += '<tr data-product="' + p.id + '">';
+      html += '<td class="sticky-col' + indentCls + '"><span class="prod-name">' + escapeHtml(p.name) +
+        '</span><span class="prod-code">PRD-' + p.id + "</span></td>";
+      html += '<td class="col-plant">' + plantStr + "</td>";
+      html += '<td class="col-stock">' + fmtQty(stock) + "</td>";
+      for (const ym of months) {
+        const isCur = ym.y === CUR_YM.y && ym.m === CUR_YM.m;
+        const isPast = ymKey(ym.y, ym.m) < ymKey(CUR_YM.y, CUR_YM.m);
+        const isFutureOrCur = ymKey(ym.y, ym.m) >= ymKey(CUR_YM.y, CUR_YM.m);
+        const { qty, items, hasFresh } = monthQty(p.id, ym.y, ym.m, W, plantFilter);
+        let cls = "col-m month-cell";
+        if (isCur) cls += " cur";
+        if (isPast && qty > 0) cls += " overdue";
+        const cellId = "c-" + p.id + "-" + ym.y + "-" + ym.m;
+        html += '<td class="' + cls + '" id="' + cellId + '" data-pid="' + p.id +
+          '" data-y="' + ym.y + '" data-m="' + ym.m + '">';
+        html += '<div class="cell-wrap' + (qty > 0 ? " has-q" : "") + '"';
+        if (qty > 0) {
+          html += ' data-items="' + encodeURIComponent(JSON.stringify(items.map(summarizeOut))) + '"';
+        }
+        html += ">";
+        if (qty > 0) {
+          if (hasFresh) {
+            html += '<span class="qty-fresh" title="Создан только что — после обновления подчиняется фильтру">' +
+              fmtQty(qty) + "</span>";
+          } else {
+            html += fmtQty(qty);
+          }
+        }
+        if (isFutureOrCur) {
+          html += '<button type="button" class="plus-btn" title="Создать выпуск" data-plus="' +
+            p.id + '" data-y="' + ym.y + '" data-m="' + ym.m + '">+</button>';
+        }
+        html += "</div></td>";
+      }
+      const nd = noDateQty(p.id, W, plantFilter);
+      html += '<td class="col-ns' + (nd.qty > 0 ? " has-q-cell" : "") + '">';
+      html += '<div class="cell-wrap' + (nd.qty > 0 ? " has-q" : "") + '"';
+      if (nd.qty > 0) html += ' data-items="' + encodeURIComponent(JSON.stringify(nd.items.map(summarizeOut))) + '"';
+      html += ">";
+      if (nd.qty > 0) {
+        if (nd.hasFresh) {
+          html += '<span class="qty-fresh" title="Создан только что — после обновления подчиняется фильтру">' +
+            fmtQty(nd.qty) + "</span>";
+        } else {
+          html += fmtQty(nd.qty);
+        }
+      }
+      html += "</div></td>";
+      html += "</tr>";
+    }
+
+    function renderCat(cat, depth) {
+      if (!categoryHasVisible(cat.id, visibleIds)) return;
+      const direct = productsInCat(cat.id, visibleIds);
+      const n = direct.length;
+      // Only show group if it has direct products OR visible children (children render their own)
+      const kids = childrenOf(cat.id).filter(ch => categoryHasVisible(ch.id, visibleIds));
+      if (n === 0 && kids.length === 0) return;
+
+      const collapsed = state.collapsed.has(cat.id);
+      const chev = collapsed ? "▸" : "▾";
+      const ind = "indent-" + Math.min(depth, 2);
+      html += '<tr class="group-row" data-cat="' + cat.id + '">';
+      html += '<td class="sticky-col ' + ind + '" colspan="' + colSpan + '">' +
+        '<span class="chev">' + chev + '</span> ' + escapeHtml(cat.name) +
+        ' · <span class="count">' + pluralTovar(n) + '</span></td>';
+      html += "</tr>";
+      if (!collapsed) {
+        for (const p of direct.sort((a, b) => a.name.localeCompare(b.name, "ru"))) {
+          renderProductRow(p, depth + 1);
+        }
+        for (const ch of kids) renderCat(ch, depth + 1);
+      }
+    }
+
+    // roots that are in our category set
+    const roots = categories.filter(c => c.parent == null).sort((a, b) => a.id - b.id);
+    for (const r of roots) renderCat(r, 0);
+
+    // Без категории
+    const uncat = products.filter(p => visibleIds.has(p.id) && (!p.cats || p.cats.length === 0));
+    if (uncat.length) {
+      const cid = "uncat";
+      const collapsed = state.collapsed.has(cid);
+      const chev = collapsed ? "▸" : "▾";
+      html += '<tr class="group-row" data-cat="' + cid + '">';
+      html += '<td class="sticky-col indent-0" colspan="' + colSpan + '">' +
+        '<span class="chev">' + chev + '</span> Без категории · <span class="count">' +
+        pluralTovar(uncat.length) + '</span></td></tr>';
+      if (!collapsed) {
+        for (const p of uncat.sort((a, b) => a.name.localeCompare(b.name, "ru"))) {
+          renderProductRow(p, 1);
+        }
+      }
+    }
+
+    html += "</tbody></table>";
+    if (!visibleIds.size) {
+      wrap.innerHTML = '<div class="empty-hint">Нет товаров для выбранного завода</div>';
+    } else {
+      wrap.innerHTML = html;
+    }
+
+    // bind group toggles
+    wrap.querySelectorAll(".group-row").forEach(tr => {
+      tr.addEventListener("click", () => {
+        const id = tr.getAttribute("data-cat");
+        const key = id === "uncat" ? "uncat" : +id;
+        if (state.collapsed.has(key)) state.collapsed.delete(key);
+        else state.collapsed.add(key);
+        renderTable();
+      });
+    });
+    bindTableInteractions();
+  }
+
+  function summarizeOut(o) {
+    return {
+      id: o.id, poId: o.poId, plantId: o.plantId,
+      date: o.expectedEndOn, status: o.status, qty: o.qty
+    };
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[c]);
+  }
+
+  function bindTableInteractions() {
+    const wrap = $("#tableWrap");
+    wrap.querySelectorAll(".plus-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openPlusMenu(btn);
+      });
+    });
+    wrap.querySelectorAll(".has-q").forEach(el => {
+      el.addEventListener("click", (e) => {
+        if (e.target.closest(".plus-btn")) return;
+        e.stopPropagation();
+        openItemsPopover(el, e);
+      });
+    });
+  }
+
+  function openPlusMenu(btn) {
+    clearFloat();
+    const pid = +btn.getAttribute("data-plus");
+    const y = +btn.getAttribute("data-y");
+    const m = +btn.getAttribute("data-m");
+    const pos = btn.getBoundingClientRect();
+    const menu = document.createElement("div");
+    menu.className = "menu";
+    menu.style.left = Math.min(pos.left, window.innerWidth - 320) + "px";
+    menu.style.top = (pos.bottom + 4) + "px";
+
+    const posList = productionOrders.filter(po => po.productId === pid && po.remaining > 0);
+    for (const po of posList) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = "Выпуск по PO-" + po.id + " — осталось разложить " + po.remaining + " шт";
+      b.addEventListener("click", () => {
+        clearFloat();
+        openCreateDialog({ mode: "fromPo", po, productId: pid, y, m });
+      });
+      menu.appendChild(b);
+    }
+    if (posList.length) {
+      const sep = document.createElement("div");
+      sep.className = "sep";
+      menu.appendChild(sep);
+    }
+    const neu = document.createElement("button");
+    neu.type = "button";
+    neu.textContent = "Новый заказ на производство…";
+    neu.addEventListener("click", () => {
+      clearFloat();
+      openCreateDialog({ mode: "newPo", productId: pid, y, m });
+    });
+    menu.appendChild(neu);
+    floatLayer.appendChild(menu);
+
+    setTimeout(() => {
+      const closer = (ev) => {
+        if (!menu.contains(ev.target) && ev.target !== btn) {
+          clearFloat();
+          document.removeEventListener("click", closer);
+        }
+      };
+      document.addEventListener("click", closer);
+    }, 0);
+  }
+
+  function openItemsPopover(el, e) {
+    clearFloat();
+    const raw = el.getAttribute("data-items");
+    if (!raw) return;
+    const items = JSON.parse(decodeURIComponent(raw));
+    const pop = document.createElement("div");
+    pop.className = "pop";
+    const rect = el.getBoundingClientRect();
+    pop.style.left = Math.min(rect.left, window.innerWidth - 320) + "px";
+    pop.style.top = (rect.bottom + 4) + "px";
+    pop.innerHTML = "<h4>Выпуски</h4>" + items.map(it =>
+      '<div class="line">OUT-' + it.id + " · PO-" + it.poId + " · PLT-" + it.plantId +
+      " · " + fmtDate(it.date) + " · " + STATUS_RU[it.status] + " · " + it.qty + " шт</div>"
+    ).join("");
+    floatLayer.appendChild(pop);
+    setTimeout(() => {
+      const closer = (ev) => {
+        if (!pop.contains(ev.target)) {
+          clearFloat();
+          document.removeEventListener("click", closer);
+        }
+      };
+      document.addEventListener("click", closer);
+    }, 0);
+  }
+
+  function openCreateDialog(opts) {
+    clearFloat();
+    const p = products.find(x => x.id === opts.productId);
+    const last = lastDay(opts.y, opts.m);
+    const prefDate = opts.y + "-" + String(opts.m).padStart(2, "0") + "-" + String(last).padStart(2, "0");
+    const isNew = opts.mode === "newPo";
+    const title = isNew ? "Новый заказ на производство" : "Новый выпуск";
+    const defaultQty = isNew ? 1 : Math.max(1, opts.po.remaining);
+
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+    let plantField = "";
+    if (isNew) {
+      const pref = p.plant != null ? p.plant : "";
+      let optsHtml = '<option value="">—</option>';
+      for (const id of plantIds) {
+        optsHtml += '<option value="' + id + '"' + (pref === id ? " selected" : "") + ">PLT-" + id + "</option>";
+      }
+      plantField = '<div class="form-row"><label>Завод</label><select id="dlgPlant">' + optsHtml + "</select></div>";
+    }
+    let ctxHtml = '<p class="dlg-ctx">' + escapeHtml(p.name) + " · PRD-" + p.id + "</p>";
+    if (!isNew) {
+      ctxHtml += '<p class="dlg-ctx">по PO-' + opts.po.id + " · осталось разложить " + opts.po.remaining + " шт</p>";
+    }
+    overlay.innerHTML =
+      '<div class="dialog" role="dialog" aria-modal="true">' +
+      "<h3>" + title + "</h3>" +
+      ctxHtml +
+      '<div class="form-row"><label>Количество</label><input type="number" id="dlgQty" min="1" value="' + defaultQty + '"></div>' +
+      '<div class="form-row"><label>Срок выпуска</label><input type="date" id="dlgDate" value="' + prefDate + '"></div>' +
+      plantField +
+      '<div class="dialog-actions">' +
+      '<button type="button" class="btn ghost" id="dlgCancel">Отмена</button>' +
+      '<button type="button" class="btn primary" id="dlgCreate">Создать</button>' +
+      "</div></div>";
+    floatLayer.appendChild(overlay);
+
+    $("#dlgCancel", overlay).addEventListener("click", () => clearFloat());
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) clearFloat(); });
+    $("#dlgCreate", overlay).addEventListener("click", () => {
+      const qty = Math.max(1, parseInt($("#dlgQty", overlay).value, 10) || 1);
+      const dateVal = $("#dlgDate", overlay).value;
+      let plantId, poId;
+      if (isNew) {
+        const pv = $("#dlgPlant", overlay).value;
+        plantId = pv === "" ? (p.plant || plantIds[0]) : +pv;
+        poId = nextPoId++;
+        productionOrders.push({
+          id: poId, productId: p.id, plantId, planQty: qty, remaining: 0
+        });
+      } else {
+        poId = opts.po.id;
+        plantId = opts.po.plantId;
+        opts.po.remaining = Math.max(0, opts.po.remaining - qty);
+      }
+      const outId = nextOutId++;
+      outputs.push({
+        id: outId,
+        productId: p.id,
+        poId,
+        plantId,
+        qty,
+        status: "draft",
+        expectedEndOn: dateVal || null,
+        ownerType: "free"
+      });
+      justCreated.add(outId);
+      clearFloat();
+      showToast("Создан OUT-" + outId);
+      renderAll();
+      // flash & scroll
+      if (dateVal) {
+        const [yy, mm] = dateVal.split("-").map(Number);
+        const cell = document.getElementById("c-" + p.id + "-" + yy + "-" + mm);
+        if (cell) {
+          cell.classList.add("flash");
+          cell.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+          setTimeout(() => cell.classList.remove("flash"), 2000);
+        }
+      }
+    });
+  }
+
+  function renderAll(rerenderPanel) {
+    updateOwnersBtn();
+    $("#summaryLine").innerHTML = "<strong>" + escapeHtml(summaryText()) + "</strong>";
+    renderPlantSelect();
+    renderTable();
+    if (rerenderPanel !== false && state.panelOpen) renderPanel();
+  }
+
+  // ---- wire toolbar ----
+  $("#btnOwners").addEventListener("click", () => {
+    setPanel(!state.panelOpen);
+    if (state.panelOpen) renderPanel();
+  });
+  $("#btnClosePanel").addEventListener("click", () => setPanel(false));
+  $("#plantFilter").addEventListener("change", (e) => {
+    state.plantId = e.target.value === "" ? null : +e.target.value;
+    renderAll();
+  });
+  $("#btnSelectAll").addEventListener("click", () => {
+    state.free = true;
+    state.regions = new Set(regions.map(r => r.id));
+    state.withRegionOrders = true;
+    state.orders = new Set(orders.map(o => o.id));
+    renderAll();
+  });
+  $("#btnReset").addEventListener("click", () => {
+    state.free = false;
+    state.regions = new Set();
+    state.withRegionOrders = false;
+    state.orders = new Set();
+    renderAll();
+  });
+  $("#btnRefresh").addEventListener("click", () => {
+    justCreated.clear();
+    renderAll();
+  });
+
+  // initial
+  renderAll();
+})();
+</script>
+</body>
+</html>
