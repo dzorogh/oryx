@@ -33,7 +33,6 @@ import { productIdentityLabel } from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import {
   relatedOutputsForOrder,
-  relatedProductionsForOrder,
   relatedReservations,
   relatedReturnsForOrder,
   relatedShipments,
@@ -543,28 +542,18 @@ export const CustomerOrderDetailPage = () => {
 
   const primaryStages = [
     {
-      id: "production",
-      title: "Производство",
-      href: "/store/logistics/production-orders",
-      items: withOrderCoverage(
-        relatedProductionsForOrder(snapshot, order.id, balances),
-        coverage.production,
-      ),
-      doneStatuses: ["done", "closed"] as const,
-      actions: canAct
-        ? [
-            { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
-            { label: "Зарезервировать в выпуске", onClick: () => setReserveOnProductionOpen(true) },
-          ]
-        : undefined,
-    },
-    {
       id: "output",
-      title: "Выпуски",
+      title: "Выпуск производства",
       href: "/store/logistics/outputs",
       items: withOrderCoverage(relatedOutputsForOrder(snapshot, order.id), coverage.output),
       doneStatuses: ["done"] as const,
-      actions: canAct ? [{ label: "Выпустить", onClick: () => setOutputOpen(true) }] : undefined,
+      actions: canAct
+        ? [
+            { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },
+            { label: "Выпустить", onClick: () => setOutputOpen(true) },
+            { label: "Зарезервировать в выпуске", onClick: () => setReserveOnProductionOpen(true) },
+          ]
+        : undefined,
     },
     {
       id: "transfer",

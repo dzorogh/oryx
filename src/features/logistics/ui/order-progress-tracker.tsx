@@ -347,7 +347,7 @@ type OrderProgressTrackerProps = {
 };
 
 /**
- * Customer-order journey card (Производство → … → Отгрузки) with collapsible related stages.
+ * Customer-order journey card (Выпуск производства → Перемещения → Отгрузки) with collapsible related stages.
  * Document passport lives in DocumentHeader — this is only the flow strip.
  */
 export const OrderProgressTracker = ({
@@ -385,7 +385,7 @@ export const OrderProgressTracker = ({
   return (
     <Card size="sm" className={cn(logisticsCardClass, "mt-3 gap-0 overflow-hidden py-0 shadow-sm data-[size=sm]:gap-0 data-[size=sm]:py-0")} aria-label="Ход заказа">
       <div
-        className="-mt-px -ml-px grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+        className="-mt-px -ml-px grid grid-cols-1 lg:grid-cols-3"
         aria-label="Ход заказа клиента"
       >
         {primaryStages.map((stage, index) => (
