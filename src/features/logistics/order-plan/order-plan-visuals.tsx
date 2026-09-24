@@ -11,12 +11,12 @@ const hatch = (color: string, fade: string, step = 3): string =>
   `repeating-linear-gradient(135deg, ${color} 0 ${step}px, ${fade} ${step}px ${step * 2}px)`;
 
 const TONE_STYLE: Record<SegmentTone, CSSProperties> = {
-  "have-warehouse": { background: "#18181b" },
-  "have-transfer": { background: "#52525b" },
-  "have-output": { background: "#a1a1aa" },
-  "plan-warehouse": { background: hatch("#18181b", "rgba(24,24,27,.45)") },
-  "plan-transfer": { background: hatch("#52525b", "rgba(82,82,91,.45)") },
-  "plan-output": { background: hatch("#a1a1aa", "rgba(161,161,170,.45)") },
+  "have-warehouse": { background: "#059669" },
+  "have-transfer": { background: "#0284c7" },
+  "have-output": { background: "#7c3aed" },
+  "plan-warehouse": { background: hatch("#059669", "rgba(5,150,105,.35)") },
+  "plan-transfer": { background: hatch("#0284c7", "rgba(2,132,199,.35)") },
+  "plan-output": { background: hatch("#7c3aed", "rgba(124,58,237,.35)") },
   minus: { background: hatch("#dc2626", "rgba(220,38,38,.35)") },
   none: { background: "#f4f4f5", boxShadow: "inset 0 0 0 1px #d4d4d8" },
 };
