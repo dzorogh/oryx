@@ -256,7 +256,24 @@ for (const row of snapshot.plants) {
   plantIdByOld.set(String(row.id), String(plantId));
 }
 
+const categoryIdByOld = new Map();
+for (const row of snapshot.categories ?? []) {
+  const parentId = row.parent_id != null ? categoryIdByOld.get(String(row.parent_id)) : null;
+  if (row.parent_id != null && !parentId) {
+    throw new Error(`category ${row.id}: parent ${row.parent_id} must precede it in the snapshot`);
+  }
+  const created = await rest(
+    "POST",
+    "store_category",
+    { code: row.code, name: row.name, parent_id: parentId ? Number(parentId) : null },
+    "return=representation",
+  );
+  const id = Array.isArray(created) ? created[0]?.id : created?.id;
+  categoryIdByOld.set(String(row.id), String(id));
+}
+
 const variantIdByOldProduct = new Map();
+const productCategoryRows = [];
 const priceRows = [];
 const statusRows = [];
 const regionList = [...regionIdByCode.entries()];
@@ -272,6 +289,14 @@ for (const row of snapshot.products) {
   });
   const variantId = Number(created.variant_id);
   variantIdByOldProduct.set(String(row.id), String(variantId));
+
+  for (const oldCategoryId of row.category_ids ?? []) {
+    const categoryId = categoryIdByOld.get(String(oldCategoryId));
+    if (!categoryId) {
+      throw new Error(`product ${row.id}: category ${oldCategoryId} missing from seed map`);
+    }
+    productCategoryRows.push({ product_id: Number(created.product_id), category_id: Number(categoryId) });
+  }
 
   const dealerUsd = row.dealer_price != null ? Number(row.dealer_price) : inferDealer(`${row.id}:${row.name}`);
   const retailUsd = row.retail_price != null ? Number(row.retail_price) : Math.round(dealerUsd * 1.18);
@@ -337,6 +362,7 @@ for (const row of snapshot.products) {
   }
 }
 
+await postBatch("store_product_category", productCategoryRows);
 await postBatch("store_product_price", priceRows);
 await postBatch("store_product_region_status", statusRows);
 
@@ -391,7 +417,7 @@ const stories = await seedLogisticsStories({
 });
 
 console.log(
-  `seed_ok products=${snapshot.products.length} plants=${snapshot.plants.length} warehouses=${snapshot.warehouses.length} customer_orders=${seededOrders} regions=${regionIdByCode.size} prices=${priceRows.length} statuses=${statusRows.length} story_orders=${stories.orders}`,
+  `seed_ok products=${snapshot.products.length} categories=${categoryIdByOld.size} product_categories=${productCategoryRows.length} plants=${snapshot.plants.length} warehouses=${snapshot.warehouses.length} customer_orders=${seededOrders} regions=${regionIdByCode.size} prices=${priceRows.length} statuses=${statusRows.length} story_orders=${stories.orders}`,
 );
 
 /** Spread history changed_at monotonically after each document's created_at, at most ~2 days apart, never past now (deterministic). */

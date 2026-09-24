@@ -7,7 +7,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/01/03/223416/conversions/Force-1100-(6)-medium.webp",
       "dealer_price": 39950,
       "retail_price": 42990,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 17,
@@ -16,7 +20,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/19/191255/conversions/180-Cross-RX-medium.webp",
       "dealer_price": 3321,
       "retail_price": 33900,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 29,
@@ -25,7 +33,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/16/197015/conversions/Activator-280-RX-(19)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 36,
@@ -34,7 +46,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/04/203877/conversions/6825efde5c4d1620449154-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 46,
@@ -43,7 +59,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/19/191279/conversions/Hummer-320-RX-LTD-medium.webp",
       "dealer_price": 6557,
       "retail_price": 78900,
-      "plant_id": 12
+      "plant_id": 12,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 131,
@@ -52,7 +72,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/12/191383/conversions/Sharmax-Force-650-—-копия-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 1
+      "plant_id": 1,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 207,
@@ -61,7 +85,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/04/203871/conversions/Cross-E-200-(4)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        1,
+        38
+      ]
     },
     {
       "id": 2,
@@ -70,7 +98,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191296/conversions/6825ef08146ea335049195-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 23
+      "plant_id": 23,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 3,
@@ -79,7 +111,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191303/conversions/6825ef3629508319286321-(1)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 23
+      "plant_id": 23,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 4,
@@ -88,7 +124,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205018/conversions/200_pro-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 27
+      "plant_id": 27,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 5,
@@ -97,7 +136,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205044/conversions/Junior-250-(20)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 27
+      "plant_id": 27,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 6,
@@ -106,7 +148,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/19/205062/conversions/682f4bf95e3e7197477387-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 28
+      "plant_id": 28,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 9,
@@ -115,7 +160,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/21/205098/conversions/6826ed31be73e096857416-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 10,
@@ -124,7 +172,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/22/205107/conversions/69b0366638c32931032066-(1)-medium.webp",
       "dealer_price": 26055,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 11,
@@ -133,7 +184,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/14/203013/conversions/Sport-309-(2)-medium.webp",
       "dealer_price": 4398,
       "retail_price": 43900,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 12,
@@ -142,7 +197,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203129/conversions/682cba5b16b63445981055-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 14,
@@ -151,7 +210,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/13/15/219616/conversions/Power-Max-320-(38)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 18,
@@ -160,7 +223,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/13/17/219657/conversions/Expert-Pro-RXP-450-(5)-medium.webp",
       "dealer_price": 13400,
       "retail_price": null,
-      "plant_id": 42
+      "plant_id": 42,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 21,
@@ -169,7 +236,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/17/22/167548/conversions/6827442d38d25426040151-medium.webp",
       "dealer_price": 48500,
       "retail_price": null,
-      "plant_id": 25
+      "plant_id": 25,
+      "category_ids": [
+        5,
+        15
+      ]
     },
     {
       "id": 22,
@@ -178,7 +249,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2025/12/14/21/162355/conversions/6827446e7e4bf842911729-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 6
+      "plant_id": 6,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 23,
@@ -187,7 +262,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/17/204160/conversions/Tour-Enduro-300-Ultra-(22)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 7
+      "plant_id": 7,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 24,
@@ -196,7 +275,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/17/208117/conversions/FX-200-(10)-medium.webp",
       "dealer_price": null,
       "retail_price": 46900,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 25,
@@ -205,7 +288,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/22/204792/conversions/682748de90b7e098173401-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 26,
@@ -214,7 +301,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207690/conversions/FX-350-ultra-(3)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 30,
@@ -223,7 +314,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/02/25/14/175790/conversions/69299a86f36c8084011751-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 31,
@@ -232,7 +327,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/15/204436/conversions/RST-250-Latina-(8)-medium.webp",
       "dealer_price": 4248,
       "retail_price": 37900,
-      "plant_id": 16
+      "plant_id": 16,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 32,
@@ -241,7 +340,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/07/167553/conversions/682c9b1430cf9837319837-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 33,
@@ -250,7 +353,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/15/204442/conversions/1-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 34,
@@ -259,7 +366,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/12/167567/conversions/682c9b73ec327178111119_converted-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 35,
@@ -268,7 +379,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/09/218156/conversions/Custom-1000-RST-Roadster-(3)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 25
+      "plant_id": 25,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 37,
@@ -277,7 +392,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204687/conversions/1-(30)-medium.webp",
       "dealer_price": 4880,
       "retail_price": 41900,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 42,
@@ -286,7 +405,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207723/conversions/GP-401-Ultra-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 43,
@@ -295,7 +418,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/08/204635/conversions/682c9711e990e228619270-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 44,
@@ -304,7 +431,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/09/204647/conversions/GP-1100-Ultra-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 45,
@@ -313,7 +444,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208069/conversions/GL-102122-medium.webp",
       "dealer_price": 7120,
       "retail_price": null,
-      "plant_id": 25
+      "plant_id": 25,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 47,
@@ -322,7 +457,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/09/204316/conversions/682749a8e151e380172377-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 48,
@@ -331,7 +470,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/15/19/219953/conversions/GL-400-medium.webp",
       "dealer_price": 2878,
       "retail_price": 13790,
-      "plant_id": 6
+      "plant_id": 6,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 49,
@@ -340,7 +483,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208056/conversions/GL-570-Ult1ra-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 62,
@@ -349,7 +496,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207728/conversions/GL-770-Ultra-medium.webp",
       "dealer_price": 27058,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 109,
@@ -358,7 +509,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/12/204368/conversions/682c95e50d088313130977-medium.webp",
       "dealer_price": 34000,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 129,
@@ -367,7 +522,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/15/203644/conversions/POWER-MAX-301-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 130,
@@ -376,7 +535,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/17/203774/conversions/67dc316d75ee5976035250-(3)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 132,
@@ -385,7 +548,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/08/218141/conversions/69a9595f48396410292739-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        11
+      ]
     },
     {
       "id": 50,
@@ -394,7 +561,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/15/191246/conversions/130-Cross-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 51,
@@ -403,7 +574,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/02/22/191291/conversions/Raizer-250-Race-Cup-(6)-medium.webp",
       "dealer_price": 5350,
       "retail_price": null,
-      "plant_id": 12
+      "plant_id": 12,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 52,
@@ -412,7 +587,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207746/conversions/Force-Challenger-801-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 53,
@@ -421,7 +600,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/17/197037/conversions/Force-420-Cyber-(9)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 39
+      "plant_id": 39,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 54,
@@ -430,7 +613,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/14/191452/conversions/68f76dd9681a6202957510-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 55,
@@ -439,7 +626,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/17/205015/conversions/XForce-1100-Sport-X4-(17)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 29
+      "plant_id": 29,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 56,
@@ -448,7 +638,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/02/09/03/172240/conversions/XForce-1101-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 29
+      "plant_id": 29,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 57,
@@ -457,7 +650,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/09/202924/conversions/Sport-230-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 58,
@@ -466,7 +663,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/14/203035/conversions/Sport-310-(1)-medium.webp",
       "dealer_price": 4980,
       "retail_price": 47900,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        3
+      ]
     },
     {
       "id": 59,
@@ -475,7 +675,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/19/203094/conversions/Sport-300-Air-Ultimatum-(6)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 42
+      "plant_id": 42,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 60,
@@ -484,7 +688,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203143/conversions/Power-Max-300-Air-2029-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 61,
@@ -493,7 +701,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        3
+      ]
     },
     {
       "id": 63,
@@ -502,7 +713,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/05/203229/conversions/Expert-Pro-454-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 42
+      "plant_id": 42,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 64,
@@ -511,7 +726,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/04/203212/conversions/Expert-Pro-300-Air-(3)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 42
+      "plant_id": 42,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 65,
@@ -520,7 +739,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/19/203105/conversions/Sport-320-(15)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 3
+      "plant_id": 3,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 66,
@@ -529,7 +752,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/00/203169/conversions/Power-Max-322-(8)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 3
+      "plant_id": 3,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 67,
@@ -538,7 +765,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/10/203384/conversions/Sport-145-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 4
+      "plant_id": 4,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 68,
@@ -547,7 +778,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207761/conversions/Sport-190-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 4
+      "plant_id": 4,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 69,
@@ -556,7 +791,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/15/204149/conversions/Sport-145-Miami-(9)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 5
+      "plant_id": 5,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 70,
@@ -565,7 +804,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/12/203490/conversions/Sport-190-Miami-(6)-medium.webp",
       "dealer_price": 3130,
       "retail_price": null,
-      "plant_id": 5
+      "plant_id": 5,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 71,
@@ -574,7 +817,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/11/203427/conversions/Power-Max-145-MIAMI-(6)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 5
+      "plant_id": 5,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 72,
@@ -583,7 +830,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/18/203823/conversions/Power-Max-190-MIAMI-(4)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 5
+      "plant_id": 5,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 73,
@@ -592,7 +843,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/13/203562/conversions/682f37799436e829910344-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 74,
@@ -601,7 +856,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/07/203259/conversions/130-Mini-(1)-medium.webp",
       "dealer_price": 1931,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 75,
@@ -610,7 +869,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/18/204188/conversions/Enduro-125-EU-(13)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 7
+      "plant_id": 7,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 76,
@@ -619,7 +882,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218088/conversions/Enduro-250-Latina-medium.webp",
       "dealer_price": 4042,
       "retail_price": null,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 77,
@@ -628,7 +895,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218102/conversions/Enduro-351-(13)-medium.webp",
       "dealer_price": 6150,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 78,
@@ -637,7 +908,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204732/conversions/68fb9d7fae8b9320909486-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 79,
@@ -646,7 +921,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207712/conversions/Moped-152-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 80,
@@ -655,7 +934,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204751/conversions/Vespito-150-medium.webp",
       "dealer_price": 3451,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 81,
@@ -664,7 +947,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/20/204759/conversions/Vespito-126-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 11
+      "plant_id": 11,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 82,
@@ -673,7 +960,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/21/204783/conversions/69de5432ee8b4168704633-(1)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 11
+      "plant_id": 11,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 83,
@@ -682,7 +973,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/23/204803/conversions/FX-250-medium.webp",
       "dealer_price": 13178,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 84,
@@ -691,7 +986,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207697/conversions/FX-300-EFI-(8)-medium.webp",
       "dealer_price": 10200,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 85,
@@ -700,7 +999,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/17/208124/conversions/FX-441-EU-(29)-medium.webp",
       "dealer_price": 15120,
       "retail_price": null,
-      "plant_id": 14
+      "plant_id": 14,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 86,
@@ -709,7 +1012,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/20/204769/conversions/Phantom-125-(33)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 15
+      "plant_id": 15,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 87,
@@ -718,7 +1025,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/19/204515/conversions/RST-MINI-BANANA-140-(5)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 17
+      "plant_id": 17,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 88,
@@ -727,7 +1038,10 @@
       "image_url": null,
       "dealer_price": 4113,
       "retail_price": null,
-      "plant_id": 16
+      "plant_id": 16,
+      "category_ids": [
+        9
+      ]
     },
     {
       "id": 89,
@@ -736,7 +1050,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/17/204478/conversions/RST-501-Zooma-(2)-—-копия-medium.webp",
       "dealer_price": 24850,
       "retail_price": 121900,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 90,
@@ -745,7 +1063,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/14/204418/conversions/RST-501-ULTRA-(30)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 91,
@@ -754,7 +1076,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/17/204466/conversions/Bandit-502-(1)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 14
+      "plant_id": 14,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 92,
@@ -763,7 +1089,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/13/204413/conversions/RST-351-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 14
+      "plant_id": 14,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 93,
@@ -772,7 +1102,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/14/208018/conversions/RST-125-EU-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 10
+      "plant_id": 10,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 94,
@@ -781,7 +1115,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/08/204629/conversions/GP-501-L-(24)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 14
+      "plant_id": 14,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 95,
@@ -790,7 +1128,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/06/204546/conversions/691f6ee98a643412876997-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 96,
@@ -799,7 +1141,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/13/204680/conversions/Frame-22-medium.webp",
       "dealer_price": 8075,
       "retail_price": null,
-      "plant_id": 19
+      "plant_id": 19,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 97,
@@ -808,7 +1154,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/04/207658/conversions/_E-GP-510-(1)-medium.webp",
       "dealer_price": 19000,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        35
+      ]
     },
     {
       "id": 98,
@@ -817,7 +1167,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/09/204654/conversions/691f6ee98a643412876997-medium.webp",
       "dealer_price": 6880,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 99,
@@ -826,7 +1180,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208080/conversions/GP-1104-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 100,
@@ -835,7 +1193,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208084/conversions/GP-321-S-(7)-medium.webp",
       "dealer_price": 7489,
       "retail_price": null,
-      "plant_id": 20
+      "plant_id": 20,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 101,
@@ -844,7 +1206,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/15/208096/conversions/GP-410-(7)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 21
+      "plant_id": 21,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 102,
@@ -853,7 +1219,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/07/204603/conversions/GP-125-EU-(21)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 21
+      "plant_id": 21,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 103,
@@ -862,7 +1232,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/05/204250/conversions/RR-771-Victoria-(14)-medium.webp",
       "dealer_price": 21300,
       "retail_price": 179900,
-      "plant_id": 22
+      "plant_id": 22,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 104,
@@ -871,7 +1245,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/19/167597/conversions/6967b9aa54ec2155133016_converted-medium.webp",
       "dealer_price": 16468,
       "retail_price": 138900,
-      "plant_id": 24
+      "plant_id": 24,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 105,
@@ -880,7 +1258,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/04/204217/conversions/691f6fcfa3875256201900-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 106,
@@ -889,7 +1271,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        11
+      ]
     },
     {
       "id": 107,
@@ -898,7 +1283,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        11
+      ]
     },
     {
       "id": 108,
@@ -907,7 +1295,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/06/204278/conversions/CR-125-EU-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 7
+      "plant_id": 7,
+      "category_ids": [
+        11,
+        39
+      ]
     },
     {
       "id": 134,
@@ -916,7 +1308,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/15/17/219938/conversions/GL-351-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 135,
@@ -925,7 +1321,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/08/204303/conversions/GL-601-Ultra-(1)-medium.webp",
       "dealer_price": 23500,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 136,
@@ -934,7 +1334,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/12/09/204315/conversions/691f6d03939a1162939527-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 137,
@@ -943,7 +1347,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/08/204859/conversions/Street-Bike-175-ME-Dubai-(8)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 16
+      "plant_id": 16,
+      "category_ids": [
+        5,
+        13
+      ]
     },
     {
       "id": 138,
@@ -952,7 +1360,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/06/204838/conversions/1-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 18
+      "plant_id": 18,
+      "category_ids": [
+        5,
+        13
+      ]
     },
     {
       "id": 139,
@@ -961,7 +1373,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/17/20/167543/conversions/682c9c37dabd0256125411-medium.webp",
       "dealer_price": 45000,
       "retail_price": 318900,
-      "plant_id": 24
+      "plant_id": 24,
+      "category_ids": [
+        5,
+        15
+      ]
     },
     {
       "id": 140,
@@ -970,7 +1386,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207677/conversions/Spyder-1115-(1)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 24
+      "plant_id": 24,
+      "category_ids": [
+        5,
+        16
+      ]
     },
     {
       "id": 141,
@@ -979,7 +1399,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/08/204890/conversions/69202fde73525836429749-medium.webp",
       "dealer_price": 10080,
       "retail_price": null,
-      "plant_id": 24
+      "plant_id": 24,
+      "category_ids": [
+        5,
+        16
+      ]
     },
     {
       "id": 142,
@@ -988,7 +1412,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/22/205120/conversions/Golf-Cart-5000-6-Seater-Pro-(43)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 143,
@@ -997,7 +1424,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/11/06/218669/conversions/Country-Club-4-Seater-(5)-medium.webp",
       "dealer_price": 21960,
       "retail_price": null,
-      "plant_id": 33
+      "plant_id": 33,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 144,
@@ -1006,7 +1436,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205127/conversions/Country-Club-2+2-(5)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 33
+      "plant_id": 33,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 145,
@@ -1015,7 +1448,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205157/conversions/Country-Club-6-Seater-(20)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 33
+      "plant_id": 33,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 146,
@@ -1024,7 +1460,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/23/205139/conversions/Country-Club-4-Seater-(6)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 33
+      "plant_id": 33,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 7,
@@ -1033,7 +1472,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2025/12/14/18/162343/conversions/1-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 3
+      "plant_id": 3,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 8,
@@ -1042,7 +1485,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2025/12/15/00/162358/conversions/682f372dc216f574983584-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 13,
@@ -1051,7 +1498,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/01/18/15/167576/conversions/682c98ad9fa59143257323-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 21
+      "plant_id": 21,
+      "category_ids": [
+        5,
+        11
+      ]
     },
     {
       "id": 15,
@@ -1060,7 +1511,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/19/204195/conversions/Frame-21-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 16,
@@ -1069,7 +1524,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/02/08/19/172191/conversions/68d3c35c8ca4a126124719-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 16
+      "plant_id": 16,
+      "category_ids": [
+        5,
+        13
+      ]
     },
     {
       "id": 19,
@@ -1078,7 +1537,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/12/204994/conversions/ACE-1001-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        36,
+        40
+      ]
     },
     {
       "id": 20,
@@ -1087,7 +1550,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/08/14/202658/conversions/Rage-720-LTD-(18)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 27,
@@ -1096,7 +1563,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/14/11/204953/conversions/SN-380-(6)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 17
+      "plant_id": 17,
+      "category_ids": [
+        36,
+        40
+      ]
     },
     {
       "id": 28,
@@ -1105,7 +1576,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/04/207642/conversions/SN-500-(10)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 17
+      "plant_id": 17,
+      "category_ids": [
+        36,
+        40
+      ]
     },
     {
       "id": 38,
@@ -1114,7 +1589,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/25/07/197155/conversions/Activator-300-RX-(16)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        1,
+        25
+      ]
     },
     {
       "id": 39,
@@ -1123,7 +1602,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/22/19/197050/conversions/Force-425-Cyber-(7)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 39
+      "plant_id": 39,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 40,
@@ -1132,7 +1615,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/13/191426/conversions/69206379cc218670595640-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 41,
@@ -1141,7 +1628,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/05/03/16/191478/conversions/113-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 110,
@@ -1150,7 +1641,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/09/10/202934/conversions/Sport-240-1-(1)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 111,
@@ -1159,7 +1654,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/14/203611/conversions/682f37799436e829910344-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 112,
@@ -1168,7 +1667,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/14/203619/conversions/682f37799436e829910344-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 113,
@@ -1177,7 +1680,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/16/203749/conversions/POWER-MAX-301-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 114,
@@ -1186,7 +1693,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/16/203754/conversions/POWER-MAX-301-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 115,
@@ -1195,7 +1706,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/08/21/218058/conversions/68dd29a956fbb316574661-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 116,
@@ -1204,7 +1719,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/10/17/203784/conversions/67dc316d75ee5976035250-(3)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 2
+      "plant_id": 2,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 117,
@@ -1213,7 +1732,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/06/207770/conversions/Force-1000-Ranger-(7)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 118,
@@ -1222,7 +1745,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/11/17/204168/conversions/Tour-Enduro-300-Ultra-(22)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 7
+      "plant_id": 7,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 119,
@@ -1231,7 +1758,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/07/218117/conversions/RR-1005-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 120,
@@ -1240,7 +1771,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/08/218130/conversions/RR-801-Ultra-(11)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 121,
@@ -1249,7 +1784,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204696/conversions/Eurotank-133-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 15
+      "plant_id": 15,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 122,
@@ -1258,7 +1797,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/17/204716/conversions/Eurotank-133-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 15
+      "plant_id": 15,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 123,
@@ -1267,7 +1810,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/13/19/204731/conversions/JET-X-125-(18)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 15
+      "plant_id": 15,
+      "category_ids": [
+        5,
+        7
+      ]
     },
     {
       "id": 124,
@@ -1276,7 +1823,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/17/00/220081/conversions/SN-282-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        36,
+        40
+      ]
     },
     {
       "id": 125,
@@ -1285,7 +1836,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/11/08/218704/conversions/SN-500-(16)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        41
+      ]
     },
     {
       "id": 126,
@@ -1294,7 +1848,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        41
+      ]
     },
     {
       "id": 127,
@@ -1303,7 +1860,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207667/conversions/_E-GP-511-medium.webp",
       "dealer_price": 19000,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        35
+      ]
     },
     {
       "id": 128,
@@ -1312,7 +1873,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/06/26/05/207685/conversions/RST-250-(14)-medium.webp",
       "dealer_price": 4248,
       "retail_price": null,
-      "plant_id": 16
+      "plant_id": 16,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 133,
@@ -1321,7 +1886,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/10/18/218608/conversions/6826ed8738853947330495-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 34
+      "plant_id": 34,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 147,
@@ -1330,7 +1898,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/04/07/216674/conversions/RR-1390-Black-Star-(19)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 6
+      "plant_id": 6,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 148,
@@ -1339,7 +1911,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/04/09/216731/conversions/FX-125-ADV-EU-(16)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 15
+      "plant_id": 15,
+      "category_ids": [
+        1,
+        7
+      ]
     },
     {
       "id": 149,
@@ -1348,7 +1924,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/06/13/217705/conversions/Force-425-Cyber-(7)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 150,
@@ -1357,7 +1937,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/08/10/217964/conversions/6a75bb646fb21138579033-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 151,
@@ -1366,7 +1950,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218168/conversions/RST-511-EU-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 18
+      "plant_id": 18,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 152,
@@ -1375,7 +1963,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218172/conversions/RST-MINI-BANANA-140-(5)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 17
+      "plant_id": 17,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 153,
@@ -1384,7 +1976,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/09/12/218180/conversions/RST-Mini-Moon-200-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 10
+      "plant_id": 10,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 154,
@@ -1393,7 +1989,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 28
+      "plant_id": 28,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 155,
@@ -1402,7 +2001,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 24
+      "plant_id": 24,
+      "category_ids": [
+        5,
+        16
+      ]
     },
     {
       "id": 156,
@@ -1411,7 +2014,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222201/conversions/PIM_TEST_bike_transparent-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 8
+      "plant_id": 8,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 157,
@@ -1420,7 +2027,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 158,
@@ -1429,7 +2040,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/07/222129/conversions/PIM_TEST_bike_transparent-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 14
+      "plant_id": 14,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 159,
@@ -1438,7 +2053,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        13
+      ]
     },
     {
       "id": 160,
@@ -1447,7 +2066,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 11
+      "plant_id": 11,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 161,
@@ -1456,7 +2079,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 162,
@@ -1465,7 +2092,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 163,
@@ -1474,7 +2105,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 164,
@@ -1483,7 +2118,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        13
+      ]
     },
     {
       "id": 165,
@@ -1492,7 +2131,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        13
+      ]
     },
     {
       "id": 166,
@@ -1501,7 +2144,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 37
+      "plant_id": 37,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 167,
@@ -1510,7 +2157,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 36
+      "plant_id": 36,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 168,
@@ -1519,7 +2169,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        16
+      ]
     },
     {
       "id": 169,
@@ -1528,7 +2182,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 170,
@@ -1537,7 +2195,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 38
+      "plant_id": 38,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 171,
@@ -1546,7 +2208,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 3
+      "plant_id": 3,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 172,
@@ -1555,7 +2221,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 11
+      "plant_id": 11,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 173,
@@ -1564,7 +2234,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/06/13/217705/conversions/Force-425-Cyber-(7)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 39
+      "plant_id": 39,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 174,
@@ -1573,7 +2247,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/24/02/221837/conversions/Force-450-black-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 39
+      "plant_id": 39,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 175,
@@ -1582,7 +2260,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/24/02/221843/conversions/Force-450-red-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 39
+      "plant_id": 39,
+      "category_ids": [
+        1,
+        37
+      ]
     },
     {
       "id": 176,
@@ -1591,7 +2273,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/10/222192/conversions/PIM_TEST_bike_transparent-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 18
+      "plant_id": 18,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 177,
@@ -1600,7 +2286,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 18
+      "plant_id": 18,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 178,
@@ -1609,7 +2299,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/01/222084/conversions/1-(34)-Photoroom-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 17
+      "plant_id": 17,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 179,
@@ -1618,7 +2311,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 180,
@@ -1627,7 +2324,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 14
+      "plant_id": 14,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 181,
@@ -1636,7 +2337,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5
+      ]
     },
     {
       "id": 182,
@@ -1645,7 +2349,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222198/conversions/PIM_TEST_bike_transparent-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 10
+      "plant_id": 10,
+      "category_ids": [
+        5,
+        12
+      ]
     },
     {
       "id": 183,
@@ -1654,7 +2362,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222203/conversions/PIM_TEST_bike_transparent-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 9
+      "plant_id": 9,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 184,
@@ -1663,7 +2375,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/25/11/222209/conversions/PIM_TEST_bike_transparent-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 10
+      "plant_id": 10,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 185,
@@ -1672,7 +2388,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 36
+      "plant_id": 36,
+      "category_ids": [
+        5,
+        6
+      ]
     },
     {
       "id": 186,
@@ -1681,7 +2401,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/08/27/03/222774/conversions/PIM_TEST_bike_transparent-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 10
+      "plant_id": 10,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 187,
@@ -1690,7 +2414,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/15/09/226355/conversions/Eurasia-320-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 40
+      "plant_id": 40,
+      "category_ids": [
+        5,
+        11
+      ]
     },
     {
       "id": 188,
@@ -1699,7 +2427,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/15/09/226380/conversions/Junior-300-Pro-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        18
+      ]
     },
     {
       "id": 189,
@@ -1708,7 +2439,10 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/14/12/226205/conversions/Force-525-Supercharge-(7)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 39
+      "plant_id": 39,
+      "category_ids": [
+        1
+      ]
     },
     {
       "id": 190,
@@ -1717,7 +2451,11 @@
       "image_url": "https://my.globaldrive.ru/s3/media/2026/09/14/16/226272/conversions/Sport-300-air-black-edition-(15)-medium.webp",
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": 41
+      "plant_id": 41,
+      "category_ids": [
+        2,
+        3
+      ]
     },
     {
       "id": 191,
@@ -1726,7 +2464,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 192,
@@ -1735,7 +2477,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 193,
@@ -1744,7 +2490,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 194,
@@ -1753,7 +2503,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        9
+      ]
     },
     {
       "id": 195,
@@ -1762,7 +2516,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        10
+      ]
     },
     {
       "id": 196,
@@ -1771,7 +2529,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        39
+      ]
     },
     {
       "id": 197,
@@ -1780,7 +2542,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        13
+      ]
     },
     {
       "id": 198,
@@ -1789,7 +2555,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 199,
@@ -1798,7 +2567,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        19
+      ]
     },
     {
       "id": 200,
@@ -1807,7 +2579,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        38
+      ]
     },
     {
       "id": 201,
@@ -1816,7 +2591,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        38
+      ]
     },
     {
       "id": 202,
@@ -1825,7 +2603,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        35
+      ]
     },
     {
       "id": 203,
@@ -1834,7 +2615,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        2,
+        4
+      ]
     },
     {
       "id": 204,
@@ -1843,7 +2628,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        8
+      ]
     },
     {
       "id": 205,
@@ -1852,7 +2641,10 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5
+      ]
     },
     {
       "id": 206,
@@ -1861,7 +2653,11 @@
       "image_url": null,
       "dealer_price": null,
       "retail_price": null,
-      "plant_id": null
+      "plant_id": null,
+      "category_ids": [
+        5,
+        10
+      ]
     }
   ],
   "warehouses": [
@@ -3493,6 +4289,170 @@
       "order_id": 48,
       "product_id": 11,
       "quantity": 50
+    }
+  ],
+  "categories": [
+    {
+      "id": 41,
+      "parent_id": null,
+      "code": "pim-41",
+      "name": "Personal Watercraft"
+    },
+    {
+      "id": 1,
+      "parent_id": null,
+      "code": "pim-1",
+      "name": "ATV"
+    },
+    {
+      "id": 2,
+      "parent_id": null,
+      "code": "pim-2",
+      "name": "Off Road"
+    },
+    {
+      "id": 5,
+      "parent_id": null,
+      "code": "pim-5",
+      "name": "On Road"
+    },
+    {
+      "id": 18,
+      "parent_id": null,
+      "code": "pim-18",
+      "name": "UTV"
+    },
+    {
+      "id": 19,
+      "parent_id": null,
+      "code": "pim-19",
+      "name": "Golf Cart"
+    },
+    {
+      "id": 36,
+      "parent_id": null,
+      "code": "pim-36",
+      "name": "Snowmobiles"
+    },
+    {
+      "id": 38,
+      "parent_id": 1,
+      "code": "pim-38",
+      "name": "Electro"
+    },
+    {
+      "id": 25,
+      "parent_id": 1,
+      "code": "pim-25",
+      "name": "4x2"
+    },
+    {
+      "id": 37,
+      "parent_id": 1,
+      "code": "pim-37",
+      "name": "4x4"
+    },
+    {
+      "id": 3,
+      "parent_id": 2,
+      "code": "pim-3",
+      "name": "Enduro"
+    },
+    {
+      "id": 4,
+      "parent_id": 2,
+      "code": "pim-4",
+      "name": "Pitbike"
+    },
+    {
+      "id": 39,
+      "parent_id": 5,
+      "code": "pim-39",
+      "name": "Cruiser"
+    },
+    {
+      "id": 6,
+      "parent_id": 5,
+      "code": "pim-6",
+      "name": "Enduro Travel"
+    },
+    {
+      "id": 7,
+      "parent_id": 5,
+      "code": "pim-7",
+      "name": "Scooter"
+    },
+    {
+      "id": 8,
+      "parent_id": 5,
+      "code": "pim-8",
+      "name": "Maxi Scooter"
+    },
+    {
+      "id": 9,
+      "parent_id": 5,
+      "code": "pim-9",
+      "name": "Naked Bike"
+    },
+    {
+      "id": 10,
+      "parent_id": 5,
+      "code": "pim-10",
+      "name": "Super Sport"
+    },
+    {
+      "id": 11,
+      "parent_id": 5,
+      "code": "pim-11",
+      "name": "Road Bike"
+    },
+    {
+      "id": 12,
+      "parent_id": 5,
+      "code": "pim-12",
+      "name": "Touring Bike"
+    },
+    {
+      "id": 13,
+      "parent_id": 5,
+      "code": "pim-13",
+      "name": "Street Bike"
+    },
+    {
+      "id": 14,
+      "parent_id": 5,
+      "code": "pim-14",
+      "name": "Sport Travel"
+    },
+    {
+      "id": 15,
+      "parent_id": 5,
+      "code": "pim-15",
+      "name": "Custom Bike"
+    },
+    {
+      "id": 16,
+      "parent_id": 5,
+      "code": "pim-16",
+      "name": "Tricycle"
+    },
+    {
+      "id": 17,
+      "parent_id": 5,
+      "code": "pim-17",
+      "name": "Mini Bike"
+    },
+    {
+      "id": 35,
+      "parent_id": 5,
+      "code": "pim-35",
+      "name": "Electro"
+    },
+    {
+      "id": 40,
+      "parent_id": 36,
+      "code": "pim-40",
+      "name": "Utility"
     }
   ]
 }

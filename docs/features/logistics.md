@@ -82,7 +82,7 @@ Seed после историй раскладывает `changed_at` монот�
 
 ## Каталог и цены
 
-`store_product` / `store_product_variant`; цены `store_product_price` (purchase global; dealer/retail regional) + `store_currency` / `store_region_group`. Soft-delete `deleted_at` на справочниках.
+`store_product` / `store_product_variant`; категории `store_category` (дерево) + `store_product_category` — снимок каталога техники из PIM Корпортала в `scripts/data/logistics-demo.json` (`categories`, `category_ids` у товара; привязки явные, как в PIM: товар бывает и в корневой, и в дочерней категории). Цены `store_product_price` (purchase global; dealer/retail regional) + `store_currency` / `store_region_group`. Soft-delete `deleted_at` на справочниках.
 
 ## Бэкенд
 
