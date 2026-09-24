@@ -194,9 +194,6 @@ export const projectCancelGuidance = (facts: CancelGuidanceFacts): CancelGuidanc
   }
 
   if (facts.type === "reservation") {
-    if (facts.status !== "posted") {
-      return hiddenGuidance(facts.id);
-    }
     const direction = facts.reservationDirection ?? "reserve";
     const blockedReason = reservationBlockedReason(facts);
     return withCommon({
@@ -393,7 +390,7 @@ export const cancelGuidanceFactsFromSnapshot = (
     return {
       type: "reservation",
       id: doc.id,
-      status: doc.status,
+      status: "posted",
       reservationDirection: direction,
       availableQuantity: availability.quantity,
       reservedQuantity: availability.reservedQuantity,

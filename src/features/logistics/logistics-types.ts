@@ -76,8 +76,6 @@ export type ReservationOperation = ReservationDirection;
 
 export const RESERVATION_ORIGINS = ["manual", "customer_order_close", "production_order_close"] as const;
 export type ReservationOrigin = (typeof RESERVATION_ORIGINS)[number];
-export const RESERVATION_STATUSES = ["draft", "posted"] as const;
-export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
 
 export const RESERVATION_LOCATION_KINDS = ["warehouse", "production_order", "transfer"] as const;
 export type ReservationLocationType = (typeof RESERVATION_LOCATION_KINDS)[number];
@@ -254,12 +252,11 @@ export type Reservation = {
   ownerId: string;
   toOwnerType: OwnerType | null;
   toOwnerId: string | null;
-  postedAt: string | null;
+  postedAt: string;
   creationSource: ReservationOrigin;
   description: string;
   createdAt: string;
   createdBy: string;
-  status: "draft" | "posted";
   origin: ReservationOrigin;
   note: string;
 };

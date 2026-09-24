@@ -466,12 +466,11 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       ownerId: str(row.owner_id),
       toOwnerType: dest.ownerType,
       toOwnerId: dest.ownerId,
-      postedAt: dateOrNull(row.posted_at),
+      postedAt: dateOrNull(row.posted_at) ?? doc.created_at,
       creationSource: str(row.creation_source) as Reservation["creationSource"],
       description: doc.description,
       createdAt: doc.created_at,
       createdBy: doc.created_by,
-      status: row.posted_at ? "posted" : "draft",
       origin: str(row.creation_source) as Reservation["origin"],
       note: doc.description,
     };
@@ -936,8 +935,6 @@ export const loadReservationList = () =>
       id: str(row.id),
       sequenceNumber: str(row.sequenceNumber),
       number: str(row.number),
-      status: str(row.status) as ReservationListRow["status"],
-      postedAt: dateOrNull(row.postedAt),
       createdAt: str(row.createdAt),
       description: row.description ? str(row.description) : "",
       creationSource: str(row.creationSource ?? "manual"),
@@ -983,8 +980,6 @@ export const loadOutputCalendarPage = async () => {
   return mapOutputCalendarPage(data);
 };
 
-export const postReservation = (id: string) => rpc("store_post_reservation", { p_id: id });
-
 export type ReservationLineInput = {
   productId: string;
   quantity: number;
@@ -1018,21 +1013,6 @@ const reservationRpcArgs = async (args: {
   };
 };
 
-export const createReservationDraft = async (args: {
-  locationType: ReservationLocationType;
-  locationId: string;
-  toOwnerType?: OwnerType | null;
-  toOwnerId?: string | null;
-  note?: string;
-  lines: ReservationLineInput[];
-}) => {
-  const created = await rpcJson<{ id: number | string }>(
-    "store_create_reservation_draft",
-    await reservationRpcArgs(args),
-  );
-  return String(created.id);
-};
-
 export const createAndPostReservation = async (args: {
   locationType: ReservationLocationType;
   locationId: string;
@@ -1046,18 +1026,6 @@ export const createAndPostReservation = async (args: {
     await reservationRpcArgs(args),
   );
   return String(created.id);
-};
-
-export const addReservationLine = async (args: ReservationLineInput & { reservationId: string }) => {
-  const fromOwnerId = await resolveOwnerId(args.fromOwnerType ?? null, args.fromOwnerId ?? null);
-  const data = await rpcJson<number | string>("store_add_document_product_line", {
-    p_document_id: Number(args.reservationId),
-    p_product_variant_id: Number(args.productId),
-    p_quantity: args.quantity,
-    p_from_owner_id: Number(fromOwnerId),
-    p_to_owner_id: null,
-  });
-  return String(data);
 };
 
 export const completeOutput = (id: string) => rpc("store_complete_production_output", { p_id: id });

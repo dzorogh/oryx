@@ -50,11 +50,6 @@ const uniqueRelated = (items: RelatedDocumentItem[]): RelatedDocumentItem[] => {
   });
 };
 
-const activeReservation = (snapshot: LogisticsSnapshot, reservationId: string): boolean => {
-  const status = snapshot.reservations.find((item) => item.id === reservationId)?.status;
-  return status === "draft" || status === "posted";
-};
-
 export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
   snapshot.reservations
     .filter((item) => reservationTouchesOrder(item, snapshot.reservationLines, customerOrderId))
@@ -65,8 +60,8 @@ export const relatedReservations = (snapshot: LogisticsSnapshot, customerOrderId
         id: item.id,
         href: `/store/logistics/reservations/${publicDocumentParam(item)}`,
         label: item.number,
-        meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
-        statusKey: item.status,
+        meta: RESERVATION_DIRECTION_LABELS[direction],
+        statusKey: "posted",
         operation: direction,
       };
     });
@@ -109,7 +104,7 @@ export const relatedTransfersForOrder = (snapshot: LogisticsSnapshot, customerOr
     }
   }
   for (const reservation of snapshot.reservations) {
-    if (reservation.locationType !== "transfer" || !activeReservation(snapshot, reservation.id)) {
+    if (reservation.locationType !== "transfer") {
       continue;
     }
     if (reservationTouchesOrder(reservation, snapshot.reservationLines, customerOrderId)) {
@@ -298,8 +293,8 @@ export const relatedReservationsForRegion = (
         id: item.id,
         href: `/store/logistics/reservations/${publicDocumentParam(item)}`,
         label: item.number,
-        meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
-        statusKey: item.status,
+        meta: RESERVATION_DIRECTION_LABELS[direction],
+        statusKey: "posted",
         operation: direction,
       };
     });
@@ -325,8 +320,8 @@ export const relatedReservationsForProduction = (
         id: item.id,
         href: `/store/logistics/reservations/${publicDocumentParam(item)}`,
         label: item.number,
-        meta: `${statusMeta(item.status)} · ${RESERVATION_DIRECTION_LABELS[direction]}`,
-        statusKey: item.status,
+        meta: RESERVATION_DIRECTION_LABELS[direction],
+        statusKey: "posted",
         operation: direction,
       };
     });

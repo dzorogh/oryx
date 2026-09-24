@@ -6,7 +6,6 @@ import type {
   ProductionStatus,
   ReservationDirection,
   ReservationLocationType,
-  ReservationStatus,
   ShipmentDirection,
   TransferStatus,
 } from "@/features/logistics/logistics-types";
@@ -120,8 +119,6 @@ export type ReservationListRow = {
   id: string;
   sequenceNumber: string;
   number: string;
-  status: ReservationStatus;
-  postedAt: string | null;
   createdAt: string;
   description: string;
   creationSource: string;

@@ -63,15 +63,14 @@ List-RPC дополняются полями `createdBy` (имя автора) �
 Вкладка «История» строится на клиенте (`buildDocumentTimeline`):
 
 - документы со статусом — снимки `store_document_history` (одна запись = один снимок; поля «было → стало»);
-- отгрузка / корректировка — «Создан и проведён»;
-- резерв — «Создан» (+ «Проведён» при `posted_at`);
+- отгрузка / корректировка / резерв — «Создан и проведён»;
 - «Завершён» в шапке — `changed_at` первого снимка со статусом `done` / `closed` / `delivered`.
 
 Seed после историй раскладывает `changed_at` монотонно от `created_at` документа.
 
 ## Lifecycle
 
-Единый словарь: `draft` | `in_progress` | `done` | `cancelled` на `store_document.status` для customer order, production order, transfer, production output. Reservation / shipment / adjustment — без status (reservation: `posted_at`; shipment/adjustment — create-and-post).
+Единый словарь: `draft` | `in_progress` | `done` | `cancelled` на `store_document.status` для customer order, production order, transfer, production output. Reservation / shipment / adjustment — без status и черновиков: только create-and-post, строки после создания не меняются. У резерва `posted_at` всегда заполнен.
 
 История: единственный trigger на `store_document` → `store_document_history`.
 

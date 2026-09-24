@@ -52,7 +52,7 @@ export type DocumentTimelineEntry = {
 export type DocumentTimelineInput = {
   documentId: string;
   /** When set, history is synthesized for documents without a status cycle. */
-  mode?: "lifecycle" | "posted" | "reservation";
+  mode?: "lifecycle" | "posted";
   createdAt: string;
   createdBy?: string | null;
   postedAt?: string | null;
@@ -229,38 +229,10 @@ const postedTimeline = (
   },
 ];
 
-const reservationTimeline = (
-  snapshot: LogisticsSnapshot,
-  input: DocumentTimelineInput,
-): DocumentTimelineEntry[] => {
-  const entries: DocumentTimelineEntry[] = [
-    {
-      id: `${input.documentId}:created`,
-      kind: "create",
-      title: "Создан",
-      at: input.createdAt,
-      by: userName(snapshot, input.createdBy),
-      statusKey: "draft",
-    },
-  ];
-  if (input.postedAt) {
-    entries.push({
-      id: `${input.documentId}:posted`,
-      kind: "post",
-      title: "Проведён",
-      at: input.postedAt,
-      by: userName(snapshot, input.createdBy),
-      detail: input.postedDetail ?? null,
-      statusKey: "posted",
-    });
-  }
-  return entries;
-};
-
 /**
  * Build the universal document history timeline.
  * Lifecycle documents use `documentHistory` snapshots (one entry per save).
- * Posted / reservation documents synthesize client-side events without DB changes.
+ * Posted documents synthesize a client-side event without DB changes.
  */
 export const buildDocumentTimeline = (
   snapshot: LogisticsSnapshot,
@@ -269,9 +241,6 @@ export const buildDocumentTimeline = (
   const mode = input.mode ?? "lifecycle";
   if (mode === "posted") {
     return postedTimeline(snapshot, input);
-  }
-  if (mode === "reservation") {
-    return reservationTimeline(snapshot, input);
   }
   return lifecycleTimeline(snapshot, input);
 };

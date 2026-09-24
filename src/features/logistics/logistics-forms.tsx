@@ -10,7 +10,6 @@ import {
   createAndPostAdjustment,
   createAndPostReservation,
   createAndPostShipment,
-  createReservationDraft,
 } from "@/features/logistics/logistics-api";
 import {
   assertUniqueReturnDestinations,
@@ -73,15 +72,12 @@ import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
 import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
 
-type FormMode = "hub" | "list";
-
 type SharedFormProps = {
   snapshot: LogisticsSnapshot;
   balances: StockBalance[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reload: () => Promise<void>;
-  mode?: FormMode;
   /** Form data (`store_form_context`) is still loading. */
   loading?: boolean;
   loadError?: string | null;
@@ -95,26 +91,15 @@ const parsePlaceKey = (value: string): { locationType: ReservationLocationType; 
 };
 
 const FormActions = ({
-  mode,
-  onDraft,
   onPost,
   canSubmit,
-  draftLabel = "Сохранить черновик",
   postLabel = "Провести",
 }: {
-  mode: FormMode;
-  onDraft?: () => void;
   onPost: () => void;
   canSubmit: boolean;
-  draftLabel?: string;
   postLabel?: string;
 }) => (
   <div className="flex flex-wrap gap-2">
-    {mode === "list" && onDraft ? (
-      <Button type="button" variant="outline" disabled={!canSubmit} onClick={onDraft}>
-        {draftLabel}
-      </Button>
-    ) : null}
     <Button type="button" disabled={!canSubmit} onClick={onPost}>
       {postLabel}
     </Button>
@@ -327,7 +312,6 @@ export const ReservationForm = ({
   open,
   onOpenChange,
   reload,
-  mode = "list",
   preset,
   loading,
   loadError,
@@ -460,7 +444,7 @@ export const ReservationForm = ({
     ]);
   };
 
-  const submit = async (post: boolean) => {
+  const submit = async () => {
     if (!destReady || !locationType || !locationId || validLines.length === 0) {
       toast.error("Выберите назначение, место и хотя бы одну строку товара");
       return;
@@ -520,8 +504,8 @@ export const ReservationForm = ({
       lines: payloadLines,
     };
     const ok = await runLogisticsAction(
-      () => (post ? createAndPostReservation(payload) : createReservationDraft(payload)),
-      post ? `${RESERVATION_DIRECTION_LABELS[derivedDirection]} проведён` : "Черновик резерва создан",
+      () => createAndPostReservation(payload),
+      `${RESERVATION_DIRECTION_LABELS[derivedDirection]} проведён`,
       reload,
     );
     if (ok) {
@@ -609,10 +593,8 @@ export const ReservationForm = ({
           <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Необязательно" />
         </label>
         <FormActions
-          mode={mode}
           canSubmit={Boolean(destReady && location && linesReady)}
-          onDraft={() => void submit(false)}
-          onPost={() => void submit(true)}
+          onPost={() => void submit()}
           postLabel={RESERVATION_DIRECTION_LABELS[derivedDirection]}
         />
       </div>
@@ -1553,7 +1535,6 @@ export const AdjustmentForm = ({
           />
         </label>
         <FormActions
-          mode="hub"
           canSubmit={canSubmit}
           onPost={() => void submit()}
           postLabel="Провести"

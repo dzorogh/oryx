@@ -795,9 +795,7 @@ export const CustomerOrderDetailPage = () => {
         balances={balances}
         open={reserveOpen}
         onOpenChange={setReserveOpen}
-        reload={reload}
-        mode="hub"
-        preset={{
+        reload={reload}        preset={{
           toOwnerType: "order",
           toOwnerId: order.id,
           productId: reserveLine?.productId,
@@ -809,18 +807,14 @@ export const CustomerOrderDetailPage = () => {
         balances={balances}
         open={shipOpen}
         onOpenChange={setShipOpen}
-        reload={reload}
-        mode="hub"
-        preset={{ intention: "shipment", customerOrderId: order.id }}
+        reload={reload}        preset={{ intention: "shipment", customerOrderId: order.id }}
       />
       <ReservationForm
         snapshot={snapshot}
         balances={balances}
         open={releaseOpen}
         onOpenChange={setReleaseOpen}
-        reload={reload}
-        mode="hub"
-        preset={{
+        reload={reload}        preset={{
           toOwnerType: null,
           toOwnerId: null,
           fromOwnerType: "order",

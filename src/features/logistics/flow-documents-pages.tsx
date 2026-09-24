@@ -308,9 +308,7 @@ export const ShipmentsPage = () => {
         loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
-        reload={reload}
-        mode="list"
-      />
+        reload={reload}      />
     </LogisticsPageShell>
   );
 };
@@ -552,9 +550,7 @@ export const ShipmentDetailPage = () => {
         balances={store.balances}
         open={formOpen}
         onOpenChange={setFormOpen}
-        reload={store.reload}
-        mode="hub"
-        preset={{ intention: formIntention, customerOrderId: doc.customerOrderId, warehouseId }}
+        reload={store.reload}        preset={{ intention: formIntention, customerOrderId: doc.customerOrderId, warehouseId }}
       />
     </>
   );
@@ -671,9 +667,7 @@ export const AdjustmentsPage = () => {
         loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
-        reload={reload}
-        mode="hub"
-      />
+        reload={reload}      />
     </LogisticsPageShell>
   );
 };
@@ -789,9 +783,7 @@ export const AdjustmentDetailPage = () => {
         balances={store.balances}
         open
         onOpenChange={setAdjustOpen}
-        reload={store.reload}
-        mode="hub"
-        preset={adjustPreset}
+        reload={store.reload}        preset={adjustPreset}
       />
     ) : null}
     </>
@@ -1392,9 +1384,7 @@ export const OutputDetailPage = () => {
           balances={store.balances}
           open
           onOpenChange={setAdjustOpen}
-          reload={store.reload}
-          mode="hub"
-          preset={adjustPreset}
+          reload={store.reload}          preset={adjustPreset}
         />
       ) : null}
       <OutputReserveDialog target={reserveTarget} onClose={() => setReserveTarget(null)} reload={store.reload} />
@@ -1455,7 +1445,7 @@ const DocumentDetail = ({
   kindLabel: string;
   kindIcon?: LucideIcon;
   meta: Array<{ label: string; value: ReactNode }>;
-  historyMode?: "posted" | "lifecycle" | "reservation";
+  historyMode?: "posted" | "lifecycle";
   createdAt?: string;
   createdBy?: string | null;
   postedAt?: string | null;
