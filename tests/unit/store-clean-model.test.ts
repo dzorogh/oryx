@@ -23,7 +23,13 @@ describe("чистая модель Store — инварианты контра�
     assert.deepEqual([...LIFECYCLE_STATUSES], ["draft", "in_progress", "done", "cancelled"]);
     assert.ok(DOCUMENT_KINDS.includes("production_output"));
     assert.deepEqual([...OWNER_KINDS], ["free", "customer_order", "region"]);
-    assert.deepEqual([...LOCATION_KINDS], ["warehouse", "production_order", "transfer", "customer_order"]);
+    assert.deepEqual([...LOCATION_KINDS], [
+      "warehouse",
+      "production_order",
+      "transfer",
+      "customer_order",
+      "production_output",
+    ]);
   });
 
   it("номер документа берёт префикс kind, не внутренний id", () => {

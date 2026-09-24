@@ -107,7 +107,10 @@ export const OrderPlanTab = ({
   const pending = useRef(0);
   const detailRef = useRef<HTMLDivElement>(null);
 
-  const plan = payload.plans.find((item) => item.id === selectedPlanId) ?? null;
+  const plan =
+    payload.plans.find((item) => item.id === selectedPlanId) ??
+    payload.plans.find((item) => item.id === defaultPlanId(payload.plans)) ??
+    null;
   const status = plan ? planStatus(plan) : null;
   const launched = Boolean(plan?.launchedAt);
   const editable = status === "draft" && canAct;
@@ -158,6 +161,15 @@ export const OrderPlanTab = ({
     }
   };
 
+  const enqueue = <T,>(task: () => Promise<T>): Promise<T> => {
+    const run = queue.current.then(task);
+    queue.current = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  };
+
   const setAction = (key: OrderPlanActionKey, quantity: number): Promise<void> => {
     const planId = plan?.id;
     if (!planId) {
@@ -165,7 +177,7 @@ export const OrderPlanTab = ({
     }
     pending.current += 1;
     setSave({ state: "saving" });
-    const run = queue.current.then(async () => {
+    return enqueue(async () => {
       try {
         const next = await setOrderPlanAction(planId, key, quantity);
         setPayload(next);
@@ -178,13 +190,11 @@ export const OrderPlanTab = ({
         setSave({ state: "error", message: errorText(caught) });
       }
     });
-    queue.current = run;
-    return run;
   };
 
   const runPlanCommand = async (command: () => Promise<OrderPlanPayload>) => {
     try {
-      setPayload(await command());
+      setPayload(await enqueue(command));
       return true;
     } catch (caught) {
       toast.error("Не удалось выполнить действие", { description: errorText(caught) });
@@ -194,7 +204,7 @@ export const OrderPlanTab = ({
 
   const createPlan = async (copyFromPlanId: string | null) => {
     try {
-      const created = await createOrderPlan({ customerOrderId: orderId, copyFromPlanId });
+      const created = await enqueue(() => createOrderPlan({ customerOrderId: orderId, copyFromPlanId }));
       setPayload(created.payload);
       selectPlan(created.planId);
       setSave({ state: "idle" });
@@ -209,7 +219,8 @@ export const OrderPlanTab = ({
     }
     setLaunching(true);
     try {
-      await launchOrderPlan(plan.id);
+      const planId = plan.id;
+      await enqueue(() => launchOrderPlan(planId));
       setConfirmOpen(false);
       toast.success(`«${plan.name}» запущен`);
     } catch (caught) {
@@ -289,7 +300,7 @@ export const OrderPlanTab = ({
         <OrderPlanBar
           plans={payload.plans}
           current={plan}
-          canCreate={canAct}
+          canAct={canAct}
           onSelect={(planId) => selectPlan(planId)}
           onCreate={() => void createPlan(null)}
           onCopy={(planId) => void createPlan(planId)}

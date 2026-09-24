@@ -315,7 +315,7 @@ end;
 $f$;
 
 -- 7. store_location_ref включает выпуски
-create or replace view public.store_location_ref as
+create or replace view public.store_location_ref with (security_invoker = true) as
 select w.stock_location_id, 'warehouse'::text as kind, w.id as entity_id
 from public.store_warehouse w
 union all

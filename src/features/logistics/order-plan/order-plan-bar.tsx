@@ -60,7 +60,7 @@ const byNewest = (left: OrderPlan, right: OrderPlan) => right.createdAt.localeCo
 export const OrderPlanBar = ({
   plans,
   current,
-  canCreate,
+  canAct,
   onSelect,
   onCreate,
   onCopy,
@@ -69,7 +69,7 @@ export const OrderPlanBar = ({
 }: {
   plans: OrderPlan[];
   current: OrderPlan | null;
-  canCreate: boolean;
+  canAct: boolean;
   onSelect: (planId: string) => void;
   onCreate: () => void;
   onCopy: (planId: string) => void;
@@ -82,6 +82,8 @@ export const OrderPlanBar = ({
   const active = plans.filter((plan) => !plan.archivedAt).sort(byNewest);
   const archived = plans.filter((plan) => plan.archivedAt).sort(byNewest);
   const status = current ? planStatus(current) : null;
+  const draft = status === "draft";
+  const canRename = draft && canAct;
 
   return (
     <Card
@@ -151,34 +153,34 @@ export const OrderPlanBar = ({
             </DropdownMenuContent>
           </DropdownMenu>
           <span className="text-xs whitespace-nowrap text-zinc-500">создан {formatDayMonth(current.createdAt)}</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button type="button" variant="ghost" size="icon" aria-label="Действия с планом" />}
-            >
-              <MoreHorizontal />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-60">
-              <DropdownMenuItem
-                onClick={() => {
-                  setName(current.name);
-                  setRenameOpen(true);
-                }}
+          {draft ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<Button type="button" variant="ghost" size="icon" aria-label="Действия с планом" />}
               >
-                Переименовать
-              </DropdownMenuItem>
-              {status === "draft" ? (
-                <>
-                  <DropdownMenuItem onClick={() => onCopy(current.id)}>Копировать в новый черновик</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onArchive(current.id, true)}>В архив</DropdownMenuItem>
-                </>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <MoreHorizontal />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-60">
+                {canRename ? (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setName(current.name);
+                      setRenameOpen(true);
+                    }}
+                  >
+                    Переименовать
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem onClick={() => onCopy(current.id)}>Копировать в новый черновик</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onArchive(current.id, true)}>В архив</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </>
       ) : null}
       <span className="flex-1" />
-      {canCreate ? (
+      {canAct ? (
         <Button type="button" variant="ghost" onClick={onCreate} className="text-zinc-600">
           <Plus />
           Новый план

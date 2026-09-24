@@ -246,3 +246,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-output-status-planned-done.md`
   summary: У заказа на производство в статусе `done` видны «Отменить», «Закрыть заказ» и выбор статуса.
   evidence: `canMutate` в `production-orders-page.tsx` исключает только устаревшие `closed` и `cancelled`, а база пишет `done`; было до этой задачи (PO-910 в браузере 24.09.2026).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-fulfillment-plan.md`
+  summary: Автотесты SQL-правил плана заказа клиента (`store_place_available`, пределы `store_set_order_plan_action`, откат `store_launch_order_plan`, группировка RSV/OUT/PO, `p_allow_done_order`).
+  evidence: В репозитории нет стенда для RPC-тестов; правила проверены браузерным прогоном и запросами к демо-базе 24.09.2026.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-fulfillment-plan.md`
+  summary: AGENTS.md утверждает, что автотестов нет, хотя `npm test` (`tests/unit/*.test.ts`) существует и не входит в список проверок перед сдачей.
+  evidence: Из-за этого падение `store-clean-model.test.ts` прошло проверки реализации; правка agent-context файла вне этой задачи.

@@ -5,6 +5,7 @@ import {
   mapLogisticsPayload,
   mapOutputListRow,
 } from "@/features/logistics/logistics-api";
+import { mapOrderPlanPayload } from "@/features/logistics/order-plan/order-plan-types";
 
 describe("mapCustomerOrderListRow", () => {
   it("maps an order without lines to empty products and zero totals", () => {
@@ -219,6 +220,40 @@ describe("mapLogisticsPayload", () => {
     assert.equal(owned?.toOwnerId, "12");
     assert.equal(free?.toOwnerType, null);
     assert.equal(free?.toOwnerId, null);
+  });
+
+  it("maps output stock location and passes order_plan through", () => {
+    const orderPlan = {
+      coverage: [],
+      sources: [],
+      plans: [
+        {
+          id: 4,
+          name: "План 1",
+          createdAt: "2026-09-24T10:00:00Z",
+          launchedAt: null,
+          archivedAt: null,
+          launchedCoverage: null,
+          actions: [{ id: 17, kind: "produce", variantId: 2, quantity: 3, locationId: 55, available: null }],
+        },
+      ],
+    };
+    const mapped = mapLogisticsPayload({
+      document_kinds: [{ code: "production_output", number_prefix: "OUT" }],
+      documents: [
+        { id: 30, kind: "production_output", sequence_number: 5, status: "draft", created_at: "2026-01-02T00:00:00Z" },
+      ],
+      production_outputs: [{ id: 30, production_order_id: 9, stock_location_id: 162 }],
+      order_plan: orderPlan,
+    });
+    assert.equal(mapped.snapshot.outputs[0]?.stockLocationId, "162");
+    assert.equal(mapped.orderPlan, orderPlan);
+
+    const plan = mapOrderPlanPayload(mapped.orderPlan).plans[0];
+    assert.equal(plan?.launchedCoverage, null);
+    assert.equal(plan?.actions[0]?.kind, "produce");
+    assert.equal(plan?.actions[0]?.available, null);
+    assert.equal(plan?.actions[0]?.locationId, "55");
   });
 
   it("honors found=false from context RPCs", () => {
