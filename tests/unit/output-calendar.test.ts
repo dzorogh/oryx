@@ -15,7 +15,6 @@ import {
   plantCodesForProduct,
   productVisibleForPlant,
   stockQuantity,
-  summaryText,
   type OutputCalendarPage,
 } from "@/features/logistics/output-calendar";
 
@@ -265,8 +264,8 @@ describe("I/O matrix: двойной путь владельца", () => {
   });
 });
 
-describe("I/O matrix: фильтр завода и Считаем", () => {
-  it("filters month qty by plant; stock stays owner-only; summary lists plant", () => {
+describe("I/O matrix: фильтр завода", () => {
+  it("filters month qty by plant; stock stays owner-only", () => {
     const page = pageFixture();
     const W = buildOwnerSet(defaultOwnerFilter(page), page);
     const novAll = monthCell("1", { year: 2026, month: 11 }, page.outputLines, W, null);
@@ -276,14 +275,6 @@ describe("I/O matrix: фильтр завода и Считаем", () => {
     assert.equal(stockQuantity("1", page.stock, W), 9);
     assert.ok(productVisibleForPlant("1", page.outputLines, "3"));
     assert.equal(productVisibleForPlant("2", page.outputLines, "3"), false);
-    assert.equal(
-      summaryText(defaultOwnerFilter(page), "3", page),
-      "Считаем: всё — свободно и все резервы · PLT-3 (остаток по всем заводам)",
-    );
-    assert.equal(
-      summaryText(defaultOwnerFilter(page), null, page),
-      "Считаем: всё — свободно и все резервы",
-    );
     assert.deepEqual(plantCodesForProduct("1", page.outputLines), ["PLT-3", "PLT-5"]);
   });
 });

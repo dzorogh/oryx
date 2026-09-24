@@ -462,24 +462,6 @@ export const buildCategoryTree = (
   return { roots, uncategorized };
 };
 
-export const isDefaultOwnerFilter = (
-  filter: OutputCalendarOwnerFilter,
-  page: Pick<OutputCalendarPage, "regions" | "customerOrders">,
-): boolean => {
-  if (!filter.free || !filter.withRegionOrders) return false;
-  if (filter.regionIds.length !== page.regions.length) return false;
-  if (filter.orderIds.length !== page.customerOrders.length) return false;
-  const regionSet = new Set(filter.regionIds);
-  for (const r of page.regions) {
-    if (!regionSet.has(r.id)) return false;
-  }
-  const orderSet = new Set(filter.orderIds);
-  for (const o of page.customerOrders) {
-    if (!orderSet.has(o.id)) return false;
-  }
-  return true;
-};
-
 /** Count of deselected pieces vs default-all (for toolbar badge). */
 export const ownersChangedCount = (
   filter: OutputCalendarOwnerFilter,
@@ -508,42 +490,6 @@ export const applyLocalOutput = (
     })
     .filter((order) => order.remaining > 0),
 });
-
-export const summaryText = (
-  filter: OutputCalendarOwnerFilter,
-  plantId: string | null,
-  page: Pick<OutputCalendarPage, "regions" | "customerOrders">,
-): string => {
-  const plantSuffix =
-    plantId == null ? "" : ` · ${formatLogisticsCode("plant", plantId)} (остаток по всем заводам)`;
-  if (isDefaultOwnerFilter(filter, page)) {
-    return `Считаем: всё — свободно и все резервы${plantSuffix}`;
-  }
-  const parts: string[] = [];
-  if (filter.free) parts.push("Свободно");
-  const regionSet = new Set(filter.regionIds);
-  const selectedRegions = page.regions.filter((r) => regionSet.has(r.id));
-  const allRegs = selectedRegions.length === page.regions.length && page.regions.length > 0;
-  if (selectedRegions.length) {
-    let rs = allRegs ? "все регионы" : selectedRegions.map((r) => r.name).join(", ");
-    if (filter.withRegionOrders) rs += " (с заказами)";
-    parts.push(rs);
-  }
-  const orderSet = new Set(filter.orderIds);
-  const allOrds =
-    filter.orderIds.length === page.customerOrders.length && page.customerOrders.length > 0;
-  if (allOrds && allRegs && filter.withRegionOrders) {
-    // covered by regions switch
-  } else if (allOrds) {
-    parts.push("все заказы");
-  } else if (filter.orderIds.length > 0) {
-    parts.push(
-      page.customerOrders.filter((o) => orderSet.has(o.id)).map((o) => o.number).join(", "),
-    );
-  }
-  if (!parts.length) parts.push("ничего не выбрано");
-  return `Считаем: ${parts.join(" + ")}${plantSuffix}`;
-};
 
 export const openOrdersForProduct = (
   productId: string,

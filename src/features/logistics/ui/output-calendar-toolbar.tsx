@@ -16,7 +16,6 @@ import { Switch } from "@/components/ui/switch";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import {
   ownersChangedCount,
-  summaryText,
   type OutputCalendarOwnerFilter,
   type OutputCalendarPage,
 } from "@/features/logistics/output-calendar";
@@ -122,10 +121,6 @@ export const OutputCalendarToolbar = ({
             Обновить
           </Button>
         </div>
-
-        <p className="pb-1 text-xs text-muted-foreground">
-          <span className="font-medium text-zinc-700">{summaryText(filter, plantId, page)}</span>
-        </p>
       </CardHeader>
     </Card>
   );
