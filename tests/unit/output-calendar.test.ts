@@ -14,6 +14,7 @@ import {
   outputPassesFilters,
   plantCodesForProduct,
   productVisibleForPlant,
+  stockBreakdown,
   stockQuantity,
   type OutputCalendarPage,
 } from "@/features/logistics/output-calendar";
@@ -36,22 +37,24 @@ const pageFixture = (): OutputCalendarPage => ({
     { id: "2", name: "Россия", ownerId: "3" },
   ],
   customerOrders: [
-    { id: "10", number: "OMS-10", regionId: "1", ownerId: "20" },
-    { id: "11", number: "OMS-11", regionId: "2", ownerId: "21" },
+    { id: "10", number: "OMS-10", regionId: "1", ownerId: "20", sequenceNumber: "10" },
+    { id: "11", number: "OMS-11", regionId: "2", ownerId: "21", sequenceNumber: "11" },
   ],
   stock: [
-    { productId: "1", ownerId: "1", quantity: 4 },
-    { productId: "1", ownerId: "2", quantity: 3 },
-    { productId: "1", ownerId: "20", quantity: 2 },
+    { productId: "1", ownerId: "1", locationKind: "warehouse", locationId: "7", locationSequence: null, quantity: 4 },
+    { productId: "1", ownerId: "2", locationKind: "warehouse", locationId: "7", locationSequence: null, quantity: 3 },
+    { productId: "1", ownerId: "20", locationKind: "warehouse", locationId: "7", locationSequence: null, quantity: 2 },
   ],
   outputLines: [
     {
       outputId: "100",
       outputNumber: "OUT-A",
+      outputSequence: null,
       status: "in_progress",
       expectedEndOn: "2026-11-15",
       productionOrderId: "50",
       productionOrderNumber: "PO-50",
+      productionOrderSequence: null,
       plantId: "5",
       productId: "1",
       ownerId: "1",
@@ -60,10 +63,12 @@ const pageFixture = (): OutputCalendarPage => ({
     {
       outputId: "101",
       outputNumber: "OUT-B",
+      outputSequence: null,
       status: "in_progress",
       expectedEndOn: "2026-11-20",
       productionOrderId: "50",
       productionOrderNumber: "PO-50",
+      productionOrderSequence: null,
       plantId: "3",
       productId: "1",
       ownerId: "2",
@@ -72,10 +77,12 @@ const pageFixture = (): OutputCalendarPage => ({
     {
       outputId: "102",
       outputNumber: "OUT-C",
+      outputSequence: null,
       status: "draft",
       expectedEndOn: null,
       productionOrderId: "51",
       productionOrderNumber: "PO-51",
+      productionOrderSequence: null,
       plantId: "5",
       productId: "1",
       ownerId: "1",
@@ -84,10 +91,12 @@ const pageFixture = (): OutputCalendarPage => ({
     {
       outputId: "103",
       outputNumber: "OUT-D",
+      outputSequence: null,
       status: "in_progress",
       expectedEndOn: "2026-08-10",
       productionOrderId: "52",
       productionOrderNumber: "PO-52",
+      productionOrderSequence: null,
       plantId: "5",
       productId: "2",
       ownerId: "1",
@@ -95,7 +104,7 @@ const pageFixture = (): OutputCalendarPage => ({
     },
   ],
   openOrders: [
-    { productionOrderId: "50", number: "PO-50", plantId: "5", productId: "1", remaining: 5 },
+    { productionOrderId: "50", number: "PO-50", sequenceNumber: "50", plantId: "5", productId: "1", remaining: 5 },
   ],
 });
 
@@ -107,16 +116,21 @@ describe("mapOutputCalendarPage", () => {
       products: [{ id: 1, name: "Force", unit: "шт", plantId: 5, categoryIds: [2, 10] }],
       plants: [{ id: 5 }],
       regions: [{ id: 1, name: "ОАЭ", ownerId: 2 }],
-      customerOrders: [{ id: 10, number: "OMS-10", regionId: 1, ownerId: 20 }],
-      stock: [{ productId: 1, ownerId: 1, quantity: 4 }],
+      customerOrders: [{ id: 10, number: "OMS-10", regionId: 1, ownerId: 20, sequenceNumber: 10 }],
+      stock: [
+        { productId: 1, ownerId: 1, locationKind: "warehouse", locationId: 7, locationSequence: null, quantity: 4 },
+        { productId: 1, ownerId: 2, locationKind: "transfer", locationId: 141, locationSequence: 903, quantity: 3 },
+      ],
       outputLines: [
         {
           outputId: 100,
           outputNumber: "OUT-100",
+          outputSequence: 100,
           status: "draft",
           expectedEndOn: "2026-11-15T00:00:00",
           productionOrderId: 50,
           productionOrderNumber: "PO-50",
+          productionOrderSequence: 50,
           plantId: 5,
           productId: 1,
           ownerId: 1,
@@ -125,10 +139,12 @@ describe("mapOutputCalendarPage", () => {
         {
           outputId: 101,
           outputNumber: "OUT-101",
+          outputSequence: null,
           status: "in_progress",
           expectedEndOn: null,
           productionOrderId: 50,
           productionOrderNumber: "PO-50",
+          productionOrderSequence: null,
           plantId: 3,
           productId: 1,
           ownerId: 2,
@@ -137,23 +153,37 @@ describe("mapOutputCalendarPage", () => {
         {
           outputId: 102,
           outputNumber: "OUT-102",
+          outputSequence: null,
           status: "done",
           expectedEndOn: "2026-08-01",
           productionOrderId: 50,
           productionOrderNumber: "PO-50",
+          productionOrderSequence: null,
           plantId: 5,
           productId: 1,
           ownerId: 1,
           quantity: 9,
         },
       ],
-      openOrders: [{ productionOrderId: 50, number: "PO-50", plantId: 5, productId: 1, remaining: 5 }],
+      openOrders: [{ productionOrderId: 50, number: "PO-50", sequenceNumber: 50, plantId: 5, productId: 1, remaining: 5 }],
     });
     assert.equal(mapped.freeOwnerId, "1");
     assert.deepEqual(mapped.products[0].categoryIds, ["2", "10"]);
     assert.deepEqual(mapped.regions[0], { id: "1", name: "ОАЭ", ownerId: "2" });
-    assert.deepEqual(mapped.customerOrders[0], { id: "10", number: "OMS-10", regionId: "1", ownerId: "20" });
-    assert.deepEqual(mapped.stock[0], { productId: "1", ownerId: "1", quantity: 4 });
+    assert.deepEqual(mapped.customerOrders[0], {
+      id: "10",
+      number: "OMS-10",
+      regionId: "1",
+      ownerId: "20",
+      sequenceNumber: "10",
+    });
+    assert.deepEqual(mapped.stock, [
+      { productId: "1", ownerId: "1", locationKind: "warehouse", locationId: "7", locationSequence: null, quantity: 4 },
+      { productId: "1", ownerId: "2", locationKind: "transfer", locationId: "141", locationSequence: "903", quantity: 3 },
+    ]);
+    assert.equal(mapped.outputLines[0]?.outputSequence, "100");
+    assert.equal(mapped.outputLines[0]?.productionOrderSequence, "50");
+    assert.equal(mapped.outputLines[1]?.outputSequence, null);
     assert.equal(mapped.outputLines.length, 2);
     assert.equal(mapped.outputLines[0]?.expectedEndOn, "2026-11-15");
     assert.equal(mapped.outputLines[0]?.status, "draft");
@@ -162,10 +192,33 @@ describe("mapOutputCalendarPage", () => {
     assert.deepEqual(mapped.openOrders[0], {
       productionOrderId: "50",
       number: "PO-50",
+      sequenceNumber: "50",
       plantId: "5",
       productId: "1",
       remaining: 5,
     });
+  });
+});
+
+describe("stockBreakdown", () => {
+  it("lists stock rows behind Остаток with resolved owners, filtered by owner set", () => {
+    const page = pageFixture();
+    const all = stockBreakdown("1", page, buildOwnerSet(defaultOwnerFilter(page), page));
+    assert.deepEqual(
+      all.map((row) => [row.owner.kind, row.quantity]),
+      [
+        ["free", 4],
+        ["region", 3],
+        ["order", 2],
+      ],
+    );
+    const regionOnly = stockBreakdown(
+      "1",
+      page,
+      buildOwnerSet({ free: false, regionIds: ["1"], withRegionOrders: false, orderIds: [] }, page),
+    );
+    assert.equal(regionOnly.length, 1);
+    assert.equal(regionOnly[0]?.owner.kind === "region" && regionOnly[0].owner.region.name, "ОАЭ");
   });
 });
 
@@ -295,10 +348,12 @@ describe("applyLocalOutput", () => {
     const next = applyLocalOutput(page, {
       outputId: "200",
       outputNumber: "Новый выпуск",
+      outputSequence: null,
       status: "draft",
       expectedEndOn: "2026-12-31",
       productionOrderId: "50",
       productionOrderNumber: "PO-50",
+      productionOrderSequence: null,
       plantId: "5",
       productId: "1",
       ownerId: "1",
@@ -320,10 +375,12 @@ describe("I/O matrix: флаг новый обходит фильтры", () => 
     const fresh: (typeof page.outputLines)[number] = {
       outputId: "999",
       outputNumber: "OUT-NEW",
+      outputSequence: null,
       status: "draft",
       expectedEndOn: "2026-12-31",
       productionOrderId: "50",
       productionOrderNumber: "PO-50",
+      productionOrderSequence: null,
       plantId: "99",
       productId: "1",
       ownerId: "999",

@@ -121,10 +121,12 @@ export const OutputCalendarPage = () => {
         insertLocalLine({
           outputId,
           outputNumber: "Новый выпуск",
+          outputSequence: null,
           status: "draft",
           expectedEndOn,
           productionOrderId: target.order.productionOrderId,
           productionOrderNumber: target.order.number,
+          productionOrderSequence: target.order.sequenceNumber,
           plantId: target.order.plantId,
           productId: target.product.id,
           ownerId: page.freeOwnerId,
@@ -142,12 +144,14 @@ export const OutputCalendarPage = () => {
         insertLocalLine({
           outputId: created.outputId,
           outputNumber: "Новый выпуск",
+          outputSequence: null,
           status: "draft",
           expectedEndOn,
           productionOrderId: created.productionOrderId,
           productionOrderNumber: created.sequenceNumber
             ? formatLogisticsCode("productionOrder", created.sequenceNumber)
             : "Новый заказ",
+          productionOrderSequence: created.sequenceNumber,
           plantId: args.plantId,
           productId: target.product.id,
           ownerId: page.freeOwnerId,

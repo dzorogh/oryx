@@ -25,21 +25,30 @@ export type OutputCalendarCustomerOrder = {
   number: string;
   regionId: string;
   ownerId: string;
+  sequenceNumber: string;
 };
 
 export type OutputCalendarStockRow = {
   productId: string;
   ownerId: string;
+  locationKind: "warehouse" | "transfer";
+  /** Warehouse id or transfer document id. */
+  locationId: string;
+  /** Transfer sequence number; null for warehouses. */
+  locationSequence: string | null;
   quantity: number;
 };
 
 export type OutputCalendarOutputLine = {
   outputId: string;
   outputNumber: string;
+  /** Null for a locally created output until the page is refreshed. */
+  outputSequence: string | null;
   status: "draft" | "in_progress";
   expectedEndOn: string | null;
   productionOrderId: string;
   productionOrderNumber: string;
+  productionOrderSequence: string | null;
   plantId: string;
   productId: string;
   ownerId: string;
@@ -51,6 +60,7 @@ export type OutputCalendarOutputLine = {
 export type OutputCalendarOpenOrder = {
   productionOrderId: string;
   number: string;
+  sequenceNumber: string;
   plantId: string;
   productId: string;
   remaining: number;
@@ -140,6 +150,7 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
         number: String(o.number ?? ""),
         regionId: asId(o.regionId),
         ownerId: asId(o.ownerId),
+        sequenceNumber: asId(o.sequenceNumber),
       };
     }),
     stock: list("stock").map((item) => {
@@ -147,6 +158,9 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
       return {
         productId: asId(s.productId),
         ownerId: asId(s.ownerId),
+        locationKind: s.locationKind === "transfer" ? ("transfer" as const) : ("warehouse" as const),
+        locationId: asId(s.locationId),
+        locationSequence: asNullableId(s.locationSequence),
         quantity: asNumber(s.quantity),
       };
     }),
@@ -157,11 +171,13 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
         {
           outputId: asId(l.outputId),
           outputNumber: String(l.outputNumber ?? ""),
+          outputSequence: asNullableId(l.outputSequence),
           status: l.status,
           expectedEndOn:
             l.expectedEndOn == null || l.expectedEndOn === "" ? null : String(l.expectedEndOn).slice(0, 10),
           productionOrderId: asId(l.productionOrderId),
           productionOrderNumber: String(l.productionOrderNumber ?? ""),
+          productionOrderSequence: asNullableId(l.productionOrderSequence),
           plantId: asId(l.plantId),
           productId: asId(l.productId),
           ownerId: asId(l.ownerId),
@@ -175,6 +191,7 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
       return {
         productionOrderId: asId(o.productionOrderId),
         number: String(o.number ?? ""),
+        sequenceNumber: asId(o.sequenceNumber),
         plantId: asId(o.plantId),
         productId: asId(o.productId),
         remaining: asNumber(o.remaining),
@@ -232,6 +249,37 @@ export const stockQuantity = (
   }
   return sum;
 };
+
+export type CalendarOwner =
+  | { kind: "free" }
+  | { kind: "region"; region: OutputCalendarRegion }
+  | { kind: "order"; order: OutputCalendarCustomerOrder }
+  | { kind: "unknown" };
+
+export const resolveOwner = (
+  ownerId: string,
+  page: Pick<OutputCalendarPage, "freeOwnerId" | "regions" | "customerOrders">,
+): CalendarOwner => {
+  if (ownerId === page.freeOwnerId) return { kind: "free" };
+  const region = page.regions.find((r) => r.ownerId === ownerId);
+  if (region) return { kind: "region", region };
+  const order = page.customerOrders.find((o) => o.ownerId === ownerId);
+  if (order) return { kind: "order", order };
+  return { kind: "unknown" };
+};
+
+export type StockBreakdownRow = OutputCalendarStockRow & { owner: CalendarOwner };
+
+/** Stock rows behind the «Остаток» cell, largest first. */
+export const stockBreakdown = (
+  productId: string,
+  page: Pick<OutputCalendarPage, "stock" | "freeOwnerId" | "regions" | "customerOrders">,
+  ownerSet: Set<string>,
+): StockBreakdownRow[] =>
+  page.stock
+    .filter((row) => row.productId === productId && ownerSet.has(row.ownerId))
+    .map((row) => ({ ...row, owner: resolveOwner(row.ownerId, page) }))
+    .sort((a, b) => b.quantity - a.quantity);
 
 export const yearMonthOf = (iso: string | null | undefined): YearMonth | null => {
   if (!iso) return null;

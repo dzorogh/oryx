@@ -62,20 +62,26 @@ as $f$
     select
       b.product_variant_id as "productId",
       b.stock_owner_id as "ownerId",
+      b.location_kind as "locationKind",
+      b.location_entity_id as "locationId",
+      td.sequence_number as "locationSequence",
       sum(b.quantity) as quantity
     from store_stock_balance_ref b
+    left join store_document td on td.id = b.location_entity_id and b.location_kind = 'transfer'
     where b.location_kind in ('warehouse', 'transfer')
-    group by b.product_variant_id, b.stock_owner_id
+    group by b.product_variant_id, b.stock_owner_id, b.location_kind, b.location_entity_id, td.sequence_number
     having sum(b.quantity) <> 0
   ),
   output_lines as (
     select
       o.id as "outputId",
       store_doc_number(d.kind, d.sequence_number) as "outputNumber",
+      d.sequence_number as "outputSequence",
       d.status,
       d.expected_end_on as "expectedEndOn",
       po.id as "productionOrderId",
       store_doc_number(pod.kind, pod.sequence_number) as "productionOrderNumber",
+      pod.sequence_number as "productionOrderSequence",
       po.plant_id as "plantId",
       l.product_variant_id as "productId",
       coalesce(l.to_owner_id, (select id from free)) as "ownerId",
@@ -93,6 +99,7 @@ as $f$
     select
       po.id as "productionOrderId",
       store_doc_number(d.kind, d.sequence_number) as number,
+      d.sequence_number as "sequenceNumber",
       po.plant_id as "plantId",
       l.product_variant_id as "productId",
       (sum(l.quantity) - public.store_po_output_qty(po.id, l.product_variant_id)) as remaining
@@ -132,8 +139,8 @@ as $f$
     'products', coalesce((select jsonb_agg(to_jsonb(p) order by p.id) from products p), '[]'::jsonb),
     'plants', coalesce((select jsonb_agg(to_jsonb(pl) order by pl.id) from plants pl), '[]'::jsonb),
     'regions', coalesce((select jsonb_agg(to_jsonb(r) order by r.id) from regions r), '[]'::jsonb),
-    'customerOrders', coalesce((select jsonb_agg((to_jsonb(o) - 'sequenceNumber') order by o."sequenceNumber", o.id) from customer_orders o), '[]'::jsonb),
-    'stock', coalesce((select jsonb_agg(to_jsonb(s) order by s."productId", s."ownerId") from stock_rows s), '[]'::jsonb),
+    'customerOrders', coalesce((select jsonb_agg(to_jsonb(o) order by o."sequenceNumber", o.id) from customer_orders o), '[]'::jsonb),
+    'stock', coalesce((select jsonb_agg(to_jsonb(s) order by s."productId", s."locationKind", s."locationId", s."ownerId") from stock_rows s), '[]'::jsonb),
     'outputLines', coalesce((select jsonb_agg((to_jsonb(l) - 'lineId') order by l."outputId", l."lineId") from output_lines l), '[]'::jsonb),
     'openOrders', coalesce((select jsonb_agg(to_jsonb(o) order by o."productionOrderId", o."productId") from open_orders o), '[]'::jsonb)
   );
