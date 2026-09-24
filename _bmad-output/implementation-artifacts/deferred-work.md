@@ -226,3 +226,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-reserve-on-output-line.md`
   summary: Заменить оставшиеся проверки заказа клиента `status === "open"` на `isOpenCustomerOrderStatus` (формы отгрузки `logistics-forms.tsx` ~568/~1030, `flow-documents-pages.tsx` ~380, `logistics-cancel-guidance.ts` ~307, локальный хелпер в `customer-orders-page.tsx`).
   evidence: В данных статус `in_progress`, поэтому эти списки/ветки сейчас не срабатывают; в диалогах резерва уже исправлено.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-orders-calendar-screen.md`
+  summary: Unit-test the partial-failure path of `createProductionOrderWithDraftOutput` (PO created, draft output failed → `ProductionForOrderOutputError` with PO id and sequence).
+  evidence: No RPC mocking exists for `logistics-api` tests; the sibling `createProductionForOrder` is untested the same way. Covered only by manual browser check today.

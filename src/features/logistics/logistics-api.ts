@@ -977,6 +977,12 @@ export const loadLedgerPage = () => loadMappedRpc("store_ledger_page", {});
 
 export const loadCatalogPage = () => loadMappedRpc("store_catalog_page", {});
 
+export const loadOutputCalendarPage = async () => {
+  const { mapOutputCalendarPage } = await import("@/features/logistics/output-calendar");
+  const data = await rpcJson<unknown>("store_output_calendar_page", {});
+  return mapOutputCalendarPage(data);
+};
+
 export const postReservation = (id: string) => rpc("store_post_reservation", { p_id: id });
 
 export type ReservationLineInput = {
@@ -1179,6 +1185,34 @@ export const createProductionForOrder = async (args: {
     throw new ProductionForOrderOutputError(String(created.id), created.sequenceNumber, caught);
   }
   return created.id;
+};
+
+export const createProductionOrderWithDraftOutput = async (args: {
+  plantId: string;
+  productId: string;
+  quantity: number;
+  expectedEndOn: string | null;
+}): Promise<{ productionOrderId: string; outputId: string; sequenceNumber: string | null }> => {
+  const created = await createProductionOrder({
+    plantId: args.plantId,
+    expectedEndOn: args.expectedEndOn,
+    lines: [{ productId: args.productId, quantity: args.quantity }],
+  });
+  try {
+    const outputId = await createProductionOutput({
+      orderId: created.id,
+      expectedEndOn: args.expectedEndOn,
+      complete: false,
+      lines: [{ productId: args.productId, quantity: args.quantity }],
+    });
+    return {
+      productionOrderId: created.id,
+      outputId,
+      sequenceNumber: created.sequenceNumber,
+    };
+  } catch (caught) {
+    throw new ProductionForOrderOutputError(created.id, created.sequenceNumber, caught);
+  }
 };
 
 export const reserveInProductionOutput = async (args: {

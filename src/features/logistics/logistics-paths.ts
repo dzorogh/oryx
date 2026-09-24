@@ -13,6 +13,7 @@ export const LOGISTICS_PATHS = {
   customerOrders: logisticsPath("customer-orders"),
   productionOrders: logisticsPath("production-orders"),
   outputs: logisticsPath("outputs"),
+  calendar: logisticsPath("calendar"),
   transfers: logisticsPath("transfers"),
   shipments: logisticsPath("shipments"),
   returns: logisticsPath("returns"),

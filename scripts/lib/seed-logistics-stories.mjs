@@ -370,10 +370,10 @@ export const seedLogisticsStories = async (args) => {
   });
   const poDraft2 = await call("store_create_production_order", {
     p_plant_id: plant("taotao"),
-    p_status: "draft",
+    p_status: "in_progress",
     p_expected_end_on: "2026-10-08",
     p_sequence_number: 902,
-    p_description: "Черновик: Cross 180",
+    p_description: "В работе: Cross 180",
     p_lines: [{ product_variant_id: v("cross180"), quantity: 4 }],
   });
   const poDraft3 = await call("store_create_production_order", {
@@ -541,7 +541,7 @@ export const seedLogisticsStories = async (args) => {
   }
 
   // Extra open PO without output yet
-  await call("store_create_production_order", {
+  const poGpOpen = await call("store_create_production_order", {
     p_plant_id: plant("qianjiang"),
     p_status: "in_progress",
     p_expected_end_on: "2026-10-15",
@@ -553,10 +553,106 @@ export const seedLogisticsStories = async (args) => {
     ],
   });
 
-  void poDraft1;
-  void poDraft2;
-  void poDraft3;
-  void poOpen3;
+  // ---------------------------------------------------------------------------
+  // Calendar demo: open outputs on existing POs (for /store/logistics/calendar)
+  // Sequences 930+ — live DB already has OUT-917…921 from earlier stories.
+  // ---------------------------------------------------------------------------
+  const calOut = async ({
+    poId,
+    seq,
+    description,
+    expectedEndOn,
+    lines,
+    status = "draft",
+  }) => {
+    const created = await call("store_create_production_output", {
+      p_production_order_id: Number(poId),
+      p_complete: false,
+      p_expected_end_on: expectedEndOn,
+      p_sequence_number: seq,
+      p_description: description,
+      p_lines: lines,
+    });
+    if (status === "in_progress") {
+      await patch(`store_document?id=eq.${created.id}`, { status: "in_progress" });
+    }
+    return created;
+  };
+
+  // Overdue in_progress (Aug 2026) — Cross on PO-902
+  await calOut({
+    poId: poDraft2.id,
+    seq: 930,
+    description: "Календарь: просрочка Cross август",
+    expectedEndOn: "2026-08-18",
+    status: "in_progress",
+    lines: [{ product_variant_id: v("cross180"), quantity: 2, allocation_owner_id: 1 }],
+  });
+
+  // Force 1100 to November with region reserve on part of qty — PO-904 remaining 3
+  await calOut({
+    poId: poOpen1.id,
+    seq: 931,
+    description: "Календарь: Force к ноябрю с резервом региона",
+    expectedEndOn: "2026-11-20",
+    status: "in_progress",
+    lines: [
+      {
+        product_variant_id: v("force1100"),
+        quantity: 3,
+        allocation_owner_id: regionOwner,
+        allocation_quantity: 2,
+      },
+    ],
+  });
+
+  // Draft without deadline — Enduro on PO-901
+  await calOut({
+    poId: poDraft1.id,
+    seq: 932,
+    description: "Календарь: Enduro без срока",
+    expectedEndOn: null,
+    lines: [{ product_variant_id: v("enduro250"), quantity: 2, allocation_owner_id: 1 }],
+  });
+
+  // December — Cruiser on PO-905
+  await calOut({
+    poId: poOpen2.id,
+    seq: 933,
+    description: "Календарь: Cruiser декабрь",
+    expectedEndOn: "2026-12-15",
+    status: "in_progress",
+    lines: [{ product_variant_id: v("cruiser300"), quantity: 2, allocation_owner_id: 1 }],
+  });
+
+  // January — Hummer on PO-906 (other plant)
+  await calOut({
+    poId: poOpen3.id,
+    seq: 934,
+    description: "Календарь: Hummer январь",
+    expectedEndOn: "2027-01-20",
+    lines: [{ product_variant_id: v("hummer320"), quantity: 1, allocation_owner_id: 1 }],
+  });
+
+  // December — GP-401 on PO-920
+  await calOut({
+    poId: poGpOpen.id,
+    seq: 935,
+    description: "Календарь: GP401 декабрь",
+    expectedEndOn: "2026-12-28",
+    status: "in_progress",
+    lines: [{ product_variant_id: v("gp401"), quantity: 2, allocation_owner_id: 1 }],
+  });
+
+  // November — Power Max on PO-903 (another plant)
+  await calOut({
+    poId: poDraft3.id,
+    seq: 936,
+    description: "Календарь: Power Max ноябрь",
+    expectedEndOn: "2026-11-10",
+    lines: [{ product_variant_id: v("powerMax250"), quantity: 2, allocation_owner_id: 1 }],
+  });
+
   void poOpen4;
 
   // ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
   BookOpen,
+  CalendarDays,
   Factory,
   Layers,
   Lock,
@@ -31,6 +32,7 @@ export const LOGISTICS_SALES_NAV_ITEMS: ModuleSubnavItem[] = [
 export const LOGISTICS_PRODUCTION_NAV_ITEMS: ModuleSubnavItem[] = [
   item(LOGISTICS_PATHS.productionOrders, "Заказы на производство", Factory),
   item(LOGISTICS_PATHS.outputs, "Выпуски", PackageCheck),
+  item(LOGISTICS_PATHS.calendar, "Календарь выпусков", CalendarDays),
 ];
 
 export const LOGISTICS_WAREHOUSE_NAV_ITEMS: ModuleSubnavItem[] = [

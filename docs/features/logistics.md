@@ -16,6 +16,7 @@
 | `/store/logistics/adjustments` | Корректировки (знаковые строки) |
 | `/store/logistics/production-orders` | Заказы на производство |
 | `/store/logistics/outputs` | Выпуски (`store_production_output`) |
+| `/store/logistics/calendar` | Календарь выпусков (матрица товар × месяц) |
 | `/store/logistics/transfers` | Перемещения |
 | `/store/logistics/warehouses` | Склады |
 | `/store/logistics/plants` | Заводы (`store_plant`; код `PLT-n`) |
@@ -27,7 +28,7 @@
 
 - **Каталог** — Товары, Прайс-листы
 - **Продажи** — Заказы клиента, Отгрузки и возвраты, Резервы
-- **Производство** — Заказы на производство, Выпуски
+- **Производство** — Заказы на производство, Выпуски, Календарь выпусков
 - **Склад** — Остатки, Перемещения, Корректировки, Журнал
 - **Справочники** — Склады, Регионы, Заводы
 - без заголовка — Импорт/Экспорт, Настройки
@@ -80,6 +81,14 @@ Seed после историй раскладывает `changed_at` монот�
 
 Колонки «Закреплено за» тонированы (свободно / регион / заказ); «Всего» = сумма мест с полосой распределения; единицы через `formatQuantity` (`шт`, не `pcs`).
 
+## Календарь выпусков
+
+- Месяцы считают выпуски `draft` и `in_progress` по сроку выпуска; «Остаток» — склады и перемещения по выбранным владельцам, без отгруженного.
+- Панель «Для кого считаем»: «Свободно», регионы, переключатель «С заказами клиентов региона» и заказы клиента. Одно количество входит один раз.
+- Фильтр завода сужает приход. «Остаток» остаётся общим — в строке «Считаем» это «PLT-n (остаток по всем заводам)».
+- «+» с текущего месяца создаёт выпуск по открытому заказу на производство или новый заказ с черновиком. До «Обновить» строка подписана «Новый выпуск» и видна даже если фильтр её исключает.
+- Демо-сиды OUT-930…936 на открытых заказах на производство: просрочка августа, Force к ноябрю с резервом региона, выпуск без срока, декабрь и январь.
+
 ## Каталог и цены
 
 `store_product` / `store_product_variant`; категории `store_category` (дерево) + `store_product_category` — снимок каталога техники из PIM Корпортала в `scripts/data/logistics-demo.json` (`categories`, `category_ids` у товара; привязки явные, как в PIM: товар бывает и в корневой, и в дочерней категории). Цены `store_product_price` (purchase global; dealer/retail regional) + `store_currency` / `store_region_group`. Soft-delete `deleted_at` на справочниках.
@@ -89,7 +98,7 @@ Seed после историй раскладывает `changed_at` монот�
 - Клиент: `src/lib/supabase/client.ts`
 - API: `src/features/logistics/logistics-api.ts` (RPC only)
 - Каталог: `src/features/store/store-catalog-from-logistics.ts`
-- Миграции: `20260922200000_store_baseline.sql` (+ `thank_you_entry`); `20260923120000_store_page_read_models.sql` — read-RPC страниц (удаляет временный `store_logistics_snapshot`)
+- Миграции: `20260922200000_store_baseline.sql` (+ `thank_you_entry`); `20260923120000_store_page_read_models.sql` — read-RPC страниц (удаляет временный `store_logistics_snapshot`); `20260924120000_store_output_calendar_page.sql` — `store_output_calendar_page()`
 - Seed: `scripts/seed-logistics.mjs` + `scripts/lib/seed-logistics-stories.mjs`
 
 ### Загрузка данных
@@ -103,6 +112,7 @@ Seed после историй раскладывает `changed_at` монот�
 | Перемещения (список) | `store_transfer_list()` |
 | Отгрузки / возвраты (список) | `store_shipment_list()` |
 | Выпуски (список) | `store_output_list()` |
+| Календарь выпусков | `store_output_calendar_page()` |
 | Корректировки (список) | `store_adjustment_list()` |
 | Резервы (список) | `store_reservation_list()` |
 | Остатки | `store_stock_page()` |
