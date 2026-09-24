@@ -70,3 +70,5 @@ When the active model is Grok, quality outranks speed, token count, and smallest
 Outside the managed block on purpose: keep this section when refreshing `bmad-project-context`.
 
 Delegate well-defined technical tasks — writing code to a clear spec, and codebase or web research — to subagents running the latest Grok model. Prefer Grok 4.7 medium fast; if that tier is not offered, use the newest available Grok slug (for example `grok-4.7-high-fast`). Keep design decisions, ambiguous requirements, and final review/verification in the parent agent. Give each subagent full context (it cannot see the chat), and check its result before reporting it as done.
+
+Never use Grok for design work: UX prototypes, HTML mocks, design directions, wireframes, DESIGN.md / EXPERIENCE.md. Do it in the parent agent or delegate to a non-Grok subagent (default `inherit`).
