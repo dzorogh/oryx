@@ -313,7 +313,7 @@ const JourneyStage = ({
 
   return (
     <div
-      className="min-w-0 border-l border-border/60 px-4 py-3.5 first:border-l-0"
+      className="min-w-0 border-t border-l border-border/60 px-4 py-3.5"
       aria-current={marker === "current" ? "step" : undefined}
     >
       <div className="flex items-center gap-2.5">
@@ -377,7 +377,7 @@ export const OrderProgressTracker = ({
   return (
     <Card size="sm" className={cn(logisticsCardClass, "mt-3 gap-0 overflow-hidden py-0 shadow-sm data-[size=sm]:gap-0 data-[size=sm]:py-0")} aria-label="Ход заказа">
       <div
-        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+        className="-mt-px -ml-px grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
         aria-label="Ход заказа клиента"
       >
         {primaryStages.map((stage, index) => (
@@ -409,7 +409,7 @@ export const OrderProgressTracker = ({
           </div>
           <CollapsibleContent>
             <div
-              className="grid grid-cols-1 border-t border-border/60 sm:grid-cols-2"
+              className="-ml-px grid grid-cols-1 sm:grid-cols-2"
               aria-label="Связанные документы"
             >
               {secondaryStages.map((stage, index) => (
