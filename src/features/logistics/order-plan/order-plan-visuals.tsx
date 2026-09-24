@@ -169,8 +169,6 @@ export const PlanQuantityInput = ({
   const [draft, setDraft] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const version = useRef(0);
-  const [focused, setFocused] = useState(false);
-
   useEffect(() => () => {
     if (timer.current) {
       clearTimeout(timer.current);
@@ -196,7 +194,7 @@ export const PlanQuantityInput = ({
   };
 
   const shown = draft ?? (value > 0 ? formatQuantity(value) : "");
-  const dim = disabled || (!focused && draft == null && value <= 0);
+  const dim = Boolean(disabled);
 
   return (
     <span className="relative inline-flex">
@@ -218,7 +216,6 @@ export const PlanQuantityInput = ({
         aria-invalid={invalid || undefined}
         disabled={disabled}
         value={shown}
-        onFocus={() => setFocused(true)}
         onChange={(event) => {
           const next = event.target.value;
           if (!/^[0-9]*[.,]?[0-9]{0,2}$/.test(next)) {
@@ -231,7 +228,6 @@ export const PlanQuantityInput = ({
           timer.current = setTimeout(() => commit(next), COMMIT_DELAY_MS);
         }}
         onBlur={() => {
-          setFocused(false);
           if (draft != null) {
             commit(draft);
           }
