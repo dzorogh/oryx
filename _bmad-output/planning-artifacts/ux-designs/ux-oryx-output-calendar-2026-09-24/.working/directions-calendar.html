@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Календарь выпусков — направления UX</title>
+  <!--
+    Spec: SPEC-orders-calendar (SPEC.md CAP-1..7; calculation-rules.md; table-layout.md)
+    Conventions: list-page-toolbar.md, place-codes.md, russian-labels.md
+    Demo data: demo-reference.json (products/cats/regions/prefixes)
+    Hex: bg #f4f4f5 · card #fff · fg #18181b · muted-fg #71717a · border #e5e5e5 ·
+         current-col #fafafa · overdue-bg #fef2f2 · overdue-fg #b91c1c ·
+         accent-btn #18181b · ring #a1a1aa · sticky-bg #fff · group-bg #fafafa ·
+         band-bg #f0f0f1 · plus-btn #27272a · chip-bg #f4f4f5 · sheet-shadow rgba(24,24,27,.12)
+  -->
+  <style>
+    :root {
+      --bg: #f4f4f5;
+      --card: #ffffff;
+      --fg: #18181b;
+      --muted-fg: #71717a;
+      --border: #e5e5e5;
+      --current: #fafafa;
+      --overdue-bg: #fef2f2;
+      --overdue-fg: #b91c1c;
+      --group: #fafafa;
+      --band: #f0f0f1;
+      --chip: #f4f4f5;
+      --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    .page { width: 100%; padding: 16px; }
+    .page-title { margin: 0 0 4px; font-size: 20px; font-weight: 650; letter-spacing: -.02em; }
+    .page-sub { margin: 0 0 20px; color: var(--muted-fg); font-size: 12px; }
+    .section { margin-bottom: 36px; }
+    .section > h2 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .section > .sec-lead { margin: 0 0 14px; color: var(--muted-fg); font-size: 12px; }
+    .variants {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 1100px) {
+      .variants.side { grid-template-columns: 1fr 1fr 1fr; }
+      .variants.side-2 { grid-template-columns: 1fr 1fr; }
+    }
+    .variant {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .variant-head {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+    .badge {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 22px;
+      padding: 0 7px;
+      border-radius: 4px;
+      background: #18181b;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 650;
+    }
+    .caption { margin: 0; font-size: 12px; color: #3f3f46; line-height: 1.45; }
+    .variant-body { padding: 10px; background: var(--bg); }
+    .crumb {
+      display: flex; gap: 6px; align-items: center;
+      margin: 0 0 8px; color: var(--muted-fg); font-size: 11px;
+    }
+    .crumb span[aria-current] { color: var(--fg); }
+    .toolbar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+    }
+    .tb-title {
+      display: flex; justify-content: space-between; gap: 8px;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    .tb-title h3 { margin: 0; font-size: 15px; font-weight: 650; }
+    .tb-title p { margin: 2px 0 0; color: var(--muted-fg); font-size: 11px; }
+    .tb-controls {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      padding: 8px 12px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 9px;
+      border: 1px solid var(--border); border-radius: 5px;
+      background: #fff; color: #27272a; font-size: 12px; white-space: nowrap;
+    }
+    .btn.active { background: #18181b; color: #fff; border-color: #18181b; }
+    .btn.ghost { background: transparent; border-color: transparent; color: var(--muted-fg); }
+    .switch {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 28px; padding: 0 8px; font-size: 12px;
+    }
+    .switch .track {
+      width: 28px; height: 16px; border-radius: 999px;
+      background: #18181b; position: relative;
+    }
+    .switch .track::after {
+      content: ""; position: absolute; top: 2px; right: 2px;
+      width: 12px; height: 12px; border-radius: 50%; background: #fff;
+    }
+    .summary {
+      padding: 0 12px 8px;
+      color: var(--muted-fg); font-size: 11px;
+    }
+    .summary strong { color: #3f3f46; font-weight: 550; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 26px; padding: 0 8px;
+      border: 1px solid var(--border); border-radius: 999px;
+      background: var(--chip); font-size: 11px; color: #3f3f46;
+    }
+    .chip .x { color: var(--muted-fg); font-size: 13px; line-height: 1; }
+    .chip-row {
+      display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+      padding: 0 12px 8px;
+    }
+    .chip-row .lbl { color: var(--muted-fg); font-size: 11px; margin-right: 2px; }
+    .table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 12px;
+      min-width: 720px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 5px 8px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    thead th {
+      background: #fafafa;
+      font-weight: 550;
+      color: #3f3f46;
+      font-size: 11px;
+      position: sticky; top: 0; z-index: 2;
+    }
+    .sticky-col {
+      position: sticky; left: 0; z-index: 1;
+      background: #fff; min-width: 160px; max-width: 200px;
+    }
+    thead .sticky-col { z-index: 3; background: #fafafa; }
+    .col-plant { min-width: 64px; color: var(--muted-fg); font-variant-numeric: tabular-nums; }
+    .col-stock, .col-m, .col-ns {
+      text-align: right; font-variant-numeric: tabular-nums;
+      min-width: 52px;
+    }
+    .col-m.cur, th.cur { background: var(--current); }
+    td.cur { background: var(--current); }
+    td.overdue {
+      background: var(--overdue-bg);
+      color: var(--overdue-fg);
+      font-weight: 550;
+    }
+    .prod-name { font-weight: 550; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+    .prod-code { color: var(--muted-fg); font-size: 11px; }
+    .also { color: var(--muted-fg); font-size: 10px; display: block; }
+    .group-row td {
+      background: var(--group);
+      font-weight: 600;
+      font-size: 12px;
+      color: #27272a;
+    }
+    .group-row .count { color: var(--muted-fg); font-weight: 450; }
+    .chev { display: inline-block; width: 12px; color: var(--muted-fg); font-size: 10px; }
+    .indent-1 { padding-left: 22px !important; }
+    .indent-2 { padding-left: 36px !important; }
+    .band-row td {
+      background: var(--band);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .01em;
+      border-bottom-color: #d4d4d8;
+    }
+    .demand { display: block; color: var(--muted-fg); font-size: 10px; font-weight: 450; margin-top: 1px; }
+    .demand-row td { background: #fcfcfc; color: var(--muted-fg); font-size: 11px; }
+    .demand-row .sticky-col { background: #fcfcfc; padding-left: 16px; font-weight: 450; }
+    .legend-tiny { font-size: 10px; color: var(--muted-fg); font-weight: 450; }
+    th.subh { font-size: 10px; padding: 3px 4px; text-align: center; font-weight: 500; }
+    td.split { padding: 3px 4px; }
+    .split-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .split-inner span {
+      text-align: right; padding: 2px 4px;
+      border-right: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+    .split-inner span:last-child { border-right: 0; color: var(--muted-fg); }
+    .cell-hover {
+      position: relative;
+      background: #f8fafc !important;
+    }
+    .plus {
+      position: absolute; top: 2px; right: 2px;
+      width: 16px; height: 16px;
+      border-radius: 3px;
+      background: #27272a; color: #fff;
+      font-size: 12px; line-height: 16px; text-align: center;
+      font-weight: 600;
+    }
+    .popover-wrap { position: relative; display: inline-block; }
+    .popover {
+      position: absolute; top: calc(100% + 4px); left: 0; z-index: 20;
+      width: 280px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(24,24,27,.12);
+      padding: 10px;
+      font-size: 12px;
+    }
+    .popover h4 { margin: 0 0 6px; font-size: 11px; font-weight: 650; color: var(--muted-fg); text-transform: uppercase; letter-spacing: .04em; }
+    .popover .check { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+    .popover .box {
+      width: 13px; height: 13px; border: 1px solid #a1a1aa; border-radius: 3px;
+      background: #18181b; position: relative; flex: none;
+    }
+    .popover .box::after {
+      content: ""; position: absolute; left: 3px; top: 1px;
+      width: 5px; height: 8px; border: solid #fff; border-width: 0 1.5px 1.5px 0;
+      transform: rotate(45deg);
+    }
+    .popover .box.off { background: #fff; }
+    .popover .box.off::after { display: none; }
+    .popover .search {
+      width: 100%; height: 28px; margin: 4px 0 6px;
+      padding: 0 8px; border: 1px solid var(--border); border-radius: 5px;
+    }
+    .popover .sep { height: 1px; background: var(--border); margin: 8px 0; }
+    .sheet-demo {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 0;
+      min-height: 280px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .sheet-demo .dim { padding: 8px; opacity: .55; pointer-events: none; }
+    .sheet {
+      background: #fff;
+      border-left: 1px solid var(--border);
+      box-shadow: -8px 0 24px rgba(24,24,27,.08);
+      display: flex; flex-direction: column;
+    }
+    .sheet-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+    }
+    .sheet-head h4 { margin: 0; font-size: 14px; font-weight: 650; }
+    .sheet-tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 8px;
+    }
+    .sheet-tabs span {
+      padding: 8px 12px; font-size: 12px; color: var(--muted-fg);
+      border-bottom: 2px solid transparent; font-weight: 550;
+    }
+    .sheet-tabs .on { color: var(--fg); border-bottom-color: #18181b; }
+    .sheet-body { padding: 12px 14px; flex: 1; overflow: auto; }
+    .sheet-body .check { display: flex; gap: 6px; align-items: center; padding: 4px 0; font-size: 12px; }
+    .sheet-body .box {
+      width: 13px; height: 13px; border: 1px solid #a1a1aa; border-radius: 3px;
+      background: #18181b; flex: none;
+    }
+    .sheet-body h5 { margin: 10px 0 4px; font-size: 11px; color: var(--muted-fg); font-weight: 650; text-transform: uppercase; letter-spacing: .04em; }
+    .full { grid-column: 1 / -1; }
+    .note { margin: 8px 0 0; font-size: 11px; color: var(--muted-fg); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1 class="page-title">Календарь выпусков — направления</h1>
+    <p class="page-sub">Три решения по раскладке. Данные из demo-reference.json · сентябрь 2026 · единицы — шт.</p>
+
+    <!-- ========== A ========== -->
+    <section class="section">
+      <h2>A — Спрос рядом с приходом</h2>
+      <p class="sec-lead">Переключатель «Спрос» включён: в ячейках месяца виден остаток к отгрузке по заказам клиента.</p>
+      <div class="variants side">
+
+        <!-- A1 -->
+        <article class="variant">
+          <div class="variant-head">
+            <span class="badge">A1</span>
+            <p class="caption">Два числа в одной ячейке: приход сверху, «спрос N» снизу. Компактно, но ячейка становится выше и труднее сканировать глазом.</p>
+          </div>
+          <div class="variant-body">
+            <div class="crumb">Склад <span>›</span> Производство <span>›</span> <span aria-current="page">Календарь выпусков</span></div>
+            <div class="toolbar">
+              <div class="tb-title">
+                <div>
+                  <h3>Календарь выпусков</h3>
+                  <p>Приход по месяцам и спрос рядом</p>
+                </div>
+              </div>
+              <div class="tb-controls">
+                <span class="switch"><span class="track"></span> Спрос</span>
+                <span class="btn">Завод: все</span>
+              </div>
+              <div class="summary">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Товар <span class="legend-tiny">· спрос — остаток к отгрузке</span></th>
+                    <th class="col-plant">Код завода</th>
+                    <th class="col-stock">Остаток</th>
+                    <th class="col-m">Авг 2026</th>
+                    <th class="col-m cur">Сен 2026</th>
+                    <th class="col-m">Окт 2026</th>
+                    <th class="col-m">Ноя 2026</th>
+                    <th class="col-ns">Без срока</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="group-row"><td class="sticky-col" colspan="8">4x4 · <span class="count">14 товаров</span></td></tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 1100 EFI</span>
+                      <span class="prod-code">PRD-1</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">7</td>
+                    <td class="col-m overdue">3<span class="demand">спрос 2</span></td>
+                    <td class="col-m cur">5<span class="demand">спрос 4</span></td>
+                    <td class="col-m cell-hover">8<span class="demand">спрос 3</span><span class="plus">+</span></td>
+                    <td class="col-m">4<span class="demand">спрос 1</span></td>
+                    <td class="col-ns">2</td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 650</span>
+                      <span class="prod-code">PRD-6</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-1</td>
+                    <td class="col-stock">12</td>
+                    <td class="col-m overdue">2<span class="demand">спрос 1</span></td>
+                    <td class="col-m cur">6<span class="demand">спрос 5</span></td>
+                    <td class="col-m"></td>
+                    <td class="col-m">10<span class="demand">спрос 2</span></td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 800 EFI Challenger</span>
+                      <span class="prod-code">PRD-46</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">3</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">4<span class="demand">спрос 6</span></td>
+                    <td class="col-m">7<span class="demand">спрос 2</span></td>
+                    <td class="col-m"></td>
+                    <td class="col-ns">1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <!-- A2 -->
+        <article class="variant">
+          <div class="variant-head">
+            <span class="badge">A2</span>
+            <p class="caption">Отдельная подстрока «Спрос» под товаром. Приход остаётся чистым; таблица почти удваивается по высоте.</p>
+          </div>
+          <div class="variant-body">
+            <div class="summary" style="padding:0 0 6px">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Товар</th>
+                    <th class="col-plant">Код завода</th>
+                    <th class="col-stock">Остаток</th>
+                    <th class="col-m">Авг 2026</th>
+                    <th class="col-m cur">Сен 2026</th>
+                    <th class="col-m">Окт 2026</th>
+                    <th class="col-m">Ноя 2026</th>
+                    <th class="col-ns">Без срока</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="group-row"><td class="sticky-col" colspan="8">Naked Bike · <span class="count">28 товаров</span></td></tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">RST 240 Ultra</span>
+                      <span class="prod-code">PRD-25</span>
+                      <span class="also">также в: On Road</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">5</td>
+                    <td class="col-m overdue">4</td>
+                    <td class="col-m cur">6</td>
+                    <td class="col-m cell-hover">9<span class="plus">+</span></td>
+                    <td class="col-m">3</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr class="demand-row">
+                    <td class="sticky-col">Спрос</td>
+                    <td class="col-plant"></td>
+                    <td class="col-stock"></td>
+                    <td class="col-m">2</td>
+                    <td class="col-m cur">5</td>
+                    <td class="col-m">3</td>
+                    <td class="col-m">1</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">RST 322 Ultra</span>
+                      <span class="prod-code">PRD-27</span>
+                      <span class="also">также в: On Road</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">9</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">8</td>
+                    <td class="col-m">4</td>
+                    <td class="col-m">12</td>
+                    <td class="col-ns">2</td>
+                  </tr>
+                  <tr class="demand-row">
+                    <td class="sticky-col">Спрос</td>
+                    <td class="col-plant"></td>
+                    <td class="col-stock"></td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">7</td>
+                    <td class="col-m">2</td>
+                    <td class="col-m">4</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">RST 750 Ultra</span>
+                      <span class="prod-code">PRD-29</span>
+                      <span class="also">также в: On Road</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">2</td>
+                    <td class="col-m overdue">1</td>
+                    <td class="col-m cur">3</td>
+                    <td class="col-m"></td>
+                    <td class="col-m">5</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr class="demand-row">
+                    <td class="sticky-col">Спрос</td>
+                    <td class="col-plant"></td>
+                    <td class="col-stock"></td>
+                    <td class="col-m">3</td>
+                    <td class="col-m cur">2</td>
+                    <td class="col-m"></td>
+                    <td class="col-m">6</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <!-- A3 -->
+        <article class="variant">
+          <div class="variant-head">
+            <span class="badge">A3</span>
+            <p class="caption">Две узкие подколонки «Приход | Спрос» под каждым месяцем. Сравнение в строке, но ширина таблицы растёт вдвое.</p>
+          </div>
+          <div class="variant-body">
+            <div class="summary" style="padding:0 0 6px">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+            <div class="table-wrap">
+              <table style="min-width:860px">
+                <thead>
+                  <tr>
+                    <th class="sticky-col" rowspan="2">Товар</th>
+                    <th class="col-plant" rowspan="2">Код завода</th>
+                    <th class="col-stock" rowspan="2">Остаток</th>
+                    <th colspan="2" style="text-align:center">Авг 2026</th>
+                    <th colspan="2" class="cur" style="text-align:center">Сен 2026</th>
+                    <th colspan="2" style="text-align:center">Окт 2026</th>
+                    <th class="col-ns" rowspan="2">Без срока</th>
+                  </tr>
+                  <tr>
+                    <th class="subh">Приход</th>
+                    <th class="subh">Спрос</th>
+                    <th class="subh cur">Приход</th>
+                    <th class="subh cur">Спрос</th>
+                    <th class="subh">Приход</th>
+                    <th class="subh">Спрос</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="group-row"><td class="sticky-col" colspan="10">4x2 · <span class="count">9 товаров</span></td></tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Cross 180 RX</span>
+                      <span class="prod-code">PRD-2</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-4</td>
+                    <td class="col-stock">4</td>
+                    <td class="col-m overdue">2</td>
+                    <td class="col-m" style="color:var(--muted-fg)">1</td>
+                    <td class="col-m cur">5</td>
+                    <td class="col-m cur" style="color:var(--muted-fg)">3</td>
+                    <td class="col-m cell-hover">7<span class="plus">+</span></td>
+                    <td class="col-m" style="color:var(--muted-fg)">2</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Hummer 320 RX LTD</span>
+                      <span class="prod-code">PRD-5</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-2</td>
+                    <td class="col-stock">8</td>
+                    <td class="col-m overdue">3</td>
+                    <td class="col-m" style="color:var(--muted-fg)">2</td>
+                    <td class="col-m cur">4</td>
+                    <td class="col-m cur" style="color:var(--muted-fg)">4</td>
+                    <td class="col-m"></td>
+                    <td class="col-m" style="color:var(--muted-fg)">1</td>
+                    <td class="col-ns">2</td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Cruiser Race 550 GX</span>
+                      <span class="prod-code">PRD-9</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-3</td>
+                    <td class="col-stock">1</td>
+                    <td class="col-m"></td>
+                    <td class="col-m" style="color:var(--muted-fg)"></td>
+                    <td class="col-m cur">6</td>
+                    <td class="col-m cur" style="color:var(--muted-fg)">5</td>
+                    <td class="col-m">3</td>
+                    <td class="col-m" style="color:var(--muted-fg)">2</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ========== B ========== -->
+    <section class="section">
+      <h2>B — Фильтр: для кого считаем</h2>
+      <p class="sec-lead">Владельцы прихода (Свободно / регионы / OMS-…) и отдельный фильтр спроса той же формы; плюс завод.</p>
+      <div class="variants">
+
+        <!-- B1 -->
+        <article class="variant full">
+          <div class="variant-head">
+            <span class="badge">B1</span>
+            <p class="caption">Одна кнопка с составом «Приход: Свободно + 2» открывает поповер с чекбоксами. Мало места в тулбаре, но состав фильтра спрятан за кликом.</p>
+          </div>
+          <div class="variant-body">
+            <div class="crumb">Склад <span>›</span> Производство <span>›</span> <span aria-current="page">Календарь выпусков</span></div>
+            <div class="toolbar" style="min-height: 220px">
+              <div class="tb-title">
+                <div>
+                  <h3>Календарь выпусков</h3>
+                  <p>Фильтр владельцев прихода и спроса</p>
+                </div>
+              </div>
+              <div class="tb-controls" style="position:relative; padding-bottom: 170px;">
+                <div class="popover-wrap">
+                  <span class="btn active">Приход: Свободно + 2 ▾</span>
+                  <div class="popover">
+                    <div class="check"><span class="box"></span> Свободно</div>
+                    <div class="sep"></div>
+                    <h4>Регионы</h4>
+                    <div class="check"><span class="box"></span> Россия</div>
+                    <div class="check"><span class="box off"></span> Казахстан</div>
+                    <div class="check"><span class="box off"></span> Беларусь</div>
+                    <div class="check"><span class="box off"></span> ОАЭ</div>
+                    <div class="check" style="padding-left:19px"><span class="box"></span> с заказами клиентов региона</div>
+                    <div class="sep"></div>
+                    <h4>Заказы клиента</h4>
+                    <input class="search" placeholder="Поиск OMS-…" value="OMS-1" readonly>
+                    <div class="check"><span class="box"></span> OMS-12 · ООО «СеверТрейд»</div>
+                    <div class="check"><span class="box off"></span> OMS-18 · АО «Степь»</div>
+                    <div class="check"><span class="box off"></span> OMS-24 · ТОО «Каспий»</div>
+                  </div>
+                </div>
+                <span class="switch"><span class="track"></span> Спрос</span>
+                <span class="btn">Спрос: все ▾</span>
+                <span class="btn">Завод: все ▾</span>
+              </div>
+              <div class="summary">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Товар</th>
+                    <th class="col-plant">Код завода</th>
+                    <th class="col-stock">Остаток</th>
+                    <th class="col-m">Авг 2026</th>
+                    <th class="col-m cur">Сен 2026</th>
+                    <th class="col-m">Окт 2026</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="group-row"><td class="sticky-col" colspan="6">Electro · <span class="count">3 товара</span></td></tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Cross E-200</span>
+                      <span class="prod-code">PRD-7</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-4</td>
+                    <td class="col-stock">6</td>
+                    <td class="col-m overdue">2</td>
+                    <td class="col-m cur">4</td>
+                    <td class="col-m cell-hover">5<span class="plus">+</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <!-- B2 -->
+        <article class="variant full">
+          <div class="variant-head">
+            <span class="badge">B2</span>
+            <p class="caption">Состав фильтра — съёмные чипы в тулбаре. Всё видно сразу; при длинном списке OMS чипы займут вторую-третью строку.</p>
+          </div>
+          <div class="variant-body">
+            <div class="toolbar">
+              <div class="tb-title">
+                <div>
+                  <h3>Календарь выпусков</h3>
+                  <p>Чипы владельцев вместо скрытого поповера</p>
+                </div>
+              </div>
+              <div class="tb-controls">
+                <span class="switch"><span class="track"></span> Спрос</span>
+                <span class="btn">Завод: все ▾</span>
+                <span class="btn ghost">Сбросить</span>
+              </div>
+              <div class="chip-row">
+                <span class="lbl">Приход:</span>
+                <span class="chip">Свободно <span class="x">×</span></span>
+                <span class="chip">Россия + заказы <span class="x">×</span></span>
+                <span class="chip">OMS-12 <span class="x">×</span></span>
+                <span class="btn" style="height:26px;font-size:11px">+ Добавить ▾</span>
+              </div>
+              <div class="chip-row">
+                <span class="lbl">Спрос:</span>
+                <span class="chip">Казахстан <span class="x">×</span></span>
+                <span class="chip">OMS-18 <span class="x">×</span></span>
+                <span class="btn" style="height:26px;font-size:11px">+ Добавить ▾</span>
+              </div>
+              <div class="summary">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все · Спрос: Казахстан + OMS-18</div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Товар</th>
+                    <th class="col-plant">Код завода</th>
+                    <th class="col-stock">Остаток</th>
+                    <th class="col-m">Авг 2026</th>
+                    <th class="col-m cur">Сен 2026</th>
+                    <th class="col-m">Ноя 2026</th>
+                    <th class="col-ns">Без срока</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="group-row"><td class="sticky-col" colspan="7">4x4 · <span class="count">14 товаров</span></td></tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 420 Cyber EFI</span>
+                      <span class="prod-code">PRD-47</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-6</td>
+                    <td class="col-stock">11</td>
+                    <td class="col-m overdue">5</td>
+                    <td class="col-m cur">8</td>
+                    <td class="col-m">6</td>
+                    <td class="col-ns">3</td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 720</span>
+                      <span class="prod-code">PRD-121</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">4</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">3</td>
+                    <td class="col-m cell-hover">9<span class="plus">+</span></td>
+                    <td class="col-ns"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <!-- B3 -->
+        <article class="variant full">
+          <div class="variant-head">
+            <span class="badge">B3</span>
+            <p class="caption">Правая панель «Для кого считаем» с вкладками Приход / Спрос. Много места для длинных списков OMS, но уводит фокус от таблицы.</p>
+          </div>
+          <div class="variant-body">
+            <div class="sheet-demo">
+              <div class="dim">
+                <div class="toolbar">
+                  <div class="tb-title"><div><h3>Календарь выпусков</h3><p>Панель фильтра открыта справа</p></div></div>
+                  <div class="tb-controls">
+                    <span class="btn active">Для кого считаем</span>
+                    <span class="switch"><span class="track"></span> Спрос</span>
+                    <span class="btn">Завод: все ▾</span>
+                  </div>
+                  <div class="summary">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="sticky-col">Товар</th>
+                        <th class="col-m cur">Сен 2026</th>
+                        <th class="col-m">Окт 2026</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="sticky-col"><span class="prod-name">Force 1100 EFI LTD</span><span class="prod-code">PRD-48</span></td>
+                        <td class="col-m cur">7</td>
+                        <td class="col-m">4</td>
+                      </tr>
+                      <tr>
+                        <td class="sticky-col"><span class="prod-name">Activator 280 RX</span><span class="prod-code">PRD-3</span></td>
+                        <td class="col-m cur">2</td>
+                        <td class="col-m"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <aside class="sheet">
+                <div class="sheet-head">
+                  <h4>Для кого считаем</h4>
+                  <span style="color:var(--muted-fg);font-size:16px;line-height:1">×</span>
+                </div>
+                <div class="sheet-tabs">
+                  <span class="on">Приход</span>
+                  <span>Спрос</span>
+                </div>
+                <div class="sheet-body">
+                  <div class="check"><span class="box"></span> Свободно</div>
+                  <h5>Регионы</h5>
+                  <div class="check"><span class="box"></span> Россия</div>
+                  <div class="check"><span class="box" style="background:#fff"></span> Казахстан</div>
+                  <div class="check"><span class="box" style="background:#fff"></span> Беларусь</div>
+                  <div class="check"><span class="box" style="background:#fff"></span> Узбекистан</div>
+                  <div class="check"><span class="box" style="background:#fff"></span> Германия</div>
+                  <div class="check" style="padding-left:19px"><span class="box"></span> с заказами клиентов региона</div>
+                  <h5>Заказы клиента</h5>
+                  <input class="search" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--border);border-radius:5px;margin-bottom:6px" placeholder="Поиск OMS-…" readonly>
+                  <div class="check"><span class="box"></span> OMS-12 · ООО «СеверТрейд»</div>
+                  <div class="check"><span class="box" style="background:#fff"></span> OMS-18 · АО «Степь»</div>
+                  <div class="check"><span class="box" style="background:#fff"></span> OMS-31 · ИП Каримов</div>
+                  <p class="note">На вкладке «Спрос» — те же регионы и OMS, без пункта «Свободно».</p>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ========== C ========== -->
+    <section class="section">
+      <h2>C — Дерево категорий</h2>
+      <p class="sec-lead">Товары сгруппированы по дереву PIM; товар в нескольких категориях повторяется с пометкой «также в: …».</p>
+      <div class="variants side">
+
+        <!-- C1 -->
+        <article class="variant">
+          <div class="variant-head">
+            <span class="badge">C1</span>
+            <p class="caption">Вложенные группы с шевронами и отступами. Иерархия читается сразу; глубокое дерево съедает ширину колонки «Товар».</p>
+          </div>
+          <div class="variant-body">
+            <div class="summary" style="padding:0 0 6px">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Товар</th>
+                    <th class="col-plant">Код завода</th>
+                    <th class="col-stock">Остаток</th>
+                    <th class="col-m">Авг 2026</th>
+                    <th class="col-m cur">Сен 2026</th>
+                    <th class="col-m">Окт 2026</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="group-row">
+                    <td class="sticky-col" colspan="6"><span class="chev">▾</span> ATV · <span class="count">26 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col indent-1">
+                      <span class="prod-name">Force 1100 EFI</span>
+                      <span class="prod-code">PRD-1</span>
+                      <span class="also">также в: 4x4</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">7</td>
+                    <td class="col-m overdue">3</td>
+                    <td class="col-m cur">5</td>
+                    <td class="col-m cell-hover">8<span class="plus">+</span></td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col indent-1" colspan="6"><span class="chev">▾</span> 4x4 · <span class="count">14 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col indent-2">
+                      <span class="prod-name">Force 650</span>
+                      <span class="prod-code">PRD-6</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-1</td>
+                    <td class="col-stock">12</td>
+                    <td class="col-m overdue">2</td>
+                    <td class="col-m cur">6</td>
+                    <td class="col-m">10</td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col indent-1" colspan="6"><span class="chev">▾</span> 4x2 · <span class="count">9 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col indent-2">
+                      <span class="prod-name">Cross 180 RX</span>
+                      <span class="prod-code">PRD-2</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-4</td>
+                    <td class="col-stock">4</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">5</td>
+                    <td class="col-m">7</td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col indent-1" colspan="6"><span class="chev">▾</span> Electro · <span class="count">3 товара</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col indent-2">
+                      <span class="prod-name">Cross E-200</span>
+                      <span class="prod-code">PRD-7</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-4</td>
+                    <td class="col-stock">6</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">4</td>
+                    <td class="col-m">5</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <!-- C2 -->
+        <article class="variant">
+          <div class="variant-head">
+            <span class="badge">C2</span>
+            <p class="caption">Плоские группы с полным путём «ATV → 4x4». Проще свернуть/развернуть по одной ветке; путь длиннее и повторяет корень.</p>
+          </div>
+          <div class="variant-body">
+            <div class="summary" style="padding:0 0 6px">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Товар</th>
+                    <th class="col-plant">Код завода</th>
+                    <th class="col-stock">Остаток</th>
+                    <th class="col-m">Авг 2026</th>
+                    <th class="col-m cur">Сен 2026</th>
+                    <th class="col-m">Ноя 2026</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="group-row">
+                    <td class="sticky-col" colspan="6"><span class="chev">▾</span> ATV · <span class="count">26 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 1100 EFI</span>
+                      <span class="prod-code">PRD-1</span>
+                      <span class="also">также в: 4x4</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">7</td>
+                    <td class="col-m overdue">3</td>
+                    <td class="col-m cur">5</td>
+                    <td class="col-m">4</td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col" colspan="6"><span class="chev">▾</span> ATV → 4x4 · <span class="count">14 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 800 EFI Challenger</span>
+                      <span class="prod-code">PRD-46</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">3</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">4</td>
+                    <td class="col-m cell-hover">7<span class="plus">+</span></td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col" colspan="6"><span class="chev">▾</span> ATV → 4x2 · <span class="count">9 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Cruiser 300 FJ</span>
+                      <span class="prod-code">PRD-4</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-4</td>
+                    <td class="col-stock">9</td>
+                    <td class="col-m overdue">1</td>
+                    <td class="col-m cur">6</td>
+                    <td class="col-m">2</td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col" colspan="6"><span class="chev">▾</span> On Road → Naked Bike · <span class="count">28 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">RST 250 Latina</span>
+                      <span class="prod-code">PRD-26</span>
+                      <span class="also">также в: On Road</span>
+                    </td>
+                    <td class="col-plant">PLT-23</td>
+                    <td class="col-stock">5</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">8</td>
+                    <td class="col-m">3</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <!-- C3 -->
+        <article class="variant">
+          <div class="variant-head">
+            <span class="badge">C3</span>
+            <p class="caption">Корень — широкая полоса-секция; товары прямо под ней, затем дочерние группы. Корень заметнее, но ломает единообразие строк таблицы.</p>
+          </div>
+          <div class="variant-body">
+            <div class="summary" style="padding:0 0 6px">Считаем: <strong>Свободно + Россия (с заказами) + OMS-12</strong> · Завод: все</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Товар</th>
+                    <th class="col-plant">Код завода</th>
+                    <th class="col-stock">Остаток</th>
+                    <th class="col-m">Авг 2026</th>
+                    <th class="col-m cur">Сен 2026</th>
+                    <th class="col-m">Дек 2026</th>
+                    <th class="col-ns">Без срока</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="band-row">
+                    <td class="sticky-col" colspan="7" style="background:var(--band)">ATV · 26 товаров</td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 1100 EFI</span>
+                      <span class="prod-code">PRD-1</span>
+                      <span class="also">также в: 4x4</span>
+                    </td>
+                    <td class="col-plant">PLT-5</td>
+                    <td class="col-stock">7</td>
+                    <td class="col-m overdue">3</td>
+                    <td class="col-m cur">5</td>
+                    <td class="col-m cell-hover">4<span class="plus">+</span></td>
+                    <td class="col-ns">2</td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Cross 180 RX</span>
+                      <span class="prod-code">PRD-2</span>
+                      <span class="also">также в: 4x2</span>
+                    </td>
+                    <td class="col-plant">PLT-4</td>
+                    <td class="col-stock">4</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur">5</td>
+                    <td class="col-m"></td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col" colspan="7"><span class="chev">▾</span> 4x4 · <span class="count">14 товаров</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">Force 425 Cyber</span>
+                      <span class="prod-code">PRD-125</span>
+                      <span class="also">также в: ATV</span>
+                    </td>
+                    <td class="col-plant">PLT-6</td>
+                    <td class="col-stock">8</td>
+                    <td class="col-m overdue">2</td>
+                    <td class="col-m cur">6</td>
+                    <td class="col-m">9</td>
+                    <td class="col-ns"></td>
+                  </tr>
+                  <tr class="group-row">
+                    <td class="sticky-col" colspan="7"><span class="chev">▾</span> Electro · <span class="count">3 товара</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">
+                      <span class="prod-name">FX 3000 ADV</span>
+                      <span class="prod-code">PRD-201</span>
+                    </td>
+                    <td class="col-plant">—</td>
+                    <td class="col-stock">0</td>
+                    <td class="col-m"></td>
+                    <td class="col-m cur"></td>
+                    <td class="col-m">3</td>
+                    <td class="col-ns">1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
