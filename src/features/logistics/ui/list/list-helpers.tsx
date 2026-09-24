@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { hrefForCustomerOrder } from "@/features/logistics/logistics-availability";
-import { formatExpectedEnd, formatQuantity } from "@/features/logistics/logistics-labels";
+import { formatDate, formatExpectedEnd, formatQuantity } from "@/features/logistics/logistics-labels";
 import type { LogisticsListProductLine } from "@/features/logistics/logistics-list-types";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import { overdueDays } from "@/features/logistics/ui/document/document-meta-field";
@@ -62,9 +62,7 @@ export const listCreatedColumn = <TRow extends { createdAt: string }>(): ListCol
   sortType: "date",
   sortValue: (row) => row.createdAt,
   render: (row) => (
-    <span className="text-xs text-muted-foreground">
-      {new Date(row.createdAt).toLocaleDateString("ru-RU")}
-    </span>
+    <span className="whitespace-nowrap tabular-nums">{formatDate(row.createdAt)}</span>
   ),
 });
 
@@ -98,7 +96,7 @@ export const listDeadlineColumn = <TRow extends { expectedEndOn: string | null; 
   render: (row) => {
     const overdue = row.status && isOpen?.(row.status) ? overdueDays(row.expectedEndOn) : 0;
     return (
-      <span className="tabular-nums">
+      <span className="whitespace-nowrap tabular-nums">
         {formatExpectedEnd(row.expectedEndOn)}
         {overdue > 0 ? (
           <span className="ml-1.5 inline-block rounded bg-destructive/10 px-1.5 py-0 text-[11px] font-medium text-destructive">

@@ -193,7 +193,7 @@ export const formatTimestamp = (value: string | null): string => {
   if (!value) {
     return "—";
   }
-    return new Date(value).toLocaleString("ru-RU", {
+  return new Date(value).toLocaleString("ru-RU", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -216,15 +216,21 @@ export const formatMetaTimestamp = (value: string | null): string => {
   });
 };
 
+const SHORT_DATE_OPTIONS: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+
 export const formatExpectedEnd = (value: string | null): string => {
   if (!value) {
     return "—";
   }
-  return new Date(`${value}T00:00:00`).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return new Date(`${value}T00:00:00`).toLocaleDateString("ru-RU", SHORT_DATE_OPTIONS);
+};
+
+/** Date part of an ISO timestamp in the same format as {@link formatExpectedEnd}: «24 сент. 2026 г.». */
+export const formatDate = (value: string | null): string => {
+  if (!value) {
+    return "—";
+  }
+  return new Date(value).toLocaleDateString("ru-RU", SHORT_DATE_OPTIONS);
 };
 
 export const expectedEndMeta = (status: string, expectedEndOn: string | null, extras: string[] = []): string =>
