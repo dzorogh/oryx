@@ -61,6 +61,7 @@ export const OrderPlanBar = ({
   plans,
   current,
   canAct,
+  unsaved = false,
   onSelect,
   onCreate,
   onCopy,
@@ -70,6 +71,8 @@ export const OrderPlanBar = ({
   plans: OrderPlan[];
   current: OrderPlan | null;
   canAct: boolean;
+  /** Черновик «План 1» ещё не записан в базу. */
+  unsaved?: boolean;
   onSelect: (planId: string) => void;
   onCreate: () => void;
   onCopy: (planId: string) => void;
@@ -93,7 +96,14 @@ export const OrderPlanBar = ({
         "h-12 flex-row items-center gap-2 px-2 py-0 shadow-sm data-[size=sm]:gap-2 data-[size=sm]:py-0",
       )}
     >
-      {current ? (
+      {unsaved && !current ? (
+        <span className="inline-flex h-8 items-center gap-2 px-2.5 text-[13px] font-semibold whitespace-nowrap">
+          План 1
+          <span className="inline-flex h-5 items-center rounded-full border border-border bg-zinc-50 px-2 text-[11.5px] leading-none font-medium text-zinc-600">
+            Черновик
+          </span>
+        </span>
+      ) : current ? (
         <>
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -180,7 +190,7 @@ export const OrderPlanBar = ({
         </>
       ) : null}
       <span className="flex-1" />
-      {canAct ? (
+      {canAct && plans.length > 0 ? (
         <Button type="button" variant="ghost" onClick={onCreate} className="text-zinc-600">
           <Plus />
           Новый план

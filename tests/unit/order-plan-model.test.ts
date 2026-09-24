@@ -94,10 +94,50 @@ describe("order plan model", () => {
     const draft = plan({ actions: [action({ quantity: 4, available: 18 })] });
     const products = buildProductPlans({ snapshot, lines: [line], payload: payload(10, 8), plan: draft, places });
     assert.equal(products[0]?.remaining, -2);
+    assert.equal(products[0]?.excess, 2);
     const problems = planProblems(products, false);
     assert.equal(problems.excess, 1);
     assert.equal(problems.shortages, 0);
     assert.equal(problems.firstVariantId, "2");
+  });
+
+  it("a product already covered, with no plan actions, is covered and not excess", () => {
+    const products = buildProductPlans({ snapshot, lines: [line], payload: payload(10, 10), plan: plan({}), places });
+    assert.equal(products[0]?.isCovered, true);
+    assert.equal(products[0]?.excess, 0);
+    assert.equal(products[0]?.remaining, 0);
+    assert.deepEqual(planProblems(products, false), { shortages: 0, excess: 0, firstVariantId: null });
+  });
+
+  it("reserve above the order before the plan is not excess and does not block launch", () => {
+    const products = buildProductPlans({ snapshot, lines: [line], payload: payload(10, 12), plan: plan({}), places });
+    assert.equal(products[0]?.isCovered, true);
+    assert.equal(products[0]?.excess, 0);
+    assert.equal(products[0]?.remaining, 0);
+    assert.equal(products[0]?.bar.overflow, 0);
+    assert.deepEqual(planProblems(products, false), { shortages: 0, excess: 0, firstVariantId: null });
+  });
+
+  it("excess added by the plan is min(plan, have + plan − ordered)", () => {
+    const draft = plan({ actions: [action({ quantity: 4, available: 18 })] });
+    const products = buildProductPlans({ snapshot, lines: [line], payload: payload(10, 8), plan: draft, places });
+    assert.equal(products[0]?.excess, Math.min(4, 8 + 4 - 10));
+    assert.equal(products[0]?.remaining, -2);
+    assert.equal(products[0]?.isCovered, false);
+    assert.equal(products[0]?.bar.overflow, 2);
+
+    const alreadyOver = buildProductPlans({
+      snapshot,
+      lines: [line],
+      payload: payload(10, 12),
+      plan: plan({ actions: [action({ quantity: 3, available: 18 })] }),
+      places,
+    });
+    assert.equal(alreadyOver[0]?.excess, Math.min(3, 12 + 3 - 10));
+    assert.equal(alreadyOver[0]?.remaining, -3);
+    assert.equal(alreadyOver[0]?.isCovered, false);
+    assert.equal(alreadyOver[0]?.bar.overflow, 3);
+    assert.equal(planProblems(alreadyOver, false).excess, 1);
   });
 
   it("a launched plan reads launchedCoverage, not live coverage", () => {

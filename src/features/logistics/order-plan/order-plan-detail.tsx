@@ -300,17 +300,17 @@ export const OrderPlanDetail = ({
   const takeTotal = groups.reduce((sum, group) => sum + group.take, 0);
   const produceRows = [...produce.existing, ...produce.created];
   const addTotal = produceRows.reduce((sum, row) => sum + row.take, 0);
-  const excess = product.remaining < -1e-9;
-  const showProduce = editable || produceRows.length > 0;
+  const excess = product.excess > 1e-9;
+  const showProduce = !product.isCovered && (editable || produceRows.length > 0);
 
   return (
     <Card size="sm" className={cn(logisticsCardClass, "min-w-0 gap-0 py-0 shadow-sm data-[size=sm]:gap-0 data-[size=sm]:py-0")}>
-      <div className="border-b border-border/60 px-4 py-3.5">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-[15px] font-semibold">{product.name}</h3>
-          {product.subtitle ? <span className="text-xs text-zinc-500">{product.subtitle}</span> : null}
-        </div>
-        <div className="mt-3 grid grid-cols-4 rounded-md border border-border/60">
+      <div className="flex items-baseline gap-1.5 border-b border-border/60 px-3.5 py-2.5">
+        <h3 className="text-[13px] font-semibold">{product.name}</h3>
+        {product.subtitle ? <small className="text-xs text-zinc-500">{product.subtitle}</small> : null}
+      </div>
+      <div className="border-b border-border/60 px-4 py-3">
+        <div className="grid grid-cols-4 rounded-md border border-border/60">
           <Kpi label="Заказано">{formatQuantity(product.ordered)}</Kpi>
           <Kpi label={launched ? "Было" : "Уже есть"} marker="warehouse">
             {formatQuantity(product.have)}
@@ -330,26 +330,30 @@ export const OrderPlanDetail = ({
         <CoverageBar bar={product.bar} size="large" />
       </div>
 
-      <div className="border-b border-border/60 px-4 pt-2.5 pb-3 last:border-b-0">
-        <SectionHead title="Взять" total={formatQuantity(takeTotal)} grid={grid} />
-        {groups.length > 0 ? (
-          <ColumnHead labels={editable ? ["Источник", "Владелец", "Доступно", "Взять"] : ["Источник", "Владелец", "Взято"]} grid={grid} />
-        ) : null}
-        {groups.map((group) => (
-          <div key={group.kind}>
-            <div className={cn(grid, "px-2 pt-2.5 pb-0.5 text-xs font-semibold text-zinc-600")}>
-              <span className={cn("flex items-center gap-1.5", editable ? "col-span-3" : "col-span-2")}>
-                <Marker tone={GROUP_MARKERS[group.kind]} />
-                {GROUP_LABELS[group.kind]}
-              </span>
-              <span className="pr-2 text-right text-zinc-500 tabular-nums">{formatQuantity(group.take)}</span>
+      {product.isCovered ? (
+        <p className="px-4 py-3 text-[13px] text-zinc-500">Товар обеспечен</p>
+      ) : (
+        <div className="border-b border-border/60 px-4 pt-2.5 pb-3 last:border-b-0">
+          <SectionHead title="Взять" total={formatQuantity(takeTotal)} grid={grid} />
+          {groups.length > 0 ? (
+            <ColumnHead labels={editable ? ["Источник", "Владелец", "Доступно", "Взять"] : ["Источник", "Владелец", "Взято"]} grid={grid} />
+          ) : null}
+          {groups.map((group) => (
+            <div key={group.kind}>
+              <div className={cn(grid, "px-2 pt-2.5 pb-0.5 text-xs font-semibold text-zinc-600")}>
+                <span className={cn("flex items-center gap-1.5", editable ? "col-span-3" : "col-span-2")}>
+                  <Marker tone={GROUP_MARKERS[group.kind]} />
+                  {GROUP_LABELS[group.kind]}
+                </span>
+                <span className="pr-2 text-right text-zinc-500 tabular-nums">{formatQuantity(group.take)}</span>
+              </div>
+              {group.rows.map((row) => (
+                <SourceLine key={row.keyString} row={row} editable={editable} remaining={product.remaining} onSet={onSet} />
+              ))}
             </div>
-            {group.rows.map((row) => (
-              <SourceLine key={row.keyString} row={row} editable={editable} remaining={product.remaining} onSet={onSet} />
-            ))}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {showProduce ? (
         <div className="px-4 pt-2.5 pb-3">

@@ -99,19 +99,21 @@ export const OrderPlanTab = ({
     const fromUrl = readPlanParam();
     return initial.plans.some((plan) => plan.id === fromUrl) ? fromUrl : defaultPlanId(initial.plans);
   });
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(lines[0]?.productId ?? null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [save, setSave] = useState<SaveState>({ state: "idle" });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [launching, setLaunching] = useState(false);
   const queue = useRef<Promise<void>>(Promise.resolve());
   const pending = useRef(0);
+  const createdPlanId = useRef<string | null>(null);
   const detailRef = useRef<HTMLDivElement>(null);
 
   const plan =
     payload.plans.find((item) => item.id === selectedPlanId) ??
     payload.plans.find((item) => item.id === defaultPlanId(payload.plans)) ??
     null;
-  const status = plan ? planStatus(plan) : null;
+  const unsaved = !plan && canAct;
+  const status = plan ? planStatus(plan) : unsaved ? "draft" : null;
   const launched = Boolean(plan?.launchedAt);
   const editable = status === "draft" && canAct;
 
@@ -121,7 +123,11 @@ export const OrderPlanTab = ({
     () => buildProductPlans({ snapshot, lines, payload, plan, places }),
     [snapshot, lines, payload, plan, places],
   );
-  const selected = products.find((product) => product.variantId === selectedVariantId) ?? products[0] ?? null;
+  const selected =
+    products.find((product) => product.variantId === selectedVariantId) ??
+    products.find((product) => !product.isCovered) ??
+    products[0] ??
+    null;
   const groups = useMemo(
     () =>
       selected
@@ -171,14 +177,22 @@ export const OrderPlanTab = ({
   };
 
   const setAction = (key: OrderPlanActionKey, quantity: number): Promise<void> => {
-    const planId = plan?.id;
-    if (!planId) {
+    if (!plan && !unsaved) {
       return Promise.resolve();
     }
+    setSelectedVariantId(key.variantId);
     pending.current += 1;
     setSave({ state: "saving" });
     return enqueue(async () => {
       try {
+        let planId = plan?.id ?? createdPlanId.current;
+        if (!planId) {
+          const created = await createOrderPlan({ customerOrderId: orderId });
+          planId = created.planId;
+          createdPlanId.current = planId;
+          setPayload(created.payload);
+          selectPlan(planId);
+        }
         const next = await setOrderPlanAction(planId, key, quantity);
         setPayload(next);
         pending.current -= 1;
@@ -187,7 +201,13 @@ export const OrderPlanTab = ({
         }
       } catch (caught) {
         pending.current -= 1;
-        setSave({ state: "error", message: errorText(caught) });
+        const message = errorText(caught);
+        if (!plan && !createdPlanId.current) {
+          setSave({ state: "idle" });
+          toast.error("Не удалось сохранить план", { description: message });
+        } else {
+          setSave({ state: "error", message });
+        }
       }
     });
   };
@@ -236,7 +256,7 @@ export const OrderPlanTab = ({
   const launchDisabled =
     !canAct || save.state === "saving" || problemCount > 0 || !hasAction(plan) || launching;
 
-  const footer = !plan ? null : status === "draft" ? (
+  const footer = !plan && !unsaved ? null : status === "draft" ? (
     <>
       <div className="flex min-h-[18px] items-center gap-2">
         <span
@@ -253,7 +273,9 @@ export const OrderPlanTab = ({
             ? "Сохраняется…"
             : save.state === "error"
               ? save.message
-              : `Сохранено · ${formatSavedAt(plan.updatedAt)}`}
+              : unsaved || !plan
+                ? "Не сохранён"
+                : `Сохранено · ${formatSavedAt(plan.updatedAt)}`}
         </span>
         <span className="flex-1" />
         {problemCount > 0 ? (
@@ -284,11 +306,11 @@ export const OrderPlanTab = ({
         type="button"
         variant="outline"
         className="h-9"
-        onClick={() => void runPlanCommand(() => setOrderPlanArchived(plan.id, status !== "archived"))}
+        onClick={() => plan && void runPlanCommand(() => setOrderPlanArchived(plan.id, status !== "archived"))}
       >
         {status === "archived" ? "Вернуть из архива" : "В архив"}
       </Button>
-      <Button type="button" className="h-9 flex-1" onClick={() => void createPlan(plan.id)}>
+      <Button type="button" className="h-9 flex-1" onClick={() => plan && void createPlan(plan.id)}>
         Копировать в новый черновик
       </Button>
     </div>
@@ -296,10 +318,11 @@ export const OrderPlanTab = ({
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      {plan ? (
+      {plan || unsaved ? (
         <OrderPlanBar
           plans={payload.plans}
           current={plan}
+          unsaved={unsaved}
           canAct={canAct}
           onSelect={(planId) => selectPlan(planId)}
           onCreate={() => void createPlan(null)}
@@ -309,14 +332,9 @@ export const OrderPlanTab = ({
         />
       ) : null}
 
-      {!plan ? (
+      {!plan && !unsaved ? (
         <Card size="sm" className={cn(logisticsCardClass, "items-center gap-3 py-10 text-center shadow-sm")}>
           <p className="text-sm text-muted-foreground">Планов пока нет</p>
-          {canAct ? (
-            <Button type="button" onClick={() => void createPlan(null)}>
-              Новый план
-            </Button>
-          ) : null}
         </Card>
       ) : products.length === 0 ? (
         <Card size="sm" className={cn(logisticsCardClass, "items-center py-10 text-center shadow-sm")}>
@@ -328,7 +346,7 @@ export const OrderPlanTab = ({
           <div ref={detailRef} className="min-w-0 scroll-mt-4">
             {selected ? (
               <OrderPlanDetail
-                key={`${plan.id}:${selected.variantId}`}
+                key={`${!plan || plan.id === createdPlanId.current ? "draft" : plan.id}:${selected.variantId}`}
                 product={selected}
                 groups={groups}
                 produce={produce}

@@ -254,3 +254,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-fulfillment-plan.md`
   summary: AGENTS.md утверждает, что автотестов нет, хотя `npm test` (`tests/unit/*.test.ts`) существует и не входит в список проверок перед сдачей.
   evidence: Из-за этого падение `store-clean-model.test.ts` прошло проверки реализации; правка agent-context файла вне этой задачи.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-order-plan-first-input-and-covered.md`
+  summary: Нет автотеста на `store_launch_order_plan`: запуск проходит при резерве сверх заказа до плана и отклоняется при лишнем от плана.
+  evidence: Правило продублировано в модели (`order-plan-model.ts`) и SQL; модель покрыта `npm test`, SQL — нет, стенда для SQL-тестов в репо нет. Уточнить может разовый прогон на демо-базе с удалением созданных документов.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-order-plan-first-input-and-covered.md`
+  summary: Создание плана при первом вводе (`OrderPlanTab.setAction`) без автотеста: один план на несколько быстрых вводов, ошибки создания и записи.
+  evidence: Логика внутри компонента; проверено вручную в браузере на OMS-2 24.09.2026.

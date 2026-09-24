@@ -230,8 +230,13 @@ export type ProductPlan = {
   shortageByKind: Record<BarKind, number>;
   shortage: number;
   shortageCount: number;
+  /** Для показа: не ниже −excess. Уже существующее превышение резерва даёт 0. */
   remaining: number;
+  /** Сколько план добавил сверх заказа: min(план, have + план − заказано). */
+  excess: number;
   covered: number;
+  /** Обеспечен до плана и действий плана по товару нет. */
+  isCovered: boolean;
   bar: BarModel;
 };
 
@@ -277,6 +282,8 @@ export const buildProductPlans = (args: {
     const shortage = shortageByKind.warehouse + shortageByKind.transfer + shortageByKind.output;
     const planTotal = planByKind.warehouse + planByKind.transfer + planByKind.output + shortage;
     const ordered = cover?.ordered ?? line.quantity;
+    const rawRemaining = ordered - have - planTotal;
+    const excess = Math.min(planTotal, Math.max(0, -rawRemaining));
     const parts: BarSegment[] = [
       { tone: "have-warehouse", qty: haveByKind.warehouse },
       { tone: "have-transfer", qty: haveByKind.transfer },
@@ -286,6 +293,7 @@ export const buildProductPlans = (args: {
       parts.push({ tone: `plan-${kind}`, qty: planByKind[kind] });
       parts.push({ tone: "minus", qty: shortageByKind[kind] });
     }
+    const bar = buildBar(ordered, parts);
     return {
       variantId: line.productId,
       name: product?.name ?? line.productName,
@@ -300,9 +308,11 @@ export const buildProductPlans = (args: {
       shortageByKind,
       shortage,
       shortageCount,
-      remaining: ordered - have - planTotal,
+      remaining: excess > EPS ? -excess : Math.max(0, rawRemaining),
+      excess,
       covered: have + planTotal,
-      bar: buildBar(ordered, parts),
+      isCovered: have + EPS >= ordered && planTotal <= EPS,
+      bar: { ...bar, overflow: excess },
     };
   });
 };
@@ -514,7 +524,7 @@ export const buildPlanSummary = (args: {
     products.find((product) => product.variantId === variantId)?.name ??
     productById(snapshot, variantId)?.name ??
     variantId;
-  const excess = new Set(products.filter((product) => product.remaining < -EPS).map((product) => product.variantId));
+  const excess = new Set(products.filter((product) => product.excess > EPS).map((product) => product.variantId));
   const groups = new Map<string, { group: SummaryGroup; actions: OrderPlanAction[]; section: "take" | "order"; order: number }>();
 
   for (const action of plan?.actions ?? []) {
@@ -588,8 +598,8 @@ export const planProblems = (products: ProductPlan[], launched: boolean): PlanPr
     return { shortages: 0, excess: 0, firstVariantId: null };
   }
   const shortages = products.reduce((sum, product) => sum + product.shortageCount, 0);
-  const excessProducts = products.filter((product) => product.remaining < -EPS);
-  const first = products.find((product) => product.shortageCount > 0 || product.remaining < -EPS);
+  const excessProducts = products.filter((product) => product.excess > EPS);
+  const first = products.find((product) => product.shortageCount > 0 || product.excess > EPS);
   return { shortages, excess: excessProducts.length, firstVariantId: first?.variantId ?? null };
 };
 
