@@ -49,7 +49,16 @@ import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import Link from "next/link";
-import { Fragment, useMemo, type ReactNode } from "react";
+import {
+  Fragment,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 export type CreateDialogTarget =
   | {
@@ -520,6 +529,11 @@ const ProductRow = ({
   );
 };
 
+const GROUP_ROW_HEIGHT = 32;
+
+/** Nested category rows stack under the sticky header, one row per level. */
+const groupStickyTop = (depth: number) => `calc(var(--calendar-head-h, 0px) + ${depth * GROUP_ROW_HEIGHT}px)`;
+
 const GroupRows = ({
   node,
   months,
@@ -531,6 +545,7 @@ const GroupRows = ({
   onToggleCollapse,
   onSetCollapsed,
   onCreate,
+  stickyIds,
 }: {
   node: CategoryTreeNode;
   months: YearMonth[];
@@ -542,20 +557,28 @@ const GroupRows = ({
   onToggleCollapse: (id: string) => void;
   onSetCollapsed: (ids: string[], collapsed: boolean) => void;
   onCreate: (target: CreateDialogTarget) => void;
+  stickyIds: Set<string>;
 }) => {
   const isCollapsed = collapsed.has(node.id);
+  const stickyTop = stickyIds.has(node.id) ? groupStickyTop(node.depth) : undefined;
   const descendants = descendantCategoryIds(node);
   const anyCollapsedInside = isCollapsed || descendants.some((id) => collapsed.has(id));
   const colSpan = 5 + months.length;
   return (
     <Fragment>
       <tr
+        data-group-id={node.id}
+        data-group-depth={node.depth}
         className="group/category cursor-pointer select-none hover:bg-transparent"
         onClick={() => onToggleCollapse(node.id)}
       >
         <td
-          className={cn(IDENTITY_CELL, "border-b border-r border-border bg-zinc-50 font-semibold")}
-          style={{ paddingLeft: 8 + node.depth * 14 }}
+          className={cn(
+            IDENTITY_CELL,
+            "h-8 border-b border-r border-border bg-zinc-50 py-0 font-semibold whitespace-nowrap",
+            stickyTop && "z-[16]",
+          )}
+          style={{ paddingLeft: 8 + node.depth * 14, top: stickyTop }}
           colSpan={1}
         >
           <button
@@ -578,7 +601,11 @@ const GroupRows = ({
             </span>
           </button>
         </td>
-        <td className="border-b border-r border-border bg-zinc-50 px-2" colSpan={colSpan - 1}>
+        <td
+          className={cn("h-8 border-b border-r border-border bg-zinc-50 px-2 py-0", stickyTop && "sticky z-[15]")}
+          style={{ top: stickyTop }}
+          colSpan={colSpan - 1}
+        >
           {descendants.length > 0 ? (
             <button
               type="button"
@@ -630,6 +657,7 @@ const GroupRows = ({
               onToggleCollapse={onToggleCollapse}
               onSetCollapsed={onSetCollapsed}
               onCreate={onCreate}
+              stickyIds={stickyIds}
             />
           ))}
         </>
@@ -667,12 +695,66 @@ export const OutputCalendarMatrix = ({
     [page.categories, page.products, visibleIds],
   );
   const curKey = ymKey(currentYm);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLTableSectionElement>(null);
+  const [headHeight, setHeadHeight] = useState(0);
+  const [stickyIds, setStickyIds] = useState<Set<string>>(() => new Set());
+
+  const updateStickyIds = useCallback(() => {
+    const box = scrollRef.current;
+    const head = headRef.current;
+    if (!box || !head) return;
+    // The deepest category rows whose natural position has passed the header form the sticky stack.
+    const line = box.scrollTop + head.offsetHeight;
+    const path: string[] = [];
+    for (const row of box.querySelectorAll<HTMLTableRowElement>("tr[data-group-id]")) {
+      const depth = Number(row.dataset.groupDepth);
+      if (row.offsetTop > line + depth * GROUP_ROW_HEIGHT) break;
+      path.length = depth;
+      path[depth] = row.dataset.groupId ?? "";
+    }
+    setStickyIds((prev) => {
+      const next = new Set(path.filter(Boolean));
+      return next.size === prev.size && [...next].every((id) => prev.has(id)) ? prev : next;
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    const head = headRef.current;
+    if (!head) return;
+    const observer = new ResizeObserver(() => setHeadHeight(head.getBoundingClientRect().height));
+    observer.observe(head);
+    return () => observer.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const frame = requestAnimationFrame(updateStickyIds);
+    return () => cancelAnimationFrame(frame);
+  }, [updateStickyIds, collapsed, roots, uncategorized, headHeight]);
+
+  const groupProps = {
+    months,
+    currentYm,
+    ownerSet,
+    plantId,
+    page,
+    collapsed,
+    onToggleCollapse,
+    onSetCollapsed,
+    onCreate,
+    stickyIds,
+  };
 
   return (
-    <div className="max-h-[calc(100vh-180px)] overflow-auto rounded-md border border-border bg-background">
+    <div
+      ref={scrollRef}
+      onScroll={updateStickyIds}
+      className="max-h-[calc(100vh-180px)] overflow-auto rounded-md border border-border bg-background"
+      style={{ "--calendar-head-h": `${headHeight}px` } as CSSProperties}
+    >
       <style>{`@keyframes flashPulse{0%{box-shadow:inset 0 0 0 2px #2563eb}100%{box-shadow:inset 0 0 0 0 transparent}}`}</style>
       <table className="w-full min-w-[900px] border-separate border-spacing-0 text-xs">
-        <thead>
+        <thead ref={headRef}>
           <tr>
             <th className={cn(IDENTITY_HEAD, "sticky top-0 border-b border-r border-border")}>Товар</th>
             <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50 text-left")}>
@@ -700,23 +782,13 @@ export const OutputCalendarMatrix = ({
             })}
           </tr>
         </thead>
-        <tbody>
-          {roots.map((node) => (
-            <GroupRows
-              key={node.id}
-              node={node}
-              months={months}
-              currentYm={currentYm}
-              ownerSet={ownerSet}
-              plantId={plantId}
-              page={page}
-              collapsed={collapsed}
-              onToggleCollapse={onToggleCollapse}
-              onSetCollapsed={onSetCollapsed}
-              onCreate={onCreate}
-            />
-          ))}
-          {uncategorized.length > 0 ? (
+        {roots.map((node) => (
+          <tbody key={node.id}>
+            <GroupRows node={node} {...groupProps} />
+          </tbody>
+        ))}
+        {uncategorized.length > 0 ? (
+          <tbody>
             <GroupRows
               node={{
                 id: UNCATEGORIZED_GROUP_ID,
@@ -726,18 +798,10 @@ export const OutputCalendarMatrix = ({
                 products: uncategorized,
                 children: [],
               }}
-              months={months}
-              currentYm={currentYm}
-              ownerSet={ownerSet}
-              plantId={plantId}
-              page={page}
-              collapsed={collapsed}
-              onToggleCollapse={onToggleCollapse}
-              onSetCollapsed={onSetCollapsed}
-              onCreate={onCreate}
+              {...groupProps}
             />
-          ) : null}
-        </tbody>
+          </tbody>
+        ) : null}
       </table>
       {visibleIds.size === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-muted-foreground">Нет товаров для отображения</p>
