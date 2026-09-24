@@ -208,17 +208,17 @@
       padding: 5px 0; font-size: 12px; cursor: pointer;
     }
     .check input { margin-top: 2px; flex: none; }
-    .sec-h-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 8px; margin: 14px 0 6px;
-    }
-    .sec-h-row:first-child { margin-top: 0; }
     .sec-h {
-      margin: 0; font-size: 11px; color: var(--muted-fg);
+      margin: 14px 0 6px; font-size: 11px; color: var(--muted-fg);
       font-weight: 650; text-transform: uppercase; letter-spacing: .04em;
     }
-    .btn-xs {
-      height: 24px; padding: 0 7px; font-size: 11px;
+    .check-master {
+      font-weight: 600;
+      padding-bottom: 6px;
+    }
+    .list-divider {
+      height: 1px; background: var(--border);
+      margin: 0 0 6px;
     }
     .dlg-ctx {
       margin: -6px 0 10px; font-size: 12px; color: var(--muted-fg);
@@ -717,12 +717,19 @@
   });
 
   // ---- render panel ----
+  function syncMasterCheckbox(el, selectedCount, totalCount) {
+    if (!el) return;
+    el.indeterminate = selectedCount > 0 && selectedCount < totalCount;
+    el.checked = selectedCount === totalCount && totalCount > 0;
+  }
+
   function renderPanel() {
     const body = $("#panelBody");
     let html = "";
     html += '<label class="check"><input type="checkbox" id="chkFree"' + (state.free ? " checked" : "") + "> Свободно</label>";
-    html += '<div class="sec-h-row"><div class="sec-h">Регионы</div>' +
-      '<button type="button" class="btn ghost btn-xs" id="btnAllRegions">Все регионы</button></div>';
+    html += '<div class="sec-h">Регионы</div>';
+    html += '<label class="check check-master"><input type="checkbox" id="chkAllRegions"> Все регионы</label>';
+    html += '<div class="list-divider" aria-hidden="true"></div>';
     for (const r of regions) {
       html += '<label class="check"><input type="checkbox" data-region="' + r.id + '"' +
         (state.regions.has(r.id) ? " checked" : "") + "> " + r.name + "</label>";
@@ -730,11 +737,12 @@
     html += '<div class="switch-row"><span>С заказами клиентов региона</span>' +
       '<button type="button" class="switch' + (state.withRegionOrders ? " on" : "") +
       '" id="swRegionOrders" aria-pressed="' + state.withRegionOrders + '"></button></div>';
-    html += '<div class="sec-h-row"><div class="sec-h">Заказы клиента</div>' +
-      '<button type="button" class="btn ghost btn-xs" id="btnAllOrders">Все заказы</button></div>';
+    html += '<div class="sec-h">Заказы клиента</div>';
     html += '<input class="search" id="orderSearch" placeholder="Поиск OMS…" value="' +
       state.orderSearch.replace(/"/g, "&quot;") + '">';
     html += '<div class="order-list">';
+    html += '<label class="check check-master"><input type="checkbox" id="chkAllOrders"> Все заказы</label>';
+    html += '<div class="list-divider" aria-hidden="true"></div>';
     const q = state.orderSearch.trim().toLowerCase();
     for (const o of orders) {
       const rname = regionById[o.regionId].name;
@@ -746,15 +754,26 @@
     html += "</div>";
     body.innerHTML = html;
 
+    syncMasterCheckbox($("#chkAllRegions"), state.regions.size, regions.length);
+    syncMasterCheckbox($("#chkAllOrders"), state.orders.size, orders.length);
+
     $("#chkFree").addEventListener("change", (e) => {
       state.free = e.target.checked; renderAll();
     });
-    $("#btnAllRegions").addEventListener("click", () => {
-      state.regions = new Set(regions.map(r => r.id));
+    $("#chkAllRegions").addEventListener("change", () => {
+      if (state.regions.size === regions.length) {
+        state.regions = new Set();
+      } else {
+        state.regions = new Set(regions.map(r => r.id));
+      }
       renderAll();
     });
-    $("#btnAllOrders").addEventListener("click", () => {
-      state.orders = new Set(orders.map(o => o.id));
+    $("#chkAllOrders").addEventListener("change", () => {
+      if (state.orders.size === orders.length) {
+        state.orders = new Set();
+      } else {
+        state.orders = new Set(orders.map(o => o.id));
+      }
       renderAll();
     });
     body.querySelectorAll("[data-region]").forEach(inp => {
@@ -777,6 +796,9 @@
         const id = +e.target.getAttribute("data-order");
         if (e.target.checked) state.orders.add(id); else state.orders.delete(id);
         renderAll(false);
+        // keep master checkbox in sync when panel is not fully re-rendered
+        syncMasterCheckbox($("#chkAllOrders"), state.orders.size, orders.length);
+        syncMasterCheckbox($("#chkAllRegions"), state.regions.size, regions.length);
       });
     });
   }
@@ -810,7 +832,7 @@
       parts.push(rs);
     }
     const allOrds = state.orders.size === orders.length;
-    if (allOrds && state.withRegionOrders) {
+    if (allOrds && allRegs && state.withRegionOrders) {
       // covered by regions switch — do not list orders
     } else if (allOrds) {
       parts.push("все заказы");
