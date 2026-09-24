@@ -29,6 +29,7 @@ import {
   STATUS_RU,
   stockBreakdown,
   stockQuantity,
+  unassignedCell,
   ymKey,
   type CalendarOwner,
   type CategoryTreeNode,
@@ -310,6 +311,37 @@ const StockPopover = ({
   );
 };
 
+const UnassignedPopover = ({
+  productName,
+  orders,
+  quantity,
+  unit,
+}: {
+  productName: string;
+  orders: OutputCalendarOpenOrder[];
+  quantity: number;
+  unit: string;
+}) => {
+  if (quantity <= 0 || orders.length === 0) {
+    return null;
+  }
+  return (
+    <HoverBreakdown title="Не распределено по выпускам" subtitle={productName} quantity={quantity} unit={unit}>
+      {orders.map((order) => (
+        <section key={order.productionOrderId} className="flex items-center justify-between gap-3 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <EntityLink href={logisticsPath("production-orders", order.sequenceNumber)}>{order.number}</EntityLink>
+            <EntityLink href={logisticsPath("plants", order.plantId)}>
+              {formatLogisticsCode("plant", order.plantId)}
+            </EntityLink>
+          </div>
+          <span className="font-semibold tabular-nums">{formatQuantity(order.remaining, unit)}</span>
+        </section>
+      ))}
+    </HoverBreakdown>
+  );
+};
+
 const MonthCell = ({
   page,
   product,
@@ -409,6 +441,7 @@ const ProductRow = ({
   const plants = plantCodesForProduct(product.id, page.outputLines);
   const orders = openOrdersForProduct(product.id, page.openOrders);
   const noDate = noDateCell(product.id, page.outputLines, ownerSet, plantId);
+  const unassigned = unassignedCell(product.id, page.openOrders, plantId);
   const pad = 8 + depth * 14 + 20;
 
   return (
@@ -432,6 +465,35 @@ const ProductRow = ({
           />
         </div>
       </td>
+      <td className={cn(QTY_CELL, "border-b border-r border-border")}>
+        <div className="flex">
+          <UnassignedPopover
+            productName={product.name}
+            orders={unassigned.orders}
+            quantity={unassigned.quantity}
+            unit={product.unit}
+          />
+        </div>
+      </td>
+      <td
+        className={cn(
+          QTY_CELL,
+          "border-b border-r border-border",
+          noDate.hasFresh && "animate-[flashPulse_2s_ease-out]",
+        )}
+      >
+        <div className="flex">
+          <CellPopover
+            page={page}
+            title="Приход без срока"
+            productName={product.name}
+            lines={noDate.lines}
+            quantity={noDate.quantity}
+            unit={product.unit}
+            hasFresh={noDate.hasFresh}
+          />
+        </div>
+      </td>
       {months.map((ym) => {
         const cell = monthCell(product.id, ym, page.outputLines, ownerSet, plantId);
         const curKey = ymKey(currentYm);
@@ -451,25 +513,6 @@ const ProductRow = ({
           />
         );
       })}
-      <td
-        className={cn(
-          QTY_CELL,
-          "border-b border-border",
-          noDate.hasFresh && "animate-[flashPulse_2s_ease-out]",
-        )}
-      >
-        <div className="flex">
-          <CellPopover
-            page={page}
-            title="Приход без срока"
-            productName={product.name}
-            lines={noDate.lines}
-            quantity={noDate.quantity}
-            unit={product.unit}
-            hasFresh={noDate.hasFresh}
-          />
-        </div>
-      </td>
     </tr>
   );
 };
@@ -496,7 +539,7 @@ const GroupRows = ({
   onCreate: (target: CreateDialogTarget) => void;
 }) => {
   const isCollapsed = collapsed.has(node.id);
-  const colSpan = 3 + months.length + 1;
+  const colSpan = 5 + months.length;
   return (
     <Fragment>
       <tr
@@ -582,12 +625,12 @@ export const OutputCalendarMatrix = ({
   const visibleIds = useMemo(() => {
     const set = new Set<string>();
     for (const product of page.products) {
-      if (productVisibleForPlant(product.id, page.outputLines, plantId)) {
+      if (productVisibleForPlant(product.id, page.outputLines, plantId, page.openOrders)) {
         set.add(product.id);
       }
     }
     return set;
-  }, [page.products, page.outputLines, plantId]);
+  }, [page.products, page.outputLines, page.openOrders, plantId]);
   const { roots, uncategorized } = useMemo(
     () => buildCategoryTree(page.categories, page.products, visibleIds),
     [page.categories, page.products, visibleIds],
@@ -605,6 +648,10 @@ export const OutputCalendarMatrix = ({
               Код завода
             </th>
             <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50")}>Остаток</th>
+            <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50")}>
+              Не распределено
+            </th>
+            <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50")}>Без срока</th>
             {months.map((ym) => {
               const key = ymKey(ym);
               return (
@@ -620,7 +667,6 @@ export const OutputCalendarMatrix = ({
                 </th>
               );
             })}
-            <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-border bg-zinc-50")}>Без срока</th>
           </tr>
         </thead>
         <tbody>

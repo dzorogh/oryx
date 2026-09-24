@@ -16,6 +16,8 @@ import {
   productVisibleForPlant,
   stockBreakdown,
   stockQuantity,
+  unassignedCell,
+  plantFilterOptions,
   type OutputCalendarPage,
 } from "@/features/logistics/output-calendar";
 
@@ -392,5 +394,27 @@ describe("I/O matrix: флаг новый обходит фильтры", () => 
     assert.equal(cell.quantity, 4);
     assert.equal(cell.hasFresh, true);
     assert.ok(productVisibleForPlant("1", [...page.outputLines, fresh], "5"));
+  });
+});
+
+describe("Не распределено", () => {
+  it("sums open-order plan not yet in outputs, follows plant filter, not owners", () => {
+    const page: OutputCalendarPage = {
+      ...pageFixture(),
+      openOrders: [
+        { productionOrderId: "50", number: "PO-50", sequenceNumber: "50", plantId: "5", productId: "1", remaining: 5 },
+        { productionOrderId: "60", number: "PO-60", sequenceNumber: "60", plantId: "8", productId: "1", remaining: 2 },
+        { productionOrderId: "61", number: "PO-61", sequenceNumber: "61", plantId: "8", productId: "99", remaining: 4 },
+      ],
+    };
+    assert.equal(unassignedCell("1", page.openOrders, null).quantity, 7);
+    assert.deepEqual(
+      unassignedCell("1", page.openOrders, "8").orders.map((o) => o.number),
+      ["PO-60"],
+    );
+    assert.equal(unassignedCell("2", page.openOrders, null).quantity, 0);
+    assert.ok(plantFilterOptions(page.outputLines, page.openOrders).includes("8"));
+    assert.ok(productVisibleForPlant("99", page.outputLines, "8", page.openOrders));
+    assert.equal(productVisibleForPlant("99", page.outputLines, "8"), false);
   });
 });

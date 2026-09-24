@@ -412,11 +412,17 @@ export const plantCodesForProduct = (
     .map((id) => formatLogisticsCode("plant", id));
 };
 
-export const plantFilterOptions = (lines: OutputCalendarOutputLine[]): string[] => {
+export const plantFilterOptions = (
+  lines: OutputCalendarOutputLine[],
+  openOrders: OutputCalendarOpenOrder[] = [],
+): string[] => {
   const ids = new Set<string>();
   for (const line of lines) {
     if (line.status !== "draft" && line.status !== "in_progress") continue;
     ids.add(line.plantId);
+  }
+  for (const order of openOrders) {
+    if (order.remaining > 0) ids.add(order.plantId);
   }
   return Array.from(ids).sort((a, b) => Number(a) - Number(b));
 };
@@ -425,14 +431,29 @@ export const productVisibleForPlant = (
   productId: string,
   lines: OutputCalendarOutputLine[],
   plantId: string | null,
+  openOrders: OutputCalendarOpenOrder[] = [],
 ): boolean => {
   if (plantId == null) return true;
-  return lines.some(
-    (line) =>
-      line.productId === productId &&
-      (line.status === "draft" || line.status === "in_progress") &&
-      (line.plantId === plantId || line.isNew),
+  return (
+    lines.some(
+      (line) =>
+        line.productId === productId &&
+        (line.status === "draft" || line.status === "in_progress") &&
+        (line.plantId === plantId || line.isNew),
+    ) || openOrders.some((order) => order.productId === productId && order.plantId === plantId && order.remaining > 0)
   );
+};
+
+/** Plan of open production orders not yet split into outputs («Не распределено»). */
+export const unassignedCell = (
+  productId: string,
+  openOrders: OutputCalendarOpenOrder[],
+  plantId: string | null,
+): { quantity: number; orders: OutputCalendarOpenOrder[] } => {
+  const orders = openOrdersForProduct(productId, openOrders).filter(
+    (order) => plantId == null || order.plantId === plantId,
+  );
+  return { quantity: orders.reduce((sum, order) => sum + order.remaining, 0), orders };
 };
 
 export type CategoryTreeNode = {

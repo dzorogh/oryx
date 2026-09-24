@@ -46,7 +46,7 @@ export const OutputCalendarPage = () => {
   const applyPage = useCallback((next: OutputCalendarPageData, preserveFilter: boolean) => {
     setPage(next);
     setPlantId((prev) =>
-      prev != null && !plantFilterOptions(next.outputLines).includes(prev) ? null : prev,
+      prev != null && !plantFilterOptions(next.outputLines, next.openOrders).includes(prev) ? null : prev,
     );
     setFilter((prev) => {
       if (preserveFilter && prev) {
@@ -85,7 +85,7 @@ export const OutputCalendarPage = () => {
   }, [load]);
 
   const plantOptions = useMemo(
-    () => (page ? plantFilterOptions(page.outputLines) : []),
+    () => (page ? plantFilterOptions(page.outputLines, page.openOrders) : []),
     [page],
   );
 
