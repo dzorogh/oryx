@@ -338,6 +338,8 @@ const JourneyStage = ({
   );
 };
 
+const SUMMARY_BADGE_LIMIT = 3;
+
 type OrderProgressTrackerProps = {
   canAct: boolean;
   primaryStages: OrderProgressStage[];
@@ -364,12 +366,18 @@ export const OrderProgressTracker = ({
         </span>
       );
     }
+    const visible = stage.items.slice(0, SUMMARY_BADGE_LIMIT);
+    const hiddenCount = stage.items.length - visible.length;
     return (
-      <span key={stage.id} className="inline-flex flex-wrap items-center gap-1.5">
-        {stage.title}{" "}
-        {stage.items.map((item) => (
-          <LogisticsCodeBadge key={item.id} code={item.label} href={item.href} />
-        ))}
+      <span key={stage.id} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+        {stage.title}
+        <span className="text-foreground/80 lg:hidden">{stage.items.length}</span>
+        <span className="hidden items-center gap-1.5 lg:inline-flex">
+          {visible.map((item) => (
+            <LogisticsCodeBadge key={item.id} code={item.label} href={item.href} />
+          ))}
+          {hiddenCount > 0 ? <span className="text-xs text-muted-foreground">+{hiddenCount}</span> : null}
+        </span>
       </span>
     );
   });
@@ -392,12 +400,14 @@ export const OrderProgressTracker = ({
 
       {secondaryStages.length > 0 ? (
         <Collapsible defaultOpen={false} className="group border-t border-border/60 bg-muted/30">
-          <div className="flex flex-wrap items-center gap-3.5 px-5 py-2 text-sm text-muted-foreground">
-            <b className="font-semibold text-foreground/80">Связанные</b>
-            <div className="flex flex-wrap items-center gap-3">{secondarySummary as ReactNode}</div>
+          <div className="flex items-center gap-3.5 px-5 py-2 text-sm text-muted-foreground">
+            <b className="shrink-0 font-semibold text-foreground/80">Связанные</b>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
+              {secondarySummary as ReactNode}
+            </div>
             <CollapsibleTrigger
               type="button"
-              className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm text-foreground/80 hover:bg-muted"
+              className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-sm text-foreground/80 hover:bg-muted"
             >
               <span className="group-data-[open]:hidden">Показать</span>
               <span className="hidden group-data-[open]:inline">Скрыть</span>
