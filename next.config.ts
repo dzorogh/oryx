@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Dev server is also opened via the machine's network address, not only localhost.
+  allowedDevOrigins: ["127.173.122.92"],
   // Keep Docker builds gentle on the shared Dokploy host (8 CPUs, ~2 GiB free).
   experimental: {
     cpus: 2,

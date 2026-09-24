@@ -34,6 +34,7 @@ import type {
   TransferAllocation,
   TransferLine,
 } from "@/features/logistics/logistics-types";
+import { mapOutputCalendarPage } from "@/features/logistics/output-calendar";
 import type {
   AdjustmentListRow,
   CustomerOrderListRow,
@@ -978,7 +979,6 @@ export const loadLedgerPage = () => loadMappedRpc("store_ledger_page", {});
 export const loadCatalogPage = () => loadMappedRpc("store_catalog_page", {});
 
 export const loadOutputCalendarPage = async () => {
-  const { mapOutputCalendarPage } = await import("@/features/logistics/output-calendar");
   const data = await rpcJson<unknown>("store_output_calendar_page", {});
   return mapOutputCalendarPage(data);
 };
