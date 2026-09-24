@@ -279,11 +279,8 @@ const stageCaption = (
   const allPosted = items.every(
     (item) => (item.statusKey ?? parseTrackerMeta(item.meta).statusKey) === "posted",
   );
-  if (allPosted) {
-    return `${items.length} проведено`;
-  }
   const doneCount = items.filter((item) => isDocumentDone(item, doneStatuses)).length;
-  if (doneCount === items.length) {
+  if (!allPosted && doneCount === items.length) {
     return `${items.length} ${items.length === 1 ? "завершён" : "завершено"}`;
   }
   const n = items.length;
