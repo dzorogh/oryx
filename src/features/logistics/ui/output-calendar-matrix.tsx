@@ -41,6 +41,8 @@ import {
   type YearMonth,
 } from "@/features/logistics/output-calendar";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
+import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
+import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
@@ -74,23 +76,28 @@ const IDENTITY_CELL = "sticky left-0 z-10 min-w-[200px] max-w-[240px] bg-backgro
 const QTY_HEAD = "min-w-14 px-2 py-1.5 text-right text-[11px] font-medium text-zinc-700";
 const QTY_CELL = "min-w-14 px-2 py-1 text-right text-xs tabular-nums";
 
-const EntityLink = ({ href, children }: { href: string | null; children: ReactNode }) =>
-  href ? (
-    <Link href={href} className="font-medium text-primary hover:underline">
-      {children}
-    </Link>
-  ) : (
-    <span className="font-medium">{children}</span>
-  );
+const EntityLink = ({ href, children }: { href: string | null; children: string }) =>
+  href ? <LogisticsCodeBadge code={children} href={href} /> : <span className="font-medium">{children}</span>;
+
+const NameLink = ({ href, children }: { href: string; children: string }) => (
+  <Link
+    href={href}
+    className="underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 hover:decoration-foreground"
+  >
+    {children}
+  </Link>
+);
 
 const HoverBreakdown = ({
   title,
+  subtitle,
   quantity,
   unit,
   hasFresh = false,
   children,
 }: {
   title: string;
+  subtitle: string;
   quantity: number;
   unit: string;
   hasFresh?: boolean;
@@ -112,21 +119,43 @@ const HoverBreakdown = ({
         {formatQuantity(quantity, unit)}
       </span>
     </PopoverTrigger>
-    <PopoverContent align="end" className="w-[320px] gap-1 p-2.5 text-xs">
-      <h4 className="mb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{title}</h4>
-      {children}
+    <PopoverContent align="end" className="w-[380px] gap-0 p-0 text-sm">
+      <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="min-w-0">
+          <div className="font-semibold">{title}</div>
+          <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
+        </div>
+        <div className="shrink-0 text-base font-semibold tabular-nums">{formatQuantity(quantity, unit)}</div>
+      </div>
+      <div className="max-h-[60vh] divide-y divide-border overflow-y-auto">{children}</div>
     </PopoverContent>
   </Popover>
 );
 
+const DetailRow = ({ label, children }: { label: string; children: ReactNode }) => (
+  <>
+    <dt className="text-muted-foreground">{label}</dt>
+    <dd className="min-w-0">{children}</dd>
+  </>
+);
+
+const todayIso = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
 const CellPopover = ({
   page,
+  title,
+  productName,
   lines,
   quantity,
   unit,
   hasFresh,
 }: {
   page: OutputCalendarPage;
+  title: string;
+  productName: string;
   lines: OutputCalendarOutputLine[];
   quantity: number;
   unit: string;
@@ -135,30 +164,71 @@ const CellPopover = ({
   if (quantity <= 0 || lines.length === 0) {
     return null;
   }
+  const outputs = new Map<string, OutputCalendarOutputLine[]>();
+  for (const line of lines) {
+    outputs.set(line.outputId, [...(outputs.get(line.outputId) ?? []), line]);
+  }
+  const today = todayIso();
   return (
-    <HoverBreakdown title="Состав ячейки" quantity={quantity} unit={unit} hasFresh={hasFresh}>
-      {lines.map((line) => (
-        <div key={`${line.outputId}-${line.ownerId}`} className="py-0.5 text-zinc-700">
-          <EntityLink href={line.outputSequence ? logisticsPath("outputs", line.outputSequence) : null}>
-            {line.outputNumber}
-          </EntityLink>
-          {" · "}
-          <EntityLink
-            href={
-              line.productionOrderSequence ? logisticsPath("production-orders", line.productionOrderSequence) : null
-            }
-          >
-            {line.productionOrderNumber}
-          </EntityLink>
-          {" · "}
-          <EntityLink href={logisticsPath("plants", line.plantId)}>
-            {formatLogisticsCode("plant", line.plantId)}
-          </EntityLink>
-          {` · ${formatOutputDate(line.expectedEndOn)} · ${STATUS_RU[line.status]} · `}
-          <OwnerLabel owner={resolveOwner(line.ownerId, page)} />
-          {` · ${formatQuantity(line.quantity, unit)}`}
-        </div>
-      ))}
+    <HoverBreakdown title={title} subtitle={productName} quantity={quantity} unit={unit} hasFresh={hasFresh}>
+      {[...outputs.values()].map((group) => {
+        const first = group[0];
+        const total = group.reduce((sum, line) => sum + line.quantity, 0);
+        const overdue = first.expectedEndOn != null && first.expectedEndOn < today;
+        return (
+          <section key={first.outputId} className="px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <EntityLink href={first.outputSequence ? logisticsPath("outputs", first.outputSequence) : null}>
+                  {first.outputNumber}
+                </EntityLink>
+                <StatusPill status={first.status} label={STATUS_RU[first.status]} />
+              </div>
+              <span className="shrink-0 font-semibold tabular-nums">{formatQuantity(total, unit)}</span>
+            </div>
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+              <DetailRow label="Заказ">
+                <EntityLink
+                  href={
+                    first.productionOrderSequence
+                      ? logisticsPath("production-orders", first.productionOrderSequence)
+                      : null
+                  }
+                >
+                  {first.productionOrderNumber}
+                </EntityLink>
+              </DetailRow>
+              <DetailRow label="Завод">
+                <EntityLink href={logisticsPath("plants", first.plantId)}>
+                  {formatLogisticsCode("plant", first.plantId)}
+                </EntityLink>
+              </DetailRow>
+              <DetailRow label="Срок">
+                <span className={cn(overdue && "font-medium text-red-700")}>
+                  {formatOutputDate(first.expectedEndOn)}
+                  {overdue ? " · просрочен" : ""}
+                </span>
+              </DetailRow>
+              <DetailRow label="Для кого">
+                {group.length === 1 ? (
+                  <OwnerLabel owner={resolveOwner(first.ownerId, page)} />
+                ) : (
+                  <ul className="space-y-0.5">
+                    {group.map((line) => (
+                      <li key={line.ownerId} className="flex justify-between gap-3">
+                        <OwnerLabel owner={resolveOwner(line.ownerId, page)} />
+                        <span className="tabular-nums text-muted-foreground">
+                          {formatQuantity(line.quantity, unit)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </DetailRow>
+            </dl>
+          </section>
+        );
+      })}
     </HoverBreakdown>
   );
 };
@@ -179,7 +249,7 @@ const OwnerLabel = ({ owner }: { owner: CalendarOwner }) => {
     case "free":
       return <span>Свободно</span>;
     case "region":
-      return <EntityLink href={logisticsPath("regions", owner.region.id)}>{owner.region.name}</EntityLink>;
+      return <NameLink href={logisticsPath("regions", owner.region.id)}>{owner.region.name}</NameLink>;
     case "order":
       return (
         <EntityLink href={logisticsPath("customer-orders", owner.order.sequenceNumber)}>
@@ -191,19 +261,50 @@ const OwnerLabel = ({ owner }: { owner: CalendarOwner }) => {
   }
 };
 
-const StockPopover = ({ rows, quantity, unit }: { rows: StockBreakdownRow[]; quantity: number; unit: string }) => {
+const StockPopover = ({
+  productName,
+  rows,
+  quantity,
+  unit,
+}: {
+  productName: string;
+  rows: StockBreakdownRow[];
+  quantity: number;
+  unit: string;
+}) => {
   if (quantity === 0 || rows.length === 0) {
     return null;
   }
+  const locations = new Map<string, StockBreakdownRow[]>();
+  for (const row of rows) {
+    const key = `${row.locationKind}-${row.locationId}`;
+    locations.set(key, [...(locations.get(key) ?? []), row]);
+  }
+  const groups = [...locations.entries()]
+    .map(([key, group]) => ({ key, group, total: group.reduce((sum, row) => sum + row.quantity, 0) }))
+    .sort((a, b) => b.total - a.total);
   return (
-    <HoverBreakdown title="Остаток" quantity={quantity} unit={unit}>
-      {rows.map((row) => (
-        <div key={`${row.locationKind}-${row.locationId}-${row.ownerId}`} className="py-0.5 text-zinc-700">
-          <StockLocation row={row} />
-          {" · "}
-          <OwnerLabel owner={row.owner} />
-          {` · ${formatQuantity(row.quantity, unit)}`}
-        </div>
+    <HoverBreakdown title="Остаток" subtitle={productName} quantity={quantity} unit={unit}>
+      {groups.map(({ key, group, total }) => (
+        <section key={key} className="px-4 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <StockLocation row={group[0]} />
+              <span className="text-xs text-muted-foreground">
+                {group[0].locationKind === "transfer" ? "в пути" : "склад"}
+              </span>
+            </div>
+            <span className="font-semibold tabular-nums">{formatQuantity(total, unit)}</span>
+          </div>
+          <ul className="mt-1 space-y-0.5 pl-3">
+            {group.map((row) => (
+              <li key={row.ownerId} className="flex justify-between gap-3">
+                <OwnerLabel owner={row.owner} />
+                <span className="tabular-nums text-muted-foreground">{formatQuantity(row.quantity, unit)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
     </HoverBreakdown>
   );
@@ -273,6 +374,8 @@ const MonthCell = ({
         ) : null}
         <CellPopover
           page={page}
+          title={`Приход · ${formatYearMonthLabel(ym)}`}
+          productName={product.name}
           lines={cell.lines}
           quantity={cell.quantity}
           unit={product.unit}
@@ -322,6 +425,7 @@ const ProductRow = ({
       <td className={cn(QTY_CELL, "border-b border-r border-border")}>
         <div className="flex">
           <StockPopover
+            productName={product.name}
             rows={stockBreakdown(product.id, page, ownerSet)}
             quantity={stock}
             unit={product.unit}
@@ -357,6 +461,8 @@ const ProductRow = ({
         <div className="flex">
           <CellPopover
             page={page}
+            title="Приход без срока"
+            productName={product.name}
             lines={noDate.lines}
             quantity={noDate.quantity}
             unit={product.unit}
