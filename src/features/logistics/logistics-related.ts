@@ -8,6 +8,7 @@ import { plantCode, warehouseCode } from "@/features/logistics/logistics-lookups
 import {
   expectedEndMeta,
   formatQuantity,
+  OUTPUT_STATUS_LABELS,
   RESERVATION_DIRECTION_LABELS,
   SHIPMENT_DIRECTION_LABELS,
 } from "@/features/logistics/logistics-labels";
@@ -32,6 +33,8 @@ export type RelatedDocumentItem = {
   label: string;
   meta: string;
   statusKey?: string;
+  /** Kind-specific status caption. Overrides merged label maps. */
+  statusLabel?: string;
   expectedEndOn?: string | null;
   operation?: ReservationDirection;
   coveragePercent?: number;
@@ -160,7 +163,7 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
       continue;
     }
     const status = output.status;
-    if (status === "draft" || status === "planned" || status === "in_progress" || status === "done") {
+    if (status === "draft" || status === "done") {
       outputIds.add(output.id);
     }
   }
@@ -172,6 +175,7 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
       label: item.number,
       meta: expectedEndMeta(item.status, item.expectedEndOn),
       statusKey: item.status,
+      statusLabel: OUTPUT_STATUS_LABELS[item.status],
       expectedEndOn: item.expectedEndOn,
     }));
 };
@@ -418,6 +422,8 @@ export type ProductActivityRow = {
   number: string;
   quantity: number;
   status: string;
+  /** Kind-specific status caption. Overrides merged label maps. */
+  statusLabel?: string;
   expectedEndOn: string | null;
   hasExpectedEnd: boolean;
   hint: string | null;
@@ -538,6 +544,7 @@ export const productActivity = (snapshot: LogisticsSnapshot, productId: string):
         number: item.number,
         quantity: outputQty.get(item.id) ?? 0,
         status: item.status,
+        statusLabel: OUTPUT_STATUS_LABELS[item.status],
         expectedEndOn: item.expectedEndOn,
         hasExpectedEnd: true,
         hint: production ? production.number : null,

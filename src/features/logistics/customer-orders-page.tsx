@@ -11,8 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
-import { closeCustomerOrder, createCustomerOrder, loadCustomerOrderList, updateExpectedEnd } from "@/features/logistics/logistics-api";
+import {
+  closeCustomerOrder,
+  createCustomerOrder,
+  loadCustomerOrderList,
+  setOrderLineQuantity,
+  updateExpectedEnd,
+} from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
+import { nextOrderLineQuantity } from "@/features/logistics/logistics-rules";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { sumFreeForProduct } from "@/features/logistics/logistics-availability";
 import { ReservationForm, ShipmentForm } from "@/features/logistics/logistics-forms";
@@ -29,7 +36,7 @@ import {
   formatQuantity,
   formatMetaTimestamp,
 } from "@/features/logistics/logistics-labels";
-import { productIdentityLabel } from "@/features/logistics/logistics-lookups";
+import { productById, productIdentityLabel } from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import {
   relatedOutputsForOrder,
@@ -53,8 +60,10 @@ import {
 } from "@/features/logistics/logistics-types";
 import type { CustomerOrderListRow } from "@/features/logistics/logistics-list-types";
 import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
-import { sumShippedForLine } from "@/features/logistics/logistics-balances";
+import { sumShippedForLine, sumShippedForOrderProduct } from "@/features/logistics/logistics-balances";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
+import { OrderLineDialog, type OrderLineDialogMode } from "@/features/logistics/ui/order-line-dialog";
+import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
@@ -490,6 +499,12 @@ export const CustomerOrderDetailPage = () => {
     locationType: LocationType;
     locationId: string;
   } | null>(null);
+  const [lineOpen, setLineOpen] = useState(false);
+  const [lineMode, setLineMode] = useState<OrderLineDialogMode>("add");
+  const [lineProductId, setLineProductId] = useState("");
+  const [lineQuantity, setLineQuantity] = useState("1");
+  const [linePending, setLinePending] = useState(false);
+  const [lineError, setLineError] = useState<string | null>(null);
 
   const lines = useMemo(
     () => (order ? snapshot.customerOrderLines.filter((line) => line.orderId === order.id) : []),
@@ -701,24 +716,39 @@ export const CustomerOrderDetailPage = () => {
               <DocumentSection
                 title="Товары"
                 tools={
-                  canAct ? (
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setReserveLine(null);
-                          setReserveOpen(true);
-                        }}
-                      >
-                        Зарезервировать
-                      </Button>
-                      <Button type="button" size="sm" onClick={() => setShipOpen(true)}>
-                        Отгрузить
-                      </Button>
-                    </>
-                  ) : null
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setLineMode("add");
+                        setLineProductId("");
+                        setLineQuantity("1");
+                        setLineError(null);
+                        setLineOpen(true);
+                      }}
+                    >
+                      Добавить товар
+                    </Button>
+                    {canAct ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setReserveLine(null);
+                            setReserveOpen(true);
+                          }}
+                        >
+                          Зарезервировать
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" onClick={() => setShipOpen(true)}>
+                          Отгрузить
+                        </Button>
+                      </>
+                    ) : null}
+                  </>
                 }
               >
                 <CustomerOrderLinesTable
@@ -746,6 +776,13 @@ export const CustomerOrderDetailPage = () => {
                       quantity: hold.quantity,
                     })
                   }
+                  onEditQuantity={(line) => {
+                    setLineMode("edit");
+                    setLineProductId(line.productId);
+                    setLineQuantity(String(line.quantity));
+                    setLineError(null);
+                    setLineOpen(true);
+                  }}
                 />
               </DocumentSection>
             ),
@@ -863,6 +900,90 @@ export const CustomerOrderDetailPage = () => {
         reload={reload}
         customerOrderId={order.id}
         lines={lines}
+      />
+      <OrderLineDialog
+        open={lineOpen}
+        onOpenChange={(next) => {
+          setLineOpen(next);
+          if (!next) {
+            setLineError(null);
+          }
+        }}
+        mode={lineMode}
+        products={snapshot.products.map((product) => ({
+          id: product.id,
+          label: productIdentityLabel(product, product.id),
+        }))}
+        productId={lineProductId}
+        productLabel={
+          productById(snapshot, lineProductId)?.name ??
+          lines.find((line) => line.productId === lineProductId)?.productName ??
+          lineProductId
+        }
+        quantity={lineQuantity}
+        hint={
+          lineProductId
+            ? (() => {
+                const existing =
+                  lineMode === "add" ? lines.find((line) => line.productId === lineProductId) : undefined;
+                const shipped = `отгружено ${formatQuantity(sumShippedForOrderProduct(balances, order.id, lineProductId))}`;
+                return existing
+                  ? `Уже в заказе ${formatQuantity(existing.quantity)} — количество сложится; ${shipped}`
+                  : shipped;
+              })()
+            : null
+        }
+        pending={linePending}
+        error={lineError}
+        onProductIdChange={setLineProductId}
+        onQuantityChange={setLineQuantity}
+        onDelete={() => {
+          setLineMode("delete");
+          setLineError(null);
+        }}
+        onSubmit={() => {
+          if (lineMode !== "delete" && (!lineProductId || !(Number(lineQuantity) > 0))) {
+            setLineError("Выберите товар и количество");
+            return;
+          }
+          if (!lineProductId) {
+            return;
+          }
+          const existing = lines.find((line) => line.productId === lineProductId);
+          const quantity = nextOrderLineQuantity(
+            lineMode,
+            existing ? existing.quantity : null,
+            Number(lineQuantity),
+          );
+          setLinePending(true);
+          setLineError(null);
+          void (async () => {
+            try {
+              await setOrderLineQuantity({
+                documentId: order.id,
+                productId: lineProductId,
+                quantity,
+              });
+              await reload();
+              setLineOpen(false);
+              setLineProductId("");
+              setLineQuantity("1");
+              toast.success(
+                lineMode === "delete"
+                  ? "Товар удалён из заказа клиента"
+                  : lineMode === "edit"
+                    ? "Количество в заказе клиента изменено"
+                    : "Товар добавлен в заказ клиента",
+              );
+            } catch (caught) {
+              setLineError(
+                translateLogisticsError(caught instanceof Error ? caught.message : "Не удалось сохранить строку"),
+              );
+            } finally {
+              setLinePending(false);
+            }
+          })();
+        }}
       />
     </LogisticsPageShell>
   );

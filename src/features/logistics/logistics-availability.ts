@@ -375,12 +375,12 @@ export const placeStockBreakdown = (
 };
 
 export const isActiveProductionOutputStatus = (status: string | null | undefined): boolean =>
-  status === "draft" || status === "planned" || status === "in_progress";
+  status === "draft";
 
 export const isUncancelledProductionOutputStatus = (status: string | null | undefined): boolean =>
   status != null && status !== "cancelled";
 
-/** Qty already reserved for a CO product in active (draft/in_progress) outputs. */
+/** Qty already reserved for a CO product in a planned (draft) output. */
 export const reservedInActiveOutputsForOrderProduct = (
   snapshot: LogisticsSnapshot,
   orderId: string,
@@ -441,7 +441,7 @@ export const freeInDraftOutput = (
   productId: string,
 ): number => {
   const output = snapshot.outputs.find((item) => item.id === outputId);
-  if (!output || (output.status !== "draft" && output.status !== "planned")) {
+  if (!output || output.status !== "draft") {
     return 0;
   }
   return snapshot.outputLines

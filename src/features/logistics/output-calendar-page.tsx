@@ -170,7 +170,7 @@ export const OutputCalendarPage = () => {
           quantity,
           isNew: true,
         });
-        toast.success("Заказ и черновик выпуска созданы");
+        toast.success("Заказ и запланированный выпуск созданы");
       }
     } catch (caught) {
       if (caught instanceof ProductionForOrderOutputError) {

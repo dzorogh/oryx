@@ -230,3 +230,19 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-orders-calendar-screen.md`
   summary: Unit-test the partial-failure path of `createProductionOrderWithDraftOutput` (PO created, draft output failed → `ProductionForOrderOutputError` with PO id and sequence).
   evidence: No RPC mocking exists for `logistics-api` tests; the sibling `createProductionForOrder` is untested the same way. Covered only by manual browser check today.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-output-status-planned-done.md`
+  summary: Слитые карты подписей статусов без вида документа по-прежнему путают «Черновик» / «Открыт» / «В работе» у заказа клиента, заказа на производство и перемещения.
+  evidence: `document-timeline.ts`, `ui/related-documents.tsx`, `ui/order-progress-tracker.tsx`, `ui/product-activity-card.tsx` склеивают словари. У выпуска подпись задаётся полем `statusLabel`; остальные виды не трогались.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-output-status-planned-done.md`
+  summary: Изменения строк заказа клиента и заказа на производство не пишутся в журнал `store_document_history`.
+  evidence: История документа — только статус и срок. Команда `store_set_order_line_quantity` меняет строку и не создаёт снимок.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-output-status-planned-done.md`
+  summary: Автотесты правил `store_set_order_line_quantity` (не ниже отгруженного, запреты удаления, проверка завода, вставка / замена / удаление).
+  evidence: В репозитории нет стенда для RPC-тестов; правила проверены вручную SQL-блоком с откатом на демо-базе 24.09.2026.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-output-status-planned-done.md`
+  summary: У заказа на производство в статусе `done` видны «Отменить», «Закрыть заказ» и выбор статуса.
+  evidence: `canMutate` в `production-orders-page.tsx` исключает только устаревшие `closed` и `cancelled`, а база пишет `done`; было до этой задачи (PO-910 в браузере 24.09.2026).

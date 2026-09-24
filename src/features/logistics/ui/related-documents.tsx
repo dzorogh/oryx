@@ -134,7 +134,9 @@ export const RelatedDocuments = ({
                 >
                   <LogisticsCodeBadge code={item.label} />
                   <span className="flex shrink-0 items-center gap-2">
-                    {parsed.status ? <Badge variant={statusVariant(item.meta)}>{parsed.status}</Badge> : null}
+                    {item.statusLabel || parsed.status ? (
+                      <Badge variant={statusVariant(item.meta)}>{item.statusLabel ?? parsed.status}</Badge>
+                    ) : null}
                     {parsed.extra ? (
                       <span className="text-xs tabular-nums text-muted-foreground">{parsed.extra}</span>
                     ) : null}

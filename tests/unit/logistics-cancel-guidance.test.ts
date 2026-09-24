@@ -230,7 +230,7 @@ describe("помощник отмены складских документов"
     assert.equal(guidance.actions[0]?.id, "close-production-order");
     assert.equal(guidance.actions[0]?.label, "Закрыть заказ");
     assert.equal(guidance.closeEffects, CANCEL_GUIDANCE_PRODUCTION_CLOSE);
-    assert.match(guidance.closeEffects ?? "", /незавершённые выпуски/);
+    assert.match(guidance.closeEffects ?? "", /запланированные выпуски/);
     assert.match(guidance.closeEffects ?? "", /Складской остаток не списывается/);
     assert.match(guidance.closeEffects ?? "", /Завершённые выпуски и связанные документы не отменяются/);
   });
@@ -245,9 +245,9 @@ describe("помощник отмены складских документов"
     assert.equal(ret.actions[0]?.id, "open-shipment");
     assert.throws(() => assertDocumentCanBeCancelled("shipment_return", "draft"));
 
-    const output = projectCancelGuidance(facts({ type: "output", status: "planned" }));
+    const output = projectCancelGuidance(facts({ type: "output", status: "draft" }));
     assert.equal(output.cancelRpcKind, "production_output");
-    assert.doesNotThrow(() => assertDocumentCanBeCancelled("production_output", "planned"));
+    assert.doesNotThrow(() => assertDocumentCanBeCancelled("production_output", "draft"));
   });
 
   it("скрывает действие для закрытого или отменённого документа и не добавляет отмену черновика резерва", () => {

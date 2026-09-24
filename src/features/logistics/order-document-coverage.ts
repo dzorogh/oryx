@@ -151,7 +151,7 @@ export const calculateOrderDocumentCoverage = (
       continue;
     }
     const status = output.status;
-    const active = status === "draft" || status === "planned" || status === "in_progress";
+    const active = status === "draft";
     addForProduct(
       quantities.production,
       output.productionOrderId,

@@ -563,7 +563,6 @@ export const seedLogisticsStories = async (args) => {
     description,
     expectedEndOn,
     lines,
-    status = "draft",
   }) => {
     const created = await call("store_create_production_output", {
       p_production_order_id: Number(poId),
@@ -573,9 +572,6 @@ export const seedLogisticsStories = async (args) => {
       p_description: description,
       p_lines: lines,
     });
-    if (status === "in_progress") {
-      await patch(`store_document?id=eq.${created.id}`, { status: "in_progress" });
-    }
     return created;
   };
 
@@ -585,7 +581,6 @@ export const seedLogisticsStories = async (args) => {
     seq: 930,
     description: "Календарь: просрочка Cross август",
     expectedEndOn: "2026-08-18",
-    status: "in_progress",
     lines: [{ product_variant_id: v("cross180"), quantity: 2, allocation_owner_id: 1 }],
   });
 
@@ -595,7 +590,6 @@ export const seedLogisticsStories = async (args) => {
     seq: 931,
     description: "Календарь: Force к ноябрю с резервом региона",
     expectedEndOn: "2026-11-20",
-    status: "in_progress",
     lines: [
       {
         product_variant_id: v("force1100"),
@@ -621,7 +615,6 @@ export const seedLogisticsStories = async (args) => {
     seq: 933,
     description: "Календарь: Cruiser декабрь",
     expectedEndOn: "2026-12-15",
-    status: "in_progress",
     lines: [{ product_variant_id: v("cruiser300"), quantity: 2, allocation_owner_id: 1 }],
   });
 
@@ -640,7 +633,6 @@ export const seedLogisticsStories = async (args) => {
     seq: 935,
     description: "Календарь: GP401 декабрь",
     expectedEndOn: "2026-12-28",
-    status: "in_progress",
     lines: [{ product_variant_id: v("gp401"), quantity: 2, allocation_owner_id: 1 }],
   });
 

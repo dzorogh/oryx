@@ -48,7 +48,7 @@ export const lineLocationAllocations = (
         continue;
       }
       const status = output.status;
-      if (status !== "draft" && status !== "planned" && status !== "in_progress") {
+      if (status !== "draft") {
         continue;
       }
       inProduction += outputLine.quantity;

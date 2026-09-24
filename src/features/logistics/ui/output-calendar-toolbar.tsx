@@ -58,7 +58,7 @@ export const OutputCalendarToolbar = ({
           <div className="space-y-1">
             <h1 className="text-lg font-semibold text-foreground">Календарь выпусков</h1>
             <p className="text-xs text-muted-foreground">
-              Приход по выпускам в статусах «Черновик» и «В работе»
+              Приход по запланированным выпускам
             </p>
           </div>
         </div>

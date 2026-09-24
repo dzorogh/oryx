@@ -20,13 +20,14 @@ import {
 import {
   draftOutputHoldsForOrderProduct,
   freePlacesForProduct,
+  reservedInActiveOutputsForOrderProduct,
   hrefForProduct,
   hrefForWarehouse,
   remainingToReserveForLine,
   reservedPlacesForLine,
   type DraftOutputHold,
 } from "@/features/logistics/logistics-availability";
-import { sumShippedForLine } from "@/features/logistics/logistics-balances";
+import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { locationIdentity, productById, productCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type {
@@ -88,6 +89,7 @@ const LineActionsMenu = ({
   onShip,
   onRelease,
   onReleaseOutput,
+  onEdit,
 }: {
   productName: string;
   canReserve: boolean;
@@ -104,11 +106,8 @@ const LineActionsMenu = ({
   onShip: () => void;
   onRelease: (place: { locationType: LocationType; locationId: string }) => void;
   onReleaseOutput: (hold: DraftOutputHold) => void;
+  onEdit: () => void;
 }) => {
-  if (!canReserve && !canShip && releasePlaces.length === 0 && outputHolds.length === 0) {
-    return null;
-  }
-
   return (
     <DropdownMenu>
       <div
@@ -131,6 +130,7 @@ const LineActionsMenu = ({
         </DropdownMenuTrigger>
       </div>
       <DropdownMenuContent align="end" className="min-w-40">
+        <DropdownMenuItem onClick={onEdit}>Изменить количество</DropdownMenuItem>
         {canReserve ? <DropdownMenuItem onClick={onReserve}>Зарезервировать</DropdownMenuItem> : null}
         {canShip ? <DropdownMenuItem onClick={onShip}>Отгрузить</DropdownMenuItem> : null}
         {releasePlaces.map((place) => {
@@ -175,6 +175,7 @@ export const CustomerOrderLinesTable = ({
   onShip,
   onRelease,
   onReleaseOutput,
+  onEditQuantity,
   bare = false,
 }: {
   snapshot: LogisticsSnapshot;
@@ -189,6 +190,7 @@ export const CustomerOrderLinesTable = ({
     locationId: string;
   }) => void;
   onReleaseOutput: (line: CustomerOrderLine, hold: DraftOutputHold) => void;
+  onEditQuantity: (line: CustomerOrderLine) => void;
   /** When true, render only the table (DocumentSection provides the card). */
   bare?: boolean;
 }) => {
@@ -253,6 +255,11 @@ export const CustomerOrderLinesTable = ({
               const reserved = reservedPlacesForLine(balances, line);
               const freePlaces = freePlacesForProduct(balances, line.productId);
               const shippedQty = sumShippedForLine(balances, line);
+              const reserveExcess =
+                sumReservedForLine(balances, line) +
+                reservedInActiveOutputsForOrderProduct(snapshot, line.orderId, line.productId) +
+                shippedQty -
+                line.quantity;
               const producedQty = sumProducedForLine(snapshot, line);
               const locations = lineLocationAllocations(balances, line, snapshot);
               const toReserve = remainingToReserveForLine(line, balances);
@@ -271,32 +278,42 @@ export const CustomerOrderLinesTable = ({
                         productId={line.productId}
                         productName={line.productName}
                       />
-                      {canAct ? (
-                        <LineActionsMenu
-                          productName={productName}
-                          canReserve={canReserve}
-                          canShip={canShipLine}
-                          releasePlaces={reserved.map((place) => {
-                            const identity = locationIdentity(snapshot, place.locationType, place.locationId);
-                            return {
-                              locationType: place.locationType,
-                              locationId: place.locationId,
-                              title: identity.title,
-                              hint: identity.hint,
-                              quantity: place.quantity,
-                            };
-                          })}
-                          outputHolds={draftOutputHoldsForOrderProduct(snapshot, line.orderId, line.productId)}
-                          onReserve={() => onReserve(line)}
-                          onShip={onShip}
-                          onRelease={(place) => onRelease({ line, ...place })}
-                          onReleaseOutput={(hold) => onReleaseOutput(line, hold)}
-                        />
-                      ) : null}
+                      <LineActionsMenu
+                        productName={productName}
+                        canReserve={canReserve}
+                        canShip={canShipLine}
+                        releasePlaces={
+                          canAct
+                            ? reserved.map((place) => {
+                                const identity = locationIdentity(snapshot, place.locationType, place.locationId);
+                                return {
+                                  locationType: place.locationType,
+                                  locationId: place.locationId,
+                                  title: identity.title,
+                                  hint: identity.hint,
+                                  quantity: place.quantity,
+                                };
+                              })
+                            : []
+                        }
+                        outputHolds={
+                          canAct ? draftOutputHoldsForOrderProduct(snapshot, line.orderId, line.productId) : []
+                        }
+                        onReserve={() => onReserve(line)}
+                        onShip={onShip}
+                        onRelease={(place) => onRelease({ line, ...place })}
+                        onReleaseOutput={(hold) => onReleaseOutput(line, hold)}
+                        onEdit={() => onEditQuantity(line)}
+                      />
                     </div>
                   </TableCell>
                   <TableCell className={cn(tdNum, book)}>
                     <span className="font-semibold tabular-nums">{formatQuantity(line.quantity)}</span>
+                    {reserveExcess > 1e-9 ? (
+                      <span className="mt-0.5 block text-xs text-amber-700">
+                        резерв больше заказа на {formatQuantity(reserveExcess)}
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell className={cn(tdNum, sep)}>
                     <Qty quantity={locations.inProduction} />

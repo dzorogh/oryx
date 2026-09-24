@@ -31,7 +31,7 @@ export const CANCEL_GUIDANCE_CUSTOMER_CLOSE =
   "Закрытие заказа снимет текущие резервы этого заказа. Уже отгруженный товар и связанные документы — выпуски, перемещения, отгрузки и возвраты — сохранятся. Система не отменяет и не откатывает связанные документы.";
 
 export const CANCEL_GUIDANCE_PRODUCTION_CLOSE =
-  "Закрытие отменит незавершённые выпуски (черновик и в работе) вместе с их резервом. Завершённые выпуски и связанные документы не отменяются. Складской остаток не списывается.";
+  "Закрытие отменит запланированные выпуски вместе с их резервом. Завершённые выпуски и связанные документы не отменяются. Складской остаток не списывается.";
 
 export const CANCEL_GUIDANCE_SAFE_CONFIRM =
   "У этого документа ещё нет проводок. Подтверждение меняет только статус. Журнал и остатки не изменятся.";
@@ -262,7 +262,7 @@ export const projectCancelGuidance = (facts: CancelGuidanceFacts): CancelGuidanc
   }
 
   if (facts.type === "output") {
-    if (facts.status === "planned") {
+    if (facts.status === "draft") {
       return safeCancelGuidance(facts.id, facts.status, "production_output", "выпуск");
     }
     if (facts.status !== "done") {

@@ -1,4 +1,5 @@
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { OUTPUT_STATUS_LABELS } from "@/features/logistics/logistics-labels";
 
 export type OutputCalendarCategory = {
   id: string;
@@ -44,7 +45,7 @@ export type OutputCalendarOutputLine = {
   outputNumber: string;
   /** Null for a locally created output until the page is refreshed. */
   outputSequence: string | null;
-  status: "draft" | "in_progress";
+  status: "draft";
   expectedEndOn: string | null;
   productionOrderId: string;
   productionOrderNumber: string;
@@ -101,8 +102,7 @@ const asNumber = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const isOpenOutputStatus = (value: unknown): value is "draft" | "in_progress" =>
-  value === "draft" || value === "in_progress";
+const isOpenOutputStatus = (value: unknown): value is "draft" => value === "draft";
 
 export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
   const row = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
@@ -316,7 +316,7 @@ export const computeMonthRange = (
   let earliestOverdue: number | null = null;
   let latest = curKey;
   for (const line of lines) {
-    if (line.status !== "draft" && line.status !== "in_progress") continue;
+    if (line.status !== "draft") continue;
     const ym = yearMonthOf(line.expectedEndOn);
     if (!ym) continue;
     const key = ymKey(ym);
@@ -364,7 +364,7 @@ export const monthCell = (
   let hasFresh = false;
   for (const line of lines) {
     if (line.productId !== productId) continue;
-    if (line.status !== "draft" && line.status !== "in_progress") continue;
+    if (line.status !== "draft") continue;
     if (!outputPassesFilters(line, ownerSet, plantId)) continue;
     const lineYm = yearMonthOf(line.expectedEndOn);
     if (!lineYm || lineYm.year !== ym.year || lineYm.month !== ym.month) continue;
@@ -386,7 +386,7 @@ export const noDateCell = (
   let hasFresh = false;
   for (const line of lines) {
     if (line.productId !== productId) continue;
-    if (line.status !== "draft" && line.status !== "in_progress") continue;
+    if (line.status !== "draft") continue;
     if (!outputPassesFilters(line, ownerSet, plantId)) continue;
     if (line.expectedEndOn) continue;
     matched.push(line);
@@ -404,7 +404,7 @@ export const plantCodesForProduct = (
   const ids = new Set<string>();
   for (const line of lines) {
     if (line.productId !== productId) continue;
-    if (line.status !== "draft" && line.status !== "in_progress") continue;
+    if (line.status !== "draft") continue;
     ids.add(line.plantId);
   }
   return Array.from(ids)
@@ -418,7 +418,7 @@ export const plantFilterOptions = (
 ): string[] => {
   const ids = new Set<string>();
   for (const line of lines) {
-    if (line.status !== "draft" && line.status !== "in_progress") continue;
+    if (line.status !== "draft") continue;
     ids.add(line.plantId);
   }
   for (const order of openOrders) {
@@ -438,7 +438,7 @@ export const productVisibleForPlant = (
     lines.some(
       (line) =>
         line.productId === productId &&
-        (line.status === "draft" || line.status === "in_progress") &&
+        line.status === "draft" &&
         (line.plantId === plantId || line.isNew),
     ) || openOrders.some((order) => order.productId === productId && order.plantId === plantId && order.remaining > 0)
   );
@@ -582,10 +582,9 @@ export const openOrdersForProduct = (
 
 export const productCode = (productId: string): string => formatLogisticsCode("product", productId);
 
-export const STATUS_RU: Record<"draft" | "in_progress", string> = {
-  draft: "Черновик",
-  in_progress: "В работе",
-};
+export const STATUS_RU = {
+  draft: OUTPUT_STATUS_LABELS.draft,
+} as const;
 
 export const formatOutputDate = (iso: string | null): string => {
   if (!iso) return "—";

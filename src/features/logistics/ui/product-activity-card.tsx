@@ -99,7 +99,7 @@ const ActivityRow = ({
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2 pt-0.5">
-          <Badge variant={statusVariant(row.status)}>{STATUS_LABELS[row.status] ?? row.status}</Badge>
+          <Badge variant={statusVariant(row.status)}>{row.statusLabel ?? STATUS_LABELS[row.status] ?? row.status}</Badge>
           <Link
             href={row.href}
             className="text-muted-foreground opacity-0 transition-opacity group-hover/item:opacity-100"

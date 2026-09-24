@@ -328,6 +328,7 @@ export const ProductionOrderProductManifest = ({
   lines,
   canMutate,
   onAddProduct,
+  onEdit,
   onReserve,
   onReleaseReservation,
   onReserveInOutput,
@@ -337,6 +338,7 @@ export const ProductionOrderProductManifest = ({
   lines: ProductionOrderLine[];
   canMutate: boolean;
   onAddProduct?: () => void;
+  onEdit?: (lineId: string) => void;
   onReserve: (lineId: string) => void;
   onReleaseReservation?: (target: OutputReleaseTarget) => void;
   onReserveInOutput?: (outputId: string, productId: string) => void;
@@ -439,17 +441,30 @@ export const ProductionOrderProductManifest = ({
                               nameAs="text"
                             />
                           </div>
-                          {view.showReserve ? (
-                            <div className="opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 motion-reduce:transition-none">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="h-8 shrink-0"
-                                onClick={() => onReserve(line.id)}
-                              >
-                                Зарезервировать
-                              </Button>
+                          {view.showReserve || onEdit ? (
+                            <div className="flex gap-1 opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 motion-reduce:transition-none">
+                              {onEdit ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 shrink-0"
+                                  onClick={() => onEdit(line.id)}
+                                >
+                                  Изменить
+                                </Button>
+                              ) : null}
+                              {view.showReserve ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 shrink-0"
+                                  onClick={() => onReserve(line.id)}
+                                >
+                                  Зарезервировать
+                                </Button>
+                              ) : null}
                             </div>
                           ) : null}
                         </div>
@@ -522,16 +537,25 @@ export const ProductionOrderProductManifest = ({
                     <dd className="text-sm tabular-nums">{view.q(view.outputs.outputted)}</dd>
                   </div>
                 </dl>
-                {view.showReserve ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="mt-3 h-11"
-                    onClick={() => onReserve(line.id)}
-                  >
-                    Зарезервировать
-                  </Button>
+                {onEdit || view.showReserve ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {onEdit ? (
+                      <Button type="button" size="sm" variant="outline" className="h-11" onClick={() => onEdit(line.id)}>
+                        Изменить
+                      </Button>
+                    ) : null}
+                    {view.showReserve ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-11"
+                        onClick={() => onReserve(line.id)}
+                      >
+                        Зарезервировать
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
                 {isOpen ? (
                   <div id={panelId} className="mt-3">

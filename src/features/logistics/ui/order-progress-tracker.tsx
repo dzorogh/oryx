@@ -242,7 +242,9 @@ const DocumentCard = ({
   const parsed = parseTrackerMeta(item.meta);
   const statusKey = item.statusKey ?? parsed.statusKey;
   const statusLabel =
-    parsed.statusLabel ?? (statusKey && statusKey in STATUS_LABELS ? STATUS_LABELS[statusKey] : undefined);
+    item.statusLabel ??
+    parsed.statusLabel ??
+    (statusKey && statusKey in STATUS_LABELS ? STATUS_LABELS[statusKey] : undefined);
   const caption = documentCaption(item, parsed.extra);
   const showStatus = Boolean(statusLabel && statusKey && statusKey !== "posted");
 

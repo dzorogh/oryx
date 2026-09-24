@@ -143,7 +143,7 @@ export const OutputReserveDialog = ({
           lines: [{ productId: target.productId, quantity: qty }],
         });
       },
-      destination.kind === "new" ? "Черновик выпуска создан, резерв в выпуске" : "Зарезервировано в выпуске",
+      destination.kind === "new" ? "Выпуск запланирован, резерв в выпуске" : "Зарезервировано в выпуске",
       reload,
     );
     setPending(false);
@@ -187,7 +187,7 @@ export const OutputReserveDialog = ({
             }))}
             disabled={pending}
             placeholder="Выберите выпуск"
-            emptyLabel="Нет места в плане и нет свободного черновика выпуска"
+            emptyLabel="Нет места в плане и нет свободного запланированного выпуска"
             onChange={(next) => {
               setDestinationKey(next);
               setQuantity(null);

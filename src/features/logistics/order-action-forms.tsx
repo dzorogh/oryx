@@ -263,14 +263,14 @@ export const ProductionFromOrderForm = ({
         expectedEndOn: expectedEndOn || null,
         lines: payload,
       });
-      toast.success("Заказ на производство и черновик выпуска созданы — резерв в выпуске");
+      toast.success("Заказ на производство и запланированный выпуск созданы — резерв в выпуске");
       await reload();
       onOpenChange(false);
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       if (caught instanceof ProductionForOrderOutputError) {
         const seq = caught.sequenceNumber;
-        toast.error("Заказ на производство создан, но черновик выпуска не создан", {
+        toast.error("Заказ на производство создан, но запланированный выпуск не создан", {
           description: `${translateLogisticsError(raw)} Откройте заказ на производство и зарезервируйте в выпуске повторно.`,
           action: {
             label: seq ? documentNumber("PO", seq) : "Заказы на производство",
@@ -388,7 +388,7 @@ export const ProductionFromOrderForm = ({
             role="status"
             className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
           >
-            Вместе с заказом на производство создадим черновик выпуска на весь объём — резерв будет в
+            Вместе с заказом на производство создадим запланированный выпуск на весь объём — резерв будет в
             выпуске.
           </div>
         ) : null}
@@ -468,7 +468,7 @@ export const ReserveOnProductionForm = ({
         if (output.productionOrderId !== po.id) {
           continue;
         }
-        if (output.status !== "draft" && output.status !== "planned") {
+        if (output.status !== "draft") {
           continue;
         }
         const free = freeInDraftOutput(snapshot, output.id, orderLine.productId);
@@ -585,7 +585,7 @@ export const ReserveOnProductionForm = ({
           role="status"
           className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
         >
-          Резерв под производство держится в черновике выпуска, а не на месте заказа на производство.
+          Резерв под производство держится в запланированном выпуске, а не на месте заказа на производство.
         </div>
         <FieldSelect
           label="Товар заказа клиента"
@@ -617,7 +617,7 @@ export const ReserveOnProductionForm = ({
           placeholder="Выберите цель"
           emptyLabel={
             orderLine
-              ? "Нет доступного заказа на производство или свободного черновика выпуска"
+              ? "Нет доступного заказа на производство или свободного запланированного выпуска"
               : "Сначала выберите товар"
           }
         />
@@ -683,10 +683,7 @@ export const OutputFromOrderForm = ({
             }
             const output = snapshot.outputs.find((item) => item.id === outputLine.outputId);
             return (
-              output?.productionOrderId === line.orderId &&
-              (output.status === "draft" ||
-                output.status === "planned" ||
-                output.status === "in_progress")
+              output?.productionOrderId === line.orderId && output.status === "draft"
             );
           })
           .reduce((sum, outputLine) => sum + outputLine.quantity, 0);
@@ -781,7 +778,7 @@ export const OutputFromOrderForm = ({
           value={productionLineId}
           items={candidates.map((item) => ({
             value: item.line.id,
-            label: `${locationLabel(snapshot, "production_order", item.line.orderId)} · остаток плана ${formatQuantity(item.planRoom)} · уже в черновиках ${formatQuantity(item.reservedHere)}`,
+            label: `${locationLabel(snapshot, "production_order", item.line.orderId)} · остаток плана ${formatQuantity(item.planRoom)} · уже в запланированных выпусках ${formatQuantity(item.reservedHere)}`,
           }))}
           onChange={(value) => {
             setProductionLineId(value);
@@ -798,7 +795,7 @@ export const OutputFromOrderForm = ({
           emptyLabel={
             orderLine &&
             reservedInActiveOutputsForOrderProduct(snapshot, orderLine.orderId, orderLine.productId) > 0
-              ? "Весь план уже в черновиках выпусков — завершите выпуск на его странице"
+              ? "Весь план уже в запланированных выпусках — завершите выпуск на его странице"
               : "Нет доступного заказа на производство"
           }
         />

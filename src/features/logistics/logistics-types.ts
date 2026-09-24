@@ -66,8 +66,8 @@ export type ProductionStatus = LifecycleStatus;
 export const TRANSFER_STATUSES = LIFECYCLE_STATUSES;
 export type TransferStatus = LifecycleStatus;
 
-export const OUTPUT_STATUSES = LIFECYCLE_STATUSES;
-export type OutputStatus = LifecycleStatus;
+export const OUTPUT_STATUSES = ["draft", "done", "cancelled"] as const;
+export type OutputStatus = (typeof OUTPUT_STATUSES)[number];
 
 export const RESERVATION_DIRECTIONS = ["reserve", "release", "reassign"] as const;
 export type ReservationDirection = (typeof RESERVATION_DIRECTIONS)[number];

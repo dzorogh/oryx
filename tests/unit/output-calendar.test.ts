@@ -54,7 +54,7 @@ const pageFixture = (): OutputCalendarPage => ({
       outputId: "100",
       outputNumber: "OUT-A",
       outputSequence: null,
-      status: "in_progress",
+      status: "draft",
       expectedEndOn: "2026-11-15",
       productionOrderId: "50",
       productionOrderNumber: "PO-50",
@@ -68,7 +68,7 @@ const pageFixture = (): OutputCalendarPage => ({
       outputId: "101",
       outputNumber: "OUT-B",
       outputSequence: null,
-      status: "in_progress",
+      status: "draft",
       expectedEndOn: "2026-11-20",
       productionOrderId: "50",
       productionOrderNumber: "PO-50",
@@ -96,7 +96,7 @@ const pageFixture = (): OutputCalendarPage => ({
       outputId: "103",
       outputNumber: "OUT-D",
       outputSequence: null,
-      status: "in_progress",
+      status: "draft",
       expectedEndOn: "2026-08-10",
       productionOrderId: "52",
       productionOrderNumber: "PO-52",
@@ -144,7 +144,7 @@ describe("mapOutputCalendarPage", () => {
           outputId: 101,
           outputNumber: "OUT-101",
           outputSequence: null,
-          status: "in_progress",
+          status: "draft",
           expectedEndOn: null,
           productionOrderId: 50,
           productionOrderNumber: "PO-50",
@@ -192,7 +192,7 @@ describe("mapOutputCalendarPage", () => {
     assert.equal(mapped.outputLines[0]?.expectedEndOn, "2026-11-15");
     assert.equal(mapped.outputLines[0]?.status, "draft");
     assert.equal(mapped.outputLines[1]?.expectedEndOn, null);
-    assert.equal(mapped.outputLines[1]?.status, "in_progress");
+    assert.equal(mapped.outputLines[1]?.status, "draft");
     assert.deepEqual(mapped.openOrders[0], {
       productionOrderId: "50",
       number: "PO-50",
@@ -227,7 +227,7 @@ describe("stockBreakdown", () => {
 });
 
 describe("I/O matrix: приход", () => {
-  it("counts draft/in_progress in month; ignores done-like by not including them", () => {
+  it("counts draft outputs in month; ignores done-like by not including them", () => {
     const page = pageFixture();
     const W = buildOwnerSet(defaultOwnerFilter(page), page);
     const nov = monthCell("1", { year: 2026, month: 11 }, page.outputLines, W, null);

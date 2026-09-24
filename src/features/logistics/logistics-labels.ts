@@ -88,10 +88,8 @@ export const TRANSFER_STATUS_LABELS: Partial<Record<TransferStatus, string>> = {
   delivered: "Доставлен",
 };
 
-export const OUTPUT_STATUS_LABELS: Partial<Record<OutputStatus, string>> = {
-  draft: "Черновик",
-  planned: "Запланирован",
-  in_progress: "В работе",
+export const OUTPUT_STATUS_LABELS: Record<OutputStatus, string> = {
+  draft: "Запланирован",
   done: "Готов",
   cancelled: "Отменён",
 };

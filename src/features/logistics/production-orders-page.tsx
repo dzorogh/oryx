@@ -18,10 +18,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
-import { remainingToReserveInProductionOutputsForLine } from "@/features/logistics/logistics-availability";
-import { assertEnoughStock, assertProductionOutputLines } from "@/features/logistics/logistics-rules";
+import { OrderLineDialog, type OrderLineDialogMode } from "@/features/logistics/ui/order-line-dialog";
 import {
-  addProductionLine,
+  productionProductOutputs,
+  remainingToReserveInProductionOutputsForLine,
+} from "@/features/logistics/logistics-availability";
+import { assertEnoughStock, assertProductionOutputLines, nextOrderLineQuantity } from "@/features/logistics/logistics-rules";
+import {
+  setOrderLineQuantity,
   closeProductionOrder,
   createProductionOrder,
   createProductionOutput,
@@ -32,11 +36,13 @@ import {
 import {
   formatExpectedEnd,
   formatMetaTimestamp,
+  formatQuantity,
   PRODUCTION_STATUS_LABELS,
 } from "@/features/logistics/logistics-labels";
 import {
   plantIdsForProducts,
   plantSelectItems,
+  productById,
   productIdentityLabel,
   productsForPlant,
 } from "@/features/logistics/logistics-lookups";
@@ -383,6 +389,7 @@ export const ProductionOrderDetailPage = () => {
   const outputLockRef = useRef(false);
 
   const [productOpen, setProductOpen] = useState(false);
+  const [lineMode, setLineMode] = useState<OrderLineDialogMode>("add");
   const [productPending, setProductPending] = useState(false);
   const [productError, setProductError] = useState<string | null>(null);
   const [newProductId, setNewProductId] = useState("");
@@ -705,24 +712,36 @@ export const ProductionOrderDetailPage = () => {
                 <DocumentSection
                   title="Товары"
                   tools={
-                    canMutate ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => {
-                          setProductError(null);
-                          setProductOpen(true);
-                        }}
-                      >
-                        Добавить товар
-                      </Button>
-                    ) : null
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setLineMode("add");
+                        setNewProductId("");
+                        setNewQuantity("1");
+                        setProductError(null);
+                        setProductOpen(true);
+                      }}
+                    >
+                      Добавить товар
+                    </Button>
                   }
                 >
                   <ProductionOrderProductManifest
                     snapshot={snapshot}
                     lines={lines}
                     canMutate={canMutate}
+                    onEdit={(lineId) => {
+                      const line = lines.find((item) => item.id === lineId);
+                      if (!line) {
+                        return;
+                      }
+                      setLineMode("edit");
+                      setNewProductId(line.productId);
+                      setNewQuantity(String(line.quantity));
+                      setProductError(null);
+                      setProductOpen(true);
+                    }}
                     onReleaseReservation={setOutputReleaseTarget}
                     bare
                     onReserve={(lineId) => {
@@ -798,112 +817,90 @@ export const ProductionOrderDetailPage = () => {
         />
       </div>
 
-      <LogisticsDialog
+      <OrderLineDialog
         open={productOpen}
         onOpenChange={(next) => {
-          if (productPending) {
-            return;
-          }
           setProductOpen(next);
           if (!next) {
             setProductError(null);
           }
         }}
-        title="Добавить товар"
-      >
-        <div className="flex flex-col gap-3">
-          {plantProducts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Для этого производителя нет доступных товаров.</p>
-          ) : (
-            <label className="space-y-1 text-sm">
-              <span className="font-medium">Товар</span>
-              <Select
-                items={plantProducts.map((item) => ({
-                  value: item.id,
-                  label: productIdentityLabel(item, item.id),
-                }))}
-                value={newProductId}
-                disabled={productPending}
-                onValueChange={(value) => setNewProductId(value ?? "")}
-              >
-                <SelectTrigger className="w-full bg-background" aria-label="Новый товар">
-                  <SelectValue placeholder="Выберите товар" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {plantProducts.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {productIdentityLabel(item, item.id)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </label>
-          )}
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Количество</span>
-            <Input
-              type="number"
-              min={1}
-              value={newQuantity}
-              disabled={productPending || plantProducts.length === 0}
-              aria-invalid={productError ? true : undefined}
-              onChange={(event) => setNewQuantity(event.target.value)}
-              aria-label="Количество нового товара"
-            />
-          </label>
-          {productError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {productError}
-            </p>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={productPending}
-              onClick={() => setProductOpen(false)}
-            >
-              Отмена
-            </Button>
-            <Button
-              type="button"
-              disabled={productPending || plantProducts.length === 0}
-              onClick={() => {
-                if (!newProductId || !(Number(newQuantity) > 0)) {
-                  setProductError("Выберите товар и количество");
-                  return;
-                }
-                setProductPending(true);
-                setProductError(null);
-                void (async () => {
-                  try {
-                    await addProductionLine({
-                      orderId: order.id,
-                      productId: newProductId,
-                      quantity: Number(newQuantity),
-                    });
-                    await reload();
-                    setProductOpen(false);
-                    setNewProductId("");
-                    setNewQuantity("1");
-                    toast.success("Товар добавлен в заказ на производство");
-                  } catch (caught) {
-                    setProductError(
-                      translateLogisticsError(caught instanceof Error ? caught.message : "Не удалось добавить товар"),
-                    );
-                  } finally {
-                    setProductPending(false);
-                  }
-                })();
-              }}
-            >
-              Добавить
-            </Button>
-          </div>
-        </div>
-      </LogisticsDialog>
+        mode={lineMode}
+        products={plantProducts.map((item) => ({
+          id: item.id,
+          label: productIdentityLabel(item, item.id),
+        }))}
+        productId={newProductId}
+        productLabel={
+          productById(snapshot, newProductId)?.name ??
+          lines.find((line) => line.productId === newProductId)?.productName ??
+          newProductId
+        }
+        quantity={newQuantity}
+        hint={
+          newProductId
+            ? (() => {
+                const outputs = productionProductOutputs(snapshot, order.id, newProductId);
+                const existing = lineMode === "add" ? lines.find((line) => line.productId === newProductId) : undefined;
+                const summary = `в выпусках ${formatQuantity(outputs.inOutputs)}, выпущено ${formatQuantity(outputs.outputted)}`;
+                return existing
+                  ? `Уже в заказе ${formatQuantity(existing.quantity)} — количество сложится; ${summary}`
+                  : summary;
+              })()
+            : null
+        }
+        pending={productPending}
+        error={productError}
+        onProductIdChange={setNewProductId}
+        onQuantityChange={setNewQuantity}
+        onDelete={() => {
+          setLineMode("delete");
+          setProductError(null);
+        }}
+        onSubmit={() => {
+          if (lineMode !== "delete" && (!newProductId || !(Number(newQuantity) > 0))) {
+            setProductError("Выберите товар и количество");
+            return;
+          }
+          if (!newProductId) {
+            return;
+          }
+          const existing = lines.find((line) => line.productId === newProductId);
+          const quantity = nextOrderLineQuantity(
+            lineMode,
+            existing ? existing.quantity : null,
+            Number(newQuantity),
+          );
+          setProductPending(true);
+          setProductError(null);
+          void (async () => {
+            try {
+              await setOrderLineQuantity({
+                documentId: order.id,
+                productId: newProductId,
+                quantity,
+              });
+              await reload();
+              setProductOpen(false);
+              setNewProductId("");
+              setNewQuantity("1");
+              toast.success(
+                lineMode === "delete"
+                  ? "Товар удалён из заказа на производство"
+                  : lineMode === "edit"
+                    ? "Количество в заказе на производство изменено"
+                    : "Товар добавлен в заказ на производство",
+              );
+            } catch (caught) {
+              setProductError(
+                translateLogisticsError(caught instanceof Error ? caught.message : "Не удалось сохранить строку"),
+              );
+            } finally {
+              setProductPending(false);
+            }
+          })();
+        }}
+      />
 
       <OutputReleaseDialog
         snapshot={snapshot}

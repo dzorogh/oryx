@@ -1111,7 +1111,7 @@ export class ProductionForOrderOutputError extends Error {
   productionOrderId: string;
   sequenceNumber: string | null;
   constructor(productionOrderId: string, sequenceNumber: string | null, cause: unknown) {
-    const detail = cause instanceof Error ? cause.message : "Не удалось создать черновик выпуска";
+    const detail = cause instanceof Error ? cause.message : "Не удалось создать запланированный выпуск";
     super(detail);
     this.name = "ProductionForOrderOutputError";
     this.productionOrderId = productionOrderId;
@@ -1322,9 +1322,13 @@ export const createProductionOrder = async (args: {
   };
 };
 
-export const addProductionLine = (args: { orderId: string; productId: string; quantity: number }) =>
-  rpc("store_add_production_line", {
-    p_id: Number(args.orderId),
+export const setOrderLineQuantity = (args: {
+  documentId: string;
+  productId: string;
+  quantity: number;
+}) =>
+  rpc("store_set_order_line_quantity", {
+    p_document_id: Number(args.documentId),
     p_product_variant_id: Number(args.productId),
     p_quantity: args.quantity,
   });

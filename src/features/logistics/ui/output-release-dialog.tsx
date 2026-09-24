@@ -82,7 +82,7 @@ export const OutputReleaseDialog = ({
     >
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
-          Количество останется в черновике выпуска свободным — его можно зарезервировать под другой заказ.
+          Количество останется в запланированном выпуске свободным — его можно зарезервировать под другой заказ.
         </p>
         <QuantityField value={value} onChange={setQuantity} max={max} disabled={pending} />
         <div className="flex flex-wrap gap-2">

@@ -9,6 +9,7 @@ import {
 import { lineLocationAllocations } from "@/features/logistics/allocation-atlas";
 import { calculateOrderDocumentCoverage } from "@/features/logistics/order-document-coverage";
 import {
+  productActivity,
   relatedOutputsForOrder,
   relatedProductionsForOrder,
 } from "@/features/logistics/logistics-related";
@@ -226,7 +227,7 @@ describe("универсальные товарные строки", () => {
           sequenceNumber: "2",
           number: "OUT-2",
           productionOrderId: "2000001",
-          status: "planned",
+          status: "draft",
           createdAt: "2026-09-22T01:00:00Z",
           createdBy: "1",
           expectedEndOn: null,
@@ -402,6 +403,8 @@ describe("связанные документы и покрытие этапов
     const outputs = relatedOutputsForOrder(view, "12");
     assert.ok(productions.some((item) => item.id === "po-1"));
     assert.ok(outputs.some((item) => item.id === "out-draft"));
+    assert.equal(outputs.find((item) => item.id === "out-draft")?.statusLabel, "Запланирован");
+    assert.equal(outputs.find((item) => item.id === "out-done")?.statusLabel, "Готов");
     assert.ok(!outputs.some((item) => item.id === "out-cancelled"));
 
     const coverage = calculateOrderDocumentCoverage(view, "12");
@@ -410,6 +413,12 @@ describe("связанные документы и покрытие этапов
     assert.equal(coverage.output.get("out-draft"), 40);
     assert.equal(coverage.output.get("out-done"), 30);
     assert.equal(coverage.output.has("out-cancelled"), false);
+  });
+
+  it("подпись статуса выпуска в активности товара", () => {
+    const view = { ...base(), productionOrders: [] };
+    const outputRows = productActivity(view, "7").find((group) => group.kind === "output")?.items ?? [];
+    assert.equal(outputRows.find((row) => row.id === "out-draft")?.statusLabel, "Запланирован");
   });
 
   it("done покрывает production, а active-loop не дублирует output", () => {

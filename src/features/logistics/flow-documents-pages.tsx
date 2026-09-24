@@ -1122,6 +1122,7 @@ export const OutputDetailPage = () => {
         createdAt: doc.createdAt,
         createdBy: doc.createdBy,
         postedAt: completedAt,
+        statusLabels: OUTPUT_STATUS_LABELS,
       })
     : [];
   const movementCount = doc
@@ -1183,7 +1184,7 @@ export const OutputDetailPage = () => {
         status={<OutputStatusBadge status={doc.status} />}
         actions={
           <>
-            {doc.status === "draft" || doc.status === "planned" ? (
+            {doc.status === "draft" ? (
               <Button
                 type="button"
                 size="sm"

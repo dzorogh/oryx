@@ -55,11 +55,25 @@ export const assertDocumentCanBeCancelled = (kind: string, status?: string | nul
   }
   const posted =
     ((kind === "production_output" || kind === "output") &&
-      (status === "done" || status === "in_progress")) ||
+      status === "done") ||
     (kind === "transfer" && (status === "in_progress" || status === "done" || status === "sent" || status === "delivered"));
   if (posted) {
     throw new Error(POSTED_DOCUMENT_CANCEL_FORBIDDEN);
   }
+};
+
+export const nextOrderLineQuantity = (
+  mode: "add" | "edit" | "delete",
+  existingQuantity: number | null,
+  entered: number,
+): number => {
+  if (mode === "delete") {
+    return 0;
+  }
+  if (mode === "add" && existingQuantity != null) {
+    return existingQuantity + entered;
+  }
+  return entered;
 };
 
 export const assertPositiveQuantity = (quantity: number): void => {
