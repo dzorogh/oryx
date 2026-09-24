@@ -806,6 +806,9 @@ export const hrefForLocation = (
       : snapshot.productionOrderLines.find((item) => item.id === locationId)?.orderId;
     return orderId ? hrefForProductionOrder(orderId, snapshot) : null;
   }
+  if (locationType === "production_output") {
+    return hrefForDocument("output", locationId, snapshot);
+  }
   return null;
 };
 

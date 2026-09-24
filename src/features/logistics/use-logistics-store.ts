@@ -101,6 +101,7 @@ const LOAD_ERROR = "Не удалось загрузить данные логи
 export const useLogisticsStore = (source: LogisticsStoreSource) => {
   const [snapshot, setSnapshot] = useState<LogisticsSnapshot>(EMPTY_SNAPSHOT);
   const [payloadBalances, setPayloadBalances] = useState<StockBalance[] | null>(null);
+  const [orderPlan, setOrderPlan] = useState<unknown>(null);
   const [found, setFound] = useState(true);
   const [pending, setPending] = useState(false);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -129,6 +130,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
       }
       setSnapshot(next.snapshot);
       setPayloadBalances(next.balances);
+      setOrderPlan(next.orderPlan);
       setFound(next.found);
       setError(null);
     } catch (caught: unknown) {
@@ -162,6 +164,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
   return {
     snapshot,
     balances,
+    orderPlan,
     isLoading: enabled && (pending || loadedKey !== key),
     error,
     reload,

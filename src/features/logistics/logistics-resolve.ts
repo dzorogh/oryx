@@ -30,17 +30,19 @@ export const resolveStockLocationId = async (
     const cached = locationMapCache.get(`${locationType}:${locationEntityId}`);
     if (cached) return cached;
   }
-  const [warehouses, customerOrders, productionOrders, transfers] = await Promise.all([
+  const [warehouses, customerOrders, productionOrders, transfers, outputs] = await Promise.all([
     selectAll("store_warehouse", "id,stock_location_id"),
     selectAll("store_customer_order", "id,stock_location_id"),
     selectAll("store_production_order", "id,stock_location_id"),
     selectAll("store_transfer", "id,stock_location_id"),
+    selectAll("store_production_output", "id,stock_location_id"),
   ]);
   const map = new Map<string, string>();
   for (const row of warehouses) map.set(`warehouse:${row.id}`, str(row.stock_location_id));
   for (const row of customerOrders) map.set(`customer_order:${row.id}`, str(row.stock_location_id));
   for (const row of productionOrders) map.set(`production_order:${row.id}`, str(row.stock_location_id));
   for (const row of transfers) map.set(`transfer:${row.id}`, str(row.stock_location_id));
+  for (const row of outputs) map.set(`production_output:${row.id}`, str(row.stock_location_id));
   locationMapCache = map;
   locationMapAt = Date.now();
   const id = map.get(`${locationType}:${locationEntityId}`);

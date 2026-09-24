@@ -93,6 +93,7 @@ import {
 } from "@/features/logistics/ui/list/list-helpers";
 import type { ListColumnDef, ListGroupDef, ListSortDef } from "@/features/logistics/ui/list/list-types";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
+import { OrderPlanTab } from "@/features/logistics/order-plan/order-plan-tab";
 import { OrderProgressTracker } from "@/features/logistics/ui/order-progress-tracker";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
@@ -478,7 +479,7 @@ export const CustomerOrdersPage = () => {
 
 export const CustomerOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
-  const { snapshot, balances, isLoading, error, reload, found } = useLogisticsStore({
+  const { snapshot, balances, orderPlan, isLoading, error, reload, found } = useLogisticsStore({
     kind: "document",
     documentKind: "customer_order",
     ref: String(params.orderId ?? ""),
@@ -785,6 +786,20 @@ export const CustomerOrderDetailPage = () => {
                   }}
                 />
               </DocumentSection>
+            ),
+          },
+          {
+            id: "plan",
+            label: "План",
+            panel: (
+              <OrderPlanTab
+                snapshot={snapshot}
+                orderId={order.id}
+                lines={lines}
+                canAct={canAct}
+                rawPlan={orderPlan}
+                reload={reload}
+              />
             ),
           },
           {

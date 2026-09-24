@@ -207,6 +207,7 @@ export type LogisticsPayload = {
   users?: SnapshotRow[];
   document_history?: SnapshotRow[];
   balances?: SnapshotRow[];
+  order_plan?: unknown;
   found?: boolean;
 };
 
@@ -214,6 +215,8 @@ export type MappedLogistics = {
   snapshot: LogisticsSnapshot;
   /** When present, prefer over computeStockBalances(transactions). */
   balances: StockBalance[] | null;
+  /** Raw `order_plan` of a customer order context; map with `mapOrderPlanPayload`. */
+  orderPlan: unknown;
   found: boolean;
 };
 
@@ -359,6 +362,11 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
   }
   for (const row of transfersRaw) {
     locEntity.set(str(row.stock_location_id), { kind: "transfer", entityId: str(row.id) });
+  }
+  for (const row of outputsRaw) {
+    if (row.stock_location_id != null) {
+      locEntity.set(str(row.stock_location_id), { kind: "production_output", entityId: str(row.id) });
+    }
   }
 
   const ownerEntity = new Map<string, EntityOwner>();
@@ -533,6 +541,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       sequenceNumber: doc.sequence_number,
       number: documentNumber(doc.number_prefix, doc.sequence_number),
       productionOrderId: str(row.production_order_id),
+      stockLocationId: row.stock_location_id == null ? undefined : str(row.stock_location_id),
       status: (doc.status ?? "draft") as ProductionOutput["status"],
       createdAt: doc.created_at,
       createdBy: doc.created_by,
@@ -788,6 +797,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
   return {
     snapshot,
     balances,
+    orderPlan: payload.order_plan ?? null,
     found: payload.found !== false,
   };
 };

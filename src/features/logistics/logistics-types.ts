@@ -1,6 +1,12 @@
 import type { LogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
 
-export const LOCATION_KINDS = ["warehouse", "production_order", "transfer", "customer_order"] as const;
+export const LOCATION_KINDS = [
+  "warehouse",
+  "production_order",
+  "transfer",
+  "customer_order",
+  "production_output",
+] as const;
 export const LOCATION_TYPES = LOCATION_KINDS;
 export type LocationKind = (typeof LOCATION_KINDS)[number];
 /** @deprecated Use LocationKind */
@@ -346,6 +352,8 @@ export type ProductionOutput = {
   sequenceNumber: string;
   number: string;
   productionOrderId: string;
+  /** Stock location registry id (kind production_output); no ledger postings there. */
+  stockLocationId?: string;
   status: OutputStatus;
   createdAt: string;
   createdBy: string;

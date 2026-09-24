@@ -19,6 +19,7 @@ export const LOCATION_LABELS: Record<LocationType, string> = {
   production_order: "Заказ на производство",
   transfer: "Перемещение",
   customer_order: "Заказ клиента",
+  production_output: "Выпуск",
 };
 
 /** Host entity that holds stock or a reservation — not the stock-place phrasing. */
@@ -34,6 +35,9 @@ export const locationKindLabel = (type: LocationType, isPlantWarehouse = false):
   }
   if (type === "customer_order") {
     return "Заказ клиента";
+  }
+  if (type === "production_output") {
+    return "Выпуск";
   }
   return type;
 };

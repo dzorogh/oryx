@@ -244,6 +244,16 @@ export const locationIdentity = (
       isPlantWarehouse: false,
     };
   }
+  if (type === "production_output") {
+    const output = snapshot.outputs.find((item) => item.id === id);
+    const order = output ? productionOrderById(snapshot, output.productionOrderId) : undefined;
+    return {
+      title: output?.number ?? id,
+      hint: order?.plantId ? plantCode(snapshot, order.plantId) : null,
+      plantId: order?.plantId ?? null,
+      isPlantWarehouse: false,
+    };
+  }
   return { title: id, hint: null, plantId: null, isPlantWarehouse: false };
 };
 
@@ -260,6 +270,9 @@ export const locationLabel = (snapshot: LogisticsSnapshot, type: LocationType, i
   }
   if (type === "customer_order") {
     return customerOrderById(snapshot, id)?.number ?? id;
+  }
+  if (type === "production_output") {
+    return locationIdentity(snapshot, type, id).title;
   }
   return `${LOCATION_LABELS[type]} ${id}`;
 };

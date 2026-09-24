@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вариант E — Плюс и форма · План заказа OMS-1042</title>
+<style>
+/*
+  Палитра (токены Oryx), все hex-значения в файле:
+  #f4f4f5  фон страницы (bg-muted/30), «не покрыто» заливка, выбранная строка, фон сегмент-контрола
+  #ffffff  карточки, поля
+  #18181b  текст, primary-кнопка, сегмент «склад», выбранная опция
+  #52525b  вторичный текст, сегмент «в пути»
+  #71717a  muted-fg
+  #a1a1aa  сегмент «выпуск», третичный текст, рамка «план»
+  #d4d4d8  рамка «не покрыто», рамки полей и кнопок
+  #e5e5e5  border
+  #e4e4e7  фон недоступной кнопки, фон вокруг кадров
+  #fafafa  шапки таблиц, хром браузера, подвал окон
+  #dc2626  минус / ошибка     #fef2f2 фон ошибки     #fecaca рамка ошибки
+  #d97706  лишнее             #fffbeb фон лишнего    #fde68a рамка лишнего
+  Штриховка «добавит план» — тот же цвет сегмента + он же с прозрачностью 45%.
+  Затемнение под окном и шторкой — rgba(24,24,27,.45).
+*/
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#18181b;background:#e4e4e7;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.intro{max-width:1440px;margin:0 auto 36px}
+.intro h1{font-size:24px;font-weight:650;letter-spacing:-.01em}
+.intro p{color:#52525b;max-width:920px;margin-top:8px;font-size:14px;line-height:1.55}
+.cap{max-width:1440px;margin:0 auto 10px}
+.cap b{font-weight:650;font-size:14px}
+.frame{max-width:1440px;margin:0 auto 56px;border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 30px rgba(0,0,0,.07)}
+.chrome{height:36px;display:flex;align-items:center;gap:7px;padding:0 14px;background:#fafafa;border-bottom:1px solid #e5e5e5}
+.dot{width:10px;height:10px;border-radius:50%;background:#d4d4d8}
+.url{margin-left:14px;flex:1;max-width:560px;height:22px;border-radius:6px;background:#fff;border:1px solid #e5e5e5;color:#71717a;font-size:12px;display:flex;align-items:center;padding:0 10px}
+
+/* оболочка приложения */
+.app{display:grid;grid-template-columns:208px minmax(0,1fr);background:#f4f4f5;position:relative}
+.app.tall{min-height:900px}
+.app.crop{max-height:900px;overflow:hidden}
+.side{background:#fff;border-right:1px solid #e5e5e5;padding:14px 10px}
+.brand{font-weight:650;font-size:15px;padding:4px 8px 14px;letter-spacing:-.01em}
+.nav a{display:block;padding:6px 8px;border-radius:6px;color:#52525b;text-decoration:none}
+.nav a.on{background:#f4f4f5;color:#18181b;font-weight:600}
+.nav .grp{font-size:11px;color:#a1a1aa;padding:12px 8px 4px}
+.main{padding:16px 20px 28px;min-width:0}
+.crumbs{color:#71717a;margin-bottom:10px}
+.crumbs b{color:#18181b;font-weight:500}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:6px}
+
+/* шапка заказа */
+.head{padding:14px 16px 0}
+.head-top{display:flex;align-items:center;gap:10px}
+.head h2{font-size:18px;font-weight:650;letter-spacing:-.01em}
+.meta{display:flex;gap:20px;color:#71717a;margin-top:4px}
+.meta b{color:#18181b;font-weight:500}
+.tabs{display:flex;gap:2px;margin-top:12px}
+.tab{padding:8px 12px;color:#71717a;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:#18181b;border-color:#18181b;font-weight:600}
+.tab small{color:#a1a1aa;margin-left:4px;font-size:12px}
+
+/* метки */
+.chip{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:999px;border:1px solid #e5e5e5;background:#fafafa;font-size:11.5px;font-weight:500;color:#52525b;white-space:nowrap;line-height:1}
+.chip-dark{background:#18181b;border-color:#18181b;color:#fff}
+.chip-plan{background:#fff;border:1px dashed #a1a1aa;color:#52525b}
+.chip-q{background:#f4f4f5;border-color:#f4f4f5;color:#71717a}
+.chip-in{background:#fff;border-color:#18181b;color:#18181b}
+.chip-r{background:#fef2f2;border-color:#fecaca;color:#dc2626}
+.chip .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* панель плана */
+.planbar{margin-top:12px;display:flex;align-items:center;gap:10px;padding:10px 12px}
+.switch{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 10px 0 12px;border:1px solid #e5e5e5;border-radius:6px;font-weight:600;background:#fff}
+.caret{color:#71717a;font-weight:400;font-size:11px}
+.iconbtn{width:32px;height:32px;border:1px solid #e5e5e5;border-radius:6px;display:inline-grid;place-items:center;color:#52525b;font-weight:700;letter-spacing:1px}
+.vsep{width:1px;height:20px;background:#e5e5e5}
+.saved{color:#71717a;display:inline-flex;align-items:center;gap:6px}
+.saved::before{content:"";width:6px;height:6px;border-radius:50%;background:#a1a1aa}
+.spacer{flex:1}
+.cnt{color:#71717a}
+.cnt b{color:#18181b;font-weight:600;font-variant-numeric:tabular-nums}
+.btn{height:32px;padding:0 14px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid transparent;white-space:nowrap;font-size:13px}
+.btn-primary{background:#18181b;color:#fff}
+.btn-outline{background:#fff;border-color:#d4d4d8;color:#18181b}
+.btn-ghost{color:#52525b}
+.btn-disabled{background:#e4e4e7;color:#a1a1aa}
+.why{font-size:12px;color:#dc2626;font-weight:500;white-space:nowrap}
+
+/* мастер-деталь */
+.md{display:grid;grid-template-columns:minmax(0,56fr) minmax(0,44fr);gap:12px;margin-top:12px;align-items:start}
+.mh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #e5e5e5}
+.mh h3,.sech h3{font-size:13px;font-weight:650;white-space:nowrap}
+.legend{display:flex;gap:12px;color:#71717a;font-size:12px;align-items:center;flex-wrap:wrap}
+.lg{display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+.sw{width:14px;height:8px;border-radius:2px;display:inline-block;flex:none}
+.lsep{width:1px;height:12px;background:#e5e5e5}
+
+table.pt{width:100%;border-collapse:collapse;table-layout:fixed}
+.pt th{font-size:12px;font-weight:500;color:#71717a;text-align:left;padding:8px 14px;border-bottom:1px solid #e5e5e5;background:#fafafa;white-space:nowrap}
+.pt td{padding:13px 14px;border-bottom:1px solid #e5e5e5;vertical-align:middle}
+.pt tr:last-child td{border-bottom:0}
+.pt .num{text-align:right;font-variant-numeric:tabular-nums}
+.pt .addc{text-align:right;padding-left:0}
+.pt.tails td.cov{padding-right:52px}
+.pn{font-weight:550;display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv{color:#71717a;font-size:12px}
+tr.sel td{background:#f4f4f5}
+tr.sel td:first-child{box-shadow:inset 3px 0 0 #18181b}
+.tot{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tot .z{color:#a1a1aa}
+.tot.a{color:#d97706}
+.tot.r{color:#dc2626}
+.rd{width:8px;height:8px;border-radius:50%;flex:none}
+.rd.r{background:#dc2626}.rd.a{background:#d97706}
+.plus{width:28px;height:28px;border:1px solid #d4d4d8;border-radius:6px;display:inline-grid;place-items:center;font-size:17px;line-height:1;color:#18181b;background:#fff;font-weight:500}
+tr.sel .plus{border-color:#18181b}
+
+.bar{position:relative;display:flex;gap:1px;height:10px;border-radius:3px}
+.bar>i{display:block;height:100%}
+.bar>i:first-of-type{border-top-left-radius:3px;border-bottom-left-radius:3px}
+.bar>i:last-of-type{border-top-right-radius:3px;border-bottom-right-radius:3px}
+.s-wh{background:#18181b}.s-tr{background:#52525b}.s-out{background:#a1a1aa}
+.p-wh{background:repeating-linear-gradient(135deg,#18181b 0 2px,rgba(24,24,27,.45) 2px 5px)}
+.p-tr{background:repeating-linear-gradient(135deg,#52525b 0 2px,rgba(82,82,91,.45) 2px 5px)}
+.p-out{background:repeating-linear-gradient(135deg,#a1a1aa 0 2px,rgba(161,161,170,.45) 2px 5px)}
+.none{background:#f4f4f5;box-shadow:inset 0 0 0 1px #d4d4d8}
+.tail{position:absolute;left:calc(100% + 4px);top:0;height:100%;border-radius:2px;width:14px}
+.tail.minus{background:repeating-linear-gradient(135deg,#dc2626 0 2px,rgba(220,38,38,.35) 2px 5px)}
+.tail.extra{background:repeating-linear-gradient(135deg,#d97706 0 2px,rgba(217,119,6,.35) 2px 5px)}
+.tl{position:absolute;left:calc(100% + 22px);top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:650;white-space:nowrap}
+.tl.r{color:#dc2626}.tl.a{color:#d97706}
+
+/* правая панель — результат плана */
+.detail{position:sticky;top:16px}
+.dh{padding:14px 16px 14px;border-bottom:1px solid #e5e5e5}
+.over{font-size:11.5px;color:#71717a;font-weight:500}
+.dh h3{font-size:15px;font-weight:650;letter-spacing:-.005em;margin-top:2px}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.nb{border:1px solid #e5e5e5;border-radius:6px;padding:6px 9px}
+.nb span{display:flex;gap:6px;align-items:center;color:#71717a;font-size:11.5px;white-space:nowrap}
+.nb b{font-size:16px;font-weight:650;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.nb.r{border-color:#fecaca;background:#fef2f2}
+.nb.r b{color:#dc2626}
+.nb .chip{height:18px}
+.dbar{margin-top:12px;position:relative}
+.dbar .bar{height:12px}
+.dbar.short .bar{width:calc(100% - 52px)}
+.sec{padding:12px 16px 14px;border-bottom:1px solid #e5e5e5}
+.sec:last-child{border-bottom:0}
+.sech{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sech .n{color:#71717a;font-weight:500;font-variant-numeric:tabular-nums}
+.sq{width:12px;height:12px;border-radius:2px;display:inline-block;flex:none}
+.dash{color:#a1a1aa;padding:2px 8px}
+
+.pl{display:grid;grid-template-columns:12px minmax(0,1fr) auto 22px;gap:10px;align-items:center;padding:7px 8px;border:1px solid #e5e5e5;border-radius:6px;background:#fff}
+.pl+.pl{margin-top:6px}
+.ps{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.ps b{font-weight:600}
+.ps .sub{color:#a1a1aa;font-size:12px;white-space:nowrap}
+.pq{display:flex;align-items:center;gap:8px;justify-self:end}
+.avr{color:#dc2626;font-size:11.5px;font-weight:500;white-space:nowrap}
+.x{color:#a1a1aa;font-size:16px;text-align:center;line-height:1}
+.step{display:inline-flex;height:28px;border:1px solid #d4d4d8;border-radius:6px;overflow:hidden;background:#fff}
+.step i{font-style:normal;width:24px;display:grid;place-items:center;color:#52525b;background:#fafafa;font-size:14px}
+.step i:first-child{border-right:1px solid #e5e5e5}
+.step i:last-child{border-left:1px solid #e5e5e5}
+.step i.off{color:#d4d4d8}
+.step b{width:40px;display:grid;place-items:center;font-weight:600;font-variant-numeric:tabular-nums}
+.pl.bad{background:#fef2f2;border-color:#fecaca}
+.pl.bad .step{border-color:#dc2626}
+.pl.bad .step b{color:#dc2626}
+.pl .chip-r{height:18px;font-weight:650}
+.fl{grid-column:2/4;display:flex;justify-content:space-between;align-items:center;margin-top:-4px}
+.fl .chip{height:18px}
+.addbig{margin-top:10px;height:38px;border:1px solid #d4d4d8;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;background:#fff}
+.addbig span{font-size:17px;font-weight:500;line-height:1}
+.pl.ro{grid-template-columns:12px minmax(0,1fr) 36px 88px}
+.pl.ro .v{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.doclink{justify-self:end;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:5px;border:1px solid #e5e5e5;background:#fafafa;font-weight:600;font-size:12px;text-decoration:underline;text-decoration-color:#a1a1aa;text-underline-offset:2px;white-space:nowrap}
+.doclink::after{content:"↗";text-decoration:none;color:#71717a;font-weight:400;font-size:11px}
+
+/* запущенный план */
+.docs{margin-top:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.docs .lbl{font-weight:650;margin-right:4px}
+.docchip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid #e5e5e5;border-radius:6px;background:#fff;white-space:nowrap}
+.docchip small{color:#71717a;font-size:12px}
+a.doc{color:#18181b;font-weight:600;text-decoration:underline;text-decoration-color:#a1a1aa;text-underline-offset:2px}
+
+/* затемнение, шторка формы, окно */
+.overlay{position:absolute;inset:0;background:rgba(24,24,27,.45);z-index:5}
+.overlay.center{display:flex;align-items:flex-start;justify-content:center;padding-top:72px}
+.sheet{position:absolute;top:0;right:0;bottom:0;width:540px;background:#fff;border-left:1px solid #e5e5e5;box-shadow:-24px 0 60px rgba(0,0,0,.2);display:flex;flex-direction:column;z-index:6}
+.sh-h{padding:16px 20px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sh-h h4{font-size:16px;font-weight:650;letter-spacing:-.005em}
+.sh-h .pv{margin-top:2px}
+.close{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:#71717a;font-size:18px;line-height:1}
+.remain{margin:14px 20px 0;padding:12px 14px;border:1px solid #e5e5e5;border-radius:8px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+.remain .lb{font-size:12px;color:#71717a;font-weight:500}
+.remain .big{font-size:34px;font-weight:650;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.remain .bar{height:12px}
+.remain .ord{display:flex;justify-content:space-between;font-size:11.5px;color:#71717a;margin-top:6px;font-variant-numeric:tabular-nums}
+.seg{margin:14px 20px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:2px;padding:3px;background:#f4f4f5;border-radius:8px;border:1px solid #e5e5e5}
+.seg span{height:32px;border-radius:6px;display:grid;place-items:center;font-weight:600;color:#52525b}
+.seg span.on{background:#fff;color:#18181b;box-shadow:0 1px 2px rgba(0,0,0,.08),0 0 0 1px #e5e5e5}
+.sh-b{padding:4px 20px 12px;flex:1;min-height:0}
+.gh{display:flex;align-items:center;gap:7px;margin:14px 0 6px;font-size:12px;font-weight:600;color:#52525b}
+.gh .r{margin-left:auto;font-weight:500;color:#a1a1aa}
+.opt{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid #e5e5e5;border-radius:6px;background:#fff}
+.opt+.opt{margin-top:4px}
+.opt .l{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.opt .l b{font-weight:600}
+.opt .l .sub{color:#a1a1aa;font-size:12px;white-space:nowrap}
+.opt .n{font-weight:600;font-variant-numeric:tabular-nums;min-width:28px;text-align:right}
+.radio{width:16px;height:16px;border-radius:50%;border:1.5px solid #a1a1aa;background:#fff}
+.opt.on{border-color:#18181b;box-shadow:inset 0 0 0 1px #18181b;background:#fafafa}
+.opt.on .radio{border-color:#18181b;background:radial-gradient(circle,#18181b 0 4px,#fff 4.5px)}
+.opt.quiet .l b,.opt.quiet .n{color:#71717a;font-weight:500}
+.opt.off{background:#fafafa}
+.opt.off .radio{border-style:dashed;border-color:#d4d4d8;background:#fafafa}
+.opt.off .l b,.opt.off .n{color:#a1a1aa}
+.dd{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border:1px solid #d4d4d8;border-radius:6px;background:#fff;font-weight:600;font-size:12.5px}
+.dd .caret{font-size:10px}
+.qty{margin-top:16px;padding-top:14px;border-top:1px solid #e5e5e5;display:flex;align-items:center;gap:10px}
+.qty .lb{font-weight:600;margin-right:auto}
+.inp{width:96px;height:38px;border:1px solid #18181b;border-radius:6px;box-shadow:0 0 0 3px rgba(24,24,27,.08);display:flex;align-items:center;justify-content:flex-end;padding:0 12px;font-size:17px;font-weight:650;font-variant-numeric:tabular-nums}
+.qty .btn{height:38px}
+.sh-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #e5e5e5;background:#fafafa}
+.sh-f .btn{height:36px;padding:0 18px}
+
+.modal{width:880px;background:#fff;border-radius:8px;box-shadow:0 24px 60px rgba(0,0,0,.28);border:1px solid #e5e5e5;overflow:hidden}
+.modal-h{padding:18px 20px 4px}
+.modal-h h4{font-size:16px;font-weight:650}
+.modal-h p{color:#71717a;margin-top:4px}
+.modal-b{padding:12px 20px 18px}
+.mlbl{font-size:12px;font-weight:650;color:#18181b;margin-bottom:6px;display:flex;gap:6px}
+.mlbl .n{color:#71717a;font-weight:500}
+.mgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.mt{width:100%;border-collapse:collapse;border:1px solid #e5e5e5;border-radius:6px;font-size:12.5px}
+.mt td{padding:6px 10px;white-space:nowrap;border-top:1px solid #e5e5e5;vertical-align:middle}
+.mt tr:first-child td{border-top:0}
+.mt td:first-child{font-weight:600;white-space:nowrap;width:1%}
+.mt td.q{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;width:1%}
+.mt .chip{height:18px;font-size:11px;margin-left:4px}
+.mt + .mlbl{margin-top:14px}
+.modal-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #e5e5e5;background:#fafafa}
+</style>
+</head>
+<body>
+
+<header class="intro">
+  <h1>Вариант E — Плюс и форма</h1>
+  <p>Та же раскладка, что в A, но правая панель — это только «Результат плана»: что уже есть и что выбрано, без полей под каждый возможный источник. Новая строка добавляется кнопкой «+» у товара или «+ Добавить» в панели: форма с выбором «Взять / Произвести», источником и количеством. Повторный выбор того же источника увеличивает существующую строку, а не создаёт новую.</p>
+</header>
+
+<!-- ===================================================== КАДР 1 -->
+<div class="cap"><b>1 · Основной — ATV Hunter 500</b></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">oryx.local/store/customer-orders/OMS-1042?tab=plan</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">Oryx</div>
+      <nav class="nav"><a>Главная</a><div class="grp">Магазин</div><a>Каталог</a><a class="on">Заказы клиента</a><a>Заказы на производство</a><a>Выпуски</a><a>Склады</a><a>Логистика</a></nav>
+    </aside>
+    <main class="main">
+      <div class="crumbs">Заказы клиента / <b>OMS-1042</b></div>
+      <section class="card head">
+        <div class="head-top"><h2>OMS-1042</h2><span class="chip"><span class="d"></span>Открыт</span></div>
+        <div class="meta"><span>Срок <b>30.09.2026</b></span><span>Регион <b>Россия</b></span><span>Товаров <b>7</b></span></div>
+        <div class="tabs"><span class="tab">Товары<small>7</small></span><span class="tab on">План</span><span class="tab">Документы<small>5</small></span><span class="tab">История</span></div>
+      </section>
+
+      <section class="card planbar">
+        <span class="switch">План 2<span class="caret">▾</span></span>
+        <span class="chip">Черновик</span>
+        <span class="iconbtn">···</span>
+        <span class="vsep"></span>
+        <span class="saved">Сохранено · 18:42</span>
+        <span class="spacer"></span>
+        <span class="cnt">Покрыто <b>6 / 7</b></span>
+        <span class="btn btn-primary">Запустить</span>
+      </section>
+
+      <div class="md">
+        <section class="card">
+          <div class="mh">
+            <h3>Товары</h3>
+            <div class="legend">
+              <span class="lg"><i class="sw s-wh"></i>Склад</span>
+              <span class="lg"><i class="sw s-tr"></i>В пути</span>
+              <span class="lg"><i class="sw s-out"></i>Выпуск</span>
+              <span class="lsep"></span>
+              <span class="lg"><i class="sw s-wh"></i>уже есть</span>
+              <span class="lg"><i class="sw p-wh"></i>добавит план</span>
+              <span class="lg"><i class="sw none"></i>не покрыто</span>
+            </div>
+          </div>
+          <table class="pt">
+            <colgroup><col style="width:33%"><col style="width:12%"><col style="width:33%"><col style="width:13%"><col style="width:9%"></colgroup>
+            <thead><tr><th>Товар</th><th class="num">Заказано</th><th>Покрытие</th><th class="num">Итог</th><th></th></tr></thead>
+            <tbody>
+              <tr class="sel"><td><div class="pn">ATV Hunter 500 4x4</div><div class="pv">зелёный</div></td><td class="num">20</td><td class="cov"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div></td><td class="num"><span class="tot">20 / 20</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Pitbike Storm 125</div><div class="pv">красный</div></td><td class="num">12</td><td class="cov"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:41.667%"></i></div></td><td class="num"><span class="tot">12 / 12</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">UTV Ranger 1000</div><div class="pv">камуфляж</div></td><td class="num">5</td><td class="cov"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div></td><td class="num"><span class="tot">5 / 5</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Scooter Metro 50</div><div class="pv">белый</div></td><td class="num">30</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">30 / 30</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Snowmobile Polar 600</div><div class="pv">чёрный</div></td><td class="num">8</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">8 / 8</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Golf Cart Club 4</div><div class="pv">бежевый</div></td><td class="num">6</td><td class="cov"><div class="bar"><i class="none" style="width:100%"></i></div></td><td class="num"><span class="tot"><span class="z">0</span> / 6</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Enduro Trail 250</div><div class="pv">оранжевый</div></td><td class="num">10</td><td class="cov"><div class="bar"><i class="s-out" style="width:60%"></i><i class="p-wh" style="width:40%"></i></div></td><td class="num"><span class="tot">10 / 10</span></td><td class="addc"><span class="plus">+</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <aside class="card detail">
+          <div class="dh">
+            <div class="over">Результат плана</div>
+            <h3>ATV Hunter 500 4x4</h3><div class="pv">зелёный</div>
+            <div class="nums">
+              <div class="nb"><span>Заказано</span><b>20</b></div>
+              <div class="nb"><span><i class="sw s-wh"></i>Уже есть</span><b>0</b></div>
+              <div class="nb"><span><i class="sw p-wh"></i>В плане</span><b>20</b></div>
+              <div class="nb"><span><i class="sw none"></i>Осталось</span><b>0</b></div>
+            </div>
+            <div class="dbar"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div></div>
+          </div>
+          <div class="sec">
+            <div class="sech"><h3>Уже есть</h3></div>
+            <div class="dash">—</div>
+          </div>
+          <div class="sec">
+            <div class="sech"><h3>В плане</h3><span class="n">4</span></div>
+            <div class="pl"><i class="sq p-wh"></i><div class="ps"><b>WH-3</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>6</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-tr"></i><div class="ps"><b>TR-311</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>5</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-out"></i><div class="ps"><b>OUT-208</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>8</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-out"></i><div class="ps"><b>PO-57</b><span class="chip chip-plan">план</span><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>1</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="addbig"><span>+</span>Добавить</div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===================================================== КАДР 2 -->
+<div class="cap"><b>2 · Форма «Взять» — ATV Hunter 500, осталось 9</b></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">oryx.local/store/customer-orders/OMS-1042?tab=plan</span></div>
+  <div class="app tall">
+    <aside class="side">
+      <div class="brand">Oryx</div>
+      <nav class="nav"><a>Главная</a><div class="grp">Магазин</div><a>Каталог</a><a class="on">Заказы клиента</a><a>Заказы на производство</a><a>Выпуски</a><a>Склады</a><a>Логистика</a></nav>
+    </aside>
+    <main class="main">
+      <div class="crumbs">Заказы клиента / <b>OMS-1042</b></div>
+      <section class="card head">
+        <div class="head-top"><h2>OMS-1042</h2><span class="chip"><span class="d"></span>Открыт</span></div>
+        <div class="meta"><span>Срок <b>30.09.2026</b></span><span>Регион <b>Россия</b></span><span>Товаров <b>7</b></span></div>
+        <div class="tabs"><span class="tab">Товары<small>7</small></span><span class="tab on">План</span><span class="tab">Документы<small>5</small></span><span class="tab">История</span></div>
+      </section>
+      <section class="card planbar">
+        <span class="switch">План 2<span class="caret">▾</span></span>
+        <span class="chip">Черновик</span>
+        <span class="iconbtn">···</span>
+        <span class="vsep"></span>
+        <span class="saved">Сохранено · 18:40</span>
+        <span class="spacer"></span>
+        <span class="cnt">Покрыто <b>5 / 7</b></span>
+        <span class="btn btn-primary">Запустить</span>
+      </section>
+      <div class="md">
+        <section class="card">
+          <div class="mh">
+            <h3>Товары</h3>
+            <div class="legend">
+              <span class="lg"><i class="sw s-wh"></i>Склад</span>
+              <span class="lg"><i class="sw s-tr"></i>В пути</span>
+              <span class="lg"><i class="sw s-out"></i>Выпуск</span>
+              <span class="lsep"></span>
+              <span class="lg"><i class="sw s-wh"></i>уже есть</span>
+              <span class="lg"><i class="sw p-wh"></i>добавит план</span>
+              <span class="lg"><i class="sw none"></i>не покрыто</span>
+            </div>
+          </div>
+          <table class="pt">
+            <colgroup><col style="width:33%"><col style="width:12%"><col style="width:33%"><col style="width:13%"><col style="width:9%"></colgroup>
+            <thead><tr><th>Товар</th><th class="num">Заказано</th><th>Покрытие</th><th class="num">Итог</th><th></th></tr></thead>
+            <tbody>
+              <tr class="sel"><td><div class="pn">ATV Hunter 500 4x4</div><div class="pv">зелёный</div></td><td class="num">20</td><td class="cov"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="none" style="width:45%"></i></div></td><td class="num"><span class="tot">11 / 20</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Pitbike Storm 125</div><div class="pv">красный</div></td><td class="num">12</td><td class="cov"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:41.667%"></i></div></td><td class="num"><span class="tot">12 / 12</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">UTV Ranger 1000</div><div class="pv">камуфляж</div></td><td class="num">5</td><td class="cov"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div></td><td class="num"><span class="tot">5 / 5</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Scooter Metro 50</div><div class="pv">белый</div></td><td class="num">30</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">30 / 30</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Snowmobile Polar 600</div><div class="pv">чёрный</div></td><td class="num">8</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">8 / 8</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Golf Cart Club 4</div><div class="pv">бежевый</div></td><td class="num">6</td><td class="cov"><div class="bar"><i class="none" style="width:100%"></i></div></td><td class="num"><span class="tot"><span class="z">0</span> / 6</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Enduro Trail 250</div><div class="pv">оранжевый</div></td><td class="num">10</td><td class="cov"><div class="bar"><i class="s-out" style="width:60%"></i><i class="p-wh" style="width:40%"></i></div></td><td class="num"><span class="tot">10 / 10</span></td><td class="addc"><span class="plus">+</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+        <aside class="card detail">
+          <div class="dh">
+            <div class="over">Результат плана</div>
+            <h3>ATV Hunter 500 4x4</h3><div class="pv">зелёный</div>
+            <div class="nums">
+              <div class="nb"><span>Заказано</span><b>20</b></div>
+              <div class="nb"><span><i class="sw s-wh"></i>Уже есть</span><b>0</b></div>
+              <div class="nb"><span><i class="sw p-wh"></i>В плане</span><b>11</b></div>
+              <div class="nb"><span><i class="sw none"></i>Осталось</span><b>9</b></div>
+            </div>
+            <div class="dbar"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="none" style="width:45%"></i></div></div>
+          </div>
+          <div class="sec"><div class="sech"><h3>Уже есть</h3></div><div class="dash">—</div></div>
+          <div class="sec">
+            <div class="sech"><h3>В плане</h3><span class="n">2</span></div>
+            <div class="pl"><i class="sq p-wh"></i><div class="ps"><b>WH-3</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>6</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-tr"></i><div class="ps"><b>TR-311</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>5</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="addbig"><span>+</span>Добавить</div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <div class="overlay"></div>
+    <div class="sheet">
+      <div class="sh-h">
+        <div><h4>Добавить в план · ATV Hunter 500 4x4</h4><div class="pv">зелёный</div></div>
+        <span class="close">×</span>
+      </div>
+      <div class="remain">
+        <div><div class="lb">Осталось покрыть</div><div class="big">9</div></div>
+        <div><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="none" style="width:45%"></i></div><div class="ord"><span>11 в плане</span><span>20</span></div></div>
+      </div>
+      <div class="seg"><span class="on">Взять</span><span>Произвести</span></div>
+      <div class="sh-b">
+        <div class="gh"><i class="sq s-wh"></i>Склад<span class="r">Доступно</span></div>
+        <div class="opt off"><span class="radio"></span><div class="l"><b>WH-3</b><span class="chip">свободно</span><span class="chip chip-in">в плане 6</span></div><span class="n">0</span></div>
+        <div class="opt"><span class="radio"></span><div class="l"><b>WH-1</b><span class="chip">свободно</span></div><span class="n">3</span></div>
+        <div class="opt quiet"><span class="radio"></span><div class="l"><b>WH-3</b><span class="chip chip-q">OMS-1017</span></div><span class="n">4</span></div>
+
+        <div class="gh"><i class="sq s-tr"></i>В пути<span class="r">Доступно</span></div>
+        <div class="opt off"><span class="radio"></span><div class="l"><b>TR-311</b><span class="chip">свободно</span><span class="sub">WH-1 → WH-3</span><span class="chip chip-in">в плане 5</span></div><span class="n">0</span></div>
+
+        <div class="gh"><i class="sq s-out"></i>Выпуск<span class="r">Доступно</span></div>
+        <div class="opt on"><span class="radio"></span><div class="l"><b>OUT-208</b><span class="chip">свободно</span><span class="sub">PLT-2</span></div><span class="n">8</span></div>
+        <div class="opt"><span class="radio"></span><div class="l"><b>PO-57</b><span class="chip chip-plan">план</span><span class="chip">свободно</span><span class="sub">PLT-2</span></div><span class="n">10</span></div>
+        <div class="opt quiet"><span class="radio"></span><div class="l"><b>OUT-211</b><span class="chip chip-q">регион Казахстан</span><span class="sub">PLT-2</span></div><span class="n">6</span></div>
+
+        <div class="qty"><span class="lb">Количество</span><span class="inp">8</span><span class="btn btn-outline">макс. 8</span></div>
+      </div>
+      <div class="sh-f"><span class="btn btn-outline">Отмена</span><span class="btn btn-primary">Добавить</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== КАДР 3 -->
+<div class="cap"><b>3 · Форма «Произвести» — Golf Cart Club 4</b></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">oryx.local/store/customer-orders/OMS-1042?tab=plan</span></div>
+  <div class="app tall">
+    <aside class="side">
+      <div class="brand">Oryx</div>
+      <nav class="nav"><a>Главная</a><div class="grp">Магазин</div><a>Каталог</a><a class="on">Заказы клиента</a><a>Заказы на производство</a><a>Выпуски</a><a>Склады</a><a>Логистика</a></nav>
+    </aside>
+    <main class="main">
+      <div class="crumbs">Заказы клиента / <b>OMS-1042</b></div>
+      <section class="card head">
+        <div class="head-top"><h2>OMS-1042</h2><span class="chip"><span class="d"></span>Открыт</span></div>
+        <div class="meta"><span>Срок <b>30.09.2026</b></span><span>Регион <b>Россия</b></span><span>Товаров <b>7</b></span></div>
+        <div class="tabs"><span class="tab">Товары<small>7</small></span><span class="tab on">План</span><span class="tab">Документы<small>5</small></span><span class="tab">История</span></div>
+      </section>
+      <section class="card planbar">
+        <span class="switch">План 2<span class="caret">▾</span></span>
+        <span class="chip">Черновик</span>
+        <span class="iconbtn">···</span>
+        <span class="vsep"></span>
+        <span class="saved">Сохранено · 18:42</span>
+        <span class="spacer"></span>
+        <span class="cnt">Покрыто <b>6 / 7</b></span>
+        <span class="btn btn-primary">Запустить</span>
+      </section>
+      <div class="md">
+        <section class="card">
+          <div class="mh">
+            <h3>Товары</h3>
+            <div class="legend">
+              <span class="lg"><i class="sw s-wh"></i>Склад</span>
+              <span class="lg"><i class="sw s-tr"></i>В пути</span>
+              <span class="lg"><i class="sw s-out"></i>Выпуск</span>
+              <span class="lsep"></span>
+              <span class="lg"><i class="sw s-wh"></i>уже есть</span>
+              <span class="lg"><i class="sw p-wh"></i>добавит план</span>
+              <span class="lg"><i class="sw none"></i>не покрыто</span>
+            </div>
+          </div>
+          <table class="pt">
+            <colgroup><col style="width:33%"><col style="width:12%"><col style="width:33%"><col style="width:13%"><col style="width:9%"></colgroup>
+            <thead><tr><th>Товар</th><th class="num">Заказано</th><th>Покрытие</th><th class="num">Итог</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><div class="pn">ATV Hunter 500 4x4</div><div class="pv">зелёный</div></td><td class="num">20</td><td class="cov"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div></td><td class="num"><span class="tot">20 / 20</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Pitbike Storm 125</div><div class="pv">красный</div></td><td class="num">12</td><td class="cov"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:41.667%"></i></div></td><td class="num"><span class="tot">12 / 12</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">UTV Ranger 1000</div><div class="pv">камуфляж</div></td><td class="num">5</td><td class="cov"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div></td><td class="num"><span class="tot">5 / 5</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Scooter Metro 50</div><div class="pv">белый</div></td><td class="num">30</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">30 / 30</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Snowmobile Polar 600</div><div class="pv">чёрный</div></td><td class="num">8</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">8 / 8</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr class="sel"><td><div class="pn">Golf Cart Club 4</div><div class="pv">бежевый</div></td><td class="num">6</td><td class="cov"><div class="bar"><i class="none" style="width:100%"></i></div></td><td class="num"><span class="tot"><span class="z">0</span> / 6</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Enduro Trail 250</div><div class="pv">оранжевый</div></td><td class="num">10</td><td class="cov"><div class="bar"><i class="s-out" style="width:60%"></i><i class="p-wh" style="width:40%"></i></div></td><td class="num"><span class="tot">10 / 10</span></td><td class="addc"><span class="plus">+</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+        <aside class="card detail">
+          <div class="dh">
+            <div class="over">Результат плана</div>
+            <h3>Golf Cart Club 4</h3><div class="pv">бежевый</div>
+            <div class="nums">
+              <div class="nb"><span>Заказано</span><b>6</b></div>
+              <div class="nb"><span><i class="sw s-wh"></i>Уже есть</span><b>0</b></div>
+              <div class="nb"><span><i class="sw p-wh"></i>В плане</span><b>0</b></div>
+              <div class="nb"><span><i class="sw none"></i>Осталось</span><b>6</b></div>
+            </div>
+            <div class="dbar"><div class="bar"><i class="none" style="width:100%"></i></div></div>
+          </div>
+          <div class="sec"><div class="sech"><h3>Уже есть</h3></div><div class="dash">—</div></div>
+          <div class="sec">
+            <div class="sech"><h3>В плане</h3><span class="n">0</span></div>
+            <div class="addbig" style="margin-top:0"><span>+</span>Добавить</div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <div class="overlay"></div>
+    <div class="sheet">
+      <div class="sh-h">
+        <div><h4>Добавить в план · Golf Cart Club 4</h4><div class="pv">бежевый</div></div>
+        <span class="close">×</span>
+      </div>
+      <div class="remain">
+        <div><div class="lb">Осталось покрыть</div><div class="big">6</div></div>
+        <div><div class="bar"><i class="none" style="width:100%"></i></div><div class="ord"><span>0 в плане</span><span>6</span></div></div>
+      </div>
+      <div class="seg"><span>Взять</span><span class="on">Произвести</span></div>
+      <div class="sh-b">
+        <div class="gh"><i class="sq p-out"></i>Заказ на производство</div>
+        <div class="opt"><span class="radio"></span><div class="l"><b>PO-57</b><span class="sub">PLT-2</span></div><span class="chip">В работе</span></div>
+        <div class="opt"><span class="radio"></span><div class="l"><b>PO-54</b><span class="sub">PLT-2</span></div><span class="chip chip-q">Закрыт</span></div>
+        <div class="gh"><i class="sq p-out"></i>Новый</div>
+        <div class="opt on"><span class="radio"></span><div class="l"><b>Новый PO</b></div><span class="dd">PLT-4<span class="caret">▾</span></span></div>
+
+        <div class="qty"><span class="lb">Количество</span><span class="inp">6</span><span class="btn btn-outline">макс. 6</span></div>
+      </div>
+      <div class="sh-f"><span class="btn btn-outline">Отмена</span><span class="btn btn-primary">Добавить</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== КАДР 4 -->
+<div class="cap"><b>4 · Расхождения — тот же План 2 через два дня</b></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">oryx.local/store/customer-orders/OMS-1042?tab=plan</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">Oryx</div>
+      <nav class="nav"><a>Главная</a><div class="grp">Магазин</div><a>Каталог</a><a class="on">Заказы клиента</a><a>Заказы на производство</a><a>Выпуски</a><a>Склады</a><a>Логистика</a></nav>
+    </aside>
+    <main class="main">
+      <div class="crumbs">Заказы клиента / <b>OMS-1042</b></div>
+      <section class="card head">
+        <div class="head-top"><h2>OMS-1042</h2><span class="chip"><span class="d"></span>Открыт</span></div>
+        <div class="meta"><span>Срок <b>30.09.2026</b></span><span>Регион <b>Россия</b></span><span>Товаров <b>7</b></span></div>
+        <div class="tabs"><span class="tab">Товары<small>7</small></span><span class="tab on">План</span><span class="tab">Документы<small>6</small></span><span class="tab">История</span></div>
+      </section>
+      <section class="card planbar">
+        <span class="switch">План 2<span class="caret">▾</span></span>
+        <span class="chip">Черновик</span>
+        <span class="iconbtn">···</span>
+        <span class="vsep"></span>
+        <span class="saved">Сохранено · 24.09, 18:42</span>
+        <span class="spacer"></span>
+        <span class="cnt">Покрыто <b>6 / 7</b></span>
+        <span class="why">2 нехватки · 1 лишнее</span>
+        <span class="btn btn-disabled">Запустить</span>
+      </section>
+      <div class="md">
+        <section class="card">
+          <div class="mh">
+            <h3>Товары</h3>
+            <div class="legend">
+              <span class="lg"><i class="sw s-wh"></i>Склад</span>
+              <span class="lg"><i class="sw s-tr"></i>В пути</span>
+              <span class="lg"><i class="sw s-out"></i>Выпуск</span>
+              <span class="lsep"></span>
+              <span class="lg"><i class="sw s-wh"></i>уже есть</span>
+              <span class="lg"><i class="sw p-wh"></i>добавит план</span>
+              <span class="lg"><i class="sw none"></i>не покрыто</span>
+            </div>
+          </div>
+          <table class="pt tails">
+            <colgroup><col style="width:33%"><col style="width:12%"><col style="width:33%"><col style="width:13%"><col style="width:9%"></colgroup>
+            <thead><tr><th>Товар</th><th class="num">Заказано</th><th>Покрытие</th><th class="num">Итог</th><th></th></tr></thead>
+            <tbody>
+              <tr class="sel"><td><div class="pn"><i class="rd r"></i>ATV Hunter 500 4x4</div><div class="pv" style="padding-left:15px">зелёный</div></td><td class="num">20</td><td class="cov"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i><span class="tail minus"></span><span class="tl r">−9</span></div></td><td class="num"><span class="tot r">20 / 20</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn"><i class="rd a"></i>Pitbike Storm 125</div><div class="pv" style="padding-left:15px">красный</div></td><td class="num">12</td><td class="cov"><div class="bar"><i class="s-wh" style="width:58.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:16.667%"></i><span class="tail extra"></span><span class="tl a">+3</span></div></td><td class="num"><span class="tot a">15 / 12</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">UTV Ranger 1000</div><div class="pv">камуфляж</div></td><td class="num">5</td><td class="cov"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div></td><td class="num"><span class="tot">5 / 5</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Scooter Metro 50</div><div class="pv">белый</div></td><td class="num">30</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">30 / 30</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Snowmobile Polar 600</div><div class="pv">чёрный</div></td><td class="num">8</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">8 / 8</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Golf Cart Club 4</div><div class="pv">бежевый</div></td><td class="num">6</td><td class="cov"><div class="bar"><i class="none" style="width:100%"></i></div></td><td class="num"><span class="tot"><span class="z">0</span> / 6</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Enduro Trail 250</div><div class="pv">оранжевый</div></td><td class="num">10</td><td class="cov"><div class="bar"><i class="s-out" style="width:60%"></i><i class="p-wh" style="width:40%"></i></div></td><td class="num"><span class="tot">10 / 10</span></td><td class="addc"><span class="plus">+</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+        <aside class="card detail">
+          <div class="dh">
+            <div class="over">Результат плана</div>
+            <h3>ATV Hunter 500 4x4</h3><div class="pv">зелёный</div>
+            <div class="nums">
+              <div class="nb"><span>Заказано</span><b>20</b></div>
+              <div class="nb"><span><i class="sw s-wh"></i>Уже есть</span><b>0</b></div>
+              <div class="nb r"><span><i class="sw p-wh"></i>В плане</span><b>20<span class="chip chip-r">−9</span></b></div>
+              <div class="nb"><span><i class="sw none"></i>Осталось</span><b>0</b></div>
+            </div>
+            <div class="dbar short"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i><span class="tail minus"></span><span class="tl r">−9</span></div></div>
+          </div>
+          <div class="sec"><div class="sech"><h3>Уже есть</h3></div><div class="dash">—</div></div>
+          <div class="sec">
+            <div class="sech"><h3>В плане</h3><span class="n">4</span></div>
+            <div class="pl bad"><i class="sq p-wh"></i><div class="ps"><b>WH-3</b><span class="chip">свободно</span><span class="chip chip-r">−4</span></div><div class="pq"><span class="step"><i>−</i><b>6</b><i class="off">+</i></span></div><span class="x">×</span><div class="fl"><span></span><span class="avr">доступно 2</span></div></div>
+            <div class="pl bad"><i class="sq p-tr"></i><div class="ps"><b>TR-311</b><span class="chip">свободно</span><span class="chip chip-r">−5</span></div><div class="pq"><span class="step"><i>−</i><b>5</b><i class="off">+</i></span></div><span class="x">×</span><div class="fl"><span class="chip chip-q">доехало</span><span class="avr">доступно 0</span></div></div>
+            <div class="pl"><i class="sq p-out"></i><div class="ps"><b>OUT-208</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>8</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-out"></i><div class="ps"><b>PO-57</b><span class="chip chip-plan">план</span><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>1</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="addbig"><span>+</span>Добавить</div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===================================================== КАДР 5 -->
+<div class="cap"><b>5 · Подтверждение запуска</b></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">oryx.local/store/customer-orders/OMS-1042?tab=plan</span></div>
+  <div class="app crop tall">
+    <aside class="side">
+      <div class="brand">Oryx</div>
+      <nav class="nav"><a>Главная</a><div class="grp">Магазин</div><a>Каталог</a><a class="on">Заказы клиента</a><a>Заказы на производство</a><a>Выпуски</a><a>Склады</a><a>Логистика</a></nav>
+    </aside>
+    <main class="main">
+      <div class="crumbs">Заказы клиента / <b>OMS-1042</b></div>
+      <section class="card head">
+        <div class="head-top"><h2>OMS-1042</h2><span class="chip"><span class="d"></span>Открыт</span></div>
+        <div class="meta"><span>Срок <b>30.09.2026</b></span><span>Регион <b>Россия</b></span><span>Товаров <b>7</b></span></div>
+        <div class="tabs"><span class="tab">Товары<small>7</small></span><span class="tab on">План</span><span class="tab">Документы<small>5</small></span><span class="tab">История</span></div>
+      </section>
+      <section class="card planbar">
+        <span class="switch">План 2<span class="caret">▾</span></span>
+        <span class="chip">Черновик</span>
+        <span class="iconbtn">···</span>
+        <span class="vsep"></span>
+        <span class="saved">Сохранено · 18:42</span>
+        <span class="spacer"></span>
+        <span class="cnt">Покрыто <b>6 / 7</b></span>
+        <span class="btn btn-primary">Запустить</span>
+      </section>
+      <div class="md">
+        <section class="card">
+          <div class="mh"><h3>Товары</h3><div class="legend"><span class="lg"><i class="sw s-wh"></i>Склад</span><span class="lg"><i class="sw s-tr"></i>В пути</span><span class="lg"><i class="sw s-out"></i>Выпуск</span></div></div>
+          <table class="pt">
+            <colgroup><col style="width:33%"><col style="width:12%"><col style="width:33%"><col style="width:13%"><col style="width:9%"></colgroup>
+            <thead><tr><th>Товар</th><th class="num">Заказано</th><th>Покрытие</th><th class="num">Итог</th><th></th></tr></thead>
+            <tbody>
+              <tr class="sel"><td><div class="pn">ATV Hunter 500 4x4</div><div class="pv">зелёный</div></td><td class="num">20</td><td class="cov"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div></td><td class="num"><span class="tot">20 / 20</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Pitbike Storm 125</div><div class="pv">красный</div></td><td class="num">12</td><td class="cov"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:41.667%"></i></div></td><td class="num"><span class="tot">12 / 12</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">UTV Ranger 1000</div><div class="pv">камуфляж</div></td><td class="num">5</td><td class="cov"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div></td><td class="num"><span class="tot">5 / 5</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Scooter Metro 50</div><div class="pv">белый</div></td><td class="num">30</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">30 / 30</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Snowmobile Polar 600</div><div class="pv">чёрный</div></td><td class="num">8</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">8 / 8</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Golf Cart Club 4</div><div class="pv">бежевый</div></td><td class="num">6</td><td class="cov"><div class="bar"><i class="none" style="width:100%"></i></div></td><td class="num"><span class="tot"><span class="z">0</span> / 6</span></td><td class="addc"><span class="plus">+</span></td></tr>
+              <tr><td><div class="pn">Enduro Trail 250</div><div class="pv">оранжевый</div></td><td class="num">10</td><td class="cov"><div class="bar"><i class="s-out" style="width:60%"></i><i class="p-wh" style="width:40%"></i></div></td><td class="num"><span class="tot">10 / 10</span></td><td class="addc"><span class="plus">+</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+        <aside class="card detail">
+          <div class="dh">
+            <div class="over">Результат плана</div>
+            <h3>ATV Hunter 500 4x4</h3><div class="pv">зелёный</div>
+            <div class="nums">
+              <div class="nb"><span>Заказано</span><b>20</b></div>
+              <div class="nb"><span>Уже есть</span><b>0</b></div>
+              <div class="nb"><span>В плане</span><b>20</b></div>
+              <div class="nb"><span>Осталось</span><b>0</b></div>
+            </div>
+            <div class="dbar"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div></div>
+          </div>
+          <div class="sec">
+            <div class="sech"><h3>В плане</h3><span class="n">4</span></div>
+            <div class="pl"><i class="sq p-wh"></i><div class="ps"><b>WH-3</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>6</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-tr"></i><div class="ps"><b>TR-311</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>5</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-out"></i><div class="ps"><b>OUT-208</b><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>8</b><i class="off">+</i></span></div><span class="x">×</span></div>
+            <div class="pl"><i class="sq p-out"></i><div class="ps"><b>PO-57</b><span class="chip chip-plan">план</span><span class="chip">свободно</span></div><div class="pq"><span class="step"><i>−</i><b>1</b><i class="off">+</i></span></div><span class="x">×</span></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <div class="overlay center">
+      <div class="modal">
+        <div class="modal-h">
+          <h4>Запустить План 2?</h4>
+          <p>Всё ниже создастся сразу, одной операцией. Если остатки успели измениться, запуск не пройдёт и ничего не создаст.</p>
+        </div>
+        <div class="modal-b">
+          <div class="mgrid">
+            <div>
+              <div class="mlbl">Резервы<span class="n">6</span></div>
+              <table class="mt">
+                <tr><td>WH-3</td><td>ATV Hunter 500 4x4</td><td class="q">6</td></tr>
+                <tr><td>WH-1</td><td>Pitbike Storm 125</td><td class="q">3</td></tr>
+                <tr><td>TR-311</td><td>ATV Hunter 500 4x4</td><td class="q">5</td></tr>
+                <tr><td>WH-2</td><td>Enduro Trail 250</td><td class="q">4</td></tr>
+                <tr><td>OUT-208<span class="chip">черновик</span></td><td>ATV Hunter 500 4x4</td><td class="q">8</td></tr>
+                <tr><td>WH-3</td><td>UTV Ranger 1000<span class="chip chip-q">регион Россия</span></td><td class="q">2</td></tr>
+              </table>
+            </div>
+            <div>
+              <div class="mlbl">Производство<span class="n">3</span></div>
+              <table class="mt">
+                <tr><td>Выпуск из PO-57</td><td>ATV Hunter 500 4x4</td><td class="q">1</td></tr>
+                <tr><td>Докинуть PO-61</td><td>UTV Ranger 1000</td><td class="q">+3</td></tr>
+                <tr><td>Новый PO · PLT-4</td><td>Pitbike Storm 125</td><td class="q">5</td></tr>
+              </table>
+              <div class="mlbl">Не покрыто<span class="n">1</span></div>
+              <table class="mt">
+                <tr><td>Golf Cart Club 4</td><td></td><td class="q">6</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-f"><span class="btn btn-outline">Отмена</span><span class="btn btn-primary">Запустить</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== КАДР 6 -->
+<div class="cap"><b>6 · Запущенный План 1 — только просмотр</b></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">oryx.local/store/customer-orders/OMS-1042?tab=plan&amp;plan=1</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">Oryx</div>
+      <nav class="nav"><a>Главная</a><div class="grp">Магазин</div><a>Каталог</a><a class="on">Заказы клиента</a><a>Заказы на производство</a><a>Выпуски</a><a>Склады</a><a>Логистика</a></nav>
+    </aside>
+    <main class="main">
+      <div class="crumbs">Заказы клиента / <b>OMS-1042</b></div>
+      <section class="card head">
+        <div class="head-top"><h2>OMS-1042</h2><span class="chip"><span class="d"></span>Открыт</span></div>
+        <div class="meta"><span>Срок <b>30.09.2026</b></span><span>Регион <b>Россия</b></span><span>Товаров <b>7</b></span></div>
+        <div class="tabs"><span class="tab">Товары<small>7</small></span><span class="tab on">План</span><span class="tab">Документы<small>5</small></span><span class="tab">История</span></div>
+      </section>
+      <section class="card planbar">
+        <span class="switch">План 1<span class="caret">▾</span></span>
+        <span class="chip chip-dark">Запущен</span>
+        <span class="iconbtn">···</span>
+        <span class="vsep"></span>
+        <span class="saved">22.09.2026 14:10</span>
+        <span class="spacer"></span>
+        <span class="cnt">Покрыто <b>4 / 7</b></span>
+        <span class="btn btn-ghost">В архив</span>
+        <span class="btn btn-outline">Копировать в новый черновик</span>
+      </section>
+      <section class="card docs">
+        <span class="lbl">Документы · 4</span>
+        <span class="docchip"><a class="doc">RSV-901</a><small>WH-3</small></span>
+        <span class="docchip"><a class="doc">RSV-902</a><small>TR-311</small></span>
+        <span class="docchip"><a class="doc">OUT-215</a><small>PO-57</small></span>
+        <span class="docchip"><a class="doc">PO-63</a><small>PLT-4</small></span>
+      </section>
+      <div class="md">
+        <section class="card">
+          <div class="mh">
+            <h3>Товары</h3>
+            <div class="legend">
+              <span class="lg"><i class="sw s-wh"></i>Склад</span>
+              <span class="lg"><i class="sw s-tr"></i>В пути</span>
+              <span class="lg"><i class="sw s-out"></i>Выпуск</span>
+              <span class="lsep"></span>
+              <span class="lg"><i class="sw s-wh"></i>было</span>
+              <span class="lg"><i class="sw p-wh"></i>добавил план</span>
+              <span class="lg"><i class="sw none"></i>не покрыто</span>
+            </div>
+          </div>
+          <table class="pt">
+            <colgroup><col style="width:36%"><col style="width:13%"><col style="width:36%"><col style="width:15%"></colgroup>
+            <thead><tr><th>Товар</th><th class="num">Заказано</th><th>Покрытие</th><th class="num">Итог</th></tr></thead>
+            <tbody>
+              <tr class="sel"><td><div class="pn">ATV Hunter 500 4x4</div><div class="pv">зелёный</div></td><td class="num">20</td><td class="cov"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div></td><td class="num"><span class="tot">20 / 20</span></td></tr>
+              <tr><td><div class="pn">Pitbike Storm 125</div><div class="pv">красный</div></td><td class="num">12</td><td class="cov"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-out" style="width:66.667%"></i></div></td><td class="num"><span class="tot">12 / 12</span></td></tr>
+              <tr><td><div class="pn">UTV Ranger 1000</div><div class="pv">камуфляж</div></td><td class="num">5</td><td class="cov"><div class="bar"><i class="none" style="width:100%"></i></div></td><td class="num"><span class="tot"><span class="z">0</span> / 5</span></td></tr>
+              <tr><td><div class="pn">Scooter Metro 50</div><div class="pv">белый</div></td><td class="num">30</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">30 / 30</span></td></tr>
+              <tr><td><div class="pn">Snowmobile Polar 600</div><div class="pv">чёрный</div></td><td class="num">8</td><td class="cov"><div class="bar"><i class="s-wh" style="width:100%"></i></div></td><td class="num"><span class="tot">8 / 8</span></td></tr>
+              <tr><td><div class="pn">Golf Cart Club 4</div><div class="pv">бежевый</div></td><td class="num">6</td><td class="cov"><div class="bar"><i class="none" style="width:100%"></i></div></td><td class="num"><span class="tot"><span class="z">0</span> / 6</span></td></tr>
+              <tr><td><div class="pn">Enduro Trail 250</div><div class="pv">оранжевый</div></td><td class="num">10</td><td class="cov"><div class="bar"><i class="s-out" style="width:60%"></i><i class="none" style="width:40%"></i></div></td><td class="num"><span class="tot">6 / 10</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+        <aside class="card detail">
+          <div class="dh">
+            <div class="over">Результат плана</div>
+            <h3>ATV Hunter 500 4x4</h3><div class="pv">зелёный</div>
+            <div class="nums">
+              <div class="nb"><span>Заказано</span><b>20</b></div>
+              <div class="nb"><span><i class="sw s-wh"></i>Было</span><b>0</b></div>
+              <div class="nb"><span><i class="sw p-wh"></i>В плане</span><b>20</b></div>
+              <div class="nb"><span><i class="sw none"></i>Осталось</span><b>0</b></div>
+            </div>
+            <div class="dbar"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div></div>
+          </div>
+          <div class="sec"><div class="sech"><h3>Было</h3></div><div class="dash">—</div></div>
+          <div class="sec">
+            <div class="sech"><h3>В плане</h3><span class="n">3</span></div>
+            <div class="pl ro"><i class="sq p-wh"></i><div class="ps"><b>WH-3</b><span class="chip">свободно</span></div><span class="v">6</span><a class="doclink">RSV-901</a></div>
+            <div class="pl ro"><i class="sq p-tr"></i><div class="ps"><b>TR-311</b><span class="chip">свободно</span></div><span class="v">5</span><a class="doclink">RSV-902</a></div>
+            <div class="pl ro"><i class="sq p-out"></i><div class="ps"><b>PO-57</b><span class="chip chip-plan">план</span><span class="chip">свободно</span></div><span class="v">9</span><a class="doclink">OUT-215</a></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

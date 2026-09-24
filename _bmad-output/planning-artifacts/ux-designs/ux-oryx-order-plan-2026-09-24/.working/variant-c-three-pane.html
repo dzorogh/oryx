@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вариант C — Три колонки · вкладка «План» · OMS-1042</title>
+<style>
+/*
+  Палитра (токены Oryx):
+  #f4f4f5 — фон страницы (bg-muted/30), «не покрыто», фон выбранной строки
+  #ffffff — карточки
+  #18181b — текст, primary-кнопка, сегмент «склад»
+  #71717a — приглушённый текст
+  #e5e5e5 — рамки
+  #52525b — сегмент «в пути»
+  #a1a1aa — сегмент «выпуск»
+  #d4d4d8 — рамка «не покрыто», рамки полей
+  #dc2626 / #fef2f2 — минус, ошибка
+  #d97706 / #fffbeb — лишнее
+  #fafafa — фон документа вокруг кадров
+  Прозрачности: rgba(24,24,27,.45), rgba(82,82,91,.45), rgba(161,161,170,.45) — штриховка «добавит план»;
+  rgba(24,24,27,.45) — затемнение под модальным окном.
+*/
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#18181b;background:#fafafa;-webkit-font-smoothing:antialiased}
+b{font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:#71717a}
+a{color:#18181b;text-decoration:underline;text-decoration-color:#a1a1aa;text-underline-offset:2px}
+
+/* Документ */
+.doc{padding:32px 32px 64px}
+.doc-head{max-width:1440px;margin:0 auto 28px}
+.doc-head h1{font-size:22px;font-weight:650;margin:0 0 8px;letter-spacing:-.01em}
+.doc-head p{margin:0 0 6px;color:#52525b;font-size:14px;max-width:880px}
+.frame-cap{max-width:1440px;margin:40px auto 10px;display:flex;gap:10px;align-items:baseline}
+.frame-cap .n{font-weight:650;font-size:14px}
+.frame-cap .d{color:#71717a}
+
+/* Браузерная рамка */
+.frame{max-width:1440px;margin:0 auto;border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 2px rgba(24,24,27,.06),0 8px 24px rgba(24,24,27,.06)}
+.chrome{height:38px;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid #e5e5e5;background:#fafafa}
+.chrome .dot{width:11px;height:11px;border-radius:50%;background:#d4d4d8}
+.chrome .addr{margin-left:14px;flex:0 1 460px;height:24px;border-radius:6px;background:#fff;border:1px solid #e5e5e5;display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a}
+.view{position:relative;background:#f4f4f5;padding:16px 24px 24px}
+
+/* Оболочка страницы */
+.crumbs{font-size:12px;color:#71717a;margin:0 0 10px;display:flex;gap:6px}
+.crumbs .cur{color:#18181b}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:6px}
+.order{padding:14px 16px 0;margin-bottom:12px}
+.order-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.order-top h1{margin:0;font-size:18px;font-weight:650;letter-spacing:-.01em}
+.order-top .meta{color:#71717a}
+.order-top .meta b{color:#18181b;font-weight:500}
+.tabs{display:flex;gap:22px;margin-top:12px}
+.tabs span{padding:8px 0 10px;color:#71717a;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs span em{font-style:normal;color:#a1a1aa;margin-left:4px}
+.tabs span.on{color:#18181b;font-weight:600;border-bottom-color:#18181b}
+
+/* Чипы и кнопки */
+.chip{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:5px;font-size:11.5px;font-weight:500;border:1px solid #e5e5e5;background:#f4f4f5;color:#18181b;white-space:nowrap}
+.chip.run{background:#18181b;border-color:#18181b;color:#fff}
+.chip.arch{background:#fff;border-style:dashed;border-color:#d4d4d8;color:#71717a}
+.chip.closed{background:#fff;border-color:#d4d4d8;color:#52525b}
+.chip.err{background:#fef2f2;border-color:#fecaca;color:#dc2626;border-color:#dc2626}
+.chip.warn{background:#fffbeb;border-color:#d97706;color:#d97706}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 14px;border-radius:6px;font-weight:550;font-size:13px;border:1px solid #e5e5e5;background:#fff;color:#18181b;white-space:nowrap}
+.btn.primary{background:#18181b;border-color:#18181b;color:#fff}
+.btn.disabled{background:#f4f4f5;border-color:#e5e5e5;color:#a1a1aa}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.btn.full{width:100%}
+.btn.ghost{border-color:transparent;background:transparent;color:#52525b}
+.ico{width:14px;height:14px;display:inline-block;vertical-align:-2px}
+.ico-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:#71717a;border:1px solid transparent}
+.ico-btn:hover{border-color:#e5e5e5}
+
+/* Шапка вкладки */
+.phead{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 12px 10px 16px;margin-bottom:12px}
+.ph-l,.ph-r{display:flex;align-items:center;gap:10px}
+.ph-title{font-size:16px;font-weight:650;letter-spacing:-.01em;padding:2px 6px;margin-left:-6px;border-radius:5px;border:1px dashed transparent}
+.ph-title.edit{border-color:#d4d4d8}
+.saved{display:inline-flex;align-items:center;gap:5px;color:#71717a;font-size:12px}
+.why{font-size:12px;color:#dc2626;text-align:right;line-height:1.35}
+.why.neutral{color:#71717a}
+
+/* Баннер */
+.banner{display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:12px;border:1px solid #d4d4d8;border-radius:6px;background:#fff}
+.banner b{font-weight:600}
+
+/* Три колонки */
+.cols{display:grid;grid-template-columns:220px minmax(0,1fr) 420px;gap:12px;align-items:start}
+
+/* Левая колонка — планы */
+.rail{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:640px}
+.rail-h{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 2px;font-weight:600}
+.rail-h .muted{font-weight:400}
+.pcard{position:relative;border:1px solid #e5e5e5;border-radius:6px;padding:8px 8px 9px 10px;background:#fff}
+.pcard.sel{border-color:#18181b;box-shadow:0 0 0 1px #18181b}
+.pcard.dim{background:#fafafa}
+.pcard.dim .pc-name{color:#52525b}
+.pc-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.pc-name{font-weight:600;display:flex;align-items:center;gap:6px;min-width:0}
+.pc-name .rdot{width:7px;height:7px;border-radius:50%;background:#dc2626;flex:none}
+.dots{width:22px;height:22px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;color:#71717a;flex:none;font-weight:700;letter-spacing:1px}
+.dots.on{background:#f4f4f5;color:#18181b}
+.pc-meta{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;color:#71717a}
+.cov{display:flex;align-items:center;gap:7px;margin-top:7px;font-size:12px;color:#52525b}
+.covbar{display:inline-flex;gap:2px}
+.covbar i{width:9px;height:5px;border-radius:1px;background:#e5e5e5}
+.covbar i.on{background:#18181b}
+.covbar i.err{background:#dc2626}
+.covbar i.warn{background:#d97706}
+.menu{position:absolute;z-index:5;right:6px;top:32px;width:176px;background:#fff;border:1px solid #e5e5e5;border-radius:6px;box-shadow:0 6px 20px rgba(24,24,27,.12);padding:4px}
+.menu div{padding:6px 8px;border-radius:4px;display:flex;align-items:center;gap:8px}
+.menu div.hl{background:#f4f4f5}
+.menu div.off{color:#a1a1aa}
+.menu hr{border:0;border-top:1px solid #e5e5e5;margin:4px 0}
+.arch-g{margin-top:auto;border-top:1px solid #e5e5e5;padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.arch-t{display:flex;align-items:center;gap:6px;color:#71717a;padding:2px 4px;font-size:12.5px}
+
+/* Средняя колонка — товары */
+.mid{padding:0;overflow:hidden}
+.whole{padding:14px 16px 12px;border-bottom:1px solid #e5e5e5}
+.whole-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.h2{font-size:14px;font-weight:600}
+.whole-h .tot{margin-left:auto;font-size:13px}
+.whole-h .tot b{font-size:15px}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:12.5px;color:#52525b}
+.stats span{display:inline-flex;align-items:center;gap:6px}
+.stats b{color:#18181b}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:8px 16px;font-size:11.5px;color:#71717a;border-bottom:1px solid #e5e5e5;background:#fafafa}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{display:inline-block;width:12px;height:8px;border-radius:2px;flex:none}
+.plh{display:grid;grid-template-columns:196px minmax(0,1fr) 108px;gap:12px;padding:8px 16px 6px;font-size:11.5px;color:#71717a}
+.plh .r{text-align:right}
+.prow{position:relative;display:grid;grid-template-columns:196px minmax(0,1fr) 108px;gap:12px;align-items:start;padding:10px 16px 10px;border-top:1px solid #e5e5e5}
+.prow.sel{background:#f4f4f5}
+.prow.sel::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#18181b}
+.pname{font-weight:600;line-height:1.3}
+.pvar{font-size:12px;color:#71717a;margin-top:1px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pvar .chip{height:18px;font-size:11px;padding:0 6px}
+.ptot{text-align:right;line-height:1.3}
+.ptot b{font-size:13.5px}
+.ptot small{display:block;white-space:nowrap;font-size:11.5px;color:#71717a;margin-top:1px}
+.ptot small.err{color:#dc2626;font-weight:550}
+.ptot small.warn{color:#d97706;font-weight:550}
+.srcs{margin-top:6px;font-size:11.5px;color:#71717a;line-height:1.4}
+.srcs b{color:#52525b;font-weight:550}
+
+/* Полосы разбивки */
+.bl{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:6px;margin-top:3px}
+.whole .bl{grid-template-columns:minmax(0,1fr) 84px}
+.bar{display:flex;height:10px;border-radius:3px;overflow:hidden;background:#f4f4f5}
+.bar.big{height:16px;border-radius:4px}
+.bar>i{display:block;height:100%}
+.bar>i+i{border-left:1px solid #fff}
+.s-wh{background:#18181b}
+.s-tr{background:#52525b}
+.s-out{background:#a1a1aa}
+.p-wh{background:repeating-linear-gradient(135deg,#18181b 0 2px,rgba(24,24,27,.45) 2px 5px)}
+.p-tr{background:repeating-linear-gradient(135deg,#52525b 0 2px,rgba(82,82,91,.45) 2px 5px)}
+.p-out{background:repeating-linear-gradient(135deg,#a1a1aa 0 2px,rgba(161,161,170,.45) 2px 5px)}
+.unc{background:#f4f4f5;box-shadow:inset 0 0 0 1px #d4d4d8}
+.bar>i.unc{border-radius:0 3px 3px 0}
+.rel{background:#fff;box-shadow:inset 0 0 0 1px #a1a1aa}
+.ov{display:flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600}
+.ovb{display:block;width:12px;height:10px;border-radius:2px}
+.big+.ov .ovb{height:16px}
+.ovb.r{background:repeating-linear-gradient(135deg,#dc2626 0 2px,#fef2f2 2px 5px);box-shadow:inset 0 0 0 1px #dc2626}
+.ovb.a{background:repeating-linear-gradient(135deg,#d97706 0 2px,#fffbeb 2px 5px);box-shadow:inset 0 0 0 1px #d97706}
+.ov .r{color:#dc2626}
+.ov .a{color:#d97706}
+.ovcol{display:flex;flex-direction:column;gap:3px}
+
+/* Правая колонка — источники */
+.det{padding:0;overflow:hidden}
+.det-h{padding:14px 16px 12px;border-bottom:1px solid #e5e5e5}
+.det-h .t{font-size:14px;font-weight:600}
+.det-h .v{color:#71717a;font-size:12px}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 10px}
+.kv div{font-size:11.5px;color:#71717a}
+.kv b{display:block;font-size:15px;color:#18181b;font-weight:600}
+.kv .err b{color:#dc2626}
+.hint{font-size:11.5px;color:#71717a;margin-top:8px}
+.sec{padding:10px 16px 12px}
+.sec+.sec{border-top:1px solid #e5e5e5}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
+.sec-h .h{font-size:12px;font-weight:600;color:#52525b;text-transform:none}
+.sec-h .cols-h{display:grid;grid-template-columns:64px 72px;gap:8px;font-size:11px;color:#71717a;text-align:right}
+.sec-h .cols-h.ro{grid-template-columns:64px 84px}
+.src{display:grid;grid-template-columns:14px minmax(0,1fr) 64px 72px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid #f4f4f5}
+.src.ro{grid-template-columns:14px minmax(0,1fr) 64px 84px}
+.sec-h+.src{border-top:0}
+.src .sw{width:10px;height:10px;border-radius:2px}
+.src .lbl{line-height:1.35}
+.src .sub{display:block;font-size:11.5px;color:#71717a}
+.src .av{text-align:right;font-variant-numeric:tabular-nums}
+.src .tk{display:flex;justify-content:flex-end}
+.src.quiet .lbl,.src.quiet .av{color:#71717a}
+.src.quiet .sw{opacity:.55}
+.src.bad{background:#fef2f2;margin:2px -16px;padding:8px 16px;border-top:0;border-left:3px solid #dc2626;padding-left:13px}
+.src.bad .av{color:#dc2626;font-weight:600}
+.src .msg{display:block;font-size:11.5px;color:#dc2626;font-weight:550;margin-top:2px}
+.qty{display:inline-flex;align-items:center;justify-content:flex-end;width:64px;height:28px;padding:0 8px;border:1px solid #d4d4d8;border-radius:6px;background:#fff;font-variant-numeric:tabular-nums;font-weight:550}
+.qty.zero{color:#a1a1aa;font-weight:400}
+.qty.bad{border-color:#dc2626;color:#dc2626;box-shadow:0 0 0 2px #fef2f2}
+.qty.off{background:#f4f4f5;color:#a1a1aa;border-color:#e5e5e5;font-weight:400}
+.qty.ro{border-color:transparent;background:transparent;padding-right:0}
+.sep-h{font-size:11px;color:#71717a;margin:10px 0 2px;display:flex;align-items:center;gap:8px}
+.sep-h::after{content:"";flex:1;border-top:1px solid #e5e5e5}
+.acts{background:#fafafa;border-top:1px solid #e5e5e5}
+.acts .sec-t{padding:12px 16px 0;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
+.acts .sec-t span{font-weight:400;font-size:11.5px;color:#71717a}
+.act{display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid #e5e5e5}
+.acts .sec{padding-top:6px}
+.act:first-of-type{border-top:0}
+.act .sub{display:block;font-size:11.5px;color:#71717a}
+.act.off .lbl{color:#a1a1aa}
+.act .tk{display:flex;justify-content:flex-end}
+.doclink{font-weight:550}
+
+/* Созданные документы */
+.docs{padding:12px 16px 14px;border-bottom:1px solid #e5e5e5}
+.docs-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.dcard{border:1px solid #e5e5e5;border-radius:6px;padding:8px 10px}
+.dcard a{font-weight:600}
+.dcard div{font-size:12px;color:#71717a;margin-top:1px}
+
+/* Модальное окно */
+.overlay{position:absolute;inset:0;background:rgba(24,24,27,.45);display:flex;align-items:flex-start;justify-content:center;padding-top:150px;z-index:10}
+.modal{width:560px;background:#fff;border-radius:8px;border:1px solid #e5e5e5;box-shadow:0 20px 50px rgba(24,24,27,.25)}
+.modal-h{padding:18px 20px 4px}
+.modal-h h2{margin:0;font-size:17px;font-weight:650}
+.modal-h p{margin:6px 0 0;color:#52525b}
+.moves{margin:14px 20px 0;border:1px solid #e5e5e5;border-radius:6px}
+.moves-h{padding:8px 12px;font-size:12px;font-weight:600;color:#52525b;border-bottom:1px solid #e5e5e5;background:#fafafa;border-radius:6px 6px 0 0}
+.mv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 12px;align-items:center}
+.mv+.mv{border-top:1px solid #e5e5e5}
+.mv .k{font-weight:600}
+.mv .q{font-weight:600;font-variant-numeric:tabular-nums}
+.mv .sub{display:block;font-size:11.5px;color:#71717a}
+details.more{margin:12px 20px 0;font-size:12px;color:#71717a}
+details.more summary{cursor:default;color:#52525b;font-weight:550;list-style:none;display:flex;align-items:center;gap:6px}
+details.more summary::-webkit-details-marker{display:none}
+details.more ul{margin:6px 0 0;padding-left:18px;line-height:1.6}
+.modal-f{display:flex;justify-content:flex-end;gap:8px;padding:16px 20px 18px;margin-top:14px;border-top:1px solid #e5e5e5}
+
+@media (max-width:1320px){
+  .cols{grid-template-columns:200px minmax(0,1fr) 380px}
+  .plh,.prow{grid-template-columns:170px minmax(0,1fr) 84px}
+}
+</style>
+</head>
+<body>
+<div class="doc">
+
+<header class="doc-head">
+  <h1>Вариант C — Три колонки</h1>
+  <p>Планы заказа — полноправная колонка слева: каждый план виден карточкой с состоянием, датой и строкой покрытия, переключение одним щелчком, поэтому планы легко сравнивать глазами без отдельного экрана сравнения.</p>
+  <p>В середине — общая полоса по всему заказу и мастер из семи товаров с разбивкой; справа — постоянная широкая деталь выбранного товара: сначала источники (свободное выше, чужие резервы тише), ниже отдельный блок «Действия» — производство и свой резерв.</p>
+</header>
+
+<!-- ============================================================ КАДР 1 -->
+<div class="frame-cap"><span class="n">Кадр 1 — Основной</span><span class="d">Черновик «План 2», выбран ATV Hunter 500. Открыто меню ⋯ у плана «Без PLT-4».</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="addr">Oryx — Заказ клиента OMS-1042 · План</span></div>
+  <div class="view">
+    <div class="crumbs"><span>Заказы клиента</span><span>/</span><span class="cur">OMS-1042</span></div>
+    <section class="card order">
+      <div class="order-top"><h1>OMS-1042</h1><span class="chip">Открыт</span><span class="meta">Срок <b>30.09.2026</b></span><span class="meta">Регион <b>Россия</b></span></div>
+      <nav class="tabs"><span>Товары<em>7</em></span><span class="on">План</span><span>Документы<em>5</em></span><span>История</span></nav>
+    </section>
+
+    <section class="card phead">
+      <div class="ph-l">
+        <span class="ph-title edit">План 2</span>
+        <span class="ico-btn" title="Переименовать"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"/><path d="M9.5 4l2.5 2.5"/></svg></span>
+        <span class="chip">Черновик</span>
+        <span class="muted">Создан 24.09.2026</span>
+      </div>
+      <div class="ph-r">
+        <span class="saved"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>Сохранено · 18:42</span>
+        <span class="btn primary">Запустить</span>
+      </div>
+    </section>
+
+    <div class="cols">
+      <!-- Планы -->
+      <aside class="card rail">
+        <div class="rail-h">Планы <span class="muted">3</span></div>
+        <div class="pcard sel">
+          <div class="pc-top"><span class="pc-name">План 2</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 24.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>6 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">Без PLT-4</span><span class="dots on">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 23.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>5 из 7 товаров</div>
+          <div class="menu">
+            <div class="hl"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"/></svg>Переименовать</div>
+            <div><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg>Копировать в новый черновик</div>
+            <hr>
+            <div><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2.5" y="3" width="11" height="3" rx="1"/><path d="M3.5 6v6.5h9V6M6.5 8.5h3"/></svg>В архив</div>
+          </div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">План 1</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip run">Запущен</span>22.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i></span>4 из 7 товаров</div>
+        </div>
+        <span class="btn sm full"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Новый план</span>
+        <div class="arch-g">
+          <div class="arch-t"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>Архив · 1</div>
+        </div>
+      </aside>
+
+      <!-- Товары -->
+      <section class="card mid">
+        <div class="whole">
+          <div class="whole-h"><span class="h2">Весь заказ</span><span class="muted">7 товаров · 91 шт.</span><span class="tot">После плана <b class="num">85 из 91</b></span></div>
+          <div class="bl"><div class="bar big">
+            <i class="s-wh" style="width:46.154%"></i><i class="s-out" style="width:4.396%"></i><i class="p-wh" style="width:18.681%"></i><i class="p-tr" style="width:5.495%"></i><i class="p-out" style="width:18.681%"></i><i class="unc" style="width:6.593%"></i>
+          </div><div class="ov"></div></div>
+          <div class="stats">
+            <span><i class="sw s-wh"></i>Уже есть <b class="num">48</b></span>
+            <span><i class="sw p-wh"></i>Добавит план <b class="num">39</b></span>
+            <span><i class="sw rel"></i>Снимет план <b class="num">2</b></span>
+            <span><i class="sw unc"></i>Не покрыто <b class="num">6</b></span>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="sw s-wh"></i>Склад</span><span><i class="sw s-tr"></i>В пути</span><span><i class="sw s-out"></i>Выпуск</span>
+          <span>Сплошная — уже есть</span><span><i class="sw p-wh"></i>Штриховка — добавит план</span><span><i class="sw unc"></i>Не покрыто</span><span>За краем полосы — минус или лишнее</span>
+        </div>
+        <div class="plh"><span>Товар</span><span>Разбивка по местам</span><span class="r">Итог</span></div>
+
+        <div class="prow sel">
+          <div><div class="pname">ATV Hunter 500 4x4</div><div class="pvar">зелёный</div></div>
+          <div><div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div>
+            <div class="srcs">План: WH-3 <b>6</b> · TR-311 <b>5</b> · OUT-208 <b>8</b> · PO-57 <b>1</b></div></div>
+          <div class="ptot"><b class="num">20 из 20</b><small>покрыто</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Pitbike Storm 125</div><div class="pvar">красный</div></div>
+          <div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:41.667%"></i></div><div class="ov"></div></div>
+            <div class="srcs">Уже: резерв WH-1 <b>4</b> · План: WH-1 <b>3</b> · новый заказ на производство PLT-4 <b>5</b></div></div>
+          <div class="ptot"><b class="num">12 из 12</b><small>покрыто</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">UTV Ranger 1000</div><div class="pvar">камуфляж</div></div>
+          <div><div class="bl"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div><div class="ov"></div></div>
+            <div class="srcs">План: WH-3 · резерв региона Россия <b>2</b> · докинуть в PO-61 <b>3</b></div></div>
+          <div class="ptot"><b class="num">5 из 5</b><small>покрыто</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Scooter Metro 50</div><div class="pvar">белый</div></div>
+          <div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="s-wh" style="width:66.667%"></i></div><div class="ov"></div></div>
+            <div class="srcs">Уже: отгружено <b>10</b> (SHP-318), резерв WH-2 <b>20</b> · План: отгрузить со склада WH-2 <b>20</b></div></div>
+          <div class="ptot"><b class="num">30 из 30</b><small>уже есть</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Snowmobile Polar 600</div><div class="pvar">чёрный</div></div>
+          <div><div class="bl"><div class="bar"><i class="s-wh" style="width:100%"></i></div><div class="ov"></div></div>
+            <div class="srcs">Уже: резерв WH-1 <b>8</b> · План: переместить WH-1 → WH-3 <b>8</b></div></div>
+          <div class="ptot"><b class="num">8 из 8</b><small>уже есть</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Golf Cart Club 4</div><div class="pvar">бежевый</div></div>
+          <div><div class="bl"><div class="bar"><i class="unc" style="width:100%"></i></div><div class="ov"></div></div>
+            <div class="srcs">В плане ничего</div></div>
+          <div class="ptot"><b class="num">0 из 6</b><small>не покрыто 6</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Enduro Trail 250</div><div class="pvar">оранжевый</div></div>
+          <div><div class="bl"><div class="bar"><i class="s-out" style="width:40%"></i><i class="p-wh" style="width:60%"></i></div><div class="ov"></div></div>
+            <div class="srcs">Уже: резерв OUT-205 <b>6</b> · План: снять резерв OUT-205 <b>2</b>, WH-2 · свободно <b>6</b></div></div>
+          <div class="ptot"><b class="num">10 из 10</b><small>покрыто</small></div>
+        </div>
+      </section>
+
+      <!-- Деталь товара -->
+      <section class="card det">
+        <div class="det-h">
+          <div class="t">ATV Hunter 500 4x4</div><div class="v">зелёный</div>
+          <div class="kv"><div>Заказано<b class="num">20</b></div><div>Уже есть<b class="num">0</b></div><div>Добавит план<b class="num">20</b></div><div>Не покрыто<b class="num">0</b></div></div>
+          <div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div>
+          <div class="hint">«Взять» — не больше доступного и непокрытого остатка. Остаток сейчас 0: поля можно только уменьшать.</div>
+        </div>
+        <div class="sec">
+          <div class="sec-h"><span class="h">Источники · свободное</span><span class="cols-h"><span>Доступно</span><span>Взять</span></span></div>
+          <div class="src"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · свободно</span><span class="av">6</span><span class="tk"><span class="qty">6</span></span></div>
+          <div class="src"><i class="sw s-wh"></i><span class="lbl">Склад WH-1 · свободно</span><span class="av">3</span><span class="tk"><span class="qty zero">0</span></span></div>
+          <div class="src"><i class="sw s-tr"></i><span class="lbl">В пути TR-311 (WH-1 → WH-3) · свободно</span><span class="av">5</span><span class="tk"><span class="qty">5</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-208 · PLT-2 · черновик · свободно</span><span class="av">8</span><span class="tk"><span class="qty">8</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Заказ на производство PO-57 · PLT-2 · незанятый план<span class="sub">При запуске — новый черновик выпуска под OMS-1042</span></span><span class="av">10</span><span class="tk"><span class="qty">1</span></span></div>
+          <div class="sep-h">Чужие резервы — забрать под этот заказ</div>
+          <div class="src quiet"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · резерв OMS-1017</span><span class="av">4</span><span class="tk"><span class="qty zero">0</span></span></div>
+          <div class="src quiet"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-211 · PLT-2 · черновик · резерв региона Казахстан</span><span class="av">6</span><span class="tk"><span class="qty zero">0</span></span></div>
+        </div>
+        <div class="acts">
+          <div class="sec-t">Действия<span>не источники — отдельные шаги плана</span></div>
+          <div class="sec">
+            <div class="sep-h" style="margin-top:4px">Производство</div>
+            <div class="act"><span class="lbl">Докинуть в PO-57 · PLT-2<span class="sub">Заказ на производство · В работе</span></span><span class="tk"><span class="qty zero">0</span></span></div>
+            <div class="act"><span class="lbl">Новый заказ на производство · PLT-2<span class="sub">Создастся при запуске, статус «Черновик»</span></span><span class="tk"><span class="qty zero">0</span></span></div>
+            <div class="sep-h">Свой резерв OMS-1042</div>
+            <div class="act off"><span class="lbl">Переместить · склад → склад</span><span class="tk"><span class="qty off">—</span></span></div>
+            <div class="act off"><span class="lbl">Отгрузить</span><span class="tk"><span class="qty off">—</span></span></div>
+            <div class="act off"><span class="lbl">Снять резерв в свободное<span class="sub">У товара пока нет резерва этого заказа</span></span><span class="tk"><span class="qty off">—</span></span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ КАДР 2 -->
+<div class="frame-cap"><span class="n">Кадр 2 — Расхождения</span><span class="d">Тот же «План 2» через два дня: TR-311 доехало, на WH-3 осталось 2, запущен «Без PLT-4». Запуск недоступен.</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="addr">Oryx — Заказ клиента OMS-1042 · План</span></div>
+  <div class="view">
+    <div class="crumbs"><span>Заказы клиента</span><span>/</span><span class="cur">OMS-1042</span></div>
+    <section class="card order">
+      <div class="order-top"><h1>OMS-1042</h1><span class="chip">Открыт</span><span class="meta">Срок <b>30.09.2026</b></span><span class="meta">Регион <b>Россия</b></span></div>
+      <nav class="tabs"><span>Товары<em>7</em></span><span class="on">План</span><span>Документы<em>5</em></span><span>История</span></nav>
+    </section>
+
+    <section class="card phead">
+      <div class="ph-l">
+        <span class="ph-title edit">План 2</span>
+        <span class="ico-btn" title="Переименовать"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"/><path d="M9.5 4l2.5 2.5"/></svg></span>
+        <span class="chip">Черновик</span>
+        <span class="muted">Создан 24.09.2026</span>
+      </div>
+      <div class="ph-r">
+        <span class="saved"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>Сохранено · 24.09, 18:42</span>
+        <span class="why">Не хватает на 2 строках,<br>лишнее на 1 товаре</span>
+        <span class="btn disabled">Запустить</span>
+      </div>
+    </section>
+
+    <div class="cols">
+      <aside class="card rail">
+        <div class="rail-h">Планы <span class="muted">3</span></div>
+        <div class="pcard sel">
+          <div class="pc-top"><span class="pc-name"><span class="rdot"></span>План 2</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 24.09</div>
+          <div class="cov"><span class="covbar"><i class="err"></i><i class="warn"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>4 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">Без PLT-4</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip run">Запущен</span>26.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>5 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">План 1</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip run">Запущен</span>22.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i></span>4 из 7 товаров</div>
+        </div>
+        <span class="btn sm full"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Новый план</span>
+        <div class="arch-g">
+          <div class="arch-t"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>Архив · 1</div>
+        </div>
+      </aside>
+
+      <section class="card mid">
+        <div class="whole">
+          <div class="whole-h"><span class="h2">Весь заказ</span><span class="muted">7 товаров · 91 шт.</span><span class="tot">После плана <b class="num">76 из 91</b></span></div>
+          <div class="bl"><div class="bar big">
+            <i class="s-wh" style="width:49.451%"></i><i class="s-out" style="width:4.396%"></i><i class="p-wh" style="width:14.286%"></i><i class="p-out" style="width:15.385%"></i><i class="unc" style="width:16.484%"></i>
+          </div><div class="ov"><span class="ovb r"></span><span class="r">−9</span><span class="ovb a" style="margin-left:4px"></span><span class="a">+3</span></div></div>
+          <div class="stats">
+            <span><i class="sw s-wh"></i>Уже есть <b class="num">51</b></span>
+            <span><i class="sw p-wh"></i>Добавит план <b class="num">30</b></span>
+            <span><i class="sw rel"></i>Снимет план <b class="num">2</b></span>
+            <span><i class="sw unc"></i>Не покрыто <b class="num">15</b></span>
+            <span style="color:#dc2626"><i class="sw ovb r" style="width:12px;height:8px"></i>Не хватает <b class="num" style="color:#dc2626">9</b></span>
+            <span style="color:#d97706"><i class="sw ovb a" style="width:12px;height:8px"></i>Лишнее <b class="num" style="color:#d97706">3</b></span>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="sw s-wh"></i>Склад</span><span><i class="sw s-tr"></i>В пути</span><span><i class="sw s-out"></i>Выпуск</span>
+          <span>Сплошная — уже есть</span><span><i class="sw p-wh"></i>Штриховка — добавит план</span><span><i class="sw unc"></i>Не покрыто</span><span>За краем полосы — минус или лишнее</span>
+        </div>
+        <div class="plh"><span>Товар</span><span>Разбивка по местам</span><span class="r">Итог</span></div>
+
+        <div class="prow sel">
+          <div><div class="pname">ATV Hunter 500 4x4</div><div class="pvar">зелёный <span class="chip err">Не хватает 9</span></div></div>
+          <div><div class="bl"><div class="bar"><i class="p-wh" style="width:10%"></i><i class="p-out" style="width:45%"></i><i class="unc" style="width:45%"></i></div><div class="ov"><span class="ovb r"></span><span class="r">−9</span></div></div>
+            <div class="srcs">План: WH-3 <b>6</b> (доступно 2) · TR-311 <b>5</b> (доступно 0) · OUT-208 <b>8</b> · PO-57 <b>1</b></div></div>
+          <div class="ptot"><b class="num">11 из 20</b><small class="err">2 строки с минусом</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Pitbike Storm 125</div><div class="pvar">красный <span class="chip warn">Лишнее 3</span></div></div>
+          <div><div class="bl"><div class="bar"><i class="s-wh" style="width:58.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:16.667%"></i></div><div class="ov"><span class="ovb a"></span><span class="a">+3</span></div></div>
+            <div class="srcs">Уже: резерв WH-1 <b>7</b> (4 + 3 по «Без PLT-4») · План: WH-1 <b>3</b> · новый заказ на производство PLT-4 <b>5</b></div></div>
+          <div class="ptot"><b class="num">15 из 12</b><small class="warn">лишнее 3</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">UTV Ranger 1000</div><div class="pvar">камуфляж</div></div>
+          <div><div class="bl"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div><div class="ov"></div></div>
+            <div class="srcs">План: WH-3 · резерв региона Россия <b>2</b> · докинуть в PO-61 <b>3</b></div></div>
+          <div class="ptot"><b class="num">5 из 5</b><small>покрыто</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Scooter Metro 50</div><div class="pvar">белый</div></div>
+          <div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="s-wh" style="width:66.667%"></i></div><div class="ov"></div></div>
+            <div class="srcs">Уже: отгружено <b>10</b> (SHP-318), резерв WH-2 <b>20</b> · План: отгрузить со склада WH-2 <b>20</b></div></div>
+          <div class="ptot"><b class="num">30 из 30</b><small>уже есть</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Snowmobile Polar 600</div><div class="pvar">чёрный</div></div>
+          <div><div class="bl"><div class="bar"><i class="s-wh" style="width:100%"></i></div><div class="ov"></div></div>
+            <div class="srcs">Уже: резерв WH-1 <b>8</b> · План: переместить WH-1 → WH-3 <b>8</b></div></div>
+          <div class="ptot"><b class="num">8 из 8</b><small>уже есть</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Golf Cart Club 4</div><div class="pvar">бежевый</div></div>
+          <div><div class="bl"><div class="bar"><i class="unc" style="width:100%"></i></div><div class="ov"></div></div>
+            <div class="srcs">В плане ничего</div></div>
+          <div class="ptot"><b class="num">0 из 6</b><small>не покрыто 6</small></div>
+        </div>
+        <div class="prow">
+          <div><div class="pname">Enduro Trail 250</div><div class="pvar">оранжевый</div></div>
+          <div><div class="bl"><div class="bar"><i class="s-out" style="width:40%"></i><i class="p-wh" style="width:60%"></i></div><div class="ov"></div></div>
+            <div class="srcs">Уже: резерв OUT-205 <b>6</b> · План: снять резерв OUT-205 <b>2</b>, WH-2 · свободно <b>6</b></div></div>
+          <div class="ptot"><b class="num">10 из 10</b><small>покрыто</small></div>
+        </div>
+      </section>
+
+      <section class="card det">
+        <div class="det-h">
+          <div class="t">ATV Hunter 500 4x4</div><div class="v">зелёный</div>
+          <div class="kv"><div>Заказано<b class="num">20</b></div><div>Уже есть<b class="num">0</b></div><div>В плане<b class="num">20</b></div><div class="err">Не хватает<b class="num">9</b></div></div>
+          <div class="bl"><div class="bar"><i class="p-wh" style="width:10%"></i><i class="p-out" style="width:45%"></i><i class="unc" style="width:45%"></i></div><div class="ov"><span class="ovb r"></span><span class="r">−9</span></div></div>
+          <div class="hint">Автопереноса нет: уменьшите строки с минусом и возьмите недостающее из других источников.</div>
+        </div>
+        <div class="sec">
+          <div class="sec-h"><span class="h">Источники · свободное</span><span class="cols-h"><span>Доступно</span><span>Взять</span></span></div>
+          <div class="src bad"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · свободно<span class="msg">Не хватает 4 · берём 6, доступно 2</span></span><span class="av">2</span><span class="tk"><span class="qty bad">6</span></span></div>
+          <div class="src"><i class="sw s-wh"></i><span class="lbl">Склад WH-1 · свободно</span><span class="av">3</span><span class="tk"><span class="qty zero">0</span></span></div>
+          <div class="src bad"><i class="sw s-tr"></i><span class="lbl">В пути TR-311 (WH-1 → WH-3) · свободно<span class="msg">Источника нет · TR-311 доехало на WH-3, правьте вручную</span></span><span class="av">0</span><span class="tk"><span class="qty bad">5</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-208 · PLT-2 · черновик · свободно</span><span class="av">8</span><span class="tk"><span class="qty">8</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Заказ на производство PO-57 · PLT-2 · незанятый план<span class="sub">При запуске — новый черновик выпуска под OMS-1042</span></span><span class="av">10</span><span class="tk"><span class="qty">1</span></span></div>
+          <div class="sep-h">Чужие резервы — забрать под этот заказ</div>
+          <div class="src quiet"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · резерв OMS-1017</span><span class="av">4</span><span class="tk"><span class="qty zero">0</span></span></div>
+          <div class="src quiet"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-211 · PLT-2 · черновик · резерв региона Казахстан</span><span class="av">6</span><span class="tk"><span class="qty zero">0</span></span></div>
+        </div>
+        <div class="acts">
+          <div class="sec-t">Действия<span>не источники — отдельные шаги плана</span></div>
+          <div class="sec">
+            <div class="sep-h" style="margin-top:4px">Производство</div>
+            <div class="act"><span class="lbl">Докинуть в PO-57 · PLT-2<span class="sub">Заказ на производство · В работе</span></span><span class="tk"><span class="qty zero">0</span></span></div>
+            <div class="act"><span class="lbl">Новый заказ на производство · PLT-2<span class="sub">Создастся при запуске, статус «Черновик»</span></span><span class="tk"><span class="qty zero">0</span></span></div>
+            <div class="sep-h">Свой резерв OMS-1042</div>
+            <div class="act off"><span class="lbl">Переместить · склад → склад</span><span class="tk"><span class="qty off">—</span></span></div>
+            <div class="act off"><span class="lbl">Отгрузить</span><span class="tk"><span class="qty off">—</span></span></div>
+            <div class="act off"><span class="lbl">Снять резерв в свободное<span class="sub">У товара пока нет резерва этого заказа</span></span><span class="tk"><span class="qty off">—</span></span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ КАДР 3 -->
+<div class="frame-cap"><span class="n">Кадр 3 — Подтверждение запуска</span><span class="d">«План 2» без расхождений, нажата «Запустить».</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="addr">Oryx — Заказ клиента OMS-1042 · План</span></div>
+  <div class="view">
+    <div class="crumbs"><span>Заказы клиента</span><span>/</span><span class="cur">OMS-1042</span></div>
+    <section class="card order">
+      <div class="order-top"><h1>OMS-1042</h1><span class="chip">Открыт</span><span class="meta">Срок <b>30.09.2026</b></span><span class="meta">Регион <b>Россия</b></span></div>
+      <nav class="tabs"><span>Товары<em>7</em></span><span class="on">План</span><span>Документы<em>5</em></span><span>История</span></nav>
+    </section>
+    <section class="card phead">
+      <div class="ph-l">
+        <span class="ph-title edit">План 2</span>
+        <span class="ico-btn"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"/><path d="M9.5 4l2.5 2.5"/></svg></span>
+        <span class="chip">Черновик</span>
+        <span class="muted">Создан 24.09.2026</span>
+      </div>
+      <div class="ph-r">
+        <span class="saved"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>Сохранено · 18:42</span>
+        <span class="btn primary">Запустить</span>
+      </div>
+    </section>
+    <div class="cols">
+      <aside class="card rail">
+        <div class="rail-h">Планы <span class="muted">3</span></div>
+        <div class="pcard sel">
+          <div class="pc-top"><span class="pc-name">План 2</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 24.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>6 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">Без PLT-4</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 23.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>5 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">План 1</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip run">Запущен</span>22.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i></span>4 из 7 товаров</div>
+        </div>
+        <span class="btn sm full">Новый план</span>
+        <div class="arch-g"><div class="arch-t">Архив · 1</div></div>
+      </aside>
+      <section class="card mid">
+        <div class="whole">
+          <div class="whole-h"><span class="h2">Весь заказ</span><span class="muted">7 товаров · 91 шт.</span><span class="tot">После плана <b class="num">85 из 91</b></span></div>
+          <div class="bl"><div class="bar big">
+            <i class="s-wh" style="width:46.154%"></i><i class="s-out" style="width:4.396%"></i><i class="p-wh" style="width:18.681%"></i><i class="p-tr" style="width:5.495%"></i><i class="p-out" style="width:18.681%"></i><i class="unc" style="width:6.593%"></i>
+          </div><div class="ov"></div></div>
+          <div class="stats"><span><i class="sw s-wh"></i>Уже есть <b>48</b></span><span><i class="sw p-wh"></i>Добавит план <b>39</b></span><span><i class="sw rel"></i>Снимет план <b>2</b></span><span><i class="sw unc"></i>Не покрыто <b>6</b></span></div>
+        </div>
+        <div class="plh"><span>Товар</span><span>Разбивка по местам</span><span class="r">Итог</span></div>
+        <div class="prow sel"><div><div class="pname">ATV Hunter 500 4x4</div><div class="pvar">зелёный</div></div><div><div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div><div class="srcs">План: WH-3 <b>6</b> · TR-311 <b>5</b> · OUT-208 <b>8</b> · PO-57 <b>1</b></div></div><div class="ptot"><b>20 из 20</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">Pitbike Storm 125</div><div class="pvar">красный</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:41.667%"></i></div><div class="ov"></div></div><div class="srcs">Уже: резерв WH-1 <b>4</b> · План: WH-1 <b>3</b> · новый заказ на производство PLT-4 <b>5</b></div></div><div class="ptot"><b>12 из 12</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">UTV Ranger 1000</div><div class="pvar">камуфляж</div></div><div><div class="bl"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div><div class="ov"></div></div><div class="srcs">План: WH-3 · резерв региона Россия <b>2</b> · докинуть в PO-61 <b>3</b></div></div><div class="ptot"><b>5 из 5</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">Scooter Metro 50</div><div class="pvar">белый</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="s-wh" style="width:66.667%"></i></div><div class="ov"></div></div><div class="srcs">Уже: отгружено <b>10</b> (SHP-318), резерв WH-2 <b>20</b> · План: отгрузить со склада WH-2 <b>20</b></div></div><div class="ptot"><b>30 из 30</b><small>уже есть</small></div></div>
+        <div class="prow"><div><div class="pname">Snowmobile Polar 600</div><div class="pvar">чёрный</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:100%"></i></div><div class="ov"></div></div><div class="srcs">Уже: резерв WH-1 <b>8</b> · План: переместить WH-1 → WH-3 <b>8</b></div></div><div class="ptot"><b>8 из 8</b><small>уже есть</small></div></div>
+        <div class="prow"><div><div class="pname">Golf Cart Club 4</div><div class="pvar">бежевый</div></div><div><div class="bl"><div class="bar"><i class="unc" style="width:100%"></i></div><div class="ov"></div></div><div class="srcs">В плане ничего</div></div><div class="ptot"><b>0 из 6</b><small>не покрыто 6</small></div></div>
+        <div class="prow"><div><div class="pname">Enduro Trail 250</div><div class="pvar">оранжевый</div></div><div><div class="bl"><div class="bar"><i class="s-out" style="width:40%"></i><i class="p-wh" style="width:60%"></i></div><div class="ov"></div></div><div class="srcs">Уже: резерв OUT-205 <b>6</b> · План: снять резерв OUT-205 <b>2</b>, WH-2 · свободно <b>6</b></div></div><div class="ptot"><b>10 из 10</b><small>покрыто</small></div></div>
+      </section>
+      <section class="card det">
+        <div class="det-h">
+          <div class="t">ATV Hunter 500 4x4</div><div class="v">зелёный</div>
+          <div class="kv"><div>Заказано<b>20</b></div><div>Уже есть<b>0</b></div><div>Добавит план<b>20</b></div><div>Не покрыто<b>0</b></div></div>
+          <div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div>
+        </div>
+        <div class="sec">
+          <div class="sec-h"><span class="h">Источники · свободное</span><span class="cols-h"><span>Доступно</span><span>Взять</span></span></div>
+          <div class="src"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · свободно</span><span class="av">6</span><span class="tk"><span class="qty">6</span></span></div>
+          <div class="src"><i class="sw s-wh"></i><span class="lbl">Склад WH-1 · свободно</span><span class="av">3</span><span class="tk"><span class="qty zero">0</span></span></div>
+          <div class="src"><i class="sw s-tr"></i><span class="lbl">В пути TR-311 (WH-1 → WH-3) · свободно</span><span class="av">5</span><span class="tk"><span class="qty">5</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-208 · PLT-2 · черновик · свободно</span><span class="av">8</span><span class="tk"><span class="qty">8</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Заказ на производство PO-57 · PLT-2 · незанятый план</span><span class="av">10</span><span class="tk"><span class="qty">1</span></span></div>
+          <div class="sep-h">Чужие резервы — забрать под этот заказ</div>
+          <div class="src quiet"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · резерв OMS-1017</span><span class="av">4</span><span class="tk"><span class="qty zero">0</span></span></div>
+          <div class="src quiet"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-211 · PLT-2 · черновик · резерв региона Казахстан</span><span class="av">6</span><span class="tk"><span class="qty zero">0</span></span></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="overlay">
+      <div class="modal">
+        <div class="modal-h">
+          <h2>Запустить План 2?</h2>
+          <p>Все документы плана создадутся сразу, одной операцией. Если хоть одна строка не пройдёт проверку остатков, не создастся ничего.</p>
+        </div>
+        <div class="moves">
+          <div class="moves-h">Физические движения · 2</div>
+          <div class="mv"><span><span class="k">Перемещение WH-1 → WH-3:</span> Snowmobile Polar 600<span class="sub">Создастся сразу в пути</span></span><span class="q">8 шт.</span></div>
+          <div class="mv"><span><span class="k">Отгрузка со склада WH-2:</span> Scooter Metro 50<span class="sub">Проведётся сразу, товар спишется</span></span><span class="q">20 шт.</span></div>
+        </div>
+        <details class="more" open>
+          <summary><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>Что ещё создастся — без движения товара</summary>
+          <ul>
+            <li>4 резерва под OMS-1042: WH-3, TR-311, WH-1, WH-2</li>
+            <li>Резерв в черновике выпуска OUT-208 — 8 шт.</li>
+            <li>1 снятие резерва: OUT-205 — 2 шт. в свободное</li>
+            <li>Новый черновик выпуска из PO-57 — 1 шт.</li>
+            <li>Докинуть в PO-61 — 3 шт. и черновик выпуска под заказ</li>
+            <li>Новый заказ на производство на PLT-4 — 5 шт., «Черновик»</li>
+          </ul>
+        </details>
+        <div class="modal-f"><span class="btn">Отмена</span><span class="btn primary">Запустить</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ КАДР 4 -->
+<div class="frame-cap"><span class="n">Кадр 4 — Запущенный план</span><span class="d">В колонке планов выбран «План 1». Только просмотр: состояние на момент запуска и созданные документы.</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="addr">Oryx — Заказ клиента OMS-1042 · План</span></div>
+  <div class="view">
+    <div class="crumbs"><span>Заказы клиента</span><span>/</span><span class="cur">OMS-1042</span></div>
+    <section class="card order">
+      <div class="order-top"><h1>OMS-1042</h1><span class="chip">Открыт</span><span class="meta">Срок <b>30.09.2026</b></span><span class="meta">Регион <b>Россия</b></span></div>
+      <nav class="tabs"><span>Товары<em>7</em></span><span class="on">План</span><span>Документы<em>5</em></span><span>История</span></nav>
+    </section>
+    <section class="card phead">
+      <div class="ph-l">
+        <span class="ph-title">План 1</span>
+        <span class="chip run">Запущен</span>
+        <span class="muted">22.09.2026 14:10 · только просмотр</span>
+      </div>
+      <div class="ph-r">
+        <span class="btn"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h6.5"/></svg>Копировать в новый черновик</span>
+        <span class="btn"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2.5" y="3" width="11" height="3" rx="1"/><path d="M3.5 6v6.5h9V6M6.5 8.5h3"/></svg>В архив</span>
+      </div>
+    </section>
+    <div class="cols">
+      <aside class="card rail">
+        <div class="rail-h">Планы <span class="muted">3</span></div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">План 2</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 24.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>6 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">Без PLT-4</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 23.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>5 из 7 товаров</div>
+        </div>
+        <div class="pcard sel">
+          <div class="pc-top"><span class="pc-name">План 1</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip run">Запущен</span>22.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i></span>4 из 7 товаров</div>
+        </div>
+        <span class="btn sm full"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Новый план</span>
+        <div class="arch-g">
+          <div class="arch-t"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>Архив · 1</div>
+        </div>
+      </aside>
+
+      <section class="card mid">
+        <div class="whole">
+          <div class="whole-h"><span class="h2">Весь заказ на момент запуска</span><span class="muted">7 товаров · 91 шт.</span><span class="tot">После плана <b class="num">76 из 91</b></span></div>
+          <div class="bl"><div class="bar big">
+            <i class="s-wh" style="width:46.154%"></i><i class="s-out" style="width:6.593%"></i><i class="p-wh" style="width:6.593%"></i><i class="p-tr" style="width:5.495%"></i><i class="p-out" style="width:18.681%"></i><i class="unc" style="width:16.484%"></i>
+          </div><div class="ov"></div></div>
+          <div class="stats">
+            <span><i class="sw s-wh"></i>Было <b class="num">48</b></span>
+            <span><i class="sw p-wh"></i>Добавил план <b class="num">28</b></span>
+            <span><i class="sw unc"></i>Не покрыто <b class="num">15</b></span>
+          </div>
+        </div>
+        <div class="docs">
+          <div class="h2">Создано при запуске · 6 документов</div>
+          <div class="docs-g">
+            <div class="dcard"><a>RSV-901</a><div>Резерв · WH-3</div></div>
+            <div class="dcard"><a>RSV-902</a><div>Резерв · TR-311</div></div>
+            <div class="dcard"><a>OUT-215</a><div>Черновик выпуска · из PO-57</div></div>
+            <div class="dcard"><a>PO-63</a><div>Заказ на производство · PLT-4 · черновик</div></div>
+            <div class="dcard"><a>TR-420</a><div>Перемещение · WH-1 → WH-3</div></div>
+            <div class="dcard"><a>SHP-330</a><div>Отгрузка · WH-2</div></div>
+          </div>
+        </div>
+        <div class="plh"><span>Товар</span><span>Разбивка по местам</span><span class="r">Итог</span></div>
+        <div class="prow sel"><div><div class="pname">ATV Hunter 500 4x4</div><div class="pvar">зелёный</div></div><div><div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div><div class="srcs">WH-3 <b>6</b> · TR-311 <b>5</b> · PO-57 <b>9</b></div></div><div class="ptot"><b>20 из 20</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">Pitbike Storm 125</div><div class="pvar">красный</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-out" style="width:66.667%"></i></div><div class="ov"></div></div><div class="srcs">Было: резерв WH-1 <b>4</b> · новый заказ на производство PLT-4 <b>8</b></div></div><div class="ptot"><b>12 из 12</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">UTV Ranger 1000</div><div class="pvar">камуфляж</div></div><div><div class="bl"><div class="bar"><i class="unc" style="width:100%"></i></div><div class="ov"></div></div><div class="srcs">В плане ничего</div></div><div class="ptot"><b>0 из 5</b><small>не покрыто 5</small></div></div>
+        <div class="prow"><div><div class="pname">Scooter Metro 50</div><div class="pvar">белый</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="s-wh" style="width:66.667%"></i></div><div class="ov"></div></div><div class="srcs">Было: отгружено <b>10</b>, резерв WH-2 <b>20</b> · отгрузка со склада WH-2 <b>20</b></div></div><div class="ptot"><b>30 из 30</b><small>уже было</small></div></div>
+        <div class="prow"><div><div class="pname">Snowmobile Polar 600</div><div class="pvar">чёрный</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:100%"></i></div><div class="ov"></div></div><div class="srcs">Было: резерв WH-1 <b>8</b> · перемещение WH-1 → WH-3 <b>8</b></div></div><div class="ptot"><b>8 из 8</b><small>уже было</small></div></div>
+        <div class="prow"><div><div class="pname">Golf Cart Club 4</div><div class="pvar">бежевый</div></div><div><div class="bl"><div class="bar"><i class="unc" style="width:100%"></i></div><div class="ov"></div></div><div class="srcs">В плане ничего</div></div><div class="ptot"><b>0 из 6</b><small>не покрыто 6</small></div></div>
+        <div class="prow"><div><div class="pname">Enduro Trail 250</div><div class="pvar">оранжевый</div></div><div><div class="bl"><div class="bar"><i class="s-out" style="width:60%"></i><i class="unc" style="width:40%"></i></div><div class="ov"></div></div><div class="srcs">Было: резерв OUT-205 <b>6</b> · в плане ничего</div></div><div class="ptot"><b>6 из 10</b><small>не покрыто 4</small></div></div>
+      </section>
+
+      <section class="card det">
+        <div class="det-h">
+          <div class="t">ATV Hunter 500 4x4</div><div class="v">зелёный</div>
+          <div class="kv"><div>Заказано<b>20</b></div><div>Было<b>0</b></div><div>Добавил план<b>20</b></div><div>Не покрыто<b>0</b></div></div>
+          <div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div>
+          <div class="hint">Состояние на момент запуска. Расхождения у запущенного плана не считаются.</div>
+        </div>
+        <div class="sec">
+          <div class="sec-h"><span class="h">Источники</span><span class="cols-h ro"><span>Взято</span><span>Документ</span></span></div>
+          <div class="src ro"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · свободно</span><span class="av"><b>6</b></span><span class="av"><a class="doclink">RSV-901</a></span></div>
+          <div class="src ro"><i class="sw s-tr"></i><span class="lbl">В пути TR-311 (WH-1 → WH-3) · свободно</span><span class="av"><b>5</b></span><span class="av"><a class="doclink">RSV-902</a></span></div>
+          <div class="src ro"><i class="sw s-out"></i><span class="lbl">Заказ на производство PO-57 · PLT-2 · незанятый план<span class="sub">Стал черновиком выпуска под OMS-1042</span></span><span class="av"><b>9</b></span><span class="av"><a class="doclink">OUT-215</a></span></div>
+        </div>
+        <div class="acts">
+          <div class="sec-t">Действия</div>
+          <div class="sec">
+            <div class="act" style="border-top:0"><span class="lbl muted">В плане не было действий для этого товара</span><span class="tk"></span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ КАДР 5 -->
+<div class="frame-cap"><span class="n">Кадр 5 — Заказ закрыт</span><span class="d">Все планы только для просмотра, запуск недоступен. Копировать и архивировать можно. Архив раскрыт, меню ⋯ у архивного плана.</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="addr">Oryx — Заказ клиента OMS-1042 · План</span></div>
+  <div class="view">
+    <div class="crumbs"><span>Заказы клиента</span><span>/</span><span class="cur">OMS-1042</span></div>
+    <section class="card order">
+      <div class="order-top"><h1>OMS-1042</h1><span class="chip closed">Закрыт</span><span class="meta">Срок <b>30.09.2026</b></span><span class="meta">Регион <b>Россия</b></span></div>
+      <nav class="tabs"><span>Товары<em>7</em></span><span class="on">План</span><span>Документы<em>5</em></span><span>История</span></nav>
+    </section>
+    <div class="banner">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3" y="7" width="10" height="6.5" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+      <span><b>Заказ закрыт — планы только для просмотра.</b> <span class="muted">Запуск недоступен. Копировать план и отправлять в архив можно.</span></span>
+    </div>
+    <section class="card phead">
+      <div class="ph-l">
+        <span class="ph-title">План 2</span>
+        <span class="chip">Черновик</span>
+        <span class="muted">Создан 24.09.2026</span>
+      </div>
+      <div class="ph-r">
+        <span class="btn">Копировать в новый черновик</span>
+        <span class="btn">В архив</span>
+        <span class="why neutral">Заказ закрыт</span>
+        <span class="btn disabled">Запустить</span>
+      </div>
+    </section>
+    <div class="cols">
+      <aside class="card rail">
+        <div class="rail-h">Планы <span class="muted">3</span></div>
+        <div class="pcard sel">
+          <div class="pc-top"><span class="pc-name">План 2</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 24.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>6 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">Без PLT-4</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip">Черновик</span>создан 23.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></span>5 из 7 товаров</div>
+        </div>
+        <div class="pcard">
+          <div class="pc-top"><span class="pc-name">План 1</span><span class="dots">⋯</span></div>
+          <div class="pc-meta"><span class="chip run">Запущен</span>22.09</div>
+          <div class="cov"><span class="covbar"><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i></span>4 из 7 товаров</div>
+        </div>
+        <span class="btn sm full disabled"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Новый план</span>
+        <div class="arch-g">
+          <div class="arch-t"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>Архив · 1</div>
+          <div class="pcard dim">
+            <div class="pc-top"><span class="pc-name">Первый набросок</span><span class="dots on">⋯</span></div>
+            <div class="pc-meta"><span class="chip arch">Архив</span>черновик · 21.09</div>
+            <div class="cov"><span class="covbar"><i class="on"></i><i></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i></span>3 из 7 товаров</div>
+            <div class="menu">
+              <div class="off">Переименовать</div>
+              <div class="hl">Копировать в новый черновик</div>
+              <hr>
+              <div>Вернуть из архива</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="card mid">
+        <div class="whole">
+          <div class="whole-h"><span class="h2">Весь заказ</span><span class="muted">7 товаров · 91 шт.</span><span class="tot">После плана <b class="num">85 из 91</b></span></div>
+          <div class="bl"><div class="bar big">
+            <i class="s-wh" style="width:46.154%"></i><i class="s-out" style="width:4.396%"></i><i class="p-wh" style="width:18.681%"></i><i class="p-tr" style="width:5.495%"></i><i class="p-out" style="width:18.681%"></i><i class="unc" style="width:6.593%"></i>
+          </div><div class="ov"></div></div>
+          <div class="stats"><span><i class="sw s-wh"></i>Уже есть <b>48</b></span><span><i class="sw p-wh"></i>Добавит план <b>39</b></span><span><i class="sw rel"></i>Снимет план <b>2</b></span><span><i class="sw unc"></i>Не покрыто <b>6</b></span></div>
+        </div>
+        <div class="plh"><span>Товар</span><span>Разбивка по местам</span><span class="r">Итог</span></div>
+        <div class="prow sel"><div><div class="pname">ATV Hunter 500 4x4</div><div class="pvar">зелёный</div></div><div><div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div><div class="srcs">План: WH-3 <b>6</b> · TR-311 <b>5</b> · OUT-208 <b>8</b> · PO-57 <b>1</b></div></div><div class="ptot"><b>20 из 20</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">Pitbike Storm 125</div><div class="pvar">красный</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="p-wh" style="width:25%"></i><i class="p-out" style="width:41.667%"></i></div><div class="ov"></div></div><div class="srcs">Уже: резерв WH-1 <b>4</b> · План: WH-1 <b>3</b> · новый заказ на производство PLT-4 <b>5</b></div></div><div class="ptot"><b>12 из 12</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">UTV Ranger 1000</div><div class="pvar">камуфляж</div></div><div><div class="bl"><div class="bar"><i class="p-wh" style="width:40%"></i><i class="p-out" style="width:60%"></i></div><div class="ov"></div></div><div class="srcs">План: WH-3 · резерв региона Россия <b>2</b> · докинуть в PO-61 <b>3</b></div></div><div class="ptot"><b>5 из 5</b><small>покрыто</small></div></div>
+        <div class="prow"><div><div class="pname">Scooter Metro 50</div><div class="pvar">белый</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:33.333%"></i><i class="s-wh" style="width:66.667%"></i></div><div class="ov"></div></div><div class="srcs">Уже: отгружено <b>10</b> (SHP-318), резерв WH-2 <b>20</b> · План: отгрузить со склада WH-2 <b>20</b></div></div><div class="ptot"><b>30 из 30</b><small>уже есть</small></div></div>
+        <div class="prow"><div><div class="pname">Snowmobile Polar 600</div><div class="pvar">чёрный</div></div><div><div class="bl"><div class="bar"><i class="s-wh" style="width:100%"></i></div><div class="ov"></div></div><div class="srcs">Уже: резерв WH-1 <b>8</b> · План: переместить WH-1 → WH-3 <b>8</b></div></div><div class="ptot"><b>8 из 8</b><small>уже есть</small></div></div>
+        <div class="prow"><div><div class="pname">Golf Cart Club 4</div><div class="pvar">бежевый</div></div><div><div class="bl"><div class="bar"><i class="unc" style="width:100%"></i></div><div class="ov"></div></div><div class="srcs">В плане ничего</div></div><div class="ptot"><b>0 из 6</b><small>не покрыто 6</small></div></div>
+        <div class="prow"><div><div class="pname">Enduro Trail 250</div><div class="pvar">оранжевый</div></div><div><div class="bl"><div class="bar"><i class="s-out" style="width:40%"></i><i class="p-wh" style="width:60%"></i></div><div class="ov"></div></div><div class="srcs">Уже: резерв OUT-205 <b>6</b> · План: снять резерв OUT-205 <b>2</b>, WH-2 · свободно <b>6</b></div></div><div class="ptot"><b>10 из 10</b><small>покрыто</small></div></div>
+      </section>
+
+      <section class="card det">
+        <div class="det-h">
+          <div class="t">ATV Hunter 500 4x4</div><div class="v">зелёный</div>
+          <div class="kv"><div>Заказано<b>20</b></div><div>Уже есть<b>0</b></div><div>В плане<b>20</b></div><div>Не покрыто<b>0</b></div></div>
+          <div class="bl"><div class="bar"><i class="p-wh" style="width:30%"></i><i class="p-tr" style="width:25%"></i><i class="p-out" style="width:45%"></i></div><div class="ov"></div></div>
+          <div class="hint">Заказ закрыт — количества показаны текстом, изменить их нельзя.</div>
+        </div>
+        <div class="sec">
+          <div class="sec-h"><span class="h">Источники · свободное</span><span class="cols-h"><span>Доступно</span><span>Взять</span></span></div>
+          <div class="src"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · свободно</span><span class="av">6</span><span class="tk"><span class="qty ro">6</span></span></div>
+          <div class="src"><i class="sw s-wh"></i><span class="lbl">Склад WH-1 · свободно</span><span class="av">3</span><span class="tk"><span class="qty ro zero">0</span></span></div>
+          <div class="src"><i class="sw s-tr"></i><span class="lbl">В пути TR-311 (WH-1 → WH-3) · свободно</span><span class="av">5</span><span class="tk"><span class="qty ro">5</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-208 · PLT-2 · черновик · свободно</span><span class="av">8</span><span class="tk"><span class="qty ro">8</span></span></div>
+          <div class="src"><i class="sw s-out"></i><span class="lbl">Заказ на производство PO-57 · PLT-2 · незанятый план</span><span class="av">10</span><span class="tk"><span class="qty ro">1</span></span></div>
+          <div class="sep-h">Чужие резервы</div>
+          <div class="src quiet"><i class="sw s-wh"></i><span class="lbl">Склад WH-3 · резерв OMS-1017</span><span class="av">4</span><span class="tk"><span class="qty ro zero">0</span></span></div>
+          <div class="src quiet"><i class="sw s-out"></i><span class="lbl">Выпуск OUT-211 · PLT-2 · черновик · резерв региона Казахстан</span><span class="av">6</span><span class="tk"><span class="qty ro zero">0</span></span></div>
+        </div>
+        <div class="acts">
+          <div class="sec-t">Действия</div>
+          <div class="sec">
+            <div class="sep-h" style="margin-top:4px">Производство</div>
+            <div class="act off"><span class="lbl">Докинуть в PO-57 · PLT-2</span><span class="tk"><span class="qty ro zero">0</span></span></div>
+            <div class="act off"><span class="lbl">Новый заказ на производство · PLT-2</span><span class="tk"><span class="qty ro zero">0</span></span></div>
+            <div class="sep-h">Свой резерв OMS-1042</div>
+            <div class="act off"><span class="lbl">Переместить, отгрузить, снять резерв — нет резерва</span><span class="tk"><span class="qty ro zero">—</span></span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
