@@ -12,7 +12,7 @@
 |-----|-----------|
 | `/store/pim/products` | Каталог; режим по умолчанию — base products |
 | `/store/pim/products?listing=variants` | Тот же каталог в режиме product variants |
-| `/store/pim/products/[productId]` | Карточка: demo PIM UI для старых `bike-*` id, иначе логистическая карточка того же варианта. Код — `PRD-{id}` (`formatLogisticsCode`), фото из `store_product_variant.image_url` (Корпортал Spatie medium `/s3/media/.../conversions/{stem}-medium.webp`). |
+| `/store/pim/products/[productId]` | Карточка: demo PIM UI для старых `bike-*` id, иначе логистическая карточка того же варианта. Код — настраиваемый префикс + id варианта (`formatLogisticsCode`, по умолчанию `PRD-{id}`; префикс в «Магазин → Настройки», в строку варианта не пишется), фото из `store_product_variant.image_url` (Корпортал Spatie medium `/s3/media/.../conversions/{stem}-medium.webp`). |
 | `/store/logistics/...` | Заказы клиента, остатки, заказы на производство — см. [logistics.md](logistics.md) |
 
 - Страница: `app/store/pim/products/page.tsx` → `StoreCatalogPage`

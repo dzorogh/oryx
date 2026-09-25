@@ -65,6 +65,7 @@ import {
   DOCUMENT_KIND_TO_PREFIX_FIELD,
   DOCUMENT_PREFIX_FIELDS,
   formatLogisticsCode,
+  regionCatalogCode,
   getActiveLogisticsCodePrefixes,
   mergeLogisticsCodePrefixes,
   setActiveLogisticsCodePrefixes,
@@ -382,7 +383,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     const id = str(row.id);
     return {
       id,
-      code: row.code ? str(row.code) : formatLogisticsCode("region", id),
+      code: regionCatalogCode(row.code, id),
       name: str(row.name),
       stockOwnerId: str(row.stock_owner_id),
     };

@@ -266,3 +266,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-stock-products-category-groups.md`
   summary: Контракт `store_stock_page()` (`categories[].parent_id`, `product_variants[].category_ids`, исключение удалённых категорий) не проверяется автотестом.
   evidence: Маппер покрыт тестами на ручных payload; SQL-тестов в репо нет. Проверено разово на демо-базе 25.09.2026 (27 категорий, `category_ids` у товаров).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-product-code-prefix.md`
+  summary: Нет автотеста, что `store_location_code` берёт префикс склада из `store_catalog_code_prefix`.
+  evidence: Юнит-тест форматтера проходит и при старом литерале `WH-`. В репозитории нет стенда для SQL-тестов. На демо-базе при префиксе `WH` функция вернула `WH-1`, `WH-2`, `WH-3`.

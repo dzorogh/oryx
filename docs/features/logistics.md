@@ -20,7 +20,7 @@
 | `/store/logistics/transfers` | Перемещения |
 | `/store/logistics/warehouses` | Склады |
 | `/store/logistics/plants` | Заводы (`store_plant`; код `PLT-n`) |
-| `/store/settings` | Префиксы документов (`store_document_kind.number_prefix`) и завода (`store_catalog_code_prefix`) |
+| `/store/settings` | Префиксы документов (`store_document_kind.number_prefix`) и справочников завода, товара и склада (`store_catalog_code_prefix`) |
 
 ## Меню Store
 
@@ -56,7 +56,7 @@ List-RPC дополняются полями `createdBy` (имя автора) �
 2. **Вкладки разделов** — «Товары» / … / «Движения» / «История»; выбранная вкладка в hash адреса (`#history`); строка вкладок скроллится.
 3. У заказа клиента полоса этапов («Выпуск производства → Перемещения → Отгрузки»; создание заказа на производство — в меню «…» этапа выпуска) — отдельная карточка под шапкой; «Связанные» раскрывает резервы и возвраты.
 
-Код товара везде — `PRD-N` (`formatLogisticsCode("product", id)`); поля SKU / «Артикул» нет.
+Код товара везде — `prefix-{id варианта}` (`formatLogisticsCode("product", id)`), по умолчанию `PRD-12`. Код склада — `prefix-{id}`, по умолчанию `WH-7`. Оба префикса задаются в «Магазин → Настройки» и читаются из `store_catalog_code_prefix`; в строки вариантов и складов префикс не пишется. Тексты ошибок плана заказа берут код склада из `store_location_code` с тем же префиксом. Код региона — сохранённый `store_region.code`; `REG-{id}` только если код пуст. Поля SKU / «Артикул» нет.
 
 ### История
 
@@ -106,7 +106,7 @@ Seed после историй раскладывает `changed_at` монот�
 - API: `src/features/logistics/logistics-api.ts` (RPC only)
 - Каталог: `src/features/store/store-catalog-from-logistics.ts`
 - Дерево категорий: `src/features/logistics/category-tree.ts`; прилипание строк категорий: `src/features/logistics/ui/use-sticky-category-rows.ts` — общие для календаря выпусков и остатков.
-- Миграции: `20260922200000_store_baseline.sql` (+ `thank_you_entry`); `20260923120000_store_page_read_models.sql` — read-RPC страниц (удаляет временный `store_logistics_snapshot`); `20260924120000_store_output_calendar_page.sql` — `store_output_calendar_page()`; `20260924180000_store_output_stock_location.sql` — место выпуска; `20260924181000_store_order_plan.sql` — план заказа клиента; `20260924190000_store_order_plan_excess_from_plan.sql` — лишнее при запуске только от плана; `20260925094732_store_stock_page_categories.sql` — категории в `store_stock_page()`
+- Миграции: `20260922200000_store_baseline.sql` (+ `thank_you_entry`); `20260923120000_store_page_read_models.sql` — read-RPC страниц (удаляет временный `store_logistics_snapshot`); `20260924120000_store_output_calendar_page.sql` — `store_output_calendar_page()`; `20260924180000_store_output_stock_location.sql` — место выпуска; `20260924181000_store_order_plan.sql` — план заказа клиента; `20260924190000_store_order_plan_excess_from_plan.sql` — лишнее при запуске только от плана; `20260925094732_store_stock_page_categories.sql` — категории в `store_stock_page()`; `20260925120000_store_catalog_code_prefix.sql` — префикс завода; `20260925140000_store_product_warehouse_code_prefix.sql` — префиксы товара и склада; `20260925141000_store_location_code_warehouse_prefix.sql` — `store_location_code` берёт префикс склада из `store_catalog_code_prefix`
 - Seed: `scripts/seed-logistics.mjs` + `scripts/lib/seed-logistics-stories.mjs`. Большие заказы клиента OMS-907…910 (регионы RU, KZ, MX, DE): по 5–20 товаров с 1–4 заводов, 5–20 шт каждого, без резервов и движений — для запуска производства и плана.
 
 ### Загрузка данных

@@ -43,19 +43,23 @@ export const DOCUMENT_PREFIX_FIELDS: Array<{
   { kind: "adjustment", label: "Корректировки", exampleId: "1", documentKind: "adjustment" },
 ];
 
-/** Catalogs with an editable code prefix (`store_catalog_code_prefix`); WH/PRD/REG stay fixed. */
+/** Catalogs with an editable code prefix (`store_catalog_code_prefix`). Region stays fixed. */
 export const CATALOG_PREFIX_FIELDS: Array<{
   kind: LogisticsCodeKind;
   label: string;
   exampleId: string;
   catalogCode: string;
-}> = [{ kind: "plant", label: "Заводы", exampleId: "4", catalogCode: "plant" }];
+}> = [
+  { kind: "plant", label: "Заводы", exampleId: "4", catalogCode: "plant" },
+  { kind: "product", label: "Товары", exampleId: "12", catalogCode: "product" },
+  { kind: "warehouse", label: "Склады", exampleId: "7", catalogCode: "warehouse" },
+];
 
 export const CATALOG_CODE_TO_PREFIX_FIELD: Record<string, LogisticsCodeKind> = Object.fromEntries(
   CATALOG_PREFIX_FIELDS.map((field) => [field.catalogCode, field.kind]),
 );
 
-const FIXED_CODE_KINDS = new Set<LogisticsCodeKind>(["product", "warehouse", "region"]);
+const FIXED_CODE_KINDS = new Set<LogisticsCodeKind>(["region"]);
 
 const clonePrefixes = (prefixes: LogisticsCodePrefixes): LogisticsCodePrefixes => ({ ...prefixes });
 
@@ -106,4 +110,14 @@ export const formatLogisticsCode = (
   }
   const prefix = FIXED_CODE_KINDS.has(kind) ? LOGISTICS_CODE_PREFIXES[kind] : prefixes[kind];
   return `${prefix}-${id}`;
+};
+
+/** Stored `store_region.code` wins; `REG-{id}` is only the empty-code fallback. */
+export const regionCatalogCode = (
+  storedCode: unknown,
+  id: string | number | null | undefined,
+  prefixes: LogisticsCodePrefixes = activePrefixes,
+): string => {
+  const code = typeof storedCode === "string" ? storedCode.trim() : storedCode ? String(storedCode) : "";
+  return code ? code : formatLogisticsCode("region", id, prefixes);
 };

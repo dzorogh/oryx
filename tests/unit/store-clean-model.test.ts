@@ -12,7 +12,13 @@ import {
   shipmentDirection,
 } from "@/features/logistics/logistics-types";
 import { adjustmentSignedQuantity } from "@/features/logistics/logistics-adjustments";
-import { formatLogisticsCode, mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
+import {
+  CATALOG_CODE_TO_PREFIX_FIELD,
+  formatLogisticsCode,
+  mergeLogisticsCodePrefixes,
+  normalizeLogisticsCodePrefix,
+  regionCatalogCode,
+} from "@/features/logistics/logistics-codes";
 import {
   buildPriceCellId,
   buildStatusCellId,
@@ -38,17 +44,44 @@ describe("чистая модель Store — инварианты контра�
     assert.equal(formatLogisticsCode("productionOutput", 3, mergeLogisticsCodePrefixes()), "OUT-3");
   });
 
-  it("префикс завода настраивается, код склада фиксирован WH", () => {
+  it("префиксы завода, товара и склада настраиваются, регион остаётся REG", () => {
+    const defaults = mergeLogisticsCodePrefixes();
+    assert.equal(formatLogisticsCode("product", 12, defaults), "PRD-12");
+    assert.equal(formatLogisticsCode("warehouse", 7, defaults), "WH-7");
+
     const custom = mergeLogisticsCodePrefixes({
       plant: "ZAV",
-      warehouse: "PLT",
+      product: "ART",
+      warehouse: "SKL",
+      region: "AREA",
       customerOrder: "DFL",
       productionOrder: "PL",
     });
     assert.equal(formatLogisticsCode("plant", 6, custom), "ZAV-6");
-    assert.equal(formatLogisticsCode("warehouse", 7, custom), "WH-7");
+    assert.equal(formatLogisticsCode("product", 12, custom), "ART-12");
+    assert.equal(formatLogisticsCode("warehouse", 7, custom), "SKL-7");
+    assert.equal(formatLogisticsCode("region", 3, custom), "REG-3");
+    assert.equal(CATALOG_CODE_TO_PREFIX_FIELD.product, "product");
+    assert.equal(CATALOG_CODE_TO_PREFIX_FIELD.warehouse, "warehouse");
+    assert.equal(regionCatalogCode("ae", 3, custom), "ae");
+    assert.equal(regionCatalogCode("", 3, custom), "REG-3");
+    assert.equal(regionCatalogCode("   ", 3, custom), "REG-3");
+    assert.equal(regionCatalogCode(null, 3, custom), "REG-3");
     assert.equal(formatLogisticsCode("customerOrder", 2, custom), "DFL-2");
     assert.equal(formatLogisticsCode("productionOrder", "1.6", custom), "PL-1.6");
+
+    const missing = mergeLogisticsCodePrefixes({ plant: "ZAV" });
+    assert.equal(formatLogisticsCode("product", 12, missing), "PRD-12");
+    assert.equal(formatLogisticsCode("warehouse", 7, missing), "WH-7");
+
+    const empty = mergeLogisticsCodePrefixes({ product: "", warehouse: "---", region: "XXX" });
+    assert.equal(formatLogisticsCode("product", 12, empty), "PRD-12");
+    assert.equal(formatLogisticsCode("warehouse", 7, empty), "WH-7");
+    assert.equal(formatLogisticsCode("region", 1, empty), "REG-1");
+
+    assert.equal(normalizeLogisticsCodePrefix("ART"), "ART");
+    assert.equal(normalizeLogisticsCodePrefix("ARTарт-"), "ART");
+    assert.equal(normalizeLogisticsCodePrefix("арт-"), "");
   });
 
   it("свободный owner — singleton id=1, projection free→null pair", () => {
