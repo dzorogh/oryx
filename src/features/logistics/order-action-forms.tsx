@@ -36,9 +36,7 @@ import {
   remainingToReserveInProductionOutputsForLine,
   reservedInActiveOutputsForOrderProduct,
 } from "@/features/logistics/logistics-availability";
-import { lineLocationAllocations } from "@/features/logistics/allocation-atlas";
 import { TransferCreateDialog } from "@/features/logistics/ui/transfer-create-dialog";
-import { sumReservedForLine } from "@/features/logistics/logistics-balances";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import {
@@ -263,7 +261,7 @@ export const ProductionFromOrderForm = ({
         expectedEndOn: expectedEndOn || null,
         lines: payload,
       });
-      toast.success("Заказ на производство и запланированный выпуск созданы — резерв в выпуске");
+      toast.success("Заказ на производство и запланированный выпуск созданы — выпуск связан с заказом клиента");
       await reload();
       onOpenChange(false);
     } catch (caught: unknown) {
@@ -295,7 +293,7 @@ export const ProductionFromOrderForm = ({
       className="sm:max-w-2xl"
     >
       <div className="flex flex-col gap-3">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <FieldSelect
             label="Завод"
             value={plantId}
@@ -339,8 +337,6 @@ export const ProductionFromOrderForm = ({
                 {plantLines.map((line) => {
                   const product = productById(snapshot, line.productId);
                   const max = remainingToReserveInProductionOutputsForLine(line, balances, snapshot);
-                  const reserved = sumReservedForLine(balances, line);
-                  const inProduction = lineLocationAllocations(balances, line, snapshot).inProduction;
                   const rawQuantity = quantities[line.id] ?? String(max);
                   const numericQuantity = Number(rawQuantity);
                   const excluded = !Number.isFinite(numericQuantity) || numericQuantity <= 0;
@@ -348,15 +344,12 @@ export const ProductionFromOrderForm = ({
                     <TableRow key={line.id} className={excluded ? "opacity-60" : undefined}>
                       <TableCell className="whitespace-normal">
                         <ProductIdentity snapshot={snapshot} productId={line.productId} nameAs="text" />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Заказано {plannerQuantity(line.quantity, product?.unit)}
-                          {" · "}зарезервировано {plannerQuantity(reserved, product?.unit)}
-                          {" · "}в производстве {plannerQuantity(inProduction, product?.unit)}
-                        </p>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">
                         <div className="font-medium tabular-nums">{plannerQuantity(max, product?.unit)}</div>
-                        <div className="text-xs text-muted-foreground">осталось</div>
+                        <div className="text-xs text-muted-foreground">
+                          из {plannerQuantity(line.quantity, product?.unit)}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="relative ml-auto w-[7.5rem]">
@@ -388,8 +381,8 @@ export const ProductionFromOrderForm = ({
             role="status"
             className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
           >
-            Вместе с заказом на производство создадим запланированный выпуск на весь объём — резерв будет в
-            выпуске.
+            Вместе с заказом на производство создадим запланированный выпуск на весь объём — выпуск будет
+            связан с этим заказом клиента.
           </div>
         ) : null}
       </div>

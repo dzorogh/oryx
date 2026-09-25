@@ -350,6 +350,69 @@ export const seedLogisticsStories = async (args) => {
     ],
   });
 
+  // Mixed orders OMS-907..910: 1–4 plants and 5–20 lines each, 5–20 pcs, no stock movements.
+  // Keys are snapshot product ids (scripts/data/logistics-demo.json).
+  const bulkOrders = [
+    {
+      sequence: 907,
+      regionCode: "ru",
+      description: "Демо: сборный заказ дилера с двух заводов",
+      createdAt: "2026-09-19T08:20:00+00:00",
+      expectedEndOn: "2026-11-20",
+      lines: [
+        ["1", 8], ["26", 12], ["30", 15], ["32", 10], ["42", 6], ["43", 9], ["90", 14],
+        ["17", 10], ["29", 7], ["36", 12], ["207", 16], ["50", 20],
+      ],
+    },
+    {
+      sequence: 908,
+      regionCode: "kz",
+      description: "Демо: поставка для сети салонов к Новому году",
+      createdAt: "2026-09-21T11:05:00+00:00",
+      expectedEndOn: "2026-12-05",
+      lines: [
+        ["44", 5], ["49", 7], ["62", 6], ["109", 5], ["52", 9], ["54", 8], ["99", 11], ["19", 6],
+      ],
+    },
+    {
+      sequence: 909,
+      regionCode: "mx",
+      description: "Демо: первый заказ нового дистрибьютора",
+      createdAt: "2026-09-23T14:40:00+00:00",
+      expectedEndOn: "2026-12-15",
+      lines: [
+        ["24", 20], ["25", 15], ["78", 12], ["80", 18], ["83", 9], ["84", 10],
+        ["47", 7], ["77", 11], ["89", 8], ["95", 13], ["134", 6],
+        ["11", 14], ["57", 9], ["58", 12], ["150", 5],
+      ],
+    },
+    {
+      sequence: 910,
+      regionCode: "de",
+      description: "Демо: пополнение ассортимента к сезону",
+      createdAt: "2026-09-24T09:30:00+00:00",
+      expectedEndOn: "2027-01-20",
+      lines: [
+        ["12", 10], ["14", 8], ["129", 15], ["130", 12], ["60", 6], ["61", 9],
+        ["9", 5], ["10", 7], ["142", 5], ["38", 11],
+        ["85", 8], ["91", 6], ["92", 14], ["158", 10], ["180", 9],
+        ["53", 7], ["39", 12], ["174", 6], ["175", 8], ["189", 5],
+      ],
+    },
+  ];
+  for (const order of bulkOrders) {
+    const regionRows = await get(`store_region?code=eq.${order.regionCode}&select=id`);
+    const bulkRegionId = Number(regionRows?.[0]?.id ?? regionId);
+    await call("store_create_customer_order", {
+      p_region_id: bulkRegionId,
+      p_description: order.description,
+      p_expected_end_on: order.expectedEndOn,
+      p_sequence_number: order.sequence,
+      p_created_at: order.createdAt,
+      p_lines: order.lines.map(([key, quantity]) => ({ product_variant_id: v(key), quantity })),
+    });
+  }
+
   const meta901 = await orderMeta(order901.id);
   const meta902 = await orderMeta(order902.id);
   const meta903 = await orderMeta(order903.id);
@@ -928,5 +991,5 @@ export const seedLogisticsStories = async (args) => {
   // Mark one story order done for lifecycle variety
   await patch(`store_document?id=eq.${order901.id}`, { status: "done" });
 
-  return { orders: 6 };
+  return { orders: 6 + bulkOrders.length };
 };
