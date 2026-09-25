@@ -100,6 +100,7 @@ import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { CustomerOrderStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { OrderAmountInput, OrderMoneyTab, summarizeOrderMoney } from "@/features/logistics/ui/order-money-tab";
 
 const STATUS_TOGGLE = [
   { value: "all", label: "Все" },
@@ -362,7 +363,7 @@ export const CustomerOrdersPage = () => {
 
 export const CustomerOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
-  const { snapshot, balances, orderPlan, isLoading, error, reload, found } = useLogisticsStore({
+  const { snapshot, balances, orderPlan, orderMoney, isLoading, error, reload, found } = useLogisticsStore({
     kind: "document",
     documentKind: "customer_order",
     ref: String(params.orderId ?? ""),
@@ -428,6 +429,7 @@ export const CustomerOrderDetailPage = () => {
   const orderedQty = lines.reduce((sum, line) => sum + line.quantity, 0);
   const shippedQty = lines.reduce((sum, line) => sum + sumShippedForLine(balances, line), 0);
   const shipPct = orderedQty > 0 ? Math.min(100, Math.floor((shippedQty / orderedQty) * 100)) : 0;
+  const moneySummary = summarizeOrderMoney(snapshot, order.id, orderMoney);
   const movementFilter = (entry: StockTransaction) =>
     documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
       documentKey(entry.documentType, entry.documentId),
@@ -596,6 +598,22 @@ export const CustomerOrderDetailPage = () => {
               </span>
             ),
           },
+          {
+            label: "Сумма заказа",
+            value:
+              moneySummary && orderMoney.money ? (
+                <OrderAmountInput
+                  variant="meta"
+                  documentId={order.id}
+                  amount={orderMoney.money.amount}
+                  estimated={moneySummary.estimated}
+                  currencyCode={moneySummary.currencyCode}
+                  reload={reload}
+                />
+              ) : (
+                <DocumentMetaEmpty />
+              ),
+          },
         ]}
       />
 
@@ -675,6 +693,12 @@ export const CustomerOrderDetailPage = () => {
                 />
               </DocumentSection>
             ),
+          },
+          {
+            id: "money",
+            label: "Деньги",
+            count: orderMoney.payments.length,
+            panel: <OrderMoneyTab snapshot={snapshot} documentId={order.id} context={orderMoney} reload={reload} />,
           },
           {
             id: "plan",

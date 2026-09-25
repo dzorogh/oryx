@@ -27,6 +27,7 @@ import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
+import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
 import { Button } from "@/components/ui/button";
 
 const sumAtWarehouse = (balances: StockBalance[], productId: string, warehouseId: string) =>
@@ -97,6 +98,8 @@ export const CustomerOrderCatalogDialog = ({
   const [regionError, setRegionError] = useState<string | null>(null);
   const regionId = order?.regionId ?? pickedRegionId;
   const wasOpen = useRef(false);
+  const floatRates = useFloatRatesOnOpen(open && !order);
+  const ratesLoading = !order && floatRates.status === "loading";
   const seededRegionId = useRef<string | null>(null);
 
   const dealerOf = (productId: string) =>
@@ -241,7 +244,7 @@ export const CustomerOrderCatalogDialog = ({
   const priceErrorId = lines.find((line) => priceIssue(line.priceRaw))?.productId ?? null;
 
   const submit = async () => {
-    if (submitting || lines.length === 0) return;
+    if (submitting || lines.length === 0 || ratesLoading) return;
     if (needsSource && !sourceId) return;
     if (!order && !regionId) {
       setRegionError("Выберите регион");
@@ -270,6 +273,7 @@ export const CustomerOrderCatalogDialog = ({
         sourceKind,
         sourceId,
         lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity, unitPrice: line.unitPrice })),
+        rates: floatRates.rates,
       });
       onOpenChange(false);
       router.push(logisticsPath("customer-orders", created.id));
@@ -371,6 +375,7 @@ export const CustomerOrderCatalogDialog = ({
               />
             </label>
           )}
+          {order ? null : <FloatRatesNote state={floatRates} className="basis-full" />}
         </div>
       }
       panel={
@@ -390,8 +395,14 @@ export const CustomerOrderCatalogDialog = ({
       }
       submitLabel={order ? "Добавить" : "Создать заказ"}
       onSubmit={() => void submit()}
-      submitDisabled={(needsSource && !sourceId) || lines.length === 0}
-      disabledReason={needsSource && !sourceId ? "Выберите источник" : "Введите количество"}
+      submitDisabled={(needsSource && !sourceId) || lines.length === 0 || ratesLoading}
+      disabledReason={
+        needsSource && !sourceId
+          ? "Выберите источник"
+          : lines.length === 0
+            ? "Введите количество"
+            : "Загружаем курсы валют…"
+      }
       submitting={submitting}
       serverError={serverError}
       dirty={enteredQuantityKeys(quantities).length > 0}

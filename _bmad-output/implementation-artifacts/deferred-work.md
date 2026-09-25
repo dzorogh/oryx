@@ -275,3 +275,10 @@
   summary: Регион нового заказа клиента молча берётся первым из справочника — нужен явный выбор региона (от него зависит дилерская цена).
   evidence: Поведение существовало до редизайна (CustomerOrderCreateDialog брал первый регион); в новом окне сохранено как было.
 - resolved in spec-store-dialogs-redesign: регион нового заказа клиента выбирается явно (поле «Регион» в шапке, обязательно; цены и «по прайсу» по выбранному региону).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-order-money-payments-calendar.md`
+  summary: SQL-правила денег заказа (снимок курсов в триггере, слияние курсов, смена валюты, фильтры календарного payload) не покрыты автотестами.
+  evidence: В прототипе нет харнесса для тестов БД; мапперы тестируются на рукописных фикстурах, переименование ключа в SQL тесты не поймают. Проверено вручную SQL-пробой с откатом.
+- source_spec: `_bmad-output/implementation-artifacts/spec-order-money-payments-calendar.md`
+  summary: `npm test` не входит в список проверок перед сдачей в AGENTS.md, а набор уже красный из-за `document-timeline` («reservation: Создан; when posted — Проведён»).
+  evidence: AGENTS.md пишет «no automated test suite», но `tests/unit` есть; падающий тест не связан с этой работой и падает на базовом коммите.

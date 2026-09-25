@@ -19,32 +19,48 @@ import {
   type CategoryTreeNode,
 } from "@/features/logistics/category-tree";
 import {
+  buildCalendarColumns,
   buildOwnerSet,
   computeMonthRange,
   currentYearMonth,
   formatOutputDate,
   formatYearMonthLabel,
-  monthCell,
+  moneyPeriodCell,
+  moneyUnallocatedCell,
   noDateCell,
   openOrdersForProduct,
+  periodCell,
   plantCodesForProduct,
+  plantMoneyRows,
   productCode,
   productVisibleForPlant,
+  regionMoneyRows,
   resolveOwner,
   STATUS_RU,
   stockBreakdown,
   stockQuantity,
   unassignedCell,
+  unpaidPaymentDueDates,
   ymKey,
+  type CalendarColumn,
   type CalendarOwner,
+  type IncomingFilter,
+  type MoneyCell,
+  type MoneyRow,
+  type MoneyUnallocatedEntry,
+  type OutputCalendarMoneyOrder,
+  type PlantPaymentsFilter,
   type StockBreakdownRow,
   type OutputCalendarOpenOrder,
   type OutputCalendarOutputLine,
   type OutputCalendarOwnerFilter,
   type OutputCalendarPage,
   type OutputCalendarProduct,
+  type UnpaidStatus,
   type YearMonth,
 } from "@/features/logistics/output-calendar";
+import { formatOrderMoney, todayIso } from "@/features/logistics/order-money";
+import { PaymentStatusPill } from "@/features/logistics/ui/order-money-tab";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
 import { categoryGroupStickyTop, useStickyCategoryRows } from "@/features/logistics/ui/use-sticky-category-rows";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -60,20 +76,30 @@ export type CreateDialogTarget =
       product: OutputCalendarProduct;
       order: OutputCalendarOpenOrder;
       month: YearMonth;
+      /** Day column — the output date; month column — the month's last day. */
+      date?: string;
     }
   | {
       kind: "new";
       product: OutputCalendarProduct;
       month: YearMonth;
+      date?: string;
     };
+
+export const MONEY_PLANTS_GROUP_ID = "money:plants";
+export const MONEY_REGIONS_GROUP_ID = "money:regions";
 
 type OutputCalendarMatrixProps = {
   page: OutputCalendarPage;
   filter: OutputCalendarOwnerFilter;
   plantId: string | null;
+  plantPaymentsFilter: PlantPaymentsFilter;
+  incomingFilter: IncomingFilter;
   collapsed: Set<string>;
   onToggleCollapse: (id: string) => void;
   onSetCollapsed: (ids: string[], collapsed: boolean) => void;
+  expandedMonths: Set<number>;
+  onToggleMonth: (key: number) => void;
   onCreate: (target: CreateDialogTarget) => void;
 };
 
@@ -98,15 +124,13 @@ const NameLink = ({ href, children }: { href: string; children: string }) => (
 const HoverBreakdown = ({
   title,
   subtitle,
-  quantity,
-  unit,
+  valueLabel,
   hasFresh = false,
   children,
 }: {
   title: string;
   subtitle: string;
-  quantity: number;
-  unit: string;
+  valueLabel: string;
   hasFresh?: boolean;
   children: ReactNode;
 }) => (
@@ -123,7 +147,7 @@ const HoverBreakdown = ({
             "border-b border-dashed border-muted-foreground after:ml-0.5 after:inline-block after:size-1.5 after:rounded-full after:bg-blue-600 after:align-middle after:content-['']",
         )}
       >
-        {formatQuantity(quantity, unit)}
+        {valueLabel}
       </span>
     </PopoverTrigger>
     <PopoverContent align="end" className="w-[380px] gap-0 p-0 text-sm">
@@ -132,7 +156,7 @@ const HoverBreakdown = ({
           <div className="font-semibold">{title}</div>
           <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
         </div>
-        <div className="shrink-0 text-base font-semibold tabular-nums">{formatQuantity(quantity, unit)}</div>
+        <div className="shrink-0 text-base font-semibold tabular-nums">{valueLabel}</div>
       </div>
       <div className="max-h-[60vh] divide-y divide-border overflow-y-auto">{children}</div>
     </PopoverContent>
@@ -145,11 +169,6 @@ const DetailRow = ({ label, children }: { label: string; children: ReactNode }) 
     <dd className="min-w-0">{children}</dd>
   </>
 );
-
-const todayIso = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-};
 
 const CellPopover = ({
   page,
@@ -177,7 +196,12 @@ const CellPopover = ({
   }
   const today = todayIso();
   return (
-    <HoverBreakdown title={title} subtitle={productName} quantity={quantity} unit={unit} hasFresh={hasFresh}>
+    <HoverBreakdown
+      title={title}
+      subtitle={productName}
+      valueLabel={formatQuantity(quantity, unit)}
+      hasFresh={hasFresh}
+    >
       {[...outputs.values()].map((group) => {
         const first = group[0];
         const total = group.reduce((sum, line) => sum + line.quantity, 0);
@@ -291,7 +315,7 @@ const StockPopover = ({
     .map(([key, group]) => ({ key, group, total: group.reduce((sum, row) => sum + row.quantity, 0) }))
     .sort((a, b) => b.total - a.total);
   return (
-    <HoverBreakdown title="Остаток" subtitle={productName} quantity={quantity} unit={unit}>
+    <HoverBreakdown title="Остаток" subtitle={productName} valueLabel={formatQuantity(quantity, unit)}>
       {groups.map(({ key, group, total }) => (
         <section key={key} className="px-4 py-2.5">
           <div className="flex items-center justify-between gap-3">
@@ -332,7 +356,11 @@ const UnassignedPopover = ({
     return null;
   }
   return (
-    <HoverBreakdown title="Не распределено по выпускам" subtitle={productName} quantity={quantity} unit={unit}>
+    <HoverBreakdown
+      title="Не распределено по выпускам"
+      subtitle={productName}
+      valueLabel={formatQuantity(quantity, unit)}
+    >
       {orders.map((order) => (
         <section key={order.productionOrderId} className="flex items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2">
@@ -348,10 +376,118 @@ const UnassignedPopover = ({
   );
 };
 
-const MonthCell = ({
+const orderHref = (order: Pick<OutputCalendarMoneyOrder, "kind" | "sequenceNumber">) =>
+  logisticsPath(order.kind === "production_order" ? "production-orders" : "customer-orders", order.sequenceNumber);
+
+const MoneyPeriodPopover = ({
+  title,
+  row,
+  cell,
+  productionCurrency,
+}: {
+  title: string;
+  row: MoneyRow;
+  cell: MoneyCell;
+  productionCurrency: string;
+}) => {
+  if (cell.entries.length === 0) return null;
+  return (
+    <HoverBreakdown
+      title={title}
+      subtitle={row.code}
+      valueLabel={formatOrderMoney(cell.amount, productionCurrency, { compact: true })}
+    >
+      {cell.entries.map((entry) => (
+        <section key={entry.payment.id} className="px-4 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <EntityLink href={orderHref(entry.order)}>{entry.order.number}</EntityLink>
+              <span className={cn("tabular-nums", entry.overdue && "font-medium text-red-700")}>
+                {formatOutputDate(entry.payment.dueOn)}
+                {entry.overdue ? " · просрочен" : ""}
+              </span>
+              <PaymentStatusPill status={entry.payment.status} />
+            </div>
+          </div>
+          <div className="mt-1 flex justify-end gap-1.5 text-sm tabular-nums">
+            {entry.order.currencyCode === productionCurrency ? (
+              <span className="font-semibold">{formatOrderMoney(entry.converted, productionCurrency)}</span>
+            ) : (
+              <>
+                <span className="text-muted-foreground">
+                  {formatOrderMoney(entry.payment.amount, entry.order.currencyCode)} →
+                </span>
+                <span className="font-semibold">{formatOrderMoney(entry.converted, productionCurrency)}</span>
+              </>
+            )}
+          </div>
+        </section>
+      ))}
+    </HoverBreakdown>
+  );
+};
+
+const MoneyUnallocatedPopover = ({
+  row,
+  amount,
+  entries,
+  productionCurrency,
+}: {
+  row: MoneyRow;
+  amount: number;
+  entries: MoneyUnallocatedEntry[];
+  productionCurrency: string;
+}) => {
+  if (entries.length === 0) return null;
+  return (
+    <HoverBreakdown
+      title="Не распределено по платежам"
+      subtitle={row.code}
+      valueLabel={formatOrderMoney(amount, productionCurrency, { compact: true })}
+    >
+      {entries.map((entry) => {
+        const code = entry.order.currencyCode;
+        return (
+          <section key={entry.order.id} className="px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <EntityLink href={orderHref(entry.order)}>{entry.order.number}</EntityLink>
+              <span className="font-semibold tabular-nums">
+                {formatOrderMoney(entry.converted, productionCurrency)}
+              </span>
+            </div>
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+              <DetailRow label="Сумма заказа">
+                <span className="tabular-nums">{formatOrderMoney(entry.total, code)}</span>
+              </DetailRow>
+              <DetailRow label="Распределено">
+                <span className="tabular-nums">{formatOrderMoney(entry.allocated, code)}</span>
+              </DetailRow>
+              <DetailRow label="Остаток">
+                <span className="tabular-nums">{formatOrderMoney(entry.rest, code)}</span>
+              </DetailRow>
+            </dl>
+          </section>
+        );
+      })}
+    </HoverBreakdown>
+  );
+};
+
+const columnTitle = (column: CalendarColumn) =>
+  column.kind === "month" ? formatYearMonthLabel(column.ym) : formatOutputDate(column.iso);
+
+/** Current month (collapsed) or today (expanded day). */
+const isCurrentColumn = (column: CalendarColumn, currentKey: number, today: string) =>
+  column.kind === "month" ? ymKey(column.ym) === currentKey : column.iso === today;
+
+/** Month before the current one or a day before today. */
+const isPastColumn = (column: CalendarColumn, currentKey: number, today: string) =>
+  column.kind === "month" ? ymKey(column.ym) < currentKey : column.iso < today;
+
+const PeriodCell = ({
   page,
   product,
-  ym,
+  column,
   current,
   isPast,
   cell,
@@ -361,7 +497,7 @@ const MonthCell = ({
 }: {
   page: OutputCalendarPage;
   product: OutputCalendarProduct;
-  ym: YearMonth;
+  column: CalendarColumn;
   current: boolean;
   isPast: boolean;
   cell: { quantity: number; lines: OutputCalendarOutputLine[]; hasFresh: boolean };
@@ -370,6 +506,7 @@ const MonthCell = ({
   onCreate: (target: CreateDialogTarget) => void;
 }) => {
   const overdue = isPast && cell.quantity > 0;
+  const date = column.kind === "day" ? column.iso : undefined;
   return (
     <td
       className={cn(
@@ -398,13 +535,13 @@ const MonthCell = ({
               {openOrders.map((order) => (
                 <DropdownMenuItem
                   key={order.productionOrderId}
-                  onClick={() => onCreate({ kind: "existing", product, order, month: ym })}
+                  onClick={() => onCreate({ kind: "existing", product, order, month: column.ym, date })}
                 >
                   Выпуск по {order.number} — осталось разложить {formatQuantity(order.remaining, product.unit)}
                 </DropdownMenuItem>
               ))}
               {openOrders.length > 0 ? <DropdownMenuSeparator /> : null}
-              <DropdownMenuItem onClick={() => onCreate({ kind: "new", product, month: ym })}>
+              <DropdownMenuItem onClick={() => onCreate({ kind: "new", product, month: column.ym, date })}>
                 Новый заказ на производство…
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -412,7 +549,7 @@ const MonthCell = ({
         ) : null}
         <CellPopover
           page={page}
-          title={`Приход · ${formatYearMonthLabel(ym)}`}
+          title={`Приход · ${columnTitle(column)}`}
           productName={product.name}
           lines={cell.lines}
           quantity={cell.quantity}
@@ -427,8 +564,9 @@ const MonthCell = ({
 const ProductRow = ({
   product,
   depth,
-  months,
-  currentYm,
+  columns,
+  currentKey,
+  today,
   ownerSet,
   plantId,
   page,
@@ -436,8 +574,9 @@ const ProductRow = ({
 }: {
   product: OutputCalendarProduct;
   depth: number;
-  months: YearMonth[];
-  currentYm: YearMonth;
+  columns: CalendarColumn[];
+  currentKey: number;
+  today: string;
   ownerSet: Set<string>;
   plantId: string | null;
   page: OutputCalendarPage;
@@ -500,20 +639,19 @@ const ProductRow = ({
           />
         </div>
       </td>
-      {months.map((ym) => {
-        const cell = monthCell(product.id, ym, page.outputLines, ownerSet, plantId);
-        const curKey = ymKey(currentYm);
-        const key = ymKey(ym);
+      {columns.map((column) => {
+        const cell = periodCell(product.id, column.period, page.outputLines, ownerSet, plantId);
+        const isPast = isPastColumn(column, currentKey, today);
         return (
-          <MonthCell
-            key={`${product.id}-${key}`}
+          <PeriodCell
+            key={`${product.id}-${column.key}`}
             page={page}
             product={product}
-            ym={ym}
-            current={key === curKey}
-            isPast={key < curKey}
+            column={column}
+            current={isCurrentColumn(column, currentKey, today)}
+            isPast={isPast}
             cell={cell}
-            showPlus={key >= curKey}
+            showPlus={!isPast}
             openOrders={orders}
             onCreate={onCreate}
           />
@@ -526,79 +664,112 @@ const ProductRow = ({
 /** Nested category rows stack under the sticky header, one row per level. */
 const groupStickyTop = categoryGroupStickyTop;
 
-const GroupRows = ({
-  node,
-  months,
-  currentYm,
-  ownerSet,
-  plantId,
-  page,
-  collapsed,
-  onToggleCollapse,
-  onSetCollapsed,
-  onCreate,
-  stickyIds,
-}: {
-  node: CategoryTreeNode<OutputCalendarProduct>;
-  months: YearMonth[];
-  currentYm: YearMonth;
-  ownerSet: Set<string>;
-  plantId: string | null;
+type RowContext = {
+  columns: CalendarColumn[];
+  currentKey: number;
+  today: string;
   page: OutputCalendarPage;
   collapsed: Set<string>;
   onToggleCollapse: (id: string) => void;
+  stickyIds: Set<string>;
+};
+
+const GroupHeaderRow = ({
+  id,
+  depth,
+  title,
+  count,
+  colSpan,
+  collapsed,
+  stickyTop,
+  onToggle,
+  tools,
+}: {
+  id: string;
+  depth: number;
+  title: string;
+  count: string;
+  colSpan: number;
+  collapsed: boolean;
+  stickyTop: string | undefined;
+  onToggle: () => void;
+  tools?: ReactNode;
+}) => (
+  <tr
+    data-group-id={id}
+    data-group-depth={depth}
+    className="group/category cursor-pointer select-none hover:bg-transparent"
+    onClick={onToggle}
+  >
+    <td
+      className={cn(
+        IDENTITY_CELL,
+        "h-8 border-b border-r border-border bg-zinc-50 py-0 font-semibold whitespace-nowrap",
+        stickyTop && "z-[16]",
+      )}
+      style={{ paddingLeft: 8 + depth * 14, top: stickyTop }}
+      colSpan={1}
+    >
+      <button
+        type="button"
+        aria-expanded={!collapsed}
+        className="inline-flex items-center gap-1"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggle();
+        }}
+      >
+        {collapsed ? (
+          <ChevronRight className="size-3 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="size-3 text-muted-foreground" />
+        )}
+        {title}
+        <span className="font-normal text-muted-foreground">· {count}</span>
+      </button>
+    </td>
+    <td
+      className={cn("h-8 border-b border-r border-border bg-zinc-50 px-2 py-0", stickyTop && "sticky z-[15]")}
+      style={{ top: stickyTop }}
+      colSpan={colSpan - 1}
+    >
+      {tools}
+    </td>
+  </tr>
+);
+
+const GroupRows = ({
+  node,
+  ownerSet,
+  plantId,
+  onSetCollapsed,
+  onCreate,
+  ...ctx
+}: RowContext & {
+  node: CategoryTreeNode<OutputCalendarProduct>;
+  ownerSet: Set<string>;
+  plantId: string | null;
   onSetCollapsed: (ids: string[], collapsed: boolean) => void;
   onCreate: (target: CreateDialogTarget) => void;
-  stickyIds: Set<string>;
 }) => {
+  const { collapsed, onToggleCollapse, stickyIds, columns } = ctx;
   const isCollapsed = collapsed.has(node.id);
   const stickyTop = stickyIds.has(node.id) ? groupStickyTop(node.depth) : undefined;
   const descendants = descendantCategoryIds(node);
   const anyCollapsedInside = isCollapsed || descendants.some((id) => collapsed.has(id));
-  const colSpan = 5 + months.length;
   return (
     <Fragment>
-      <tr
-        data-group-id={node.id}
-        data-group-depth={node.depth}
-        className="group/category cursor-pointer select-none hover:bg-transparent"
-        onClick={() => onToggleCollapse(node.id)}
-      >
-        <td
-          className={cn(
-            IDENTITY_CELL,
-            "h-8 border-b border-r border-border bg-zinc-50 py-0 font-semibold whitespace-nowrap",
-            stickyTop && "z-[16]",
-          )}
-          style={{ paddingLeft: 8 + node.depth * 14, top: stickyTop }}
-          colSpan={1}
-        >
-          <button
-            type="button"
-            aria-expanded={!isCollapsed}
-            className="inline-flex items-center gap-1"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleCollapse(node.id);
-            }}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="size-3 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="size-3 text-muted-foreground" />
-            )}
-            {node.name}
-            <span className="font-normal text-muted-foreground">
-              · {pluralTovar(node.productCount)}
-            </span>
-          </button>
-        </td>
-        <td
-          className={cn("h-8 border-b border-r border-border bg-zinc-50 px-2 py-0", stickyTop && "sticky z-[15]")}
-          style={{ top: stickyTop }}
-          colSpan={colSpan - 1}
-        >
-          {descendants.length > 0 ? (
+      <GroupHeaderRow
+        id={node.id}
+        depth={node.depth}
+        title={node.name}
+        count={pluralTovar(node.productCount)}
+        colSpan={5 + columns.length}
+        collapsed={isCollapsed}
+        stickyTop={stickyTop}
+        onToggle={() => onToggleCollapse(node.id)}
+        tools={
+          descendants.length > 0 ? (
             <button
               type="button"
               className="pointer-events-none inline-flex items-center gap-1 rounded px-1 text-xs font-normal text-muted-foreground opacity-0 group-hover/category:pointer-events-auto group-hover/category:opacity-100 hover:bg-zinc-200/70 hover:text-foreground focus-visible:pointer-events-auto focus-visible:opacity-100"
@@ -618,9 +789,9 @@ const GroupRows = ({
               )}
               {anyCollapsedInside ? "Развернуть всё" : "Свернуть подкатегории"}
             </button>
-          ) : null}
-        </td>
-      </tr>
+          ) : null
+        }
+      />
       {!isCollapsed ? (
         <>
           {node.products.map((product) => (
@@ -628,11 +799,12 @@ const GroupRows = ({
               key={`${node.id}-${product.id}`}
               product={product}
               depth={node.depth}
-              months={months}
-              currentYm={currentYm}
+              columns={columns}
+              currentKey={ctx.currentKey}
+              today={ctx.today}
               ownerSet={ownerSet}
               plantId={plantId}
-              page={page}
+              page={ctx.page}
               onCreate={onCreate}
             />
           ))}
@@ -640,16 +812,11 @@ const GroupRows = ({
             <GroupRows
               key={child.id}
               node={child}
-              months={months}
-              currentYm={currentYm}
               ownerSet={ownerSet}
               plantId={plantId}
-              page={page}
-              collapsed={collapsed}
-              onToggleCollapse={onToggleCollapse}
               onSetCollapsed={onSetCollapsed}
               onCreate={onCreate}
-              stickyIds={stickyIds}
+              {...ctx}
             />
           ))}
         </>
@@ -658,21 +825,142 @@ const GroupRows = ({
   );
 };
 
+const pluralRows = (count: number, forms: [string, string, string]) => {
+  const n = Math.abs(count) % 100;
+  const n1 = n % 10;
+  const word = n > 10 && n < 20 ? forms[2] : n1 === 1 ? forms[0] : n1 >= 2 && n1 <= 4 ? forms[1] : forms[2];
+  return `${count} ${word}`;
+};
+
+const MoneyRowView = ({
+  row,
+  hiddenStatuses,
+  ...ctx
+}: RowContext & { row: MoneyRow; hiddenStatuses: UnpaidStatus[] }) => {
+  const { page, columns, currentKey, today } = ctx;
+  const currency = page.productionCurrency;
+  const unallocatedCell = moneyUnallocatedCell(row, currency);
+  return (
+    <tr className="hover:bg-transparent">
+      <td className={cn(IDENTITY_CELL, "border-b border-r border-border")} style={{ paddingLeft: 28 }}>
+        <EntityLink href={logisticsPath(row.kind === "plant" ? "plants" : "regions", row.id)}>{row.code}</EntityLink>
+        <span className="ml-2 text-[11px] text-muted-foreground">{currency}</span>
+      </td>
+      <td className="border-b border-r border-border px-2 py-1" />
+      <td className={cn(QTY_CELL, "border-b border-r border-border")} />
+      <td className={cn(QTY_CELL, "border-b border-r border-border whitespace-nowrap")}>
+        <div className="flex">
+          <MoneyUnallocatedPopover
+            row={row}
+            amount={unallocatedCell.amount}
+            entries={unallocatedCell.entries}
+            productionCurrency={currency}
+          />
+        </div>
+      </td>
+      <td className={cn(QTY_CELL, "border-b border-r border-border")} />
+      {columns.map((column) => {
+        const cell = moneyPeriodCell(row, column.period, hiddenStatuses, currency, today);
+        return (
+          <td
+            key={`${row.kind}-${row.id}-${column.key}`}
+            className={cn(
+              QTY_CELL,
+              "border-b border-r border-border whitespace-nowrap",
+              isCurrentColumn(column, currentKey, today) && "bg-zinc-50",
+              cell.overdue && "bg-red-50 font-medium text-red-700",
+            )}
+          >
+            <div className="flex min-h-[22px] items-center justify-end">
+              <MoneyPeriodPopover
+                title={`${row.kind === "plant" ? "Платежи" : "Поступления"} · ${columnTitle(column)}`}
+                row={row}
+                cell={cell}
+                productionCurrency={currency}
+              />
+            </div>
+          </td>
+        );
+      })}
+    </tr>
+  );
+};
+
+const MoneyGroupRows = ({
+  id,
+  title,
+  rows,
+  hiddenStatuses,
+  empty,
+  ...ctx
+}: RowContext & {
+  id: string;
+  title: string;
+  rows: MoneyRow[];
+  hiddenStatuses: UnpaidStatus[];
+  empty: string;
+}) => {
+  const isCollapsed = ctx.collapsed.has(id);
+  const stickyTop = ctx.stickyIds.has(id) ? groupStickyTop(0) : undefined;
+  return (
+    <Fragment>
+      <GroupHeaderRow
+        id={id}
+        depth={0}
+        title={title}
+        count={`${pluralRows(rows.length, ["строка", "строки", "строк"])} · ${ctx.page.productionCurrency}`}
+        colSpan={5 + ctx.columns.length}
+        collapsed={isCollapsed}
+        stickyTop={stickyTop}
+        onToggle={() => ctx.onToggleCollapse(id)}
+      />
+      {!isCollapsed ? (
+        rows.length > 0 ? (
+          rows.map((row) => (
+            <MoneyRowView key={`${row.kind}-${row.id}`} row={row} hiddenStatuses={hiddenStatuses} {...ctx} />
+          ))
+        ) : (
+          <tr className="hover:bg-transparent">
+            <td
+              className={cn(IDENTITY_CELL, "border-b border-r border-border text-muted-foreground")}
+              style={{ paddingLeft: 28 }}
+            >
+              {empty}
+            </td>
+            <td className="border-b border-border" colSpan={4 + ctx.columns.length} />
+          </tr>
+        )
+      ) : null}
+    </Fragment>
+  );
+};
+
+const HEAD_CELL = "sticky top-0 z-20 border-b border-r border-border bg-zinc-50";
+
 export const OutputCalendarMatrix = ({
   page,
   filter,
   plantId,
+  plantPaymentsFilter,
+  incomingFilter,
   collapsed,
   onToggleCollapse,
   onSetCollapsed,
+  expandedMonths,
+  onToggleMonth,
   onCreate,
 }: OutputCalendarMatrixProps) => {
   const currentYm = currentYearMonth();
+  const currentKey = ymKey(currentYm);
+  const today = todayIso();
   const ownerSet = useMemo(() => buildOwnerSet(filter, page), [filter, page]);
   const months = useMemo(
-    () => computeMonthRange(page.outputLines),
-    [page.outputLines],
+    () => computeMonthRange(page.outputLines, new Date(), unpaidPaymentDueDates(page)),
+    [page],
   );
+  const columns = useMemo(() => buildCalendarColumns(months, expandedMonths), [months, expandedMonths]);
+  const anyExpanded = months.some((ym) => expandedMonths.has(ymKey(ym)));
+  const headRowSpan = anyExpanded ? 2 : 1;
   const visibleIds = useMemo(() => {
     const set = new Set<string>();
     for (const product of page.products) {
@@ -686,25 +974,16 @@ export const OutputCalendarMatrix = ({
     () => buildCategoryTree(page.categories, page.products, visibleIds),
     [page.categories, page.products, visibleIds],
   );
-  const curKey = ymKey(currentYm);
+  const plantRows = useMemo(() => plantMoneyRows(page, plantPaymentsFilter), [page, plantPaymentsFilter]);
+  const regionRows = useMemo(() => regionMoneyRows(page, incomingFilter), [page, incomingFilter]);
   const { scrollRef, headRef, stickyIds, onScroll, scrollStyle } = useStickyCategoryRows({
     collapsed,
     roots,
     uncategorized,
   });
 
-  const groupProps = {
-    months,
-    currentYm,
-    ownerSet,
-    plantId,
-    page,
-    collapsed,
-    onToggleCollapse,
-    onSetCollapsed,
-    onCreate,
-    stickyIds,
-  };
+  const ctx: RowContext = { columns, currentKey, today, page, collapsed, onToggleCollapse, stickyIds };
+  const groupProps = { ...ctx, ownerSet, plantId, onSetCollapsed, onCreate };
 
   return (
     <div
@@ -717,31 +996,79 @@ export const OutputCalendarMatrix = ({
       <table className="w-full min-w-[900px] border-separate border-spacing-0 text-xs">
         <thead ref={headRef}>
           <tr>
-            <th className={cn(IDENTITY_HEAD, "sticky top-0 border-b border-r border-border")}>Товар</th>
-            <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50 text-left")}>
+            <th rowSpan={headRowSpan} className={cn(IDENTITY_HEAD, "sticky top-0 border-b border-r border-border")}>
+              Товар
+            </th>
+            <th rowSpan={headRowSpan} className={cn(QTY_HEAD, HEAD_CELL, "text-left")}>
               Код завода
             </th>
-            <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50")}>Остаток</th>
-            <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50")}>
+            <th rowSpan={headRowSpan} className={cn(QTY_HEAD, HEAD_CELL)}>
+              Остаток
+            </th>
+            <th rowSpan={headRowSpan} className={cn(QTY_HEAD, HEAD_CELL)}>
               Не распределено
             </th>
-            <th className={cn(QTY_HEAD, "sticky top-0 z-20 border-b border-r border-border bg-zinc-50")}>Без срока</th>
+            <th rowSpan={headRowSpan} className={cn(QTY_HEAD, HEAD_CELL)}>
+              Без срока
+            </th>
             {months.map((ym) => {
               const key = ymKey(ym);
+              const expanded = expandedMonths.has(key);
               return (
                 <th
                   key={key}
+                  rowSpan={expanded ? 1 : headRowSpan}
+                  colSpan={expanded ? columns.filter((c) => c.kind === "day" && ymKey(c.ym) === key).length : 1}
                   className={cn(
                     QTY_HEAD,
-                    "sticky top-0 z-20 border-b border-r border-border bg-zinc-50",
-                    key === curKey && "bg-zinc-100",
+                    HEAD_CELL,
+                    "p-0",
+                    key === currentKey && "bg-zinc-100",
+                    expanded && "text-center",
                   )}
                 >
-                  {formatYearMonthLabel(ym)}
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    title={expanded ? "Свернуть месяц" : "Раскрыть по дням"}
+                    onClick={() => onToggleMonth(key)}
+                    className={cn(
+                      "inline-flex w-full items-center gap-1 px-2 py-1.5 whitespace-nowrap hover:bg-zinc-200/60",
+                      expanded ? "justify-center" : "justify-end",
+                    )}
+                  >
+                    {expanded ? (
+                      <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
+                    ) : (
+                      <ChevronRight className="size-3 text-muted-foreground" aria-hidden />
+                    )}
+                    {formatYearMonthLabel(ym)}
+                  </button>
                 </th>
               );
             })}
           </tr>
+          {anyExpanded ? (
+            <tr>
+              {columns.flatMap((column) =>
+                column.kind === "day"
+                  ? [
+                      <th
+                        key={column.key}
+                        className={cn(
+                          "sticky z-20 min-w-10 border-b border-r border-border bg-zinc-50 px-1 py-1 text-center text-[11px] font-medium text-zinc-700 tabular-nums",
+                          column.iso === today && "bg-zinc-100 text-foreground",
+                        )}
+                        style={{ top: "var(--calendar-head-h-row, 0px)" }}
+                        title={formatOutputDate(column.iso)}
+                      >
+                        {column.day}
+                      </th>,
+                    ]
+                  : [],
+              )}
+            </tr>
+          ) : null}
         </thead>
         {roots.map((node) => (
           <tbody key={node.id}>
@@ -763,6 +1090,26 @@ export const OutputCalendarMatrix = ({
             />
           </tbody>
         ) : null}
+        <tbody>
+          <MoneyGroupRows
+            id={MONEY_PLANTS_GROUP_ID}
+            title="Платежи заводам"
+            rows={plantRows}
+            hiddenStatuses={plantPaymentsFilter.hiddenStatuses}
+            empty="Нет неоплаченных платежей заводам"
+            {...ctx}
+          />
+        </tbody>
+        <tbody>
+          <MoneyGroupRows
+            id={MONEY_REGIONS_GROUP_ID}
+            title="Поступления от клиентов"
+            rows={regionRows}
+            hiddenStatuses={incomingFilter.hiddenStatuses}
+            empty="Нет ожидаемых поступлений"
+            {...ctx}
+          />
+        </tbody>
       </table>
       {visibleIds.size === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-muted-foreground">Нет товаров для отображения</p>

@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { preferKorportalMediaConversion } from "./lib/korportal-media-url.mjs";
-import { seedLogisticsStories } from "./lib/seed-logistics-stories.mjs";
+import { seedLogisticsStories, seedOrderMoney } from "./lib/seed-logistics-stories.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const home = process.env.HOME || process.env.USERPROFILE || "";
@@ -45,19 +45,22 @@ const hashSeed = (seed) => {
 
 const inferDealer = (seed) => 2490 + (hashSeed(seed) % 90) * 100;
 
+/** `rate` — units per 1 USD: the snapshot every seeded order gets. */
 const CURRENCIES = [
-  { code: "USD", name: "Доллар США" },
-  { code: "CNY", name: "Юань" },
-  { code: "EUR", name: "Евро" },
-  { code: "RUB", name: "Российский рубль" },
-  { code: "AED", name: "Дирхам ОАЭ" },
-  { code: "KZT", name: "Тенге" },
-  { code: "BYN", name: "Белорусский рубль" },
-  { code: "UZS", name: "Сум" },
-  { code: "MXN", name: "Мексиканское песо" },
-  { code: "INR", name: "Индийская рупия" },
-  { code: "OMR", name: "Оманский риал" },
+  { code: "USD", name: "Доллар США", rate: 1 },
+  { code: "CNY", name: "Юань", rate: 7.12 },
+  { code: "EUR", name: "Евро", rate: 0.86 },
+  { code: "RUB", name: "Российский рубль", rate: 82.5 },
+  { code: "AED", name: "Дирхам ОАЭ", rate: 3.6725 },
+  { code: "KZT", name: "Тенге", rate: 480 },
+  { code: "BYN", name: "Белорусский рубль", rate: 3.27 },
+  { code: "UZS", name: "Сум", rate: 12650 },
+  { code: "MXN", name: "Мексиканское песо", rate: 18.4 },
+  { code: "INR", name: "Индийская рупия", rate: 88.2 },
+  { code: "OMR", name: "Оманский риал", rate: 0.385 },
 ];
+
+const PRODUCTION_CURRENCY = "CNY";
 
 const REGION_GROUPS = [
   { code: "cis", name: "СНГ", sort_order: 10 },
@@ -101,6 +104,8 @@ if (!url || !serviceKey) {
 }
 
 const wipeSql = `truncate table
+  public.store_order_payment,
+  public.store_order_money,
   public.store_stock_transaction,
   public.store_document_product_line,
   public.store_document_history,
@@ -185,13 +190,16 @@ const postBatch = async (table, rows) => {
   }
 };
 
-// Currencies (idempotent upsert by code)
+// Currencies (idempotent upsert by code) with demo rates
 for (const row of CURRENCIES) {
   const existing = await rest("GET", `store_currency?code=eq.${row.code}&select=id`);
   if (!existing?.[0]) {
     await rest("POST", "store_currency", row, "return=minimal");
+  } else {
+    await rest("PATCH", `store_currency?code=eq.${row.code}`, { rate: row.rate }, "return=minimal");
   }
 }
+await rpc("store_set_production_currency", { p_currency_code: PRODUCTION_CURRENCY });
 const currencyRows = await rest("GET", "store_currency?select=id,code&deleted_at=is.null");
 const currencyIdByCode = new Map(currencyRows.map((row) => [row.code, row.id]));
 const cnyId = currencyIdByCode.get("CNY");
@@ -416,8 +424,10 @@ const stories = await seedLogisticsStories({
   warehouseIdByOld,
 });
 
+const money = await seedOrderMoney({ url, serviceKey });
+
 console.log(
-  `seed_ok products=${snapshot.products.length} categories=${categoryIdByOld.size} product_categories=${productCategoryRows.length} plants=${snapshot.plants.length} warehouses=${snapshot.warehouses.length} customer_orders=${seededOrders} regions=${regionIdByCode.size} prices=${priceRows.length} statuses=${statusRows.length} story_orders=${stories.orders}`,
+  `seed_ok products=${snapshot.products.length} categories=${categoryIdByOld.size} product_categories=${productCategoryRows.length} plants=${snapshot.plants.length} warehouses=${snapshot.warehouses.length} customer_orders=${seededOrders} regions=${regionIdByCode.size} prices=${priceRows.length} statuses=${statusRows.length} story_orders=${stories.orders} money_orders=${money.orders} payments=${money.payments}`,
 );
 
 /** Spread history changed_at monotonically after each document's created_at, at most ~2 days apart, never past now (deterministic). */

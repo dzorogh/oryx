@@ -75,6 +75,7 @@ import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-g
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { documentLedgerRows } from "@/features/logistics/ui/document-ledger";
+import { OrderAmountInput, OrderMoneyTab, summarizeOrderMoney } from "@/features/logistics/ui/order-money-tab";
 
 const LIST_STATUSES = PRODUCTION_STATUSES.filter((status) => status !== "cancelled");
 
@@ -281,7 +282,7 @@ export const ProductionOrdersPage = () => {
 
 export const ProductionOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+  const { snapshot, balances, orderMoney, isLoading, error, reload } = useLogisticsStore({
     kind: "document",
     documentKind: "production_order",
     ref: String(params.orderId ?? ""),
@@ -366,6 +367,7 @@ export const ProductionOrderDetailPage = () => {
       })
     : [];
   const completedAt = order ? documentCompletedAt(snapshot, order.id) : null;
+  const moneySummary = order ? summarizeOrderMoney(snapshot, order.id, orderMoney) : null;
   const workflowStatuses = (["draft", "planned", "in_progress", "done"] as const) satisfies readonly ProductionStatus[];
 
 
@@ -490,6 +492,22 @@ export const ProductionOrderDetailPage = () => {
                 />
               ),
             },
+            {
+              label: "Сумма заказа",
+              value:
+                moneySummary && orderMoney.money ? (
+                  <OrderAmountInput
+                    variant="meta"
+                    documentId={order.id}
+                    amount={orderMoney.money.amount}
+                    estimated={moneySummary.estimated}
+                    currencyCode={moneySummary.currencyCode}
+                    reload={reload}
+                  />
+                ) : (
+                  <DocumentMetaEmpty />
+                ),
+            },
             { label: "Создан", value: formatMetaTimestamp(order.createdAt) },
             {
               label: "Завершён",
@@ -547,6 +565,12 @@ export const ProductionOrderDetailPage = () => {
                   />
                 </DocumentSection>
               ),
+            },
+            {
+              id: "money",
+              label: "Деньги",
+              count: orderMoney.payments.length,
+              panel: <OrderMoneyTab snapshot={snapshot} documentId={order.id} context={orderMoney} reload={reload} />,
             },
             {
               id: "outputs",

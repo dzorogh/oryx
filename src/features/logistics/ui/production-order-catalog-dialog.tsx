@@ -14,6 +14,7 @@ import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
+import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
 
 const stockAt = (balances: StockBalance[], productId: string, warehouseId: string) =>
   balances
@@ -72,6 +73,8 @@ export const ProductionOrderCatalogDialog = ({
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const wasOpen = useRef(false);
+  const floatRates = useFloatRatesOnOpen(open && !order);
+  const ratesLoading = !order && floatRates.status === "loading";
 
   useEffect(() => {
     const becameOpen = open && !wasOpen.current;
@@ -113,7 +116,7 @@ export const ProductionOrderCatalogDialog = ({
   });
 
   const submit = async () => {
-    if (submitting || !plantId || lines.length === 0) return;
+    if (submitting || !plantId || lines.length === 0 || ratesLoading) return;
     setSubmitting(true);
     setServerError(null);
     try {
@@ -136,6 +139,7 @@ export const ProductionOrderCatalogDialog = ({
         plantId,
         expectedEndOn: expectedEndOn || null,
         lines,
+        rates: floatRates.rates,
       });
       onOpenChange(false);
       router.push(logisticsPath("production-orders", created.sequenceNumber ?? created.id));
@@ -167,6 +171,7 @@ export const ProductionOrderCatalogDialog = ({
             disabled={Boolean(order)}
           />
           {order ? null : <ExpectedEndField optional value={expectedEndOn} onChange={setExpectedEndOn} />}
+          {order ? null : <FloatRatesNote state={floatRates} className="basis-full" />}
         </div>
       }
       panel={
@@ -186,8 +191,8 @@ export const ProductionOrderCatalogDialog = ({
       }
       submitLabel={order ? "Добавить" : "Создать PO"}
       onSubmit={() => void submit()}
-      submitDisabled={!plantId || lines.length === 0}
-      disabledReason={!plantId ? "Выберите завод" : "Введите количество"}
+      submitDisabled={!plantId || lines.length === 0 || ratesLoading}
+      disabledReason={!plantId ? "Выберите завод" : lines.length === 0 ? "Введите количество" : "Загружаем курсы валют…"}
       submitting={submitting}
       serverError={serverError}
       dirty={enteredQuantityKeys(quantities).length > 0}

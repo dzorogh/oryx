@@ -1,5 +1,20 @@
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatLogisticsCode, regionCatalogCode } from "@/features/logistics/logistics-codes";
 import { OUTPUT_STATUS_LABELS } from "@/features/logistics/logistics-labels";
+import {
+  allocatedAmount,
+  convert,
+  estimatedCostFromTotals,
+  isPaymentOverdue,
+  isPaymentStatus,
+  mapOrderRates,
+  MONEY_EPSILON,
+  orderTotal,
+  todayIso,
+  unallocated,
+  type MoneyLineTotal,
+  type OrderRates,
+  type PaymentStatus,
+} from "@/features/logistics/order-money";
 
 export type OutputCalendarCategory = {
   id: string;
@@ -17,6 +32,8 @@ export type OutputCalendarProduct = {
 
 export type OutputCalendarRegion = {
   id: string;
+  /** Stored `store_region.code` (fallback `REG-{id}`). */
+  code: string;
   name: string;
   ownerId: string;
 };
@@ -67,8 +84,34 @@ export type OutputCalendarOpenOrder = {
   remaining: number;
 };
 
+export type OutputCalendarMoneyOrder = {
+  id: string;
+  kind: "production_order" | "customer_order";
+  number: string;
+  sequenceNumber: string;
+  status: string;
+  /** Production order plant. */
+  plantId: string | null;
+  /** Customer order region. */
+  regionId: string | null;
+  currencyCode: string;
+  amount: number | null;
+  rates: OrderRates;
+  lineTotals: MoneyLineTotal[];
+};
+
+export type OutputCalendarPayment = {
+  id: string;
+  orderId: string;
+  dueOn: string;
+  amount: number;
+  status: PaymentStatus;
+};
+
 export type OutputCalendarPage = {
   freeOwnerId: string;
+  /** All calendar sums are in this currency. */
+  productionCurrency: string;
   categories: OutputCalendarCategory[];
   products: OutputCalendarProduct[];
   plants: Array<{ id: string }>;
@@ -77,6 +120,10 @@ export type OutputCalendarPage = {
   stock: OutputCalendarStockRow[];
   outputLines: OutputCalendarOutputLine[];
   openOrders: OutputCalendarOpenOrder[];
+  /** Non-cancelled production and customer orders with their money facts. */
+  moneyOrders: OutputCalendarMoneyOrder[];
+  /** Every payment of `moneyOrders`, paid included. */
+  payments: OutputCalendarPayment[];
 };
 
 export type OutputCalendarOwnerFilter = {
@@ -110,6 +157,7 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
 
   return {
     freeOwnerId: asId(row.freeOwnerId),
+    productionCurrency: row.productionCurrency ? String(row.productionCurrency) : "USD",
     categories: list("categories").map((item) => {
       const c = item as Record<string, unknown>;
       return {
@@ -139,6 +187,7 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
       const r = item as Record<string, unknown>;
       return {
         id: asId(r.id),
+        code: regionCatalogCode(r.code, asId(r.id)),
         name: String(r.name ?? ""),
         ownerId: asId(r.ownerId),
       };
@@ -196,6 +245,39 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
         productId: asId(o.productId),
         remaining: asNumber(o.remaining),
       };
+    }),
+    moneyOrders: list("moneyOrders").map((item) => {
+      const o = item as Record<string, unknown>;
+      const totals = Array.isArray(o.lineTotals) ? (o.lineTotals as Array<Record<string, unknown>>) : [];
+      return {
+        id: asId(o.id),
+        kind: o.kind === "customer_order" ? ("customer_order" as const) : ("production_order" as const),
+        number: String(o.number ?? ""),
+        sequenceNumber: asId(o.sequenceNumber),
+        status: String(o.status ?? ""),
+        plantId: asNullableId(o.plantId),
+        regionId: asNullableId(o.regionId),
+        currencyCode: String(o.currencyCode ?? "USD"),
+        amount: o.amount == null || o.amount === "" ? null : asNumber(o.amount),
+        rates: mapOrderRates(o.rates),
+        lineTotals: totals.map((t) => ({
+          currencyCode: t.currencyCode == null ? null : String(t.currencyCode),
+          total: asNumber(t.total),
+        })),
+      };
+    }),
+    payments: list("payments").flatMap((item) => {
+      const p = item as Record<string, unknown>;
+      if (!isPaymentStatus(p.status)) return [];
+      return [
+        {
+          id: asId(p.id),
+          orderId: asId(p.orderId),
+          dueOn: String(p.dueOn ?? "").slice(0, 10),
+          amount: asNumber(p.amount),
+          status: p.status,
+        },
+      ];
     }),
   };
 };
@@ -307,17 +389,25 @@ export const lastDayOfMonthIso = (ym: YearMonth): string => {
   return `${ym.year}-${String(ym.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 };
 
+/**
+ * Month columns: from the earliest overdue output or unpaid payment (else the current month)
+ * to the latest of both, at least current month + 5. `paymentDueDates` — unpaid payments of non-cancelled orders.
+ */
 export const computeMonthRange = (
   lines: Array<Pick<OutputCalendarOutputLine, "expectedEndOn" | "status">>,
   today: Date = new Date(),
+  paymentDueDates: string[] = [],
 ): YearMonth[] => {
   const cur = currentYearMonth(today);
   const curKey = ymKey(cur);
   let earliestOverdue: number | null = null;
   let latest = curKey;
-  for (const line of lines) {
-    if (line.status !== "draft") continue;
-    const ym = yearMonthOf(line.expectedEndOn);
+  const dates = [
+    ...lines.filter((line) => line.status === "draft").map((line) => line.expectedEndOn),
+    ...paymentDueDates,
+  ];
+  for (const date of dates) {
+    const ym = yearMonthOf(date);
     if (!ym) continue;
     const key = ymKey(ym);
     if (key < curKey) {
@@ -352,9 +442,46 @@ export type CellBreakdown = {
   hasFresh: boolean;
 };
 
-export const monthCell = (
+/** Inclusive ISO date range of a month or day column. */
+export type CalendarPeriod = { from: string; to: string };
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+export const dayIso = (ym: YearMonth, day: number): string => `${ym.year}-${pad2(ym.month)}-${pad2(day)}`;
+
+export const daysInMonth = (ym: YearMonth): number => new Date(ym.year, ym.month, 0).getDate();
+
+export const monthPeriod = (ym: YearMonth): CalendarPeriod => ({
+  from: dayIso(ym, 1),
+  to: dayIso(ym, daysInMonth(ym)),
+});
+
+export const inPeriod = (iso: string | null | undefined, period: CalendarPeriod): boolean => {
+  if (!iso) return false;
+  const date = iso.slice(0, 10);
+  return date >= period.from && date <= period.to;
+};
+
+export type CalendarColumn =
+  | { kind: "month"; key: string; ym: YearMonth; period: CalendarPeriod }
+  | { kind: "day"; key: string; ym: YearMonth; day: number; iso: string; period: CalendarPeriod };
+
+/** Collapsed months stay one column; each expanded month becomes a column per day (empty days included). */
+export const buildCalendarColumns = (months: YearMonth[], expanded: Set<number>): CalendarColumn[] =>
+  months.flatMap((ym): CalendarColumn[] => {
+    const key = ymKey(ym);
+    if (!expanded.has(key)) {
+      return [{ kind: "month", key: `m${key}`, ym, period: monthPeriod(ym) }];
+    }
+    return Array.from({ length: daysInMonth(ym) }, (_, index) => {
+      const iso = dayIso(ym, index + 1);
+      return { kind: "day" as const, key: `d${iso}`, ym, day: index + 1, iso, period: { from: iso, to: iso } };
+    });
+  });
+
+export const periodCell = (
   productId: string,
-  ym: YearMonth,
+  period: CalendarPeriod,
   lines: OutputCalendarOutputLine[],
   ownerSet: Set<string>,
   plantId: string | null,
@@ -366,14 +493,21 @@ export const monthCell = (
     if (line.productId !== productId) continue;
     if (line.status !== "draft") continue;
     if (!outputPassesFilters(line, ownerSet, plantId)) continue;
-    const lineYm = yearMonthOf(line.expectedEndOn);
-    if (!lineYm || lineYm.year !== ym.year || lineYm.month !== ym.month) continue;
+    if (!inPeriod(line.expectedEndOn, period)) continue;
     matched.push(line);
     quantity += line.quantity;
     if (line.isNew) hasFresh = true;
   }
   return { quantity, lines: matched, hasFresh };
 };
+
+export const monthCell = (
+  productId: string,
+  ym: YearMonth,
+  lines: OutputCalendarOutputLine[],
+  ownerSet: Set<string>,
+  plantId: string | null,
+): CellBreakdown => periodCell(productId, monthPeriod(ym), lines, ownerSet, plantId);
 
 export const noDateCell = (
   productId: string,
@@ -505,4 +639,241 @@ export const formatOutputDate = (iso: string | null): string => {
   const [y, m, d] = iso.slice(0, 10).split("-");
   if (!y || !m || !d) return "—";
   return `${d}.${m}.${y}`;
+};
+
+// ---------------------------------------------------------------------------
+// Money rows: «Платежи заводам» (row per plant) and «Поступления от клиентов» (row per region)
+// ---------------------------------------------------------------------------
+
+export type UnpaidStatus = Exclude<PaymentStatus, "paid">;
+
+export const UNPAID_STATUSES: readonly UnpaidStatus[] = ["planned", "invoiced"];
+
+/** Exclusion sets: empty — default (everything shown); new plants after a refresh stay visible. */
+export type PlantPaymentsFilter = { hiddenPlantIds: string[]; hiddenStatuses: UnpaidStatus[] };
+
+export type IncomingFilter = {
+  hiddenRegionIds: string[];
+  hiddenOrderIds: string[];
+  hiddenStatuses: UnpaidStatus[];
+};
+
+export const defaultPlantPaymentsFilter = (): PlantPaymentsFilter => ({ hiddenPlantIds: [], hiddenStatuses: [] });
+
+export const defaultIncomingFilter = (): IncomingFilter => ({
+  hiddenRegionIds: [],
+  hiddenOrderIds: [],
+  hiddenStatuses: [],
+});
+
+export const plantPaymentsFilterChanged = (filter: PlantPaymentsFilter): boolean =>
+  filter.hiddenPlantIds.length > 0 || filter.hiddenStatuses.length > 0;
+
+export const incomingFilterChanged = (filter: IncomingFilter): boolean =>
+  filter.hiddenRegionIds.length > 0 || filter.hiddenOrderIds.length > 0 || filter.hiddenStatuses.length > 0;
+
+export const outputsFilterChanged = (
+  filter: OutputCalendarOwnerFilter,
+  page: Pick<OutputCalendarPage, "regions" | "customerOrders">,
+  plantId: string | null,
+): boolean => ownersChangedCount(filter, page) > 0 || plantId != null;
+
+/** One order with money totals in its own currency. */
+export type MoneyOrderFacts = {
+  order: OutputCalendarMoneyOrder;
+  estimated: number;
+  total: number;
+  allocated: number;
+  /** «Не распределено по платежам»; negative when payments exceed the amount. */
+  rest: number;
+  payments: OutputCalendarPayment[];
+};
+
+export const moneyOrderFacts = (
+  order: OutputCalendarMoneyOrder,
+  payments: OutputCalendarPayment[],
+): MoneyOrderFacts => {
+  const own = payments.filter((payment) => payment.orderId === order.id);
+  const estimated = estimatedCostFromTotals(order.lineTotals, order.currencyCode, order.rates);
+  const total = orderTotal(order.amount, estimated);
+  return { order, estimated, total, allocated: allocatedAmount(own), rest: unallocated(total, own), payments: own };
+};
+
+/** Amount of an order payment in the production currency, by the order snapshot. */
+export const toProductionCurrency = (
+  amount: number,
+  order: Pick<OutputCalendarMoneyOrder, "currencyCode" | "rates">,
+  productionCurrency: string,
+): number => convert(amount, order.currencyCode, productionCurrency, order.rates) ?? 0;
+
+const isUnpaid = (payment: OutputCalendarPayment): payment is OutputCalendarPayment & { status: UnpaidStatus } =>
+  payment.status !== "paid";
+
+/** Due dates of unpaid payments of non-cancelled orders — they widen the month range. */
+export const unpaidPaymentDueDates = (page: Pick<OutputCalendarPage, "moneyOrders" | "payments">): string[] => {
+  const live = new Set(page.moneyOrders.filter((order) => order.status !== "cancelled").map((order) => order.id));
+  return page.payments.filter((payment) => live.has(payment.orderId) && isUnpaid(payment)).map((p) => p.dueOn);
+};
+
+export type MoneyRowKind = "plant" | "region";
+
+export type MoneyRow = {
+  kind: MoneyRowKind;
+  /** Plant id or region id. */
+  id: string;
+  code: string;
+  facts: MoneyOrderFacts[];
+};
+
+const byNumericId = (a: string, b: string) => Number(a) - Number(b) || a.localeCompare(b);
+
+const hasMoneyToShow = (facts: MoneyOrderFacts[], hiddenStatuses: UnpaidStatus[]): boolean =>
+  facts.some(
+    (fact) =>
+      fact.rest > MONEY_EPSILON ||
+      fact.payments.some((payment) => isUnpaid(payment) && !hiddenStatuses.includes(payment.status)),
+  );
+
+const liveFacts = (page: Pick<OutputCalendarPage, "moneyOrders" | "payments">, kind: OutputCalendarMoneyOrder["kind"]) =>
+  page.moneyOrders
+    .filter((order) => order.kind === kind && order.status !== "cancelled")
+    .map((order) => moneyOrderFacts(order, page.payments));
+
+const groupFacts = (facts: MoneyOrderFacts[], keyOf: (fact: MoneyOrderFacts) => string | null) => {
+  const groups = new Map<string, MoneyOrderFacts[]>();
+  for (const fact of facts) {
+    const key = keyOf(fact);
+    if (!key) continue;
+    groups.set(key, [...(groups.get(key) ?? []), fact]);
+  }
+  return groups;
+};
+
+/** Plants with unpaid payments or unallocated money; options of the «Платежи заводам» panel. */
+export const plantPaymentOptions = (page: Pick<OutputCalendarPage, "moneyOrders" | "payments">): string[] =>
+  [...groupFacts(liveFacts(page, "production_order"), (fact) => fact.order.plantId).entries()]
+    .filter(([, facts]) => hasMoneyToShow(facts, []))
+    .map(([id]) => id)
+    .sort(byNumericId);
+
+/** Customer orders with money to show; options of the «Поступления» panel. */
+export const incomingOrderOptions = (
+  page: Pick<OutputCalendarPage, "moneyOrders" | "payments">,
+): OutputCalendarMoneyOrder[] =>
+  liveFacts(page, "customer_order")
+    .filter((fact) => fact.order.regionId && hasMoneyToShow([fact], []))
+    .map((fact) => fact.order)
+    .sort((a, b) => byNumericId(a.sequenceNumber, b.sequenceNumber));
+
+export const incomingRegionOptions = (
+  page: Pick<OutputCalendarPage, "moneyOrders" | "payments" | "regions">,
+): OutputCalendarRegion[] => {
+  const ids = new Set(incomingOrderOptions(page).map((order) => order.regionId));
+  return page.regions.filter((region) => ids.has(region.id));
+};
+
+export const plantMoneyRows = (
+  page: Pick<OutputCalendarPage, "moneyOrders" | "payments">,
+  filter: PlantPaymentsFilter,
+): MoneyRow[] =>
+  [...groupFacts(liveFacts(page, "production_order"), (fact) => fact.order.plantId).entries()]
+    .filter(([plantId, facts]) => !filter.hiddenPlantIds.includes(plantId) && hasMoneyToShow(facts, filter.hiddenStatuses))
+    .sort(([a], [b]) => byNumericId(a, b))
+    .map(([plantId, facts]) => ({ kind: "plant", id: plantId, code: formatLogisticsCode("plant", plantId), facts }));
+
+export const regionMoneyRows = (
+  page: Pick<OutputCalendarPage, "moneyOrders" | "payments" | "regions">,
+  filter: IncomingFilter,
+): MoneyRow[] => {
+  const codeById = new Map(page.regions.map((region) => [region.id, region.code]));
+  const facts = liveFacts(page, "customer_order").filter((fact) => !filter.hiddenOrderIds.includes(fact.order.id));
+  return [...groupFacts(facts, (fact) => fact.order.regionId).entries()]
+    .filter(([regionId, group]) => !filter.hiddenRegionIds.includes(regionId) && hasMoneyToShow(group, filter.hiddenStatuses))
+    .sort(([a], [b]) => byNumericId(a, b))
+    .map(([regionId, group]) => ({
+      kind: "region",
+      id: regionId,
+      code: codeById.get(regionId) ?? regionCatalogCode(null, regionId),
+      facts: group,
+    }));
+};
+
+export type MoneyCellEntry = {
+  payment: OutputCalendarPayment;
+  order: OutputCalendarMoneyOrder;
+  overdue: boolean;
+  /** Production currency. */
+  converted: number;
+};
+
+export type MoneyCell = { amount: number; entries: MoneyCellEntry[]; overdue: boolean };
+
+/** Σ unpaid payments due in `period`, converted to the production currency by each order's snapshot. */
+export const moneyPeriodCell = (
+  row: MoneyRow,
+  period: CalendarPeriod,
+  hiddenStatuses: UnpaidStatus[],
+  productionCurrency: string,
+  today: string = todayIso(),
+): MoneyCell => {
+  const entries: MoneyCellEntry[] = [];
+  for (const fact of row.facts) {
+    for (const payment of fact.payments) {
+      if (!isUnpaid(payment) || hiddenStatuses.includes(payment.status)) continue;
+      if (!inPeriod(payment.dueOn, period)) continue;
+      entries.push({
+        payment,
+        order: fact.order,
+        overdue: isPaymentOverdue(payment, today),
+        converted: toProductionCurrency(payment.amount, fact.order, productionCurrency),
+      });
+    }
+  }
+  entries.sort((a, b) => a.payment.dueOn.localeCompare(b.payment.dueOn) || byNumericId(a.payment.id, b.payment.id));
+  return {
+    amount: entries.reduce((sum, entry) => sum + entry.converted, 0),
+    entries,
+    overdue: entries.some((entry) => entry.overdue),
+  };
+};
+
+export type MoneyUnallocatedEntry = MoneyOrderFacts & { converted: number };
+
+/** Σ max(0, «Не распределено по платежам») of the row's orders in the production currency. */
+export const moneyUnallocatedCell = (
+  row: MoneyRow,
+  productionCurrency: string,
+): { amount: number; entries: MoneyUnallocatedEntry[] } => {
+  const entries = row.facts
+    .filter((fact) => fact.rest > MONEY_EPSILON)
+    .map((fact) => ({ ...fact, converted: toProductionCurrency(fact.rest, fact.order, productionCurrency) }));
+  return { amount: entries.reduce((sum, entry) => sum + entry.converted, 0), entries };
+};
+
+// ---------------------------------------------------------------------------
+// «Считаем: …» — outputs filter only
+// ---------------------------------------------------------------------------
+
+const listWithMore = (items: string[], max = 3): string =>
+  items.length <= max ? items.join(", ") : `${items.slice(0, max).join(", ")} +${items.length - max}`;
+
+export const outputsFilterSummary = (
+  filter: OutputCalendarOwnerFilter,
+  page: Pick<OutputCalendarPage, "regions" | "customerOrders">,
+  plantId: string | null,
+): string => {
+  const parts: string[] = [];
+  if (filter.free) parts.push("Свободно");
+  const regionNames = page.regions.filter((r) => filter.regionIds.includes(r.id)).map((r) => r.name);
+  if (regionNames.length > 0) {
+    const label =
+      regionNames.length === page.regions.length ? "все регионы" : listWithMore(regionNames);
+    parts.push(filter.withRegionOrders ? `${label} (с заказами)` : label);
+  }
+  const orders = page.customerOrders.filter((o) => filter.orderIds.includes(o.id)).map((o) => o.number);
+  if (orders.length > 0) {
+    parts.push(orders.length === page.customerOrders.length ? "все заказы клиента" : listWithMore(orders));
+  }
+  const owners = parts.length > 0 ? parts.join(" + ") : "никого";
+  return `Считаем: ${owners}${plantId ? ` · ${formatLogisticsCode("plant", plantId)}` : ""}`;
 };

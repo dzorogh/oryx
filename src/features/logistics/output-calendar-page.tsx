@@ -6,19 +6,28 @@ import { toast } from "sonner";
 import { loadOutputCalendarPage } from "@/features/logistics/logistics-api";
 import { allCategoryGroupIds } from "@/features/logistics/category-tree";
 import {
+  defaultIncomingFilter,
   defaultOwnerFilter,
+  defaultPlantPaymentsFilter,
   plantFilterOptions,
+  type IncomingFilter,
   type OutputCalendarOwnerFilter,
   type OutputCalendarPage as OutputCalendarPageData,
+  type PlantPaymentsFilter,
 } from "@/features/logistics/output-calendar";
 import { OutputCalendarCreateDialog } from "@/features/logistics/ui/output-calendar-create-dialog";
 import {
+  MONEY_PLANTS_GROUP_ID,
+  MONEY_REGIONS_GROUP_ID,
   OutputCalendarMatrix,
   type CreateDialogTarget,
 } from "@/features/logistics/ui/output-calendar-matrix";
 import {
-  OutputCalendarOwnersPanel,
+  OutputCalendarIncomingPanel,
+  OutputCalendarOutputsPanel,
+  OutputCalendarPlantPaymentsPanel,
   OutputCalendarToolbar,
+  type CalendarPanel,
 } from "@/features/logistics/ui/output-calendar-toolbar";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
@@ -28,9 +37,13 @@ export const OutputCalendarPage = () => {
   const [page, setPage] = useState<OutputCalendarPageData | null>(null);
   const [filter, setFilter] = useState<OutputCalendarOwnerFilter | null>(null);
   const [plantId, setPlantId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [plantPaymentsFilter, setPlantPaymentsFilter] = useState<PlantPaymentsFilter>(defaultPlantPaymentsFilter);
+  const [incomingFilter, setIncomingFilter] = useState<IncomingFilter>(defaultIncomingFilter);
+  const [panel, setPanel] = useState<CalendarPanel | null>(null);
   const [orderSearch, setOrderSearch] = useState("");
+  const [incomingSearch, setIncomingSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [expandedMonths, setExpandedMonths] = useState<Set<number>>(() => new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +115,15 @@ export const OutputCalendarPage = () => {
     });
   };
 
+  const toggleMonth = (key: number) => {
+    setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   if (loading && !page) {
     return (
       <LogisticsPageShell crumbs={[{ label: "Календарь выпусков" }]}>
@@ -126,6 +148,8 @@ export const OutputCalendarPage = () => {
     );
   }
 
+  const closePanel = () => setPanel(null);
+
   return (
     <LogisticsPageShell crumbs={[{ label: "Календарь выпусков" }]}>
       <div className="flex w-full items-stretch gap-0">
@@ -134,12 +158,16 @@ export const OutputCalendarPage = () => {
             page={page}
             filter={filter}
             plantId={plantId}
-            plantOptions={plantOptions}
-            panelOpen={panelOpen}
-            onTogglePanel={() => setPanelOpen((v) => !v)}
-            onPlantChange={setPlantId}
+            plantPaymentsFilter={plantPaymentsFilter}
+            incomingFilter={incomingFilter}
+            panel={panel}
+            onTogglePanel={(next) => setPanel((current) => (current === next ? null : next))}
             onRefresh={() => void load({ soft: true })}
-            onCollapseAll={() => setCollapsed(new Set(allCategoryGroupIds(page.categories)))}
+            onCollapseAll={() =>
+              setCollapsed(
+                new Set([...allCategoryGroupIds(page.categories), MONEY_PLANTS_GROUP_ID, MONEY_REGIONS_GROUP_ID]),
+              )
+            }
             onExpandAll={() => setCollapsed(new Set())}
             refreshing={refreshing}
           />
@@ -147,30 +175,59 @@ export const OutputCalendarPage = () => {
             page={page}
             filter={filter}
             plantId={plantId}
+            plantPaymentsFilter={plantPaymentsFilter}
+            incomingFilter={incomingFilter}
             collapsed={collapsed}
             onToggleCollapse={toggleCollapse}
             onSetCollapsed={setCollapsedMany}
+            expandedMonths={expandedMonths}
+            onToggleMonth={toggleMonth}
             onCreate={setCreateTarget}
           />
         </div>
-        <OutputCalendarOwnersPanel
-          open={panelOpen}
-          page={page}
-          filter={filter}
-          orderSearch={orderSearch}
-          onOrderSearchChange={setOrderSearch}
-          onChange={setFilter}
-          onClose={() => setPanelOpen(false)}
-          onSelectAll={() => setFilter(defaultOwnerFilter(page))}
-          onReset={() =>
-            setFilter({
-              free: false,
-              regionIds: [],
-              withRegionOrders: true,
-              orderIds: [],
-            })
-          }
-        />
+        {panel === "outputs" ? (
+          <OutputCalendarOutputsPanel
+            page={page}
+            filter={filter}
+            plantId={plantId}
+            plantOptions={plantOptions}
+            orderSearch={orderSearch}
+            onOrderSearchChange={setOrderSearch}
+            onChange={setFilter}
+            onPlantChange={setPlantId}
+            onClose={closePanel}
+            onSelectAll={() => {
+              setFilter(defaultOwnerFilter(page));
+              setPlantId(null);
+            }}
+            onReset={() =>
+              setFilter({
+                free: false,
+                regionIds: [],
+                withRegionOrders: true,
+                orderIds: [],
+              })
+            }
+          />
+        ) : null}
+        {panel === "plants" ? (
+          <OutputCalendarPlantPaymentsPanel
+            page={page}
+            filter={plantPaymentsFilter}
+            onChange={setPlantPaymentsFilter}
+            onClose={closePanel}
+          />
+        ) : null}
+        {panel === "incoming" ? (
+          <OutputCalendarIncomingPanel
+            page={page}
+            filter={incomingFilter}
+            orderSearch={incomingSearch}
+            onOrderSearchChange={setIncomingSearch}
+            onChange={setIncomingFilter}
+            onClose={closePanel}
+          />
+        ) : null}
       </div>
       <OutputCalendarCreateDialog
         target={createTarget}

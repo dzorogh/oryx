@@ -616,6 +616,16 @@ export const seedLogisticsStories = async (args) => {
     ],
   });
 
+  // Cancelled in seedOrderMoney after its payments are recorded: payments stay in the card, not in the calendar.
+  await call("store_create_production_order", {
+    p_plant_id: plant("sunyee"),
+    p_status: "in_progress",
+    p_expected_end_on: "2026-10-30",
+    p_sequence_number: 908,
+    p_description: "Отменён: Hummer — платежи остались в карточке",
+    p_lines: [{ product_variant_id: v("hummer320"), quantity: 2 }],
+  });
+
   // ---------------------------------------------------------------------------
   // Calendar demo: open outputs on existing POs (for /store/logistics/calendar)
   // Sequences 930+ — live DB already has OUT-917…921 from earlier stories.
@@ -992,4 +1002,209 @@ export const seedLogisticsStories = async (args) => {
   await patch(`store_document?id=eq.${order901.id}`, { status: "done" });
 
   return { orders: 6 + bulkOrders.length };
+};
+
+const round2 = (value) => Math.round(value * 100) / 100;
+
+/** Mirrors `estimatedCost` of src/features/logistics/order-money.ts for seeding. */
+const estimated = (lines, orderCurrency, rates) =>
+  lines.reduce((sum, line) => {
+    const from = line.currencyCode ?? orderCurrency;
+    const total = Number(line.unit_price) * Number(line.quantity);
+    if (from === orderCurrency) return sum + total;
+    const rf = Number(rates[from]);
+    const rt = Number(rates[orderCurrency]);
+    return rf > 0 && rt > 0 ? sum + (total / rf) * rt : sum;
+  }, 0);
+
+const getAll = async (url, key, path) => {
+  const rows = [];
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await restGet(url, key, `${path}&limit=${pageSize}&offset=${offset}`);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+};
+
+/**
+ * Money demo (CAP-10): currencies, amounts and payment schedules on story orders; closed and JSON orders
+ * get one paid payment for the whole amount. Production currency CNY; today in the demo is late Sep 2026.
+ * @param {{ url: string, serviceKey: string }} args
+ */
+export const seedOrderMoney = async ({ url, serviceKey }) => {
+  const call = (name, body) => rpc(url, serviceKey, name, body);
+  const docs = await getAll(
+    url,
+    serviceKey,
+    "store_document?select=id,kind,sequence_number,status,created_at,expected_end_on&kind=in.(production_order,customer_order)&order=id",
+  );
+  const currencies = await restGet(url, serviceKey, "store_currency?select=id,code");
+  const codeById = new Map(currencies.map((row) => [String(row.id), row.code]));
+  const lines = await getAll(
+    url,
+    serviceKey,
+    "store_document_product_line?select=document_id,unit_price,quantity,currency_id&unit_price=not.is.null&order=id",
+  );
+  const linesByDoc = new Map();
+  for (const line of lines) {
+    const key = String(line.document_id);
+    linesByDoc.set(key, [
+      ...(linesByDoc.get(key) ?? []),
+      { ...line, currencyCode: line.currency_id == null ? null : codeById.get(String(line.currency_id)) ?? null },
+    ]);
+  }
+  const moneyRows = await getAll(url, serviceKey, "store_order_money?select=document_id,currency_id,amount,rates&order=document_id");
+  const moneyByDoc = new Map(moneyRows.map((row) => [String(row.document_id), row]));
+
+  const doc = (kind, seq) => {
+    const found = docs.find((row) => row.kind === kind && Number(row.sequence_number) === seq);
+    if (!found) throw new Error(`money seed: ${kind} ${seq} missing`);
+    return found;
+  };
+  const currencyOf = (id) => codeById.get(String(moneyByDoc.get(String(id))?.currency_id)) ?? "USD";
+  const totalOf = (id, currencyCode = currencyOf(id), amount = null) => {
+    if (amount != null) return amount;
+    const money = moneyByDoc.get(String(id));
+    return round2(estimated(linesByDoc.get(String(id)) ?? [], currencyCode, money?.rates ?? {}));
+  };
+
+  let orders = 0;
+  let payments = 0;
+  /**
+   * @param {{ kind: string, seq: number, currency?: string, amount?: (estimate: number) => number,
+   *   schedule?: Array<{ dueOn: string, share: number, status: string }> }} plan
+   */
+  const apply = async ({ kind, seq, currency, amount, schedule = [] }) => {
+    const row = doc(kind, seq);
+    const code = currency ?? currencyOf(row.id);
+    if (currency) await call("store_set_order_currency", { p_document_id: Number(row.id), p_currency_code: currency });
+    const estimate = totalOf(row.id, code);
+    let total = estimate;
+    if (amount) {
+      total = round2(amount(estimate));
+      await call("store_set_order_amount", { p_document_id: Number(row.id), p_amount: total });
+    }
+    let used = 0;
+    for (const [index, part] of schedule.entries()) {
+      const last = index === schedule.length - 1 && schedule.reduce((sum, item) => sum + item.share, 0) >= 0.999;
+      const value = last ? round2(total - used) : round2(total * part.share);
+      used = round2(used + value);
+      if (value <= 0) continue;
+      await call("store_save_order_payment", {
+        p_document_id: Number(row.id),
+        p_due_on: part.dueOn,
+        p_amount: value,
+        p_status: part.status,
+      });
+      payments += 1;
+    }
+    orders += 1;
+  };
+  const paidInFull = (kind, row) =>
+    apply({
+      kind,
+      seq: Number(row.sequence_number),
+      schedule: [
+        { dueOn: String(row.expected_end_on ?? row.created_at).slice(0, 10), share: 1, status: "paid" },
+      ],
+    });
+
+  // Payments to plants (PO). PO-906 at PLT-2 has the overdue invoice.
+  const PO = "production_order";
+  await apply({
+    kind: PO,
+    seq: 901,
+    schedule: [
+      { dueOn: "2026-10-05", share: 0.3, status: "invoiced" },
+      { dueOn: "2026-11-16", share: 0.7, status: "planned" },
+    ],
+  });
+  await apply({
+    kind: PO,
+    seq: 902,
+    currency: "USD",
+    schedule: [
+      { dueOn: "2026-09-01", share: 0.4, status: "paid" },
+      { dueOn: "2026-10-12", share: 0.6, status: "planned" },
+    ],
+  });
+  await apply({ kind: PO, seq: 903, amount: (estimate) => Math.round(estimate * 1.05) });
+  await apply({
+    kind: PO,
+    seq: 904,
+    schedule: [
+      { dueOn: "2026-08-20", share: 0.5, status: "paid" },
+      { dueOn: "2026-10-20", share: 0.5, status: "invoiced" },
+    ],
+  });
+  await apply({ kind: PO, seq: 905, currency: "EUR", schedule: [{ dueOn: "2026-10-08", share: 0.5, status: "planned" }] });
+  await apply({
+    kind: PO,
+    seq: 906,
+    schedule: [
+      { dueOn: "2026-09-10", share: 0.4, status: "invoiced" },
+      { dueOn: "2026-10-26", share: 0.6, status: "planned" },
+    ],
+  });
+  await apply({ kind: PO, seq: 907, schedule: [{ dueOn: "2026-10-15", share: 1, status: "planned" }] });
+  await apply({
+    kind: PO,
+    seq: 920,
+    schedule: [
+      { dueOn: "2026-10-01", share: 0.3, status: "invoiced" },
+      { dueOn: "2026-12-10", share: 0.7, status: "planned" },
+    ],
+  });
+  await apply({ kind: PO, seq: 908, schedule: [{ dueOn: "2026-10-18", share: 1, status: "planned" }] });
+  await call("store_cancel_document", { p_kind: PO, p_id: Number(doc(PO, 908).id) });
+
+  // Incoming from customers (OMS). OMS-907 (ru) is overdue.
+  const CO = "customer_order";
+  await apply({
+    kind: CO,
+    seq: 902,
+    schedule: [
+      { dueOn: "2026-09-05", share: 0.5, status: "paid" },
+      { dueOn: "2026-10-10", share: 0.5, status: "invoiced" },
+    ],
+  });
+  await apply({ kind: CO, seq: 904, schedule: [{ dueOn: "2026-10-20", share: 1, status: "planned" }] });
+  await apply({
+    kind: CO,
+    seq: 906,
+    currency: "USD",
+    schedule: [
+      { dueOn: "2026-10-03", share: 0.4, status: "invoiced" },
+      { dueOn: "2026-11-05", share: 0.6, status: "planned" },
+    ],
+  });
+  await apply({
+    kind: CO,
+    seq: 907,
+    schedule: [
+      { dueOn: "2026-09-15", share: 0.3, status: "planned" },
+      { dueOn: "2026-10-30", share: 0.7, status: "planned" },
+    ],
+  });
+  await apply({
+    kind: CO,
+    seq: 908,
+    amount: (estimate) => Math.round(estimate * 0.97),
+    schedule: [{ dueOn: "2026-11-25", share: 0.5, status: "planned" }],
+  });
+  await apply({ kind: CO, seq: 909, schedule: [{ dueOn: "2026-12-10", share: 1, status: "planned" }] });
+  await apply({ kind: CO, seq: 910, currency: "EUR", schedule: [{ dueOn: "2026-10-15", share: 0.2, status: "invoiced" }] });
+
+  // Closed orders and every JSON customer order: one paid payment for the full amount.
+  for (const row of docs) {
+    const seq = Number(row.sequence_number);
+    const isStory = seq >= STORY_LO && seq <= STORY_HI;
+    if (row.kind === PO && row.status === "done") await paidInFull(PO, row);
+    else if (row.kind === CO && (!isStory || row.status === "done" || seq === 903 || seq === 905)) {
+      await paidInFull(CO, row);
+    }
+  }
+
+  return { orders, payments };
 };

@@ -36,6 +36,13 @@ import type {
   TransferLine,
 } from "@/features/logistics/logistics-types";
 import { mapOutputCalendarPage } from "@/features/logistics/output-calendar";
+import {
+  mapOrderMoneyContext,
+  type OrderCurrency,
+  type OrderMoneyContext,
+  type OrderRates,
+  type PaymentStatus,
+} from "@/features/logistics/order-money";
 import type {
   AdjustmentListRow,
   CustomerOrderListRow,
@@ -257,6 +264,9 @@ export type LogisticsPayload = {
   document_history?: SnapshotRow[];
   balances?: SnapshotRow[];
   order_plan?: unknown;
+  order_money?: unknown;
+  order_payments?: unknown;
+  currencies?: unknown;
   found?: boolean;
 };
 
@@ -266,6 +276,8 @@ export type MappedLogistics = {
   balances: StockBalance[] | null;
   /** Raw `order_plan` of a customer order context; map with `mapOrderPlanPayload`. */
   orderPlan: unknown;
+  /** Money of a production order or customer order context; `money` is null for other documents. */
+  orderMoney: OrderMoneyContext;
   found: boolean;
 };
 
@@ -874,6 +886,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     snapshot,
     balances,
     orderPlan: payload.order_plan ?? null,
+    orderMoney: mapOrderMoneyContext(payload),
     found: payload.found !== false,
   };
 };
@@ -1359,6 +1372,8 @@ export const createCustomerOrder = async (args: {
   sourceKind?: "plant" | "hub" | null;
   sourceId?: string | null;
   lines: Array<{ productId: string; quantity: number; unitPrice?: number | null }>;
+  /** floatrates rates; null — the RPC snapshots `store_currency.rate`. */
+  rates?: OrderRates | null;
 }) => {
   let regionId = args.regionId;
   if (!regionId) {
@@ -1380,6 +1395,7 @@ export const createCustomerOrder = async (args: {
     })),
     p_source_kind: args.sourceKind ?? null,
     p_source_id: args.sourceId ? Number(args.sourceId) : null,
+    p_rates: args.rates ?? null,
   });
   return { id: String(created.id), lines: created.lines };
 };
@@ -1420,6 +1436,8 @@ export const createProductionOrder = async (args: {
   plantId?: string;
   expectedEndOn?: string | null;
   lines: Array<{ productId: string; quantity: number }>;
+  /** floatrates rates; null — the RPC snapshots `store_currency.rate`. */
+  rates?: OrderRates | null;
 }) => {
   const plantId = args.plantId;
   if (!plantId) throw new Error("Нужен plantId");
@@ -1434,6 +1452,7 @@ export const createProductionOrder = async (args: {
       product_variant_id: Number(line.productId),
       quantity: line.quantity,
     })),
+    p_rates: args.rates ?? null,
   });
   return {
     id: String(created.id),
@@ -1469,6 +1488,62 @@ export const updateExpectedEnd = (documentId: string, expectedEndOn: string | nu
     p_id: Number(documentId),
     p_expected_end_on: expectedEndOn || null,
   });
+
+export const setOrderCurrency = (documentId: string, currencyCode: string) =>
+  rpc("store_set_order_currency", { p_document_id: Number(documentId), p_currency_code: currencyCode });
+
+export const setOrderAmount = (documentId: string, amount: number | null) =>
+  rpc("store_set_order_amount", { p_document_id: Number(documentId), p_amount: amount });
+
+export const setOrderRates = (documentId: string, rates: OrderRates) =>
+  rpc("store_set_order_rates", { p_document_id: Number(documentId), p_rates: rates });
+
+export const saveOrderPayment = (args: {
+  documentId: string;
+  paymentId?: string | null;
+  dueOn: string;
+  amount: number;
+  status: PaymentStatus;
+}) =>
+  rpcJson<number | string>("store_save_order_payment", {
+    p_document_id: Number(args.documentId),
+    p_due_on: args.dueOn,
+    p_amount: args.amount,
+    p_status: args.status,
+    p_payment_id: args.paymentId ? Number(args.paymentId) : null,
+  }).then(String);
+
+export const deleteOrderPayment = (paymentId: string) =>
+  rpc("store_delete_order_payment", { p_payment_id: Number(paymentId) });
+
+export type StoreMoneySettings = {
+  productionCurrencyCode: string | null;
+  currencies: OrderCurrency[];
+};
+
+export const loadStoreMoneySettings = async (): Promise<StoreMoneySettings> => {
+  const client = requireClient();
+  const [currencies, setting] = await Promise.all([
+    client.from("store_currency").select("id,code,name").is("deleted_at", null).order("code", { ascending: true }),
+    client.from("store_setting").select("production_currency_id").maybeSingle(),
+  ]);
+  const rows = requireData(currencies.data, currencies.error).map((row) => ({
+    id: str(row.id),
+    code: str(row.code),
+    name: str(row.name),
+  }));
+  if (setting.error) {
+    throw new Error(setting.error.message);
+  }
+  const currencyId = setting.data?.production_currency_id;
+  return {
+    productionCurrencyCode: rows.find((row) => row.id === String(currencyId ?? ""))?.code ?? null,
+    currencies: rows,
+  };
+};
+
+export const saveProductionCurrency = (currencyCode: string) =>
+  rpc("store_set_production_currency", { p_currency_code: currencyCode });
 
 /** @deprecated Direct table writes removed — use RPCs. */
 export const insertRows = async () => {

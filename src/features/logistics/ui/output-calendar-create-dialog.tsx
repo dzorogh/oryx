@@ -74,7 +74,7 @@ const CreateForm = ({
       ? { [target.product.id]: formatLimitNumber(target.order.remaining) }
       : { [target.product.id]: "1" },
   );
-  const [expectedEndOn, setExpectedEndOn] = useState(lastDayOfMonthIso(target.month));
+  const [expectedEndOn, setExpectedEndOn] = useState(target.date ?? lastDayOfMonthIso(target.month));
   const [plantId, setPlantId] = useState(
     target.kind === "existing" ? target.order.plantId : (target.product.plantId ?? ""),
   );
@@ -232,8 +232,8 @@ export const OutputCalendarCreateDialog = ({
   if (!target) return null;
   const formKey =
     target.kind === "existing"
-      ? `existing-${target.product.id}-${target.order.productionOrderId}-${target.month.year}-${target.month.month}`
-      : `new-${target.product.id}-${target.month.year}-${target.month.month}`;
+      ? `existing-${target.product.id}-${target.order.productionOrderId}-${target.date ?? `${target.month.year}-${target.month.month}`}`
+      : `new-${target.product.id}-${target.date ?? `${target.month.year}-${target.month.month}`}`;
   return (
     <CreateForm
       key={formKey}
