@@ -38,17 +38,17 @@ describe("чистая модель Store — инварианты контра�
     assert.equal(formatLogisticsCode("productionOutput", 3, mergeLogisticsCodePrefixes()), "OUT-3");
   });
 
-  it("коды завода/склада фиксированы PLT/WH даже при чужих префиксах настроек", () => {
-    const polluted = mergeLogisticsCodePrefixes({
-      plant: "WH",
+  it("префикс завода настраивается, код склада фиксирован WH", () => {
+    const custom = mergeLogisticsCodePrefixes({
+      plant: "ZAV",
       warehouse: "PLT",
       customerOrder: "DFL",
       productionOrder: "PL",
     });
-    assert.equal(formatLogisticsCode("plant", 6, polluted), "PLT-6");
-    assert.equal(formatLogisticsCode("warehouse", 7, polluted), "WH-7");
-    assert.equal(formatLogisticsCode("customerOrder", 2, polluted), "DFL-2");
-    assert.equal(formatLogisticsCode("productionOrder", "1.6", polluted), "PL-1.6");
+    assert.equal(formatLogisticsCode("plant", 6, custom), "ZAV-6");
+    assert.equal(formatLogisticsCode("warehouse", 7, custom), "WH-7");
+    assert.equal(formatLogisticsCode("customerOrder", 2, custom), "DFL-2");
+    assert.equal(formatLogisticsCode("productionOrder", "1.6", custom), "PL-1.6");
   });
 
   it("свободный owner — singleton id=1, projection free→null pair", () => {

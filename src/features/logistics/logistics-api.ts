@@ -59,11 +59,15 @@ import {
   STORE_CURRENT_USER_ID,
 } from "@/features/logistics/logistics-types";
 import {
+  CATALOG_CODE_TO_PREFIX_FIELD,
+  CATALOG_PREFIX_FIELDS,
   DOCUMENT_KIND_TO_PREFIX_FIELD,
   DOCUMENT_PREFIX_FIELDS,
   formatLogisticsCode,
+  getActiveLogisticsCodePrefixes,
   mergeLogisticsCodePrefixes,
   setActiveLogisticsCodePrefixes,
+  type LogisticsCodeKind,
   type LogisticsCodePrefixes,
 } from "@/features/logistics/logistics-codes";
 import { assertDocumentCanBeCancelled } from "@/features/logistics/logistics-rules";
@@ -145,26 +149,56 @@ const rpcJson = async <T>(name: string, args: Record<string, unknown>): Promise<
 type EntityLoc = { kind: StockLocation["kind"]; entityId: string };
 type EntityOwner = { kind: OwnerKind; entityId: string | null };
 
-const prefixesFromKinds = (
-  kinds: Array<{ code: string; number_prefix: string }>,
-): LogisticsCodePrefixes => {
-  const overrides: Record<string, string> = {};
-  for (const kind of kinds) {
-    const field = DOCUMENT_KIND_TO_PREFIX_FIELD[kind.code];
+type PrefixRow = { code: string; number_prefix: string };
+
+const mapPrefixRow = (row: Record<string, unknown>): PrefixRow => ({
+  code: str(row.code),
+  number_prefix: str(row.number_prefix),
+});
+
+const prefixOverrides = (
+  rows: PrefixRow[],
+  fieldByCode: Record<string, LogisticsCodeKind>,
+): Partial<Record<LogisticsCodeKind, string>> => {
+  const overrides: Partial<Record<LogisticsCodeKind, string>> = {};
+  for (const row of rows) {
+    const field = fieldByCode[row.code];
     if (field) {
-      overrides[field] = kind.number_prefix;
+      overrides[field] = row.number_prefix;
     }
   }
-  return mergeLogisticsCodePrefixes(overrides);
+  return overrides;
 };
 
+let catalogPrefixOverrides: Partial<Record<LogisticsCodeKind, string>> = {};
+let catalogPrefixRequest: Promise<void> | null = null;
+
+const fetchCatalogPrefixes = async () => {
+  const rows = await selectAll("store_catalog_code_prefix", "code,number_prefix", mapPrefixRow, "code");
+  catalogPrefixOverrides = prefixOverrides(rows, CATALOG_CODE_TO_PREFIX_FIELD);
+  setActiveLogisticsCodePrefixes({ ...getActiveLogisticsCodePrefixes(), ...catalogPrefixOverrides });
+};
+
+/** Loads catalog code prefixes once per session; on failure codes fall back to defaults. */
+const ensureCatalogPrefixes = (): Promise<void> => {
+  catalogPrefixRequest ??= fetchCatalogPrefixes().catch(() => {
+    catalogPrefixRequest = null;
+  });
+  return catalogPrefixRequest;
+};
+
+const prefixesFromKinds = (kinds: PrefixRow[]): LogisticsCodePrefixes =>
+  mergeLogisticsCodePrefixes({
+    ...prefixOverrides(kinds, DOCUMENT_KIND_TO_PREFIX_FIELD),
+    ...catalogPrefixOverrides,
+  });
+
 export const loadLogisticsSettings = async (): Promise<LogisticsSetting> => {
-  const kinds = await selectAll(
-    "store_document_kind",
-    "code,number_prefix",
-    (row) => ({ code: str(row.code), number_prefix: str(row.number_prefix) }),
-    "code",
-  );
+  const [kinds] = await Promise.all([
+    selectAll("store_document_kind", "code,number_prefix", mapPrefixRow, "code"),
+    fetchCatalogPrefixes(),
+  ]);
+  catalogPrefixRequest = Promise.resolve();
   const codePrefixes = prefixesFromKinds(kinds);
   setActiveLogisticsCodePrefixes(codePrefixes);
   return { id: "1", codePrefixes };
@@ -180,6 +214,16 @@ export const saveLogisticsCodePrefixes = async (
       p_prefix: next[field.kind],
     });
   }
+  for (const field of CATALOG_PREFIX_FIELDS) {
+    await rpc("store_update_catalog_code_prefix", {
+      p_code: field.catalogCode,
+      p_prefix: next[field.kind],
+    });
+  }
+  catalogPrefixOverrides = Object.fromEntries(
+    CATALOG_PREFIX_FIELDS.map((field) => [field.kind, next[field.kind]]),
+  );
+  catalogPrefixRequest = Promise.resolve();
   setActiveLogisticsCodePrefixes(next);
   return { id: "1", codePrefixes: next };
 };
@@ -818,7 +862,7 @@ const mapListProducts = (raw: unknown): LogisticsListProductLine[] => {
 };
 
 const loadListRpc = async <T>(name: string, map: (row: Record<string, unknown>) => T): Promise<T[]> => {
-  const data = await rpcJson<unknown>(name, {});
+  const [data] = await Promise.all([rpcJson<unknown>(name, {}), ensureCatalogPrefixes()]);
   if (!Array.isArray(data)) {
     return [];
   }
@@ -963,7 +1007,7 @@ export const loadReservationList = () =>
   });
 
 const loadMappedRpc = async (name: string, args: Record<string, unknown>): Promise<MappedLogistics> => {
-  const payload = await rpcJson<LogisticsPayload>(name, args);
+  const [payload] = await Promise.all([rpcJson<LogisticsPayload>(name, args), ensureCatalogPrefixes()]);
   return mapLogisticsPayload(payload);
 };
 
@@ -986,7 +1030,10 @@ export const loadLedgerPage = () => loadMappedRpc("store_ledger_page", {});
 export const loadCatalogPage = () => loadMappedRpc("store_catalog_page", {});
 
 export const loadOutputCalendarPage = async () => {
-  const data = await rpcJson<unknown>("store_output_calendar_page", {});
+  const [data] = await Promise.all([
+    rpcJson<unknown>("store_output_calendar_page", {}),
+    ensureCatalogPrefixes(),
+  ]);
   return mapOutputCalendarPage(data);
 };
 

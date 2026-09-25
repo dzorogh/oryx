@@ -27,7 +27,7 @@ export const DOCUMENT_KIND_TO_PREFIX_FIELD: Record<string, LogisticsCodeKind> = 
   adjustment: "adjustment",
 };
 
-/** Document kinds only — catalog codes (PLT/WH/PRD/REG) are fixed, not editable. */
+/** Document kinds; editable catalog codes live in `CATALOG_PREFIX_FIELDS`. */
 export const DOCUMENT_PREFIX_FIELDS: Array<{
   kind: LogisticsCodeKind;
   label: string;
@@ -43,7 +43,19 @@ export const DOCUMENT_PREFIX_FIELDS: Array<{
   { kind: "adjustment", label: "Корректировки", exampleId: "1", documentKind: "adjustment" },
 ];
 
-const CATALOG_CODE_KINDS = new Set<LogisticsCodeKind>(["product", "plant", "warehouse", "region"]);
+/** Catalogs with an editable code prefix (`store_catalog_code_prefix`); WH/PRD/REG stay fixed. */
+export const CATALOG_PREFIX_FIELDS: Array<{
+  kind: LogisticsCodeKind;
+  label: string;
+  exampleId: string;
+  catalogCode: string;
+}> = [{ kind: "plant", label: "Заводы", exampleId: "4", catalogCode: "plant" }];
+
+export const CATALOG_CODE_TO_PREFIX_FIELD: Record<string, LogisticsCodeKind> = Object.fromEntries(
+  CATALOG_PREFIX_FIELDS.map((field) => [field.catalogCode, field.kind]),
+);
+
+const FIXED_CODE_KINDS = new Set<LogisticsCodeKind>(["product", "warehouse", "region"]);
 
 const clonePrefixes = (prefixes: LogisticsCodePrefixes): LogisticsCodePrefixes => ({ ...prefixes });
 
@@ -92,6 +104,6 @@ export const formatLogisticsCode = (
   if (id == null || id === "") {
     return "";
   }
-  const prefix = CATALOG_CODE_KINDS.has(kind) ? LOGISTICS_CODE_PREFIXES[kind] : prefixes[kind];
+  const prefix = FIXED_CODE_KINDS.has(kind) ? LOGISTICS_CODE_PREFIXES[kind] : prefixes[kind];
   return `${prefix}-${id}`;
 };

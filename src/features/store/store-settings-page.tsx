@@ -22,6 +22,7 @@ import {
   saveLogisticsCodePrefixes,
 } from "@/features/logistics/logistics-api";
 import {
+  CATALOG_PREFIX_FIELDS,
   DOCUMENT_PREFIX_FIELDS,
   mergeLogisticsCodePrefixes,
   normalizeLogisticsCodePrefix,
@@ -31,6 +32,15 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 const STORE_PRODUCTS_HREF = "/store/pim/products";
+
+type PrefixField = { kind: LogisticsCodeKind; label: string; exampleId: string };
+
+const EDITABLE_PREFIX_FIELDS: PrefixField[] = [...DOCUMENT_PREFIX_FIELDS, ...CATALOG_PREFIX_FIELDS];
+
+const PREFIX_SECTIONS: Array<{ title: string; fields: PrefixField[] }> = [
+  { title: "Префиксы документов", fields: DOCUMENT_PREFIX_FIELDS },
+  { title: "Префиксы справочников", fields: CATALOG_PREFIX_FIELDS },
+];
 
 const prefixesFromDraft = (draft: Record<LogisticsCodeKind, string>): LogisticsCodePrefixes =>
   mergeLogisticsCodePrefixes(draft);
@@ -62,7 +72,7 @@ export const StoreSettingsPage = () => {
         setError(null);
       } catch (caught: unknown) {
         if (!cancelled) {
-          setError(caught instanceof Error ? caught.message : "Не удалось загрузить префиксы документов.");
+          setError(caught instanceof Error ? caught.message : "Не удалось загрузить префиксы.");
         }
       } finally {
         if (!cancelled) {
@@ -77,13 +87,13 @@ export const StoreSettingsPage = () => {
   }, [configured]);
 
   const isDirty = useMemo(
-    () => DOCUMENT_PREFIX_FIELDS.some((field) => draft[field.kind] !== saved[field.kind]),
+    () => EDITABLE_PREFIX_FIELDS.some((field) => draft[field.kind] !== saved[field.kind]),
     [draft, saved],
   );
 
   const invalidKinds = useMemo(
     () =>
-      DOCUMENT_PREFIX_FIELDS.filter((field) => !normalizeLogisticsCodePrefix(draft[field.kind])).map(
+      EDITABLE_PREFIX_FIELDS.filter((field) => !normalizeLogisticsCodePrefix(draft[field.kind])).map(
         (field) => field.kind,
       ),
     [draft],
@@ -105,9 +115,9 @@ export const StoreSettingsPage = () => {
       const next = await saveLogisticsCodePrefixes(prefixesFromDraft(draft));
       setDraft(next.codePrefixes);
       setSaved(next.codePrefixes);
-      toast.success("Префиксы документов сохранены");
+      toast.success("Префиксы сохранены");
     } catch (caught: unknown) {
-      toast.error("Не удалось сохранить префиксы документов", {
+      toast.error("Не удалось сохранить префиксы", {
         description: caught instanceof Error ? caught.message : "Попробуйте ещё раз.",
       });
     } finally {
@@ -164,37 +174,39 @@ export const StoreSettingsPage = () => {
               <Skeleton className="h-64 w-full" />
             </div>
           ) : (
-            <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
-              <CardHeader className="gap-1">
-                <h2 className="text-sm font-semibold text-foreground">Префиксы документов</h2>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {DOCUMENT_PREFIX_FIELDS.map((field) => {
-                    const prefix = draft[field.kind];
-                    const example = prefix ? `${prefix}-${field.exampleId}` : "—";
-                    const invalid = invalidKinds.includes(field.kind);
-                    return (
-                      <label key={field.kind} className="space-y-1 text-sm">
-                        <span className="font-medium text-foreground">{field.label}</span>
-                        <Input
-                          value={prefix}
-                          onChange={(event) => updatePrefix(field.kind, event.target.value)}
-                          aria-invalid={invalid}
-                          aria-label={`Префикс: ${field.label}`}
-                          autoCapitalize="characters"
-                          autoComplete="off"
-                          spellCheck={false}
-                          maxLength={8}
-                          disabled={!configured}
-                        />
-                        <span className="block text-xs text-muted-foreground">Пример {example}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            PREFIX_SECTIONS.map((section) => (
+              <Card key={section.title} size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
+                <CardHeader className="gap-1">
+                  <h2 className="text-sm font-semibold text-foreground">{section.title}</h2>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {section.fields.map((field) => {
+                      const prefix = draft[field.kind];
+                      const example = prefix ? `${prefix}-${field.exampleId}` : "—";
+                      const invalid = invalidKinds.includes(field.kind);
+                      return (
+                        <label key={field.kind} className="space-y-1 text-sm">
+                          <span className="font-medium text-foreground">{field.label}</span>
+                          <Input
+                            value={prefix}
+                            onChange={(event) => updatePrefix(field.kind, event.target.value)}
+                            aria-invalid={invalid}
+                            aria-label={`Префикс: ${field.label}`}
+                            autoCapitalize="characters"
+                            autoComplete="off"
+                            spellCheck={false}
+                            maxLength={8}
+                            disabled={!configured}
+                          />
+                          <span className="block text-xs text-muted-foreground">Пример {example}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
           )}
         </div>
       </section>

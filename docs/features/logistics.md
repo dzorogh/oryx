@@ -20,7 +20,7 @@
 | `/store/logistics/transfers` | Перемещения |
 | `/store/logistics/warehouses` | Склады |
 | `/store/logistics/plants` | Заводы (`store_plant`; код `PLT-n`) |
-| `/store/settings` | Префиксы из `store_document_kind.number_prefix` |
+| `/store/settings` | Префиксы документов (`store_document_kind.number_prefix`) и завода (`store_catalog_code_prefix`) |
 
 ## Меню Store
 
@@ -127,7 +127,7 @@ Seed после историй раскладывает `changed_at` монот�
 | Деталь склада / завода / региона | `store_place_context(kind, id)` |
 | Деталь товара (`/store/pim/products/[id]`) | `store_product_context(variant_id)` |
 | Диалог «Создать …» на списке | `store_form_context(form)` при открытии |
-| Настройки / PIM префиксы | `loadLogisticsSettings` (`store_document_kind` select) |
+| Настройки / PIM префиксы | `loadLogisticsSettings` (`store_document_kind` + `store_catalog_code_prefix` select) |
 
 Детальный контекст — сам документ/место/товар, связанные документы (по товарам, а для заказов, перемещений, складов и регионов — ещё по их месту хранения и владельцу), их строки и история, проводки по этим товарам и остатки `balances`. Справочники и заголовки заказов клиента, заказов на производство и перемещений приходят целиком. Диалоги действий на детальной странице работают на её контексте. После действия страница перезагружает только свой запрос.
 
