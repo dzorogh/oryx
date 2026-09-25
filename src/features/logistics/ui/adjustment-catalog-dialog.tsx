@@ -27,8 +27,6 @@ import { reportPartialCreate } from "@/features/logistics/ui/open-created-docume
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { Input } from "@/components/ui/input";
 
-export type AdjustmentCatalogIntent = "inventory" | "signed";
-
 export type AdjustmentCatalogPreset = {
   operation?: AdjustmentOperation;
   warehouseId?: string;
@@ -36,11 +34,7 @@ export type AdjustmentCatalogPreset = {
   sourceDocumentType?: AdjustmentSourceDocumentType | "";
   sourceDocumentId?: string;
   productId?: string;
-  intent?: AdjustmentCatalogIntent;
 };
-
-export const adjustmentIntentFromPreset = (preset?: AdjustmentCatalogPreset): AdjustmentCatalogIntent =>
-  preset?.intent ?? "signed";
 
 export const AdjustmentCatalogDialog = ({
   open,
@@ -48,7 +42,6 @@ export const AdjustmentCatalogDialog = ({
   snapshot,
   balances,
   preset,
-  intent: intentProp,
   loading,
   loadError,
 }: {
@@ -57,12 +50,10 @@ export const AdjustmentCatalogDialog = ({
   snapshot: LogisticsSnapshot;
   balances: StockBalance[];
   preset?: AdjustmentCatalogPreset;
-  intent?: AdjustmentCatalogIntent;
   loading?: boolean;
   loadError?: string | null;
 }) => {
   const router = useRouter();
-  const intent = intentProp ?? adjustmentIntentFromPreset(preset);
   const [warehouseId, setWarehouseId] = useState("");
   const [explanation, setExplanation] = useState("");
   const [quantities, setQuantities] = useState<Record<string, string>>({});
@@ -88,9 +79,7 @@ export const AdjustmentCatalogDialog = ({
   }, [open, preset]);
 
   const warehouseItems = useMemo(() => {
-    const all = warehouseSelectItems(snapshot);
-    if (intent === "inventory") return all;
-    return all.filter((item) => {
+    return warehouseSelectItems(snapshot).filter((item) => {
       if (item.value === preset?.warehouseId) return true;
       const owners = placeOwnersByProduct(balances, "warehouse", item.value);
       const freeOnly = new Map(
@@ -98,7 +87,7 @@ export const AdjustmentCatalogDialog = ({
       );
       return catalogProductsFromPlace(snapshot, freeOnly).length > 0;
     });
-  }, [balances, intent, preset?.warehouseId, snapshot]);
+  }, [balances, preset?.warehouseId, snapshot]);
 
   useEffect(() => {
     if (warehouseId && !warehouseItems.some((item) => item.value === warehouseId)) setWarehouseId("");
@@ -118,28 +107,11 @@ export const AdjustmentCatalogDialog = ({
         list.filter((owner) => owner.ownerType == null),
       ]),
     );
-    const base = catalogProductsFromPlace(snapshot, freeOnly);
-    if (intent !== "inventory") {
-      return base.map((product) => ({
-        ...product,
-        owners: product.owners.map((owner) => ({ ...owner, hints: [bookOf(product.id)] })),
-      }));
-    }
-    return base.map((product) => {
-      const book = bookOf(product.id);
-      const raw = quantities[`${product.id}:free:`] ?? "";
-      const fact = parseDecimalQuantity(raw);
-      const delta = fact == null ? null : fact - book;
-      return {
-        ...product,
-        owners: product.owners.map((owner) => ({
-          ...owner,
-          limit: null,
-          hints: [book, delta == null ? "—" : formatLimitNumber(delta)],
-        })),
-      };
-    });
-  }, [balances, bookOf, intent, quantities, snapshot, warehouseId]);
+    return catalogProductsFromPlace(snapshot, freeOnly).map((product) => ({
+      ...product,
+      owners: product.owners.map((owner) => ({ ...owner, hints: [bookOf(product.id)] })),
+    }));
+  }, [balances, bookOf, snapshot, warehouseId]);
 
   const collapse = useCatalogCollapse(snapshot.categories, products, quantities, search);
 
@@ -166,38 +138,6 @@ export const AdjustmentCatalogDialog = ({
     setServerError(null);
     const created: Array<{ href: string; label: string }> = [];
     try {
-      if (intent === "inventory") {
-        const increases: Array<{ productId: string; quantity: number }> = [];
-        const decreases: Array<{ productId: string; quantity: number }> = [];
-        for (const product of products) {
-          for (const owner of product.owners) {
-            const fact = parseDecimalQuantity(quantities[owner.key] ?? "");
-            if (fact == null) continue;
-            const delta = fact - bookOf(product.id);
-            if (Math.abs(delta) <= 1e-9) continue;
-            if (delta > 0) increases.push({ productId: product.id, quantity: delta });
-            else decreases.push({ productId: product.id, quantity: Math.abs(delta) });
-          }
-        }
-        if (increases.length + decreases.length === 0) {
-          setServerError("Введите факт, отличный от учёта");
-          return;
-        }
-        const first = increases.length
-          ? await post("increase", increases)
-          : await post("write_off", decreases);
-        created.push({
-          href: logisticsPath("adjustments", first.id),
-          label: increases.length ? "Оприходование" : "Списание",
-        });
-        if (increases.length && decreases.length) {
-          const second = await post("write_off", decreases);
-          created.push({ href: logisticsPath("adjustments", second.id), label: "Списание" });
-        }
-        onOpenChange(false);
-        router.push(created[0].href);
-        return;
-      }
       const plus: Array<{ productId: string; quantity: number }> = [];
       const minus: Array<{ productId: string; quantity: number }> = [];
       for (const product of products) {
@@ -239,16 +179,10 @@ export const AdjustmentCatalogDialog = ({
   };
 
   const filled = Object.values(quantities).filter((raw) => {
-    const value = parseDecimalQuantity(raw, intent !== "inventory");
+    const value = parseDecimalQuantity(raw, true);
     return value != null && value !== 0;
   }).length;
-  const columns =
-    intent === "inventory"
-      ? [
-          { id: "book", header: "Учёт" },
-          { id: "delta", header: "Разница" },
-        ]
-      : [{ id: "now", header: "На складе сейчас" }];
+  const columns = [{ id: "now", header: "На складе сейчас" }];
 
   return (
     <DialogShell
@@ -256,7 +190,7 @@ export const AdjustmentCatalogDialog = ({
       onOpenChange={onOpenChange}
       size="catalog"
       kicker="Корректировки"
-      title={intent === "inventory" ? "Инвентаризация" : "Списание / оприходование"}
+      title="Новая корректировка"
       loading={loading}
       error={loadError}
       header={
@@ -306,7 +240,7 @@ export const AdjustmentCatalogDialog = ({
           quantities={quantities}
           onQuantityChange={(key, raw) => setQuantities((current) => ({ ...current, [key]: raw }))}
           limitMode="none"
-          quantityHeader={intent === "inventory" ? "Факт" : "±"}
+          quantityHeader="±"
           search={search}
           collapsed={collapse.collapsed}
           onToggleGroup={collapse.toggle}

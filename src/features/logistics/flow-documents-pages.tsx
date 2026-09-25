@@ -570,7 +570,6 @@ export const AdjustmentsPage = () => {
   const [warehouseFilter, setWarehouseFilter] = useState(ALL_VALUE);
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
-  const [adjustIntent, setAdjustIntent] = useState<"inventory" | "signed">("signed");
   const formStore = useLogisticsStore({ kind: "form", form: "adjustment", enabled: open });
 
   const warehouseOptions = useMemo(() => {
@@ -622,19 +621,8 @@ export const AdjustmentsPage = () => {
       <LogisticsListPageContent
         listId="adjustments"
         title="Корректировки"
-        actions={
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button size="sm">Новая корректировка</Button>} />
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => { setAdjustIntent("inventory"); setOpen(true); }}>
-                Инвентаризация
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setAdjustIntent("signed"); setOpen(true); }}>
-                Списание / оприходование
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        }
+        actionLabel="Новая корректировка"
+        onAction={() => setOpen(true)}
         columns={adjustmentColumns}
         sortDefs={adjustmentSortDefs}
         groupDefs={adjustmentGroupDefs()}
@@ -686,7 +674,6 @@ export const AdjustmentsPage = () => {
         loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
-        intent={adjustIntent}
       />
     </LogisticsPageShell>
   );
