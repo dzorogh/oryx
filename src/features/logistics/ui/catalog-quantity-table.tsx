@@ -624,10 +624,10 @@ const collapsedForSignature = (
   groupIds: string[],
 ): Set<string> => {
   const query = search.trim().toLowerCase();
+  const searching = query.length > 0;
+  if (!searching) return new Set();
   const entered = new Set(enteredProductIds(products, quantities));
   const anyEntered = entered.size > 0;
-  const searching = query.length > 0;
-  if (!anyEntered && !searching) return new Set();
   const byId = new Map(categories.map((category) => [category.id, category]));
   const open = new Set<string>();
   const addAncestors = (id: string) => {
@@ -655,7 +655,7 @@ export const useCatalogCollapse = (
   search: string,
 ) => {
   const groupIds = useMemo(() => allCategoryGroupIds(categories), [categories]);
-  const signature = `${search.trim().toLowerCase()}|${enteredProductIds(products, quantities).sort().join(",")}|${groupIds.join(",")}`;
+  const signature = `${search.trim().toLowerCase()}|${groupIds.join(",")}`;
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [applied, setApplied] = useState(signature);
   if (applied !== signature) {

@@ -76,13 +76,13 @@ export const productsNotMadeByPlant = (
 ): string[] =>
   enteredProductIds.filter((productId) => plantByProduct.get(productId) !== plantId);
 
-/** Пустой список без поиска раскрыт целиком; иначе открыты категории со значениями или с поиском. */
+/** Без поиска категории не трогаем. При поиске открыты совпадения и категории, где уже введено количество. */
 export const categoryStartsOpen = (
   hasEnteredQuantity: boolean,
   matchesSearch: boolean,
   context: { anyEntered: boolean; searching: boolean } = { anyEntered: false, searching: false },
 ): boolean => {
-  if (!context.anyEntered && !context.searching) return true;
+  if (!context.searching) return true;
   return hasEnteredQuantity || matchesSearch;
 };
 

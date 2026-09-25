@@ -112,10 +112,13 @@ describe("диалоги store: ограничения ввода", () => {
     assert.deepEqual(leafCategoryIds(["2"], categories), ["2"]);
   });
 
-  it("пустой каталог раскрыт, а категория со значением остаётся открытой", () => {
+  it("ввод количества не сворачивает категории, поиск открывает совпадения", () => {
     assert.equal(categoryStartsOpen(false, false, { anyEntered: false, searching: false }), true);
     assert.equal(categoryStartsOpen(true, false, { anyEntered: true, searching: false }), true);
-    assert.equal(categoryStartsOpen(false, false, { anyEntered: true, searching: false }), false);
+    assert.equal(categoryStartsOpen(false, false, { anyEntered: true, searching: false }), true);
+    assert.equal(categoryStartsOpen(false, true, { anyEntered: false, searching: true }), true);
+    assert.equal(categoryStartsOpen(false, false, { anyEntered: false, searching: true }), false);
+    assert.equal(categoryStartsOpen(true, false, { anyEntered: true, searching: true }), true);
   });
 
   it("единица pcs показывается как шт, итог категории — в позициях", () => {
