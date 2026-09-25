@@ -7,13 +7,14 @@ import type { LogisticsSnapshot, Transfer } from "@/features/logistics/logistics
 const emptySnapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
   ({
     products: [],
+    dealerPrices: [],
     plants: [],
     stockLocations: [],
     stockOwners: [],
     freeOwnerId: "1",
     warehouses: [
-      { id: "w1", code: "WH-1", name: "A", regionId: "r1" },
-      { id: "w2", code: "WH-2", name: "B", regionId: "r1" },
+      { id: "w1", code: "WH-1", name: "A", stockLocationId: "l1", kind: "customer" as const, plantId: null },
+      { id: "w2", code: "WH-2", name: "B", stockLocationId: "l2", kind: "customer" as const, plantId: null },
     ],
     regions: [],
     settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },

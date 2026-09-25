@@ -18,6 +18,7 @@ import type { LogisticsSnapshot, ProductionOrderLine } from "@/features/logistic
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DOCUMENT_TABLE_HEAD_CLASS } from "@/features/logistics/ui/logistics-table-card";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { HIGHLIGHT_ROW_CLASS } from "@/features/logistics/ui/highlight-rows";
 import type { OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { OutputStatusBadge } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
@@ -333,6 +334,7 @@ export const ProductionOrderProductManifest = ({
   onReleaseReservation,
   onReserveInOutput,
   bare = false,
+  highlightedProductIds,
 }: {
   snapshot: LogisticsSnapshot;
   lines: ProductionOrderLine[];
@@ -343,6 +345,7 @@ export const ProductionOrderProductManifest = ({
   onReleaseReservation?: (target: OutputReleaseTarget) => void;
   onReserveInOutput?: (outputId: string, productId: string) => void;
   bare?: boolean;
+  highlightedProductIds?: string[];
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [expandedOutputs, setExpandedOutputs] = useState<Set<string>>(() => new Set());
@@ -386,6 +389,8 @@ export const ProductionOrderProductManifest = ({
               ownerId: item.ownerId,
               productId: line.productId,
               quantity: item.quantity,
+              highlightDocumentId: line.orderId,
+              highlightLineId: line.id,
             })
         : undefined;
     const onReserveRow: ReserveHandler | undefined =
@@ -424,7 +429,7 @@ export const ProductionOrderProductManifest = ({
                 const panelId = `po-outputs-${line.id}`;
                 return (
                   <Fragment key={line.id}>
-                    <TableRow className="group/row">
+                    <TableRow className={cn("group/row", highlightedProductIds?.includes(line.id) && HIGHLIGHT_ROW_CLASS)}>
                       <TableCell className="px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex min-w-0 items-start gap-1.5">

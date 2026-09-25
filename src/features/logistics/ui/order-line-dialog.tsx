@@ -11,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
+import { parseDecimalQuantity } from "@/features/logistics/ui/catalog-quantity-model";
+import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 
 export type OrderLineDialogMode = "add" | "edit" | "delete";
 
@@ -52,31 +53,38 @@ export const OrderLineDialog = ({
   onSubmit: () => void;
 }) => {
   const title =
-    mode === "add" ? "Добавить товар" : mode === "delete" ? "Удалить товар" : "Изменить количество";
+    mode === "add" ? "Добавить товар" : mode === "delete" ? "Удалить товар?" : "Изменить количество";
   const submitLabel = mode === "add" ? "Добавить" : mode === "delete" ? "Удалить" : "Сохранить";
-  const canSubmit =
-    !pending &&
-    (mode === "delete" || (Boolean(productId) && Number(quantity) > 0)) &&
-    (mode !== "add" || products.length > 0);
+  const quantityOk = (parseDecimalQuantity(quantity) ?? 0) > 0;
+  const canSubmit = mode === "delete" || (Boolean(productId) && quantityOk && (mode !== "add" || products.length > 0));
 
   return (
-    <LogisticsDialog
+    <DialogShell
       open={open}
       onOpenChange={(next) => {
-        if (pending) {
-          return;
-        }
+        if (pending) return;
         onOpenChange(next);
       }}
+      size="sm"
       title={title}
+      dismissLabel={mode === "delete" ? "Назад" : undefined}
+      footerSummary={mode === "delete" ? undefined : productLabel}
+      submitLabel={submitLabel}
+      onSubmit={onSubmit}
+      submitDisabled={!canSubmit}
+      disabledReason={mode === "delete" ? undefined : "Введите количество"}
+      submitting={pending}
+      pendingLabel={mode === "delete" ? "Удаляем…" : "Сохраняем…"}
+      serverError={error}
+      dirty={mode !== "delete" && quantity.trim().length > 0}
     >
       <div className="flex flex-col gap-3">
         {mode === "add" ? (
           products.length === 0 ? (
             <p className="text-sm text-muted-foreground">Нет доступных товаров.</p>
           ) : (
-            <label className="space-y-1 text-sm">
-              <span className="font-medium">Товар</span>
+            <label className="space-y-1.5 text-sm">
+              <span className="text-muted-foreground">Товар</span>
               <Select
                 items={products.map((item) => ({ value: item.id, label: item.label }))}
                 value={productId}
@@ -102,41 +110,27 @@ export const OrderLineDialog = ({
           <p className="text-sm font-medium">{productLabel}</p>
         )}
         {mode === "delete" ? (
-          <p className="text-sm text-muted-foreground">Строка будет удалена из заказа.</p>
+          <p className="text-sm">Строка будет удалена из заказа.</p>
         ) : (
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Количество</span>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Количество</span>
             <Input
-              type="number"
-              min={1}
+              type="text"
+              inputMode="decimal"
               value={quantity}
               disabled={pending || (mode === "add" && products.length === 0)}
-              aria-invalid={error ? true : undefined}
               onChange={(event) => onQuantityChange?.(event.target.value)}
               aria-label="Количество"
             />
           </label>
         )}
         {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
-        {error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
+        {mode === "edit" && onDelete ? (
+          <Button type="button" variant="outline" disabled={pending} onClick={onDelete}>
+            Удалить
+          </Button>
         ) : null}
-        <div className="flex flex-wrap gap-2">
-          {mode === "edit" && onDelete ? (
-            <Button type="button" variant="outline" disabled={pending} onClick={onDelete}>
-              Удалить
-            </Button>
-          ) : null}
-          <Button type="button" variant="outline" disabled={pending} onClick={() => onOpenChange(false)}>
-            Отмена
-          </Button>
-          <Button type="button" disabled={!canSubmit} onClick={onSubmit}>
-            {submitLabel}
-          </Button>
-        </div>
       </div>
-    </LogisticsDialog>
+    </DialogShell>
   );
 };

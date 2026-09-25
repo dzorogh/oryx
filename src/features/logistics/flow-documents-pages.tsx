@@ -1,18 +1,17 @@
 // english-ui:ignore-file
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
 import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
+import { CreateOutputDialog } from "@/features/logistics/ui/create-output-dialog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
   completeOutput,
-  createProductionOutput,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
@@ -27,13 +26,18 @@ import {
   hrefForDocument,
   hrefForOwner,
   hrefForWarehouse,
-  producedForProductionProduct,
   remainingToOutputForLine,
-  remainingToReserveForLine,
   remainingToReturnForOrderProduct,
   remainingToShipForLine,
 } from "@/features/logistics/logistics-availability";
-import { AdjustmentForm, ReservationForm, ShipmentForm } from "@/features/logistics/logistics-forms";
+import { AdjustmentCatalogDialog } from "@/features/logistics/ui/adjustment-catalog-dialog";
+import { ShipmentCatalogDialog } from "@/features/logistics/ui/shipment-catalog-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ADJUSTMENT_OPERATION_LABELS,
   FREE_OWNER_LABEL,
@@ -61,15 +65,6 @@ import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
 import { relatedOrderItem } from "@/features/logistics/logistics-related";
 import {
-  assertEnoughStock,
-  assertProductionOutputLines,
-} from "@/features/logistics/logistics-rules";
-import {
-  buildProductionOutputDrafts,
-  ProductionOutputLinesFields,
-  type ProductionOutputDraftLine,
-} from "@/features/logistics/ui/production-output-lines-fields";
-import {
   OUTPUT_STATUSES,
   shipmentDirection,
   shipmentWarehouseId,
@@ -81,8 +76,6 @@ import {
   isFreeOwner,
 } from "@/features/logistics/logistics-types";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
-import { FieldSelect } from "@/features/logistics/ui/field-select";
-import { isAllowedQuantity } from "@/features/logistics/ui/quantity-field";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
@@ -108,11 +101,12 @@ import {
 } from "@/features/logistics/ui/list/document-list-configs";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
+import { AddDraftOutputDialog } from "@/features/logistics/ui/add-draft-output-dialog";
+import { HIGHLIGHT_ROW_CLASS, takeHighlightedRows } from "@/features/logistics/ui/highlight-rows";
 import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { OutputReserveDialog, type OutputReserveTarget } from "@/features/logistics/ui/output-reserve-dialog";
 import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
-import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { DocumentStatusBadge, OutputStatusBadge, ShipmentDirectionBadge } from "@/features/logistics/ui/status-badge";
 import {
   loadAdjustmentList,
@@ -151,6 +145,7 @@ export const ShipmentsPage = () => {
     directionParam === "shipment" || directionParam === "return" ? directionParam : "all";
   const [direction, setDirection] = useState<"all" | ShipmentDirection>(parsedDirection);
   const [open, setOpen] = useState(false);
+  const [shipIntention, setShipIntention] = useState<ShipmentDirection>("shipment");
   const formStore = useLogisticsStore({ kind: "form", form: "shipment", enabled: open });
 
   useEffect(() => {
@@ -240,8 +235,19 @@ export const ShipmentsPage = () => {
       <LogisticsListPageContent
         listId="shipments"
         title="Отгрузки и возвраты"
-        actionLabel="Новый документ"
-        onAction={() => setOpen(true)}
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button size="sm">Новый документ</Button>} />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setShipIntention("shipment"); setOpen(true); }}>
+                Отгрузить
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setShipIntention("return"); setOpen(true); }}>
+                Оформить возврат
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
         columns={shipmentColumns}
         sortDefs={shipmentSortDefs}
         groupDefs={shipmentGroupDefs}
@@ -301,14 +307,15 @@ export const ShipmentsPage = () => {
           </>
         }
       />
-      <ShipmentForm
+      <ShipmentCatalogDialog
         snapshot={formStore.snapshot}
         balances={formStore.balances}
         loading={formStore.isLoading}
         loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
-        reload={reload}      />
+        preset={{ intention: shipIntention }}
+      />
     </LogisticsPageShell>
   );
 };
@@ -391,6 +398,7 @@ export const ShipmentDetailPage = () => {
               {cancelGuidance ? (
                 <DocumentCancelControl
                   guidance={cancelGuidance}
+                  kicker={doc.number}
                   reload={store.reload}
                   onFollowUp={(action) => {
                     if (action.id === "open-return") {
@@ -544,13 +552,12 @@ export const ShipmentDetailPage = () => {
           ]}
         />
       </LogisticsPageShell>
-      <ShipmentForm
-        key={`${formIntention}:${doc.customerOrderId}:${warehouseId}:${formOpen ? "open" : "closed"}`}
+      <ShipmentCatalogDialog
         snapshot={store.snapshot}
         balances={store.balances}
         open={formOpen}
         onOpenChange={setFormOpen}
-        reload={store.reload}        preset={{ intention: formIntention, customerOrderId: doc.customerOrderId, warehouseId }}
+        preset={{ intention: formIntention, customerOrderId: doc.customerOrderId, warehouseId }}
       />
     </>
   );
@@ -563,6 +570,7 @@ export const AdjustmentsPage = () => {
   const [warehouseFilter, setWarehouseFilter] = useState(ALL_VALUE);
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
+  const [adjustIntent, setAdjustIntent] = useState<"inventory" | "signed">("signed");
   const formStore = useLogisticsStore({ kind: "form", form: "adjustment", enabled: open });
 
   const warehouseOptions = useMemo(() => {
@@ -614,8 +622,19 @@ export const AdjustmentsPage = () => {
       <LogisticsListPageContent
         listId="adjustments"
         title="Корректировки"
-        actionLabel="Новая корректировка"
-        onAction={() => setOpen(true)}
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button size="sm">Новая корректировка</Button>} />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setAdjustIntent("inventory"); setOpen(true); }}>
+                Инвентаризация
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setAdjustIntent("signed"); setOpen(true); }}>
+                Списание / оприходование
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
         columns={adjustmentColumns}
         sortDefs={adjustmentSortDefs}
         groupDefs={adjustmentGroupDefs()}
@@ -660,14 +679,15 @@ export const AdjustmentsPage = () => {
           </label>
         }
       />
-      <AdjustmentForm
+      <AdjustmentCatalogDialog
         snapshot={formStore.snapshot}
         balances={formStore.balances}
         loading={formStore.isLoading}
         loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
-        reload={reload}      />
+        intent={adjustIntent}
+      />
     </LogisticsPageShell>
   );
 };
@@ -778,12 +798,12 @@ export const AdjustmentDetailPage = () => {
       })}
     />
     {adjustOpen ? (
-      <AdjustmentForm
+      <AdjustmentCatalogDialog
         snapshot={store.snapshot}
         balances={store.balances}
         open
         onOpenChange={setAdjustOpen}
-        reload={store.reload}        preset={adjustPreset}
+        preset={adjustPreset}
       />
     ) : null}
     </>
@@ -798,14 +818,8 @@ export const OutputsPage = () => {
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [orderId, setOrderId] = useState("");
-  const [drafts, setDrafts] = useState<ProductionOutputDraftLine[]>([]);
-  const [expectedEndOn, setExpectedEndOn] = useState("");
-  const creatingRef = useRef(false);
   const formStore = useLogisticsStore({ kind: "form", form: "output", enabled: open });
   const snapshot = formStore.snapshot;
-  const balances = formStore.balances;
   const plantOptions = useMemo(() => {
     const ids = [...new Set(listRows.map((row) => row.plantId).filter(Boolean))];
     return ids
@@ -844,121 +858,13 @@ export const OutputsPage = () => {
       }),
     [listRows, overdueOnly, plantFilter, productFilter, search, status],
   );
-  const prodLines = snapshot.productionOrderLines.filter((line) => line.orderId === orderId);
-  const eligibleLines = prodLines.filter(
-    (line) => remainingToOutputForLine(snapshot, line.id, line.quantity) > 0,
-  );
-  const remainingFor = (lineId: string) => {
-    const line = prodLines.find((item) => item.id === lineId);
-    return line ? remainingToOutputForLine(snapshot, line.id, line.quantity) : 0;
-  };
-  const selectedDrafts = drafts.filter((draft) => Number(draft.quantity) > 0);
-  const canSubmit =
-    Boolean(orderId) &&
-    selectedDrafts.length > 0 &&
-    selectedDrafts.every((draft) => isAllowedQuantity(draft.quantity, remainingFor(draft.productionLineId)));
-
-  const resetDraftsForOrder = (nextOrderId: string) => {
-    const lines = snapshot.productionOrderLines.filter((line) => line.orderId === nextOrderId);
-    const eligible = lines.filter(
-      (line) => remainingToOutputForLine(snapshot, line.id, line.quantity) > 0,
-    );
-    setDrafts(
-      buildProductionOutputDrafts(eligible, (lineId) => {
-        const line = lines.find((item) => item.id === lineId);
-        return line ? remainingToOutputForLine(snapshot, line.id, line.quantity) : 0;
-      }),
-    );
-  };
-
-  const create = async (complete: boolean) => {
-    if (creatingRef.current || pending) {
-      return;
-    }
-    if (!orderId || !canSubmit) {
-      toast.error("Выберите заказ на производство и количество в пределах плана");
-      return;
-    }
-    try {
-      assertProductionOutputLines(
-        selectedDrafts.map((draft) => {
-          const line = prodLines.find((item) => item.id === draft.productionLineId)!;
-          return {
-            productId: draft.productId,
-            quantity: Number(draft.quantity),
-            planQuantity: line.quantity,
-            alreadyOutput: producedForProductionProduct(snapshot, orderId, line.productId),
-            allocationQuantity: draft.allocOrderLineId !== "none" ? Number(draft.allocQty) || 0 : 0,
-          };
-        }),
-      );
-      for (const draft of selectedDrafts) {
-        if (draft.allocOrderLineId === "none" || !(Number(draft.allocQty) > 0)) {
-          continue;
-        }
-        const allocLine = snapshot.customerOrderLines.find((line) => line.id === draft.allocOrderLineId);
-        if (!allocLine) {
-          continue;
-        }
-        const allocMax = Math.min(
-          Number(draft.quantity),
-          remainingToReserveForLine(allocLine, balances),
-        );
-        assertEnoughStock(allocMax, Number(draft.allocQty), "open order");
-      }
-    } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : "Проверьте количество");
-      return;
-    }
-    creatingRef.current = true;
-    setPending(true);
-    const ok = await runLogisticsAction(
-      () =>
-        createProductionOutput({
-          orderId,
-          expectedEndOn: expectedEndOn || null,
-          complete,
-          lines: selectedDrafts.map((draft) => {
-            const allocLine = snapshot.customerOrderLines.find((line) => line.id === draft.allocOrderLineId);
-            return {
-              productId: draft.productId,
-              quantity: Number(draft.quantity),
-              allocation:
-                allocLine && Number(draft.allocQty) > 0
-                  ? {
-                      ownerType: "order" as const,
-                      ownerId: allocLine.orderId,
-                      quantity: Number(draft.allocQty),
-                    }
-                  : undefined,
-            };
-          }),
-        }),
-      complete ? "Выпуск завершён" : "Выпуск запланирован",
-      reload,
-    );
-    creatingRef.current = false;
-    setPending(false);
-    if (ok) {
-      setOpen(false);
-      setOrderId("");
-      setDrafts([]);
-      setExpectedEndOn("");
-    }
-  };
-
   return (
     <LogisticsPageShell crumbs={[{ label: "Выпуски" }]}>
       <LogisticsListPageContent
         listId="outputs"
         title="Выпуски"
         actionLabel="Новый выпуск"
-        onAction={() => {
-          setOrderId("");
-          setDrafts([]);
-          setExpectedEndOn("");
-          setOpen(true);
-        }}
+        onAction={() => setOpen(true)}
         columns={outputColumns}
         sortDefs={outputSortDefs}
         groupDefs={outputGroupDefs()}
@@ -1014,84 +920,13 @@ export const OutputsPage = () => {
           </>
         }
       />
-      <LogisticsDialog
+      <CreateOutputDialog
         open={open}
-        onOpenChange={(next) => {
-          if (pending) {
-            return;
-          }
-          setOpen(next);
-          if (!next) {
-          }
-        }}
-        title="Новый выпуск"
-      >
-        {formStore.isLoading ? <LogisticsLoading /> : null}
-        {formStore.error ? <LogisticsError message={formStore.error} /> : null}
-        {!formStore.isLoading && !formStore.error ? (
-        <div className="flex flex-col gap-3" aria-busy={pending || undefined}>
-          <FieldSelect
-            label="Заказ на производство"
-            value={orderId}
-            disabled={pending}
-            items={snapshot.productionOrders
-              .filter((item) => item.status !== "closed" && item.status !== "cancelled")
-              .map((item) => ({ value: item.id, label: item.number }))}
-            onChange={(value) => {
-              setOrderId(value);
-              resetDraftsForOrder(value);
-            }}
-          />
-          {orderId ? (
-            <ProductionOutputLinesFields
-              snapshot={snapshot}
-              balances={balances}
-              drafts={drafts}
-              remainingByLineId={remainingFor}
-              disabled={pending || eligibleLines.length === 0}
-              onChange={setDrafts}
-            />
-          ) : null}
-          <ExpectedEndField
-            value={expectedEndOn}
-            disabled={pending || !orderId}
-            onChange={(value) => {
-              setExpectedEndOn(value);
-            }}
-          />
-          {pending ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              Создаём выпуск…
-            </p>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => setOpen(false)}
-            >
-              Отмена
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending || !canSubmit}
-              onClick={() => void create(false)}
-            >
-              Сохранить план
-            </Button>
-            <Button
-              type="button"
-              disabled={pending || !canSubmit}
-              onClick={() => void create(true)}
-            >
-              Завершить выпуск
-            </Button>
-          </div>
-        </div>
-        ) : null}
-      </LogisticsDialog>
+        onOpenChange={setOpen}
+        snapshot={snapshot}
+        loading={formStore.isLoading}
+        error={formStore.error}
+      />
     </LogisticsPageShell>
   );
 };
@@ -1107,7 +942,20 @@ export const OutputDetailPage = () => {
   const [adjustPreset, setAdjustPreset] = useState<CancelGuidance["adjustmentPreset"]>();
   const [reserveTarget, setReserveTarget] = useState<OutputReserveTarget | null>(null);
   const [releaseTarget, setReleaseTarget] = useState<OutputReleaseTarget | null>(null);
+  const [addLinesOpen, setAddLinesOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState<string[]>([]);
   const doc = matchDocumentParam(store.snapshot.outputs, params.id);
+  useEffect(() => {
+    if (!doc) return;
+    const ids = takeHighlightedRows(doc.id);
+    if (ids.length === 0) return;
+    const frame = requestAnimationFrame(() => setHighlighted(ids));
+    const timer = window.setTimeout(() => setHighlighted([]), 4000);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [doc, store.snapshot]);
   const canEditReserve = doc?.status === "draft";
   const lines = doc ? store.snapshot.outputLines.filter((line) => line.outputId === doc.id) : [];
   const production = doc ? productionOrderById(store.snapshot, doc.productionOrderId) : undefined;
@@ -1185,19 +1033,25 @@ export const OutputDetailPage = () => {
         actions={
           <>
             {doc.status === "draft" ? (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  void runLogisticsAction(() => completeOutput(doc.id), "Выпуск завершён", store.reload);
-                }}
-              >
-                Завершить
-              </Button>
+              <>
+                <Button type="button" size="sm" variant="outline" onClick={() => setAddLinesOpen(true)}>
+                  Добавить товары
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    void runLogisticsAction(() => completeOutput(doc.id), "Выпуск завершён", store.reload);
+                  }}
+                >
+                  Завершить
+                </Button>
+              </>
             ) : null}
             {cancelGuidance ? (
               <DocumentCancelControl
                 guidance={cancelGuidance}
+                kicker={doc.number}
                 reload={store.reload}
                 onFollowUp={(action, guidance) => {
                   if (action.id === "open-adjustment") {
@@ -1282,7 +1136,10 @@ export const OutputDetailPage = () => {
                       ),
                     );
                     return (
-                      <TableRow key={line.id}>
+                      <TableRow
+                        key={line.id}
+                        className={highlighted.includes(line.id) ? HIGHLIGHT_ROW_CLASS : undefined}
+                      >
                         <TableCell className="px-3 py-2">
                           <ProductIdentity snapshot={store.snapshot} productId={line.productId} />
                         </TableCell>
@@ -1324,6 +1181,8 @@ export const OutputDetailPage = () => {
                                     ownerId: line.toOwnerId!,
                                     productId: line.productId,
                                     quantity: line.quantity,
+                                    highlightDocumentId: doc.id,
+                                    highlightLineId: line.id,
                                   })
                                 }
                               >
@@ -1341,6 +1200,7 @@ export const OutputDetailPage = () => {
                                     productionOrderId: doc.productionOrderId,
                                     productId: line.productId,
                                     outputId: doc.id,
+                                    lineId: line.id,
                                   })
                                 }
                               >
@@ -1380,12 +1240,12 @@ export const OutputDetailPage = () => {
         ]}
       />
       {adjustOpen ? (
-        <AdjustmentForm
+        <AdjustmentCatalogDialog
           snapshot={store.snapshot}
           balances={store.balances}
           open
           onOpenChange={setAdjustOpen}
-          reload={store.reload}          preset={adjustPreset}
+          preset={adjustPreset}
         />
       ) : null}
       <OutputReserveDialog target={reserveTarget} onClose={() => setReserveTarget(null)} reload={store.reload} />
@@ -1395,6 +1255,15 @@ export const OutputDetailPage = () => {
         onClose={() => setReleaseTarget(null)}
         reload={store.reload}
       />
+      {doc?.status === "draft" ? (
+        <AddDraftOutputDialog
+          open={addLinesOpen}
+          onOpenChange={setAddLinesOpen}
+          snapshot={store.snapshot}
+          output={doc}
+          onAdded={store.reload}
+        />
+      ) : null}
     </LogisticsPageShell>
   );
 };
@@ -1508,6 +1377,7 @@ const DocumentDetail = ({
             {cancelGuidance ? (
               <DocumentCancelControl
                 guidance={cancelGuidance}
+                kicker={title}
                 reload={store.reload}
                 onFollowUp={onCancelFollowUp ?? (() => undefined)}
               />

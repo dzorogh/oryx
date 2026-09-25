@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Оryx · Перемещение</title>
+<style>
+/*
+  ЧТО ПОКАЗЫВАЕТ ЭКРАН
+  --------------------
+  Oryx · Документы · Новое перемещение.
+  Тип A: каталожная модалка «Перемещение» в заполненном состоянии.
+
+  1. Липкая шапка: кикер, заголовок, поля реквизитов (Со склада → На склад, Ожидаемое окончание),
+     тулбар (поиск, «Свернуть все», тумблер «Только выбранные» выключен, «Заполнить всем остатком»).
+  2. Прокручивается только таблица. Колонки: Товар | Остаток | Количество.
+     Поле количества выглядит как текстовое, единица «шт» внутри справа.
+  3. Дерево:
+     - Категория ATV (липкая строка, раскрыта): у каждого товара подстроки владельцев,
+       даже если владелец один; поле количества только в подстроке (Свободно, CO-1042, MENA).
+     - Категория Запчасти (раскрыта): превышение остатка — красная рамка и подпись «максимум 18»
+       (показанное значение 30 не обрезается); пустая строка приглушена.
+     - Категория Экипировка свёрнута, дочерние строки скрыты.
+  4. Липкий футер: итог «3 товара · 56 шт · WH-7 → WH-2», подсказка ⌘↵ и основная кнопка «Переместить»
+     (активна — правило блокировки раскрывается по клику, здесь ошибка поля просто уже видна).
+
+  Без JS, без сети, без внешних ресурсов.
+*/
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: #f4f4f5;
+  color: #18181b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-font-smoothing: antialiased;
+}
+
+.modal {
+  width: min(1120px, calc(100vw - 48px));
+  height: min(860px, calc(100vh - 48px));
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(9, 9, 11, 0.16), 0 4px 12px rgba(9, 9, 11, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- шапка ---------- */
+
+.header {
+  flex: 0 0 auto;
+  padding: 18px 20px 18px;
+  border-bottom: 1px solid #e4e4e7;
+  background: #ffffff;
+}
+
+.kicker {
+  font-size: 12px;
+  color: #71717a;
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+
+.requisites {
+  font-size: 13px;
+  color: #71717a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.requisites .code {
+  color: #18181b;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.requisites .sep {
+  color: #d4d4d8;
+}
+
+.req-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.req-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.req-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #3f3f46;
+}
+
+.req-optional {
+  font-weight: 400;
+  color: #a1a1aa;
+}
+
+.req-control {
+  height: 32px;
+  min-width: 150px;
+  padding: 0 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.req-control .chev {
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid #71717a;
+  border-bottom: 1.5px solid #71717a;
+  transform: rotate(45deg) translateY(-2px);
+}
+
+.req-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #71717a;
+}
+
+.req-arrow {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  color: #a1a1aa;
+}
+
+.toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  padding: 8px 20px;
+  background: #f4f4f5;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.toolbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+
+.toolbar-sub {
+  font-weight: 400;
+  color: #71717a;
+  margin-left: 4px;
+}
+
+.toolbar .input,
+.toolbar .btn,
+.toolbar .toggle {
+  height: 28px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.toolbar .btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: #3f3f46;
+  padding: 0 8px;
+}
+
+.toolbar .search {
+  position: relative;
+  flex: 0 1 220px;
+  min-width: 140px;
+}
+
+.search .icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid #a1a1aa;
+  border-radius: 50%;
+}
+
+.search .icon::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  width: 5px;
+  height: 1.5px;
+  background: #a1a1aa;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+
+.input {
+  height: 32px;
+  width: 100%;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 13px;
+  color: #18181b;
+  padding: 0 10px;
+}
+
+.input.with-icon { padding-left: 28px; }
+.input::placeholder { color: #a1a1aa; }
+
+.btn {
+  height: 32px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #18181b;
+  font: inherit;
+  font-size: 13px;
+  padding: 0 12px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.btn-primary {
+  background: #18181b;
+  border-color: #18181b;
+  color: #ffffff;
+  font-weight: 500;
+  height: 32px;
+  padding: 0 16px;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px 0 8px;
+  font-size: 13px;
+  color: #18181b;
+  border-radius: 6px;
+}
+
+.switch {
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: #d4d4d8;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(9, 9, 11, 0.2);
+}
+
+.spacer { flex: 1 1 auto; }
+
+/* ---------- таблица ---------- */
+
+.table-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+col.c-name  { width: auto; }
+col.c-stock { width: 140px; }
+col.c-qty   { width: 190px; }
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e4e7;
+  font-size: 12px;
+  font-weight: 500;
+  color: #71717a;
+  text-align: left;
+  padding: 8px 20px;
+  height: 36px;
+}
+
+thead th.num { text-align: right; }
+thead th.c-qty-head { padding-right: 20px; }
+
+tbody td {
+  border-bottom: 1px solid #f4f4f5;
+  padding: 8px 20px;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+tbody td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #71717a;
+}
+
+/* липкая строка категории */
+tr.cat th {
+  position: sticky;
+  top: 36px;
+  z-index: 2;
+  background: #f4f4f5;
+  border-top: 1px solid #e4e4e7;
+  border-bottom: 1px solid #e4e4e7;
+  padding: 7px 20px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: #18181b;
+}
+
+.cat-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chev {
+  width: 0;
+  height: 0;
+  flex: 0 0 auto;
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+  border-top: 5.5px solid #52525b;
+}
+
+.chev.collapsed {
+  border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent;
+  border-left: 5.5px solid #52525b;
+  border-right: 0;
+}
+
+.cat-sum {
+  font-weight: 400;
+  font-size: 12px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* товар */
+.product {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.product .name { color: #18181b; }
+.product .code {
+  font-size: 12px;
+  color: #a1a1aa;
+  font-variant-numeric: tabular-nums;
+}
+
+.owner-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid #e4e4e7;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #3f3f46;
+  background: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.owner-chip .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a1a1aa;
+}
+
+.owner-chip.order .dot { background: #2563eb; }
+.owner-chip.region .dot { background: #7c3aed; }
+
+.owner-kind {
+  margin-left: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+.owners-count {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #71717a;
+}
+
+tr.owner-row td.owner-cell { padding-left: 40px; }
+.owner-line { margin-top: 4px; }
+.muted-num { color: #a1a1aa; }
+
+tr.owner-row td { border-bottom: 1px solid #f4f4f5; }
+tr.group-head td {
+  border-top: 1px solid #e4e4e7;
+  border-bottom: 1px solid #f4f4f5;
+}
+
+/* поле количества */
+.qty-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.qty {
+  width: 120px;
+  position: relative;
+}
+
+.qty-field {
+  height: 32px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0 10px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: #18181b;
+}
+
+.qty-field .unit {
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
+.qty-field.error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+.qty-field .placeholder { color: #d4d4d8; }
+
+.qty-error {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #dc2626;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tr.faded td { opacity: 0.55; }
+
+/* ---------- футер ---------- */
+
+.footer {
+  flex: 0 0 auto;
+  border-top: 1px solid #e4e4e7;
+  background: #ffffff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.summary {
+  font-size: 13px;
+  color: #18181b;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+</style>
+</head>
+<body>
+
+<div class="modal" role="dialog" aria-label="Перемещение">
+
+  <!-- шапка -->
+  <div class="header">
+    <div class="kicker">Документы · Новое перемещение</div>
+    <h1 class="title">Перемещение</h1>
+    <div class="req-fields">
+      <label class="req-field">
+        <span class="req-label">Со склада</span>
+        <span class="req-control">WH-7<span class="chev"></span></span>
+      </label>
+      <span class="req-arrow">→</span>
+      <label class="req-field">
+        <span class="req-label">На склад</span>
+        <span class="req-control">WH-2<span class="chev"></span></span>
+      </label>
+      <label class="req-field">
+        <span class="req-label">Ожидаемое окончание <span class="req-optional">· необязательно</span></span>
+        <span class="req-control">28.09.2026<span class="req-hint">через 3 дня</span></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- панель таблицы: только управление видом списка -->
+  <div class="toolbar">
+    <div class="toolbar-title">Товары</div>
+    <div class="search">
+      <span class="icon"></span>
+      <input class="input with-icon" type="text" placeholder="Поиск товара">
+    </div>
+    <button class="btn btn-ghost" type="button">Свернуть все</button>
+    <span class="toggle"><span class="switch"></span>Только выбранные</span>
+  </div>
+
+  <!-- таблица -->
+  <div class="table-scroll">
+    <table>
+      <colgroup>
+        <col class="c-name">
+        <col class="c-stock">
+        <col class="c-qty">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Товар</th>
+          <th class="num">Остаток</th>
+          <th class="num c-qty-head">Количество</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr class="cat">
+          <th colspan="3">
+            <span class="cat-line">
+              <span class="chev"></span>
+              ATV
+              <span class="cat-sum">2 позиции · 26 шт</span>
+            </span>
+          </th>
+        </tr>
+
+        <tr class="group-head">
+          <td>
+            <span class="product"><span class="name">Sharmax Force 320</span><span class="code">PRD-18</span></span>
+          </td>
+          <td class="num muted-num">40 шт</td>
+          <td></td>
+        </tr>
+        <tr class="owner-row">
+          <td class="owner-cell"><span class="owner-chip free"><span class="dot"></span>Свободно</span></td>
+          <td class="num">40 шт</td>
+          <td>
+            <div class="qty-wrap">
+              <div class="qty">
+                <div class="qty-field"><span>12</span><span class="unit">шт</span></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <tr class="group-head">
+          <td>
+            <span class="product"><span class="name">Sharmax Hummer 400</span><span class="code">PRD-21</span></span>
+          </td>
+          <td class="num muted-num">16 шт</td>
+          <td></td>
+        </tr>
+        <tr class="owner-row">
+          <td class="owner-cell"><span class="owner-chip free"><span class="dot"></span>Свободно</span></td>
+          <td class="num">8 шт</td>
+          <td>
+            <div class="qty-wrap">
+              <div class="qty">
+                <div class="qty-field"><span>8</span><span class="unit">шт</span></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr class="owner-row">
+          <td class="owner-cell"><span class="owner-chip order"><span class="dot"></span>CO-1042</span><span class="owner-kind">заказ клиента</span></td>
+          <td class="num">6 шт</td>
+          <td>
+            <div class="qty-wrap">
+              <div class="qty">
+                <div class="qty-field"><span>6</span><span class="unit">шт</span></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr class="owner-row faded">
+          <td class="owner-cell"><span class="owner-chip region"><span class="dot"></span>MENA</span><span class="owner-kind">регион</span></td>
+          <td class="num">2 шт</td>
+          <td>
+            <div class="qty-wrap">
+              <div class="qty">
+                <div class="qty-field"><span class="placeholder">0</span><span class="unit">шт</span></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <tr class="cat">
+          <th colspan="3">
+            <span class="cat-line">
+              <span class="chev"></span>
+              Запчасти
+              <span class="cat-sum">1 позиция · 30 шт</span>
+            </span>
+          </th>
+        </tr>
+
+        <tr class="group-head">
+          <td>
+            <span class="product"><span class="name">Вариатор CVT</span><span class="code">PRD-44</span></span>
+          </td>
+          <td class="num muted-num">18 шт</td>
+          <td></td>
+        </tr>
+        <tr class="owner-row">
+          <td class="owner-cell"><span class="owner-chip free"><span class="dot"></span>Свободно</span></td>
+          <td class="num">18 шт</td>
+          <td>
+            <div class="qty-wrap">
+              <div class="qty">
+                <div class="qty-field error"><span>30</span><span class="unit">шт</span></div>
+                <div class="qty-error">максимум 18</div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <tr class="group-head faded">
+          <td>
+            <span class="product"><span class="name">Ремень привода</span><span class="code">PRD-45</span></span>
+          </td>
+          <td class="num muted-num">120 шт</td>
+          <td></td>
+        </tr>
+        <tr class="owner-row faded">
+          <td class="owner-cell"><span class="owner-chip free"><span class="dot"></span>Свободно</span></td>
+          <td class="num">120 шт</td>
+          <td>
+            <div class="qty-wrap">
+              <div class="qty">
+                <div class="qty-field"><span class="placeholder">0</span><span class="unit">шт</span></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <tr class="cat">
+          <th colspan="3">
+            <span class="cat-line">
+              <span class="chev collapsed"></span>
+              Экипировка
+              <span class="cat-sum">0 позиций</span>
+            </span>
+          </th>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- футер -->
+  <div class="footer">
+    <div>
+      <div class="summary">3 товара · 56 шт · WH-7 → WH-2</div>
+      <div class="hint">⌘↵ отправить</div>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn btn-primary" type="button">Переместить</button>
+  </div>
+
+</div>
+
+</body>
+</html>

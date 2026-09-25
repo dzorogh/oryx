@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,8 @@ import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { ProductActivityCard } from "@/features/logistics/ui/product-activity-card";
 import { ProductBalancesTable } from "@/features/logistics/ui/product-balances-table";
 import { RelatedDocuments, RelatedDocumentsBoard } from "@/features/logistics/ui/related-documents";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
+import { DialogShell } from "@/features/logistics/ui/dialog-shell";
+import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
   createPlant,
@@ -46,6 +47,7 @@ import {
 } from "@/features/logistics/logistics-lookups";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
+import { ProductionOrderCatalogDialog } from "@/features/logistics/ui/production-order-catalog-dialog";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
@@ -69,29 +71,30 @@ import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { ProductPhoto } from "@/features/store/product-photo";
 
 export const ProductsPage = () => {
+  const router = useRouter();
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({ kind: "stock" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("шт");
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const create = async () => {
-    if (!name.trim() || !unit.trim()) {
-      toast.error("Заполните название и единицу");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      () =>
-        createProduct({
-          name: name.trim(),
-          unit: unit.trim(),
-        }),
-      "Товар добавлен",
-      reload,
-    );
-    if (ok) {
+    if (submitting || !name.trim() || !unit.trim()) return;
+    setSubmitting(true);
+    setServerError(null);
+    try {
+      const id = await createProduct({ name: name.trim(), unit: unit.trim() });
+      await reload();
       setOpen(false);
       setName("");
       setUnit("шт");
+      router.push(hrefForProduct(id));
+    } catch (caught: unknown) {
+      const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      setServerError(translateLogisticsError(raw));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -125,25 +128,31 @@ export const ProductsPage = () => {
         </LogisticsTableCard>
       ) : null}
 
-      <LogisticsDialog
+      <DialogShell
         open={open}
         onOpenChange={setOpen}
+        size="sm"
+        kicker="Товары"
         title="Новый товар"
+        submitLabel="Добавить"
+        onSubmit={() => void create()}
+        submitDisabled={!name.trim() || !unit.trim()}
+        disabledReason="Заполните название и единицу"
+        submitting={submitting}
+        serverError={serverError}
+        dirty={name.trim().length > 0 || unit !== "шт"}
       >
         <div className="flex flex-col gap-3">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Название</span>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Дубовый стул" />
           </label>
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Единица</span>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Единица</span>
             <Input value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="шт" />
           </label>
-          <Button type="button" onClick={() => void create()}>
-            Добавить
-          </Button>
         </div>
-      </LogisticsDialog>
+      </DialogShell>
     </LogisticsPageShell>
   );
 };
@@ -253,55 +262,25 @@ export const ProductDetailPage = ({ productId }: { productId?: string } = {}) =>
       />
       <DocumentLedger snapshot={snapshot} hide="product" filter={(entry) => entry.productId === product.id} />
 
-      <LogisticsDialog
+      <ProductionOrderCatalogDialog
         open={productionOpen}
-        onOpenChange={(next) => {
-          setProductionOpen(next);
-          if (next) {
-            setPlantId(plantItems.length === 1 ? plantItems[0].value : "");
-            setQuantity("1");
-            setExpectedEndOn("");
-          }
-        }}
-        title="Новый заказ на производство"
-      >
-        <div className="flex flex-col gap-3">
-          <FieldSelect
-            label="Завод"
-            value={plantId}
-            items={plantItems}
-            onChange={setPlantId}
-            placeholder="Выберите производителя"
-          />
-          {plants.length > 0 ? (
-            <p className="text-xs text-muted-foreground">Только заводы, где производится этот товар.</p>
-          ) : (
-            <p className="text-xs text-muted-foreground">У товара нет связанного завода — доступны все площадки.</p>
-          )}
-          <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Количество</span>
-            <Input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(event) => setQuantity(event.target.value)}
-              aria-label="Количество"
-            />
-          </label>
-          <Button type="button" disabled={!plantId || !(Number(quantity) > 0)} onClick={() => void createProduction()}>
-            Создать
-          </Button>
-        </div>
-      </LogisticsDialog>
+        onOpenChange={setProductionOpen}
+        snapshot={snapshot}
+        balances={balances}
+        presetProductId={product.id}
+      />
     </LogisticsPageShell>
   );
 };
 
 export const WarehousesPage = () => {
+  const router = useRouter();
   const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [kind, setKind] = useState<"hub" | "customer">("customer");
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const catalogRows = mapWarehouseRows(snapshot).filter((row) => {
@@ -313,18 +292,21 @@ export const WarehousesPage = () => {
   });
 
   const create = async () => {
-    if (!name.trim()) {
-      toast.error("Укажите название склада");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      () => createWarehouse({ name: name.trim() }),
-      "Склад добавлен",
-      reload,
-    );
-    if (ok) {
+    if (submitting || !name.trim()) return;
+    setSubmitting(true);
+    setServerError(null);
+    try {
+      const id = await createWarehouse({ name: name.trim(), kind });
+      await reload();
       setOpen(false);
       setName("");
+      setKind("customer");
+      router.push(hrefForWarehouse(id));
+    } catch (caught: unknown) {
+      const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      setServerError(translateLogisticsError(raw));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -353,21 +335,36 @@ export const WarehousesPage = () => {
         toggleAriaLabel="Тип склада"
       />
 
-      <LogisticsDialog
+      <DialogShell
         open={open}
         onOpenChange={setOpen}
+        size="sm"
+        kicker="Склады"
         title="Новый склад"
+        submitLabel="Добавить"
+        onSubmit={() => void create()}
+        submitDisabled={!name.trim()}
+        disabledReason="Укажите название"
+        submitting={submitting}
+        serverError={serverError}
+        dirty={name.trim().length > 0 || kind !== "customer"}
       >
         <div className="flex flex-col gap-3">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Название</span>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Dubai Hub" />
           </label>
-          <Button type="button" onClick={() => void create()}>
-            Добавить
-          </Button>
+          <FieldSelect
+            label="Тип склада"
+            value={kind}
+            items={[
+              { value: "hub", label: "Склад-хаб" },
+              { value: "customer", label: "Склад покупателя" },
+            ]}
+            onChange={(value) => setKind(value === "hub" ? "hub" : "customer")}
+          />
         </div>
-      </LogisticsDialog>
+      </DialogShell>
     </LogisticsPageShell>
   );
 };
@@ -382,6 +379,9 @@ export const WarehouseDetailPage = () => {
   const warehouse = snapshot.warehouses.find((item) => item.id === params.id);
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState("");
+  const [kind, setKind] = useState<"hub" | "customer">("customer");
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const stock = warehouse
     ? summarizeProductStock(balances, {
@@ -396,21 +396,27 @@ export const WarehouseDetailPage = () => {
 
   const openEdit = () => {
     setName(warehouse?.name ?? "");
+    setKind(warehouse?.kind === "hub" ? "hub" : "customer");
     setEditOpen(true);
   };
 
   const save = async () => {
-    if (!warehouse || !name.trim()) {
-      toast.error("Укажите название склада");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      () => updateWarehouse({ id: warehouse.id, name: name.trim() }),
-      "Склад обновлён",
-      reload,
-    );
-    if (ok) {
+    if (submitting || !warehouse || !name.trim()) return;
+    setSubmitting(true);
+    setServerError(null);
+    try {
+      await updateWarehouse({
+        id: warehouse.id,
+        name: name.trim(),
+        kind: warehouse.kind === "plant" ? "plant" : kind,
+      });
+      await reload();
       setEditOpen(false);
+    } catch (caught: unknown) {
+      const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      setServerError(translateLogisticsError(raw));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -492,33 +498,59 @@ export const WarehouseDetailPage = () => {
         filter={(entry) => entry.locationType === "warehouse" && entry.locationId === warehouse.id}
       />
 
-      <LogisticsDialog
+      <DialogShell
         open={editOpen}
         onOpenChange={setEditOpen}
+        size="sm"
+        kicker={warehouse.code}
         title="Склад"
+        submitLabel="Сохранить"
+        pendingLabel="Сохраняем…"
+        onSubmit={() => void save()}
+        submitDisabled={!name.trim()}
+        disabledReason="Укажите название"
+        submitting={submitting}
+        serverError={serverError}
+        dirty={name.trim() !== warehouse.name || (warehouse.kind !== "plant" && kind !== warehouse.kind)}
       >
         <div className="flex flex-col gap-3">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            Код: <LogisticsCodeBadge code={warehouse.code} />
-          </p>
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Название</span>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Код</span>
+            <Input value={warehouse.code} readOnly />
+          </label>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Dubai Hub" />
           </label>
-          <p className="text-sm text-muted-foreground">Завод: {owner}</p>
-          <Button type="button" onClick={() => void save()}>
-            Сохранить
-          </Button>
+          {warehouse.kind === "plant" ? (
+            <label className="space-y-1.5 text-sm">
+              <span className="text-muted-foreground">Тип склада</span>
+              <Input value="Склад завода" readOnly />
+            </label>
+          ) : (
+            <FieldSelect
+              label="Тип склада"
+              value={kind}
+              items={[
+                { value: "hub", label: "Склад-хаб" },
+                { value: "customer", label: "Склад покупателя" },
+              ]}
+              onChange={(value) => setKind(value === "hub" ? "hub" : "customer")}
+            />
+          )}
         </div>
-      </LogisticsDialog>
+      </DialogShell>
     </LogisticsPageShell>
   );
 };
 
 export const PlantsPage = () => {
+  const router = useRouter();
   const { snapshot, isLoading, error, reload } = useLogisticsStore({ kind: "catalog" });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const catalogRows = mapPlantRows(snapshot).filter((row) => {
     const q = search.trim().toLowerCase();
@@ -527,18 +559,20 @@ export const PlantsPage = () => {
   });
 
   const create = async () => {
-    if (!name.trim()) {
-      toast.error("Укажите название производителя");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      () => createPlant({ name: name.trim() }),
-      "Завод добавлен",
-      reload,
-    );
-    if (ok) {
+    if (submitting || !name.trim()) return;
+    setSubmitting(true);
+    setServerError(null);
+    try {
+      const id = await createPlant({ name: name.trim() });
+      await reload();
       setOpen(false);
       setName("");
+      router.push(hrefForPlant(id));
+    } catch (caught: unknown) {
+      const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      setServerError(translateLogisticsError(raw));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -558,21 +592,25 @@ export const PlantsPage = () => {
         search={{ value: search, onChange: setSearch, placeholder: "Поиск: код или название" }}
       />
 
-      <LogisticsDialog
+      <DialogShell
         open={open}
         onOpenChange={setOpen}
+        size="sm"
+        kicker="Заводы"
         title="Новый завод"
+        submitLabel="Добавить"
+        onSubmit={() => void create()}
+        submitDisabled={!name.trim()}
+        disabledReason="Укажите название"
+        submitting={submitting}
+        serverError={serverError}
+        dirty={name.trim().length > 0}
       >
-        <div className="flex flex-col gap-3">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Название</span>
-            <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="ZHEJIANG TAOTAO VEHICLES CO.,LTD" />
-          </label>
-          <Button type="button" onClick={() => void create()}>
-            Добавить
-          </Button>
-        </div>
-      </LogisticsDialog>
+        <label className="space-y-1.5 text-sm">
+          <span className="text-muted-foreground">Название</span>
+          <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="ZHEJIANG TAOTAO VEHICLES CO.,LTD" />
+        </label>
+      </DialogShell>
     </LogisticsPageShell>
   );
 };
@@ -588,6 +626,8 @@ export const PlantDetailPage = () => {
   const warehouse = plant ? warehouseById(snapshot, plant.warehouseId) : undefined;
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const stock = warehouse
     ? summarizeProductStock(balances, {
@@ -603,21 +643,18 @@ export const PlantDetailPage = () => {
   };
 
   const save = async () => {
-    if (!plant || !name.trim()) {
-      toast.error("Укажите название производителя");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      () =>
-        updatePlant({
-          id: plant.id,
-          name: name.trim(),
-        }),
-      "Завод обновлён",
-      reload,
-    );
-    if (ok) {
+    if (submitting || !plant || !name.trim()) return;
+    setSubmitting(true);
+    setServerError(null);
+    try {
+      await updatePlant({ id: plant.id, name: name.trim() });
+      await reload();
       setEditOpen(false);
+    } catch (caught: unknown) {
+      const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      setServerError(translateLogisticsError(raw));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -694,32 +731,36 @@ export const PlantDetailPage = () => {
         />
       ) : null}
 
-      <LogisticsDialog
+      <DialogShell
         open={editOpen}
         onOpenChange={setEditOpen}
+        size="sm"
+        kicker={plant.code}
         title="Завод"
+        submitLabel="Сохранить"
+        pendingLabel="Сохраняем…"
+        onSubmit={() => void save()}
+        submitDisabled={!name.trim()}
+        disabledReason="Укажите название"
+        submitting={submitting}
+        serverError={serverError}
+        dirty={name.trim() !== plant.name}
       >
         <div className="flex flex-col gap-3">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            Код: <LogisticsCodeBadge code={plant.code} />
-          </p>
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Название</span>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Код</span>
+            <Input value={plant.code} readOnly />
+          </label>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="ZHEJIANG TAOTAO VEHICLES CO.,LTD" />
           </label>
-          <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            Склад:{" "}
-            {warehouse ? (
-              <LogisticsCodeBadge code={warehouse.code} href={hrefForWarehouse(warehouse.id)} />
-            ) : (
-              plant.warehouseId
-            )}
-          </p>
-          <Button type="button" onClick={() => void save()}>
-            Сохранить
-          </Button>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Склад</span>
+            <Input value={warehouse?.code ?? plant.warehouseId} readOnly />
+          </label>
         </div>
-      </LogisticsDialog>
+      </DialogShell>
     </LogisticsPageShell>
   );
 };

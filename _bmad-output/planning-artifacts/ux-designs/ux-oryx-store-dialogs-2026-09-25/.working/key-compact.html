@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Oryx · диалоги: тип C и тип D</title>
+<style>
+/*
+  Oryx — мок двух диалогов рядом (десктоп). Без JS, без сети, системные шрифты.
+  Визуальный язык общий с соседними мокапами:
+  белая карточка, граница #e4e4e7, текст #18181b, приглушённый #71717a,
+  первичная кнопка #18181b с белым текстом, радиус 8px, размер 13–14px.
+  Имя ("Название") показано только в форме склада — это карточка справочника складов.
+  Везде в остальных местах — только коды.
+*/
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 56px 40px;
+  background: #f4f4f5;
+  color: #18181b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.row { display: flex; gap: 32px; align-items: flex-start; }
+.slot { display: flex; flex-direction: column; gap: 10px; }
+.slot-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #71717a;
+  padding-left: 2px;
+}
+.dialog {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.05), 0 8px 24px rgba(24, 24, 27, 0.06);
+  overflow: hidden;
+}
+.dialog-c { width: 440px; }
+.dialog-d { width: 400px; }
+.head { padding: 18px 20px 14px; }
+.kicker { font-size: 12px; color: #71717a; margin-bottom: 4px; }
+.title { font-size: 16px; font-weight: 600; margin: 0; }
+.body { padding: 0 20px 18px; }
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.label { display: block; font-size: 13px; color: #71717a; margin-bottom: 6px; }
+.input {
+  width: 100%;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #18181b;
+  background: #ffffff;
+}
+.input.readonly { background: #f4f4f5; color: #71717a; }
+.check-row { display: flex; gap: 10px; align-items: flex-start; }
+.box {
+  width: 16px; height: 16px; flex: 0 0 16px; margin-top: 2px;
+  border-radius: 4px; background: #18181b;
+  color: #ffffff; font-size: 11px; line-height: 16px; text-align: center;
+}
+.check-title { font-size: 14px; }
+.hint { font-size: 12px; color: #71717a; margin-top: 2px; }
+.text { font-size: 14px; margin: 0; }
+.footer {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #e4e4e7;
+  background: #ffffff;
+}
+.footer.end { justify-content: flex-end; }
+.spacer { flex: 1; }
+.btn {
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: default;
+}
+.btn-primary { background: #18181b; color: #ffffff; }
+.btn-secondary { background: #ffffff; color: #18181b; border-color: #e4e4e7; }
+.kbd-hint { font-size: 12px; color: #71717a; }
+</style>
+</head>
+<body>
+<div class="row">
+
+  <div class="slot">
+    <div class="slot-label">Тип C · реквизиты</div>
+    <div class="dialog dialog-c">
+      <div class="head">
+        <div class="kicker">Склады · WH-7</div>
+        <h2 class="title">Склад</h2>
+      </div>
+      <div class="body">
+        <div class="field">
+          <span class="label">Код</span>
+          <div class="input readonly">WH-7</div>
+        </div>
+        <div class="field">
+          <span class="label">Название</span>
+          <div class="input">Dubai Hub</div>
+        </div>
+        <div class="field">
+          <div class="check-row">
+            <div class="box">✓</div>
+            <div>
+              <div class="check-title">Хаб</div>
+              <div class="hint">С хаба можно собирать заказ клиента на весь каталог.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="kbd-hint">⌘↵ отправить</span>
+        <span class="spacer"></span>
+        <span class="btn btn-primary">Сохранить</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <div class="slot-label">Тип D · подтверждение</div>
+    <div class="dialog dialog-d">
+      <div class="head">
+        <div class="kicker">Заказ на производство PO-18</div>
+        <h2 class="title">Закрыть заказ?</h2>
+      </div>
+      <div class="body">
+        <p class="text">Незакрытые строки перестанут попадать в новые выпуски.</p>
+      </div>
+      <div class="footer end">
+        <span class="btn btn-secondary">Назад</span>
+        <span class="btn btn-primary">Закрыть заказ</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

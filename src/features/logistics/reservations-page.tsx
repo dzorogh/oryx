@@ -9,7 +9,14 @@ import { loadReservationList } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { hrefForOwner } from "@/features/logistics/logistics-availability";
-import { ReservationForm } from "@/features/logistics/logistics-forms";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ReservationCatalogDialog } from "@/features/logistics/ui/reservation-catalog-dialog";
 import { FREE_OWNER_LABEL, OWNER_TYPE_LABELS, RESERVATION_DIRECTION_LABELS, formatMetaTimestamp, formatQuantity } from "@/features/logistics/logistics-labels";
 import { ownerLabel, productById } from "@/features/logistics/logistics-lookups";
 import { LocationLink } from "@/features/logistics/ui/location-link";
@@ -60,6 +67,7 @@ export const ReservationsPage = () => {
   const [search, setSearch] = useState("");
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
+  const [reserveDirection, setReserveDirection] = useState<ReservationDirection>("reserve");
   const formStore = useLogisticsStore({ kind: "form", form: "reservation", enabled: open });
 
   const productOptions = useMemo(() => {
@@ -101,8 +109,22 @@ export const ReservationsPage = () => {
       <LogisticsListPageContent
         listId="reservations"
         title="Резервы"
-        actionLabel="Новый резерв"
-        onAction={() => setOpen(true)}
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button size="sm">Новый резерв</Button>} />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setReserveDirection("reserve"); setOpen(true); }}>
+                Зарезервировать из свободного
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setReserveDirection("release"); setOpen(true); }}>
+                Снять резерв
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setReserveDirection("reassign"); setOpen(true); }}>
+                Передать между владельцами
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
         columns={reservationColumns}
         sortDefs={reservationSortDefs}
         groupDefs={reservationGroupDefs}
@@ -137,21 +159,14 @@ export const ReservationsPage = () => {
           </>
         }
       />
-      <ReservationForm
+      <ReservationCatalogDialog
         snapshot={formStore.snapshot}
         balances={formStore.balances}
         loading={formStore.isLoading}
         loadError={formStore.error}
         open={open}
         onOpenChange={setOpen}
-        reload={reload}
-        preset={
-          direction === "release"
-            ? { toOwnerType: null, toOwnerId: null }
-            : direction === "reserve"
-              ? { toOwnerType: "order" }
-              : undefined
-        }
+        direction={reserveDirection}
       />
     </LogisticsPageShell>
   );
@@ -207,6 +222,7 @@ export const ReservationDetailPage = () => {
         description={doc.description || doc.note || undefined}
         actions={
           <DocumentCancelControl
+            kicker={doc.number}
             guidance={cancelGuidance}
             reload={reload}
             onFollowUp={(action) => {
@@ -330,14 +346,13 @@ export const ReservationDetailPage = () => {
         ]}
       />
       {followUpOpen ? (
-        <ReservationForm
+        <ReservationCatalogDialog
           snapshot={followUpForm.snapshot}
           balances={followUpForm.balances}
           loading={followUpForm.isLoading}
           loadError={followUpForm.error}
           open
           onOpenChange={setFollowUpOpen}
-          reload={reload}
           preset={cancelGuidance.reservationPreset}
         />
       ) : null}

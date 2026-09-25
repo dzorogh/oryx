@@ -3,19 +3,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  createProductionOrderWithDraftOutput,
-  createProductionOutput,
-  loadOutputCalendarPage,
-  ProductionForOrderOutputError,
-} from "@/features/logistics/logistics-api";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { loadOutputCalendarPage } from "@/features/logistics/logistics-api";
 import { allCategoryGroupIds } from "@/features/logistics/category-tree";
 import {
-  applyLocalOutput,
   defaultOwnerFilter,
   plantFilterOptions,
-  type OutputCalendarOutputLine,
   type OutputCalendarOwnerFilter,
   type OutputCalendarPage as OutputCalendarPageData,
 } from "@/features/logistics/output-calendar";
@@ -110,84 +102,6 @@ export const OutputCalendarPage = () => {
     });
   };
 
-  const insertLocalLine = (line: OutputCalendarOutputLine) => {
-    setPage((prev) => (prev ? applyLocalOutput(prev, line) : prev));
-  };
-
-  const handleCreate = async (args: {
-    target: CreateDialogTarget;
-    quantity: number;
-    expectedEndOn: string;
-    plantId: string;
-  }) => {
-    if (!page) return;
-    const { target, quantity, expectedEndOn } = args;
-    try {
-      if (target.kind === "existing") {
-        const outputId = await createProductionOutput({
-          orderId: target.order.productionOrderId,
-          expectedEndOn,
-          complete: false,
-          lines: [{ productId: target.product.id, quantity }],
-        });
-        insertLocalLine({
-          outputId,
-          outputNumber: "Новый выпуск",
-          outputSequence: null,
-          status: "draft",
-          expectedEndOn,
-          productionOrderId: target.order.productionOrderId,
-          productionOrderNumber: target.order.number,
-          productionOrderSequence: target.order.sequenceNumber,
-          plantId: target.order.plantId,
-          productId: target.product.id,
-          ownerId: page.freeOwnerId,
-          quantity,
-          isNew: true,
-        });
-        toast.success("Выпуск создан");
-      } else {
-        const created = await createProductionOrderWithDraftOutput({
-          plantId: args.plantId,
-          productId: target.product.id,
-          quantity,
-          expectedEndOn,
-        });
-        insertLocalLine({
-          outputId: created.outputId,
-          outputNumber: "Новый выпуск",
-          outputSequence: null,
-          status: "draft",
-          expectedEndOn,
-          productionOrderId: created.productionOrderId,
-          productionOrderNumber: created.sequenceNumber
-            ? formatLogisticsCode("productionOrder", created.sequenceNumber)
-            : "Новый заказ",
-          productionOrderSequence: created.sequenceNumber,
-          plantId: args.plantId,
-          productId: target.product.id,
-          ownerId: page.freeOwnerId,
-          quantity,
-          isNew: true,
-        });
-        toast.success("Заказ и запланированный выпуск созданы");
-      }
-    } catch (caught) {
-      if (caught instanceof ProductionForOrderOutputError) {
-        const poLabel = caught.sequenceNumber
-          ? formatLogisticsCode("productionOrder", caught.sequenceNumber)
-          : formatLogisticsCode("productionOrder", caught.productionOrderId);
-        toast.error("Выпуск не создан", {
-          description: `Создан ${poLabel}. ${translateLogisticsError(caught.message)}`,
-        });
-        return;
-      }
-      const raw = caught instanceof Error ? caught.message : "Не удалось создать";
-      toast.error("Не удалось создать", { description: translateLogisticsError(raw) });
-      throw caught;
-    }
-  };
-
   if (loading && !page) {
     return (
       <LogisticsPageShell crumbs={[{ label: "Календарь выпусков" }]}>
@@ -260,9 +174,10 @@ export const OutputCalendarPage = () => {
       </div>
       <OutputCalendarCreateDialog
         target={createTarget}
+        openOrders={page.openOrders}
+        products={page.products}
         plantIds={page.plants.map((p) => p.id)}
         onClose={() => setCreateTarget(null)}
-        onSubmit={handleCreate}
       />
     </LogisticsPageShell>
   );

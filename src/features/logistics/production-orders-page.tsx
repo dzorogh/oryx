@@ -2,7 +2,7 @@
 "use client";
 
 import { Factory } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
@@ -17,18 +17,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
+import { CreateOutputDialog } from "@/features/logistics/ui/create-output-dialog";
 import { OrderLineDialog, type OrderLineDialogMode } from "@/features/logistics/ui/order-line-dialog";
-import {
-  productionProductOutputs,
-  remainingToReserveInProductionOutputsForLine,
-} from "@/features/logistics/logistics-availability";
-import { assertEnoughStock, assertProductionOutputLines, nextOrderLineQuantity } from "@/features/logistics/logistics-rules";
+import { ProductionOrderCatalogDialog } from "@/features/logistics/ui/production-order-catalog-dialog";
+import { productionProductOutputs } from "@/features/logistics/logistics-availability";
+import { nextOrderLineQuantity } from "@/features/logistics/logistics-rules";
 import {
   setOrderLineQuantity,
   closeProductionOrder,
   createProductionOrder,
-  createProductionOutput,
   loadProductionOrderList,
   setProductionStatus,
   updateExpectedEnd,
@@ -57,21 +54,15 @@ import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { deadlineFilterMatch, matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
 import { matchDocumentParam, PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
-import {
-  buildProductionOutputDrafts,
-  ProductionOutputLinesFields,
-  type ProductionOutputDraftLine,
-} from "@/features/logistics/ui/production-output-lines-fields";
-import { isAllowedQuantity } from "@/features/logistics/ui/quantity-field";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
-import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { ProductionStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { ProductionOrderCloseDialog } from "@/features/logistics/ui/production-order-close-dialog";
 import { ProductionOrderMovements } from "@/features/logistics/ui/production-order-movements";
 import { ProductionOrderOutputs } from "@/features/logistics/ui/production-order-outputs";
 import { ProductionOrderProductManifest } from "@/features/logistics/ui/production-order-product-manifest";
+import { takeHighlightedRows } from "@/features/logistics/ui/highlight-rows";
 import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { OutputReserveDialog, type OutputReserveTarget } from "@/features/logistics/ui/output-reserve-dialog";
 import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
@@ -276,103 +267,14 @@ export const ProductionOrdersPage = () => {
         }
       />
 
-      <LogisticsDialog
+      <ProductionOrderCatalogDialog
         open={open}
         onOpenChange={setOpen}
-        title="Новый заказ на производство"
-      >
-        {formStore.isLoading ? <LogisticsLoading /> : null}
-        {formStore.error ? <LogisticsError message={formStore.error} /> : null}
-        {!formStore.isLoading && !formStore.error ? (
-        <div className="flex flex-col gap-3">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Завод</span>
-            <Select
-              items={plantItems}
-              value={resolvedPlantId}
-              onValueChange={(value) => setPlantId(value ?? "")}
-            >
-              <SelectTrigger className="w-full bg-background" aria-label="Завод">
-                <SelectValue placeholder={plantItems.length === 0 ? "Нет общего завода" : "Выберите производителя"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {plantItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            {selectedProductIds.some(Boolean) && allowedPlantIds ? (
-              <p className="text-xs text-muted-foreground">
-                Только заводы, где производятся выбранные товары.
-              </p>
-            ) : null}
-            {selectedProductIds.some(Boolean) && plantItems.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Выбранные товары не производятся на одном заводе.
-              </p>
-            ) : null}
-          </label>
-          <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
-          {lines.map((line, index) => (
-            <div key={`line-${index}`} className="grid grid-cols-[1fr_6rem] gap-2">
-              <Select
-                items={productItems}
-                value={line.productId}
-                onValueChange={(value) => {
-                  setLines((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, productId: value ?? "" } : item,
-                    ),
-                  );
-                }}
-              >
-                <SelectTrigger className="w-full bg-background" aria-label={`Товар ${index + 1}`}>
-                  <SelectValue placeholder="Товар" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {productSource.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {productIdentityLabel(product, product.id)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                min={1}
-                value={line.quantity}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setLines((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, quantity: value } : item,
-                    ),
-                  );
-                }}
-                aria-label={`Количество ${index + 1}`}
-              />
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setLines((current) => [...current, { productId: "", quantity: "1" }])}
-          >
-            Добавить товар
-          </Button>
-          <Button type="button" disabled={!resolvedPlantId || plantItems.length === 0} onClick={() => void create()}>
-            Создать
-          </Button>
-        </div>
-        ) : null}
-      </LogisticsDialog>
+        snapshot={formStore.snapshot}
+        balances={formStore.balances}
+        loading={formStore.isLoading}
+        loadError={formStore.error}
+      />
     </LogisticsPageShell>
   );
 };
@@ -386,10 +288,10 @@ export const ProductionOrderDetailPage = () => {
   });
   const statusRef = useRef<HTMLDivElement>(null);
   const closeAnnounceRef = useRef<HTMLParagraphElement>(null);
-  const outputLockRef = useRef(false);
 
   const [productOpen, setProductOpen] = useState(false);
   const [lineMode, setLineMode] = useState<OrderLineDialogMode>("add");
+  const [addCatalogOpen, setAddCatalogOpen] = useState(false);
   const [productPending, setProductPending] = useState(false);
   const [productError, setProductError] = useState<string | null>(null);
   const [newProductId, setNewProductId] = useState("");
@@ -399,10 +301,7 @@ export const ProductionOrderDetailPage = () => {
   const [outputReleaseTarget, setOutputReleaseTarget] = useState<OutputReleaseTarget | null>(null);
 
   const [outputOpen, setOutputOpen] = useState(false);
-  const [outputPending, setOutputPending] = useState(false);
-  const [outputError, setOutputError] = useState<string | null>(null);
-  const [outputDrafts, setOutputDrafts] = useState<ProductionOutputDraftLine[]>([]);
-  const [outputExpectedEndOn, setOutputExpectedEndOn] = useState("");
+  const [highlighted, setHighlighted] = useState<string[]>([]);
 
   const [closeOpen, setCloseOpen] = useState(false);
   const [closePending, setClosePending] = useState(false);
@@ -412,6 +311,17 @@ export const ProductionOrderDetailPage = () => {
   const [datePending, setDatePending] = useState(false);
 
   const order = matchDocumentParam(snapshot.productionOrders, params.orderId);
+  useEffect(() => {
+    if (!order) return;
+    const ids = takeHighlightedRows(order.id);
+    if (ids.length === 0) return;
+    const frame = requestAnimationFrame(() => setHighlighted(ids));
+    const timer = window.setTimeout(() => setHighlighted([]), 4000);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [order, snapshot]);
   const lines = useMemo(
     () => (order ? snapshot.productionOrderLines.filter((line) => line.orderId === order.id) : []),
     [order, snapshot.productionOrderLines],
@@ -420,21 +330,6 @@ export const ProductionOrderDetailPage = () => {
     () => (order ? snapshot.outputs.filter((item) => item.productionOrderId === order.id) : []),
     [order, snapshot.outputs],
   );
-  const doneByLine = useMemo(() => {
-    const byProduct = new Map<string, number>();
-    for (const outputLine of snapshot.outputLines) {
-      const output = snapshot.outputs.find((item) => item.id === outputLine.outputId);
-      if (!order || output?.status !== "done" || output.productionOrderId !== order.id) {
-        continue;
-      }
-      byProduct.set(outputLine.productId, (byProduct.get(outputLine.productId) ?? 0) + outputLine.quantity);
-    }
-    const counts = new Map<string, number>();
-    for (const line of lines) {
-      counts.set(line.id, byProduct.get(line.productId) ?? 0);
-    }
-    return counts;
-  }, [lines, order, snapshot.outputLines, snapshot.outputs]);
 
   const outputIdsKey = outputs.map((item) => item.id).join("|");
   const movementFilter = useMemo(
@@ -454,17 +349,6 @@ export const ProductionOrderDetailPage = () => {
     [movementFilter, snapshot.transactions],
   );
 
-  const outputEligibleLines = lines.filter((line) => line.quantity - (doneByLine.get(line.id) ?? 0) > 0);
-  const remainingForOutput = (lineId: string) => {
-    const line = lines.find((item) => item.id === lineId);
-    return line ? line.quantity - (doneByLine.get(line.id) ?? 0) : 0;
-  };
-  const selectedOutputDrafts = outputDrafts.filter((draft) => Number(draft.quantity) > 0);
-  const canSubmitOutput =
-    selectedOutputDrafts.length > 0 &&
-    selectedOutputDrafts.every((draft) =>
-      isAllowedQuantity(draft.quantity, remainingForOutput(draft.productionLineId)),
-    );
 
   const plantProducts = order
     ? productsForPlant(snapshot, order.plantId ?? "")
@@ -484,95 +368,6 @@ export const ProductionOrderDetailPage = () => {
   const completedAt = order ? documentCompletedAt(snapshot, order.id) : null;
   const workflowStatuses = (["draft", "planned", "in_progress", "done"] as const) satisfies readonly ProductionStatus[];
 
-  const createOutputFromProduction = async (complete: boolean) => {
-    if (!order || !canSubmitOutput) {
-      setOutputError("Выберите товар и количество");
-      return;
-    }
-    try {
-      assertProductionOutputLines(
-        selectedOutputDrafts.map((draft) => {
-          const line = lines.find((item) => item.id === draft.productionLineId)!;
-          return {
-            productId: draft.productId,
-            quantity: Number(draft.quantity),
-            planQuantity: line.quantity,
-            alreadyOutput: doneByLine.get(line.id) ?? 0,
-            allocationQuantity: draft.allocOrderLineId !== "none" ? Number(draft.allocQty) || 0 : 0,
-          };
-        }),
-      );
-      for (const draft of selectedOutputDrafts) {
-        if (draft.allocOrderLineId === "none" || !(Number(draft.allocQty) > 0)) {
-          continue;
-        }
-        const allocLine = snapshot.customerOrderLines.find((line) => line.id === draft.allocOrderLineId);
-        if (!allocLine) {
-          continue;
-        }
-        const allocMax = Math.min(
-          Number(draft.quantity),
-          remainingToReserveInProductionOutputsForLine(allocLine, balances, snapshot),
-        );
-        assertEnoughStock(allocMax, Number(draft.allocQty), "open order");
-      }
-    } catch (caught) {
-      setOutputError(caught instanceof Error ? caught.message : "Проверьте количество");
-      return;
-    }
-    if (outputLockRef.current) {
-      return;
-    }
-    outputLockRef.current = true;
-    setOutputPending(true);
-    setOutputError(null);
-    try {
-      await createProductionOutput({
-        orderId: order.id,
-        expectedEndOn: outputExpectedEndOn || null,
-        complete,
-        lines: selectedOutputDrafts.map((draft) => {
-          const allocLine = snapshot.customerOrderLines.find((line) => line.id === draft.allocOrderLineId);
-          return {
-            productId: draft.productId,
-            quantity: Number(draft.quantity),
-            allocation:
-              allocLine && Number(draft.allocQty) > 0
-                ? {
-                    ownerType: "order" as const,
-                    ownerId: allocLine.orderId,
-                    quantity: Number(draft.allocQty),
-                  }
-                : undefined,
-          };
-        }),
-      });
-      setOutputOpen(false);
-      setOutputDrafts([]);
-      setOutputExpectedEndOn("");
-      toast.success(complete ? "Выпуск завершён" : "Выпуск запланирован");
-      try {
-        await reload();
-      } catch (reloadError) {
-        toast.error(
-          translateLogisticsError(
-            reloadError instanceof Error ? reloadError.message : "Выпуск создан, но список не обновился",
-          ),
-        );
-      }
-    } catch (caught) {
-      const detail =
-        caught instanceof Error ? translateLogisticsError(caught.message) : null;
-      setOutputError(
-        detail && detail !== "Выпуск не создан. Ничего не сохранено. Можно повторить."
-          ? `Выпуск не создан. Ничего не сохранено. Можно повторить. ${detail}`
-          : "Выпуск не создан. Ничего не сохранено. Можно повторить.",
-      );
-    } finally {
-      outputLockRef.current = false;
-      setOutputPending(false);
-    }
-  };
 
   if (isLoading || error || !order) {
     return (
@@ -596,6 +391,7 @@ export const ProductionOrderDetailPage = () => {
               {cancelGuidance ? (
                 <DocumentCancelControl
                   guidance={cancelGuidance}
+                  kicker={order.number}
                   reload={reload}
                   onFollowUp={(action) => {
                     if (action.id === "close-production-order") {
@@ -715,13 +511,7 @@ export const ProductionOrderDetailPage = () => {
                     <Button
                       type="button"
                       size="sm"
-                      onClick={() => {
-                        setLineMode("add");
-                        setNewProductId("");
-                        setNewQuantity("1");
-                        setProductError(null);
-                        setProductOpen(true);
-                      }}
+                      onClick={() => setAddCatalogOpen(true)}
                     >
                       Добавить товар
                     </Button>
@@ -753,6 +543,7 @@ export const ProductionOrderDetailPage = () => {
                     onReserveInOutput={(outputId, productId) =>
                       setOutputReserveTarget({ productionOrderId: order.id, productId, outputId })
                     }
+                    highlightedProductIds={highlighted}
                   />
                 </DocumentSection>
               ),
@@ -769,14 +560,7 @@ export const ProductionOrderDetailPage = () => {
                       <Button
                         type="button"
                         size="sm"
-                        onClick={() => {
-                          setOutputError(null);
-                          setOutputDrafts(
-                            buildProductionOutputDrafts(outputEligibleLines, (lineId) => remainingForOutput(lineId)),
-                          );
-                          setOutputExpectedEndOn("");
-                          setOutputOpen(true);
-                        }}
+                        onClick={() => setOutputOpen(true)}
                       >
                         Новый выпуск
                       </Button>
@@ -817,6 +601,14 @@ export const ProductionOrderDetailPage = () => {
         />
       </div>
 
+      <ProductionOrderCatalogDialog
+        open={addCatalogOpen}
+        onOpenChange={setAddCatalogOpen}
+        snapshot={snapshot}
+        balances={balances}
+        order={order}
+        onAdded={reload}
+      />
       <OrderLineDialog
         open={productOpen}
         onOpenChange={(next) => {
@@ -915,81 +707,20 @@ export const ProductionOrderDetailPage = () => {
         reload={reload}
       />
 
-      <LogisticsDialog
-        open={outputOpen}
-        onOpenChange={(next) => {
-          if (outputPending) {
-            return;
-          }
-          setOutputOpen(next);
-          if (!next) {
-            setOutputError(null);
-          }
-        }}
-        title="Новый выпуск"
-      >
-        <div className="flex flex-col gap-3" aria-busy={outputPending || undefined}>
-          <ProductionOutputLinesFields
-            snapshot={snapshot}
-            balances={balances}
-            drafts={outputDrafts}
-            remainingByLineId={remainingForOutput}
-            disabled={outputPending || outputEligibleLines.length === 0}
-            onChange={setOutputDrafts}
-          />
-          <ExpectedEndField
-            value={outputExpectedEndOn}
-            disabled={outputPending || outputEligibleLines.length === 0}
-            onChange={(value) => {
-              setOutputExpectedEndOn(value);
-            }}
-          />
-          {outputPending ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              Создаём выпуск…
-            </p>
-          ) : null}
-          {outputError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {outputError}
-            </p>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={outputPending}
-              onClick={() => setOutputOpen(false)}
-            >
-              Отмена
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={outputPending || !canSubmitOutput}
-              onClick={() => {
-                void createOutputFromProduction(false);
-              }}
-            >
-              Сохранить план
-            </Button>
-            <Button
-              type="button"
-              disabled={outputPending || !canSubmitOutput}
-              onClick={() => {
-                void createOutputFromProduction(true);
-              }}
-            >
-              Завершить выпуск
-            </Button>
-          </div>
-        </div>
-      </LogisticsDialog>
+      {order ? (
+        <CreateOutputDialog
+          open={outputOpen}
+          onOpenChange={setOutputOpen}
+          snapshot={snapshot}
+          productionOrderId={order.id}
+        />
+      ) : null}
 
       <ProductionOrderCloseDialog
         open={closeOpen}
         pending={closePending}
         error={closeError}
+        kicker={order.number}
         onOpenChange={(next) => {
           if (closePending) {
             return;

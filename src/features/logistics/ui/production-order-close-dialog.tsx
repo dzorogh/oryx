@@ -1,69 +1,39 @@
 // english-ui:ignore-file
 "use client";
 
-import { useRef } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { CANCEL_GUIDANCE_PRODUCTION_CLOSE } from "@/features/logistics/logistics-cancel-guidance";
+import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 
 export const ProductionOrderCloseDialog = ({
   open,
   pending,
   error,
+  kicker,
   onOpenChange,
   onConfirm,
 }: {
   open: boolean;
   pending: boolean;
   error: string | null;
+  kicker?: string;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-}) => {
-  const backRef = useRef<HTMLButtonElement>(null);
-
-  return (
-    <Dialog
-      open={open}
-      disablePointerDismissal={pending}
-      onOpenChange={(next) => {
-        if (pending) {
-          return;
-        }
-        onOpenChange(next);
-      }}
-    >
-      <DialogContent className="sm:max-w-md" initialFocus={backRef} showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Закрыть заказ?</DialogTitle>
-          <DialogDescription>{CANCEL_GUIDANCE_PRODUCTION_CLOSE}</DialogDescription>
-        </DialogHeader>
-        {error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
-        <DialogFooter className="gap-2 sm:justify-start">
-          <Button
-            ref={backRef}
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => onOpenChange(false)}
-          >
-            Вернуться
-          </Button>
-          <Button type="button" disabled={pending} aria-busy={pending || undefined} onClick={onConfirm}>
-            Закрыть заказ
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
+}) => (
+  <DialogShell
+    open={open}
+    onOpenChange={(next) => {
+      if (pending) return;
+      onOpenChange(next);
+    }}
+    size="sm"
+    kicker={kicker}
+    title="Закрыть заказ?"
+    dismissLabel="Назад"
+    submitLabel="Закрыть заказ"
+    onSubmit={onConfirm}
+    submitting={pending}
+    pendingLabel="Закрываем…"
+    serverError={error}
+  >
+    <p className="text-sm">Незакрытые строки перестанут попадать в новые выпуски.</p>
+  </DialogShell>
+);

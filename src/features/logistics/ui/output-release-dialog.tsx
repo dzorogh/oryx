@@ -2,13 +2,15 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { releaseInProductionOutput } from "@/features/logistics/logistics-api";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { ownerLabel, productById, productIdentityLabel } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot, OwnerType } from "@/features/logistics/logistics-types";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
-import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
+import { ContextRowsTable } from "@/features/logistics/ui/context-rows-table";
+import { DialogShell } from "@/features/logistics/ui/dialog-shell";
+import { markHighlightedRows } from "@/features/logistics/ui/highlight-rows";
+import { firstErrorKey, parseDecimalQuantity } from "@/features/logistics/ui/catalog-quantity-model";
+import { focusQuantityInput } from "@/features/logistics/ui/catalog-quantity-table";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 
 export type OutputReleaseTarget = {
@@ -18,6 +20,8 @@ export type OutputReleaseTarget = {
   ownerId: string;
   productId: string;
   quantity: number;
+  highlightDocumentId?: string;
+  highlightLineId?: string;
 };
 
 export const OutputReleaseDialog = ({
@@ -42,58 +46,71 @@ export const OutputReleaseDialog = ({
   };
 
   const submit = async () => {
-    if (!target || !isAllowedQuantity(value, max) || pending) {
+    const errorKey = firstErrorKey([{ key: "qty", raw: value, limit: max, mode: "hard" }]);
+    if (errorKey) {
+      focusQuantityInput(errorKey);
+      return;
+    }
+    const qty = parseDecimalQuantity(value);
+    if (!target || qty == null || qty <= 0 || pending) {
       return;
     }
     setPending(true);
     const ok = await runLogisticsAction(
-      () =>
-        releaseInProductionOutput({
+      async () => {
+        await releaseInProductionOutput({
           outputId: target.outputId,
           ownerType: target.ownerType,
           ownerId: target.ownerId,
-          lines: [{ productId: target.productId, quantity: Number(value) }],
-        }),
+          lines: [{ productId: target.productId, quantity: parseDecimalQuantity(value) ?? 0 }],
+        });
+        if (target.highlightDocumentId && target.highlightLineId) {
+          markHighlightedRows(target.highlightDocumentId, [target.highlightLineId]);
+        }
+      },
       "Резерв в выпуске снят",
       reload,
     );
     setPending(false);
-    if (ok) {
-      close();
-    }
+    if (ok) close();
   };
 
   const product = target ? productById(snapshot, target.productId) : undefined;
 
+  const rowKey = "qty";
   return (
-    <LogisticsDialog
+    <DialogShell
       open={target !== null}
       onOpenChange={(next) => {
-        if (!next && !pending) {
-          close();
-        }
+        if (!next && !pending) close();
       }}
-      title="Снять резерв в выпуске"
-      description={
-        target
-          ? `${productIdentityLabel(product, target.productId)} · ${target.outputNumber} · ${ownerLabel(snapshot, target.ownerType, target.ownerId)}. В резерве ${formatQuantity(target.quantity, product?.unit)}.`
-          : undefined
-      }
+      size="lg"
+      kicker={target?.outputNumber}
+      title="Снять резерв"
+      footerSummary={target ? ownerLabel(snapshot, target.ownerType, target.ownerId) : ""}
+      submitLabel="Снять резерв"
+      onSubmit={() => void submit()}
+      submitDisabled={!target || (parseDecimalQuantity(value) ?? 0) <= 0}
+      disabledReason="Введите количество"
+      submitting={pending}
+      dirty={quantity != null && quantity !== String(max)}
     >
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">
-          Количество останется в запланированном выпуске свободным — его можно зарезервировать под другой заказ.
-        </p>
-        <QuantityField value={value} onChange={setQuantity} max={max} disabled={pending} />
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" disabled={pending} onClick={close}>
-            Отмена
-          </Button>
-          <Button type="button" disabled={pending || !isAllowedQuantity(value, max)} onClick={() => void submit()}>
-            Снять резерв
-          </Button>
-        </div>
-      </div>
-    </LogisticsDialog>
+      {target ? (
+        <ContextRowsTable
+          rows={[
+            {
+              key: rowKey,
+              title: productIdentityLabel(product, target.productId),
+              limitLabel: formatQuantity(max, product?.unit),
+              limit: max,
+              unit: product?.unit ?? "шт",
+            },
+          ]}
+          quantities={{ [rowKey]: value }}
+          onQuantityChange={(_key, raw) => setQuantity(raw)}
+          limitHeader="В резерве"
+        />
+      ) : null}
+    </DialogShell>
   );
 };

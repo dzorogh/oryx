@@ -165,13 +165,17 @@ const UNIT_DISPLAY_LABELS: Record<string, string> = {
   pcs: "шт",
 };
 
+export const quantityUnitLabel = (unit?: string): string => {
+  if (!unit) return "";
+  return UNIT_DISPLAY_LABELS[unit] ?? unit;
+};
+
 export const formatQuantity = (quantity: number, unit?: string): string => {
   const normalized = Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
   if (!unit) {
     return normalized;
   }
-  const displayUnit = UNIT_DISPLAY_LABELS[unit] ?? unit;
-  return `${normalized} ${displayUnit}`;
+  return `${normalized} ${quantityUnitLabel(unit)}`;
 };
 
 /** Ledger/movement qty: always `+` or Unicode minus (−), never a hyphen-minus dash. Zero is unsigned. */

@@ -1,6 +1,7 @@
 // english-ui:ignore-file
 "use client";
 
+import { useId } from "react";
 import {
   Select,
   SelectContent,
@@ -9,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export type FieldSelectItem = {
   value: string;
@@ -25,6 +27,9 @@ export const FieldSelect = ({
   disabled,
   autoFocus,
   labelClassName,
+  className,
+  invalid,
+  error,
 }: {
   label: string;
   value: string;
@@ -35,44 +40,52 @@ export const FieldSelect = ({
   disabled?: boolean;
   autoFocus?: boolean;
   labelClassName?: string;
+  className?: string;
+  invalid?: boolean;
+  error?: string | null;
 }) => {
-  if (items.length === 0) {
-    return (
-      <label className="space-y-1 text-sm">
-        <span className={labelClassName ?? "font-medium"}>{label}</span>
+  const labelId = useId();
+
+  return (
+    <div className={cn("space-y-1 text-sm", className)}>
+      <span id={labelId} className={cn("block", labelClassName ?? "font-medium")}>
+        {label}
+      </span>
+      {items.length === 0 ? (
         <div
           className="flex h-8 w-full items-center rounded-lg border border-input bg-muted/40 px-2.5 text-sm text-muted-foreground"
           aria-disabled="true"
-          aria-label={label}
+          aria-labelledby={labelId}
         >
           {emptyLabel ?? placeholder}
         </div>
-      </label>
-    );
-  }
-
-  return (
-    <label className="space-y-1 text-sm">
-      <span className={labelClassName ?? "font-medium"}>{label}</span>
-      <Select
-        items={items}
-        value={value || null}
-        onValueChange={(next) => onChange(next ?? "")}
-        disabled={disabled}
-      >
-        <SelectTrigger className="w-full bg-background" aria-label={label} autoFocus={autoFocus}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {items.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </label>
+      ) : (
+        <Select
+          items={items}
+          value={value || null}
+          onValueChange={(next) => onChange(next ?? "")}
+          disabled={disabled}
+        >
+          <SelectTrigger
+            className="w-full bg-background"
+            aria-labelledby={labelId}
+            aria-invalid={invalid || undefined}
+            autoFocus={autoFocus}
+          >
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {items.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      )}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 };

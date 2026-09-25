@@ -131,6 +131,61 @@ describe("mapLogisticsPayload", () => {
     assert.equal(mapped.snapshot.customerOrders[0]?.sequenceNumber, "12");
   });
 
+  it("maps warehouse kind, customer order source and dealer prices", () => {
+    const mapped = mapLogisticsPayload({
+      document_kinds: [{ code: "customer_order", number_prefix: "OMS" }],
+      documents: [
+        {
+          id: 12,
+          kind: "customer_order",
+          sequence_number: 12,
+          description: "",
+          status: "in_progress",
+          expected_end_on: null,
+          created_at: "2026-01-01T00:00:00Z",
+          created_by: 1,
+        },
+      ],
+      customer_orders: [
+        {
+          id: 12,
+          region_id: 1,
+          stock_location_id: 100,
+          stock_owner_id: 50,
+          source_kind: "hub",
+          source_plant_id: null,
+          source_warehouse_id: 7,
+        },
+      ],
+      warehouses: [
+        { id: 7, name: "Hub", stock_location_id: 70, kind: "hub" },
+        { id: 8, name: "Shop", stock_location_id: 80 },
+        { id: 9, name: "Plant WH", stock_location_id: 90 },
+      ],
+      plants: [{ id: 3, name: "Plant", warehouse_id: 9 }],
+      regions: [{ id: 1, code: "REG-1", name: "Север", stock_owner_id: 2 }],
+      stock_locations: [
+        { id: 100, kind: "customer_order" },
+        { id: 70, kind: "warehouse" },
+        { id: 80, kind: "warehouse" },
+      ],
+      stock_owners: [
+        { id: 1, kind: "free" },
+        { id: 50, kind: "customer_order" },
+      ],
+      dealer_prices: [
+        { product_variant_id: 4, region_id: 1, amount: 10, currency_id: 2, currency_code: "USD" },
+      ],
+    });
+    assert.equal(mapped.snapshot.warehouses.find((item) => item.id === "7")?.kind, "hub");
+    assert.equal(mapped.snapshot.warehouses.find((item) => item.id === "8")?.kind, "customer");
+    assert.equal(mapped.snapshot.warehouses.find((item) => item.id === "9")?.kind, "plant");
+    assert.equal(mapped.snapshot.customerOrders[0]?.sourceKind, "hub");
+    assert.equal(mapped.snapshot.customerOrders[0]?.sourceWarehouseId, "7");
+    assert.equal(mapped.snapshot.dealerPrices[0]?.amount, 10);
+    assert.equal(mapped.snapshot.dealerPrices[0]?.currencyCode, "USD");
+  });
+
   it("passes through SQL balances when present", () => {
     const mapped = mapLogisticsPayload({
       balances: [

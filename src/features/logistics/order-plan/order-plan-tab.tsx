@@ -2,16 +2,8 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { Card } from "@/components/ui/card";
 import type { CustomerOrderLine, LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import {
@@ -103,6 +95,7 @@ export const OrderPlanTab = ({
   const [save, setSave] = useState<SaveState>({ state: "idle" });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
   const queue = useRef<Promise<void>>(Promise.resolve());
   const pending = useRef(0);
   const createdPlanId = useRef<string | null>(null);
@@ -238,14 +231,14 @@ export const OrderPlanTab = ({
       return;
     }
     setLaunching(true);
+    setLaunchError(null);
     try {
       const planId = plan.id;
       await enqueue(() => launchOrderPlan(planId));
       setConfirmOpen(false);
       toast.success(`«${plan.name}» запущен`);
     } catch (caught) {
-      setConfirmOpen(false);
-      toast.error("Не удалось запустить план", { description: errorText(caught) });
+      setLaunchError(errorText(caught));
     } finally {
       setLaunching(false);
     }
@@ -368,20 +361,25 @@ export const OrderPlanTab = ({
         </div>
       )}
 
-      <AlertDialog open={confirmOpen} onOpenChange={(open) => !launching && setConfirmOpen(open)}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Запустить «{plan?.name}»?</AlertDialogTitle>
-            <AlertDialogDescription>Это действие нельзя отменить.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={launching}>Отмена</AlertDialogCancel>
-            <Button type="button" disabled={launching} onClick={() => void launch()}>
-              Запустить
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DialogShell
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          if (launching) return;
+          if (open) setLaunchError(null);
+          setConfirmOpen(open);
+        }}
+        size="sm"
+        kicker={plan?.name}
+        title={plan ? `Запустить «${plan.name}»?` : "Запустить план?"}
+        dismissLabel="Назад"
+        submitLabel="Запустить план"
+        pendingLabel="Запускаем…"
+        onSubmit={() => void launch()}
+        submitting={launching}
+        serverError={launchError}
+      >
+        <p className="text-sm">Будут созданы резервы и заказы на производство. Отменить запуск нельзя.</p>
+      </DialogShell>
     </div>
   );
 };

@@ -194,6 +194,9 @@ export const projectCancelGuidance = (facts: CancelGuidanceFacts): CancelGuidanc
   }
 
   if (facts.type === "reservation") {
+    if (facts.status === "draft") {
+      return hiddenGuidance(facts.id);
+    }
     const direction = facts.reservationDirection ?? "reserve";
     const blockedReason = reservationBlockedReason(facts);
     return withCommon({

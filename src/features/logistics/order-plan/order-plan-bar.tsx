@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { planStatus } from "@/features/logistics/order-plan/order-plan-model";
 import type { OrderPlan } from "@/features/logistics/order-plan/order-plan-types";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
+import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { cn } from "@/lib/utils";
 
@@ -197,35 +197,33 @@ export const OrderPlanBar = ({
         </Button>
       ) : null}
 
-      <LogisticsDialog open={renameOpen} onOpenChange={setRenameOpen} title="Переименовать план">
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!current || !name.trim()) {
-              return;
-            }
-            setRenaming(true);
-            void onRename(current.id, name.trim())
-              .then((ok) => {
-                if (ok) {
-                  setRenameOpen(false);
-                }
-              })
-              .finally(() => setRenaming(false));
-          }}
-        >
-          <Input value={name} maxLength={80} autoFocus onChange={(event) => setName(event.target.value)} aria-label="Название плана" />
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setRenameOpen(false)}>
-              Отмена
-            </Button>
-            <Button type="submit" disabled={renaming || !name.trim()}>
-              Сохранить
-            </Button>
-          </div>
-        </form>
-      </LogisticsDialog>
+      <DialogShell
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        size="sm"
+        kicker={current?.name}
+        title="Переименовать план"
+        submitLabel="Сохранить"
+        pendingLabel="Сохраняем…"
+        onSubmit={() => {
+          if (!current || !name.trim() || renaming) return;
+          setRenaming(true);
+          void onRename(current.id, name.trim())
+            .then((ok) => {
+              if (ok) setRenameOpen(false);
+            })
+            .finally(() => setRenaming(false));
+        }}
+        submitDisabled={!name.trim()}
+        disabledReason="Укажите название"
+        submitting={renaming}
+        dirty={Boolean(current && name.trim() !== current.name)}
+      >
+        <label className="space-y-1.5 text-sm">
+          <span className="text-muted-foreground">Название</span>
+          <Input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} aria-label="Название плана" />
+        </label>
+      </DialogShell>
     </Card>
   );
 };

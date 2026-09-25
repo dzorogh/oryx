@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Oryx — Новый заказ клиента</title>
+<style>
+/* Oryx — UX mock, Type A catalog modal «Новый заказ клиента» (источник: хаб).
+   Static mock: inline CSS only, system fonts, no JS, no network, no external assets.
+   Palette: page #f4f4f5, card #fff, border #e4e4e7, text #18181b, muted #71717a,
+   primary #18181b on white. Radius: modal 8px, controls 6px. Type 13–14px, tabular nums.
+   Plants and warehouses appear as codes only (PLT-3, WH-7). */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #f4f4f5;
+  color: #18181b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.scrim {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  width: min(1120px, calc(100vw - 48px));
+  height: min(860px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(24, 24, 27, .10);
+}
+
+/* ---------- Sticky header ---------- */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e4e7;
+  padding: 16px 20px 18px;
+  flex: 0 0 auto;
+}
+
+.kicker {
+  font-size: 12px;
+  color: #71717a;
+  letter-spacing: .01em;
+  margin-bottom: 4px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  margin: 0;
+}
+
+.close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #71717a;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* requisites row */
+
+.requisites {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.req-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #3f3f46;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+}
+
+.select .term-label { color: #71717a; font-weight: 400; font-size: 12px; }
+
+.seg {
+  padding: 3px 14px;
+  font-size: 13px;
+  border-radius: 4px;
+  color: #71717a;
+  white-space: nowrap;
+}
+
+.seg.is-active {
+  background: #18181b;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #18181b;
+  min-width: 118px;
+  justify-content: space-between;
+}
+
+.select .caret { color: #71717a; font-size: 10px; }
+
+.term {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 13px;
+}
+
+.term .term-label { color: #71717a; }
+.term .term-value { font-weight: 500; }
+
+.sep {
+  width: 1px;
+  height: 20px;
+  background: #e4e4e7;
+}
+
+/* toolbar */
+
+.toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 20px;
+  background: #f4f4f5;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.toolbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+  margin-right: 10px;
+}
+
+.search {
+  flex: 0 1 220px;
+  min-width: 140px;
+  height: 28px;
+  font-size: 12px !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #a1a1aa;
+  font-size: 13px;
+}
+
+.btn-ghost {
+  height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #3f3f46;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.switch-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: #18181b;
+  white-space: nowrap;
+}
+
+.switch {
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: #d4d4d8;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, .2);
+}
+
+/* ---------- Body / table ---------- */
+
+.body {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e4e7;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #71717a;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th.num, td.num { text-align: right; }
+
+col.c-product { width: auto; }
+col.c-stock { width: 88px; }
+col.c-world { width: 80px; }
+col.c-reserved { width: 92px; }
+col.c-price { width: 150px; }
+col.c-qty { width: 120px; }
+col.c-sum { width: 120px; }
+
+td.stock-hub { font-weight: 600; }
+td.stock-aux { color: #71717a; }
+
+/* category header row */
+
+tr.cat th {
+  position: sticky;
+  top: 33px;
+  z-index: 2;
+  background: #f4f4f5;
+  border-top: 1px solid #e4e4e7;
+  border-bottom: 1px solid #e4e4e7;
+  padding: 7px 16px;
+  text-align: left;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.cat-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chev {
+  color: #71717a;
+  font-size: 10px;
+  width: 10px;
+  display: inline-block;
+}
+
+.cat-meta {
+  color: #71717a;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+tbody td {
+  border-bottom: 1px solid #f4f4f5;
+  padding: 10px 16px;
+  vertical-align: middle;
+}
+
+.product-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.product-sku {
+  font-size: 12px;
+  color: #71717a;
+  margin-top: 2px;
+}
+
+.stock-main {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.stock-main .unit {
+  font-size: 12px;
+  font-weight: 400;
+  color: #71717a;
+  margin-left: 3px;
+}
+
+.stock-sub {
+  font-size: 12px;
+  color: #71717a;
+  margin-top: 2px;
+}
+
+.input {
+  width: 100%;
+  height: 30px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  font-size: 11px;
+  color: #71717a;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* soft limit note: neutral/amber, not an error */
+.note-soft {
+  font-size: 11px;
+  color: #a16207;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.sum {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.empty-cat {
+  padding: 10px 16px 14px;
+  font-size: 12px;
+  color: #71717a;
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  flex: 0 0 auto;
+  border-top: 1px solid #e4e4e7;
+  background: #ffffff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.summary {
+  font-size: 13px;
+  color: #71717a;
+}
+
+.summary strong {
+  color: #18181b;
+  font-weight: 600;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+.btn-secondary {
+  height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #18181b;
+  font-size: 13px;
+}
+
+.btn-primary {
+  height: 34px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #18181b;
+  border-radius: 6px;
+  background: #18181b;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+<div class="scrim">
+  <div class="modal">
+
+    <div class="header">
+      <div class="kicker">Заказы клиентов · Новый</div>
+      <div class="title-row">
+        <h1 class="title">Новый заказ клиента</h1>
+        <div class="close">✕</div>
+      </div>
+
+      <div class="requisites">
+        <div class="req-field">
+          <span class="field-label">Источник</span>
+          <div class="segmented">
+            <span class="seg">Завод</span>
+            <span class="seg is-active">Хаб</span>
+          </div>
+        </div>
+        <div class="req-field">
+          <span class="field-label">Хаб</span>
+          <div class="select"><span>WH-7</span><span class="caret">▾</span></div>
+        </div>
+        <div class="req-field">
+          <span class="field-label">Срок</span>
+          <div class="select"><span>02.10.2026</span><span class="term-label">через 7 дней</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-title">Товары</div>
+      <div class="search"><span>⌕</span><span>Поиск товара</span></div>
+      <div class="btn-ghost">Свернуть все</div>
+      <div class="switch-wrap">
+        <span class="switch"><span class="knob"></span></span>
+        <span>Только выбранные</span>
+      </div>
+    </div>
+
+    <div class="body">
+      <table>
+        <colgroup>
+          <col class="c-product">
+          <col class="c-stock">
+          <col class="c-world">
+          <col class="c-reserved">
+          <col class="c-price">
+          <col class="c-qty">
+          <col class="c-sum">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Товар</th>
+            <th class="num">На хабе</th>
+            <th class="num">В мире</th>
+            <th class="num">В резерве</th>
+            <th class="num">Цена</th>
+            <th class="num">Количество</th>
+            <th class="num">Сумма</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr class="cat">
+            <th colspan="7">
+              <span class="cat-inner">
+                <span class="chev">▾</span>
+                <span>ATV</span>
+                <span class="cat-meta">2 позиции · 7 шт</span>
+              </span>
+            </th>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="product-name">Sharmax Force 320</div>
+              <div class="product-sku">PRD-18</div>
+            </td>
+            <td class="num stock-hub">4 шт</td>
+            <td class="num stock-aux">22 шт</td>
+            <td class="num stock-aux">6 шт</td>
+            <td>
+              <div class="input">186 000</div>
+            </td>
+            <td>
+              <div class="input">3</div>
+            </td>
+            <td class="num"><span class="sum">558 000</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="product-name">Sharmax Hummer 400</div>
+              <div class="product-sku">PRD-21</div>
+            </td>
+            <td class="num stock-hub">2 шт</td>
+            <td class="num stock-aux">9 шт</td>
+            <td class="num stock-aux">1 шт</td>
+            <td>
+              <div class="input">240 000</div>
+              <div class="caption">по прайсу 255 000</div>
+            </td>
+            <td>
+              <div class="input">4</div>
+              <div class="note-soft">сверх остатка 2</div>
+            </td>
+            <td class="num"><span class="sum">960 000</span></td>
+          </tr>
+
+          <tr class="cat">
+            <th colspan="7">
+              <span class="cat-inner">
+                <span class="chev">▸</span>
+                <span>Запчасти</span>
+                <span class="cat-meta">0 позиций</span>
+              </span>
+            </th>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <div class="summary">
+        <strong>2 товара</strong> · 7 шт · <strong>1 518 000 ₽</strong> · WH-7
+      </div>
+      <div class="footer-right">
+        <span class="hint">⌘↵ отправить</span>
+        <div class="btn-secondary">Отмена</div>
+        <div class="btn-primary">Создать заказ</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

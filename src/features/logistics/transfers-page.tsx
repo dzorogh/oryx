@@ -16,7 +16,7 @@ import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-g
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
 import { hrefForTransfer, hrefForWarehouse } from "@/features/logistics/logistics-availability";
-import { ReservationForm } from "@/features/logistics/logistics-forms";
+import { ReservationCatalogDialog } from "@/features/logistics/ui/reservation-catalog-dialog";
 import {
   formatExpectedEnd,
   formatMetaTimestamp,
@@ -122,24 +122,24 @@ export const TransfersPage = () => {
     fromWarehouseId: string;
     toWarehouseId: string;
     expectedEndOn: string | null;
-    lines: Array<{ productId: string; quantity: number }>;
+    lines: Array<{
+      productId: string;
+      quantity: number;
+      ownerType?: import("@/features/logistics/logistics-types").OwnerType | null;
+      ownerId?: string | null;
+    }>;
   }) => {
-    const ok = await runLogisticsAction(
-      async () => {
-        const created = await createAndSendTransfer(
-          freeTransferPayload({
-            fromWarehouseId: value.fromWarehouseId,
-            toWarehouseId: value.toWarehouseId,
-            expectedEndOn: value.expectedEndOn,
-            lines: value.lines,
-          }),
-        );
-        openSentTransfer(created, (href) => router.push(href));
-      },
-      "Перемещение отправлено",
-      reload,
+    const created = await createAndSendTransfer(
+      freeTransferPayload({
+        fromWarehouseId: value.fromWarehouseId,
+        toWarehouseId: value.toWarehouseId,
+        expectedEndOn: value.expectedEndOn,
+        lines: value.lines,
+      }),
     );
-    return ok;
+    await reload();
+    openSentTransfer(created, (href) => router.push(href));
+    return true;
   };
 
   return (
@@ -252,6 +252,7 @@ const TransferDetailSkeleton = () => (
 
 export const TransferDetailPage = () => {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
     kind: "document",
     documentKind: "transfer",
@@ -355,6 +356,7 @@ export const TransferDetailPage = () => {
               {cancelGuidance ? (
                 <DocumentCancelControl
                   guidance={cancelGuidance}
+                  kicker={doc.number}
                   reload={reload}
                   onFollowUp={(action) => {
                     if (action.id === "mark-delivered") {
@@ -500,13 +502,12 @@ export const TransferDetailPage = () => {
           {actionError}
         </div>
       </div>
-      <ReservationForm
+      <ReservationCatalogDialog
         snapshot={snapshot}
         balances={balances}
         open={reserveOpen}
         onOpenChange={setReserveOpen}
-        reload={reload}
-        preset={{ locationType: "transfer", locationId: doc.id }}
+        preset={{ locationType: "transfer", locationId: doc.id, direction: "reserve" }}
       />
       <TransferCreateDialog
         open={reverseOpen}
@@ -516,20 +517,17 @@ export const TransferDetailPage = () => {
         context={{ kind: "free" }}
         preset={cancelGuidance?.transferPreset}
         onSubmit={async (value) => {
-          const ok = await runLogisticsAction(
-            () =>
-              createAndSendTransfer(
-                freeTransferPayload({
-                  fromWarehouseId: value.fromWarehouseId,
-                  toWarehouseId: value.toWarehouseId,
-                  expectedEndOn: value.expectedEndOn,
-                  lines: value.lines,
-                }),
-              ),
-            "Обратное перемещение отправлено",
-            reload,
+          const created = await createAndSendTransfer(
+            freeTransferPayload({
+              fromWarehouseId: value.fromWarehouseId,
+              toWarehouseId: value.toWarehouseId,
+              expectedEndOn: value.expectedEndOn,
+              lines: value.lines,
+            }),
           );
-          return ok;
+          await reload();
+          openSentTransfer(created, (href) => router.push(href));
+          return true;
         }}
       />
     </LogisticsPageShell>

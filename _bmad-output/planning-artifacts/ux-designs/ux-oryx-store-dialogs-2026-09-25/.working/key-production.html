@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Запустить производство — Oryx</title>
+<style>
+/*
+  Oryx — Type B «context rows» dialog mock: «Запустить производство».
+  Static mock: inline CSS only, system fonts, no JS, no network, no images.
+  Palette: page #f4f4f5, surface #fff, border #e4e4e7, text #18181b, muted #71717a,
+  primary #18181b on white text. Radius 8px (containers) / 6px (inputs, chips).
+  Numbers use tabular figures. Plant is a code only (PLT-3), never a plant name.
+  Dialog is medium width (~720px), max-height ~640px, centered — not full screen.
+*/
+:root {
+  --bg: #f4f4f5;
+  --surface: #ffffff;
+  --border: #e4e4e7;
+  --text: #18181b;
+  --muted: #71717a;
+  --subtle: #fafafa;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.scrim {
+  min-height: 100%;
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog {
+  width: 100%;
+  max-width: 720px;
+  max-height: 640px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, .04), 0 12px 32px -8px rgba(24, 24, 27, .14);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.head {
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.kicker {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .01em;
+  margin-bottom: 3px;
+}
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+.req {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.req .lbl { color: var(--muted); }
+.req .dot { color: #d4d4d8; }
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+.field .caret { color: var(--muted); font-size: 10px; line-height: 1; }
+
+/* Table */
+.body { flex: 1 1 auto; overflow: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--subtle);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: left;
+  padding: 8px 20px;
+  white-space: nowrap;
+}
+thead th.num { text-align: right; }
+thead th.qty { text-align: right; width: 148px; }
+tbody td {
+  padding: 11px 20px;
+  border-bottom: 1px solid #f1f1f3;
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: 0; }
+.name { font-size: 14px; font-weight: 500; }
+.sku { margin-top: 2px; font-size: 12px; color: var(--muted); }
+.need { text-align: right; white-space: nowrap; }
+.need .big { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.need .unit { font-size: 12px; color: var(--muted); margin-left: 3px; }
+.need .of { display: block; margin-top: 1px; font-size: 12px; color: var(--muted); }
+td.qty { text-align: right; }
+.input {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+  width: 104px;
+  height: 30px;
+  padding: 0 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 28px;
+}
+.input .val { font-weight: 500; }
+.input .ph { color: #a1a1aa; }
+.input .u { font-size: 12px; color: var(--muted); }
+tr.faded .name, tr.faded .sku, tr.faded .need .big, tr.faded .need .of, tr.faded .need .unit { opacity: .55; }
+tr.faded .input { background: var(--subtle); }
+
+/* Note */
+.note {
+  margin: 0 20px 16px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #78350f;
+}
+
+/* Footer */
+.foot {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.summary { font-size: 13px; color: var(--muted); }
+.actions { display: flex; align-items: center; gap: 12px; }
+.hint { font-size: 12px; color: #a1a1aa; white-space: nowrap; }
+.btn {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--text);
+  border-radius: 6px;
+  background: var(--text);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+}
+.btn.ghost {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+</style>
+</head>
+<body>
+<div class="scrim">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+
+    <div class="head">
+      <div class="kicker">Заказ клиента CO-1042</div>
+      <h1 class="title" id="dlg-title">Запустить производство</h1>
+      <div class="req">
+        <span class="lbl">Завод</span>
+        <span class="field">PLT-3 <span class="caret">▾</span></span>
+        <span class="dot">·</span>
+        <span class="lbl">Ожидаемое окончание</span>
+        <span class="field">12 окт <span class="caret">▾</span></span>
+      </div>
+    </div>
+
+    <div class="body">
+      <table>
+        <thead>
+          <tr>
+            <th>Товар</th>
+            <th class="num">Нужно</th>
+            <th class="qty">Произвести</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="name">Sharmax Force 320</div>
+              <div class="sku">PRD-18</div>
+            </td>
+            <td class="need">
+              <span class="big">12</span><span class="unit">шт</span>
+              <span class="of">из 20 шт</span>
+            </td>
+            <td class="qty">
+              <span class="input"><span class="val">12</span><span class="u">шт</span></span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="name">Sharmax Hummer 400</div>
+              <div class="sku">PRD-21</div>
+            </td>
+            <td class="need">
+              <span class="big">6</span><span class="unit">шт</span>
+              <span class="of">из 6 шт</span>
+            </td>
+            <td class="qty">
+              <span class="input"><span class="val">6</span><span class="u">шт</span></span>
+            </td>
+          </tr>
+          <tr class="faded">
+            <td>
+              <div class="name">Вариатор CVT</div>
+              <div class="sku">PRD-44</div>
+            </td>
+            <td class="need">
+              <span class="big">4</span><span class="unit">шт</span>
+              <span class="of">из 10 шт</span>
+            </td>
+            <td class="qty">
+              <span class="input"><span class="ph">0</span><span class="u">шт</span></span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        Вместе с заказом на производство создадим запланированный выпуск на весь объём — выпуск будет связан с этим заказом клиента.
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="summary">2 товара · 18 шт · PLT-3</div>
+      <div class="actions">
+        <span class="hint">⌘↵ отправить</span>
+        <button class="btn ghost" type="button">Отмена</button>
+        <button class="btn" type="button">Запустить</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

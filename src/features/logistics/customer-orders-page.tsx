@@ -10,7 +10,6 @@ import { CatalogQuickSelectControl } from "@/components/store/pim/products/catal
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
 import {
   closeCustomerOrder,
   createCustomerOrder,
@@ -22,7 +21,9 @@ import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-ca
 import { nextOrderLineQuantity } from "@/features/logistics/logistics-rules";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { sumFreeForProduct } from "@/features/logistics/logistics-availability";
-import { ReservationForm, ShipmentForm } from "@/features/logistics/logistics-forms";
+import { CustomerOrderCatalogDialog } from "@/features/logistics/ui/customer-order-catalog-dialog";
+import { ReservationCatalogDialog } from "@/features/logistics/ui/reservation-catalog-dialog";
+import { ShipmentCatalogDialog } from "@/features/logistics/ui/shipment-catalog-dialog";
 import {
   OutputFromOrderForm,
   ProductionFromOrderForm,
@@ -36,7 +37,7 @@ import {
   formatQuantity,
   formatMetaTimestamp,
 } from "@/features/logistics/logistics-labels";
-import { productById, productIdentityLabel } from "@/features/logistics/logistics-lookups";
+import { plantCode, productById, productIdentityLabel, warehouseCode } from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import {
   relatedOutputsForOrder,
@@ -195,136 +196,11 @@ const customerOrderGroupDefs: ListGroupDef<CustomerOrderListRow>[] = [
   },
 ];
 
-const CustomerOrderCreateDialog = ({
-  open,
-  onOpenChange,
-  onCreated,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCreated: () => Promise<void>;
-}) => {
-  const { snapshot, balances, isLoading, error } = useLogisticsStore({
-    kind: "form",
-    form: "customer_order",
-    enabled: open,
-  });
-  const [lines, setLines] = useState<Array<{ productId: string; quantity: string }>>([
-    { productId: "", quantity: "1" },
-  ]);
-  const [expectedEndOn, setExpectedEndOn] = useState("");
-  const [description, setDescription] = useState("");
-
-  const productItems = snapshot.products.map((product) => ({
-    value: product.id,
-    label: productIdentityLabel(
-      product,
-      product.id,
-      `свободно ${formatQuantity(sumFreeForProduct(balances, product.id), product.unit)}`,
-    ),
-  }));
-
-  const createOrder = async () => {
-    const validLines = lines.filter((line) => line.productId && Number(line.quantity) > 0);
-    if (validLines.length === 0) {
-      toast.error("Добавьте хотя бы одну строку с товаром и количеством");
-      return;
-    }
-    const ok = await runLogisticsAction(
-      async () => {
-        await createCustomerOrder({
-          regionId: snapshot.regions[0]?.id,
-          description: description.trim(),
-          expectedEndOn: expectedEndOn || null,
-          lines: validLines.map((line) => ({
-            productId: line.productId,
-            quantity: Number(line.quantity),
-          })),
-        });
-      },
-      "Заказ клиента создан",
-      onCreated,
-    );
-    if (ok) {
-      onOpenChange(false);
-      setExpectedEndOn("");
-      setDescription("");
-      setLines([{ productId: "", quantity: "1" }]);
-    }
-  };
-
-  return (
-    <LogisticsDialog open={open} onOpenChange={onOpenChange} title="Новый заказ клиента">
-      {isLoading ? <LogisticsLoading /> : null}
-      {error ? <LogisticsError message={error} /> : null}
-      {!isLoading && !error ? (
-        <div className="flex flex-col gap-3">
-          <ExpectedEndField value={expectedEndOn} onChange={setExpectedEndOn} />
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Описание</span>
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={3}
-              className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              placeholder="Необязательный комментарий"
-            />
-          </label>
-          {lines.map((line, index) => (
-            <div key={`line-${index}`} className="space-y-2">
-              <div className="grid grid-cols-[1fr_6rem] gap-2">
-                <FieldSelect
-                  label={index === 0 ? "Товар" : `Товар ${index + 1}`}
-                  value={line.productId}
-                  items={productItems}
-                  onChange={(value) => {
-                    setLines((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, productId: value } : item,
-                      ),
-                    );
-                  }}
-                />
-                <label className="space-y-1 text-sm">
-                  <span className="font-medium">Кол-во</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={line.quantity}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setLines((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, quantity: value } : item,
-                        ),
-                      );
-                    }}
-                    aria-label={`Количество ${index + 1}`}
-                  />
-                </label>
-              </div>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setLines((current) => [...current, { productId: "", quantity: "1" }])}
-          >
-            Добавить строку
-          </Button>
-          <Button type="button" onClick={() => void createOrder()}>
-            Создать заказ клиента
-          </Button>
-        </div>
-      ) : null}
-    </LogisticsDialog>
-  );
-};
 
 export const CustomerOrdersPage = () => {
   const { rows, isLoading, error, reload } = useLogisticsList(loadCustomerOrderList);
   const [open, setOpen] = useState(false);
+  const createStore = useLogisticsStore({ kind: "form", form: "customer_order", enabled: open });
   const [statusToggle, setStatusToggle] = useState<(typeof STATUS_TOGGLE)[number]["value"]>("all");
   const [search, setSearch] = useState("");
   const [productId, setProductId] = useState(ALL_VALUE);
@@ -472,7 +348,14 @@ export const CustomerOrdersPage = () => {
         }
       />
 
-      <CustomerOrderCreateDialog open={open} onOpenChange={setOpen} onCreated={reload} />
+      <CustomerOrderCatalogDialog
+        open={open}
+        onOpenChange={setOpen}
+        snapshot={createStore.snapshot}
+        balances={createStore.balances}
+        loading={createStore.isLoading}
+        loadError={createStore.error}
+      />
     </LogisticsPageShell>
   );
 };
@@ -501,6 +384,7 @@ export const CustomerOrderDetailPage = () => {
     locationId: string;
   } | null>(null);
   const [lineOpen, setLineOpen] = useState(false);
+  const [addCatalogOpen, setAddCatalogOpen] = useState(false);
   const [lineMode, setLineMode] = useState<OrderLineDialogMode>("add");
   const [lineProductId, setLineProductId] = useState("");
   const [lineQuantity, setLineQuantity] = useState("1");
@@ -633,6 +517,7 @@ export const CustomerOrderDetailPage = () => {
         actions={
           <>
             <DocumentCancelControl
+              kicker={order.number}
               guidance={cancelGuidance}
               reload={reload}
               onFollowUp={(action) => {
@@ -662,6 +547,15 @@ export const CustomerOrderDetailPage = () => {
           </>
         }
         meta={[
+          {
+            label: "Источник",
+            value:
+              order.sourceKind === "plant" && order.sourcePlantId
+                ? `С завода ${plantCode(snapshot, order.sourcePlantId)}`
+                : order.sourceKind === "hub" && order.sourceWarehouseId
+                  ? `С хаба ${warehouseCode(snapshot, order.sourceWarehouseId)}`
+                  : "—",
+          },
           { label: "Создан", value: formatMetaTimestamp(order.createdAt) },
           {
             label: "Ожидаемое окончание",
@@ -721,13 +615,7 @@ export const CustomerOrderDetailPage = () => {
                     <Button
                       type="button"
                       size="sm"
-                      onClick={() => {
-                        setLineMode("add");
-                        setLineProductId("");
-                        setLineQuantity("1");
-                        setLineError(null);
-                        setLineOpen(true);
-                      }}
+                      onClick={() => setAddCatalogOpen(true)}
                     >
                       Добавить товар
                     </Button>
@@ -831,31 +719,33 @@ export const CustomerOrderDetailPage = () => {
         ]}
       />
 
-      <ReservationForm
+      <ReservationCatalogDialog
         snapshot={snapshot}
         balances={balances}
         open={reserveOpen}
         onOpenChange={setReserveOpen}
-        reload={reload}        preset={{
+        direction="reserve"
+        preset={{
           toOwnerType: "order",
           toOwnerId: order.id,
           productId: reserveLine?.productId,
+          direction: "reserve",
         }}
       />
-      <ShipmentForm
-        key={`order-ship:${order.id}:${shipOpen ? "open" : "closed"}`}
+      <ShipmentCatalogDialog
         snapshot={snapshot}
         balances={balances}
         open={shipOpen}
         onOpenChange={setShipOpen}
-        reload={reload}        preset={{ intention: "shipment", customerOrderId: order.id }}
+        preset={{ intention: "shipment", customerOrderId: order.id }}
       />
-      <ReservationForm
+      <ReservationCatalogDialog
         snapshot={snapshot}
         balances={balances}
         open={releaseOpen}
         onOpenChange={setReleaseOpen}
-        reload={reload}        preset={{
+        direction="release"
+        preset={{
           toOwnerType: null,
           toOwnerId: null,
           fromOwnerType: "order",
@@ -863,6 +753,7 @@ export const CustomerOrderDetailPage = () => {
           productId: releasePlace?.line.productId,
           locationType: releasePlace?.locationType === "customer_order" || releasePlace?.locationType === "production_order" ? undefined : releasePlace?.locationType as "warehouse" | "transfer" | undefined,
           locationId: releasePlace?.locationId,
+          direction: "release",
         }}
       />
       <OutputReleaseDialog
@@ -915,6 +806,14 @@ export const CustomerOrderDetailPage = () => {
         reload={reload}
         customerOrderId={order.id}
         lines={lines}
+      />
+      <CustomerOrderCatalogDialog
+        open={addCatalogOpen}
+        onOpenChange={setAddCatalogOpen}
+        snapshot={snapshot}
+        balances={balances}
+        order={order}
+        onAdded={reload}
       />
       <OrderLineDialog
         open={lineOpen}

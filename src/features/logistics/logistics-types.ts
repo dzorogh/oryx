@@ -154,12 +154,24 @@ export type LogisticsPlant = {
   warehouseId: string;
 };
 
+export const WAREHOUSE_KINDS = ["plant", "hub", "customer"] as const;
+export type WarehouseKind = (typeof WAREHOUSE_KINDS)[number];
+
 export type LogisticsWarehouse = {
   id: string;
   code: string;
   name: string;
   stockLocationId: string;
+  kind: WarehouseKind;
   plantId: string | null;
+};
+
+export type DealerPrice = {
+  productId: string;
+  regionId: string | null;
+  amount: number;
+  currencyId: string | null;
+  currencyCode?: string | null;
 };
 
 export type LogisticsRegion = {
@@ -205,6 +217,9 @@ export type CustomerOrder = {
   regionId: string;
   stockLocationId: string;
   stockOwnerId: string;
+  sourceKind: "plant" | "hub" | null;
+  sourcePlantId: string | null;
+  sourceWarehouseId: string | null;
   createdAt: string;
   createdBy: string;
   expectedEndOn: string | null;
@@ -455,6 +470,7 @@ export type StockBalance = {
 export type LogisticsSnapshot = {
   categories: LogisticsCategory[];
   products: LogisticsProduct[];
+  dealerPrices: DealerPrice[];
   plants: LogisticsPlant[];
   warehouses: LogisticsWarehouse[];
   regions: LogisticsRegion[];

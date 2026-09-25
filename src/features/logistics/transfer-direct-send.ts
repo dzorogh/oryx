@@ -27,7 +27,12 @@ export const freeTransferPayload = (args: {
   fromWarehouseId: string;
   toWarehouseId: string;
   expectedEndOn?: string | null;
-  lines: Array<{ productId: string; quantity: number }>;
+  lines: Array<{
+    productId: string;
+    quantity: number;
+    ownerType?: OwnerType | null;
+    ownerId?: string | null;
+  }>;
 }): TransferCreateAndSendInput => ({
   fromWarehouseId: args.fromWarehouseId,
   toWarehouseId: args.toWarehouseId,
@@ -35,6 +40,8 @@ export const freeTransferPayload = (args: {
   lines: args.lines.map((line) => ({
     productId: line.productId,
     quantity: line.quantity,
+    ownerType: line.ownerType,
+    ownerId: line.ownerId,
   })),
 });
 

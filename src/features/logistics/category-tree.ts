@@ -103,3 +103,26 @@ export const pluralTovar = (n: number): string => {
   if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return `${n} товара`;
   return `${n} товаров`;
 };
+
+export const pluralPozicii = (n: number): string => {
+  const n10 = n % 10;
+  const n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return `${n} позиция`;
+  if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return `${n} позиции`;
+  return `${n} позиций`;
+};
+
+/** Категории товара без предков: товар виден один раз, в самой глубокой. */
+export const leafCategoryIds = (categoryIds: string[], categories: CategoryRef[]): string[] => {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const assigned = categoryIds.filter((id) => byId.has(id));
+  const isAncestorOf = (ancestorId: string, categoryId: string): boolean => {
+    let parentId = byId.get(categoryId)?.parentId ?? null;
+    while (parentId) {
+      if (parentId === ancestorId) return true;
+      parentId = byId.get(parentId)?.parentId ?? null;
+    }
+    return false;
+  };
+  return assigned.filter((id) => !assigned.some((other) => other !== id && isAncestorOf(id, other)));
+};

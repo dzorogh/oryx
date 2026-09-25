@@ -270,3 +270,8 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-product-code-prefix.md`
   summary: Нет автотеста, что `store_location_code` берёт префикс склада из `store_catalog_code_prefix`.
   evidence: Юнит-тест форматтера проходит и при старом литерале `WH-`. В репозитории нет стенда для SQL-тестов. На демо-базе при префиксе `WH` функция вернула `WH-1`, `WH-2`, `WH-3`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-dialogs-redesign.md`
+  summary: Регион нового заказа клиента молча берётся первым из справочника — нужен явный выбор региона (от него зависит дилерская цена).
+  evidence: Поведение существовало до редизайна (CustomerOrderCreateDialog брал первый регион); в новом окне сохранено как было.
+- resolved in spec-store-dialogs-redesign: регион нового заказа клиента выбирается явно (поле «Регион» в шапке, обязательно; цены и «по прайсу» по выбранному региону).

@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { createProductionOutput, reserveInProductionOutput } from "@/features/logistics/logistics-api";
 import {
   freeInDraftOutput,
@@ -18,18 +18,26 @@ import {
   productIdentityLabel,
   productionOrderById,
 } from "@/features/logistics/logistics-lookups";
+import { logisticsPath } from "@/features/logistics/logistics-paths";
 import type { OwnerType } from "@/features/logistics/logistics-types";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { firstErrorKey, parseDecimalQuantity } from "@/features/logistics/ui/catalog-quantity-model";
+import { focusQuantityInput } from "@/features/logistics/ui/catalog-quantity-table";
+import { ContextRowsTable, type ContextQuantityRow } from "@/features/logistics/ui/context-rows-table";
+import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
-import { LogisticsDialog } from "@/features/logistics/ui/logistics-dialog";
-import { isAllowedQuantity, QuantityField } from "@/features/logistics/ui/quantity-field";
-import { runLogisticsAction } from "@/features/logistics/ui/run-action";
+import { markHighlightedRows } from "@/features/logistics/ui/highlight-rows";
+import { openCreatedDocuments, reportPartialCreate } from "@/features/logistics/ui/open-created-documents";
+import { pluralTovar } from "@/features/logistics/category-tree";
+import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 /** Without `outputId` the user picks a new draft output or an existing draft of the production order. */
 export type OutputReserveTarget = {
   productionOrderId: string;
   productId: string;
   outputId?: string;
+  /** Строка текущего документа, которую подсветить после успеха. */
+  lineId?: string;
 };
 
 type Destination =
@@ -45,22 +53,20 @@ export const OutputReserveDialog = ({
   onClose: () => void;
   reload: () => Promise<void>;
 }) => {
+  const router = useRouter();
   const formStore = useLogisticsStore({ kind: "form", form: "output", enabled: target !== null });
   const { snapshot, balances } = formStore;
   const [ownerType, setOwnerType] = useState<OwnerType>("order");
-  const [orderLineId, setOrderLineId] = useState("");
-  const [regionId, setRegionId] = useState("");
   const [destinationKey, setDestinationKey] = useState("");
-  const [quantity, setQuantity] = useState<string | null>(null);
+  const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const productionOrder = target ? productionOrderById(snapshot, target.productionOrderId) : undefined;
   const product = target ? productById(snapshot, target.productId) : undefined;
 
   const destinations = useMemo<Destination[]>(() => {
-    if (!target) {
-      return [];
-    }
+    if (!target) return [];
     const drafts = snapshot.outputs
       .filter(
         (output) =>
@@ -76,9 +82,7 @@ export const OutputReserveDialog = ({
         available: freeInDraftOutput(snapshot, output.id, target.productId),
       }))
       .filter((item) => item.available > 0);
-    if (target.outputId) {
-      return drafts;
-    }
+    if (target.outputId) return drafts;
     const plan = snapshot.productionOrderLines
       .filter((line) => line.orderId === target.productionOrderId && line.productId === target.productId)
       .reduce((sum, line) => sum + line.quantity, 0);
@@ -86,6 +90,7 @@ export const OutputReserveDialog = ({
     return planRoom > 0 ? [{ kind: "new" as const, key: "new", available: planRoom }, ...drafts] : drafts;
   }, [snapshot, target]);
 
+  const destination = destinations.find((item) => item.key === destinationKey) ?? destinations[0];
   const orderLines = useMemo(
     () =>
       target
@@ -96,160 +101,211 @@ export const OutputReserveDialog = ({
     [balances, snapshot, target],
   );
 
-  const destination = destinations.find((item) => item.key === destinationKey) ?? destinations[0];
-  const selectedOrder =
-    orderLines.find((item) => item.line.id === orderLineId) ?? (orderLines.length === 1 ? orderLines[0] : undefined);
-  const regions = snapshot.regions;
-  const selectedRegion =
-    regions.find((item) => item.id === regionId) ?? (regions.length === 1 ? regions[0] : undefined);
-  const ownerCap = ownerType === "order" ? (selectedOrder?.cap ?? 0) : Number.POSITIVE_INFINITY;
-  const max = destination ? Math.max(0, Math.min(destination.available, ownerCap)) : 0;
-  const value = quantity ?? String(max);
-  const ownerId = ownerType === "order" ? selectedOrder?.line.orderId : selectedRegion?.id;
-  const canSubmit = Boolean(destination && ownerId && isAllowedQuantity(value, max)) && !pending;
+  const base = useMemo(() => {
+    if (!destination || !product || !target) return [];
+    if (ownerType === "order") {
+      return orderLines.map((item) => ({
+        key: item.line.id,
+        ownerType: "order" as const,
+        ownerId: item.line.orderId,
+        title: customerOrderById(snapshot, item.line.orderId)?.number ?? item.line.orderId,
+        subtitle: product.name,
+        cap: item.cap,
+        unit: product.unit,
+      }));
+    }
+    return snapshot.regions.map((region) => ({
+      key: region.id,
+      ownerType: "region" as const,
+      ownerId: region.id,
+      title: ownerLabel(snapshot, "region", region.id),
+      subtitle: product.name,
+      cap: Number.POSITIVE_INFINITY,
+      unit: product.unit,
+    }));
+  }, [destination, orderLines, ownerType, product, snapshot, target]);
+
+  const usedExcept = (key: string) =>
+    base
+      .filter((row) => row.key !== key)
+      .reduce((sum, row) => sum + (parseDecimalQuantity(quantities[row.key] ?? "") ?? 0), 0);
+
+  const rows: ContextQuantityRow[] = base.map((row) => {
+    const pool = destination ? Math.max(0, destination.available - usedExcept(row.key)) : 0;
+    const limit = Math.min(row.cap, pool);
+    return {
+      key: row.key,
+      title: row.title,
+      subtitle: row.subtitle,
+      limitLabel: Number.isFinite(limit) ? formatQuantity(limit, row.unit) : formatQuantity(pool, row.unit),
+      limit: Number.isFinite(limit) ? limit : pool,
+      unit: row.unit,
+    };
+  });
+
+  const picked = rows.flatMap((row) => {
+    const quantity = parseDecimalQuantity(quantities[row.key] ?? "");
+    if (quantity == null || quantity <= 0) return [];
+    const source = base.find((item) => item.key === row.key);
+    if (!source) return [];
+    return [{ ...source, quantity }];
+  });
 
   const close = () => {
     setOwnerType("order");
-    setOrderLineId("");
-    setRegionId("");
     setDestinationKey("");
-    setQuantity(null);
+    setQuantities({});
+    setServerError(null);
     onClose();
   };
 
   const submit = async () => {
-    if (!target || !destination || !ownerId || !canSubmit) {
+    if (!target || !destination || pending || picked.length === 0) return;
+    const errorKey = firstErrorKey(
+      rows.map((row) => ({ key: row.key, raw: quantities[row.key] ?? "", limit: row.limit, mode: "hard" as const })),
+    );
+    if (errorKey) {
+      focusQuantityInput(errorKey);
       return;
     }
-    const qty = Number(value);
     setPending(true);
-    const ok = await runLogisticsAction(
-      async () => {
-        if (destination.kind === "new") {
-          await createProductionOutput({
-            orderId: target.productionOrderId,
-            expectedEndOn: productionOrder?.expectedEndOn ?? null,
-            complete: false,
-            lines: [
-              { productId: target.productId, quantity: qty, allocation: { ownerType, ownerId, quantity: qty } },
-            ],
+    setServerError(null);
+    const created: Array<{ href: string; label: string }> = [];
+    try {
+      if (destination.kind === "new") {
+        const [first, ...rest] = picked;
+        if (!first) return;
+        const total = picked.reduce((sum, row) => sum + row.quantity, 0);
+        const outputId = await createProductionOutput({
+          orderId: target.productionOrderId,
+          expectedEndOn: productionOrder?.expectedEndOn ?? null,
+          complete: false,
+          lines: [
+            {
+              productId: target.productId,
+              quantity: total,
+              allocation: { ownerType: first.ownerType, ownerId: first.ownerId, quantity: first.quantity },
+            },
+          ],
+        });
+        created.push({ href: logisticsPath("outputs", outputId), label: "Выпуск" });
+        for (const row of rest) {
+          await reserveInProductionOutput({
+            outputId,
+            ownerType: row.ownerType,
+            ownerId: row.ownerId,
+            lines: [{ productId: target.productId, quantity: row.quantity }],
           });
-          return;
         }
+        await reload();
+        close();
+        openCreatedDocuments(
+          (href) => router.push(href),
+          created[0],
+          productionOrder ? [{ href: logisticsPath("production-orders", productionOrder.sequenceNumber ?? productionOrder.id), label: productionOrder.number }] : [],
+        );
+        return;
+      }
+      for (const row of picked) {
         await reserveInProductionOutput({
           outputId: destination.outputId,
-          ownerType,
-          ownerId,
-          lines: [{ productId: target.productId, quantity: qty }],
+          ownerType: row.ownerType,
+          ownerId: row.ownerId,
+          lines: [{ productId: target.productId, quantity: row.quantity }],
         });
-      },
-      destination.kind === "new" ? "Выпуск запланирован, резерв в выпуске" : "Зарезервировано в выпуске",
-      reload,
-    );
-    setPending(false);
-    if (ok) {
+        if (created.length === 0) {
+          created.push({ href: logisticsPath("outputs", destination.outputId), label: "Резерв в выпуске" });
+        }
+      }
+      if (target.lineId) markHighlightedRows(destination.outputId, [target.lineId]);
+      await reload();
       close();
+    } catch (caught: unknown) {
+      const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      if (created.length > 0) {
+        if (target.lineId && destination.kind !== "new") markHighlightedRows(destination.outputId, [target.lineId]);
+        close();
+        await reportPartialCreate((href) => router.push(href), created.slice(0, 1), translateLogisticsError(raw), reload);
+        return;
+      }
+      setServerError(translateLogisticsError(raw));
+    } finally {
+      setPending(false);
     }
   };
 
   const fixedOutput = target?.outputId ? snapshot.outputs.find((item) => item.id === target.outputId) : undefined;
 
   return (
-    <LogisticsDialog
+    <DialogShell
       open={target !== null}
       onOpenChange={(next) => {
-        if (!next && !pending) {
-          close();
-        }
+        if (!next && !pending) close();
       }}
+      size="lg"
+      kicker={fixedOutput?.number ?? productionOrder?.number}
       title="Зарезервировать в выпуске"
-      description={
-        target
-          ? [productIdentityLabel(product, target.productId), fixedOutput?.number ?? productionOrder?.number]
-              .filter(Boolean)
-              .join(" · ")
-          : undefined
+      header={
+        <div className="grid gap-3 sm:grid-cols-2">
+          {target?.outputId ? (
+            <p className="text-sm text-muted-foreground">{productIdentityLabel(product, target.productId)}</p>
+          ) : (
+            <FieldSelect
+              label="Куда"
+              value={destination?.key ?? ""}
+              items={destinations.map((item) => ({
+                value: item.key,
+                label:
+                  item.kind === "new"
+                    ? `Новый выпуск · можно ${formatQuantity(item.available, product?.unit)}`
+                    : `${item.outputNumber} · свободно ${formatQuantity(item.available, product?.unit)}`,
+              }))}
+              placeholder="Выберите выпуск"
+              emptyLabel="Нет места в плане и нет свободного запланированного выпуска"
+              onChange={(next) => {
+                setDestinationKey(next);
+                setQuantities({});
+              }}
+            />
+          )}
+          <FieldSelect
+            label="Под что"
+            value={ownerType}
+            items={[
+              { value: "order", label: OWNER_TYPE_LABELS.order },
+              { value: "region", label: OWNER_TYPE_LABELS.region },
+            ]}
+            onChange={(next) => {
+              setOwnerType(next === "region" ? "region" : "order");
+              setQuantities({});
+            }}
+          />
+        </div>
       }
+      footerSummary={picked.length ? pluralTovar(picked.length) : "Нет строк"}
+      submitLabel="Зарезервировать"
+      onSubmit={() => void submit()}
+      submitDisabled={!destination || picked.length === 0}
+      disabledReason="Введите количество"
+      submitting={pending}
+      serverError={serverError}
+      dirty={picked.length > 0}
       loading={formStore.isLoading}
       error={formStore.error}
     >
-      <div className="flex flex-col gap-3">
-        {target?.outputId ? null : (
-          <FieldSelect
-            label="Куда"
-            value={destination?.key ?? ""}
-            items={destinations.map((item) => ({
-              value: item.key,
-              label:
-                item.kind === "new"
-                  ? `Новый выпуск · можно ${formatQuantity(item.available, product?.unit)}`
-                  : `${item.outputNumber} · свободно ${formatQuantity(item.available, product?.unit)}`,
-            }))}
-            disabled={pending}
-            placeholder="Выберите выпуск"
-            emptyLabel="Нет места в плане и нет свободного запланированного выпуска"
-            onChange={(next) => {
-              setDestinationKey(next);
-              setQuantity(null);
-            }}
-          />
-        )}
-        {target?.outputId && destinations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">В выпуске нет свободного количества этого товара.</p>
-        ) : null}
-        <FieldSelect
-          label="Под что"
-          value={ownerType}
-          items={[
-            { value: "order", label: OWNER_TYPE_LABELS.order },
-            { value: "region", label: OWNER_TYPE_LABELS.region },
-          ]}
-          disabled={pending}
-          onChange={(next) => {
-            setOwnerType(next === "region" ? "region" : "order");
-            setQuantity(null);
-          }}
-        />
-        {ownerType === "order" ? (
-          <FieldSelect
-            label={OWNER_TYPE_LABELS.order}
-            value={selectedOrder?.line.id ?? ""}
-            items={orderLines.map((item) => ({
-              value: item.line.id,
-              label: `${customerOrderById(snapshot, item.line.orderId)?.number ?? item.line.orderId} · можно ${formatQuantity(item.cap, product?.unit)}`,
-            }))}
-            disabled={pending}
-            placeholder="Выберите заказ клиента"
-            emptyLabel="Нет открытых заказов клиента с незарезервированным количеством"
-            onChange={(next) => {
-              setOrderLineId(next);
-              setQuantity(null);
-            }}
-          />
-        ) : (
-          <FieldSelect
-            label={OWNER_TYPE_LABELS.region}
-            value={selectedRegion?.id ?? ""}
-            items={regions.map((region) => ({ value: region.id, label: ownerLabel(snapshot, "region", region.id) }))}
-            disabled={pending}
-            placeholder="Выберите регион"
-            emptyLabel="Нет регионов"
-            onChange={(next) => {
-              setRegionId(next);
-              setQuantity(null);
-            }}
-          />
-        )}
-        <QuantityField value={value} onChange={setQuantity} max={max} disabled={pending || !destination} />
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" disabled={pending} onClick={close}>
-            Отмена
-          </Button>
-          <Button type="button" disabled={!canSubmit} onClick={() => void submit()}>
-            Зарезервировать
-          </Button>
+      {target?.outputId && destinations.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          В выпуске нет свободного количества этого товара.
         </div>
-      </div>
-    </LogisticsDialog>
+      ) : (
+        <ContextRowsTable
+          rows={rows}
+          quantities={quantities}
+          onQuantityChange={(key, raw) => setQuantities((current) => ({ ...current, [key]: raw }))}
+          limitHeader="Доступно к резерву"
+          empty={ownerType === "order" ? "Нет открытых заказов клиента с незарезервированным количеством" : "Нет регионов"}
+        />
+      )}
+    </DialogShell>
   );
 };

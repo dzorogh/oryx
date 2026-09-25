@@ -237,6 +237,7 @@ export type LogisticsPayload = {
   documents?: SnapshotRow[];
   product_variants?: SnapshotRow[];
   categories?: SnapshotRow[];
+  dealer_prices?: SnapshotRow[];
   warehouses?: SnapshotRow[];
   plants?: SnapshotRow[];
   regions?: SnapshotRow[];
@@ -299,6 +300,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     documents = [],
     product_variants: variants = [],
     categories: categoriesRaw = [],
+    dealer_prices: dealerPricesRaw = [],
     warehouses = [],
     plants = [],
     regions = [],
@@ -375,6 +377,12 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       code: formatLogisticsCode("warehouse", id),
       name: str(row.name),
       stockLocationId: str(row.stock_location_id),
+      kind:
+        row.kind === "plant" || row.kind === "hub" || row.kind === "customer"
+          ? row.kind
+          : plantByWarehouse.has(id)
+            ? "plant"
+            : "customer",
       plantId: plantByWarehouse.get(id) ?? null,
     };
   });
@@ -489,6 +497,9 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       regionId: str(row.region_id),
       stockLocationId: str(row.stock_location_id),
       stockOwnerId: str(row.stock_owner_id),
+      sourceKind: row.source_kind === "plant" || row.source_kind === "hub" ? row.source_kind : null,
+      sourcePlantId: strOrNull(row.source_plant_id),
+      sourceWarehouseId: strOrNull(row.source_warehouse_id),
       createdAt: doc.created_at,
       createdBy: doc.created_by,
       expectedEndOn: doc.expected_end_on,
@@ -819,6 +830,13 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
   const snapshot: LogisticsSnapshot = {
     categories: logisticsCategories,
     products: logisticsProducts,
+    dealerPrices: dealerPricesRaw.map((row) => ({
+      productId: str(row.product_variant_id),
+      regionId: strOrNull(row.region_id),
+      amount: Number(row.amount),
+      currencyId: strOrNull(row.currency_id),
+      currencyCode: strOrNull(row.currency_code),
+    })),
     plants: logisticsPlants,
     warehouses: logisticsWarehouses,
     regions: logisticsRegions,
@@ -1205,7 +1223,7 @@ export const createProductionForOrder = async (args: {
     lines: args.lines,
   });
   try {
-    await createProductionOutput({
+    const outputId = await createProductionOutput({
       orderId: String(created.id),
       expectedEndOn: args.expectedEndOn,
       complete: false,
@@ -1219,10 +1237,14 @@ export const createProductionForOrder = async (args: {
         },
       })),
     });
+    return {
+      productionOrderId: String(created.id),
+      outputId,
+      sequenceNumber: created.sequenceNumber,
+    };
   } catch (caught) {
     throw new ProductionForOrderOutputError(String(created.id), created.sequenceNumber, caught);
   }
-  return created.id;
 };
 
 export const createProductionOrderWithDraftOutput = async (args: {
@@ -1333,7 +1355,9 @@ export const createCustomerOrder = async (args: {
   regionId?: string;
   description?: string;
   expectedEndOn?: string | null;
-  lines: Array<{ productId: string; quantity: number }>;
+  sourceKind?: "plant" | "hub" | null;
+  sourceId?: string | null;
+  lines: Array<{ productId: string; quantity: number; unitPrice?: number | null }>;
 }) => {
   let regionId = args.regionId;
   if (!regionId) {
@@ -1351,10 +1375,38 @@ export const createCustomerOrder = async (args: {
     p_lines: args.lines.map((line) => ({
       product_variant_id: Number(line.productId),
       quantity: line.quantity,
+      unit_price: line.unitPrice ?? null,
     })),
+    p_source_kind: args.sourceKind ?? null,
+    p_source_id: args.sourceId ? Number(args.sourceId) : null,
   });
   return { id: String(created.id), lines: created.lines };
 };
+
+export const addCustomerOrderLines = async (args: {
+  orderId: string;
+  lines: Array<{ productId: string; quantity: number; unitPrice?: number | null }>;
+}) =>
+  rpc("store_add_customer_order_lines", {
+    p_id: Number(args.orderId),
+    p_lines: args.lines.map((line) => ({
+      product_variant_id: Number(line.productId),
+      quantity: line.quantity,
+      unit_price: line.unitPrice ?? null,
+    })),
+  });
+
+export const addDraftOutputLines = async (args: {
+  outputId: string;
+  lines: Array<{ productId: string; quantity: number }>;
+}) =>
+  rpcJson<{ lines?: Array<number | string> }>("store_add_draft_output_lines", {
+    p_output_id: Number(args.outputId),
+    p_lines: args.lines.map((line) => ({
+      product_variant_id: Number(line.productId),
+      quantity: line.quantity,
+    })),
+  });
 
 export const closeProductionOrder = (id: string) => rpc("store_close_production_order", { p_id: id });
 export const setProductionStatus = (id: string, status: ProductionStatus) => {
@@ -1442,11 +1494,18 @@ export const createProduct = async (args: { name: string; unit: string; plantId?
   return String(created.variant_id);
 };
 
-export const createWarehouse = (args: { name: string }) =>
-  rpcJson<number | string>("store_create_warehouse", { p_name: args.name }).then(String);
+export const createWarehouse = (args: { name: string; kind?: "hub" | "customer" }) =>
+  rpcJson<number | string>("store_create_warehouse", {
+    p_name: args.name,
+    p_kind: args.kind ?? "customer",
+  }).then(String);
 
-export const updateWarehouse = (args: { id: string; name: string }) =>
-  rpc("store_update_warehouse", { p_id: Number(args.id), p_name: args.name });
+export const updateWarehouse = (args: { id: string; name: string; kind?: "hub" | "customer" | "plant" }) =>
+  rpc("store_update_warehouse", {
+    p_id: Number(args.id),
+    p_name: args.name,
+    p_kind: args.kind ?? null,
+  });
 
 export const createRegion = (args: { name: string }) =>
   rpcJson<number | string>("store_create_region", { p_name: args.name, p_code: null }).then(String);
