@@ -2,6 +2,9 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { allCategoryGroupIds } from "@/features/logistics/category-tree";
 import { useRouter, useSearchParams } from "next/navigation";
 import { regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
@@ -103,6 +106,27 @@ const StockPageContent = () => {
     sortDefs: STOCK_SORTS,
   });
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+
+  const toggleGroup = (id: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const setGroupsCollapsed = (ids: string[], collapsed: boolean) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (collapsed) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  };
 
   const sortBy = <TRow extends { productId: string }>(
     rows: TRow[],
@@ -181,7 +205,35 @@ const StockPageContent = () => {
         onToggleChange={(value) => replaceFilters(stockFilterForGroup(filtersRef.current, value as StockGroup))}
         toggleAriaLabel="Группировка остатков"
         search={{ value: filters.query, onChange: (value) => updateFilters({ query: value }), placeholder: "Поиск: товар или код" }}
-        viewControls={<ListSortMenu view={view} />}
+        viewControls={
+          <>
+            <ListSortMenu view={view} />
+            {filters.group === "products" ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setCollapsedGroups(new Set(allCategoryGroupIds(snapshot.categories)))}
+                >
+                  <ChevronsDownUp aria-hidden className="size-3.5" />
+                  Свернуть все
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setCollapsedGroups(new Set())}
+                >
+                  <ChevronsUpDown aria-hidden className="size-3.5" />
+                  Развернуть все
+                </Button>
+              </>
+            ) : null}
+          </>
+        }
         filtersActive={hasActiveFilters}
         onOpenFilters={dataReady ? () => setFiltersOpen(true) : undefined}
         columnsActive={view.hasCustomColumns}
@@ -201,6 +253,9 @@ const StockPageContent = () => {
             regionSections={regionSections}
             empty={emptyMessage}
             columns={matrixColumns}
+            collapsedGroups={collapsedGroups}
+            onToggleGroup={toggleGroup}
+            onSetGroupsCollapsed={setGroupsCollapsed}
           />
         </div>
       ) : null}

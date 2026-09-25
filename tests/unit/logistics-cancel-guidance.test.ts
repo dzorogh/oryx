@@ -59,6 +59,7 @@ const withLineSnap = <T extends { productId?: string }>(row: T) => ({
 });
 
 const emptySnapshot = (): LogisticsSnapshot => ({
+  categories: [],
   products: [],
   plants: [{ id: "m1", code: "PLT-1", name: "Завод", warehouseId: "w1" }],
   warehouses: [{ id: "w1", code: "WH-1", name: "Склад", plantId: "m1" }],

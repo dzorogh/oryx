@@ -456,92 +456,6 @@ export const unassignedCell = (
   return { quantity: orders.reduce((sum, order) => sum + order.remaining, 0), orders };
 };
 
-export type CategoryTreeNode = {
-  id: string;
-  name: string;
-  depth: number;
-  /** Direct product count shown under this group (not subtree). */
-  productCount: number;
-  products: OutputCalendarProduct[];
-  children: CategoryTreeNode[];
-};
-
-const childrenOf = (categories: OutputCalendarCategory[], parentId: string | null) =>
-  categories
-    .filter((c) => c.parentId === parentId)
-    .slice()
-    .sort((a, b) => Number(a.id) - Number(b.id));
-
-const byProductName = (a: OutputCalendarProduct, b: OutputCalendarProduct) =>
-  a.name.localeCompare(b.name, "ru");
-
-const productsInCategory = (
-  products: OutputCalendarProduct[],
-  categoryId: string,
-  visibleIds: Set<string>,
-) =>
-  products.filter((p) => visibleIds.has(p.id) && p.categoryIds.includes(categoryId));
-
-const categoryHasVisible = (
-  categories: OutputCalendarCategory[],
-  products: OutputCalendarProduct[],
-  categoryId: string,
-  visibleIds: Set<string>,
-): boolean => {
-  if (productsInCategory(products, categoryId, visibleIds).length > 0) return true;
-  return childrenOf(categories, categoryId).some((child) =>
-    categoryHasVisible(categories, products, child.id, visibleIds),
-  );
-};
-
-const buildNode = (
-  categories: OutputCalendarCategory[],
-  products: OutputCalendarProduct[],
-  category: OutputCalendarCategory,
-  visibleIds: Set<string>,
-  depth: number,
-): CategoryTreeNode | null => {
-  if (!categoryHasVisible(categories, products, category.id, visibleIds)) return null;
-  const direct = productsInCategory(products, category.id, visibleIds).slice().sort(byProductName);
-  const children = childrenOf(categories, category.id)
-    .map((child) => buildNode(categories, products, child, visibleIds, depth + 1))
-    .filter((n): n is CategoryTreeNode => n != null);
-  return {
-    id: category.id,
-    name: category.name,
-    depth,
-    productCount: direct.length,
-    products: direct,
-    children,
-  };
-};
-
-/** Ids of every subcategory under a group, depth-first, without the group itself. */
-export const descendantCategoryIds = (node: CategoryTreeNode): string[] =>
-  node.children.flatMap((child) => [child.id, ...descendantCategoryIds(child)]);
-
-export const UNCATEGORIZED_GROUP_ID = "__uncategorized";
-
-export const allCategoryGroupIds = (page: Pick<OutputCalendarPage, "categories">): string[] => [
-  ...page.categories.map((category) => category.id),
-  UNCATEGORIZED_GROUP_ID,
-];
-
-export const buildCategoryTree = (
-  categories: OutputCalendarCategory[],
-  products: OutputCalendarProduct[],
-  visibleProductIds: Set<string>,
-): { roots: CategoryTreeNode[]; uncategorized: OutputCalendarProduct[] } => {
-  const roots = childrenOf(categories, null)
-    .map((cat) => buildNode(categories, products, cat, visibleProductIds, 0))
-    .filter((n): n is CategoryTreeNode => n != null);
-  const uncategorized = products
-    .filter((p) => visibleProductIds.has(p.id) && p.categoryIds.length === 0)
-    .slice()
-    .sort(byProductName);
-  return { roots, uncategorized };
-};
-
 /** Count of deselected pieces vs default-all (for toolbar badge). */
 export const ownersChangedCount = (
   filter: OutputCalendarOwnerFilter,
@@ -591,12 +505,4 @@ export const formatOutputDate = (iso: string | null): string => {
   const [y, m, d] = iso.slice(0, 10).split("-");
   if (!y || !m || !d) return "—";
   return `${d}.${m}.${y}`;
-};
-
-export const pluralTovar = (n: number): string => {
-  const n10 = n % 10;
-  const n100 = n % 100;
-  if (n10 === 1 && n100 !== 11) return `${n} товар`;
-  if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return `${n} товара`;
-  return `${n} товаров`;
 };

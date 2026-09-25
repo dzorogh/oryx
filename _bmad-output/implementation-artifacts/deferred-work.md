@@ -262,3 +262,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-order-plan-first-input-and-covered.md`
   summary: Создание плана при первом вводе (`OrderPlanTab.setAction`) без автотеста: один план на несколько быстрых вводов, ошибки создания и записи.
   evidence: Логика внутри компонента; проверено вручную в браузере на OMS-2 24.09.2026.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-stock-products-category-groups.md`
+  summary: Контракт `store_stock_page()` (`categories[].parent_id`, `product_variants[].category_ids`, исключение удалённых категорий) не проверяется автотестом.
+  evidence: Маппер покрыт тестами на ручных payload; SQL-тестов в репо нет. Проверено разово на демо-базе 25.09.2026 (27 категорий, `category_ids` у товаров).

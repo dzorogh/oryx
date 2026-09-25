@@ -13,10 +13,14 @@ import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import {
   buildCategoryTree,
+  descendantCategoryIds,
+  pluralTovar,
+  UNCATEGORIZED_GROUP_ID,
+  type CategoryTreeNode,
+} from "@/features/logistics/category-tree";
+import {
   buildOwnerSet,
   computeMonthRange,
-  descendantCategoryIds,
-  UNCATEGORIZED_GROUP_ID,
   currentYearMonth,
   formatOutputDate,
   formatYearMonthLabel,
@@ -24,7 +28,6 @@ import {
   noDateCell,
   openOrdersForProduct,
   plantCodesForProduct,
-  pluralTovar,
   productCode,
   productVisibleForPlant,
   resolveOwner,
@@ -34,7 +37,6 @@ import {
   unassignedCell,
   ymKey,
   type CalendarOwner,
-  type CategoryTreeNode,
   type StockBreakdownRow,
   type OutputCalendarOpenOrder,
   type OutputCalendarOutputLine,
@@ -44,21 +46,13 @@ import {
   type YearMonth,
 } from "@/features/logistics/output-calendar";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
+import { categoryGroupStickyTop, useStickyCategoryRows } from "@/features/logistics/ui/use-sticky-category-rows";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import Link from "next/link";
-import {
-  Fragment,
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { Fragment, useMemo, type ReactNode } from "react";
 
 export type CreateDialogTarget =
   | {
@@ -529,10 +523,8 @@ const ProductRow = ({
   );
 };
 
-const GROUP_ROW_HEIGHT = 32;
-
 /** Nested category rows stack under the sticky header, one row per level. */
-const groupStickyTop = (depth: number) => `calc(var(--calendar-head-h, 0px) + ${depth * GROUP_ROW_HEIGHT}px)`;
+const groupStickyTop = categoryGroupStickyTop;
 
 const GroupRows = ({
   node,
@@ -547,7 +539,7 @@ const GroupRows = ({
   onCreate,
   stickyIds,
 }: {
-  node: CategoryTreeNode;
+  node: CategoryTreeNode<OutputCalendarProduct>;
   months: YearMonth[];
   currentYm: YearMonth;
   ownerSet: Set<string>;
@@ -609,7 +601,7 @@ const GroupRows = ({
           {descendants.length > 0 ? (
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded px-1 text-xs font-normal text-muted-foreground opacity-0 group-hover/category:opacity-100 hover:bg-zinc-200/70 hover:text-foreground focus-visible:opacity-100"
+              className="pointer-events-none inline-flex items-center gap-1 rounded px-1 text-xs font-normal text-muted-foreground opacity-0 group-hover/category:pointer-events-auto group-hover/category:opacity-100 hover:bg-zinc-200/70 hover:text-foreground focus-visible:pointer-events-auto focus-visible:opacity-100"
               onClick={(event) => {
                 event.stopPropagation();
                 if (anyCollapsedInside) {
@@ -695,42 +687,11 @@ export const OutputCalendarMatrix = ({
     [page.categories, page.products, visibleIds],
   );
   const curKey = ymKey(currentYm);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const headRef = useRef<HTMLTableSectionElement>(null);
-  const [headHeight, setHeadHeight] = useState(0);
-  const [stickyIds, setStickyIds] = useState<Set<string>>(() => new Set());
-
-  const updateStickyIds = useCallback(() => {
-    const box = scrollRef.current;
-    const head = headRef.current;
-    if (!box || !head) return;
-    // The deepest category rows whose natural position has passed the header form the sticky stack.
-    const line = box.scrollTop + head.offsetHeight;
-    const path: string[] = [];
-    for (const row of box.querySelectorAll<HTMLTableRowElement>("tr[data-group-id]")) {
-      const depth = Number(row.dataset.groupDepth);
-      if (row.offsetTop > line + depth * GROUP_ROW_HEIGHT) break;
-      path.length = depth;
-      path[depth] = row.dataset.groupId ?? "";
-    }
-    setStickyIds((prev) => {
-      const next = new Set(path.filter(Boolean));
-      return next.size === prev.size && [...next].every((id) => prev.has(id)) ? prev : next;
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    const head = headRef.current;
-    if (!head) return;
-    const observer = new ResizeObserver(() => setHeadHeight(head.getBoundingClientRect().height));
-    observer.observe(head);
-    return () => observer.disconnect();
-  }, []);
-
-  useLayoutEffect(() => {
-    const frame = requestAnimationFrame(updateStickyIds);
-    return () => cancelAnimationFrame(frame);
-  }, [updateStickyIds, collapsed, roots, uncategorized, headHeight]);
+  const { scrollRef, headRef, stickyIds, onScroll, scrollStyle } = useStickyCategoryRows({
+    collapsed,
+    roots,
+    uncategorized,
+  });
 
   const groupProps = {
     months,
@@ -748,9 +709,9 @@ export const OutputCalendarMatrix = ({
   return (
     <div
       ref={scrollRef}
-      onScroll={updateStickyIds}
+      onScroll={onScroll}
       className="max-h-[calc(100vh-180px)] overflow-auto rounded-md border border-border bg-background"
-      style={{ "--calendar-head-h": `${headHeight}px` } as CSSProperties}
+      style={scrollStyle}
     >
       <style>{`@keyframes flashPulse{0%{box-shadow:inset 0 0 0 2px #2563eb}100%{box-shadow:inset 0 0 0 0 transparent}}`}</style>
       <table className="w-full min-w-[900px] border-separate border-spacing-0 text-xs">

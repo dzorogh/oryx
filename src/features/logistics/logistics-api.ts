@@ -6,6 +6,7 @@ import type {
   DocumentKind,
   DocumentProductLine,
   LogisticsPlant,
+  LogisticsCategory,
   LogisticsProduct,
   LogisticsRegion,
   LogisticsSetting,
@@ -234,6 +235,7 @@ export type LogisticsPayload = {
   document_kinds?: SnapshotRow[];
   documents?: SnapshotRow[];
   product_variants?: SnapshotRow[];
+  categories?: SnapshotRow[];
   warehouses?: SnapshotRow[];
   plants?: SnapshotRow[];
   regions?: SnapshotRow[];
@@ -295,6 +297,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     document_kinds: kinds = [],
     documents = [],
     product_variants: variants = [],
+    categories: categoriesRaw = [],
     warehouses = [],
     plants = [],
     regions = [],
@@ -444,6 +447,13 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
   };
 
   const variantById = new Map(variants.map((row) => [str(row.id), row]));
+  const categoryIdsOf = (value: unknown): string[] =>
+    Array.isArray(value) ? value.map((id) => str(id)) : [];
+  const logisticsCategories: LogisticsCategory[] = categoriesRaw.map((row) => ({
+    id: str(row.id),
+    parentId: strOrNull(row.parent_id ?? row.parentId),
+    name: str(row.name ?? ""),
+  }));
   const logisticsProducts: LogisticsProduct[] = variants.map((row) => {
     const id = str(row.id);
     return {
@@ -454,6 +464,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       unit: str(row.unit ?? "шт"),
       imageUrl: preferKorportalMediaConversion(row.image_url ? str(row.image_url) : null),
       plantId: strOrNull(row.plant_id),
+      categoryIds: categoryIdsOf(row.category_ids ?? row.categoryIds),
     };
   });
 
@@ -805,6 +816,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
   });
 
   const snapshot: LogisticsSnapshot = {
+    categories: logisticsCategories,
     products: logisticsProducts,
     plants: logisticsPlants,
     warehouses: logisticsWarehouses,

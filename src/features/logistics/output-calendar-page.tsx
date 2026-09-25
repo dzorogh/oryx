@@ -10,9 +10,9 @@ import {
   ProductionForOrderOutputError,
 } from "@/features/logistics/logistics-api";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { allCategoryGroupIds } from "@/features/logistics/category-tree";
 import {
   applyLocalOutput,
-  allCategoryGroupIds,
   defaultOwnerFilter,
   plantFilterOptions,
   type OutputCalendarOutputLine,
@@ -225,7 +225,7 @@ export const OutputCalendarPage = () => {
             onTogglePanel={() => setPanelOpen((v) => !v)}
             onPlantChange={setPlantId}
             onRefresh={() => void load({ soft: true })}
-            onCollapseAll={() => setCollapsed(new Set(allCategoryGroupIds(page)))}
+            onCollapseAll={() => setCollapsed(new Set(allCategoryGroupIds(page.categories)))}
             onExpandAll={() => setCollapsed(new Set())}
             refreshing={refreshing}
           />

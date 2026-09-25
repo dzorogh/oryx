@@ -17,6 +17,7 @@ import {
 import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 
 export const EMPTY_SNAPSHOT: LogisticsSnapshot = {
+  categories: [],
   products: [],
   plants: [],
   stockLocations: [],

@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { allCategoryGroupIds, buildCategoryTree, descendantCategoryIds } from "@/features/logistics/category-tree";
 import {
   applyLocalOutput,
-  allCategoryGroupIds,
-  buildCategoryTree,
-  descendantCategoryIds,
   buildOwnerSet,
   computeMonthRange,
   defaultOwnerFilter,
@@ -434,6 +432,6 @@ describe("category collapse helpers", () => {
     };
     const { roots } = buildCategoryTree(page.categories, page.products, new Set(["1"]));
     assert.deepEqual(descendantCategoryIds(roots[0]), ["10", "11"]);
-    assert.deepEqual(allCategoryGroupIds(page), ["2", "10", "11", "__uncategorized"]);
+    assert.deepEqual(allCategoryGroupIds(page.categories), ["2", "10", "11", "__uncategorized"]);
   });
 });

@@ -54,6 +54,7 @@ const lineSnap = {
 };
 
 const snapshotWithDocs = (): LogisticsSnapshot => ({
+  categories: [],
   products: [],
   plants: [],
   stockLocations: [],

@@ -260,4 +260,27 @@ describe("mapLogisticsPayload", () => {
     const mapped = mapLogisticsPayload({ found: false });
     assert.equal(mapped.found, false);
   });
+
+  it("defaults missing categories and category_ids to empty arrays", () => {
+    const mapped = mapLogisticsPayload({
+      product_variants: [{ id: 1, product_id: 9, name: "Force", unit: "шт", plant_id: null }],
+    });
+    assert.deepEqual(mapped.snapshot.categories, []);
+    assert.deepEqual(mapped.snapshot.products[0]?.categoryIds, []);
+  });
+
+  it("maps stock categories and category_ids", () => {
+    const mapped = mapLogisticsPayload({
+      categories: [
+        { id: 2, parent_id: null, name: "ATV" },
+        { id: 10, parent_id: 2, name: "4x4" },
+      ],
+      product_variants: [{ id: 1, product_id: 9, name: "Force", unit: "шт", plant_id: 5, category_ids: [2, 10] }],
+    });
+    assert.deepEqual(mapped.snapshot.categories, [
+      { id: "2", parentId: null, name: "ATV" },
+      { id: "10", parentId: "2", name: "4x4" },
+    ]);
+    assert.deepEqual(mapped.snapshot.products[0]?.categoryIds, ["2", "10"]);
+  });
 });

@@ -130,6 +130,12 @@ export type StockOwner = {
   kind: OwnerKind;
 };
 
+export type LogisticsCategory = {
+  id: string;
+  parentId: string | null;
+  name: string;
+};
+
 export type LogisticsProduct = {
   id: string;
   productId: string;
@@ -138,6 +144,7 @@ export type LogisticsProduct = {
   unit: string;
   imageUrl?: string | null;
   plantId: string | null;
+  categoryIds: string[];
 };
 
 export type LogisticsPlant = {
@@ -446,6 +453,7 @@ export type StockBalance = {
 };
 
 export type LogisticsSnapshot = {
+  categories: LogisticsCategory[];
   products: LogisticsProduct[];
   plants: LogisticsPlant[];
   warehouses: LogisticsWarehouse[];

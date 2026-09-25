@@ -1,4 +1,5 @@
-import { isFreeOwner, type StockBalance } from "@/features/logistics/logistics-types";
+import { buildCategoryTree } from "@/features/logistics/category-tree";
+import { isFreeOwner, type LogisticsSnapshot, type StockBalance } from "@/features/logistics/logistics-types";
 
 export const ON_HAND_LOCATION_TYPES = ["warehouse", "production_order", "transfer"] as const;
 
@@ -251,4 +252,28 @@ export const projectRegionProductMatrix = (
     }))
     .filter((section) => section.rows.length > 0)
     .sort((left, right) => left.regionId.localeCompare(right.regionId));
+};
+
+/** Category groups for the stock «Товары» matrix. Row order inside a group follows `rows`. */
+export const buildStockProductTree = (
+  snapshot: Pick<LogisticsSnapshot, "categories" | "products">,
+  rows: StockProductMatrixRow[],
+) => {
+  const byId = new Map(snapshot.products.map((product) => [product.id, product]));
+  const treeProducts = rows.map((row) => {
+    const product = byId.get(row.productId);
+    return {
+      ...row,
+      id: row.productId,
+      name: product?.name ?? "",
+      categoryIds: product?.categoryIds ?? [],
+    };
+  });
+  const order = new Map(treeProducts.map((product, index) => [product.id, index]));
+  return buildCategoryTree(
+    snapshot.categories,
+    treeProducts,
+    new Set(treeProducts.map((product) => product.id)),
+    (left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0),
+  );
 };

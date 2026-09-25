@@ -1,30 +1,42 @@
 // english-ui:ignore-file
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
+import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  descendantCategoryIds,
+  pluralTovar,
+  UNCATEGORIZED_GROUP_ID,
+  type CategoryTreeNode,
+} from "@/features/logistics/category-tree";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { productById, regionById, regionCode, warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import type { StockGroup } from "@/features/logistics/stock-filters";
-import type {
-  StockProductMatrixRow,
-  StockRegionSection,
-  StockWarehouseSection,
+import {
+  buildStockProductTree,
+  type StockProductMatrixRow,
+  type StockRegionSection,
+  type StockWarehouseSection,
 } from "@/features/logistics/stock-product-matrix";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { FLUSH_TABLE_CLASS } from "@/features/logistics/ui/logistics-table-card";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ListCollapsedColumnHeader, ListColumnHeader } from "@/features/logistics/ui/list/list-column-header";
+import { useStickyCategoryRows } from "@/features/logistics/ui/use-sticky-category-rows";
 import { cn } from "@/lib/utils";
 
 const QUANTITY_HEAD =
   "min-w-[4.5rem] px-3 pt-2 pb-2 text-right text-xs font-medium text-muted-foreground align-bottom";
 const QUANTITY_CELL = "px-3 py-2 text-right text-sm";
+const STOCK_HEAD_VAR = "--stock-head-h";
 const IDENTITY_HEAD =
   "sticky left-0 z-20 min-w-44 bg-card px-3 pt-2 pb-2 text-left text-xs font-medium align-bottom";
+const PRODUCTS_IDENTITY_HEAD = "sticky top-0 left-0 z-30 min-w-44 bg-card px-3 pt-2 pb-2 text-left text-xs font-medium align-bottom";
+const STICKY_HEAD = "sticky top-0 z-20";
 const IDENTITY_CELL = "sticky left-0 z-10 min-w-44 bg-card px-3 py-2";
 const GROUP_HEAD =
   "border-l border-border/60 px-3 pt-2 pb-0 text-center text-xs font-medium tracking-[0.06em] text-muted-foreground/70 uppercase";
@@ -86,7 +98,7 @@ const GROUP_LABELS: Record<StockMatrixGroupId, string> = {
 };
 
 const CollapsedHead = ({ id, columns }: { id: StockMatrixGroupId; columns: StockMatrixColumnsView }) => (
-  <TableHead scope="col" rowSpan={2} className="border-l border-border/60 p-0 text-center align-middle" style={{ width: 28, minWidth: 28 }}>
+  <TableHead scope="col" rowSpan={2} className="sticky top-0 z-20 border-l border-border/60 bg-card p-0 text-center align-middle" style={{ width: 28, minWidth: 28 }}>
     <ListCollapsedColumnHeader
       label={GROUP_LABELS[id]}
       onExpand={() => columns.toggleCollapsed(id)}
@@ -122,37 +134,264 @@ const GroupHead = ({
   </TableHead>
 );
 
+type StockTreeProduct = StockProductMatrixRow & {
+  id: string;
+  name: string;
+  categoryIds: string[];
+};
+
+const ProductMatrixCells = ({
+  snapshot,
+  row,
+  show,
+  columnCollapsed,
+  depth = 0,
+}: {
+  snapshot: LogisticsSnapshot;
+  row: StockProductMatrixRow;
+  show: (id: StockMatrixGroupId) => boolean;
+  columnCollapsed: (id: StockMatrixGroupId) => boolean;
+  depth?: number;
+}) => {
+  const unit = unitFor(snapshot, row.productId);
+  const total = row.location.warehouses + row.location.production + row.location.transfers;
+  const ownerTotal = row.owner.free + row.owner.regionReserve + row.owner.orderReserve || 1;
+  return (
+    <>
+      <TableCell className={IDENTITY_CELL} style={{ paddingLeft: 16 + depth * 14 + 20 }}>
+        <ProductIdentity snapshot={snapshot} productId={row.productId} />
+      </TableCell>
+      {show("owner") ? (
+        <>
+          <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#f7f7f8]")}>
+            <StockQty quantity={row.owner.free} unit={unit} />
+          </TableCell>
+          <TableCell className={cn(QUANTITY_CELL, "bg-[#f4f7ff]")}>
+            <StockQty quantity={row.owner.regionReserve} unit={unit} />
+          </TableCell>
+          <TableCell className={cn(QUANTITY_CELL, "bg-[#eef3fe]")}>
+            <StockQty quantity={row.owner.orderReserve} unit={unit} />
+          </TableCell>
+        </>
+      ) : columnCollapsed("owner") ? (
+        <CollapsedCell />
+      ) : null}
+      {show("location") ? (
+        <>
+          <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60")}>
+            <StockQty quantity={row.location.warehouses} unit={unit} />
+          </TableCell>
+          <TableCell className={QUANTITY_CELL}>
+            <StockQty quantity={row.location.production} unit={unit} />
+          </TableCell>
+          <TableCell className={QUANTITY_CELL}>
+            <StockQty quantity={row.location.transfers} unit={unit} />
+          </TableCell>
+        </>
+      ) : columnCollapsed("location") ? (
+        <CollapsedCell />
+      ) : null}
+      {show("total") ? (
+        <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#fcfcfc]")}>
+          <div className="flex flex-col items-end gap-1">
+            <span className="font-semibold tabular-nums">{formatQuantity(total, unit)}</span>
+            <span className="flex h-1 w-[84px] overflow-hidden rounded-full bg-muted" aria-hidden>
+              <i className="block h-full" style={{ width: `${(row.owner.free / ownerTotal) * 100}%`, background: OWNER_COLORS.free }} />
+              <i
+                className="block h-full"
+                style={{ width: `${(row.owner.regionReserve / ownerTotal) * 100}%`, background: OWNER_COLORS.region }}
+              />
+              <i
+                className="block h-full"
+                style={{ width: `${(row.owner.orderReserve / ownerTotal) * 100}%`, background: OWNER_COLORS.order }}
+              />
+            </span>
+          </div>
+        </TableCell>
+      ) : columnCollapsed("total") ? (
+        <CollapsedCell />
+      ) : null}
+    </>
+  );
+};
+
+const StockGroupRows = ({
+  node,
+  snapshot,
+  colSpan,
+  show,
+  columnCollapsed,
+  collapsed,
+  onToggleCollapse,
+  onSetCollapsed,
+  stickyIds,
+  groupStickyTop,
+}: {
+  node: CategoryTreeNode<StockTreeProduct>;
+  snapshot: LogisticsSnapshot;
+  colSpan: number;
+  show: (id: StockMatrixGroupId) => boolean;
+  columnCollapsed: (id: StockMatrixGroupId) => boolean;
+  collapsed: Set<string>;
+  onToggleCollapse: (id: string) => void;
+  onSetCollapsed: (ids: string[], collapsed: boolean) => void;
+  stickyIds: Set<string>;
+  groupStickyTop: (depth: number) => string;
+}) => {
+  const isCollapsed = collapsed.has(node.id);
+  const stickyTop = stickyIds.has(node.id) ? groupStickyTop(node.depth) : undefined;
+  const descendants = descendantCategoryIds(node);
+  const anyCollapsedInside = isCollapsed || descendants.some((id) => collapsed.has(id));
+  return (
+    <Fragment>
+      <TableRow
+        data-group-id={node.id}
+        data-group-depth={node.depth}
+        className="group/category cursor-pointer hover:bg-transparent"
+        onClick={() => onToggleCollapse(node.id)}
+      >
+        <TableCell
+          colSpan={1}
+          className={cn(
+            "sticky left-0 z-10 h-8 border-b border-border bg-zinc-50 py-0 font-semibold whitespace-nowrap",
+            stickyTop && "z-[16]",
+          )}
+          style={{ paddingLeft: 16 + node.depth * 14, top: stickyTop }}
+        >
+          <button
+            type="button"
+            aria-expanded={!isCollapsed}
+            className="inline-flex items-center gap-1"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleCollapse(node.id);
+            }}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="size-3 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="size-3 text-muted-foreground" />
+            )}
+            {node.name}
+            <span className="font-normal text-muted-foreground"> · {pluralTovar(node.productCount)}</span>
+          </button>
+        </TableCell>
+        {colSpan > 1 ? (
+        <TableCell
+          colSpan={colSpan - 1}
+          className={cn("h-8 border-b border-border bg-zinc-50 px-2 py-0", stickyTop && "sticky z-[15]")}
+          style={{ top: stickyTop }}
+        >
+          {descendants.length > 0 ? (
+            <button
+              type="button"
+              className="pointer-events-none inline-flex items-center gap-1 rounded px-1 text-xs font-normal text-muted-foreground opacity-0 group-hover/category:pointer-events-auto group-hover/category:opacity-100 hover:bg-zinc-200/70 hover:text-foreground focus-visible:pointer-events-auto focus-visible:opacity-100"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (anyCollapsedInside) onSetCollapsed([node.id, ...descendants], false);
+                else onSetCollapsed(descendants, true);
+              }}
+            >
+              {anyCollapsedInside ? (
+                <ChevronsUpDown className="size-3" aria-hidden />
+              ) : (
+                <ChevronsDownUp className="size-3" aria-hidden />
+              )}
+              {anyCollapsedInside ? "Развернуть всё" : "Свернуть подкатегории"}
+            </button>
+          ) : null}
+        </TableCell>
+        ) : null}
+      </TableRow>
+      {!isCollapsed ? (
+        <>
+          {node.products.map((product) => (
+            <TableRow key={`${node.id}-${product.id}`} className="hover:bg-muted/40">
+              <ProductMatrixCells
+                snapshot={snapshot}
+                row={product}
+                show={show}
+                columnCollapsed={columnCollapsed}
+                depth={node.depth}
+              />
+            </TableRow>
+          ))}
+          {node.children.map((child) => (
+            <StockGroupRows
+              key={child.id}
+              node={child}
+              snapshot={snapshot}
+              colSpan={colSpan}
+              show={show}
+              columnCollapsed={columnCollapsed}
+              collapsed={collapsed}
+              onToggleCollapse={onToggleCollapse}
+              onSetCollapsed={onSetCollapsed}
+              stickyIds={stickyIds}
+              groupStickyTop={groupStickyTop}
+            />
+          ))}
+        </>
+      ) : null}
+    </Fragment>
+  );
+};
+
 const ProductsMatrixTable = ({
   snapshot,
   rows,
   empty,
   columns,
+  collapsed,
+  onToggleCollapse,
+  onSetCollapsed,
 }: {
   snapshot: LogisticsSnapshot;
   rows: StockProductMatrixRow[];
   empty: string;
   columns: StockMatrixColumnsView;
+  collapsed: Set<string>;
+  onToggleCollapse: (id: string) => void;
+  onSetCollapsed: (ids: string[], collapsed: boolean) => void;
 }) => {
   const show = (id: StockMatrixGroupId) => columns.isVisible(id) && !columns.isCollapsed(id);
-  const collapsed = (id: StockMatrixGroupId) => columns.isVisible(id) && columns.isCollapsed(id);
+  const columnCollapsed = (id: StockMatrixGroupId) => columns.isVisible(id) && columns.isCollapsed(id);
   const colSpan =
     1 +
-    (["owner", "location"] as const).reduce((sum, id) => sum + (show(id) ? 3 : collapsed(id) ? 1 : 0), 0) +
+    (["owner", "location"] as const).reduce((sum, id) => sum + (show(id) ? 3 : columnCollapsed(id) ? 1 : 0), 0) +
     (columns.isVisible("total") ? 1 : 0);
   const hasSubHeader = show("owner") || show("location");
+  const secondHeadStyle = { top: `var(${STOCK_HEAD_VAR}-row, 0px)` };
+  const { roots, uncategorized } = useMemo(() => buildStockProductTree(snapshot, rows), [snapshot, rows]);
+  const { scrollRef, headRef, stickyIds, onScroll, groupStickyTop, scrollStyle } = useStickyCategoryRows(
+    { collapsed, roots, uncategorized },
+    STOCK_HEAD_VAR,
+  );
+  const groupProps = {
+    snapshot,
+    colSpan,
+    show,
+    columnCollapsed,
+    collapsed,
+    onToggleCollapse,
+    onSetCollapsed,
+    stickyIds,
+    groupStickyTop,
+  };
 
   return (
     <TooltipProvider delay={0}>
-      <Table className="w-max min-w-full">
-        <TableHeader>
+      <div ref={scrollRef} onScroll={onScroll} className="max-h-[calc(100vh-220px)] overflow-auto" style={scrollStyle}>
+      <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+        <thead ref={headRef}>
           <TableRow className="hover:bg-transparent">
-            <TableHead scope="col" rowSpan={hasSubHeader ? 2 : 1} className={IDENTITY_HEAD}>
+            <TableHead scope="col" rowSpan={hasSubHeader ? 2 : 1} className={PRODUCTS_IDENTITY_HEAD}>
               Товар
             </TableHead>
             {(["owner", "location"] as const).map((id) =>
               show(id) ? (
-                <GroupHead key={id} id={id} colSpan={3} className={GROUP_HEAD} columns={columns} />
-              ) : collapsed(id) ? (
+                <GroupHead key={id} id={id} colSpan={3} className={cn(GROUP_HEAD, STICKY_HEAD, "bg-card")} columns={columns} />
+              ) : columnCollapsed(id) ? (
                 <CollapsedHead key={id} id={id} columns={columns} />
               ) : null,
             )}
@@ -160,10 +399,10 @@ const ProductsMatrixTable = ({
               <GroupHead
                 id="total"
                 rowSpan={hasSubHeader ? 2 : 1}
-                className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#fcfcfc]")}
+                className={cn(QUANTITY_HEAD, STICKY_HEAD, "border-l border-border/60 bg-[#fcfcfc]")}
                 columns={columns}
               />
-            ) : collapsed("total") ? (
+            ) : columnCollapsed("total") ? (
               <CollapsedHead id="total" columns={columns} />
             ) : null}
           </TableRow>
@@ -171,7 +410,7 @@ const ProductsMatrixTable = ({
             <TableRow className="hover:bg-transparent">
               {show("owner") ? (
                 <>
-                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60 bg-[#f7f7f8]")}>
+                  <TableHead scope="col" style={secondHeadStyle} className={cn(QUANTITY_HEAD, "sticky z-20 border-l border-border/60 bg-[#f7f7f8]")}>
                     <span
                       className="mr-1.5 inline-block size-2 rounded-sm align-middle"
                       style={{ background: OWNER_COLORS.free }}
@@ -179,7 +418,7 @@ const ProductsMatrixTable = ({
                     />
                     Свободно
                   </TableHead>
-                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#f4f7ff]")}>
+                  <TableHead scope="col" style={secondHeadStyle} className={cn(QUANTITY_HEAD, "sticky z-20 bg-[#f4f7ff]")}>
                     <span
                       className="mr-1.5 inline-block size-2 rounded-sm align-middle"
                       style={{ background: OWNER_COLORS.region }}
@@ -187,7 +426,7 @@ const ProductsMatrixTable = ({
                     />
                     Резерв региона
                   </TableHead>
-                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "bg-[#eef3fe]")}>
+                  <TableHead scope="col" style={secondHeadStyle} className={cn(QUANTITY_HEAD, "sticky z-20 bg-[#eef3fe]")}>
                     <span
                       className="mr-1.5 inline-block size-2 rounded-sm align-middle"
                       style={{ background: OWNER_COLORS.order }}
@@ -199,98 +438,48 @@ const ProductsMatrixTable = ({
               ) : null}
               {show("location") ? (
                 <>
-                  <TableHead scope="col" className={cn(QUANTITY_HEAD, "border-l border-border/60")}>
+                  <TableHead scope="col" style={secondHeadStyle} className={cn(QUANTITY_HEAD, "sticky z-20 border-l border-border/60 bg-card")}>
                     Склады
                   </TableHead>
-                  <TableHead scope="col" className={QUANTITY_HEAD}>
+                  <TableHead scope="col" style={secondHeadStyle} className={cn(QUANTITY_HEAD, "sticky z-20 bg-card")}>
                     Производство
                   </TableHead>
-                  <TableHead scope="col" className={QUANTITY_HEAD}>
+                  <TableHead scope="col" style={secondHeadStyle} className={cn(QUANTITY_HEAD, "sticky z-20 bg-card")}>
                     Перемещения
                   </TableHead>
                 </>
               ) : null}
             </TableRow>
           ) : null}
-        </TableHeader>
-        <TableBody>
+        </thead>
+        <tbody>
           {rows.length === 0 ? (
             <MatrixEmpty colSpan={colSpan} message={empty} />
           ) : (
-            rows.map((row) => {
-              const unit = unitFor(snapshot, row.productId);
-              const total = row.location.warehouses + row.location.production + row.location.transfers;
-              const ownerTotal = row.owner.free + row.owner.regionReserve + row.owner.orderReserve || 1;
-              return (
-                <TableRow key={row.productId} className="hover:bg-muted/40">
-                  <TableCell className={IDENTITY_CELL}>
-                    <ProductIdentity snapshot={snapshot} productId={row.productId} />
-                  </TableCell>
-                  {show("owner") ? (
-                    <>
-                      <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#f7f7f8]")}>
-                        <StockQty quantity={row.owner.free} unit={unit} />
-                      </TableCell>
-                      <TableCell className={cn(QUANTITY_CELL, "bg-[#f4f7ff]")}>
-                        <StockQty quantity={row.owner.regionReserve} unit={unit} />
-                      </TableCell>
-                      <TableCell className={cn(QUANTITY_CELL, "bg-[#eef3fe]")}>
-                        <StockQty quantity={row.owner.orderReserve} unit={unit} />
-                      </TableCell>
-                    </>
-                  ) : collapsed("owner") ? (
-                    <CollapsedCell />
-                  ) : null}
-                  {show("location") ? (
-                    <>
-                      <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60")}>
-                        <StockQty quantity={row.location.warehouses} unit={unit} />
-                      </TableCell>
-                      <TableCell className={QUANTITY_CELL}>
-                        <StockQty quantity={row.location.production} unit={unit} />
-                      </TableCell>
-                      <TableCell className={QUANTITY_CELL}>
-                        <StockQty quantity={row.location.transfers} unit={unit} />
-                      </TableCell>
-                    </>
-                  ) : collapsed("location") ? (
-                    <CollapsedCell />
-                  ) : null}
-                  {show("total") ? (
-                    <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#fcfcfc]")}>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="font-semibold tabular-nums">{formatQuantity(total, unit)}</span>
-                        <span className="flex h-1 w-[84px] overflow-hidden rounded-full bg-muted" aria-hidden>
-                          <i
-                            className="block h-full"
-                            style={{ width: `${(row.owner.free / ownerTotal) * 100}%`, background: OWNER_COLORS.free }}
-                          />
-                          <i
-                            className="block h-full"
-                            style={{
-                              width: `${(row.owner.regionReserve / ownerTotal) * 100}%`,
-                              background: OWNER_COLORS.region,
-                            }}
-                          />
-                          <i
-                            className="block h-full"
-                            style={{
-                              width: `${(row.owner.orderReserve / ownerTotal) * 100}%`,
-                              background: OWNER_COLORS.order,
-                            }}
-                          />
-                        </span>
-                      </div>
-                    </TableCell>
-                  ) : collapsed("total") ? (
-                    <CollapsedCell />
-                  ) : null}
-                </TableRow>
-              );
-            })
+            <>
+              {roots.map((node) => (
+                <Fragment key={node.id}>
+                  <StockGroupRows node={node} {...groupProps} />
+                </Fragment>
+              ))}
+              {uncategorized.length > 0 ? (
+                <StockGroupRows
+                  node={{
+                    id: UNCATEGORIZED_GROUP_ID,
+                    name: "Без категории",
+                    depth: 0,
+                    productCount: uncategorized.length,
+                    products: uncategorized,
+                    children: [],
+                  }}
+                  {...groupProps}
+                />
+              ) : null}
+            </>
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
+      </div>
     </TooltipProvider>
   );
 };
@@ -440,6 +629,9 @@ export const StockProductsMatrix = ({
   regionSections,
   empty,
   columns,
+  collapsedGroups,
+  onToggleGroup,
+  onSetGroupsCollapsed,
 }: {
   snapshot: LogisticsSnapshot;
   columns: StockMatrixColumnsView;
@@ -448,6 +640,9 @@ export const StockProductsMatrix = ({
   warehouseSections: StockWarehouseSection[];
   regionSections: StockRegionSection[];
   empty: string;
+  collapsedGroups: Set<string>;
+  onToggleGroup: (id: string) => void;
+  onSetGroupsCollapsed: (ids: string[], collapsed: boolean) => void;
 }) => {
   const title =
     group === "products" ? "Товары" : group === "warehouses" ? "Склады" : "Регионы";
@@ -468,9 +663,23 @@ export const StockProductsMatrix = ({
           {count > 0 ? <span className="font-normal text-muted-foreground"> · {count}</span> : null}
         </h2>
       </div>
-      <CardContent className={cn("overflow-x-auto px-0 group-data-[size=sm]/card:px-0", FLUSH_TABLE_CLASS)}>
+      <CardContent
+        className={cn(
+          "px-0 group-data-[size=sm]/card:px-0",
+          group === "products" ? null : "overflow-x-auto",
+          FLUSH_TABLE_CLASS,
+        )}
+      >
         {group === "products" ? (
-          <ProductsMatrixTable snapshot={snapshot} rows={productRows} empty={empty} columns={columns} />
+          <ProductsMatrixTable
+            snapshot={snapshot}
+            rows={productRows}
+            empty={empty}
+            columns={columns}
+            collapsed={collapsedGroups}
+            onToggleCollapse={onToggleGroup}
+            onSetCollapsed={onSetGroupsCollapsed}
+          />
         ) : group === "warehouses" ? (
           <WarehousesMatrixTable snapshot={snapshot} sections={warehouseSections} empty={empty} />
         ) : (
