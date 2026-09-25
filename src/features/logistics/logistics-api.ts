@@ -51,6 +51,7 @@ import {
   assertAdjustmentLines,
   type AdjustmentDraft,
 } from "@/features/logistics/logistics-adjustments";
+import { richTextToPlain } from "@/features/logistics/rich-text-plain";
 import {
   derivedStockState,
   documentNumber,
@@ -986,7 +987,7 @@ export const loadAdjustmentList = () =>
     sequenceNumber: str(row.sequenceNumber),
     number: str(row.number),
     createdAt: str(row.createdAt),
-    description: row.description ? str(row.description) : "",
+    description: richTextToPlain(row.description ? str(row.description) : ""),
     warehouseId: str(row.warehouseId ?? ""),
     products: mapListProducts(row.products),
     signedQuantity: Number(row.signedQuantity ?? 0),

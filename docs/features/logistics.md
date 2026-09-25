@@ -13,7 +13,7 @@
 | `/store/logistics/reservations` | Резервы |
 | `/store/logistics/regions` | Регионы |
 | `/store/logistics/shipments` | Отгрузки и возвраты |
-| `/store/logistics/adjustments` | Корректировки (знаковые строки) |
+| `/store/logistics/adjustments` | Корректировки (знаковые строки; объяснение — форматированный текст, хранится HTML в `description`) |
 | `/store/logistics/production-orders` | Заказы на производство |
 | `/store/logistics/outputs` | Выпуски (`store_production_output`) |
 | `/store/logistics/calendar` | Календарь выпусков (матрица товар × месяц) |

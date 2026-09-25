@@ -29,7 +29,7 @@ export const DocumentHeader = ({
   icon?: LucideIcon;
   number: string;
   status?: ReactNode;
-  description?: string | null;
+  description?: ReactNode;
   actions?: ReactNode;
   meta: DocumentMetaItem[];
   className?: string;
@@ -54,7 +54,7 @@ export const DocumentHeader = ({
             {status}
           </div>
           {description ? (
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            <div className="mt-1 text-sm text-muted-foreground">{description}</div>
           ) : null}
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}

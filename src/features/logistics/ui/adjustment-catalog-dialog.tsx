@@ -25,7 +25,8 @@ import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { catalogProductsFromPlace, placeOwnersByProduct } from "@/features/logistics/ui/place-catalog";
 import { reportPartialCreate } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
-import { Input } from "@/components/ui/input";
+import { RichTextEditor } from "@/features/logistics/ui/rich-text";
+import { richTextToPlain } from "@/features/logistics/rich-text-plain";
 
 export type AdjustmentCatalogPreset = {
   operation?: AdjustmentOperation;
@@ -130,7 +131,7 @@ export const AdjustmentCatalogDialog = ({
 
   const submit = async () => {
     if (submitting || !warehouseId) return;
-    if (!explanation.trim()) {
+    if (!richTextToPlain(explanation)) {
       setServerError("Укажите объяснение корректировки");
       return;
     }
@@ -194,7 +195,7 @@ export const AdjustmentCatalogDialog = ({
       loading={loading}
       error={loadError}
       header={
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-col items-start gap-3">
           <FieldSelect
             label="Склад"
             value={warehouseId}
@@ -203,10 +204,15 @@ export const AdjustmentCatalogDialog = ({
             placeholder="Выберите склад"
             emptyLabel="Нет склада с остатком"
           />
-          <label className="flex min-w-64 flex-col gap-1 text-sm">
+          <div className="flex w-full flex-col gap-1 text-sm">
             <span className="font-medium">Объяснение</span>
-            <Input value={explanation} onChange={(event) => setExplanation(event.target.value)} />
-          </label>
+            <RichTextEditor
+              value={explanation}
+              onChange={setExplanation}
+              ariaLabel="Объяснение"
+              placeholder="Почему меняется остаток"
+            />
+          </div>
         </div>
       }
       panel={
@@ -226,7 +232,7 @@ export const AdjustmentCatalogDialog = ({
       disabledReason={!warehouseId ? "Выберите склад" : "Введите количество"}
       submitting={submitting}
       serverError={serverError}
-      dirty={Boolean(warehouseId || explanation || filled)}
+      dirty={Boolean(warehouseId || richTextToPlain(explanation) || filled)}
     >
       {!warehouseId ? (
         <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">

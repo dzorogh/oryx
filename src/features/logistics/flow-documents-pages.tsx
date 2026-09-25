@@ -31,6 +31,7 @@ import {
   remainingToShipForLine,
 } from "@/features/logistics/logistics-availability";
 import { AdjustmentCatalogDialog } from "@/features/logistics/ui/adjustment-catalog-dialog";
+import { RichTextView } from "@/features/logistics/ui/rich-text";
 import { ShipmentCatalogDialog } from "@/features/logistics/ui/shipment-catalog-dialog";
 import {
   DropdownMenu,
@@ -49,7 +50,6 @@ import {
   OUTPUT_STATUS_LABELS,
   signedQuantityClassName,
 } from "@/features/logistics/logistics-labels";
-import { adjustmentSignedQuantity } from "@/features/logistics/logistics-adjustments";
 import {
   documentLabel,
   ownerLabel,
@@ -711,7 +711,7 @@ export const AdjustmentDetailPage = () => {
       status={doc?.status}
       documentType="adjustment"
       sourceId={doc?.id}
-      description={doc?.explanation}
+      description={doc?.explanation ? <RichTextView value={doc.explanation} /> : null}
       kindLabel="Корректировка"
       kindIcon={SlidersHorizontal}
       historyMode="posted"
@@ -765,9 +765,7 @@ export const AdjustmentDetailPage = () => {
         }
       }}
       lines={lines.map((line) => {
-        const signed = doc
-          ? adjustmentSignedQuantity(doc.operation === "mixed" ? "decrease" : doc.operation, line.quantity)
-          : line.quantity;
+        const signed = line.quantity;
         return {
           id: line.id,
           productId: line.productId,
@@ -1284,7 +1282,7 @@ const DocumentDetail = ({
   status?: DocumentStatus;
   documentType?: DocumentType;
   sourceId?: string;
-  description?: string;
+  description?: ReactNode;
   onPost?: () => Promise<unknown>;
   cancelSubject?: { type: "shipment" | "return" | "adjustment"; id: string };
   onCancelFollowUp?: (action: CancelGuidanceAction, guidance: CancelGuidance) => void;
