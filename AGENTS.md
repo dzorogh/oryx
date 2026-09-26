@@ -28,7 +28,7 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 
 ## Running and verifying
 
-- There is no CI and the application has no automated test suite. Before handing off work, run `npm run lint`, `npm run typecheck`, `npm run build`, `npm run check:deps`, `npm run check:docs`, and `npm run check:static-images` locally.
+- There is no CI and no e2e suite. `npm test` runs unit tests for pure domain logic (`tests/unit/`, `node:test`, mostly Logistics). Before handing off work, run `npm run lint`, `npm run typecheck`, `npm run build`, `npm run check:deps`, `npm run check:docs`, `npm run check:static-images`, and `npm test` locally.
 - For UI changes, also verify the affected screens manually in a browser. The old `check:ui-english` / `lint:ui-english` scripts are retired and are not gates.
 
 ## Conventions that differ from defaults

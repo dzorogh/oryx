@@ -5,9 +5,10 @@
 ## Что есть в проекте сейчас
 
 - **Главная панель (`/`)**: набор бизнес-блоков (статистика, рейтинг, новости, благодарности, дни рождения, задачи, идеи) с сохранением пользовательского layout в `localStorage`.
-- **Контентные страницы**: `/pulse/news`, `/tasks`, `/pulse/ideas`, `/pulse/thanks`.
-- **PIM-модуль**: `/pim/orders/[orderId]` с таблицей позиций заказа, 3D-сценой контейнеров, аудитом результата упаковки и валидацией.
-- **Секции-заглушки**: `/[section]` для внутренних разделов (`activity`, `approvals`, `catalog`, `help`, `learning`, `profile`, `search`, `services`, `team`).
+- **Pulse (`/pulse/*`)**: новости, идеи, благодарности, опросы, согласования счетов и платежей, кабинет компании.
+- **Store (`/store/*`)**: каталог товаров PIM, заказы с 3D-визуализацией упаковки и модуль Logistics — заказы клиента и на производство, выпуски и календарь выпусков, резервы, отгрузки, перемещения, корректировки, остатки, журнал, справочники ([docs/features/logistics.md](docs/features/logistics.md)).
+- **Team, Tracker, профиль пользователя**: `/team/*`, `/tracker/*`, `/users/[userId]`.
+- **Разделы-заготовки**: CRM, Analytics, Learning, Library, Settings — страницы-заглушки; `/[section]` — заглушки `activity`, `catalog`, `help`, `search`, `services`.
 
 ## Технологический стек
 
@@ -37,13 +38,14 @@ npm run dev
 ## Основные маршруты
 
 - `/` — главная панель Oryx BMS
-- `/pulse/news` — все новости
-- `/tasks` — все задачи
-- `/pulse/ideas` — идеи и предложения
-- `/pulse/thanks` — благодарности коллегам
-- `/pim` — редирект на дефолтный заказ
-- `/pim/orders/[orderId]` — страница заказа и упаковки
-- `/[section]` — служебные/будущие разделы (placeholder-страницы)
+- `/pulse/news`, `/pulse/ideas`, `/pulse/thanks`, `/pulse/polls`, `/pulse/company`, `/pulse/approvals/*` — Pulse
+- `/store` — редирект на `/store/pim/products` (каталог товаров)
+- `/store/orders`, `/store/orders/[orderId]` — заказы и страница упаковки
+- `/store/logistics/*` — Logistics (корень ведёт на `/store/logistics/stock`); `/store/settings` — префиксы кодов
+- `/team/*`, `/tracker/*`, `/users/[userId]` — сотрудники, задачи и проекты, профиль
+- `/crm/*`, `/analytics/*`, `/learning/*`, `/library/*`, `/settings/*` — заглушки будущих разделов
+- `/pim`, `/pim/orders/[orderId]`, `/logistics/*` — старые адреса, редиректят в `/store`
+- `/[section]` — placeholder-страницы (`activity`, `catalog`, `help`, `search`, `services`)
 
 ## Conventions (agents and contributors)
 
@@ -56,7 +58,7 @@ Tool-neutral guidelines for UI and layout live in **[docs/conventions/](docs/con
 Проект разделен на UI-слой и доменный слой.
 
 1. **UI (App + components + features)**  
-   Роутинг, layout, навигационный рейл, контентные страницы, PIM-экраны и 3D-визуализация.
+   Роутинг, layout, навигационный рейл, контентные страницы, Store/Logistics-экраны и 3D-визуализация.
 2. **Domain (packing + report)**  
    Расчет упаковки, проверка ограничений размещения, валидация результата и сводка по размещению.
 
@@ -66,34 +68,40 @@ Tool-neutral guidelines for UI and layout live in **[docs/conventions/](docs/con
 app/
   layout.tsx                      # Корневой layout и NavRail
   page.tsx                        # Главная панель BMS
-  news/page.tsx                   # Список новостей
-  tasks/page.tsx                  # Список задач
-  ideas/page.tsx                  # Идеи и предложения
-  pulse/thanks/page.tsx           # Благодарности (Pulse)
-  [section]/page.tsx              # Заглушки для внутренних разделов
-  pim/
-    layout.tsx                    # Layout PIM-модуля
-    page.tsx                      # Редирект на /pim/orders/<default>
-    orders/[orderId]/page.tsx     # Детальная страница заказа
+  pulse/                          # Новости, идеи, благодарности, опросы, согласования
+  store/                          # Каталог PIM, заказы с упаковкой, logistics/, settings
+  team/, tracker/, users/         # Сотрудники, трекер задач, профиль
+  crm/, analytics/, learning/,
+  library/, settings/             # Заглушки будущих разделов
+  pim/, logistics/                # Редиректы со старых адресов в /store
+  api/comments/                   # API модуля комментариев (AI, unfurl)
+  [section]/page.tsx              # Placeholder-страницы
 
 src/
   components/
-    layout/                       # NavRail, поиск, shell-компоненты
+    layout/                       # NavRail, поиск, shell-компоненты модулей
     home/                         # Блоки главной страницы
-    pim/                          # Компоненты PIM-экрана
+    store/                        # Каталог PIM, заказы, шапка страницы упаковки
     ui/                           # Базовые UI-компоненты
   features/
+    logistics/                    # Logistics: страницы, диалоги, API, правила
+    comments/                     # Переиспользуемый модуль комментариев
+    pulse/, users/, store/, ...   # Остальные модули
     packing-visualization/        # UI/хуки 3D-визуализации упаковки
   domain/
     packing/                      # Алгоритм упаковки и проверки
     report/                       # Summary-логика
   workers/
     packing-result.worker.ts      # Вычисление упаковки в Web Worker
-  lib/                            # Вспомогательные утилиты
+  lib/                            # Утилиты, клиент Supabase
+
+supabase/migrations/              # Схема демо-бэкенда (store_*, thank_you_entry)
 
 scripts/
-  check-dependencies.mjs
-  check-doc-links.mjs
+  check-*.mjs                     # Проверки (зависимости, ссылки, изображения)
+  seed-*.mjs                      # Наполнение демо-бэкенда (service_role)
+
+tests/unit/                       # Unit-тесты доменной логики (node:test)
 ```
 
 ## PIM / Packing подсистема
@@ -102,7 +110,7 @@ PIM-модуль использует доменную логику из `src/do
 
 Базовый поток:
 
-1. Пользователь открывает заказ (`/pim/orders/[orderId]`).
+1. Пользователь открывает заказ (`/store/orders/[orderId]`).
 2. `usePackingResult` запускает расчет через `runPackingAsync`.
 3. В браузере расчет выполняется в `Web Worker` (`packing-result.worker.ts`), где вызывается `generatePackingResult`.
 4. Результат проходит валидацию; при валидном размещении рендерится 3D-сцена, при невалидном — показываются ошибки аудита.
@@ -123,9 +131,10 @@ PIM-модуль использует доменную логику из `src/do
 - `npm run check:deps` — проверка зависимостей
 - `npm run check:docs` — проверка ссылок в документации
 - `npm run check:static-images` — проверка правил для статических изображений
+- `npm test` — unit-тесты доменной логики (`tests/unit/`, `node:test`)
 - Пользовательский текст на страницах — на русском ([russian-labels.md](docs/conventions/ui/russian-labels.md)). Старые `check:ui-english` / `lint:ui-english` не являются обязательной проверкой.
 
-Приложение — быстро меняющийся исследовательский прототип, поэтому прикладная автоматизированная тестовая инфраструктура не поддерживается. Изменения интерфейса дополнительно проверяются вручную в браузере на затронутых экранах.
+Приложение — быстро меняющийся исследовательский прототип: CI и e2e-тестов нет. Есть unit-тесты чистой доменной логики (в основном Logistics) — `npm test`. Изменения интерфейса дополнительно проверяются вручную в браузере на затронутых экранах.
 
 ## Рекомендуемый baseline-check перед PR
 
@@ -136,14 +145,15 @@ npm run build
 npm run check:deps
 npm run check:docs
 npm run check:static-images
+npm test
 ```
 
 Для изменений интерфейса после этих команд вручную проверьте затронутые экраны в браузере.
 
 ## Текущий статус и ограничения
 
-- Часть разделов пока реализована как placeholder-страницы (`app/[section]/page.tsx`).
-- Контент на главной странице и на отдельных экранах в основном demo-данные. Pulse Thanks при заданных `NEXT_PUBLIC_SUPABASE_*` ходит в **свой** self-hosted Supabase (Dokploy compose `supabase`). Как работать: [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md).
+- Часть разделов пока реализована как placeholder-страницы (CRM, Analytics, Learning, Library, Settings и `app/[section]/page.tsx`).
+- Контент на главной странице и на отдельных экранах в основном demo-данные. Pulse Thanks и Store/Logistics при заданных `NEXT_PUBLIC_SUPABASE_*` ходят в **свой** self-hosted Supabase (Dokploy compose `supabase`). Как работать: [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md).
 - PIM-модуль работает на преднастроенных пресетах заказов из `src/domain/packing/constants.ts`.
 
 ## Документация по спецификации упаковки
