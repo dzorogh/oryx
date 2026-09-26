@@ -62,6 +62,9 @@ const CURRENCIES = [
 
 const PRODUCTION_CURRENCY = "CNY";
 
+/** Snapshot warehouse ids created as hubs (Dubai Hub); the rest are customer warehouses or plant warehouses. */
+const HUB_WAREHOUSE_IDS = new Set(["11"]);
+
 const REGION_GROUPS = [
   { code: "cis", name: "СНГ", sort_order: 10 },
   { code: "mena", name: "Ближний Восток и Северная Африка", sort_order: 20 },
@@ -248,7 +251,10 @@ const warehouseIdByOld = new Map();
 const plantIdByOld = new Map();
 
 for (const row of snapshot.warehouses) {
-  const id = await rpc("store_create_warehouse", { p_name: row.name });
+  const id = await rpc("store_create_warehouse", {
+    p_name: row.name,
+    p_kind: HUB_WAREHOUSE_IDS.has(String(row.id)) ? "hub" : "customer",
+  });
   warehouseIdByOld.set(String(row.id), String(id));
 }
 

@@ -413,6 +413,109 @@ export const seedLogisticsStories = async (args) => {
     });
   }
 
+  // Hub orders OMS-921..930 from Dubai Hub: 5–10 lines from 3–5 plants each, no stock movements.
+  // Keys are snapshot product ids; the hub limit is soft, so quantities may exceed hub stock.
+  const hubOrders = [
+    {
+      sequence: 921,
+      regionCode: "ae",
+      description: "Демо: дилер Дубая, пополнение витрины",
+      createdAt: "2026-09-19T07:45:00+00:00",
+      expectedEndOn: "2026-10-20",
+      lines: [["1", 4], ["30", 6], ["17", 8], ["36", 5], ["47", 10], ["77", 6]],
+    },
+    {
+      sequence: 922,
+      regionCode: "om",
+      description: "Демо: Маскат, квадроциклы и багги к сезону",
+      createdAt: "2026-09-19T13:20:00+00:00",
+      expectedEndOn: "2026-10-25",
+      lines: [["12", 6], ["130", 8], ["9", 3], ["10", 4], ["78", 10], ["53", 5], ["174", 4]],
+    },
+    {
+      sequence: 923,
+      regionCode: "in",
+      description: "Демо: Мумбаи, скутеры и лёгкие мотоциклы",
+      createdAt: "2026-09-20T09:10:00+00:00",
+      expectedEndOn: "2026-11-05",
+      lines: [["24", 12], ["25", 10], ["80", 8], ["95", 6], ["134", 6], ["11", 5], ["57", 7], ["58", 4]],
+    },
+    {
+      sequence: 924,
+      regionCode: "ru",
+      description: "Демо: сборный заказ через Dubai Hub",
+      createdAt: "2026-09-21T06:30:00+00:00",
+      expectedEndOn: "2026-11-10",
+      lines: [
+        ["42", 3], ["43", 3], ["44", 2], ["22", 6], ["29", 4], ["207", 5], ["39", 4], ["31", 8], ["128", 6],
+      ],
+    },
+    {
+      sequence: 925,
+      regionCode: "kz",
+      description: "Демо: Алматы, срочная догрузка",
+      createdAt: "2026-09-22T10:00:00+00:00",
+      expectedEndOn: "2026-10-15",
+      lines: [["14", 6], ["61", 5], ["92", 7], ["89", 4], ["156", 5]],
+    },
+    {
+      sequence: 926,
+      regionCode: "uz",
+      description: "Демо: Ташкент, мопеды и детская техника",
+      createdAt: "2026-09-22T15:40:00+00:00",
+      expectedEndOn: "2026-11-20",
+      lines: [
+        ["37", 10], ["79", 12], ["181", 15], ["76", 4], ["150", 3], ["187", 5],
+        ["141", 2], ["155", 2], ["50", 8], ["74", 10],
+      ],
+    },
+    {
+      sequence: 927,
+      regionCode: "by",
+      description: "Демо: Минск, эндуро и спорт",
+      createdAt: "2026-09-23T08:15:00+00:00",
+      expectedEndOn: "2026-11-15",
+      lines: [["26", 5], ["32", 4], ["23", 6], ["118", 3], ["46", 4], ["51", 3]],
+    },
+    {
+      sequence: 928,
+      regionCode: "de",
+      description: "Демо: гольф-кары и квадроциклы для прокатов",
+      createdAt: "2026-09-24T07:05:00+00:00",
+      expectedEndOn: "2026-12-01",
+      lines: [["144", 2], ["146", 3], ["142", 2], ["129", 6], ["85", 4], ["158", 3], ["173", 5], ["175", 3]],
+    },
+    {
+      sequence: 929,
+      regionCode: "mx",
+      description: "Демо: Монтеррей, мотоциклы Latina",
+      createdAt: "2026-09-24T16:50:00+00:00",
+      expectedEndOn: "2026-12-10",
+      lines: [["98", 8], ["107", 3], ["88", 10], ["137", 6], ["83", 6], ["179", 4], ["15", 3]],
+    },
+    {
+      sequence: 930,
+      regionCode: "ae",
+      description: "Демо: Абу-Даби, флагманские модели",
+      createdAt: "2026-09-25T09:25:00+00:00",
+      expectedEndOn: "2026-11-30",
+      lines: [["33", 3], ["34", 2], ["49", 4], ["62", 3], ["38", 5], ["133", 3], ["48", 4], ["147", 1], ["60", 5]],
+    },
+  ];
+  for (const order of hubOrders) {
+    const regionRows = await get(`store_region?code=eq.${order.regionCode}&select=id`);
+    await call("store_create_customer_order", {
+      p_region_id: Number(regionRows?.[0]?.id ?? regionId),
+      p_description: order.description,
+      p_expected_end_on: order.expectedEndOn,
+      p_sequence_number: order.sequence,
+      p_created_at: order.createdAt,
+      p_source_kind: "hub",
+      p_source_id: dubaiWh,
+      p_lines: order.lines.map(([key, quantity]) => ({ product_variant_id: v(key), quantity })),
+    });
+  }
+
   const meta901 = await orderMeta(order901.id);
   const meta902 = await orderMeta(order902.id);
   const meta903 = await orderMeta(order903.id);
@@ -1001,7 +1104,7 @@ export const seedLogisticsStories = async (args) => {
   // Mark one story order done for lifecycle variety
   await patch(`store_document?id=eq.${order901.id}`, { status: "done" });
 
-  return { orders: 6 + bulkOrders.length };
+  return { orders: 6 + bulkOrders.length + hubOrders.length };
 };
 
 const round2 = (value) => Math.round(value * 100) / 100;
