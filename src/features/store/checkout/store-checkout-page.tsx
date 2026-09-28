@@ -310,7 +310,7 @@ export const StoreCheckoutPage = () => {
   const needsRegion = lines.length > 0 && !regionsLoading && !selectedRegion;
   const loading = lines.length > 0 && (regionsLoading || catalogLoading);
   const blocked = loading || needsRegion;
-  const visibleBlocks = blocked ? [] : layout.blocks;
+  const visibleBlocks = blocked ? [] : layout.blocks.filter((block) => block.lines.length > 0);
 
   const orderCurrency: CurrencyCode =
     selectedRegion?.orderCurrency ?? selectedRegion?.dealerCurrency ?? "USD";
@@ -423,7 +423,7 @@ export const StoreCheckoutPage = () => {
         <div className="min-w-0">
           <h1 className="text-lg font-semibold">Оформление заказа</h1>
           <p className="text-sm text-muted-foreground">
-            Выберите способ получения — корзина раскладывается на черновики заказов клиента.
+            Выберите, как получить товары, — мы разложим корзину на заказы по месту получения.
           </p>
         </div>
         <RegionSwitcher />
@@ -455,8 +455,9 @@ export const StoreCheckoutPage = () => {
             <p className="mt-1 text-sm text-amber-700">У региона не задан хаб — способ недоступен</p>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              Любые товары в одном заказе. Наценка Supply costs за доставку до хаба региона
-              {selectedRegion?.hubCode ? ` (${selectedRegion.hubCode})` : ""}.
+              Всё приедет одним заказом на склад в вашем регионе
+              {selectedRegion?.hubCode ? ` (${selectedRegion.hubCode})` : ""}. В цену уже входит доставка
+              до склада. Если чего-то нет в наличии, довезём позже в этом же заказе.
             </p>
           )}
         </button>
@@ -473,7 +474,8 @@ export const StoreCheckoutPage = () => {
         >
           <p className="font-semibold">Производственная площадка</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Дилерская цена без наценки. Отдельный заказ на каждую площадку — забираете сами.
+            Забираете товар прямо с площадки, где его выпускают, и везёте сами — поэтому без доплаты
+            за доставку. На каждую площадку оформляется отдельный заказ.
           </p>
         </button>
       </div>
