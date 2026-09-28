@@ -36,7 +36,7 @@ export const ProfileDeputySection = ({ profile, ctx, onPatch }: ProfileDeputySec
     <ProfileSectionCard title="Deputy" icon={UserCheck}>
       {canEdit ? (
         <>
-          <div className="space-y-1">
+          <div className="flex flex-col gap-1">
             <ProfileFieldLabel>Substitute while on vacation</ProfileFieldLabel>
             <Select
               value={deputyId}

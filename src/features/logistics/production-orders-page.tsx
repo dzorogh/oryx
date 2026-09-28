@@ -236,7 +236,7 @@ export const ProductionOrdersPage = () => {
         }}
         filterSheet={
           <>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Товар</span>
               <CatalogQuickSelectControl
                 value={productFilter}
@@ -248,7 +248,7 @@ export const ProductionOrdersPage = () => {
                 widthClassName="w-full"
               />
             </label>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Срок</span>
               <CatalogQuickSelectControl
                 value={deadlineFilter}

@@ -32,12 +32,12 @@ export const ExpectedEndField = ({
   errorId,
 }: ExpectedEndFieldProps) => {
   const caption = optional ? (
-    <span className="font-medium">
+    <span className="block font-medium">
       {label}
       <span className="ml-1 font-normal text-muted-foreground">необязательно</span>
     </span>
   ) : (
-    <span className="font-medium">{label}</span>
+    <span className="block font-medium">{label}</span>
   );
   const hintId = hint ? `${id}-hint` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
@@ -90,7 +90,7 @@ export const ExpectedEndField = ({
   }
 
   return (
-    <label className="space-y-1 text-sm">
+    <label className="flex flex-col gap-1 text-sm">
       {caption}
       {input}
       {hintLine}

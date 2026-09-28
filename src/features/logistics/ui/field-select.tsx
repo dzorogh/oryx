@@ -47,7 +47,7 @@ export const FieldSelect = ({
   const labelId = useId();
 
   return (
-    <div className={cn("space-y-1 text-sm", className)}>
+    <div className={cn("flex flex-col gap-1 text-sm", className)}>
       <span id={labelId} className={cn("block", labelClassName ?? "font-medium")}>
         {label}
       </span>

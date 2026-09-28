@@ -309,7 +309,7 @@ export const CustomerOrdersPage = () => {
         onResetFilters={resetFilters}
         filterSheet={
           <>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Срок</span>
               <CatalogQuickSelectControl
                 value={deadlineFilter}
@@ -325,7 +325,7 @@ export const CustomerOrdersPage = () => {
                 widthClassName="w-full"
               />
             </label>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Автор</span>
               <CatalogQuickSelectControl
                 value={author}

@@ -182,7 +182,7 @@ export const LedgerPage = () => {
         }}
         filterSheet={
           <>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Товар</span>
               <CatalogQuickSelectControl
                 value={productFilter}

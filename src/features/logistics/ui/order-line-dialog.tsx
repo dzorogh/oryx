@@ -83,7 +83,7 @@ export const OrderLineDialog = ({
           products.length === 0 ? (
             <p className="text-sm text-muted-foreground">Нет доступных товаров.</p>
           ) : (
-            <label className="space-y-1.5 text-sm">
+            <label className="flex flex-col gap-1.5 text-sm">
               <span className="text-muted-foreground">Товар</span>
               <Select
                 items={products.map((item) => ({ value: item.id, label: item.label }))}
@@ -112,7 +112,7 @@ export const OrderLineDialog = ({
         {mode === "delete" ? (
           <p className="text-sm">Строка будет удалена из заказа.</p>
         ) : (
-          <label className="space-y-1.5 text-sm">
+          <label className="flex flex-col gap-1.5 text-sm">
             <span className="text-muted-foreground">Количество</span>
             <Input
               type="text"

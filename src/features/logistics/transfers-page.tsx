@@ -191,7 +191,7 @@ export const TransfersPage = () => {
           setDeadlineFilter("all");
         }}
         filterSheet={
-          <label className="space-y-1.5">
+          <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Срок</span>
             <CatalogQuickSelectControl
               value={deadlineFilter}

@@ -42,7 +42,7 @@ const FilterSelect = ({
   options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
 }) => (
-  <label className="space-y-1.5">
+  <label className="flex flex-col gap-1.5">
     <span className="text-xs font-medium text-muted-foreground">{label}</span>
     <Select items={options} value={value} onValueChange={(next) => onChange(next ?? options[0]?.value ?? "all")}>
       <SelectTrigger size="sm" className="w-full bg-background" aria-label={label}>

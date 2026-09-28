@@ -282,3 +282,13 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-order-money-payments-calendar.md`
   summary: `npm test` не входит в список проверок перед сдачей в AGENTS.md, а набор уже красный из-за `document-timeline` («reservation: Создан; when posted — Проведён»).
   evidence: AGENTS.md пишет «no automated test suite», но `tests/unit` есть; падающий тест не связан с этой работой и падает на базовом коммите.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-dialog-field-alignment.md`
+  summary: Ошибка или подсказка под `FieldSelect` / `ExpectedEndField` в шапке модалки с `items-end` поднимает контрол над соседями.
+  evidence: `FieldSelect` рендерит `error`, `ExpectedEndField` — `hintLine` внутри колонки; строки перемещения, резервов, производства и отгрузки выравниваются по низу.
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-dialog-field-alignment.md`
+  summary: Добавить в `docs/conventions/ui/` правило (и, возможно, проверку): обёртки полей с Base UI `Select` — `flex flex-col gap-*`, не `space-y-*`.
+  evidence: Скрытый input Base UI после триггера отдаёт триггеру `margin-bottom` от `space-y`; без правила ошибка вернётся.
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-dialog-field-alignment.md`
+  summary: Перевести английские подписи в `team-directory-page.tsx` и `profile-deputy-section.tsx` на русский.
+  evidence: Search / District / Department / Position, Deputy / Substitute while on vacation нарушают правило русских подписей.

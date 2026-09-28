@@ -222,7 +222,7 @@ export const TeamDirectoryPage = () => {
               </SheetHeader>
 
               <div className="grid gap-4 pb-4">
-                <label className="space-y-1.5">
+                <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Search</span>
                   <div className="relative">
                     <Search
@@ -239,7 +239,7 @@ export const TeamDirectoryPage = () => {
                   </div>
                 </label>
 
-                <label className="space-y-1.5">
+                <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-muted-foreground">District</span>
                   <Select
                     items={buildFilterItems("All districts", districtOptions)}
@@ -262,7 +262,7 @@ export const TeamDirectoryPage = () => {
                   </Select>
                 </label>
 
-                <label className="space-y-1.5">
+                <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Department</span>
                   <Select
                     items={buildFilterItems("All departments", departmentOptions)}
@@ -285,7 +285,7 @@ export const TeamDirectoryPage = () => {
                   </Select>
                 </label>
 
-                <label className="space-y-1.5">
+                <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Position</span>
                   <Select
                     items={buildFilterItems("All positions", positionOptions)}

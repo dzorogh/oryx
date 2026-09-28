@@ -22,7 +22,7 @@ export const PricelistsFiltersSheet = ({ open, onOpenChange, filters }: Pricelis
       </SheetHeader>
 
       <div className="grid gap-4 pb-4">
-        <label className="space-y-1.5">
+        <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">Поиск по названию</span>
           <Input
             value={filters.search.value}
@@ -32,7 +32,7 @@ export const PricelistsFiltersSheet = ({ open, onOpenChange, filters }: Pricelis
           />
         </label>
 
-        <div className="space-y-1.5">
+        <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">Категория</span>
           <CatalogCategoryTreeFilter
             value={filters.category.value}
@@ -44,7 +44,7 @@ export const PricelistsFiltersSheet = ({ open, onOpenChange, filters }: Pricelis
           />
         </div>
 
-        <label className="space-y-1.5">
+        <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">Бренд</span>
           <CatalogQuickSelectControl
             value={filters.brand.value}
@@ -57,7 +57,7 @@ export const PricelistsFiltersSheet = ({ open, onOpenChange, filters }: Pricelis
           />
         </label>
 
-        <label className="space-y-1.5">
+        <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">Семейство</span>
           <CatalogQuickSelectControl
             value={filters.family.value}

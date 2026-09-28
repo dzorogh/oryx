@@ -280,7 +280,7 @@ export const ShipmentsPage = () => {
         }}
         filterSheet={
           <>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Заказ клиента</span>
               <CatalogQuickSelectControl
                 value={orderFilter}
@@ -292,7 +292,7 @@ export const ShipmentsPage = () => {
                 widthClassName="w-full"
               />
             </label>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Товар</span>
               <CatalogQuickSelectControl
                 value={productFilter}
@@ -653,7 +653,7 @@ export const AdjustmentsPage = () => {
           setProductFilter(ALL_VALUE);
         }}
         filterSheet={
-          <label className="space-y-1.5">
+          <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Товар</span>
             <CatalogQuickSelectControl
               value={productFilter}
@@ -882,7 +882,7 @@ export const OutputsPage = () => {
         }}
         filterSheet={
           <>
-            <label className="space-y-1.5">
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground">Товар</span>
               <CatalogQuickSelectControl
                 value={productFilter}

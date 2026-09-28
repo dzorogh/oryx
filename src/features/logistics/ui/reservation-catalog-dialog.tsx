@@ -258,7 +258,7 @@ export const ReservationCatalogDialog = ({
             emptyLabel="Нет места с остатком"
           />
           {direction === "release" ? (
-            <p className="mb-2 text-sm text-muted-foreground">Назначение: Свободно</p>
+            <p className="mb-1.5 text-sm text-muted-foreground">Назначение: Свободно</p>
           ) : (
             <>
               <FieldSelect

@@ -230,7 +230,7 @@ export const TransferCreateDialog = ({
             placeholder="Выберите склад"
             emptyLabel={orderId ? "Нет склада с товарами этого заказа" : "Нет склада с остатком"}
           />
-          <span className="mb-2 text-muted-foreground">→</span>
+          <span className="mb-1.5 text-muted-foreground">→</span>
           <FieldSelect
             label="На склад"
             value={toId}

@@ -215,7 +215,7 @@ export const StoreSettingsPage = () => {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <label className="block max-w-xs space-y-1 text-sm">
+                  <label className="flex max-w-xs flex-col gap-1 text-sm">
                     <span className="font-medium text-foreground">Валюта</span>
                     <Select
                       items={money.currencies.map((currency) => ({
@@ -256,7 +256,7 @@ export const StoreSettingsPage = () => {
                         const example = prefix ? `${prefix}-${field.exampleId}` : "—";
                         const invalid = invalidKinds.includes(field.kind);
                         return (
-                          <label key={field.kind} className="space-y-1 text-sm">
+                          <label key={field.kind} className="flex flex-col gap-1 text-sm">
                             <span className="font-medium text-foreground">{field.label}</span>
                             <Input
                               value={prefix}
