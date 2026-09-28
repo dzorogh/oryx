@@ -15,7 +15,7 @@ import {
   reservationFollowUpLabel,
   type CancelGuidanceFacts,
 } from "@/features/logistics/logistics-cancel-guidance";
-import { LOGISTICS_CODE_PREFIXES } from "@/features/logistics/logistics-codes";
+import { ENTITY_CODE_DEFAULTS } from "@/lib/entity-codes";
 import { assertDocumentCanBeCancelled } from "@/features/logistics/logistics-rules";
 import type {
   LogisticsSnapshot,
@@ -65,7 +65,7 @@ const emptySnapshot = (): LogisticsSnapshot => ({
   plants: [{ id: "m1", code: "PLT-1", name: "Завод", warehouseId: "w1" }],
   warehouses: [{ id: "w1", code: "WH-1", name: "Склад", stockLocationId: "loc-w1", kind: "plant", plantId: "m1" }],
   regions: [],
-  settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },
+  settings: { id: "1", codePrefixes: { ...ENTITY_CODE_DEFAULTS } },
   documentProductLines: [],
   customerOrders: [],
   customerOrderLines: [],

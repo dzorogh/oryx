@@ -12,6 +12,12 @@ Canonical guidelines for humans and AI agents (Cursor, Codex, Claude, CI, etc.).
 | Warehouse and plant codes | [ui/place-codes.md](ui/place-codes.md) |
 | Images & avatars (`src/assets`; Unsplash/Pravatar for demo media) | [assets/static-images.md](assets/static-images.md) |
 
+## Data
+
+| Topic | Document |
+|-------|----------|
+| Entity code prefixes (`ENTITY_CODES`, `store_code_prefix`) | [data/entity-codes.md](data/entity-codes.md) |
+
 ## Backend
 
 | Topic | Document |

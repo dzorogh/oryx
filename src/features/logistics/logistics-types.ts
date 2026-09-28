@@ -1,4 +1,4 @@
-import type { LogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
+import type { EntityCodePrefixes } from "@/lib/entity-codes";
 
 export const LOCATION_KINDS = [
   "warehouse",
@@ -183,7 +183,7 @@ export type LogisticsRegion = {
 
 export type LogisticsSetting = {
   id: string;
-  codePrefixes: LogisticsCodePrefixes;
+  codePrefixes: EntityCodePrefixes;
 };
 
 export type DocumentProductLine = {

@@ -51,7 +51,7 @@ import {
   productionOrderSortDefs,
 } from "@/features/logistics/ui/list/document-list-configs";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { deadlineFilterMatch, matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
 import { matchDocumentParam, PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
@@ -107,7 +107,7 @@ export const ProductionOrdersPage = () => {
     const ids = [...new Set(listRows.map((row) => row.plantId).filter(Boolean))];
     return ids
       .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatLogisticsCode("plant", id) }));
+      .map((id) => ({ value: id, label: formatEntityCode("plant", id) }));
   }, [listRows]);
 
   const productOptions = useMemo(() => {

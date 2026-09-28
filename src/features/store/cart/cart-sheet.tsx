@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
 import { useCart } from "@/features/store/cart/cart-context";
 import { useSelectedRegion } from "@/features/store/region-context";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { formatCatalogPrice } from "@/components/store/pim/products/catalog/catalog-helpers";
 import { getPurchaseBlockReason } from "@/components/store/pim/products/catalog/catalog-helpers";
 
@@ -72,7 +72,7 @@ export const CartSheet = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">
-                          {item?.name ?? formatLogisticsCode("product", line.variantId)}
+                          {item?.name ?? formatEntityCode("product", line.variantId)}
                         </p>
                         <p className="text-xs text-muted-foreground">{priceLabel}</p>
                         {blockReason ? (

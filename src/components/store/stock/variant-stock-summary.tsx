@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import type { VariantRegionStock } from "@/features/store/variant-stock";
 import { cn } from "@/lib/utils";
 
@@ -147,7 +147,7 @@ export const VariantStockSummary = ({
                       )}
                     >
                       <TableCell className="px-2 py-1.5 text-xs font-medium tabular-nums">
-                        {formatLogisticsCode("warehouse", row.warehouseId)}
+                        {formatEntityCode("warehouse", row.warehouseId)}
                         {row.isHub ? (
                           <span className="ml-1.5 rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-800">
                             хаб региона

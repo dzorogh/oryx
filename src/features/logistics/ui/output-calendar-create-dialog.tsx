@@ -9,7 +9,7 @@ import {
   createProductionOutput,
   ProductionForOrderOutputError,
 } from "@/features/logistics/logistics-api";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
 import {
@@ -146,7 +146,7 @@ const CreateForm = ({
           {
             href: logisticsPath("production-orders", created.sequenceNumber ?? created.productionOrderId),
             label: created.sequenceNumber
-              ? formatLogisticsCode("productionOrder", created.sequenceNumber)
+              ? formatEntityCode("production_order", created.sequenceNumber)
               : "Заказ на производство",
           },
         ],
@@ -154,7 +154,7 @@ const CreateForm = ({
     } catch (caught) {
       if (caught instanceof ProductionForOrderOutputError) {
         const poLabel = caught.sequenceNumber
-          ? formatLogisticsCode("productionOrder", caught.sequenceNumber)
+          ? formatEntityCode("production_order", caught.sequenceNumber)
           : "Заказ на производство";
         const href = caught.sequenceNumber
           ? logisticsPath("production-orders", caught.sequenceNumber)
@@ -192,11 +192,11 @@ const CreateForm = ({
               onChange={setPlantId}
               placeholder="Выберите завод"
               emptyLabel={plantIds.length === 0 ? "Нет заводов" : undefined}
-              items={plantIds.map((id) => ({ value: id, label: formatLogisticsCode("plant", id) }))}
+              items={plantIds.map((id) => ({ value: id, label: formatEntityCode("plant", id) }))}
             />
           ) : (
             <p className="self-end text-sm text-muted-foreground">
-              Завод {formatLogisticsCode("plant", target.order.plantId)}
+              Завод {formatEntityCode("plant", target.order.plantId)}
             </p>
           )}
         </div>

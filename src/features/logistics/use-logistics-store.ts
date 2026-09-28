@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { computeStockBalances } from "@/features/logistics/logistics-balances";
-import { mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
+import { mergeEntityCodePrefixes } from "@/lib/entity-codes";
 import {
   isSupabaseConfigured,
   loadCatalogPage,
@@ -29,7 +29,7 @@ export const EMPTY_SNAPSHOT: LogisticsSnapshot = {
   freeOwnerId: "1",
   warehouses: [],
   regions: [],
-  settings: { id: "1", codePrefixes: mergeLogisticsCodePrefixes() },
+  settings: { id: "1", codePrefixes: mergeEntityCodePrefixes() },
   documentProductLines: [],
   customerOrders: [],
   customerOrderLines: [],

@@ -16,7 +16,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table";
 import { hrefForRegion } from "@/features/logistics/logistics-availability";
 import { createRegion, updateRegion } from "@/features/logistics/logistics-api";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { productById } from "@/features/logistics/logistics-lookups";
 import { relatedReservationsForRegion } from "@/features/logistics/logistics-related";
@@ -92,7 +92,7 @@ const loadRegionHubMap = async (): Promise<{
   }
   const hubs: HubOption[] = ((hubsResult.data ?? []) as Array<{ id: number | string }>).map((row) => ({
     id: String(row.id),
-    code: formatLogisticsCode("warehouse", row.id),
+    code: formatEntityCode("warehouse", row.id),
   }));
   const currencies: CurrencyOption[] = (
     (currenciesResult.data ?? []) as Array<{ id: number | string; code: string }>
@@ -127,7 +127,7 @@ export const RegionsPage = () => {
   const hubCodeByRegionId = useMemo(() => {
     const map = new Map<string, string | null>();
     for (const [regionId, hubId] of hubByRegionId) {
-      map.set(regionId, hubId ? formatLogisticsCode("warehouse", hubId) : null);
+      map.set(regionId, hubId ? formatEntityCode("warehouse", hubId) : null);
     }
     return map;
   }, [hubByRegionId]);
@@ -303,7 +303,7 @@ export const RegionDetailPage = () => {
     );
   }
 
-  const hubCode = currentHubId ? formatLogisticsCode("warehouse", currentHubId) : "—";
+  const hubCode = currentHubId ? formatEntityCode("warehouse", currentHubId) : "—";
   const orderCurrencyCode =
     currencies.find((currency) => currency.id === currentOrderCurrencyId)?.code ?? "—";
 

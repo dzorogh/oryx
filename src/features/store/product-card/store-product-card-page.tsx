@@ -26,7 +26,7 @@ import {
 import { CatalogBuyTooltip } from "@/components/store/pim/products/catalog/catalog-buy-tooltip";
 import type { DealerStatus, RetailStatus } from "@/components/store/pim/products/store-catalog-demo-data";
 import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { pluralRu } from "@/features/logistics/order-plan/order-plan-model";
 import { createProductVariant } from "@/features/logistics/logistics-api";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
@@ -257,7 +257,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
     return (data?.variants ?? []).filter((variant) => {
       if (variant.deletedAt && !showArchived && variant.id !== selectedVariant?.id) return false;
       if (!q) return true;
-      return `${variant.name} ${formatLogisticsCode("product", variant.id)}`.toLowerCase().includes(q);
+      return `${variant.name} ${formatEntityCode("product", variant.id)}`.toLowerCase().includes(q);
     });
   }, [data, query, selectedVariant?.id, showArchived]);
 
@@ -507,7 +507,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                     <div className="flex flex-wrap gap-4 text-sm">
                       <span>
                         <span className="text-muted-foreground">Код: </span>
-                        {formatLogisticsCode("product", selectedVariant.id)}
+                        {formatEntityCode("product", selectedVariant.id)}
                       </span>
                       <span>
                         <span className="text-muted-foreground">Ед.: </span>

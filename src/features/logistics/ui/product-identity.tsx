@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { hrefForProduct } from "@/features/logistics/logistics-availability";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { productById, productCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -22,7 +22,7 @@ export const ProductIdentity = ({
 }) => {
   const product = snapshot ? productById(snapshot, productId) : undefined;
   const label = productName || product?.name || productId;
-  const code = snapshot ? productCode(snapshot, productId) : formatLogisticsCode("product", productId);
+  const code = snapshot ? productCode(snapshot, productId) : formatEntityCode("product", productId);
   const title =
     name ??
     (nameAs === "link" && productId ? (

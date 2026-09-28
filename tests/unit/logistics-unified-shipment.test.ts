@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { hrefForDocument, remainingToReturnForOrderProduct } from "@/features/logistics/logistics-availability";
-import { LOGISTICS_CODE_PREFIXES } from "@/features/logistics/logistics-codes";
+import { ENTITY_CODE_DEFAULTS } from "@/lib/entity-codes";
 import { documentLabel } from "@/features/logistics/logistics-lookups";
 import { calculateOrderDocumentCoverage } from "@/features/logistics/order-document-coverage";
 import { relatedReturnsForOrder, relatedShipments } from "@/features/logistics/logistics-related";
@@ -63,7 +63,7 @@ const snapshotWithDocs = (): LogisticsSnapshot => ({
   freeOwnerId: "1",
   warehouses: [],
   regions: [],
-  settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },
+  settings: { id: "1", codePrefixes: { ...ENTITY_CODE_DEFAULTS } },
   documentProductLines: [],
   customerOrders: [],
   customerOrderLines: [{ id: "l1", orderId: "12", productId: "7", quantity: 6, ...lineSnap }],

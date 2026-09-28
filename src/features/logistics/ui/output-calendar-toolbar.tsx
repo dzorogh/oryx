@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { PAYMENT_STATUS_LABELS } from "@/features/logistics/order-money";
 import {
   incomingFilterChanged,
@@ -328,7 +328,7 @@ export const OutputCalendarOutputsPanel = ({
       <Select
         items={[
           { value: "all", label: "Все" },
-          ...plantOptions.map((id) => ({ value: id, label: formatLogisticsCode("plant", id) })),
+          ...plantOptions.map((id) => ({ value: id, label: formatEntityCode("plant", id) })),
         ]}
         value={plantId ?? "all"}
         onValueChange={(value) => onPlantChange(value == null || value === "all" ? null : value)}
@@ -340,7 +340,7 @@ export const OutputCalendarOutputsPanel = ({
           <SelectItem value="all">Все</SelectItem>
           {plantOptions.map((id) => (
             <SelectItem key={id} value={id}>
-              {formatLogisticsCode("plant", id)}
+              {formatEntityCode("plant", id)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -448,7 +448,7 @@ export const OutputCalendarPlantPaymentsPanel = ({
     <SectionTitle>Заводы</SectionTitle>
     <ExclusionList
       allLabel="Все заводы"
-      items={plantPaymentOptions(page).map((id) => ({ id, label: formatLogisticsCode("plant", id) }))}
+      items={plantPaymentOptions(page).map((id) => ({ id, label: formatEntityCode("plant", id) }))}
       hidden={filter.hiddenPlantIds}
       onChange={(hiddenPlantIds) => onChange({ ...filter, hiddenPlantIds })}
     />

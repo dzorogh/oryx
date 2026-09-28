@@ -2,7 +2,7 @@ import type { StaticImageData } from "next/image";
 
 import { STORE_DEMO_IMAGES } from "@/assets/store/demo-images";
 import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 
 import type {
   DealerStatus as PricelistDealerStatus,
@@ -465,7 +465,7 @@ const applyCatalogEnrichment = (items: StoreCatalogSeedItem[]): StoreCatalogItem
   items.map((item, index) => ({
     ...item,
     productId: item.id,
-    code: formatLogisticsCode("product", item.id),
+    code: formatEntityCode("product", item.id),
     brand: "Sharmax",
     stock: 5 + ((index * 7) % 116),
     updatedAt: new Date(Date.UTC(2026, 0, 15 - (index % 45), 12, 0, 0)).toISOString(),

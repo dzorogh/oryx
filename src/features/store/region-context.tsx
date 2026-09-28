@@ -12,7 +12,7 @@ import {
 } from "react";
 import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
 import { isCurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { resolveSelectedRegionCode } from "@/features/store/region-selection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -139,7 +139,7 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
       code: row.code,
       name: row.name,
       hubWarehouseId,
-      hubCode: hubWarehouseId ? formatLogisticsCode("warehouse", hubWarehouseId) : null,
+      hubCode: hubWarehouseId ? formatEntityCode("warehouse", hubWarehouseId) : null,
       dealerCurrency: dealerRaw,
       retailCurrency: retailRaw,
       orderCurrency,

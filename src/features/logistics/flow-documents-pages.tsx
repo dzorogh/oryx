@@ -14,7 +14,7 @@ import {
   completeOutput,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import {
   projectDocumentCancelGuidance,
   type CancelGuidance,
@@ -176,7 +176,7 @@ export const ShipmentsPage = () => {
     }
     return [...ids]
       .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatLogisticsCode("warehouse", id) }));
+      .map((id) => ({ value: id, label: formatEntityCode("warehouse", id) }));
   }, [listRows]);
 
   const orderOptions = useMemo(() => {
@@ -576,7 +576,7 @@ export const AdjustmentsPage = () => {
     const ids = [...new Set(listRows.map((row) => row.warehouseId).filter(Boolean))];
     return ids
       .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatLogisticsCode("warehouse", id) }));
+      .map((id) => ({ value: id, label: formatEntityCode("warehouse", id) }));
   }, [listRows]);
 
   const productOptions = useMemo(() => {
@@ -809,7 +809,7 @@ export const OutputsPage = () => {
     const ids = [...new Set(listRows.map((row) => row.plantId).filter(Boolean))];
     return ids
       .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatLogisticsCode("plant", id) }));
+      .map((id) => ({ value: id, label: formatEntityCode("plant", id) }));
   }, [listRows]);
 
   const productOptions = useMemo(() => {

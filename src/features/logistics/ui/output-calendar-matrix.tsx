@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import {
   buildCategoryTree,
@@ -233,7 +233,7 @@ const CellPopover = ({
               </DetailRow>
               <DetailRow label="Завод">
                 <EntityLink href={logisticsPath("plants", first.plantId)}>
-                  {formatLogisticsCode("plant", first.plantId)}
+                  {formatEntityCode("plant", first.plantId)}
                 </EntityLink>
               </DetailRow>
               <DetailRow label="Срок">
@@ -269,11 +269,11 @@ const CellPopover = ({
 const StockLocation = ({ row }: { row: StockBreakdownRow }) =>
   row.locationKind === "transfer" ? (
     <EntityLink href={row.locationSequence ? logisticsPath("transfers", row.locationSequence) : null}>
-      {formatLogisticsCode("transfer", row.locationSequence ?? row.locationId)}
+      {formatEntityCode("transfer", row.locationSequence ?? row.locationId)}
     </EntityLink>
   ) : (
     <EntityLink href={logisticsPath("warehouses", row.locationId)}>
-      {formatLogisticsCode("warehouse", row.locationId)}
+      {formatEntityCode("warehouse", row.locationId)}
     </EntityLink>
   );
 
@@ -368,7 +368,7 @@ const UnassignedPopover = ({
           <div className="flex items-center gap-2">
             <EntityLink href={logisticsPath("production-orders", order.sequenceNumber)}>{order.number}</EntityLink>
             <EntityLink href={logisticsPath("plants", order.plantId)}>
-              {formatLogisticsCode("plant", order.plantId)}
+              {formatEntityCode("plant", order.plantId)}
             </EntityLink>
           </div>
           <span className="font-semibold tabular-nums">{formatQuantity(order.remaining, unit)}</span>

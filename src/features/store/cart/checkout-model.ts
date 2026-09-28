@@ -1,6 +1,6 @@
 /** Pure checkout layout: hub/plant blocks, prices with Supply costs, currency totals. */
 
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { convert, type OrderRates } from "@/features/logistics/order-money";
 import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
 import type { DealerStatus } from "@/components/store/pim/products/store-catalog-demo-data";
@@ -287,7 +287,7 @@ const deterministicPlantBlocks = (byPlant: Map<string, CheckoutCartItem[]>): Che
   const plantIds = [...byPlant.keys()].sort((a, b) => Number(a) - Number(b));
   for (const plantId of plantIds) {
     const items = byPlant.get(plantId) ?? [];
-    const plantCode = items[0]?.plantCode ?? formatLogisticsCode("plant", plantId);
+    const plantCode = items[0]?.plantCode ?? formatEntityCode("plant", plantId);
     const lines: CheckoutBlockLine[] = items.map((item) => {
       const dealerPrice = item.dealerPrice as number;
       const currency = item.dealerCurrency as CurrencyCode;

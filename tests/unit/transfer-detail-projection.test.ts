@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { LOGISTICS_CODE_PREFIXES } from "@/features/logistics/logistics-codes";
+import { ENTITY_CODE_DEFAULTS } from "@/lib/entity-codes";
 import { projectTransferDetail } from "@/features/logistics/transfer-detail-projection";
 import type { LogisticsSnapshot, Transfer } from "@/features/logistics/logistics-types";
 
@@ -17,7 +17,7 @@ const emptySnapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSna
       { id: "w2", code: "WH-2", name: "B", stockLocationId: "l2", kind: "customer" as const, plantId: null },
     ],
     regions: [],
-    settings: { id: "1", codePrefixes: { ...LOGISTICS_CODE_PREFIXES } },
+    settings: { id: "1", codePrefixes: { ...ENTITY_CODE_DEFAULTS } },
     documentProductLines: [],
     customerOrders: [],
     customerOrderLines: [],

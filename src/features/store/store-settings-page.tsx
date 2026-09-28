@@ -25,41 +25,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { loadStoreMoneySettings, saveProductionCurrency, type StoreMoneySettings } from "@/features/logistics/logistics-api";
 import {
-  loadLogisticsSettings,
-  loadStoreMoneySettings,
-  saveLogisticsCodePrefixes,
-  saveProductionCurrency,
-  type StoreMoneySettings,
-} from "@/features/logistics/logistics-api";
-import {
-  CATALOG_PREFIX_FIELDS,
-  DOCUMENT_PREFIX_FIELDS,
-  mergeLogisticsCodePrefixes,
-  normalizeLogisticsCodePrefix,
-  type LogisticsCodeKind,
-  type LogisticsCodePrefixes,
-} from "@/features/logistics/logistics-codes";
+  EDITABLE_ENTITY_CODE_FIELDS,
+  ENTITY_CODE_PREFIX_SECTIONS,
+  mergeEntityCodePrefixes,
+  normalizeEntityCodePrefix,
+  type EntityCodeKind,
+  type EntityCodePrefixes,
+} from "@/lib/entity-codes";
+import { loadEntityCodePrefixes, saveEntityCodePrefixes } from "@/lib/entity-codes-api";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 const STORE_PRODUCTS_HREF = "/store/pim/products";
 
-type PrefixField = { kind: LogisticsCodeKind; label: string; exampleId: string };
-
-const EDITABLE_PREFIX_FIELDS: PrefixField[] = [...DOCUMENT_PREFIX_FIELDS, ...CATALOG_PREFIX_FIELDS];
-
-const PREFIX_SECTIONS: Array<{ title: string; fields: PrefixField[] }> = [
-  { title: "Префиксы документов", fields: DOCUMENT_PREFIX_FIELDS },
-  { title: "Префиксы справочников", fields: CATALOG_PREFIX_FIELDS },
-];
-
-const prefixesFromDraft = (draft: Record<LogisticsCodeKind, string>): LogisticsCodePrefixes =>
-  mergeLogisticsCodePrefixes(draft);
+const prefixesFromDraft = (draft: EntityCodePrefixes): EntityCodePrefixes =>
+  mergeEntityCodePrefixes(draft);
 
 export const StoreSettingsPage = () => {
   const configured = isSupabaseConfigured();
-  const [draft, setDraft] = useState<Record<LogisticsCodeKind, string>>(() => mergeLogisticsCodePrefixes());
-  const [saved, setSaved] = useState<Record<LogisticsCodeKind, string>>(() => mergeLogisticsCodePrefixes());
+  const [draft, setDraft] = useState<EntityCodePrefixes>(() => mergeEntityCodePrefixes());
+  const [saved, setSaved] = useState<EntityCodePrefixes>(() => mergeEntityCodePrefixes());
   const [isLoading, setIsLoading] = useState(configured);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(
@@ -76,12 +62,15 @@ export const StoreSettingsPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [settings, moneySettings] = await Promise.all([loadLogisticsSettings(), loadStoreMoneySettings()]);
+        const [codePrefixes, moneySettings] = await Promise.all([
+          loadEntityCodePrefixes(),
+          loadStoreMoneySettings(),
+        ]);
         if (cancelled) {
           return;
         }
-        setDraft(settings.codePrefixes);
-        setSaved(settings.codePrefixes);
+        setDraft(codePrefixes);
+        setSaved(codePrefixes);
         setMoney(moneySettings);
         setError(null);
       } catch (caught: unknown) {
@@ -101,22 +90,22 @@ export const StoreSettingsPage = () => {
   }, [configured]);
 
   const isDirty = useMemo(
-    () => EDITABLE_PREFIX_FIELDS.some((field) => draft[field.kind] !== saved[field.kind]),
+    () => EDITABLE_ENTITY_CODE_FIELDS.some((field) => draft[field.entity] !== saved[field.entity]),
     [draft, saved],
   );
 
   const invalidKinds = useMemo(
     () =>
-      EDITABLE_PREFIX_FIELDS.filter((field) => !normalizeLogisticsCodePrefix(draft[field.kind])).map(
-        (field) => field.kind,
+      EDITABLE_ENTITY_CODE_FIELDS.filter((field) => !normalizeEntityCodePrefix(draft[field.entity])).map(
+        (field) => field.entity,
       ),
     [draft],
   );
 
-  const updatePrefix = (kind: LogisticsCodeKind, value: string) => {
+  const updatePrefix = (kind: EntityCodeKind, value: string) => {
     setDraft((current) => ({
       ...current,
-      [kind]: normalizeLogisticsCodePrefix(value),
+      [kind]: normalizeEntityCodePrefix(value),
     }));
   };
 
@@ -126,9 +115,9 @@ export const StoreSettingsPage = () => {
     }
     setIsSaving(true);
     try {
-      const next = await saveLogisticsCodePrefixes(prefixesFromDraft(draft));
-      setDraft(next.codePrefixes);
-      setSaved(next.codePrefixes);
+      const next = await saveEntityCodePrefixes(prefixesFromDraft(draft));
+      setDraft(next);
+      setSaved(next);
       toast.success("Префиксы сохранены");
     } catch (caught: unknown) {
       toast.error("Не удалось сохранить префиксы", {
@@ -244,7 +233,7 @@ export const StoreSettingsPage = () => {
                   </label>
                 </CardContent>
               </Card>
-              {PREFIX_SECTIONS.map((section) => (
+              {ENTITY_CODE_PREFIX_SECTIONS.map((section) => (
                 <Card key={section.title} size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
                   <CardHeader className="gap-1">
                     <h2 className="text-sm font-semibold text-foreground">{section.title}</h2>
@@ -252,15 +241,15 @@ export const StoreSettingsPage = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                       {section.fields.map((field) => {
-                        const prefix = draft[field.kind];
+                        const prefix = draft[field.entity];
                         const example = prefix ? `${prefix}-${field.exampleId}` : "—";
-                        const invalid = invalidKinds.includes(field.kind);
+                        const invalid = invalidKinds.includes(field.entity);
                         return (
-                          <label key={field.kind} className="flex flex-col gap-1 text-sm">
+                          <label key={field.entity} className="flex flex-col gap-1 text-sm">
                             <span className="font-medium text-foreground">{field.label}</span>
                             <Input
                               value={prefix}
-                              onChange={(event) => updatePrefix(field.kind, event.target.value)}
+                              onChange={(event) => updatePrefix(field.entity, event.target.value)}
                               aria-invalid={invalid}
                               aria-label={`Префикс: ${field.label}`}
                               autoCapitalize="characters"

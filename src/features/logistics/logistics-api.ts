@@ -68,18 +68,16 @@ import {
   STORE_CURRENT_USER_ID,
 } from "@/features/logistics/logistics-types";
 import {
-  CATALOG_CODE_TO_PREFIX_FIELD,
-  CATALOG_PREFIX_FIELDS,
-  DOCUMENT_KIND_TO_PREFIX_FIELD,
-  DOCUMENT_PREFIX_FIELDS,
-  formatLogisticsCode,
-  regionCatalogCode,
-  getActiveLogisticsCodePrefixes,
-  mergeLogisticsCodePrefixes,
-  setActiveLogisticsCodePrefixes,
-  type LogisticsCodeKind,
-  type LogisticsCodePrefixes,
-} from "@/features/logistics/logistics-codes";
+  entityCodePrefixesFromRows,
+  formatEntityCode,
+  getActiveEntityCodePrefixes,
+  setActiveEntityCodePrefixes,
+  storedEntityCode,
+} from "@/lib/entity-codes";
+import {
+  ensureEntityCodePrefixes,
+  loadEntityCodePrefixes,
+} from "@/lib/entity-codes-api";
 import { assertDocumentCanBeCancelled } from "@/features/logistics/logistics-rules";
 import { resolveOwnerId, resolveStockLocationId } from "@/features/logistics/logistics-resolve";
 import {
@@ -159,89 +157,15 @@ const rpcJson = async <T>(name: string, args: Record<string, unknown>): Promise<
 type EntityLoc = { kind: StockLocation["kind"]; entityId: string };
 type EntityOwner = { kind: OwnerKind; entityId: string | null };
 
-type PrefixRow = { code: string; number_prefix: string };
-
-const mapPrefixRow = (row: Record<string, unknown>): PrefixRow => ({
-  code: str(row.code),
-  number_prefix: str(row.number_prefix),
-});
-
-const prefixOverrides = (
-  rows: PrefixRow[],
-  fieldByCode: Record<string, LogisticsCodeKind>,
-): Partial<Record<LogisticsCodeKind, string>> => {
-  const overrides: Partial<Record<LogisticsCodeKind, string>> = {};
-  for (const row of rows) {
-    const field = fieldByCode[row.code];
-    if (field) {
-      overrides[field] = row.number_prefix;
-    }
-  }
-  return overrides;
-};
-
-let catalogPrefixOverrides: Partial<Record<LogisticsCodeKind, string>> = {};
-let catalogPrefixRequest: Promise<void> | null = null;
-
-const fetchCatalogPrefixes = async () => {
-  const rows = await selectAll("store_catalog_code_prefix", "code,number_prefix", mapPrefixRow, "code");
-  catalogPrefixOverrides = prefixOverrides(rows, CATALOG_CODE_TO_PREFIX_FIELD);
-  setActiveLogisticsCodePrefixes({ ...getActiveLogisticsCodePrefixes(), ...catalogPrefixOverrides });
-};
-
-/** Loads catalog code prefixes once per session; on failure codes fall back to defaults. */
-const ensureCatalogPrefixes = (): Promise<void> => {
-  catalogPrefixRequest ??= fetchCatalogPrefixes().catch(() => {
-    catalogPrefixRequest = null;
-  });
-  return catalogPrefixRequest;
-};
-
-const prefixesFromKinds = (kinds: PrefixRow[]): LogisticsCodePrefixes =>
-  mergeLogisticsCodePrefixes({
-    ...prefixOverrides(kinds, DOCUMENT_KIND_TO_PREFIX_FIELD),
-    ...catalogPrefixOverrides,
-  });
-
 export const loadLogisticsSettings = async (): Promise<LogisticsSetting> => {
-  const [kinds] = await Promise.all([
-    selectAll("store_document_kind", "code,number_prefix", mapPrefixRow, "code"),
-    fetchCatalogPrefixes(),
-  ]);
-  catalogPrefixRequest = Promise.resolve();
-  const codePrefixes = prefixesFromKinds(kinds);
-  setActiveLogisticsCodePrefixes(codePrefixes);
+  const codePrefixes = await loadEntityCodePrefixes();
   return { id: "1", codePrefixes };
-};
-
-export const saveLogisticsCodePrefixes = async (
-  prefixes: LogisticsCodePrefixes,
-): Promise<LogisticsSetting> => {
-  const next = mergeLogisticsCodePrefixes(prefixes);
-  for (const field of DOCUMENT_PREFIX_FIELDS) {
-    await rpc("store_update_document_kind_prefix", {
-      p_kind: field.documentKind,
-      p_prefix: next[field.kind],
-    });
-  }
-  for (const field of CATALOG_PREFIX_FIELDS) {
-    await rpc("store_update_catalog_code_prefix", {
-      p_code: field.catalogCode,
-      p_prefix: next[field.kind],
-    });
-  }
-  catalogPrefixOverrides = Object.fromEntries(
-    CATALOG_PREFIX_FIELDS.map((field) => [field.kind, next[field.kind]]),
-  );
-  catalogPrefixRequest = Promise.resolve();
-  setActiveLogisticsCodePrefixes(next);
-  return { id: "1", codePrefixes: next };
 };
 
 type SnapshotRow = Record<string, unknown>;
 
 export type LogisticsPayload = {
-  document_kinds?: SnapshotRow[];
+  code_prefixes?: SnapshotRow[];
   documents?: SnapshotRow[];
   product_variants?: SnapshotRow[];
   categories?: SnapshotRow[];
@@ -305,11 +229,10 @@ const mapBalanceRow = (row: SnapshotRow): StockBalance => {
 
 /**
  * Maps a read-RPC payload to a snapshot: optional keys default to [], SQL balances pass through.
- * When the payload has `document_kinds`, also updates the active document code prefixes.
+ * When the payload has `code_prefixes`, also updates the active entity code prefixes.
  */
 export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics => {
   const {
-    document_kinds: kinds = [],
     documents = [],
     product_variants: variants = [],
     categories: categoriesRaw = [],
@@ -330,14 +253,20 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     stock_transactions: transactionsRaw = [],
   } = payload;
 
-  const codePrefixes = prefixesFromKinds(
-    kinds.map((row) => ({ code: str(row.code), number_prefix: str(row.number_prefix) })),
-  );
-  if (kinds.length > 0) {
-    setActiveLogisticsCodePrefixes(codePrefixes);
+  if (payload.code_prefixes !== undefined) {
+    setActiveEntityCodePrefixes(
+      entityCodePrefixesFromRows(
+        payload.code_prefixes.map((row) => ({
+          entity: str(row.entity),
+          number_prefix: str(row.number_prefix),
+        })),
+      ),
+    );
   }
+  const codePrefixes = getActiveEntityCodePrefixes();
   const settings: LogisticsSetting = { id: "1", codePrefixes };
-  const kindPrefix = new Map(kinds.map((row) => [str(row.code), str(row.number_prefix)]));
+  const documentPrefix = (kind: string): string =>
+    (codePrefixes as Partial<Record<string, string>>)[kind] ?? kind.toUpperCase();
 
   const users: AppUser[] = (payload.users ?? []).map((row) => ({ id: str(row.id), name: str(row.name) }));
   const documentHistory: DocumentHistoryEntry[] = (payload.document_history ?? []).map((row) => ({
@@ -362,7 +291,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       expected_end_on: dateOrNull(row.expected_end_on),
       created_at: str(row.created_at),
       created_by: row.created_by == null ? STORE_CURRENT_USER_ID : str(row.created_by),
-      number_prefix: kindPrefix.get(kind) ?? kind.toUpperCase(),
+      number_prefix: documentPrefix(kind),
     });
   }
 
@@ -375,7 +304,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     const id = str(row.id);
     return {
       id,
-      code: formatLogisticsCode("plant", id),
+      code: formatEntityCode("plant", id),
       name: str(row.name),
       warehouseId: str(row.warehouse_id),
     };
@@ -387,7 +316,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     const id = str(row.id);
     return {
       id,
-      code: formatLogisticsCode("warehouse", id),
+      code: formatEntityCode("warehouse", id),
       name: str(row.name),
       stockLocationId: str(row.stock_location_id),
       kind:
@@ -404,7 +333,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     const id = str(row.id);
     return {
       id,
-      code: regionCatalogCode(row.code, id),
+      code: storedEntityCode("region", row.code, id),
       name: str(row.name),
       stockOwnerId: str(row.stock_owner_id),
     };
@@ -481,7 +410,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     return {
       id,
       productId: str(row.product_id),
-      code: formatLogisticsCode("product", id),
+      code: formatEntityCode("product", id),
       name: str(row.name),
       unit: str(row.unit ?? "шт"),
       imageUrl: preferKorportalMediaConversion(row.image_url ? str(row.image_url) : null),
@@ -907,7 +836,7 @@ const mapListProducts = (raw: unknown): LogisticsListProductLine[] => {
 };
 
 const loadListRpc = async <T>(name: string, map: (row: Record<string, unknown>) => T): Promise<T[]> => {
-  const [data] = await Promise.all([rpcJson<unknown>(name, {}), ensureCatalogPrefixes()]);
+  const [data] = await Promise.all([rpcJson<unknown>(name, {}), ensureEntityCodePrefixes()]);
   if (!Array.isArray(data)) {
     return [];
   }
@@ -1052,7 +981,7 @@ export const loadReservationList = () =>
   });
 
 const loadMappedRpc = async (name: string, args: Record<string, unknown>): Promise<MappedLogistics> => {
-  const [payload] = await Promise.all([rpcJson<LogisticsPayload>(name, args), ensureCatalogPrefixes()]);
+  const [payload] = await Promise.all([rpcJson<LogisticsPayload>(name, args), ensureEntityCodePrefixes()]);
   return mapLogisticsPayload(payload);
 };
 
@@ -1077,7 +1006,7 @@ export const loadCatalogPage = () => loadMappedRpc("store_catalog_page", {});
 export const loadOutputCalendarPage = async () => {
   const [data] = await Promise.all([
     rpcJson<unknown>("store_output_calendar_page", {}),
-    ensureCatalogPrefixes(),
+    ensureEntityCodePrefixes(),
   ]);
   return mapOutputCalendarPage(data);
 };

@@ -1,5 +1,5 @@
 import { hrefForPlant } from "@/features/logistics/logistics-availability";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { plantCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -17,7 +17,7 @@ export const PlantLink = ({
   className?: string;
 }) => (
   <LogisticsCodeBadge
-    code={code ?? (snapshot ? plantCode(snapshot, plantId) : formatLogisticsCode("plant", plantId))}
+    code={code ?? (snapshot ? plantCode(snapshot, plantId) : formatEntityCode("plant", plantId))}
     href={hrefForPlant(plantId)}
     className={className}
   />

@@ -1,5 +1,5 @@
 import { hrefForCustomerOrder, hrefForRegion } from "@/features/logistics/logistics-availability";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import {
   FREE_OWNER_LABEL,
   LOCATION_LABELS,
@@ -19,14 +19,14 @@ export const productById = (snapshot: LogisticsSnapshot, id: string) =>
   snapshot.products.find((item) => item.id === id);
 
 export const productCode = (snapshot: LogisticsSnapshot, id: string): string =>
-  productById(snapshot, id)?.code || formatLogisticsCode("product", id);
+  productById(snapshot, id)?.code || formatEntityCode("product", id);
 
 export const productIdentityLabel = (
   product: { id?: string; code?: string; name: string } | undefined,
   productId: string,
   extra?: string,
 ): string => {
-  const code = product?.code || formatLogisticsCode("product", productId);
+  const code = product?.code || formatEntityCode("product", productId);
   const name = product?.name ?? productId;
   return extra ? `${code} · ${name} · ${extra}` : `${code} · ${name}`;
 };
@@ -111,7 +111,7 @@ export const regionById = (snapshot: LogisticsSnapshot, id: string) =>
   snapshot.regions.find((item) => item.id === id);
 
 export const regionCode = (snapshot: LogisticsSnapshot, id: string): string =>
-  regionById(snapshot, id)?.code || formatLogisticsCode("region", id);
+  regionById(snapshot, id)?.code || formatEntityCode("region", id);
 
 export const regionSelectItems = (snapshot: LogisticsSnapshot) =>
   snapshot.regions.map((item) => ({ value: item.id, label: `${item.code} · ${item.name}` }));
@@ -128,7 +128,7 @@ export const ownerCode = (
     return FREE_OWNER_LABEL;
   }
   if (ownerType === "order") {
-    return customerOrderById(snapshot, ownerId)?.number ?? formatLogisticsCode("customerOrder", ownerId);
+    return customerOrderById(snapshot, ownerId)?.number ?? formatEntityCode("customer_order", ownerId);
   }
   return regionCode(snapshot, ownerId);
 };
@@ -165,7 +165,7 @@ export const ownerLabel = (
   }
   if (ownerType === "region" && ownerId) {
     const region = regionById(snapshot, ownerId);
-    return region ? region.code : formatLogisticsCode("region", ownerId);
+    return region ? region.code : formatEntityCode("region", ownerId);
   }
   return ownerId ?? FREE_OWNER_LABEL;
 };

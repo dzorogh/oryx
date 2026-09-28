@@ -305,3 +305,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-catalog-group-products-by-plant.md`
   summary: Нет автоматической проверки, что каталог отдаёт в таблицу все отфильтрованные строки, а не первые 48.
   evidence: `groupCatalogItemsBySite` тестируется на 0–3 строках. Вернуть `slice(0, 48)` перед группировкой можно так, что юнит-тесты останутся зелёными. В браузере список длиннее 48 и без страниц.
+- source_spec: `_bmad-output/implementation-artifacts/spec-universal-entity-code-prefixes.md`
+  summary: Часть экранов форматирует коды без `ensureEntityCodePrefixes` (`region-context`, `regions-page`, карточка товара, `variant-stock-summary`) и в свежей сессии может показать префиксы по умолчанию.
+  evidence: Так же было с прежним `ensureCatalogPrefixes`. Проверить: сохранить свой префикс, открыть новую вкладку сразу на этих экранах.
+- source_spec: `_bmad-output/implementation-artifacts/spec-universal-entity-code-prefixes.md`
+  summary: Нет теста на кэш и повтор загрузки в `ensureEntityCodePrefixes` и на цикл сохранения `saveEntityCodePrefixes`.
+  evidence: Модуль завязан на браузерный Supabase-клиент; юнит-тесты покрывают только чистую `entityCodePrefixesFromRows`.

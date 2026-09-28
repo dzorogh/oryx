@@ -4,7 +4,7 @@ import {
   hrefForTransfer,
   hrefForWarehouse,
 } from "@/features/logistics/logistics-availability";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { FREE_OWNER_LABEL } from "@/features/logistics/logistics-labels";
 import { isFreeOwner } from "@/features/logistics/logistics-types";
 import type { OwnerType, ReservationLocationType } from "@/features/logistics/logistics-types";
@@ -31,7 +31,7 @@ export const holdOwnerBadge = (
     return { label: ownerNumber ?? ownerId, href };
   }
   if (ownerType === "region" && ownerId) {
-    return { label: ownerNumber ?? formatLogisticsCode("region", ownerId), href };
+    return { label: ownerNumber ?? formatEntityCode("region", ownerId), href };
   }
   return { label: ownerId ?? FREE_OWNER_LABEL, href };
 };
@@ -47,7 +47,7 @@ export const holdPlace = (place: {
   const { locationType, locationId, locationNumber, locationSequence } = place;
   const base = { locationType, locationId, isPlantWarehouse: place.locationIsPlantWarehouse };
   if (locationType === "warehouse") {
-    return { ...base, label: formatLogisticsCode("warehouse", locationId), href: hrefForWarehouse(locationId) };
+    return { ...base, label: formatEntityCode("warehouse", locationId), href: hrefForWarehouse(locationId) };
   }
   const label = locationNumber ?? locationId;
   if (locationType === "transfer") {

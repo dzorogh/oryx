@@ -15,7 +15,7 @@ import {
   freeWarehouseQuantity,
 } from "@/features/logistics/logistics-adjustments";
 import { hrefForDocument } from "@/features/logistics/logistics-availability";
-import { formatLogisticsCode, mergeLogisticsCodePrefixes } from "@/features/logistics/logistics-codes";
+import { formatEntityCode, mergeEntityCodePrefixes } from "@/lib/entity-codes";
 import { documentLabel } from "@/features/logistics/logistics-lookups";
 import { assertDocumentCanBeCancelled } from "@/features/logistics/logistics-rules";
 import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
@@ -72,7 +72,7 @@ describe("корректировки остатков", () => {
         documentType: "adjustment",
       },
     ]);
-    assert.equal(formatLogisticsCode("adjustment", 9, mergeLogisticsCodePrefixes()), "ADJ-9");
+    assert.equal(formatEntityCode("adjustment", 9, mergeEntityCodePrefixes()), "ADJ-9");
     assert.equal(freeWarehouseQuantity(balances, "7", "3"), 10);
   });
 

@@ -4,7 +4,7 @@ import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-
 import { isCurrencyCode, isDealerStatus } from "@/components/store/pim/pricelists/pricelists-helpers";
 import type { DealerStatus } from "@/components/store/pim/products/store-catalog-demo-data";
 import { loadLogisticsSettings } from "@/features/logistics/logistics-api";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { loadRegionPricing } from "@/features/store/store-catalog-from-logistics";
 import { productImageUrl } from "@/features/store/store-catalog-from-logistics";
 import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
@@ -214,7 +214,7 @@ export const loadCartVariantCatalog = async (
       name: row.name,
       imageUrl: productImageUrl(variantId, row.image_url),
       plantId,
-      plantCode: plantId ? formatLogisticsCode("plant", plantId) : null,
+      plantCode: plantId ? formatEntityCode("plant", plantId) : null,
       quantityPerUnit: Math.max(1, Math.floor(toNum(row.quantity_per_unit) ?? 1)),
       logistics: logisticsByVariant.get(variantId) ?? null,
       byRegion,

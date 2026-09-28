@@ -1,5 +1,5 @@
 import { hrefForWarehouse } from "@/features/logistics/logistics-availability";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { warehouseCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -19,7 +19,7 @@ export const WarehouseLink = ({
   <LogisticsCodeBadge
     code={
       code ??
-      (snapshot ? warehouseCode(snapshot, warehouseId) : formatLogisticsCode("warehouse", warehouseId))
+      (snapshot ? warehouseCode(snapshot, warehouseId) : formatEntityCode("warehouse", warehouseId))
     }
     href={hrefForWarehouse(warehouseId)}
     className={className}

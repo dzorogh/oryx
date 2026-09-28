@@ -1,6 +1,6 @@
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { OrderRates } from "@/features/logistics/order-money";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { documentNumber } from "@/features/logistics/logistics-types";
 
 export type CheckoutOrderLineInput = {
@@ -56,6 +56,6 @@ export const checkoutCustomerOrder = async (
   const number =
     payload.number_prefix && payload.sequence_number != null
       ? documentNumber(payload.number_prefix, payload.sequence_number)
-      : formatLogisticsCode("customerOrder", payload.id);
+      : formatEntityCode("customer_order", payload.id);
   return { id: String(payload.id), number, lines: payload.lines };
 };

@@ -11,7 +11,7 @@ import {
   formatQuantity,
   formatSignedQuantity,
 } from "@/features/logistics/logistics-labels";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import type {
   AdjustmentListRow,
   CustomerOrderListRow,
@@ -81,7 +81,7 @@ export const productionOrderGroupDefs = (): ListGroupDef<ProductionOrderListRow>
     id: "plant",
     label: "Завод",
     key: (row) => row.plantId,
-    renderHeader: (key) => formatLogisticsCode("plant", key),
+    renderHeader: (key) => formatEntityCode("plant", key),
   },
   {
     id: "status",
@@ -135,7 +135,7 @@ export const transferGroupDefs = (): ListGroupDef<TransferListRow>[] => [
     renderHeader: (key, rows) => {
       const row = rows[0];
       if (!row) return key;
-      return `${formatLogisticsCode("warehouse", row.fromWarehouseId)} → ${formatLogisticsCode("warehouse", row.toWarehouseId)}`;
+      return `${formatEntityCode("warehouse", row.fromWarehouseId)} → ${formatEntityCode("warehouse", row.toWarehouseId)}`;
     },
   },
   {
@@ -148,7 +148,7 @@ export const transferGroupDefs = (): ListGroupDef<TransferListRow>[] => [
     id: "from",
     label: "Откуда",
     key: (row) => row.fromWarehouseId,
-    renderHeader: (key) => formatLogisticsCode("warehouse", key),
+    renderHeader: (key) => formatEntityCode("warehouse", key),
   },
 ];
 
@@ -202,7 +202,7 @@ export const shipmentGroupDefs: ListGroupDef<ShipmentListRow>[] = [
     label: "Склад",
     key: (row) =>
       row.fromLocationType === "warehouse" ? row.fromLocationId : row.toLocationId,
-    renderHeader: (key) => formatLogisticsCode("warehouse", key),
+    renderHeader: (key) => formatEntityCode("warehouse", key),
   },
   {
     id: "customerOrder",
@@ -253,7 +253,7 @@ export const outputGroupDefs = (): ListGroupDef<OutputListRow>[] => [
     id: "plant",
     label: "Завод",
     key: (row) => row.plantId,
-    renderHeader: (key) => formatLogisticsCode("plant", key),
+    renderHeader: (key) => formatEntityCode("plant", key),
   },
   {
     id: "status",
@@ -320,7 +320,7 @@ export const adjustmentGroupDefs = (): ListGroupDef<AdjustmentListRow>[] => [
     id: "warehouse",
     label: "Склад",
     key: (row) => row.warehouseId,
-    renderHeader: (key) => formatLogisticsCode("warehouse", key),
+    renderHeader: (key) => formatEntityCode("warehouse", key),
   },
   {
     id: "operation",

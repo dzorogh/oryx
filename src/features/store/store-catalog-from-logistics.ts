@@ -8,7 +8,7 @@ import type {
 import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
 import { isCurrencyCode, isDealerStatus, isRetailStatus } from "@/components/store/pim/pricelists/pricelists-helpers";
 import { loadLogisticsSettings } from "@/features/logistics/logistics-api";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { preferKorportalMediaConversion } from "@/lib/korportal-media-url";
 import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -89,7 +89,7 @@ export const catalogProductionSite = (
   plantId: string | number | null | undefined,
 ): string => {
   if (plantId == null || plantId === "") return "—";
-  return formatLogisticsCode("plant", plantId);
+  return formatEntityCode("plant", plantId);
 };
 
 export const mapLogisticsProductToCatalogItem = (
@@ -112,7 +112,7 @@ export const mapLogisticsProductToCatalogItem = (
     id,
     productId: String(row.product_id),
     name: row.name,
-    code: formatLogisticsCode("product", id),
+    code: formatEntityCode("product", id),
     imageSrc: productImageUrl(id, row.image_url) ?? "",
     imageAlt: row.name,
     categoryId: inferred.categoryId,

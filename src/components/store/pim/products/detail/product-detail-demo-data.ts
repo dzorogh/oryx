@@ -9,7 +9,7 @@ import {
   type StoreCatalogItem,
 } from "../store-catalog-demo-data";
 import { getCategoryNodeLabel } from "@/features/store/category-tree";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { getDisplayProductName } from "../catalog/catalog-display";
 import { buildProductDescriptions } from "./product-detail-descriptions";
 
@@ -201,7 +201,7 @@ const buildVariants = (item: StoreCatalogItem): ProductVariant[] => {
       id: `${item.id}-v${variantIndex + 1}`,
       name: variantName,
       isDefault,
-      code: isDefault ? item.code : formatLogisticsCode("product", `${item.id}-v${variantIndex + 1}`),
+      code: isDefault ? item.code : formatEntityCode("product", `${item.id}-v${variantIndex + 1}`),
       productionSite: trim.productionSite ?? item.productionSite,
       unitQuantity: 1,
       dealerStatus: item.dealerStatus,
@@ -274,7 +274,7 @@ export const getVariantCatalogItems = (): StoreCatalogItem[] => {
       id: variant.id,
       productId: product.id,
       name: variant.isDefault ? product.name : `Oryx ${variant.name}`,
-      code: variant.code ?? formatLogisticsCode("product", variant.id),
+      code: variant.code ?? formatEntityCode("product", variant.id),
       imageSrc: variant.imageSrc,
       imageAlt: variant.imageAlt,
       categoryId: product.categoryId,

@@ -10,7 +10,7 @@ import { CatalogQuickSelectControl } from "@/components/store/pim/products/catal
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { completeTransfer, createAndSendTransfer, loadTransferList, updateExpectedEnd } from "@/features/logistics/logistics-api";
-import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
@@ -81,7 +81,7 @@ export const TransfersPage = () => {
     }
     return [...ids]
       .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatLogisticsCode("warehouse", id) }));
+      .map((id) => ({ value: id, label: formatEntityCode("warehouse", id) }));
   }, [listRows]);
 
   const hasActiveFilters =

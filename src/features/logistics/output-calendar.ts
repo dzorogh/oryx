@@ -1,4 +1,4 @@
-import { formatLogisticsCode, regionCatalogCode } from "@/features/logistics/logistics-codes";
+import { formatEntityCode, storedEntityCode } from "@/lib/entity-codes";
 import { OUTPUT_STATUS_LABELS } from "@/features/logistics/logistics-labels";
 import {
   allocatedAmount,
@@ -187,7 +187,7 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
       const r = item as Record<string, unknown>;
       return {
         id: asId(r.id),
-        code: regionCatalogCode(r.code, asId(r.id)),
+        code: storedEntityCode("region", r.code, asId(r.id)),
         name: String(r.name ?? ""),
         ownerId: asId(r.ownerId),
       };
@@ -543,7 +543,7 @@ export const plantCodesForProduct = (
   }
   return Array.from(ids)
     .sort((a, b) => Number(a) - Number(b))
-    .map((id) => formatLogisticsCode("plant", id));
+    .map((id) => formatEntityCode("plant", id));
 };
 
 export const plantFilterOptions = (
@@ -628,7 +628,7 @@ export const openOrdersForProduct = (
     .slice()
     .sort((a, b) => Number(a.productionOrderId) - Number(b.productionOrderId));
 
-export const productCode = (productId: string): string => formatLogisticsCode("product", productId);
+export const productCode = (productId: string): string => formatEntityCode("product", productId);
 
 export const STATUS_RU = {
   draft: OUTPUT_STATUS_LABELS.draft,
@@ -779,7 +779,7 @@ export const plantMoneyRows = (
   [...groupFacts(liveFacts(page, "production_order"), (fact) => fact.order.plantId).entries()]
     .filter(([plantId, facts]) => !filter.hiddenPlantIds.includes(plantId) && hasMoneyToShow(facts, filter.hiddenStatuses))
     .sort(([a], [b]) => byNumericId(a, b))
-    .map(([plantId, facts]) => ({ kind: "plant", id: plantId, code: formatLogisticsCode("plant", plantId), facts }));
+    .map(([plantId, facts]) => ({ kind: "plant", id: plantId, code: formatEntityCode("plant", plantId), facts }));
 
 export const regionMoneyRows = (
   page: Pick<OutputCalendarPage, "moneyOrders" | "payments" | "regions">,
@@ -793,7 +793,7 @@ export const regionMoneyRows = (
     .map(([regionId, group]) => ({
       kind: "region",
       id: regionId,
-      code: codeById.get(regionId) ?? regionCatalogCode(null, regionId),
+      code: codeById.get(regionId) ?? storedEntityCode("region", null, regionId),
       facts: group,
     }));
 };
@@ -875,5 +875,5 @@ export const outputsFilterSummary = (
     parts.push(orders.length === page.customerOrders.length ? "все заказы клиента" : listWithMore(orders));
   }
   const owners = parts.length > 0 ? parts.join(" + ") : "никого";
-  return `Считаем: ${owners}${plantId ? ` · ${formatLogisticsCode("plant", plantId)}` : ""}`;
+  return `Считаем: ${owners}${plantId ? ` · ${formatEntityCode("plant", plantId)}` : ""}`;
 };

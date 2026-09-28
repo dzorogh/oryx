@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import {
   mapCustomerOrderListRow,
   mapLogisticsPayload,
   mapOutputListRow,
 } from "@/features/logistics/logistics-api";
 import { mapOrderPlanPayload } from "@/features/logistics/order-plan/order-plan-types";
+import { resetActiveEntityCodePrefixes } from "@/lib/entity-codes";
 
 describe("mapCustomerOrderListRow", () => {
   it("maps an order without lines to empty products and zero totals", () => {
@@ -92,6 +93,10 @@ describe("mapOutputListRow", () => {
 });
 
 describe("mapLogisticsPayload", () => {
+  after(() => {
+    resetActiveEntityCodePrefixes();
+  });
+
   it("maps an empty payload to an empty snapshot", () => {
     const mapped = mapLogisticsPayload({});
     assert.equal(mapped.found, true);
@@ -101,9 +106,48 @@ describe("mapLogisticsPayload", () => {
     assert.deepEqual(mapped.snapshot.transactions, []);
   });
 
+  it("applies non-default code_prefixes to numbers, plant codes and settings", () => {
+    try {
+      const mapped = mapLogisticsPayload({
+        code_prefixes: [
+          { entity: "customer_order", number_prefix: "DFL" },
+          { entity: "plant", number_prefix: "ZAV" },
+        ],
+        documents: [
+          {
+            id: 12,
+            kind: "customer_order",
+            sequence_number: 12,
+            description: "",
+            status: "in_progress",
+            expected_end_on: null,
+            created_at: "2026-01-01T00:00:00Z",
+            created_by: 1,
+          },
+        ],
+        customer_orders: [
+          { id: 12, region_id: 1, stock_location_id: 100, stock_owner_id: 50 },
+        ],
+        plants: [{ id: 6, name: "Plant", warehouse_id: 3 }],
+        warehouses: [{ id: 3, name: "WH", stock_location_id: 1, kind: "plant" }],
+        regions: [{ id: 1, code: "REG-1", name: "Север", stock_owner_id: 2 }],
+        stock_locations: [{ id: 100, kind: "customer_order" }],
+        stock_owners: [
+          { id: 1, kind: "free" },
+          { id: 50, kind: "customer_order" },
+        ],
+      });
+      assert.equal(mapped.snapshot.customerOrders[0]?.number, "DFL-12");
+      assert.ok(mapped.snapshot.plants[0]?.code.startsWith("ZAV-"));
+      assert.equal(mapped.snapshot.settings.codePrefixes.customer_order, "DFL");
+    } finally {
+      resetActiveEntityCodePrefixes();
+    }
+  });
+
   it("maps a partial payload with document kinds and one customer order", () => {
     const mapped = mapLogisticsPayload({
-      document_kinds: [{ code: "customer_order", number_prefix: "OMS" }],
+      code_prefixes: [{ entity: "customer_order", number_prefix: "OMS" }],
       documents: [
         {
           id: 12,
@@ -133,7 +177,7 @@ describe("mapLogisticsPayload", () => {
 
   it("maps warehouse kind, customer order source and dealer prices", () => {
     const mapped = mapLogisticsPayload({
-      document_kinds: [{ code: "customer_order", number_prefix: "OMS" }],
+      code_prefixes: [{ entity: "customer_order", number_prefix: "OMS" }],
       documents: [
         {
           id: 12,
@@ -251,9 +295,9 @@ describe("mapLogisticsPayload", () => {
 
   it("maps output line owners to customer order ids, not stock owner ids", () => {
     const mapped = mapLogisticsPayload({
-      document_kinds: [
-        { code: "customer_order", number_prefix: "OMS" },
-        { code: "production_output", number_prefix: "OUT" },
+      code_prefixes: [
+        { entity: "customer_order", number_prefix: "OMS" },
+        { entity: "production_output", number_prefix: "OUT" },
       ],
       documents: [
         { id: 12, kind: "customer_order", sequence_number: 12, status: "in_progress", created_at: "2026-01-01T00:00:00Z" },
@@ -294,7 +338,7 @@ describe("mapLogisticsPayload", () => {
       ],
     };
     const mapped = mapLogisticsPayload({
-      document_kinds: [{ code: "production_output", number_prefix: "OUT" }],
+      code_prefixes: [{ entity: "production_output", number_prefix: "OUT" }],
       documents: [
         { id: 30, kind: "production_output", sequence_number: 5, status: "draft", created_at: "2026-01-02T00:00:00Z" },
       ],
