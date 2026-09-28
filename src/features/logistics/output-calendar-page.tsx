@@ -6,14 +6,10 @@ import { toast } from "sonner";
 import { loadOutputCalendarPage } from "@/features/logistics/logistics-api";
 import { allCategoryGroupIds } from "@/features/logistics/category-tree";
 import {
-  computeMonthRange,
   defaultIncomingFilter,
   defaultOwnerFilter,
   defaultPlantPaymentsFilter,
   plantFilterOptions,
-  rangeMonths,
-  unpaidPaymentDueDates,
-  type CalendarRange,
   type IncomingFilter,
   type OutputCalendarOwnerFilter,
   type OutputCalendarPage as OutputCalendarPageData,
@@ -50,7 +46,6 @@ export const OutputCalendarPage = () => {
     () => new Set([MONEY_PLANTS_GROUP_ID, MONEY_REGIONS_GROUP_ID]),
   );
   const [expandedMonths, setExpandedMonths] = useState<Set<number>>(() => new Set());
-  const [range, setRange] = useState<CalendarRange>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,11 +96,6 @@ export const OutputCalendarPage = () => {
     () => (page ? plantFilterOptions(page.outputLines, page.openOrders) : []),
     [page],
   );
-  const autoMonths = useMemo(
-    () => (page ? computeMonthRange(page.outputLines, new Date(), unpaidPaymentDueDates(page)) : []),
-    [page],
-  );
-  const months = useMemo(() => (range ? rangeMonths(range) : autoMonths), [range, autoMonths]);
 
   const setCollapsedMany = (ids: string[], nextCollapsed: boolean) => {
     setCollapsed((prev) => {
@@ -174,9 +164,6 @@ export const OutputCalendarPage = () => {
             incomingFilter={incomingFilter}
             panel={panel}
             onTogglePanel={(next) => setPanel((current) => (current === next ? null : next))}
-            months={months}
-            range={range}
-            onRangeChange={setRange}
             onRefresh={() => void load({ soft: true })}
             onCollapseAll={() =>
               setCollapsed(
@@ -188,7 +175,6 @@ export const OutputCalendarPage = () => {
           />
           <OutputCalendarMatrix
             page={page}
-            months={months}
             filter={filter}
             plantId={plantId}
             plantPaymentsFilter={plantPaymentsFilter}

@@ -425,28 +425,6 @@ export const computeMonthRange = (
   return months;
 };
 
-/** Month keys (`ymKey`), inclusive. `null` — «По данным», the range comes from `computeMonthRange`. */
-export type CalendarRange = { from: number; to: number } | null;
-
-export const MAX_RANGE_MONTHS = 36;
-
-export const RANGE_PRESETS = [3, 6, 12] as const;
-
-/** `months` months starting with the current one. */
-export const presetRange = (months: number, today: Date = new Date()): { from: number; to: number } => {
-  const from = ymKey(currentYearMonth(today));
-  return { from, to: from + months - 1 };
-};
-
-/** Months of a custom range; bounds are swapped if reversed, the length is capped at `MAX_RANGE_MONTHS`. */
-export const rangeMonths = (range: { from: number; to: number }): YearMonth[] => {
-  const from = Math.min(range.from, range.to);
-  const to = Math.min(Math.max(range.from, range.to), from + MAX_RANGE_MONTHS - 1);
-  const months: YearMonth[] = [];
-  for (let key = from; key <= to; key += 1) months.push(parseYmKey(key));
-  return months;
-};
-
 export const outputPassesFilters = (
   line: OutputCalendarOutputLine,
   ownerSet: Set<string>,

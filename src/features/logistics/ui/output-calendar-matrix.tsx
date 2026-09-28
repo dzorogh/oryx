@@ -21,6 +21,7 @@ import {
 import {
   buildCalendarColumns,
   buildOwnerSet,
+  computeMonthRange,
   currentYearMonth,
   formatOutputDate,
   formatYearMonthLabel,
@@ -39,6 +40,7 @@ import {
   stockBreakdown,
   stockQuantity,
   unassignedCell,
+  unpaidPaymentDueDates,
   ymKey,
   type CalendarColumn,
   type CalendarOwner,
@@ -88,7 +90,6 @@ export const MONEY_REGIONS_GROUP_ID = "money:regions";
 
 type OutputCalendarMatrixProps = {
   page: OutputCalendarPage;
-  months: YearMonth[];
   filter: OutputCalendarOwnerFilter;
   plantId: string | null;
   plantPaymentsFilter: PlantPaymentsFilter;
@@ -1047,7 +1048,6 @@ const HEAD_CELL = "sticky top-0 z-20 border-b border-r border-border bg-zinc-50"
 
 export const OutputCalendarMatrix = ({
   page,
-  months,
   filter,
   plantId,
   plantPaymentsFilter,
@@ -1063,6 +1063,10 @@ export const OutputCalendarMatrix = ({
   const currentKey = ymKey(currentYm);
   const today = todayIso();
   const ownerSet = useMemo(() => buildOwnerSet(filter, page), [filter, page]);
+  const months = useMemo(
+    () => computeMonthRange(page.outputLines, new Date(), unpaidPaymentDueDates(page)),
+    [page],
+  );
   const columns = useMemo(() => buildCalendarColumns(months, expandedMonths), [months, expandedMonths]);
   const anyExpanded = months.some((ym) => expandedMonths.has(ymKey(ym)));
   const headRowSpan = anyExpanded ? 2 : 1;
