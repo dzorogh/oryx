@@ -436,10 +436,11 @@ export const OrderMoneyTab = ({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
-                <th className="px-4 py-2 font-medium">Срок оплаты</th>
-                <th className="px-4 py-2 text-right font-medium">Сумма</th>
-                <th className="px-4 py-2 font-medium">Статус</th>
-                <th className="px-4 py-2" aria-label="Действия" />
+                <th className="w-48 px-4 py-2 font-medium whitespace-nowrap">Срок оплаты</th>
+                <th className="w-36 px-4 py-2 text-right font-medium whitespace-nowrap">Сумма</th>
+                <th className="w-44 px-4 py-2 font-medium">Статус</th>
+                <th className="w-px px-4 py-2" aria-label="Действия" />
+                <th aria-hidden />
               </tr>
             </thead>
             <tbody>
@@ -513,6 +514,7 @@ export const OrderMoneyTab = ({
                         Удалить
                       </Button>
                     </td>
+                    <td aria-hidden />
                   </tr>
                 );
               })}
