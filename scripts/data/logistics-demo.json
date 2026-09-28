@@ -11,7 +11,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 230,
+        "width": 130,
+        "height": 126,
+        "weight": 545,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 18,
+        "source": "prod"
+      }
     },
     {
       "id": 17,
@@ -24,7 +37,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 189,
+        "width": 71.1,
+        "height": 79.6,
+        "weight": 139.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 62,
+        "source": "estimated"
+      }
     },
     {
       "id": 29,
@@ -37,7 +63,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 157,
+        "width": 46,
+        "height": 86,
+        "weight": 147.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": null,
+        "source": "prod"
+      }
     },
     {
       "id": 36,
@@ -50,7 +89,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 188,
+        "width": 57,
+        "height": 87,
+        "weight": 148.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 75,
+        "source": "prod"
+      }
     },
     {
       "id": 46,
@@ -63,7 +115,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 217,
+        "width": 77,
+        "height": 125,
+        "weight": 234,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 30,
+        "source": "prod"
+      }
     },
     {
       "id": 131,
@@ -76,7 +141,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 194.6,
+        "width": 56.9,
+        "height": 91.2,
+        "weight": 179,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "estimated"
+      }
     },
     {
       "id": 207,
@@ -89,7 +167,20 @@
       "category_ids": [
         1,
         38
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 194,
+        "width": 69.7,
+        "height": 87.2,
+        "weight": 164.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 56,
+        "source": "estimated"
+      }
     },
     {
       "id": 2,
@@ -102,7 +193,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 130,
+        "width": 74,
+        "height": 62,
+        "weight": 112,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 108,
+        "source": "prod"
+      }
     },
     {
       "id": 3,
@@ -115,7 +219,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 136,
+        "width": 77,
+        "height": 65,
+        "weight": 134.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 100,
+        "source": "prod"
+      }
     },
     {
       "id": 4,
@@ -127,7 +244,20 @@
       "plant_id": 27,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 149.5,
+        "width": 80.5,
+        "height": 85,
+        "weight": 208,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 64,
+        "source": "prod"
+      }
     },
     {
       "id": 5,
@@ -139,7 +269,20 @@
       "plant_id": 27,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 149.5,
+        "width": 81,
+        "height": 80.5,
+        "weight": 198,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "prod"
+      }
     },
     {
       "id": 6,
@@ -151,7 +294,20 @@
       "plant_id": 28,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 180,
+        "width": 112,
+        "height": 84,
+        "weight": 235,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 39,
+        "source": "prod"
+      }
     },
     {
       "id": 9,
@@ -163,7 +319,20 @@
       "plant_id": 34,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 115,
+        "width": 70,
+        "height": 61,
+        "weight": 116,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 136,
+        "source": "prod"
+      }
     },
     {
       "id": 10,
@@ -175,7 +344,20 @@
       "plant_id": 34,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 169.5,
+        "width": 114,
+        "height": 85.2,
+        "weight": 217,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 42,
+        "source": "prod"
+      }
     },
     {
       "id": 11,
@@ -188,7 +370,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 170,
+        "width": 115,
+        "height": 86,
+        "weight": 220,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 42,
+        "source": "prod"
+      }
     },
     {
       "id": 12,
@@ -201,7 +396,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 150,
+        "width": 80,
+        "height": 53,
+        "weight": 140,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 115,
+        "source": "prod"
+      }
     },
     {
       "id": 14,
@@ -214,7 +422,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229,
+        "width": 142,
+        "height": 83,
+        "weight": 480,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 24,
+        "source": "prod"
+      }
     },
     {
       "id": 18,
@@ -227,7 +448,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 206.2,
+        "width": 79,
+        "height": 111.1,
+        "weight": 242.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 37,
+        "source": "estimated"
+      }
     },
     {
       "id": 21,
@@ -240,7 +474,20 @@
       "category_ids": [
         5,
         15
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 231.9,
+        "width": 59.6,
+        "height": 93.3,
+        "weight": 210.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 51,
+        "source": "estimated"
+      }
     },
     {
       "id": 22,
@@ -253,7 +500,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 231,
+        "width": 132.5,
+        "height": 125,
+        "weight": 520,
+        "stacking": true,
+        "stacking_limit": 4,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 17,
+        "source": "prod"
+      }
     },
     {
       "id": 23,
@@ -266,7 +526,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 373,
+        "width": 116,
+        "height": 98,
+        "weight": 705,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 3,
+        "source": "prod"
+      }
     },
     {
       "id": 24,
@@ -279,7 +552,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 287,
+        "width": 115,
+        "height": 101,
+        "weight": 590,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 16,
+        "source": "prod"
+      }
     },
     {
       "id": 25,
@@ -292,7 +578,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 148,
+        "width": 36.5,
+        "height": 81,
+        "weight": 141,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 144,
+        "source": "prod"
+      }
     },
     {
       "id": 26,
@@ -305,7 +604,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 147.5,
+        "width": 35.8,
+        "height": 87,
+        "weight": 142.28,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 144,
+        "source": "prod"
+      }
     },
     {
       "id": 30,
@@ -318,7 +630,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 193.6,
+        "width": 57.8,
+        "height": 108.3,
+        "weight": 230.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 55,
+        "source": "estimated"
+      }
     },
     {
       "id": 31,
@@ -331,7 +656,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 157.3,
+        "width": 46.5,
+        "height": 86,
+        "weight": 154.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 111,
+        "source": "prod"
+      }
     },
     {
       "id": 32,
@@ -344,7 +682,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 228,
+        "width": 82,
+        "height": 115,
+        "weight": 331,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": null,
+        "source": "prod"
+      }
     },
     {
       "id": 33,
@@ -357,7 +708,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 238,
+        "width": 76,
+        "height": 124,
+        "weight": 342,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 30,
+        "source": "prod"
+      }
     },
     {
       "id": 34,
@@ -370,7 +734,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 188,
+        "width": 46.5,
+        "height": 88,
+        "weight": 160,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 96,
+        "source": "prod"
+      }
     },
     {
       "id": 35,
@@ -383,7 +760,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 181,
+        "width": 48.5,
+        "height": 86,
+        "weight": 171,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 93,
+        "source": "prod"
+      }
     },
     {
       "id": 37,
@@ -396,7 +786,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 195.5,
+        "width": 57,
+        "height": 126.2,
+        "weight": 164.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 48,
+        "source": "prod"
+      }
     },
     {
       "id": 42,
@@ -409,7 +812,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 170,
+        "width": 45,
+        "height": 86,
+        "weight": 152,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 105,
+        "source": "prod"
+      }
     },
     {
       "id": 43,
@@ -422,7 +838,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 192.8,
+        "width": 52.4,
+        "height": 98.7,
+        "weight": 176.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 67,
+        "source": "estimated"
+      }
     },
     {
       "id": 44,
@@ -435,7 +864,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 217,
+        "width": 63,
+        "height": 117,
+        "weight": 223,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 38,
+        "source": "prod"
+      }
     },
     {
       "id": 45,
@@ -448,7 +890,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 217,
+        "width": 63,
+        "height": 117,
+        "weight": 220,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 38,
+        "source": "prod"
+      }
     },
     {
       "id": 47,
@@ -461,7 +916,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 241.4,
+        "width": 69.9,
+        "height": 112.6,
+        "weight": 252.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 35,
+        "source": "estimated"
+      }
     },
     {
       "id": 48,
@@ -474,7 +942,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 243,
+        "width": 68.4,
+        "height": 113.5,
+        "weight": 250.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 35,
+        "source": "estimated"
+      }
     },
     {
       "id": 49,
@@ -487,7 +968,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 222,
+        "width": 75,
+        "height": 124,
+        "weight": 238,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 30,
+        "source": "prod"
+      }
     },
     {
       "id": 62,
@@ -500,7 +994,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229,
+        "width": 70,
+        "height": 130,
+        "weight": 286,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 33,
+        "source": "prod"
+      }
     },
     {
       "id": 109,
@@ -513,7 +1020,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 214.5,
+        "width": 72.6,
+        "height": 111.7,
+        "weight": 231.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 38,
+        "source": "estimated"
+      }
     },
     {
       "id": 129,
@@ -526,7 +1046,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 177.1,
+        "width": 64,
+        "height": 93,
+        "weight": 89.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 63,
+        "source": "estimated"
+      }
     },
     {
       "id": 130,
@@ -539,7 +1072,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 177.5,
+        "width": 63.8,
+        "height": 88.6,
+        "weight": 85.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "estimated"
+      }
     },
     {
       "id": 132,
@@ -552,7 +1098,20 @@
       "category_ids": [
         5,
         11
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 235.5,
+        "width": 126,
+        "height": 66,
+        "weight": 317.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 34,
+        "source": "estimated"
+      }
     },
     {
       "id": 50,
@@ -565,7 +1124,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 178,
+        "width": 56.5,
+        "height": 85.5,
+        "weight": 131.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 78,
+        "source": "prod"
+      }
     },
     {
       "id": 51,
@@ -578,7 +1150,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 172.7,
+        "width": 68.3,
+        "height": 85.5,
+        "weight": 131.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "estimated"
+      }
     },
     {
       "id": 52,
@@ -591,7 +1176,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 195.6,
+        "width": 61.4,
+        "height": 87.5,
+        "weight": 186.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 63,
+        "source": "estimated"
+      }
     },
     {
       "id": 53,
@@ -604,7 +1202,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 200.4,
+        "width": 58,
+        "height": 93.9,
+        "weight": 193.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 61,
+        "source": "estimated"
+      }
     },
     {
       "id": 54,
@@ -617,7 +1228,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 196.8,
+        "width": 61.2,
+        "height": 92.2,
+        "weight": 196.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 60,
+        "source": "estimated"
+      }
     },
     {
       "id": 55,
@@ -629,7 +1253,20 @@
       "plant_id": 29,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 166.5,
+        "width": 80.5,
+        "height": 83.4,
+        "weight": 215.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 59,
+        "source": "estimated"
+      }
     },
     {
       "id": 56,
@@ -641,7 +1278,20 @@
       "plant_id": 29,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 204,
+        "width": 80,
+        "height": 112,
+        "weight": 225,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 30,
+        "source": "prod"
+      }
     },
     {
       "id": 57,
@@ -654,7 +1304,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 217,
+        "width": 84,
+        "height": 122,
+        "weight": 265,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 28,
+        "source": "prod"
+      }
     },
     {
       "id": 58,
@@ -666,7 +1329,20 @@
       "plant_id": 40,
       "category_ids": [
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 217,
+        "width": 79,
+        "height": 122,
+        "weight": 285,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 28,
+        "source": "prod"
+      }
     },
     {
       "id": 59,
@@ -679,7 +1355,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 195,
+        "width": 74,
+        "height": 86,
+        "weight": 199,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 54,
+        "source": "prod"
+      }
     },
     {
       "id": 60,
@@ -692,7 +1381,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 215,
+        "width": 65,
+        "height": 126,
+        "weight": 240,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 32,
+        "source": "prod"
+      }
     },
     {
       "id": 61,
@@ -704,7 +1406,20 @@
       "plant_id": 2,
       "category_ids": [
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 188,
+        "width": 57,
+        "height": 114,
+        "weight": 190,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 50,
+        "source": "prod"
+      }
     },
     {
       "id": 63,
@@ -717,7 +1432,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229,
+        "width": 70,
+        "height": 130,
+        "weight": 270,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 33,
+        "source": "prod"
+      }
     },
     {
       "id": 64,
@@ -730,7 +1458,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229,
+        "width": 84,
+        "height": 130,
+        "weight": 324,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 27,
+        "source": "prod"
+      }
     },
     {
       "id": 65,
@@ -743,7 +1484,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 211.6,
+        "width": 86.1,
+        "height": 113.9,
+        "weight": 277.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 32,
+        "source": "estimated"
+      }
     },
     {
       "id": 66,
@@ -756,7 +1510,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 231.8,
+        "width": 77.4,
+        "height": 119,
+        "weight": 285.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 31,
+        "source": "estimated"
+      }
     },
     {
       "id": 67,
@@ -769,7 +1536,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 140,
+        "width": 38,
+        "height": 64,
+        "weight": 90.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 200,
+        "source": "prod"
+      }
     },
     {
       "id": 68,
@@ -782,7 +1562,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 140,
+        "width": 38,
+        "height": 64,
+        "weight": 91,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 200,
+        "source": "prod"
+      }
     },
     {
       "id": 69,
@@ -795,7 +1588,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 175.8,
+        "width": 56.6,
+        "height": 87.7,
+        "weight": 74.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 76,
+        "source": "estimated"
+      }
     },
     {
       "id": 70,
@@ -808,7 +1614,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229,
+        "width": 84,
+        "height": 125,
+        "weight": 272,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 28,
+        "source": "prod"
+      }
     },
     {
       "id": 71,
@@ -821,7 +1640,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 10000,
+        "length": 10010,
+        "width": 1001,
+        "height": 1001,
+        "weight": null,
+        "stacking": false,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": null,
+        "source": "prod"
+      }
     },
     {
       "id": 72,
@@ -834,7 +1666,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 184.7,
+        "width": 63.4,
+        "height": 96.9,
+        "weight": 96.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 59,
+        "source": "estimated"
+      }
     },
     {
       "id": 73,
@@ -847,7 +1692,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 170.4,
+        "width": 65.3,
+        "height": 100.1,
+        "weight": 95,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 60,
+        "source": "estimated"
+      }
     },
     {
       "id": 74,
@@ -860,7 +1718,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 185.5,
+        "width": 63.1,
+        "height": 92.7,
+        "weight": 92.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 61,
+        "source": "estimated"
+      }
     },
     {
       "id": 75,
@@ -873,7 +1744,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 311.3,
+        "width": 123.4,
+        "height": 117.6,
+        "weight": 661.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 14,
+        "source": "estimated"
+      }
     },
     {
       "id": 76,
@@ -886,7 +1770,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 285.3,
+        "width": 129.9,
+        "height": 102.6,
+        "weight": 556.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 17,
+        "source": "estimated"
+      }
     },
     {
       "id": 77,
@@ -899,7 +1796,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 315,
+        "width": 123.7,
+        "height": 119,
+        "weight": 678.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 14,
+        "source": "estimated"
+      }
     },
     {
       "id": 78,
@@ -912,7 +1822,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 184.8,
+        "width": 56.6,
+        "height": 122.4,
+        "weight": 149.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 52,
+        "source": "estimated"
+      }
     },
     {
       "id": 79,
@@ -925,7 +1848,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 207.3,
+        "width": 52.8,
+        "height": 130.7,
+        "weight": 167,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 46,
+        "source": "estimated"
+      }
     },
     {
       "id": 80,
@@ -938,7 +1874,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 188.9,
+        "width": 52.9,
+        "height": 118.9,
+        "weight": 138.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 56,
+        "source": "estimated"
+      }
     },
     {
       "id": 81,
@@ -951,7 +1900,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 210.9,
+        "width": 56.7,
+        "height": 116.7,
+        "weight": 162.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 48,
+        "source": "estimated"
+      }
     },
     {
       "id": 82,
@@ -964,7 +1926,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 154.2,
+        "width": 36.3,
+        "height": 88.5,
+        "weight": 150,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 135,
+        "source": "estimated"
+      }
     },
     {
       "id": 83,
@@ -977,7 +1952,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 148,
+        "width": 39.1,
+        "height": 89.1,
+        "weight": 156.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 129,
+        "source": "estimated"
+      }
     },
     {
       "id": 84,
@@ -990,7 +1978,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 137,
+        "width": 37,
+        "height": 82.6,
+        "weight": 126.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 160,
+        "source": "estimated"
+      }
     },
     {
       "id": 85,
@@ -1003,7 +2004,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 142.6,
+        "width": 35.7,
+        "height": 81.7,
+        "weight": 125.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 161,
+        "source": "estimated"
+      }
     },
     {
       "id": 86,
@@ -1016,7 +2030,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 140.9,
+        "width": 33.6,
+        "height": 84.9,
+        "weight": 121.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 166,
+        "source": "estimated"
+      }
     },
     {
       "id": 87,
@@ -1029,7 +2056,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 192.5,
+        "width": 64.9,
+        "height": 107.7,
+        "weight": 255.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 49,
+        "source": "estimated"
+      }
     },
     {
       "id": 88,
@@ -1041,7 +2081,20 @@
       "plant_id": 16,
       "category_ids": [
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 216.5,
+        "width": 57.6,
+        "height": 103.2,
+        "weight": 244.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 52,
+        "source": "estimated"
+      }
     },
     {
       "id": 89,
@@ -1054,7 +2107,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 221.2,
+        "width": 66,
+        "height": 94.1,
+        "weight": 260.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 48,
+        "source": "estimated"
+      }
     },
     {
       "id": 90,
@@ -1067,7 +2133,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 202.5,
+        "width": 61.9,
+        "height": 101.3,
+        "weight": 241.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 52,
+        "source": "estimated"
+      }
     },
     {
       "id": 91,
@@ -1080,7 +2159,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 219.8,
+        "width": 63.9,
+        "height": 104.8,
+        "weight": 279.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 45,
+        "source": "estimated"
+      }
     },
     {
       "id": 92,
@@ -1093,7 +2185,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 218.2,
+        "width": 61.2,
+        "height": 108.9,
+        "weight": 276.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 46,
+        "source": "estimated"
+      }
     },
     {
       "id": 93,
@@ -1106,7 +2211,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 199.3,
+        "width": 64.1,
+        "height": 94.8,
+        "weight": 229.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 55,
+        "source": "estimated"
+      }
     },
     {
       "id": 94,
@@ -1119,7 +2237,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 208.5,
+        "width": 55,
+        "height": 106.9,
+        "weight": 216.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 54,
+        "source": "estimated"
+      }
     },
     {
       "id": 95,
@@ -1132,7 +2263,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 179.2,
+        "width": 56.1,
+        "height": 96.4,
+        "weight": 171.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 69,
+        "source": "estimated"
+      }
     },
     {
       "id": 96,
@@ -1145,7 +2289,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 202.9,
+        "width": 50.5,
+        "height": 104,
+        "weight": 188.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 62,
+        "source": "estimated"
+      }
     },
     {
       "id": 97,
@@ -1158,7 +2315,20 @@
       "category_ids": [
         5,
         35
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 233,
+        "width": 65.3,
+        "height": 93.8,
+        "weight": 232.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 46,
+        "source": "estimated"
+      }
     },
     {
       "id": 98,
@@ -1171,7 +2341,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 199.9,
+        "width": 54.4,
+        "height": 107.3,
+        "weight": 206.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 57,
+        "source": "estimated"
+      }
     },
     {
       "id": 99,
@@ -1184,7 +2367,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 201.5,
+        "width": 52.1,
+        "height": 103.2,
+        "weight": 191.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 61,
+        "source": "estimated"
+      }
     },
     {
       "id": 100,
@@ -1197,7 +2393,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 204.8,
+        "width": 52.3,
+        "height": 93.6,
+        "weight": 177.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "estimated"
+      }
     },
     {
       "id": 101,
@@ -1210,7 +2419,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 181.9,
+        "width": 56.9,
+        "height": 109.2,
+        "weight": 199.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 59,
+        "source": "estimated"
+      }
     },
     {
       "id": 102,
@@ -1223,7 +2445,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 185.5,
+        "width": 56.9,
+        "height": 99.8,
+        "weight": 186.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 63,
+        "source": "estimated"
+      }
     },
     {
       "id": 103,
@@ -1236,7 +2471,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 185.5,
+        "width": 47.9,
+        "height": 86.1,
+        "weight": 173.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 87,
+        "source": "estimated"
+      }
     },
     {
       "id": 104,
@@ -1249,7 +2497,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 178.1,
+        "width": 46.5,
+        "height": 82.5,
+        "weight": 154.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 98,
+        "source": "estimated"
+      }
     },
     {
       "id": 105,
@@ -1262,7 +2523,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 179.6,
+        "width": 47.5,
+        "height": 87.4,
+        "weight": 168.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 89,
+        "source": "estimated"
+      }
     },
     {
       "id": 106,
@@ -1274,7 +2548,20 @@
       "plant_id": 38,
       "category_ids": [
         11
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 235.1,
+        "width": 124.3,
+        "height": 65.9,
+        "weight": 311.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 34,
+        "source": "estimated"
+      }
     },
     {
       "id": 107,
@@ -1286,7 +2573,20 @@
       "plant_id": 8,
       "category_ids": [
         11
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 226.3,
+        "width": 128.7,
+        "height": 66.5,
+        "weight": 313.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 34,
+        "source": "estimated"
+      }
     },
     {
       "id": 108,
@@ -1299,7 +2599,20 @@
       "category_ids": [
         11,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 194.9,
+        "width": 49.3,
+        "height": 80.9,
+        "weight": 176.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 86,
+        "source": "estimated"
+      }
     },
     {
       "id": 134,
@@ -1312,7 +2625,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 223.6,
+        "width": 75.5,
+        "height": 122.4,
+        "weight": 274.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 32,
+        "source": "estimated"
+      }
     },
     {
       "id": 135,
@@ -1325,7 +2651,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 221.7,
+        "width": 74,
+        "height": 115.5,
+        "weight": 252,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 35,
+        "source": "estimated"
+      }
     },
     {
       "id": 136,
@@ -1338,7 +2677,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 242.7,
+        "width": 70.7,
+        "height": 113.3,
+        "weight": 258.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 34,
+        "source": "estimated"
+      }
     },
     {
       "id": 137,
@@ -1351,7 +2703,20 @@
       "category_ids": [
         5,
         13
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 197.5,
+        "width": 53.2,
+        "height": 96.4,
+        "weight": 50.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "estimated"
+      }
     },
     {
       "id": 138,
@@ -1364,7 +2729,20 @@
       "category_ids": [
         5,
         13
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 209.5,
+        "width": 51.7,
+        "height": 102.3,
+        "weight": 55.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 60,
+        "source": "estimated"
+      }
     },
     {
       "id": 139,
@@ -1377,7 +2755,20 @@
       "category_ids": [
         5,
         15
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 209.4,
+        "width": 63.2,
+        "height": 98.9,
+        "weight": 213.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 51,
+        "source": "estimated"
+      }
     },
     {
       "id": 140,
@@ -1390,7 +2781,20 @@
       "category_ids": [
         5,
         16
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 206.2,
+        "width": 62.3,
+        "height": 92.6,
+        "weight": 194,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 56,
+        "source": "estimated"
+      }
     },
     {
       "id": 141,
@@ -1403,7 +2807,20 @@
       "category_ids": [
         5,
         16
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 208.1,
+        "width": 63.5,
+        "height": 98.3,
+        "weight": 211.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 51,
+        "source": "estimated"
+      }
     },
     {
       "id": 142,
@@ -1415,7 +2832,20 @@
       "plant_id": 34,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 135.8,
+        "width": 94.9,
+        "height": 68,
+        "weight": 152.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 76,
+        "source": "estimated"
+      }
     },
     {
       "id": 143,
@@ -1427,7 +2857,20 @@
       "plant_id": 33,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 148.4,
+        "width": 86.7,
+        "height": 78,
+        "weight": 174.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "estimated"
+      }
     },
     {
       "id": 144,
@@ -1439,7 +2882,20 @@
       "plant_id": 33,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 141,
+        "width": 88.8,
+        "height": 74.2,
+        "weight": 161.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 72,
+        "source": "estimated"
+      }
     },
     {
       "id": 145,
@@ -1451,7 +2907,20 @@
       "plant_id": 33,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 132.2,
+        "width": 93.2,
+        "height": 77.9,
+        "weight": 167,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 69,
+        "source": "estimated"
+      }
     },
     {
       "id": 146,
@@ -1463,7 +2932,20 @@
       "plant_id": 33,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 147.5,
+        "width": 98,
+        "height": 77.5,
+        "weight": 195,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 59,
+        "source": "estimated"
+      }
     },
     {
       "id": 7,
@@ -1476,7 +2958,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229,
+        "width": 118,
+        "height": 84,
+        "weight": 460,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 30,
+        "source": "prod"
+      }
     },
     {
       "id": 8,
@@ -1489,7 +2984,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 230,
+        "width": 119.2,
+        "height": 88.7,
+        "weight": 443,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 29,
+        "source": "prod"
+      }
     },
     {
       "id": 13,
@@ -1502,7 +3010,20 @@
       "category_ids": [
         5,
         11
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 230,
+        "width": 120,
+        "height": 66,
+        "weight": 295,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 40,
+        "source": "prod"
+      }
     },
     {
       "id": 15,
@@ -1515,7 +3036,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 281.5,
+        "width": 122,
+        "height": 106.6,
+        "weight": 535.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 18,
+        "source": "estimated"
+      }
     },
     {
       "id": 16,
@@ -1528,7 +3062,20 @@
       "category_ids": [
         5,
         13
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 200,
+        "width": 50,
+        "height": 100,
+        "weight": 50,
+        "stacking": false,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": null,
+        "source": "prod"
+      }
     },
     {
       "id": 19,
@@ -1541,7 +3088,20 @@
       "category_ids": [
         36,
         40
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 153.9,
+        "width": 45.4,
+        "height": 87.8,
+        "weight": 150.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 109,
+        "source": "estimated"
+      }
     },
     {
       "id": 20,
@@ -1554,7 +3114,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 198.3,
+        "width": 58.7,
+        "height": 88.7,
+        "weight": 183,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 64,
+        "source": "estimated"
+      }
     },
     {
       "id": 27,
@@ -1567,7 +3140,20 @@
       "category_ids": [
         36,
         40
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 158.3,
+        "width": 42.2,
+        "height": 90.3,
+        "weight": 147.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 111,
+        "source": "estimated"
+      }
     },
     {
       "id": 28,
@@ -1580,7 +3166,20 @@
       "category_ids": [
         36,
         40
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 149,
+        "width": 44.5,
+        "height": 87,
+        "weight": 141.18,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 120,
+        "source": "prod"
+      }
     },
     {
       "id": 38,
@@ -1593,7 +3192,20 @@
       "category_ids": [
         1,
         25
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 209,
+        "width": 84,
+        "height": 130,
+        "weight": 255,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 27,
+        "source": "prod"
+      }
     },
     {
       "id": 39,
@@ -1606,7 +3218,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 190,
+        "width": 57,
+        "height": 87,
+        "weight": 152,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 72,
+        "source": "prod"
+      }
     },
     {
       "id": 40,
@@ -1619,7 +3244,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 189.3,
+        "width": 52.7,
+        "height": 88.8,
+        "weight": 157,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 75,
+        "source": "estimated"
+      }
     },
     {
       "id": 41,
@@ -1632,7 +3270,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 190,
+        "width": 57,
+        "height": 87,
+        "weight": 167,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 72,
+        "source": "prod"
+      }
     },
     {
       "id": 110,
@@ -1645,7 +3296,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 209.7,
+        "width": 84.4,
+        "height": 107.4,
+        "weight": 254.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 35,
+        "source": "estimated"
+      }
     },
     {
       "id": 111,
@@ -1658,7 +3322,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 183.3,
+        "width": 57.6,
+        "height": 96.2,
+        "weight": 86.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 65,
+        "source": "estimated"
+      }
     },
     {
       "id": 112,
@@ -1671,7 +3348,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 179.8,
+        "width": 58.6,
+        "height": 89.8,
+        "weight": 80.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 70,
+        "source": "estimated"
+      }
     },
     {
       "id": 113,
@@ -1684,7 +3374,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 181.1,
+        "width": 62.2,
+        "height": 95,
+        "weight": 91.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 62,
+        "source": "estimated"
+      }
     },
     {
       "id": 114,
@@ -1697,7 +3400,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 187.9,
+        "width": 59.8,
+        "height": 98.5,
+        "weight": 94.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 60,
+        "source": "estimated"
+      }
     },
     {
       "id": 115,
@@ -1710,7 +3426,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 183.3,
+        "width": 63.5,
+        "height": 91.6,
+        "weight": 91,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 62,
+        "source": "estimated"
+      }
     },
     {
       "id": 116,
@@ -1723,7 +3452,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 172.3,
+        "width": 63.9,
+        "height": 90.5,
+        "weight": 85,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 67,
+        "source": "estimated"
+      }
     },
     {
       "id": 117,
@@ -1736,7 +3478,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 175.8,
+        "width": 58.5,
+        "height": 92.3,
+        "weight": 168.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 70,
+        "source": "estimated"
+      }
     },
     {
       "id": 118,
@@ -1749,7 +3504,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 287.2,
+        "width": 121.4,
+        "height": 103.3,
+        "weight": 527.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 18,
+        "source": "estimated"
+      }
     },
     {
       "id": 119,
@@ -1762,7 +3530,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 180.3,
+        "width": 50.6,
+        "height": 87.8,
+        "weight": 181.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 83,
+        "source": "estimated"
+      }
     },
     {
       "id": 120,
@@ -1775,7 +3556,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 176.6,
+        "width": 44.9,
+        "height": 81.8,
+        "weight": 146.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 103,
+        "source": "estimated"
+      }
     },
     {
       "id": 121,
@@ -1788,7 +3582,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 203.6,
+        "width": 60.8,
+        "height": 134.5,
+        "weight": 194.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 40,
+        "source": "estimated"
+      }
     },
     {
       "id": 122,
@@ -1801,7 +3608,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 203.6,
+        "width": 54.3,
+        "height": 128.4,
+        "weight": 165.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 47,
+        "source": "estimated"
+      }
     },
     {
       "id": 123,
@@ -1814,7 +3634,20 @@
       "category_ids": [
         5,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 195.1,
+        "width": 60.6,
+        "height": 129,
+        "weight": 178.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 43,
+        "source": "estimated"
+      }
     },
     {
       "id": 124,
@@ -1827,7 +3660,20 @@
       "category_ids": [
         36,
         40
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 139.7,
+        "width": 42.3,
+        "height": 83.7,
+        "weight": 121.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 135,
+        "source": "estimated"
+      }
     },
     {
       "id": 125,
@@ -1839,7 +3685,20 @@
       "plant_id": null,
       "category_ids": [
         41
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 180.3,
+        "width": 73.6,
+        "height": 92.1,
+        "weight": 207.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 54,
+        "source": "estimated"
+      }
     },
     {
       "id": 126,
@@ -1851,7 +3710,20 @@
       "plant_id": null,
       "category_ids": [
         41
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 193.4,
+        "width": 69.8,
+        "height": 88.2,
+        "weight": 202.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 56,
+        "source": "estimated"
+      }
     },
     {
       "id": 127,
@@ -1864,7 +3736,20 @@
       "category_ids": [
         5,
         35
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 201.2,
+        "width": 61.6,
+        "height": 106.3,
+        "weight": 214.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 50,
+        "source": "estimated"
+      }
     },
     {
       "id": 128,
@@ -1877,7 +3762,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 224,
+        "width": 57,
+        "height": 106.8,
+        "weight": 258.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 49,
+        "source": "estimated"
+      }
     },
     {
       "id": 133,
@@ -1889,7 +3787,20 @@
       "plant_id": 34,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 152.1,
+        "width": 86.3,
+        "height": 78.6,
+        "weight": 179.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 64,
+        "source": "estimated"
+      }
     },
     {
       "id": 147,
@@ -1902,7 +3813,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 179.4,
+        "width": 49.3,
+        "height": 83.2,
+        "weight": 166.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 91,
+        "source": "estimated"
+      }
     },
     {
       "id": 148,
@@ -1915,7 +3839,20 @@
       "category_ids": [
         1,
         7
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 199,
+        "width": 55.7,
+        "height": 125.4,
+        "weight": 162.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 48,
+        "source": "estimated"
+      }
     },
     {
       "id": 149,
@@ -1928,7 +3865,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 185.1,
+        "width": 52.8,
+        "height": 86.8,
+        "weight": 150.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 78,
+        "source": "estimated"
+      }
     },
     {
       "id": 150,
@@ -1941,7 +3891,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 208,
+        "width": 78.7,
+        "height": 112,
+        "weight": 245.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 36,
+        "source": "estimated"
+      }
     },
     {
       "id": 151,
@@ -1954,7 +3917,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 220.4,
+        "width": 61.9,
+        "height": 105.1,
+        "weight": 272.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 46,
+        "source": "estimated"
+      }
     },
     {
       "id": 152,
@@ -1967,7 +3943,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 204.9,
+        "width": 65.4,
+        "height": 102.4,
+        "weight": 260.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 48,
+        "source": "estimated"
+      }
     },
     {
       "id": 153,
@@ -1980,7 +3969,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 199.3,
+        "width": 63.1,
+        "height": 94.8,
+        "weight": 226.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 56,
+        "source": "estimated"
+      }
     },
     {
       "id": 154,
@@ -1992,7 +3994,20 @@
       "plant_id": 28,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 164.6,
+        "width": 85.5,
+        "height": 82.4,
+        "weight": 223.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 57,
+        "source": "estimated"
+      }
     },
     {
       "id": 155,
@@ -2005,7 +4020,20 @@
       "category_ids": [
         5,
         16
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 206.5,
+        "width": 60.8,
+        "height": 97.6,
+        "weight": 199.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 54,
+        "source": "estimated"
+      }
     },
     {
       "id": 156,
@@ -2018,7 +4046,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 195.7,
+        "width": 57.3,
+        "height": 100.2,
+        "weight": 198.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 59,
+        "source": "estimated"
+      }
     },
     {
       "id": 157,
@@ -2031,7 +4072,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 157.8,
+        "width": 36.8,
+        "height": 80.9,
+        "weight": 142.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 142,
+        "source": "estimated"
+      }
     },
     {
       "id": 158,
@@ -2044,7 +4098,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 154.5,
+        "width": 35.5,
+        "height": 92.9,
+        "weight": 154.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 131,
+        "source": "estimated"
+      }
     },
     {
       "id": 159,
@@ -2057,7 +4124,20 @@
       "category_ids": [
         5,
         13
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 202.3,
+        "width": 51.3,
+        "height": 98.7,
+        "weight": 51.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 65,
+        "source": "estimated"
+      }
     },
     {
       "id": 160,
@@ -2070,7 +4150,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 205.1,
+        "width": 63.3,
+        "height": 102.5,
+        "weight": 252.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 50,
+        "source": "estimated"
+      }
     },
     {
       "id": 161,
@@ -2083,7 +4176,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 195.7,
+        "width": 59.2,
+        "height": 109.3,
+        "weight": 240.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 52,
+        "source": "estimated"
+      }
     },
     {
       "id": 162,
@@ -2096,7 +4202,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 215.8,
+        "width": 62,
+        "height": 107.8,
+        "weight": 273.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 46,
+        "source": "estimated"
+      }
     },
     {
       "id": 163,
@@ -2109,7 +4228,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 217.5,
+        "width": 59.4,
+        "height": 103.7,
+        "weight": 254.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 50,
+        "source": "estimated"
+      }
     },
     {
       "id": 164,
@@ -2122,7 +4254,20 @@
       "category_ids": [
         5,
         13
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 200.2,
+        "width": 53.9,
+        "height": 97.7,
+        "weight": 52.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 63,
+        "source": "estimated"
+      }
     },
     {
       "id": 165,
@@ -2135,7 +4280,20 @@
       "category_ids": [
         5,
         13
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 198.6,
+        "width": 52.6,
+        "height": 101.7,
+        "weight": 53.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 63,
+        "source": "estimated"
+      }
     },
     {
       "id": 166,
@@ -2148,7 +4306,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 320.1,
+        "width": 116.5,
+        "height": 115.5,
+        "weight": 630.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 15,
+        "source": "estimated"
+      }
     },
     {
       "id": 167,
@@ -2160,7 +4331,20 @@
       "plant_id": 36,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 143,
+        "width": 97,
+        "height": 75.2,
+        "weight": 181.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 64,
+        "source": "estimated"
+      }
     },
     {
       "id": 168,
@@ -2173,7 +4357,20 @@
       "category_ids": [
         5,
         16
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 228.6,
+        "width": 63.2,
+        "height": 107.8,
+        "weight": 254,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 43,
+        "source": "estimated"
+      }
     },
     {
       "id": 169,
@@ -2186,7 +4383,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 231.4,
+        "width": 69.2,
+        "height": 120.8,
+        "weight": 257.3,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 34,
+        "source": "estimated"
+      }
     },
     {
       "id": 170,
@@ -2199,7 +4409,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 222,
+        "width": 68,
+        "height": 121.5,
+        "weight": 243.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 36,
+        "source": "estimated"
+      }
     },
     {
       "id": 171,
@@ -2212,7 +4435,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 294.8,
+        "width": 133.8,
+        "height": 106.1,
+        "weight": 612.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 16,
+        "source": "estimated"
+      }
     },
     {
       "id": 172,
@@ -2225,7 +4461,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 202.2,
+        "width": 57.2,
+        "height": 101.1,
+        "weight": 222,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 57,
+        "source": "estimated"
+      }
     },
     {
       "id": 173,
@@ -2238,7 +4487,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 179.9,
+        "width": 56.7,
+        "height": 80.3,
+        "weight": 145.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 81,
+        "source": "estimated"
+      }
     },
     {
       "id": 174,
@@ -2251,7 +4513,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 181.4,
+        "width": 53.7,
+        "height": 81,
+        "weight": 139.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 84,
+        "source": "estimated"
+      }
     },
     {
       "id": 175,
@@ -2264,7 +4539,20 @@
       "category_ids": [
         1,
         37
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 196.1,
+        "width": 61,
+        "height": 91.9,
+        "weight": 194.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 60,
+        "source": "estimated"
+      }
     },
     {
       "id": 176,
@@ -2277,7 +4565,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229.3,
+        "width": 68.6,
+        "height": 119.6,
+        "weight": 250.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 35,
+        "source": "estimated"
+      }
     },
     {
       "id": 177,
@@ -2290,7 +4591,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 213.6,
+        "width": 76.7,
+        "height": 117.1,
+        "weight": 255.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 34,
+        "source": "estimated"
+      }
     },
     {
       "id": 178,
@@ -2302,7 +4616,20 @@
       "plant_id": 17,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 174.5,
+        "width": 76.6,
+        "height": 78,
+        "weight": 200.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 64,
+        "source": "estimated"
+      }
     },
     {
       "id": 179,
@@ -2315,7 +4642,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 208.5,
+        "width": 79.9,
+        "height": 106.8,
+        "weight": 238.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 37,
+        "source": "estimated"
+      }
     },
     {
       "id": 180,
@@ -2328,7 +4668,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 196.8,
+        "width": 64.1,
+        "height": 98.5,
+        "weight": 235.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 53,
+        "source": "estimated"
+      }
     },
     {
       "id": 181,
@@ -2340,7 +4693,20 @@
       "plant_id": 9,
       "category_ids": [
         5
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 207.2,
+        "width": 63.3,
+        "height": 93.1,
+        "weight": 199.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 54,
+        "source": "estimated"
+      }
     },
     {
       "id": 182,
@@ -2353,7 +4719,20 @@
       "category_ids": [
         5,
         12
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 213.5,
+        "width": 69.6,
+        "height": 117,
+        "weight": 231.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 38,
+        "source": "estimated"
+      }
     },
     {
       "id": 183,
@@ -2366,7 +4745,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 153.8,
+        "width": 34.3,
+        "height": 88.3,
+        "weight": 141,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 143,
+        "source": "estimated"
+      }
     },
     {
       "id": 184,
@@ -2379,7 +4771,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 207.7,
+        "width": 65.5,
+        "height": 98.9,
+        "weight": 255.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 49,
+        "source": "estimated"
+      }
     },
     {
       "id": 185,
@@ -2392,7 +4797,20 @@
       "category_ids": [
         5,
         6
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 304.1,
+        "width": 115.6,
+        "height": 115,
+        "weight": 591.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 16,
+        "source": "estimated"
+      }
     },
     {
       "id": 186,
@@ -2405,7 +4823,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 208.6,
+        "width": 58.4,
+        "height": 99.4,
+        "weight": 229.9,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 55,
+        "source": "estimated"
+      }
     },
     {
       "id": 187,
@@ -2418,7 +4849,20 @@
       "category_ids": [
         5,
         11
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 229.7,
+        "width": 122.9,
+        "height": 67.5,
+        "weight": 308.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 35,
+        "source": "estimated"
+      }
     },
     {
       "id": 188,
@@ -2430,7 +4874,20 @@
       "plant_id": null,
       "category_ids": [
         18
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 171.9,
+        "width": 77.1,
+        "height": 90.2,
+        "weight": 230.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 56,
+        "source": "estimated"
+      }
     },
     {
       "id": 189,
@@ -2442,7 +4899,20 @@
       "plant_id": 39,
       "category_ids": [
         1
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 183.3,
+        "width": 60.4,
+        "height": 82.3,
+        "weight": 127.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 73,
+        "source": "estimated"
+      }
     },
     {
       "id": 190,
@@ -2455,7 +4925,20 @@
       "category_ids": [
         2,
         3
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 212.9,
+        "width": 80.5,
+        "height": 109.1,
+        "weight": 250.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 35,
+        "source": "estimated"
+      }
     },
     {
       "id": 191,
@@ -2468,7 +4951,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 224.3,
+        "width": 59.1,
+        "height": 95.7,
+        "weight": 240.8,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 52,
+        "source": "estimated"
+      }
     },
     {
       "id": 192,
@@ -2481,7 +4977,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 205.8,
+        "width": 65.7,
+        "height": 98,
+        "weight": 251.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 50,
+        "source": "estimated"
+      }
     },
     {
       "id": 193,
@@ -2494,7 +5003,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 204,
+        "width": 58.5,
+        "height": 102,
+        "weight": 231.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 55,
+        "source": "estimated"
+      }
     },
     {
       "id": 194,
@@ -2507,7 +5029,20 @@
       "category_ids": [
         5,
         9
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 214.9,
+        "width": 57.1,
+        "height": 107.3,
+        "weight": 250,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 50,
+        "source": "estimated"
+      }
     },
     {
       "id": 195,
@@ -2520,7 +5055,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 182.8,
+        "width": 55.2,
+        "height": 93.4,
+        "weight": 166.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 71,
+        "source": "estimated"
+      }
     },
     {
       "id": 196,
@@ -2533,7 +5081,20 @@
       "category_ids": [
         5,
         39
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 171.7,
+        "width": 48.4,
+        "height": 83.6,
+        "weight": 157.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 96,
+        "source": "estimated"
+      }
     },
     {
       "id": 197,
@@ -2546,7 +5107,20 @@
       "category_ids": [
         5,
         13
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 202.1,
+        "width": 52.4,
+        "height": 98.6,
+        "weight": 52.2,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 64,
+        "source": "estimated"
+      }
     },
     {
       "id": 198,
@@ -2558,7 +5132,20 @@
       "plant_id": null,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 149.1,
+        "width": 89.9,
+        "height": 74.9,
+        "weight": 174.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 66,
+        "source": "estimated"
+      }
     },
     {
       "id": 199,
@@ -2570,7 +5157,20 @@
       "plant_id": null,
       "category_ids": [
         19
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 141.8,
+        "width": 87.1,
+        "height": 74.6,
+        "weight": 160.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 72,
+        "source": "estimated"
+      }
     },
     {
       "id": 200,
@@ -2582,7 +5182,20 @@
       "plant_id": null,
       "category_ids": [
         38
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 208.7,
+        "width": 70,
+        "height": 90.8,
+        "weight": 225.7,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 50,
+        "source": "estimated"
+      }
     },
     {
       "id": 201,
@@ -2594,7 +5207,20 @@
       "plant_id": null,
       "category_ids": [
         38
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 186.3,
+        "width": 75,
+        "height": 85,
+        "weight": 202,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 56,
+        "source": "estimated"
+      }
     },
     {
       "id": 202,
@@ -2606,7 +5232,20 @@
       "plant_id": null,
       "category_ids": [
         35
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 200.1,
+        "width": 69.7,
+        "height": 87,
+        "weight": 206.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 55,
+        "source": "estimated"
+      }
     },
     {
       "id": 203,
@@ -2619,7 +5258,20 @@
       "category_ids": [
         2,
         4
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 197,
+        "width": 63.6,
+        "height": 88,
+        "weight": 94.1,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 60,
+        "source": "estimated"
+      }
     },
     {
       "id": 204,
@@ -2632,7 +5284,20 @@
       "category_ids": [
         5,
         8
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 144.7,
+        "width": 37.8,
+        "height": 87.2,
+        "weight": 144.4,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 140,
+        "source": "estimated"
+      }
     },
     {
       "id": 205,
@@ -2644,7 +5309,20 @@
       "plant_id": null,
       "category_ids": [
         5
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 223.8,
+        "width": 59.7,
+        "height": 100.7,
+        "weight": 219.5,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 49,
+        "source": "estimated"
+      }
     },
     {
       "id": 206,
@@ -2657,7 +5335,20 @@
       "category_ids": [
         5,
         10
-      ]
+      ],
+      "logistics": {
+        "quantity_per_unit": 1,
+        "length": 203.8,
+        "width": 50.9,
+        "height": 109.4,
+        "weight": 200.6,
+        "stacking": true,
+        "stacking_limit": null,
+        "rotate_length": false,
+        "rotate_width": false,
+        "max_per_container": 59,
+        "source": "estimated"
+      }
     }
   ],
   "warehouses": [
@@ -4453,6 +7144,35 @@
       "parent_id": 36,
       "code": "pim-40",
       "name": "Utility"
+    }
+  ],
+  "containers": [
+    {
+      "code": "20ft",
+      "name": "20ft",
+      "inner_length": 5898,
+      "inner_width": 2352,
+      "inner_height": 2393,
+      "max_weight": 28200,
+      "source": "iso"
+    },
+    {
+      "code": "40ft",
+      "name": "40ft",
+      "inner_length": 12032,
+      "inner_width": 2352,
+      "inner_height": 2393,
+      "max_weight": 26700,
+      "source": "iso"
+    },
+    {
+      "code": "40HC",
+      "name": "40HC",
+      "inner_length": 12032,
+      "inner_width": 2352,
+      "inner_height": 2690,
+      "max_weight": 30000,
+      "source": "prod"
     }
   ]
 }
