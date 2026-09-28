@@ -180,7 +180,7 @@ const CreateForm = ({
         if (!next && !busy) onClose();
       }}
       size="lg"
-      kicker={target.kind === "existing" ? target.order.number : "Календарь выпусков"}
+      kicker={target.kind === "existing" ? target.order.number : "Календарь производства"}
       title={target.kind === "existing" ? "Новый выпуск" : "Новый заказ на производство"}
       header={
         <div className="grid gap-3 sm:grid-cols-2">

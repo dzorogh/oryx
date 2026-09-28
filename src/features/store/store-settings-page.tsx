@@ -211,7 +211,7 @@ export const StoreSettingsPage = () => {
                 <CardHeader className="gap-1">
                   <h2 className="text-sm font-semibold text-foreground">Валюта производств</h2>
                   <p className="text-xs text-muted-foreground">
-                    Валюта новых заказов на производство и всех сумм календаря выпусков. Сохраняется сразу.
+                    Валюта новых заказов на производство и всех сумм календаря производства. Сохраняется сразу.
                   </p>
                 </CardHeader>
                 <CardContent>

@@ -104,7 +104,7 @@ export const OutputCalendarToolbar = ({
     <CardHeader className="gap-0 space-y-2 pb-0">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="space-y-1">
-          <h1 className="text-lg font-semibold text-foreground">Календарь выпусков</h1>
+          <h1 className="text-lg font-semibold text-foreground">Календарь производства</h1>
           <p className="text-xs text-muted-foreground">
             Приход по запланированным выпускам, платежи заводам и поступления от клиентов в{" "}
             {page.productionCurrency}

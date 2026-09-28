@@ -126,7 +126,7 @@ export const OutputCalendarPage = () => {
 
   if (loading && !page) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Календарь выпусков" }]}>
+      <LogisticsPageShell crumbs={[{ label: "Календарь производства" }]}>
         <LogisticsLoading />
       </LogisticsPageShell>
     );
@@ -134,7 +134,7 @@ export const OutputCalendarPage = () => {
 
   if (error && !page) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Календарь выпусков" }]}>
+      <LogisticsPageShell crumbs={[{ label: "Календарь производства" }]}>
         <LogisticsError message={error} />
       </LogisticsPageShell>
     );
@@ -142,7 +142,7 @@ export const OutputCalendarPage = () => {
 
   if (!page || !filter) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Календарь выпусков" }]}>
+      <LogisticsPageShell crumbs={[{ label: "Календарь производства" }]}>
         <LogisticsError message="Нет данных" />
       </LogisticsPageShell>
     );
@@ -151,7 +151,7 @@ export const OutputCalendarPage = () => {
   const closePanel = () => setPanel(null);
 
   return (
-    <LogisticsPageShell crumbs={[{ label: "Календарь выпусков" }]}>
+    <LogisticsPageShell crumbs={[{ label: "Календарь производства" }]}>
       <div className="flex w-full items-stretch gap-0">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <OutputCalendarToolbar
