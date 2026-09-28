@@ -59,8 +59,7 @@ import {
   type UnpaidStatus,
   type YearMonth,
 } from "@/features/logistics/output-calendar";
-import { formatOrderMoney, todayIso } from "@/features/logistics/order-money";
-import { PaymentStatusPill } from "@/features/logistics/ui/order-money-tab";
+import { formatOrderMoney, PAYMENT_STATUS_LABELS, todayIso, type PaymentStatus } from "@/features/logistics/order-money";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
 import { categoryGroupStickyTop, useStickyCategoryRows } from "@/features/logistics/ui/use-sticky-category-rows";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
@@ -125,12 +124,15 @@ const HoverBreakdown = ({
   title,
   subtitle,
   valueLabel,
+  headerValue = valueLabel,
   hasFresh = false,
   children,
 }: {
   title: string;
   subtitle: string;
   valueLabel: string;
+  /** Header total when the cell shows a rounded value. */
+  headerValue?: string;
   hasFresh?: boolean;
   children: ReactNode;
 }) => (
@@ -156,7 +158,7 @@ const HoverBreakdown = ({
           <div className="font-semibold">{title}</div>
           <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
         </div>
-        <div className="shrink-0 text-base font-semibold tabular-nums">{valueLabel}</div>
+        <div className="shrink-0 text-base font-semibold tabular-nums">{headerValue}</div>
       </div>
       <div className="max-h-[60vh] divide-y divide-border overflow-y-auto">{children}</div>
     </PopoverContent>
@@ -379,6 +381,38 @@ const UnassignedPopover = ({
 const orderHref = (order: Pick<OutputCalendarMoneyOrder, "kind" | "sequenceNumber">) =>
   logisticsPath(order.kind === "production_order" ? "production-orders" : "customer-orders", order.sequenceNumber);
 
+const moneyRowSubtitle = (row: MoneyRow) => `${row.kind === "plant" ? "Завод" : "Регион"} ${row.code}`;
+
+const PAYMENT_DOT: Record<PaymentStatus, string> = {
+  planned: "bg-zinc-400",
+  invoiced: "bg-blue-600",
+  paid: "bg-green-600",
+};
+
+/** One line of a money popover: order code · details · amount (original currency under it). */
+const MoneyEntryRow = ({
+  order,
+  details,
+  amount,
+  original,
+}: {
+  order: OutputCalendarMoneyOrder;
+  details: ReactNode;
+  amount: string;
+  original: string | null;
+}) => (
+  <section className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-x-3 px-4 py-2.5">
+    <div>
+      <EntityLink href={orderHref(order)}>{order.number}</EntityLink>
+    </div>
+    <div className="min-w-0 space-y-0.5">{details}</div>
+    <div className="text-right tabular-nums">
+      <div className="font-semibold">{amount}</div>
+      {original ? <div className="text-xs text-muted-foreground">{original}</div> : null}
+    </div>
+  </section>
+);
+
 const MoneyPeriodPopover = ({
   title,
   row,
@@ -394,35 +428,35 @@ const MoneyPeriodPopover = ({
   return (
     <HoverBreakdown
       title={title}
-      subtitle={row.code}
+      subtitle={moneyRowSubtitle(row)}
       valueLabel={formatOrderMoney(cell.amount, productionCurrency, { compact: true })}
+      headerValue={formatOrderMoney(cell.amount, productionCurrency)}
     >
-      {cell.entries.map((entry) => (
-        <section key={entry.payment.id} className="px-4 py-2.5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <EntityLink href={orderHref(entry.order)}>{entry.order.number}</EntityLink>
-              <span className={cn("tabular-nums", entry.overdue && "font-medium text-red-700")}>
-                {formatOutputDate(entry.payment.dueOn)}
-                {entry.overdue ? " · просрочен" : ""}
-              </span>
-              <PaymentStatusPill status={entry.payment.status} />
-            </div>
-          </div>
-          <div className="mt-1 flex justify-end gap-1.5 text-sm tabular-nums">
-            {entry.order.currencyCode === productionCurrency ? (
-              <span className="font-semibold">{formatOrderMoney(entry.converted, productionCurrency)}</span>
-            ) : (
+      {cell.entries.map((entry) => {
+        const code = entry.order.currencyCode;
+        return (
+          <MoneyEntryRow
+            key={entry.payment.id}
+            order={entry.order}
+            amount={formatOrderMoney(entry.converted, productionCurrency)}
+            original={code === productionCurrency ? null : formatOrderMoney(entry.payment.amount, code)}
+            details={
               <>
-                <span className="text-muted-foreground">
-                  {formatOrderMoney(entry.payment.amount, entry.order.currencyCode)} →
-                </span>
-                <span className="font-semibold">{formatOrderMoney(entry.converted, productionCurrency)}</span>
+                <div className="flex items-baseline gap-2 whitespace-nowrap">
+                  <span className={cn("tabular-nums", entry.overdue && "font-medium text-red-700")}>
+                    {formatOutputDate(entry.payment.dueOn)}
+                  </span>
+                  {entry.overdue ? <span className="text-xs text-red-700">просрочен</span> : null}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs whitespace-nowrap text-muted-foreground">
+                  <i className={cn("size-1.5 shrink-0 rounded-full", PAYMENT_DOT[entry.payment.status])} aria-hidden />
+                  {PAYMENT_STATUS_LABELS[entry.payment.status]}
+                </div>
               </>
-            )}
-          </div>
-        </section>
-      ))}
+            }
+          />
+        );
+      })}
     </HoverBreakdown>
   );
 };
@@ -442,31 +476,30 @@ const MoneyUnallocatedPopover = ({
   return (
     <HoverBreakdown
       title="Не распределено по платежам"
-      subtitle={row.code}
+      subtitle={moneyRowSubtitle(row)}
       valueLabel={formatOrderMoney(amount, productionCurrency, { compact: true })}
+      headerValue={formatOrderMoney(amount, productionCurrency)}
     >
       {entries.map((entry) => {
         const code = entry.order.currencyCode;
         return (
-          <section key={entry.order.id} className="px-4 py-2.5">
-            <div className="flex items-center justify-between gap-3">
-              <EntityLink href={orderHref(entry.order)}>{entry.order.number}</EntityLink>
-              <span className="font-semibold tabular-nums">
-                {formatOrderMoney(entry.converted, productionCurrency)}
-              </span>
-            </div>
-            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-              <DetailRow label="Сумма заказа">
-                <span className="tabular-nums">{formatOrderMoney(entry.total, code)}</span>
-              </DetailRow>
-              <DetailRow label="Распределено">
-                <span className="tabular-nums">{formatOrderMoney(entry.allocated, code)}</span>
-              </DetailRow>
-              <DetailRow label="Остаток">
-                <span className="tabular-nums">{formatOrderMoney(entry.rest, code)}</span>
-              </DetailRow>
-            </dl>
-          </section>
+          <MoneyEntryRow
+            key={entry.order.id}
+            order={entry.order}
+            amount={formatOrderMoney(entry.converted, productionCurrency)}
+            original={code === productionCurrency ? null : formatOrderMoney(entry.rest, code)}
+            details={
+              <>
+                <div className="text-xs whitespace-nowrap text-muted-foreground">
+                  Сумма <span className="text-foreground tabular-nums">{formatOrderMoney(entry.total, code)}</span>
+                </div>
+                <div className="text-xs whitespace-nowrap text-muted-foreground">
+                  Распределено{" "}
+                  <span className="text-foreground tabular-nums">{formatOrderMoney(entry.allocated, code)}</span>
+                </div>
+              </>
+            }
+          />
         );
       })}
     </HoverBreakdown>
