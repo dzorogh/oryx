@@ -208,6 +208,8 @@ export const StoreCheckoutPage = () => {
   const { lines, catalogById, catalogLoading, catalogError, removeVariants, setQuantity } = useCart();
   const { selectedRegion, regionsLoading, setSwitcherOpen } = useSelectedRegion();
   const [mode, setMode] = useState<CheckoutFulfillmentMode>("hub");
+  const hubMissing = Boolean(selectedRegion && !selectedRegion.hubWarehouseId);
+  const effectiveMode: CheckoutFulfillmentMode = hubMissing ? "plant" : mode;
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [stockFacts, setStockFacts] = useState<VariantStockFact[]>([]);
   const [containerTypes, setContainerTypes] = useState<StoreContainerTypeRow[]>([]);
@@ -295,14 +297,14 @@ export const StoreCheckoutPage = () => {
   const layout = useMemo(
     () =>
       buildCheckoutLayout({
-        mode,
+        mode: effectiveMode,
         items: checkoutItems,
         includedVariantIds,
         hasRegion: Boolean(selectedRegion),
         hubWarehouseId: selectedRegion?.hubWarehouseId ?? null,
         hubCode: selectedRegion?.hubCode ?? null,
       }),
-    [mode, checkoutItems, includedVariantIds, selectedRegion],
+    [effectiveMode, checkoutItems, includedVariantIds, selectedRegion],
   );
 
   const needsRegion = lines.length > 0 && !regionsLoading && !selectedRegion;
@@ -437,30 +439,34 @@ export const StoreCheckoutPage = () => {
         <button
           type="button"
           onClick={() => setMode("hub")}
-          aria-pressed={mode === "hub"}
+          disabled={hubMissing}
+          aria-pressed={effectiveMode === "hub"}
           className={cn(
             "rounded-xl border bg-background p-4 text-left transition",
-            mode === "hub"
-              ? "border-indigo-500 ring-2 ring-indigo-500/30"
-              : "hover:border-foreground/20",
+            hubMissing
+              ? "cursor-not-allowed opacity-60"
+              : effectiveMode === "hub"
+                ? "border-indigo-500 ring-2 ring-indigo-500/30"
+                : "hover:border-foreground/20",
           )}
         >
           <p className="font-semibold">Склад региона</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Любые товары в одном заказе. Наценка Supply costs за доставку до хаба региона
-            {selectedRegion?.hubCode ? ` (${selectedRegion.hubCode})` : ""}.
-          </p>
-          {selectedRegion && !selectedRegion.hubWarehouseId ? (
-            <p className="mt-2 text-sm text-amber-700">У региона не задан хаб — способ недоступен</p>
-          ) : null}
+          {hubMissing ? (
+            <p className="mt-1 text-sm text-amber-700">У региона не задан хаб — способ недоступен</p>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Любые товары в одном заказе. Наценка Supply costs за доставку до хаба региона
+              {selectedRegion?.hubCode ? ` (${selectedRegion.hubCode})` : ""}.
+            </p>
+          )}
         </button>
         <button
           type="button"
           onClick={() => setMode("plant")}
-          aria-pressed={mode === "plant"}
+          aria-pressed={effectiveMode === "plant"}
           className={cn(
             "rounded-xl border bg-background p-4 text-left transition",
-            mode === "plant"
+            effectiveMode === "plant"
               ? "border-indigo-500 ring-2 ring-indigo-500/30"
               : "hover:border-foreground/20",
           )}
@@ -502,9 +508,6 @@ export const StoreCheckoutPage = () => {
         </Card>
       ) : null}
 
-      {!blocked && layout.mode === "hub" && !layout.hubAvailable ? (
-        <p className="text-sm text-amber-700">{layout.hubUnavailableReason}</p>
-      ) : null}
 
       {visibleBlocks.map((block) => (
         <Card key={block.id}>
@@ -547,13 +550,13 @@ export const StoreCheckoutPage = () => {
                     onCheckedChange={(value) => toggleLine(line.variantId, Boolean(value))}
                     aria-label={`Включить ${line.name} в заказ`}
                   />
-                  <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+                  <div className="relative size-12 shrink-0 overflow-hidden rounded-md border border-[var(--corportal-border-grey)] bg-white">
                     {line.imageUrl ? (
                       <Image
                         src={line.imageUrl}
                         alt=""
                         fill
-                        className="object-cover"
+                        className="object-contain"
                         sizes="48px"
                         unoptimized
                       />

@@ -57,7 +57,7 @@ const VariantMenu = ({ variants, activeVariantId, onSelect }: VariantMenuProps) 
           )}
         >
           <div className="relative size-11 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-white">
-            <Image src={variant.imageSrc} alt="" fill sizes="44px" className="object-cover" aria-hidden />
+            <Image src={variant.imageSrc} alt="" fill sizes="44px" className="object-contain" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">

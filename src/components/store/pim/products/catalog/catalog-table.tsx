@@ -69,7 +69,7 @@ const ProductThumbnailPreview = ({
         <Link
           href={productHref}
           aria-label={`Открыть товар ${displayName}`}
-          className="pointer-events-auto relative z-20 block size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="pointer-events-auto relative z-20 block size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-white outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         />
       }
     >
@@ -453,7 +453,10 @@ export const CatalogTable = ({
             <colgroup>
               {visibleColumnIds.map((columnId) => {
                 const columnDefinition = getCatalogColumnDefinition(columnId);
-                return <col key={columnId} className={columnDefinition?.widthClass} />;
+                // The cart counter («− N +») needs room next to the status badge and price.
+                const widthClass =
+                  columnId === "dealer" && showBuyButton ? "w-[390px]" : columnDefinition?.widthClass;
+                return <col key={columnId} className={widthClass} />;
               })}
             </colgroup>
             <TableHeader>

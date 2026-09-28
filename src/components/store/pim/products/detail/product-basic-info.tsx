@@ -58,7 +58,7 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
               alt={product.imageAlt}
               fill
               sizes="(max-width: 1024px) 100vw, 360px"
-              className="object-cover"
+              className="object-contain"
               priority
             />
           </div>
@@ -78,7 +78,7 @@ export const ProductBasicInfo = ({ product }: ProductBasicInfoProps) => {
                       : "border-[var(--corportal-border-grey)] hover:border-primary/50",
                   )}
                 >
-                  <Image src={src} alt="" fill sizes="64px" className="object-cover" aria-hidden />
+                  <Image src={src} alt="" fill sizes="64px" className="object-contain" aria-hidden />
                 </button>
               ))}
             </div>

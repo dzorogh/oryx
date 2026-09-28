@@ -80,7 +80,7 @@ const ProductNameCell = ({ row }: { row: PricelistRow }) => {
   return (
     <div className="flex w-full max-w-full min-w-0 items-center gap-2.5" title={displayName}>
       <div className="relative size-9 shrink-0 overflow-hidden rounded-lg border border-[var(--corportal-border-grey)] bg-white">
-        <Image src={row.imageSrc} alt={row.imageAlt} fill sizes="36px" className="object-cover" />
+        <Image src={row.imageSrc} alt={row.imageAlt} fill sizes="36px" className="object-contain" />
       </div>
       <div className="min-w-0 flex-1 basis-0 overflow-hidden">
         <Link

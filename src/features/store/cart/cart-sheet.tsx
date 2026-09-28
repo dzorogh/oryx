@@ -56,13 +56,13 @@ export const CartSheet = () => {
                   key={line.variantId}
                   className="flex gap-3 rounded-lg border bg-background p-2"
                 >
-                  <div className="relative size-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                  <div className="relative size-14 shrink-0 overflow-hidden rounded-md border border-[var(--corportal-border-grey)] bg-white">
                     {item?.imageUrl ? (
                       <Image
                         src={item.imageUrl}
                         alt=""
                         fill
-                        className="object-cover"
+                        className="object-contain"
                         sizes="56px"
                         unoptimized
                       />

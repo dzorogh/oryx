@@ -27,12 +27,13 @@ export const ProductPhoto = ({
 }) => (
   <span
     className={cn(
-      "relative block shrink-0 overflow-hidden rounded-xl border border-[var(--corportal-border-grey)] bg-muted",
+      "relative block shrink-0 overflow-hidden rounded-xl border border-[var(--corportal-border-grey)]",
+      hasProductPhoto(src) ? "bg-white" : "bg-muted",
       className,
     )}
   >
     {hasProductPhoto(src) ? (
-      <Image src={src} alt={alt} fill sizes={sizes} className={cn("object-cover", imageClassName)} />
+      <Image src={src} alt={alt} fill sizes={sizes} className={cn("object-contain", imageClassName)} />
     ) : (
       <span className="absolute inset-0 bg-muted" aria-hidden />
     )}

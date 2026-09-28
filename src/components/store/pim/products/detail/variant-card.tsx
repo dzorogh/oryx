@@ -64,7 +64,7 @@ export const VariantCard = ({ variant }: VariantCardProps) => {
                   Основной
                 </span>
               ) : null}
-              <Image src={variant.imageSrc} alt={variant.imageAlt} fill sizes="128px" className="object-cover" />
+              <Image src={variant.imageSrc} alt={variant.imageAlt} fill sizes="128px" className="object-contain" />
             </div>
 
             <div className="min-w-0 flex-1 space-y-2">
