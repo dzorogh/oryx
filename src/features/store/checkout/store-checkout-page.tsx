@@ -455,9 +455,9 @@ export const StoreCheckoutPage = () => {
             <p className="mt-1 text-sm text-amber-700">У региона не задан хаб — способ недоступен</p>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              Всё приедет одним заказом на склад в вашем регионе
-              {selectedRegion?.hubCode ? ` (${selectedRegion.hubCode})` : ""}. В цену уже входит доставка
-              до склада. Если чего-то нет в наличии, довезём позже в этом же заказе.
+              Забираете товары, которые уже лежат на складе в вашем регионе
+              {selectedRegion?.hubCode ? ` (${selectedRegion.hubCode})` : ""}, — всё одним заказом. Чего нет
+              в наличии, привезём на этот склад позже в том же заказе. В цену входит доставка до склада.
             </p>
           )}
         </button>
