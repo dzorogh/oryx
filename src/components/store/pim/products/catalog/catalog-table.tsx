@@ -550,8 +550,11 @@ export const CatalogTable = ({
     virtualItems.length > 0
       ? virtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1]?.end ?? 0)
       : 0;
-  const topIndex = virtualItems[0]?.index ?? -1;
-  const stickySiteLabel = activeCatalogSiteLabel(virtualElements, topIndex);
+  const scrollOffset = virtualizer.scrollOffset ?? 0;
+  const firstVisible = virtualItems.find((item) => item.end > scrollOffset) ?? virtualItems[0];
+  const firstVisibleElement = firstVisible ? virtualElements[firstVisible.index] : undefined;
+  const stickySiteLabel = activeCatalogSiteLabel(virtualElements, firstVisible?.index ?? -1);
+  const showStickySite = stickySiteLabel != null && firstVisibleElement?.kind === "row";
 
   useEffect(() => {
     if (loadMoreError || !onLoadMore || !hasMore || isLoadingMore || tableSection !== "groups") {
@@ -637,7 +640,7 @@ export const CatalogTable = ({
                 </TableRow>
               ) : (
                 <>
-                  {stickySiteLabel ? (
+                  {showStickySite ? (
                     <TableRow className="bg-muted hover:bg-muted">
                       <TableCell
                         colSpan={columnCount}
