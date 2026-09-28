@@ -6,6 +6,7 @@ import { OrbitControls, Text } from "@react-three/drei";
 import { useMemo, useRef, useState, type RefObject } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { ContainerInstance, OrderItemType } from "@/domain/packing/types";
+import { cn } from "@/lib/utils";
 import { ItemMesh } from "./item-mesh";
 import { SceneOrbitToolbar } from "./scene-orbit-toolbar";
 
@@ -36,14 +37,25 @@ type ContainerSize = {
   height: number;
 };
 
+export type MultiContainerSceneContainer = ContainerInstance & {
+  /** Per-container size; falls back to `containerSize`. */
+  size?: ContainerSize;
+  /** Type code shown on the floor label (e.g. 40HC). */
+  typeCode?: string;
+  /** Precomputed fill percent; otherwise derived from placements. */
+  fillPercent?: number;
+};
+
 type MultiContainerSceneProps = {
-  containers: ContainerInstance[];
+  containers: MultiContainerSceneContainer[];
+  /** Default / legacy single size for all containers. */
   containerSize: ContainerSize;
   orderItems: OrderItemType[];
   /**
    * Gap between containers in millimeters (domain units).
    */
   spacingMm?: number;
+  className?: string;
 };
 
 export const MultiContainerScene = ({
@@ -51,6 +63,7 @@ export const MultiContainerScene = ({
   containerSize,
   orderItems,
   spacingMm,
+  className,
 }: MultiContainerSceneProps) => {
   type TooltipPayload = {
     itemUnitId: string;
@@ -63,15 +76,31 @@ export const MultiContainerScene = ({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const orbitControlsRef = useRef<OrbitControlsImpl | null>(null);
 
+  const resolved = useMemo(
+    () =>
+      containers.map((container) => ({
+        ...container,
+        size: container.size ?? containerSize,
+      })),
+    [containers, containerSize],
+  );
+
   // Place containers side-by-side along the container "length" axis (z).
-  // The gap is edge-to-edge between adjacent containers.
-  const { safeSpacingMm, center, cameraPosition, sceneSyncKey, sceneScale } = useMemo(() => {
+  const { safeSpacingMm, center, cameraPosition, sceneSyncKey, sceneScale, offsets } = useMemo(() => {
     const scale = 0.001;
-    const safe = spacingMm ?? containerSize.length / 2;
-    const totalLengthMm =
-      containers.length * containerSize.length + Math.max(0, containers.length - 1) * safe;
-    const widthScene = containerSize.width * scale;
-    const heightScene = containerSize.height * scale;
+    const maxLength = Math.max(...resolved.map((c) => c.size.length), containerSize.length);
+    const safe = spacingMm ?? maxLength / 2;
+    let cursor = 0;
+    const offs: number[] = [];
+    for (const container of resolved) {
+      offs.push(cursor);
+      cursor += container.size.length + safe;
+    }
+    const totalLengthMm = Math.max(cursor - safe, maxLength);
+    const maxWidth = Math.max(...resolved.map((c) => c.size.width), containerSize.width);
+    const maxHeight = Math.max(...resolved.map((c) => c.size.height), containerSize.height);
+    const widthScene = maxWidth * scale;
+    const heightScene = maxHeight * scale;
     const lengthScene = totalLengthMm * scale;
     const c = {
       x: widthScene / 2,
@@ -83,15 +112,16 @@ export const MultiContainerScene = ({
       Math.max(7, heightScene * 1),
       Math.max(10, lengthScene * 3),
     ];
-    const syncKey = `${cam[0]},${cam[1]},${cam[2]}|${c.x},${c.y},${c.z}|${containers.length}`;
+    const syncKey = `${cam[0]},${cam[1]},${cam[2]}|${c.x},${c.y},${c.z}|${resolved.length}`;
     return {
       safeSpacingMm: safe,
       center: c,
       cameraPosition: cam,
       sceneSyncKey: syncKey,
       sceneScale: scale,
+      offsets: offs,
     };
-  }, [containers, containerSize, spacingMm]);
+  }, [resolved, containerSize, spacingMm]);
 
   const [tooltip, setTooltip] = useState<{
     payload: TooltipPayload;
@@ -118,7 +148,7 @@ export const MultiContainerScene = ({
   return (
     <div
       ref={wrapperRef}
-      className="relative h-[min(680px,70vh)] w-full overflow-hidden rounded-xl border"
+      className={cn("relative h-[min(680px,70vh)] w-full overflow-hidden rounded-xl border", className)}
       aria-label="3D-сцена всех контейнеров"
       onPointerLeave={() => setTooltip(null)}
     >
@@ -153,38 +183,32 @@ export const MultiContainerScene = ({
         <directionalLight position={cameraPosition} intensity={0.85} />
 
         <group scale={[sceneScale, sceneScale, sceneScale]}>
-          {containers.map((container, index) => {
-            const offsetZ = index * (containerSize.length + safeSpacingMm);
-            const containerVolume = containerSize.width * containerSize.height * containerSize.length;
-            const filledVolume = container.placements.reduce((sum, p) => sum + (p.size.width * p.size.height * p.size.length), 0);
-            const percentFilled = (filledVolume / containerVolume) * 100;
-            const dimStr = `${Math.round(containerSize.width)} × ${Math.round(containerSize.length)} × ${Math.round(containerSize.height)} mm`;
-            const textContent = `Container ${container.containerIndex + 1}\nDimensions: ${dimStr}\nFill: ${percentFilled.toFixed(1)}%`;
+          {resolved.map((container, index) => {
+            const size = container.size;
+            const offsetZ = offsets[index] ?? index * (size.length + safeSpacingMm);
+            const containerVolume = size.width * size.height * size.length;
+            const filledVolume = container.placements.reduce(
+              (sum, p) => sum + p.size.width * p.size.height * p.size.length,
+              0,
+            );
+            const percentFilled =
+              container.fillPercent ?? (containerVolume > 0 ? (filledVolume / containerVolume) * 100 : 0);
+            const typeLabel = container.typeCode ?? `Контейнер ${container.containerIndex + 1}`;
+            const dimStr = `${Math.round(size.width)} × ${Math.round(size.length)} × ${Math.round(size.height)} мм`;
+            const textContent = `${typeLabel}\n${dimStr}\nЗаполнение: ${percentFilled.toFixed(1)}%`;
 
             return (
               <group
                 key={container.containerIndex}
                 position={[0, 0, offsetZ]}
-                aria-label={`Container ${container.containerIndex + 1}`}
+                name={typeLabel}
               >
-                {/* Container wireframe */}
                 <mesh
-                  position={[
-                    containerSize.width / 2,
-                    containerSize.height / 2,
-                    containerSize.length / 2,
-                  ]}
+                  position={[size.width / 2, size.height / 2, size.length / 2]}
                   raycast={() => null}
                 >
-                  <boxGeometry
-                    args={[containerSize.width, containerSize.height, containerSize.length]}
-                  />
-                  <meshBasicMaterial
-                    color="#94a3b8"
-                    wireframe
-                    transparent
-                    opacity={0.28}
-                  />
+                  <boxGeometry args={[size.width, size.height, size.length]} />
+                  <meshBasicMaterial color="#94a3b8" wireframe transparent opacity={0.28} />
                 </mesh>
 
                 {container.placements.map((placement) => (
@@ -196,32 +220,17 @@ export const MultiContainerScene = ({
                   />
                 ))}
 
-                {/* Ground plane for orientation */}
                 <mesh
-                  position={[
-                    containerSize.width / 2,
-                    0,
-                    containerSize.length / 2,
-                  ]}
+                  position={[size.width / 2, 0, size.length / 2]}
                   rotation={[-Math.PI / 2, 0, 0]}
                   raycast={() => null}
                 >
-                  <planeGeometry args={[containerSize.width, containerSize.length]} />
-                  <meshBasicMaterial
-                    color="#334155"
-                    wireframe
-                    transparent
-                    opacity={0.18}
-                  />
+                  <planeGeometry args={[size.width, size.length]} />
+                  <meshBasicMaterial color="#334155" wireframe transparent opacity={0.18} />
                 </mesh>
 
-                {/* Container info text on the floor, on the right (narrow) side */}
                 <Text
-                  position={[
-                    containerSize.width + 400, // right side, outside the container
-                    2, // slightly above the floor
-                    containerSize.length / 2 // centered along the narrow edge
-                  ]}
+                  position={[size.width + 400, 2, size.length / 2]}
                   rotation={[-Math.PI / 2, 0, 0]}
                   fontSize={200}
                   color="#94a3b8"
@@ -249,4 +258,3 @@ export const MultiContainerScene = ({
     </div>
   );
 };
-

@@ -1603,11 +1603,18 @@ export const updateWarehouse = (args: { id: string; name: string; kind?: "hub" |
 export const createRegion = (args: { name: string }) =>
   rpcJson<number | string>("store_create_region", { p_name: args.name, p_code: null }).then(String);
 
-export const updateRegion = (args: { id: string; name: string; hubWarehouseId?: string | null }) =>
+export const updateRegion = (args: {
+  id: string;
+  name: string;
+  hubWarehouseId?: string | null;
+  orderCurrencyId?: string | null;
+}) =>
   rpc("store_update_region", {
     p_id: Number(args.id),
     p_name: args.name,
     p_hub_warehouse_id: args.hubWarehouseId == null || args.hubWarehouseId === "" ? null : Number(args.hubWarehouseId),
+    p_order_currency_id:
+      args.orderCurrencyId == null || args.orderCurrencyId === "" ? null : Number(args.orderCurrencyId),
   });
 
 export const createPlant = (args: { name: string }) =>

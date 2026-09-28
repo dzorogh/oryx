@@ -298,3 +298,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-catalog-region-prices-variant-switcher.md`
   summary: Вынести приоритет региона прайс-листа (`?region=` ссылки при первой синхронизации, дальше — общее значение) в чистую функцию с тестом.
   evidence: Логика живёт в эффектах `pricelists-page.tsx`; удаление проверки `isFirstSync && urlRegionRef.current` ничего не сломает в тестах. Проверено только в браузере.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-cart-checkout-hub-or-plant.md`
+  summary: Повторяемая проверка SQL оформления: валюта заказов региона в деньгах заказа, статус draft, отказ при товаре чужой площадки.
+  evidence: В репозитории нет SQL/интеграционных тестов; поведение `store_checkout_customer_order` и `store_order_money_init` проверено только вручную в демо-БД.

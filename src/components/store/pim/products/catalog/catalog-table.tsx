@@ -36,6 +36,8 @@ import {
   statusBadgeClassMap,
   type CatalogListingMode,
 } from "./catalog-helpers";
+import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
+import { useCart } from "@/features/store/cart/cart-context";
 import type { StoreRegionOption } from "@/features/store/region-context";
 import type { VariantStockRegion } from "@/features/store/variant-stock";
 
@@ -193,6 +195,9 @@ const DealerCell = ({ item, showBuyButton, priceFromPrefix, needsRegion }: Deale
   const displayName = getDisplayProductName(item.name);
   const blockReason = needsRegion ? "Выберите регион" : getPurchaseBlockReason(item);
   const canBuy = !needsRegion && blockReason === null;
+  const cart = useCart();
+  const quantity = cart.quantityOf(item.id);
+  const inCart = quantity > 0;
   const buyLabel = canBuy
     ? `Добавить «${displayName}» в корзину за ${formatPrice(item.dealerPrice as number, item.dealerCurrency ?? "USD")}`
     : `«${displayName}» недоступен для заказа: ${blockReason}`;
@@ -212,18 +217,28 @@ const DealerCell = ({ item, showBuyButton, priceFromPrefix, needsRegion }: Deale
         />
         {showBuyButton ? (
           <span className="relative z-20 inline-flex shrink-0 pointer-events-auto">
-            <CatalogBuyTooltip reason={blockReason} className="inline-flex shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-sm"
-                className={cn("shrink-0", !canBuy && "pointer-events-none")}
-                disabled={!canBuy}
-                aria-label={buyLabel}
-              >
-                <ShoppingCart aria-hidden className="size-4" />
-              </Button>
-            </CatalogBuyTooltip>
+            {inCart ? (
+              <CartQuantityControl
+                itemName={displayName}
+                quantity={quantity}
+                quantityPerUnit={cart.catalogById.get(item.id)?.quantityPerUnit ?? 1}
+                onChange={(next) => cart.setQuantity(item.id, next)}
+              />
+            ) : (
+              <CatalogBuyTooltip reason={blockReason} className="inline-flex shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  className={cn("shrink-0", !canBuy && "pointer-events-none")}
+                  disabled={!canBuy}
+                  aria-label={buyLabel}
+                  onClick={() => cart.addPack(item.id)}
+                >
+                  <ShoppingCart aria-hidden className="size-4" />
+                </Button>
+              </CatalogBuyTooltip>
+            )}
           </span>
         ) : null}
       </div>

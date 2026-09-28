@@ -26,6 +26,8 @@ export type StoreRegionOption = {
   hubCode: string | null;
   dealerCurrency: CurrencyCode;
   retailCurrency: CurrencyCode;
+  /** Default currency for new customer orders; null → use dealerCurrency. */
+  orderCurrency: CurrencyCode | null;
 };
 
 type RegionContextValue = {
@@ -50,6 +52,7 @@ type RegionRow = {
   hub_warehouse_id: number | string | null;
   default_retail_currency_id: number | string;
   default_dealer_currency_id: number | string;
+  order_currency_id: number | string | null;
   active: boolean;
 };
 
@@ -103,7 +106,7 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
     client
       .from("store_region")
       .select(
-        "id,code,name,hub_warehouse_id,default_retail_currency_id,default_dealer_currency_id,active,sort_order",
+        "id,code,name,hub_warehouse_id,default_retail_currency_id,default_dealer_currency_id,order_currency_id,active,sort_order",
       )
       .is("deleted_at", null)
       .eq("active", true)
@@ -125,6 +128,12 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
       continue;
     }
     const hubWarehouseId = row.hub_warehouse_id == null ? null : String(row.hub_warehouse_id);
+    const orderRaw =
+      row.order_currency_id == null
+        ? null
+        : currencyCodeById.get(String(row.order_currency_id));
+    const orderCurrency =
+      orderRaw && isCurrencyCode(orderRaw) ? orderRaw : null;
     regions.push({
       id: String(row.id),
       code: row.code,
@@ -133,6 +142,7 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
       hubCode: hubWarehouseId ? formatLogisticsCode("warehouse", hubWarehouseId) : null,
       dealerCurrency: dealerRaw,
       retailCurrency: retailRaw,
+      orderCurrency,
     });
   }
   return regions;

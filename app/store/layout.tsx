@@ -2,7 +2,6 @@
 import type { ReactNode } from "react";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { StoreAsideContent } from "@/components/store/store-aside-content";
-import { RegionProvider } from "@/features/store/region-context";
 import { STORE_SUBNAV_ITEMS } from "@/features/store/store-nav";
 
 type StoreLayoutProps = {
@@ -10,17 +9,15 @@ type StoreLayoutProps = {
 };
 
 const StoreLayout = ({ children }: StoreLayoutProps) => (
-  <RegionProvider>
-    <ModuleShell
-      moduleTitle="Магазин"
-      asideLabel="Магазин"
-      subnavItems={STORE_SUBNAV_ITEMS}
-      subnavAriaLabel="Разделы магазина"
-      asideContent={<StoreAsideContent />}
-    >
-      {children}
-    </ModuleShell>
-  </RegionProvider>
+  <ModuleShell
+    moduleTitle="Магазин"
+    asideLabel="Магазин"
+    subnavItems={STORE_SUBNAV_ITEMS}
+    subnavAriaLabel="Разделы магазина"
+    asideContent={<StoreAsideContent />}
+  >
+    {children}
+  </ModuleShell>
 );
 
 export default StoreLayout;

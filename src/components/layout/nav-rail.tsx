@@ -48,6 +48,7 @@ import { LEARNING_SUBNAV_ITEMS } from "@/features/learning/learning-nav";
 import { LIBRARY_SUBNAV_ITEMS } from "@/features/library/library-nav";
 import { ANALYTICS_SUBNAV_ITEMS } from "@/features/analytics/analytics-nav";
 import { SETTINGS_SUBNAV_ITEMS } from "@/features/settings/settings-nav";
+import { CartRailButton } from "@/features/store/cart/cart-rail-button";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -967,6 +968,7 @@ export const NavRail = () => {
         </div>
 
         <div className="flex w-full flex-col items-center gap-2 px-1 py-2">
+          <CartRailButton />
           {RAIL_FOOTER_ITEMS.map((item) => (
             <RailNavItem
               key={item.label}

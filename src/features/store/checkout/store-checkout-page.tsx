@@ -1,0 +1,738 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatCatalogPrice } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { VariantStockSummary } from "@/components/store/stock/variant-stock-summary";
+import { RegionSwitcher } from "@/components/store/region/region-switcher";
+import {
+  containerTypeFromInnerMm,
+  packMixedContainers,
+  type MixedPackItem,
+} from "@/domain/packing/mixed-containers";
+import type { OrderItemType } from "@/domain/packing/types";
+import { MultiContainerScene } from "@/features/packing-visualization/components/multi-container-scene";
+import type { OrderRates } from "@/features/logistics/order-money";
+import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
+import { logisticsPath } from "@/features/logistics/logistics-paths";
+import { pluralRu } from "@/features/logistics/order-plan/order-plan-model";
+import { useCart } from "@/features/store/cart/cart-context";
+import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
+import { loadContainerTypes, type StoreContainerTypeRow } from "@/features/store/cart/cart-catalog";
+import { checkoutCustomerOrder } from "@/features/store/cart/checkout-api";
+import {
+  blockHasSubmittableLines,
+  buildCheckoutLayout,
+  buildCheckoutOrderLines,
+  submitCheckoutBlocks,
+  sumCheckoutTotals,
+  type CheckoutBlock,
+  type CheckoutCartItem,
+  type CheckoutFulfillmentMode,
+} from "@/features/store/cart/checkout-model";
+import { useSelectedRegion } from "@/features/store/region-context";
+import {
+  computeVariantRegionStock,
+  loadVariantStockFacts,
+  type VariantStockFact,
+} from "@/features/store/variant-stock";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
+
+type BlockResult =
+  | { blockId: string; blockLabel: string; status: "created"; orderId: string; orderNumber: string }
+  | { blockId: string; blockLabel: string; status: "error"; message: string };
+
+const blockLabel = (block: CheckoutBlock) =>
+  `${block.mode === "hub" ? "Склад региона" : "Производственная площадка"} ${block.sourceCode}`;
+
+const formatQty = (value: number) =>
+  new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
+
+const loadSnapshotRates = async (): Promise<OrderRates | null> => {
+  if (!isSupabaseConfigured()) return null;
+  const client = getSupabaseBrowserClient();
+  if (!client) return null;
+  const { data, error } = await client.from("store_currency").select("code,rate").is("deleted_at", null);
+  if (error || !data) return null;
+  const rates: OrderRates = { USD: 1 };
+  for (const row of data as Array<{ code: string; rate: number | string | null }>) {
+    const n = Number(row.rate);
+    if (row.code && Number.isFinite(n) && n > 0) rates[row.code.toUpperCase()] = n;
+  }
+  return Object.keys(rates).length > 1 ? rates : null;
+};
+
+const PlantPackingSection = ({
+  block,
+  containerTypes,
+  items,
+}: {
+  block: CheckoutBlock;
+  containerTypes: StoreContainerTypeRow[];
+  items: MixedPackItem[];
+}) => {
+  const defaultCodes = useMemo(() => containerTypes.map((type) => type.code), [containerTypes]);
+  const [selectedOverride, setSelectedOverride] = useState<string[] | null>(null);
+  const selectedCodes = selectedOverride ?? defaultCodes;
+
+  const allowed = useMemo(
+    () =>
+      containerTypes
+        .filter((type) => selectedCodes.includes(type.code))
+        .map((type) =>
+          containerTypeFromInnerMm({
+            code: type.code,
+            innerLengthMm: type.innerLengthMm,
+            innerWidthMm: type.innerWidthMm,
+            innerHeightMm: type.innerHeightMm,
+            maxWeightKg: type.maxWeightKg,
+          }),
+        ),
+    [containerTypes, selectedCodes],
+  );
+
+  const result = useMemo(
+    () => (items.length && allowed.length ? packMixedContainers(items, allowed) : null),
+    [items, allowed],
+  );
+
+  const orderItems: OrderItemType[] = useMemo(
+    () =>
+      items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        width: item.widthMm,
+        length: item.lengthMm,
+        height: item.heightMm,
+        weight: item.weightKg,
+        quantity: item.quantity,
+      })),
+    [items],
+  );
+  const missingLogistics = block.lines.filter(
+    (line) => !items.some((item) => String(item.id) === line.variantId),
+  );
+
+  const defaultSize = allowed[0]
+    ? { width: allowed[0].width, length: allowed[0].length, height: allowed[0].height }
+    : { width: 12032, length: 2352, height: 2690 };
+
+  const setSelectedCodes = (codes: string[]) => setSelectedOverride(codes);
+
+  return (
+    <div className="space-y-3 border-t pt-3">
+      <p className="text-sm font-medium">Калькулятор контейнеров</p>
+      <div className="flex flex-wrap gap-3">
+        {containerTypes.map((type) => {
+          const checked = selectedCodes.includes(type.code);
+          return (
+            <label key={type.code} className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(value) => {
+                  if (value) setSelectedCodes([...selectedCodes, type.code]);
+                  else setSelectedCodes(selectedCodes.filter((code) => code !== type.code));
+                }}
+              />
+              <span className="tabular-nums">{type.code}</span>
+            </label>
+          );
+        })}
+      </div>
+      {!allowed.length ? (
+        <p className="text-sm text-muted-foreground">Выберите хотя бы один тип контейнера.</p>
+      ) : null}
+      {result?.oversizedItemIds.length ? (
+        <p className="text-sm text-amber-700">
+          Не помещается ни в один выбранный контейнер:{" "}
+          {result.oversizedItemIds
+            .map((id) => block.lines.find((line) => line.variantId === String(id))?.name ?? String(id))
+            .join(", ")}
+        </p>
+      ) : null}
+      {result?.unplacedBoxIds.length ? (
+        <p className="text-sm text-amber-700">
+          Не уложено коробок: {result.unplacedBoxIds.length} — нужно больше контейнеров, чем считает калькулятор.
+        </p>
+      ) : null}
+      {missingLogistics.length ? (
+        <p className="text-sm text-muted-foreground">
+          Нет габаритов: {missingLogistics.map((line) => line.name).join(", ")}
+        </p>
+      ) : null}
+      {result?.containers.length ? (
+        <>
+          <ul className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+            {result.containers.map((container) => (
+              <li key={container.containerIndex} className="tabular-nums">
+                {container.typeCode}: {container.fillPercent.toFixed(1)}%
+              </li>
+            ))}
+          </ul>
+          <MultiContainerScene
+            containers={result.containers.map((container) => ({
+              containerIndex: container.containerIndex,
+              placements: container.placements,
+              size: container.size,
+              typeCode: container.typeCode,
+              fillPercent: container.fillPercent,
+            }))}
+            containerSize={defaultSize}
+            orderItems={orderItems}
+            className="h-[min(360px,50vh)]"
+          />
+        </>
+      ) : allowed.length ? (
+        <p className="text-sm text-muted-foreground">Нет данных для укладки.</p>
+      ) : null}
+    </div>
+  );
+};
+
+export const StoreCheckoutPage = () => {
+  const { lines, catalogById, catalogLoading, catalogError, removeVariants, setQuantity } = useCart();
+  const { selectedRegion, regionsLoading, setSwitcherOpen } = useSelectedRegion();
+  const [mode, setMode] = useState<CheckoutFulfillmentMode>("hub");
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const [stockFacts, setStockFacts] = useState<VariantStockFact[]>([]);
+  const [containerTypes, setContainerTypes] = useState<StoreContainerTypeRow[]>([]);
+  const [submittingBlockId, setSubmittingBlockId] = useState<string | null>(null);
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const [results, setResults] = useState<BlockResult[]>([]);
+  const floatRates = useFloatRatesOnOpen(true);
+  const [fallbackRates, setFallbackRates] = useState<OrderRates | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadVariantStockFacts()
+      .then((facts) => {
+        if (!cancelled) setStockFacts(facts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setStockFacts([]);
+      });
+    void loadContainerTypes()
+      .then((rows) => {
+        if (!cancelled) setContainerTypes(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setContainerTypes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadSnapshotRates().then((rates) => {
+      if (!cancelled) setFallbackRates(rates);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const rates: OrderRates | null =
+    floatRates.status === "ok" ? floatRates.rates : fallbackRates;
+
+  const regionForStock = useMemo(
+    () =>
+      selectedRegion
+        ? {
+            id: selectedRegion.id,
+            code: selectedRegion.code,
+            hubWarehouseId: selectedRegion.hubWarehouseId,
+          }
+        : null,
+    [selectedRegion],
+  );
+
+  const checkoutItems: CheckoutCartItem[] = useMemo(() => {
+    const regionCode = selectedRegion?.code ?? null;
+    return lines.map((line) => {
+      const item = catalogById.get(line.variantId);
+      const region = regionCode && item ? item.byRegion.get(regionCode) : null;
+      const stock = computeVariantRegionStock(stockFacts, line.variantId, regionForStock);
+      return {
+        variantId: line.variantId,
+        name: item?.name ?? line.variantId,
+        imageUrl: item?.imageUrl ?? null,
+        plantId: item?.plantId ?? null,
+        plantCode: item?.plantCode ?? null,
+        quantity: line.quantity,
+        quantityPerUnit: item?.quantityPerUnit ?? 1,
+        dealerPrice: region?.dealerPrice ?? null,
+        dealerCurrency: region?.dealerCurrency ?? null,
+        dealerStatus: region?.dealerStatus ?? "unavailable",
+        supplyCostPercent: region?.supplyCostPercent ?? null,
+        hubReady: regionForStock ? stock.ready : null,
+      };
+    });
+  }, [lines, catalogById, selectedRegion, stockFacts, regionForStock]);
+
+  const includedVariantIds = useMemo(() => {
+    const set = new Set(checkoutItems.map((item) => item.variantId));
+    for (const id of excludedIds) set.delete(id);
+    return set;
+  }, [checkoutItems, excludedIds]);
+
+  const layout = useMemo(
+    () =>
+      buildCheckoutLayout({
+        mode,
+        items: checkoutItems,
+        includedVariantIds,
+        hasRegion: Boolean(selectedRegion),
+        hubWarehouseId: selectedRegion?.hubWarehouseId ?? null,
+        hubCode: selectedRegion?.hubCode ?? null,
+      }),
+    [mode, checkoutItems, includedVariantIds, selectedRegion],
+  );
+
+  const needsRegion = lines.length > 0 && !regionsLoading && !selectedRegion;
+  const loading = lines.length > 0 && (regionsLoading || catalogLoading);
+  const blocked = loading || needsRegion;
+  const visibleBlocks = blocked ? [] : layout.blocks;
+
+  const orderCurrency: CurrencyCode =
+    selectedRegion?.orderCurrency ?? selectedRegion?.dealerCurrency ?? "USD";
+
+  const totals = useMemo(
+    () => sumCheckoutTotals(layout.blocks, orderCurrency, rates),
+    [layout.blocks, orderCurrency, rates],
+  );
+
+  const packingItemsByBlock = useMemo(() => {
+    const map = new Map<string, MixedPackItem[]>();
+    for (const block of layout.blocks) {
+      if (block.mode !== "plant") continue;
+      const items: MixedPackItem[] = [];
+      for (const line of block.lines) {
+        const catalog = catalogById.get(line.variantId);
+        const logistics = catalog?.logistics;
+        if (!logistics) continue;
+        items.push({
+          id: Number(line.variantId),
+          name: line.name,
+          lengthMm: Math.round(logistics.lengthCm * 10),
+          widthMm: Math.round(logistics.widthCm * 10),
+          heightMm: Math.round(logistics.heightCm * 10),
+          weightKg: logistics.weightKg,
+          quantity: line.quantity,
+          quantityPerUnit: catalog?.quantityPerUnit ?? 1,
+          stacking: logistics.stacking,
+          stackingLimit: logistics.stackingLimit,
+          rotateLength: logistics.rotateLength,
+          rotateWidth: logistics.rotateWidth,
+          maxPerContainer: logistics.maxPerContainer,
+        });
+      }
+      map.set(block.id, items);
+    }
+    return map;
+  }, [layout.blocks, catalogById]);
+
+  const toggleLine = (variantId: string, included: boolean) => {
+    setExcludedIds((prev) => {
+      const next = new Set(prev);
+      if (included) next.delete(variantId);
+      else next.add(variantId);
+      return next;
+    });
+  };
+
+  const submitBlock = async (block: CheckoutBlock) => {
+    if (!selectedRegion) throw new Error("Выберите регион");
+    const linesPayload = buildCheckoutOrderLines(block);
+    const created = await checkoutCustomerOrder({
+      regionId: selectedRegion.id,
+      sourceKind: block.mode === "hub" ? "hub" : "plant",
+      sourceId: block.sourceId,
+      lines: linesPayload,
+      rates: floatRates.status === "ok" ? floatRates.rates : null,
+      description: `Оформлено из корзины · ${blockLabel(block)}`,
+    });
+    const doneIds = linesPayload.map((line) => line.productVariantId);
+    removeVariants(doneIds);
+    setExcludedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of doneIds) next.delete(id);
+      return next;
+    });
+    return created;
+  };
+
+  const submitBlocks = async (blocks: CheckoutBlock[], busyId: string) => {
+    setSubmittingBlockId(busyId);
+    const outcomes = await submitCheckoutBlocks(blocks, submitBlock);
+    const labelById = new Map(blocks.map((block) => [block.id, blockLabel(block)]));
+    setResults(
+      outcomes.map((outcome): BlockResult => {
+        const label = labelById.get(outcome.blockId) ?? outcome.blockId;
+        return outcome.ok
+          ? {
+              blockId: outcome.blockId,
+              blockLabel: label,
+              status: "created",
+              orderId: outcome.value.id,
+              orderNumber: outcome.value.number,
+            }
+          : { blockId: outcome.blockId, blockLabel: label, status: "error", message: outcome.message };
+      }),
+    );
+    setResultsOpen(true);
+    setSubmittingBlockId(null);
+  };
+
+  const handleSubmitBlock = (block: CheckoutBlock) => submitBlocks([block], block.id);
+  const handleSubmitAll = () => submitBlocks(layout.blocks, "__all__");
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 bg-muted/30 p-4 sm:p-6">
+      <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link href="/store/pim/products" />}>Магазин</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Оформление</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+      </Breadcrumb>
+
+      <Card size="sm" className="flex flex-row flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold">Оформление заказа</h1>
+          <p className="text-sm text-muted-foreground">
+            Выберите способ получения — корзина раскладывается на черновики заказов клиента.
+          </p>
+        </div>
+        <RegionSwitcher />
+      </Card>
+
+      {catalogError ? (
+        <p className="text-sm text-amber-700">
+          Не удалось загрузить часть товаров корзины — обновите страницу.
+        </p>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setMode("hub")}
+          aria-pressed={mode === "hub"}
+          className={cn(
+            "rounded-xl border bg-background p-4 text-left transition",
+            mode === "hub"
+              ? "border-indigo-500 ring-2 ring-indigo-500/30"
+              : "hover:border-foreground/20",
+          )}
+        >
+          <p className="font-semibold">Склад региона</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Любые товары в одном заказе. Наценка Supply costs за доставку до хаба региона
+            {selectedRegion?.hubCode ? ` (${selectedRegion.hubCode})` : ""}.
+          </p>
+          {selectedRegion && !selectedRegion.hubWarehouseId ? (
+            <p className="mt-2 text-sm text-amber-700">У региона не задан хаб — способ недоступен</p>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("plant")}
+          aria-pressed={mode === "plant"}
+          className={cn(
+            "rounded-xl border bg-background p-4 text-left transition",
+            mode === "plant"
+              ? "border-indigo-500 ring-2 ring-indigo-500/30"
+              : "hover:border-foreground/20",
+          )}
+        >
+          <p className="font-semibold">Производственная площадка</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Дилерская цена без наценки. Отдельный заказ на каждую площадку — забираете сами.
+          </p>
+        </button>
+      </div>
+
+      {lines.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Корзина пуста.{" "}
+            <Link href="/store/pim/products" className="underline">
+              Перейти в каталог
+            </Link>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {loading ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Загружаем корзину…
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {!loading && needsRegion ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-sm text-muted-foreground">
+            Цены, запасы и хаб зависят от региона.
+            <Button type="button" size="sm" onClick={() => setSwitcherOpen(true)}>
+              Выберите регион
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {!blocked && layout.mode === "hub" && !layout.hubAvailable ? (
+        <p className="text-sm text-amber-700">{layout.hubUnavailableReason}</p>
+      ) : null}
+
+      {visibleBlocks.map((block) => (
+        <Card key={block.id}>
+          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+            <div>
+              <CardTitle className="text-lg">
+                {block.mode === "hub" ? "Склад региона" : "Производственная площадка"}{" "}
+                <span className="tabular-nums text-muted-foreground">{block.sourceCode}</span>
+              </CardTitle>
+              <CardDescription>
+                {(() => {
+                  const count = block.lines.filter((line) => line.included).length;
+                  return `${count} ${pluralRu(count, "позиция", "позиции", "позиций")}`;
+                })()}
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={
+                submittingBlockId != null ||
+                !blockHasSubmittableLines(block) ||
+                regionsLoading
+              }
+              onClick={() => void handleSubmitBlock(block)}
+            >
+              {submittingBlockId === block.id ? "Оформляем…" : "Оформить блок"}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {block.lines.map((line) => {
+              const stock = computeVariantRegionStock(stockFacts, line.variantId, regionForStock);
+              return (
+                <div
+                  key={line.variantId}
+                  className="flex flex-wrap items-start gap-3 rounded-lg border p-3"
+                >
+                  <Checkbox
+                    checked={!excludedIds.has(line.variantId)}
+                    onCheckedChange={(value) => toggleLine(line.variantId, Boolean(value))}
+                    aria-label={`Включить ${line.name} в заказ`}
+                  />
+                  <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+                    {line.imageUrl ? (
+                      <Image
+                        src={line.imageUrl}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                        unoptimized
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <p className="font-medium">{line.name}</p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <CartQuantityControl
+                        itemName={line.name}
+                        quantity={line.quantity}
+                        quantityPerUnit={catalogById.get(line.variantId)?.quantityPerUnit ?? 1}
+                        onChange={(next) => setQuantity(line.variantId, next)}
+                      />
+                      <VariantStockSummary
+                        stock={stock}
+                        needsRegion={!selectedRegion}
+                        onRequestRegion={() => setSwitcherOpen(true)}
+                        compact
+                      />
+                    </div>
+                    {line.pricing && line.pricing.fromStock != null && line.pricing.onOrder != null ? (
+                      <p className="text-xs text-muted-foreground">
+                        {line.pricing.onOrder > 0
+                          ? `${formatQty(line.pricing.fromStock)} из наличия · ${formatQty(line.pricing.onOrder)} под заказ`
+                          : "Всё из наличия"}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="text-right text-sm">
+                    {line.pricing ? (
+                      <>
+                        <p className="font-medium tabular-nums">
+                          {formatCatalogPrice(line.pricing.unitPrice, {
+                            currency: line.pricing.currency,
+                          })}
+                        </p>
+                        {block.mode === "hub" && line.pricing.supplyCostPercent > 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            в т.ч. Supply costs {line.pricing.supplyCostPercent}% ·{" "}
+                            {formatCatalogPrice(line.pricing.supplyCostAmount, {
+                              currency: line.pricing.currency,
+                            })}
+                          </p>
+                        ) : null}
+                        <p className="tabular-nums text-muted-foreground">
+                          {formatCatalogPrice(line.pricing.lineTotal, {
+                            currency: line.pricing.currency,
+                          })}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">—</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {block.supplyCostTotals.length ? (
+              <p className="text-right text-sm text-muted-foreground">
+                Supply costs: итого{" "}
+                <span className="font-medium text-foreground tabular-nums">
+                  {block.supplyCostTotals
+                    .map((row) => formatCatalogPrice(row.total, { currency: row.currency }))
+                    .join(" + ")}
+                </span>
+              </p>
+            ) : null}
+            {block.currencyTotals.length ? (
+              <p className="text-right text-sm">
+                Итого по заказу:{" "}
+                <span className="font-semibold tabular-nums">
+                  {block.currencyTotals
+                    .map((row) => formatCatalogPrice(row.total, { currency: row.currency }))
+                    .join(" + ")}
+                </span>
+              </p>
+            ) : null}
+
+            {block.mode === "plant" ? (
+              <PlantPackingSection
+                block={block}
+                containerTypes={containerTypes}
+                items={packingItemsByBlock.get(block.id) ?? []}
+              />
+            ) : null}
+          </CardContent>
+        </Card>
+      ))}
+
+      {!blocked && layout.remainder.length ? (
+        <details className="rounded-xl border bg-background p-4">
+          <summary className="cursor-pointer font-medium">
+            Остаются в корзине ({layout.remainder.length})
+          </summary>
+          <ul className="mt-3 space-y-2 text-sm">
+            {layout.remainder.map((row) => (
+              <li key={row.variantId} className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2">
+                  {row.excluded ? (
+                    <Checkbox
+                      checked={false}
+                      onCheckedChange={(value) => toggleLine(row.variantId, Boolean(value))}
+                      aria-label={`Вернуть ${row.name} в заказ`}
+                    />
+                  ) : null}
+                  {row.name} · {formatQty(row.quantity)} шт.
+                </span>
+                <span className="text-muted-foreground">{row.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+
+      {visibleBlocks.length ? (
+        <Card>
+          <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-1 text-sm">
+              {totals.byCurrency.map((row) => (
+                <p key={row.currency} className="tabular-nums">
+                  {formatCatalogPrice(row.total, { currency: row.currency })}
+                </p>
+              ))}
+              {totals.orderCurrencyTotal != null ? (
+                <p className="text-muted-foreground">
+                  ≈{" "}
+                  {formatCatalogPrice(totals.orderCurrencyTotal, {
+                    currency: totals.orderCurrency,
+                  })}{" "}
+                  · примерный курс
+                </p>
+              ) : (
+                <p className="text-muted-foreground">Нет курса для суммы в валюте заказов</p>
+              )}
+              <FloatRatesNote state={floatRates} />
+            </div>
+            <Button
+              type="button"
+              disabled={
+                submittingBlockId != null ||
+                !layout.blocks.some(blockHasSubmittableLines)
+              }
+              onClick={() => void handleSubmitAll()}
+            >
+              {submittingBlockId === "__all__" ? "Оформляем…" : "Оформить всё"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Dialog open={resultsOpen} onOpenChange={setResultsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Результат оформления</DialogTitle>
+          </DialogHeader>
+          <ul className="space-y-2 text-sm">
+            {results.map((result) => (
+              <li key={result.blockId} className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="font-medium">{result.blockLabel}</span>
+                {result.status === "created" ? (
+                  <span>
+                    Создан черновик{" "}
+                    <Link
+                      href={logisticsPath("customer-orders", result.orderId)}
+                      className="font-medium underline"
+                    >
+                      {result.orderNumber}
+                    </Link>
+                  </span>
+                ) : (
+                  <span className="text-destructive">Ошибка: {result.message}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};

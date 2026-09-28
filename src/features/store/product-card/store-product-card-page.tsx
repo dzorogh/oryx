@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, Plus, Search } from "lucide-react";
+import { Archive, Plus, Search, ShoppingCart } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,8 +20,10 @@ import { VariantStockSummary } from "@/components/store/stock/variant-stock-summ
 import {
   formatCatalogPrice,
   formatCatalogStatus,
+  getPurchaseBlockReason,
   statusBadgeClassMap,
 } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { CatalogBuyTooltip } from "@/components/store/pim/products/catalog/catalog-buy-tooltip";
 import type { DealerStatus, RetailStatus } from "@/components/store/pim/products/store-catalog-demo-data";
 import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
@@ -35,6 +37,8 @@ import { ProductBalancesTable } from "@/features/logistics/ui/product-balances-t
 import { ProductionOrderCatalogDialog } from "@/features/logistics/ui/production-order-catalog-dialog";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
+import { useCart } from "@/features/store/cart/cart-context";
 import { useSelectedRegion } from "@/features/store/region-context";
 import { ProductPhoto } from "@/features/store/product-photo";
 import { resolveSelectedVariant } from "@/features/store/product-card/variant-selection";
@@ -199,6 +203,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { selectedRegion, selectedRegionCode, setSwitcherOpen } = useSelectedRegion();
+  const cart = useCart();
   const [data, setData] = useState<ProductCardData | null>(null);
   const [stockFacts, setStockFacts] = useState<VariantStockFact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -536,6 +541,45 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                         </p>
                       </div>
                       <VariantStockSummary stock={stock} className="-mr-1.5" />
+                      {(() => {
+                        const blockReason = getPurchaseBlockReason({
+                          dealerStatus: regionStatuses?.dealer ?? "unavailable",
+                          dealerPrice: regionPrices?.dealer?.amount ?? null,
+                        });
+                        const canBuy = blockReason == null;
+                        const qty = cart.quantityOf(selectedVariant.id);
+                        if (qty > 0) {
+                          return (
+                            <CartQuantityControl
+                              itemName={selectedVariant.name}
+                              quantity={qty}
+                              quantityPerUnit={cart.catalogById.get(selectedVariant.id)?.quantityPerUnit ?? 1}
+                              onChange={(next) => cart.setQuantity(selectedVariant.id, next)}
+                              className="justify-end"
+                            />
+                          );
+                        }
+                        return (
+                          <CatalogBuyTooltip reason={blockReason} className="inline-flex justify-end">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={!canBuy}
+                              className={cn(!canBuy && "pointer-events-none")}
+                              aria-label={
+                                canBuy
+                                  ? `Добавить «${selectedVariant.name}» в корзину`
+                                  : `Недоступен: ${blockReason}`
+                              }
+                              onClick={() => cart.addPack(selectedVariant.id)}
+                            >
+                              <ShoppingCart aria-hidden className="size-4" />
+                              В корзину
+                            </Button>
+                          </CatalogBuyTooltip>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

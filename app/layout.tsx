@@ -4,6 +4,9 @@ import Script from "next/script";
 import { NavRail } from "@/components/layout/nav-rail";
 import { SidebarAsideProvider } from "@/components/layout/sidebar-aside-context";
 import { CatalogScopeProvider } from "@/features/store/catalog-scope-context";
+import { CartProvider } from "@/features/store/cart/cart-context";
+import { CartSheet } from "@/features/store/cart/cart-sheet";
+import { RegionProvider } from "@/features/store/region-context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -31,8 +34,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
         <SidebarAsideProvider>
           <CatalogScopeProvider>
-            <NavRail />
-            {children}
+            <RegionProvider>
+              <CartProvider>
+                <NavRail />
+                {children}
+                <CartSheet />
+              </CartProvider>
+            </RegionProvider>
           </CatalogScopeProvider>
         </SidebarAsideProvider>
         <Toaster position="top-center" duration={1000} />
