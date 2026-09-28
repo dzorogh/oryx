@@ -33,6 +33,10 @@ import {
   plantPaymentsFilterChanged,
   regionMoneyRows,
   unpaidPaymentDueDates,
+  MAX_RANGE_MONTHS,
+  presetRange,
+  rangeMonths,
+  ymKey,
   type OutputCalendarMoneyOrder,
   type OutputCalendarPage,
   type OutputCalendarPayment,
@@ -631,6 +635,20 @@ describe("Деньги: диапазон месяцев", () => {
     assert.deepEqual(months[0], { year: 2026, month: 6 });
     const later = computeMonthRange([], new Date(2026, 8, 25), ["2027-06-01"]);
     assert.deepEqual(later.at(-1), { year: 2027, month: 6 });
+  });
+});
+
+describe("Настраиваемый период", () => {
+  it("builds preset and custom month ranges", () => {
+    const preset = presetRange(6, new Date(2026, 8, 25));
+    const months = rangeMonths(preset);
+    assert.equal(months.length, 6);
+    assert.deepEqual(months[0], SEP);
+    assert.deepEqual(months.at(-1), { year: 2027, month: 2 });
+
+    const reversed = rangeMonths({ from: ymKey(OCT), to: ymKey(SEP) });
+    assert.deepEqual(reversed, [SEP, OCT]);
+    assert.equal(rangeMonths({ from: ymKey(SEP), to: ymKey(SEP) + 100 }).length, MAX_RANGE_MONTHS);
   });
 });
 

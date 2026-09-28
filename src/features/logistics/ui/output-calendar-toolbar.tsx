@@ -27,14 +27,23 @@ import {
   plantPaymentsFilterChanged,
   UNPAID_STATUSES,
   type IncomingFilter,
+  currentYearMonth,
+  formatYearMonthLabel,
+  parseYmKey,
+  presetRange,
+  RANGE_PRESETS,
+  ymKey,
+  type CalendarRange as CalendarRangeValue,
   type OutputCalendarOwnerFilter,
   type OutputCalendarPage,
   type PlantPaymentsFilter,
   type UnpaidStatus,
+  type YearMonth,
 } from "@/features/logistics/output-calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarMasterCheckbox } from "@/features/logistics/ui/output-calendar-master-checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronsDownUp, ChevronsUpDown, ListFilter, RefreshCw } from "lucide-react";
+import { CalendarRange, ChevronsDownUp, ChevronsUpDown, ListFilter, RefreshCw } from "lucide-react";
 
 export type CalendarPanel = "outputs" | "plants" | "incoming";
 
@@ -52,6 +61,9 @@ type OutputCalendarToolbarProps = {
   incomingFilter: IncomingFilter;
   panel: CalendarPanel | null;
   onTogglePanel: (panel: CalendarPanel) => void;
+  months: YearMonth[];
+  range: CalendarRangeValue;
+  onRangeChange: (range: CalendarRangeValue) => void;
   onRefresh: () => void;
   onCollapseAll: () => void;
   onExpandAll: () => void;
@@ -88,6 +100,119 @@ const FilterButton = ({
   </Button>
 );
 
+const monthsWord = (count: number) => {
+  const n = count % 100;
+  const n1 = n % 10;
+  return n > 10 && n < 20 ? "месяцев" : n1 === 1 ? "месяц" : n1 >= 2 && n1 <= 4 ? "месяца" : "месяцев";
+};
+
+const RangePicker = ({
+  months,
+  range,
+  onChange,
+}: {
+  months: YearMonth[];
+  range: CalendarRangeValue;
+  onChange: (range: CalendarRangeValue) => void;
+}) => {
+  const first = months[0];
+  const last = months.at(-1);
+  if (!first || !last) return null;
+  const from = ymKey(first);
+  const to = ymKey(last);
+  const activePreset =
+    range == null
+      ? "auto"
+      : RANGE_PRESETS.find((count) => {
+          const preset = presetRange(count);
+          return preset.from === range.from && preset.to === range.to;
+        }) ?? null;
+  const setBound = (bound: "from" | "to", key: number) => {
+    const next = bound === "from" ? { from: key, to: Math.max(key, to) } : { from: Math.min(from, key), to: key };
+    onChange(next);
+  };
+  const current = ymKey(currentYearMonth());
+  const optionKeys = Array.from(
+    { length: Math.max(to, current + 36) - Math.min(from, current - 24) + 1 },
+    (_, index) => Math.min(from, current - 24) + index,
+  );
+  const monthSelect = (bound: "from" | "to", value: number, label: string) => (
+    <label className="space-y-1 text-xs">
+      <span className="block font-medium">{label}</span>
+      <Select
+        items={optionKeys.map((key) => ({ value: String(key), label: formatYearMonthLabel(parseYmKey(key)) }))}
+        value={String(value)}
+        onValueChange={(next) => {
+          if (next) setBound(bound, Number(next));
+        }}
+      >
+        <SelectTrigger size="sm" className="w-full bg-background" aria-label={`Период ${label.toLowerCase()}`}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {optionKeys.map((key) => (
+            <SelectItem key={key} value={String(key)}>
+              {formatYearMonthLabel(parseYmKey(key))}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </label>
+  );
+  const presetClass = (active: boolean) =>
+    cn("h-full rounded px-2.5", active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground");
+
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            aria-label={`Период: ${formatYearMonthLabel(first)} — ${formatYearMonthLabel(last)}`}
+          />
+        }
+      >
+        <CalendarRange
+          aria-hidden
+          className={cn("size-3.5", range ? "text-foreground" : "text-muted-foreground/50")}
+          strokeWidth={range ? 2.6 : 2}
+        />
+        {formatYearMonthLabel(first)} — {formatYearMonthLabel(last)}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[340px] gap-3 p-3 text-sm">
+        <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Период</div>
+        <div className="inline-flex h-8 w-fit items-center rounded-lg border bg-muted p-0.5 text-[13px]">
+          <button type="button" className={presetClass(activePreset === "auto")} onClick={() => onChange(null)}>
+            По данным
+          </button>
+          {RANGE_PRESETS.map((count) => (
+            <button
+              key={count}
+              type="button"
+              className={presetClass(activePreset === count)}
+              onClick={() => onChange(presetRange(count))}
+            >
+              {count} мес
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {monthSelect("from", from, "С")}
+          {monthSelect("to", to, "По")}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {range == null
+            ? "По данным — с самой ранней просрочки до последнего срока выпусков и платежей, не меньше полугода."
+            : `${months.length} ${monthsWord(months.length)}. Выпуски и платежи вне периода не показываются.`}
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 export const OutputCalendarToolbar = ({
   page,
   filter,
@@ -96,6 +221,9 @@ export const OutputCalendarToolbar = ({
   incomingFilter,
   panel,
   onTogglePanel,
+  months,
+  range,
+  onRangeChange,
   onRefresh,
   onCollapseAll,
   onExpandAll,
@@ -134,6 +262,7 @@ export const OutputCalendarToolbar = ({
           changed={incomingFilterChanged(incomingFilter)}
           onClick={() => onTogglePanel("incoming")}
         />
+        <RangePicker months={months} range={range} onChange={onRangeChange} />
 
         <Button
           type="button"
