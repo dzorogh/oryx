@@ -16,16 +16,25 @@ export type CatalogListRow = {
   relation?: string;
   relationNode?: ReactNode;
   plantOwned?: boolean;
+  hubCode?: string | null;
 };
 
 export const regionColumns: ListColumnDef<CatalogListRow>[] = [
   catalogCodeColumn<CatalogListRow>(),
   catalogNameColumn<CatalogListRow>(),
+  {
+    id: "hub",
+    label: "Хаб",
+    sortType: "text",
+    sortValue: (row) => row.hubCode ?? "",
+    render: (row) => row.hubCode ?? "—",
+  },
 ];
 
 export const regionSortDefs: ListSortDef<CatalogListRow>[] = [
   { id: "code", label: "Код", type: "text", value: (row) => row.code },
   { id: "name", label: "Название", type: "text", value: (row) => row.name },
+  { id: "hub", label: "Хаб", type: "text", value: (row) => row.hubCode ?? "" },
 ];
 
 export const warehouseColumns = (snapshot: LogisticsSnapshot): ListColumnDef<CatalogListRow>[] => [
@@ -101,10 +110,14 @@ export const mapPlantRows = (snapshot: LogisticsSnapshot): CatalogListRow[] =>
     };
   });
 
-export const mapRegionRows = (snapshot: LogisticsSnapshot): CatalogListRow[] =>
+export const mapRegionRows = (
+  snapshot: LogisticsSnapshot,
+  hubCodeByRegionId?: Map<string, string | null>,
+): CatalogListRow[] =>
   snapshot.regions.map((region) => ({
     id: region.id,
     code: region.code,
     name: region.name,
     href: `/store/logistics/regions/${region.id}`,
+    hubCode: hubCodeByRegionId?.get(region.id) ?? null,
   }));

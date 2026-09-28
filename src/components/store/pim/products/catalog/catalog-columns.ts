@@ -26,7 +26,7 @@ export const CATALOG_COLUMNS: CatalogColumnDefinition[] = [
   { id: "category", label: "Категория", defaultVisible: true, widthClass: "w-[130px]" },
   { id: "family", label: "Семейство", defaultVisible: false, widthClass: "w-[120px]" },
   { id: "site", label: "Площадка", defaultVisible: true, widthClass: "w-[110px]" },
-  { id: "stock", label: "Остаток", defaultVisible: false, widthClass: "w-[90px]" },
+  { id: "stock", label: "Готово · Всего", defaultVisible: true, widthClass: "w-[140px]" },
   { id: "updatedAt", label: "Обновлено", defaultVisible: false, widthClass: "w-[130px]" },
   { id: "dealer", label: "Дилер", defaultVisible: true, widthClass: "w-[290px]" },
   { id: "retail", label: "Розница", defaultVisible: true, widthClass: "w-[260px]" },

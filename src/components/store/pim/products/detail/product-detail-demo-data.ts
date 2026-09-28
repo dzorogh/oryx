@@ -272,6 +272,7 @@ export const getVariantCatalogItems = (): StoreCatalogItem[] => {
   variantCatalogItemsCache = STORE_CATALOG_ITEMS.flatMap((product, productIndex) =>
     buildVariants(product).map((variant, variantIndex) => ({
       id: variant.id,
+      productId: product.id,
       name: variant.isDefault ? product.name : `Oryx ${variant.name}`,
       code: variant.code ?? formatLogisticsCode("product", variant.id),
       imageSrc: variant.imageSrc,

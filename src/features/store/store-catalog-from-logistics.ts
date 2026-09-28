@@ -1,7 +1,16 @@
-import type { StoreCatalogItem } from "@/components/store/pim/products/store-catalog-demo-data";
+import type {
+  CatalogRegionPrices,
+  CatalogRegionStatuses,
+  DealerStatus,
+  RetailStatus,
+  StoreCatalogItem,
+} from "@/components/store/pim/products/store-catalog-demo-data";
+import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
+import { isCurrencyCode, isDealerStatus, isRetailStatus } from "@/components/store/pim/pricelists/pricelists-helpers";
 import { loadLogisticsSettings } from "@/features/logistics/logistics-api";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { preferKorportalMediaConversion } from "@/lib/korportal-media-url";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const hashSeed = (seed: string): number => {
@@ -54,9 +63,21 @@ type VariantRow = {
 type PriceRow = {
   product_variant_id: string | number;
   price_kind: string;
+  region_id: string | number | null;
+  currency_id: string | number;
   amount: number | string;
   active: boolean;
 };
+
+type StatusRow = {
+  product_variant_id: string | number;
+  region_id: string | number;
+  dealer_status: string;
+  retail_status: string;
+};
+
+type CurrencyRow = { id: number | string; code: string };
+type RegionRow = { id: number | string; code: string };
 
 const toNumber = (value: number | string | null | undefined): number | null => {
   if (value == null || value === "") return null;
@@ -68,20 +89,28 @@ export const catalogProductionSite = (
   plantId: string | number | null | undefined,
 ): string => {
   if (plantId == null || plantId === "") return "—";
-  // Outside the plant catalog, show code only (place-codes convention).
   return formatLogisticsCode("plant", plantId);
 };
 
 export const mapLogisticsProductToCatalogItem = (
   row: VariantRow,
   productionSite: string,
-  dealerPrice: number,
-  retailPrice: number,
+  dealerPrice: number | null,
+  retailPrice: number | null,
+  extras?: {
+    dealerStatus?: DealerStatus;
+    retailStatus?: RetailStatus;
+    dealerCurrency?: CurrencyCode | null;
+    retailCurrency?: CurrencyCode | null;
+    regionPrices?: Record<string, CatalogRegionPrices>;
+    regionStatuses?: Record<string, CatalogRegionStatuses>;
+  },
 ): StoreCatalogItem => {
   const id = String(row.id);
   const inferred = inferCatalogCategory(id, row.name);
   return {
     id,
+    productId: String(row.product_id),
     name: row.name,
     code: formatLogisticsCode("product", id),
     imageSrc: productImageUrl(id, row.image_url) ?? "",
@@ -94,13 +123,98 @@ export const mapLogisticsProductToCatalogItem = (
     updatedAt: "2026-09-01T00:00:00.000Z",
     dealerPrice,
     retailPrice,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerCurrency: extras?.dealerCurrency ?? null,
+    retailCurrency: extras?.retailCurrency ?? null,
+    dealerStatus: extras?.dealerStatus ?? "available",
+    retailStatus: extras?.retailStatus ?? "available",
     productionSite,
+    regionPrices: extras?.regionPrices,
+    regionStatuses: extras?.regionStatuses,
   };
 };
 
-/** Loads variants + relational prices. Returns null when Supabase is unset. */
+export type RegionPricing = {
+  pricesByVariant: Map<string, Record<string, CatalogRegionPrices>>;
+  statusesByVariant: Map<string, Record<string, CatalogRegionStatuses>>;
+};
+
+/**
+ * Dealer/retail prices and statuses of every region, keyed by variant id and region code.
+ * Pass `variantIds` to read only those variants (product card). Returns null when Supabase is unset.
+ */
+export const loadRegionPricing = async (variantIds?: readonly string[]): Promise<RegionPricing | null> => {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    return null;
+  }
+  const ids = variantIds?.map(Number);
+
+  const [priceRows, statusRows, currenciesResult, regionsResult] = await Promise.all([
+    fetchAllRows<PriceRow>((from, to) => {
+      const query = client
+        .from("store_product_price")
+        .select("product_variant_id,price_kind,region_id,currency_id,amount,active")
+        .eq("active", true)
+        .not("region_id", "is", null);
+      return (ids ? query.in("product_variant_id", ids) : query).order("id", { ascending: true }).range(from, to);
+    }),
+    fetchAllRows<StatusRow>((from, to) => {
+      const query = client
+        .from("store_product_region_status")
+        .select("product_variant_id,region_id,dealer_status,retail_status");
+      return (ids ? query.in("product_variant_id", ids) : query).order("id", { ascending: true }).range(from, to);
+    }),
+    client.from("store_currency").select("id,code").is("deleted_at", null),
+    client.from("store_region").select("id,code").is("deleted_at", null).eq("active", true),
+  ]);
+
+  if (currenciesResult.error) {
+    throw new Error(currenciesResult.error.message);
+  }
+  if (regionsResult.error) {
+    throw new Error(regionsResult.error.message);
+  }
+
+  const currencyCodeById = new Map(
+    ((currenciesResult.data ?? []) as CurrencyRow[]).map((row) => [String(row.id), row.code]),
+  );
+  const regionCodeById = new Map(
+    ((regionsResult.data ?? []) as RegionRow[]).map((row) => [String(row.id), row.code]),
+  );
+
+  const pricesByVariant = new Map<string, Record<string, CatalogRegionPrices>>();
+  for (const row of priceRows) {
+    if (row.price_kind !== "dealer" && row.price_kind !== "retail") continue;
+    const amount = toNumber(row.amount);
+    const currencyRaw = currencyCodeById.get(String(row.currency_id));
+    const regionCode = regionCodeById.get(String(row.region_id));
+    if (amount == null || !currencyRaw || !isCurrencyCode(currencyRaw) || !regionCode) continue;
+    const variantId = String(row.product_variant_id);
+    const current = pricesByVariant.get(variantId) ?? {};
+    const regionPrices = current[regionCode] ?? { dealer: null, retail: null };
+    regionPrices[row.price_kind] = { amount, currency: currencyRaw };
+    current[regionCode] = regionPrices;
+    pricesByVariant.set(variantId, current);
+  }
+
+  const statusesByVariant = new Map<string, Record<string, CatalogRegionStatuses>>();
+  for (const row of statusRows) {
+    const regionCode = regionCodeById.get(String(row.region_id));
+    if (!regionCode) continue;
+    if (!isDealerStatus(row.dealer_status) || !isRetailStatus(row.retail_status)) continue;
+    const variantId = String(row.product_variant_id);
+    const current = statusesByVariant.get(variantId) ?? {};
+    current[regionCode] = { dealer: row.dealer_status, retail: row.retail_status };
+    statusesByVariant.set(variantId, current);
+  }
+
+  return { pricesByVariant, statusesByVariant };
+};
+
+/** Loads variants + prices/statuses for all regions. Returns null when Supabase is unset. */
 export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> => {
   if (!isSupabaseConfigured()) {
     return null;
@@ -110,45 +224,38 @@ export const loadDbCatalogItems = async (): Promise<StoreCatalogItem[] | null> =
     return null;
   }
 
-  const [, variantsResult, pricesResult] = await Promise.all([
+  const [, variants, pricing] = await Promise.all([
     loadLogisticsSettings(),
-    client
-      .from("store_product_variant")
-      .select("id,product_id,name,image_url,plant_id")
-      .is("deleted_at", null)
-      .order("id", { ascending: true }),
-    client
-      .from("store_product_price")
-      .select("product_variant_id,price_kind,amount,active")
-      .eq("active", true),
+    fetchAllRows<VariantRow>((from, to) =>
+      client
+        .from("store_product_variant")
+        .select("id,product_id,name,image_url,plant_id")
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+    loadRegionPricing(),
   ]);
 
-  if (variantsResult.error) {
-    throw new Error(variantsResult.error.message);
-  }
-  if (!variantsResult.data) {
-    return [];
+  if (!pricing) {
+    return null;
   }
 
-  const dealerByVariant = new Map<string, number>();
-  const retailByVariant = new Map<string, number>();
-  for (const row of (pricesResult.data ?? []) as PriceRow[]) {
-    const amount = toNumber(row.amount);
-    if (amount == null) continue;
-    const key = String(row.product_variant_id);
-    if (row.price_kind === "dealer") dealerByVariant.set(key, amount);
-    if (row.price_kind === "retail") retailByVariant.set(key, amount);
-  }
-
-  return (variantsResult.data as VariantRow[]).map((row) => {
+  return variants.map((row) => {
     const id = String(row.id);
-    const dealer = dealerByVariant.get(id) ?? inferDemoDealerPrice(`${id}:${row.name}`);
-    const retail = retailByVariant.get(id) ?? Math.round(dealer * 1.18);
+    const regionPrices = pricing.pricesByVariant.get(id);
+    const regionStatuses = pricing.statusesByVariant.get(id);
     return mapLogisticsProductToCatalogItem(
       row,
       catalogProductionSite(row.plant_id),
-      dealer,
-      retail,
+      null,
+      null,
+      {
+        regionPrices,
+        regionStatuses,
+        dealerStatus: "unavailable",
+        retailStatus: "draft",
+      },
     );
   });
 };

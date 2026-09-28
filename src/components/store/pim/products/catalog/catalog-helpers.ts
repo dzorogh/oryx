@@ -8,6 +8,13 @@ import {
   CATALOG_COLUMNS_STORAGE_KEY,
   VARIANTS_CATALOG_COLUMNS_STORAGE_KEY,
 } from "./catalog-columns";
+import {
+  DEALER_STATUS_LABELS,
+  RETAIL_STATUS_LABELS,
+  type CurrencyCode,
+  type DealerStatus as PricelistDealerStatus,
+  type RetailStatus as PricelistRetailStatus,
+} from "../../pricelists/pricelists-helpers";
 
 export const ALL_VALUE = "all";
 export const PAGE_SIZE = 48;
@@ -40,9 +47,12 @@ export const STORE_CATALOG_PAGE = {
 export const parseCatalogListingMode = (value: string | null | undefined): CatalogListingMode =>
   value === "variants" ? "variants" : "products";
 
-export const getCatalogItemDetailHref = (itemId: string, listingMode: CatalogListingMode): string => {
+export const getCatalogItemDetailHref = (item: StoreCatalogItem, listingMode: CatalogListingMode): string => {
+  if (item.productId && !item.id.startsWith("bike-")) {
+    return `/store/pim/products/${item.productId}?variant=${item.id}`;
+  }
   const productId =
-    listingMode === "variants" ? getParentProductIdFromVariantCatalogId(itemId) : itemId;
+    listingMode === "variants" ? getParentProductIdFromVariantCatalogId(item.id) : item.id;
   return getProductDetailHref(productId);
 };
 
@@ -61,14 +71,20 @@ export type QuickFilterOption = {
   label: string;
 };
 
-export const formatPrice = (price: number) =>
-  `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(price)} USD`;
+export const formatPrice = (price: number, currency: CurrencyCode | string = "USD") =>
+  `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(price)} ${currency}`;
 
-export const formatCatalogPrice = (price: number | null, { from = false }: { from?: boolean } = {}) => {
+export const formatCatalogPrice = (
+  price: number | null,
+  {
+    from = false,
+    currency = "USD",
+  }: { from?: boolean; currency?: CurrencyCode | string | null } = {},
+) => {
   if (price === null) {
     return "—";
   }
-  const formatted = formatPrice(price);
+  const formatted = formatPrice(price, currency ?? "USD");
   return from ? `от ${formatted}` : formatted;
 };
 
@@ -79,16 +95,12 @@ export const extractSortedOptions = (items: StoreCatalogItem[], key: keyof Store
 
 export { getDisplayProductName } from "./catalog-display";
 
-export const isPurchasable = (dealerStatus: DealerStatus) => dealerStatus === "Available for purchase";
+export const isPurchasable = (dealerStatus: DealerStatus) => dealerStatus === "available";
 
 type PurchasableCatalogItem = Pick<StoreCatalogItem, "dealerStatus" | "dealerPrice">;
 
 export const getPurchaseBlockReason = (item: PurchasableCatalogItem): string | null => {
-  if (item.dealerStatus === "Hidden") {
-    return "Товар скрыт и его нельзя заказать.";
-  }
-
-  if (item.dealerStatus === "Unavailable for purchase") {
+  if (item.dealerStatus === "unavailable") {
     return "Товар временно недоступен для заказа.";
   }
 
@@ -107,32 +119,26 @@ export const matchesSearchQuery = (item: StoreCatalogItem, query: string) => {
   return `${item.name} ${getDisplayProductName(item.name)} ${item.code}`.toLowerCase().includes(query);
 };
 
-export const CATALOG_DEALER_STATUS_LABELS: Record<DealerStatus, string> = {
-  Hidden: "Скрыт",
-  "Available for purchase": "Доступен к заказу",
-  "Unavailable for purchase": "Недоступен к заказу",
-};
+export const CATALOG_DEALER_STATUS_LABELS: Record<DealerStatus, string> = DEALER_STATUS_LABELS;
 
-export const CATALOG_RETAIL_STATUS_LABELS: Record<RetailStatus, string> = {
-  "Available for sale": "В продаже",
-  "Made to order": "Под заказ",
-  "Awaiting delivery": "Ожидает поставки",
-  Archived: "В архиве",
-};
+export const CATALOG_RETAIL_STATUS_LABELS: Record<RetailStatus, string> = RETAIL_STATUS_LABELS;
 
 export const formatCatalogStatus = (status: DealerStatus | RetailStatus): string =>
-  CATALOG_DEALER_STATUS_LABELS[status as DealerStatus] ??
-  CATALOG_RETAIL_STATUS_LABELS[status as RetailStatus] ??
+  CATALOG_DEALER_STATUS_LABELS[status as PricelistDealerStatus] ??
+  CATALOG_RETAIL_STATUS_LABELS[status as PricelistRetailStatus] ??
   status;
 
 export const statusBadgeClassMap: Record<DealerStatus | RetailStatus, string> = {
-  Hidden: "bg-zinc-100 text-zinc-700",
-  "Available for purchase": "bg-emerald-100 text-emerald-700",
-  "Unavailable for purchase": "bg-rose-100 text-rose-700",
-  "Available for sale": "bg-sky-100 text-sky-700",
-  "Made to order": "bg-amber-100 text-amber-700",
-  "Awaiting delivery": "bg-indigo-100 text-indigo-700",
-  Archived: "bg-zinc-100 text-zinc-700",
+  available: "bg-emerald-100 text-emerald-700",
+  unavailable: "bg-rose-100 text-rose-700",
+  draft: "bg-zinc-100 text-zinc-700",
+  preorder: "bg-amber-100 text-amber-700",
+  temporarily_unavailable: "bg-indigo-100 text-indigo-700",
+  discontinued: "bg-orange-100 text-orange-800",
+  banned: "bg-rose-100 text-rose-800",
+  hidden: "bg-zinc-100 text-zinc-700",
+  pending_approval: "bg-sky-100 text-sky-700",
+  archived: "bg-zinc-100 text-zinc-700",
 };
 
 export const formatCatalogUpdatedAt = (updatedAt: string) =>

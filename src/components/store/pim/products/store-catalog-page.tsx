@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
@@ -26,8 +26,11 @@ import {
   parseCatalogListingMode,
   type CatalogListingMode,
 } from "./catalog/catalog-helpers";
+import { resolveCatalogItemForRegion } from "./catalog/catalog-region";
 import { useCatalogController } from "./catalog/use-catalog-controller";
+import { useSelectedRegion } from "@/features/store/region-context";
 import { loadDbCatalogItems } from "@/features/store/store-catalog-from-logistics";
+import { loadVariantStockFacts, type VariantStockFact } from "@/features/store/variant-stock";
 import type { StoreCatalogItem } from "./store-catalog-demo-data";
 
 const StoreCatalogPageFallback = () => (
@@ -36,6 +39,7 @@ const StoreCatalogPageFallback = () => (
 
 const StoreCatalogPageContent = () => {
   const searchParams = useSearchParams();
+  const { selectedRegionCode } = useSelectedRegion();
 
   // With `output: "export"` the Next router does not update useSearchParams on
   // client-side router.replace (a no-op after a hard reload), so we own the
@@ -46,18 +50,21 @@ const StoreCatalogPageContent = () => {
 
   const columnsStorageKey = getCatalogColumnsStorageKey(listingMode);
   const [dbItems, setDbItems] = useState<StoreCatalogItem[] | null>(null);
+  const [stockFacts, setStockFacts] = useState<VariantStockFact[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    void loadDbCatalogItems()
-      .then((items) => {
+    void Promise.all([loadDbCatalogItems(), loadVariantStockFacts().catch(() => null)])
+      .then(([items, facts]) => {
         if (!cancelled) {
           setDbItems(items ?? []);
+          setStockFacts(facts ?? []);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setDbItems([]);
+          setStockFacts([]);
         }
       });
     return () => {
@@ -65,7 +72,12 @@ const StoreCatalogPageContent = () => {
     };
   }, []);
 
-  const catalog = useCatalogController(listingMode, columnsStorageKey, dbItems ?? []);
+  const regionResolvedItems = useMemo(
+    () => (dbItems ?? []).map((item) => resolveCatalogItemForRegion(item, selectedRegionCode)),
+    [dbItems, selectedRegionCode],
+  );
+
+  const catalog = useCatalogController(listingMode, columnsStorageKey, regionResolvedItems);
 
   const syncUrl = useCallback((mode: CatalogListingMode) => {
     if (typeof window === "undefined") {
@@ -177,6 +189,7 @@ const StoreCatalogPageContent = () => {
             isLoading={dbItems === null || catalog.isLoading}
             listingMode={listingMode}
             visibleColumnIds={catalog.columns.visibleIds}
+            stockFacts={stockFacts}
             footer={catalogFooter}
           />
         </div>

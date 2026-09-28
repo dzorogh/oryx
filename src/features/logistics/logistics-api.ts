@@ -1570,6 +1570,23 @@ export const createProduct = async (args: { name: string; unit: string; plantId?
   return String(created.variant_id);
 };
 
+export const createProductVariant = async (args: {
+  name: string;
+  productId: string;
+  unit?: string;
+  plantId?: string | null;
+  imageUrl?: string | null;
+}) => {
+  const created = await rpcJson<{ product_id: number; variant_id: number }>("store_create_product_variant", {
+    p_name: args.name,
+    p_unit: args.unit ?? "шт",
+    p_plant_id: args.plantId ? Number(args.plantId) : null,
+    p_image_url: args.imageUrl ?? null,
+    p_product_id: Number(args.productId),
+  });
+  return { productId: String(created.product_id), variantId: String(created.variant_id) };
+};
+
 export const createWarehouse = (args: { name: string; kind?: "hub" | "customer" }) =>
   rpcJson<number | string>("store_create_warehouse", {
     p_name: args.name,
@@ -1586,8 +1603,12 @@ export const updateWarehouse = (args: { id: string; name: string; kind?: "hub" |
 export const createRegion = (args: { name: string }) =>
   rpcJson<number | string>("store_create_region", { p_name: args.name, p_code: null }).then(String);
 
-export const updateRegion = (args: { id: string; name: string }) =>
-  rpc("store_update_region", { p_id: Number(args.id), p_name: args.name });
+export const updateRegion = (args: { id: string; name: string; hubWarehouseId?: string | null }) =>
+  rpc("store_update_region", {
+    p_id: Number(args.id),
+    p_name: args.name,
+    p_hub_warehouse_id: args.hubWarehouseId == null || args.hubWarehouseId === "" ? null : Number(args.hubWarehouseId),
+  });
 
 export const createPlant = (args: { name: string }) =>
   rpcJson<number | string>("store_create_plant", { p_name: args.name }).then(String);

@@ -1,4 +1,6 @@
 // english-ui:ignore-file
+"use client";
+
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import type { ReactNode } from "react";
@@ -9,9 +11,16 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SelectRegionStub } from "@/components/store/region/region-switcher";
+import { VariantStockSummary } from "@/components/store/stock/variant-stock-summary";
 import { cn } from "@/lib/utils";
 import { ProductPhoto } from "@/features/store/product-photo";
 import { getCategoryNodeLabel } from "@/features/store/category-tree";
+import { useSelectedRegion } from "@/features/store/region-context";
+import {
+  computeVariantRegionStock,
+  type VariantStockFact,
+} from "@/features/store/variant-stock";
 import { getCatalogItemDetailHref } from "./catalog-helpers";
 import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
 import { CatalogBuyTooltip } from "./catalog-buy-tooltip";
@@ -27,6 +36,8 @@ import {
   statusBadgeClassMap,
   type CatalogListingMode,
 } from "./catalog-helpers";
+import type { StoreRegionOption } from "@/features/store/region-context";
+import type { VariantStockRegion } from "@/features/store/variant-stock";
 
 const COLUMN_BORDER = "border-l border-[var(--corportal-border-grey)]";
 
@@ -96,7 +107,7 @@ const ProductNameCell = ({
   listingMode: CatalogListingMode;
 }) => {
   const displayName = getDisplayProductName(item.name);
-  const productHref = getCatalogItemDetailHref(item.id, listingMode);
+  const productHref = getCatalogItemDetailHref(item, listingMode);
 
   return (
     <div className="flex w-full max-w-full min-w-0 items-center gap-2.5" title={displayName}>
@@ -114,50 +125,60 @@ const ProductNameCell = ({
 };
 
 const StatusBadge = ({ status, className }: { status: DealerStatus | RetailStatus; className?: string }) => (
-  <Badge
-    className={cn(
-      statusBadgeClassMap[status],
-      className,
-    )}
-  >
-    {formatCatalogStatus(status)}
-  </Badge>
+  <Badge className={cn(statusBadgeClassMap[status], className)}>{formatCatalogStatus(status)}</Badge>
 );
 
 const PriceLabel = ({
   price,
+  currency,
   from = false,
   className,
+  needsRegion,
 }: {
   price: number | null;
+  currency?: string | null;
   from?: boolean;
   className?: string;
-}) => (
-  <span
-    className={cn(
-      "shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums",
-      price === null ? "text-muted-foreground" : "text-foreground",
-      className,
-    )}
-  >
-    {formatCatalogPrice(price, { from })}
-  </span>
-);
+  needsRegion?: boolean;
+}) => {
+  if (needsRegion) {
+    return (
+      <span className={cn("pointer-events-auto relative z-20 shrink-0", className)}>
+        <SelectRegionStub />
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums",
+        price === null ? "text-muted-foreground" : "text-foreground",
+        className,
+      )}
+    >
+      {formatCatalogPrice(price, { from, currency })}
+    </span>
+  );
+};
 
 const PriceStatusCell = ({
   price,
+  currency,
   status,
   from = false,
+  needsRegion,
 }: {
   price: number | null;
+  currency?: string | null;
   status: DealerStatus | RetailStatus;
   from?: boolean;
+  needsRegion?: boolean;
 }) => (
   <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
     <div className="min-w-0 overflow-hidden">
-      <StatusBadge status={status} />
+      {needsRegion ? null : <StatusBadge status={status} />}
     </div>
-    <PriceLabel price={price} from={from} className="text-right" />
+    <PriceLabel price={price} currency={currency} from={from} needsRegion={needsRegion} className="text-right" />
   </div>
 );
 
@@ -165,23 +186,30 @@ type DealerCellProps = {
   item: StoreCatalogItem;
   showBuyButton: boolean;
   priceFromPrefix: boolean;
+  needsRegion: boolean;
 };
 
-const DealerCell = ({ item, showBuyButton, priceFromPrefix }: DealerCellProps) => {
+const DealerCell = ({ item, showBuyButton, priceFromPrefix, needsRegion }: DealerCellProps) => {
   const displayName = getDisplayProductName(item.name);
-  const blockReason = getPurchaseBlockReason(item);
-  const canBuy = blockReason === null;
+  const blockReason = needsRegion ? "Выберите регион" : getPurchaseBlockReason(item);
+  const canBuy = !needsRegion && blockReason === null;
   const buyLabel = canBuy
-    ? `Добавить «${displayName}» в корзину за ${formatPrice(item.dealerPrice as number)}`
+    ? `Добавить «${displayName}» в корзину за ${formatPrice(item.dealerPrice as number, item.dealerCurrency ?? "USD")}`
     : `«${displayName}» недоступен для заказа: ${blockReason}`;
 
   return (
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
       <div className="min-w-0 overflow-hidden">
-        <StatusBadge status={item.dealerStatus} />
+        {needsRegion ? null : <StatusBadge status={item.dealerStatus} />}
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2">
-        <PriceLabel price={item.dealerPrice} from={priceFromPrefix} className="text-right" />
+        <PriceLabel
+          price={item.dealerPrice}
+          currency={item.dealerCurrency}
+          from={priceFromPrefix}
+          needsRegion={needsRegion}
+          className="text-right"
+        />
         {showBuyButton ? (
           <span className="relative z-20 inline-flex shrink-0 pointer-events-auto">
             <CatalogBuyTooltip reason={blockReason} className="inline-flex shrink-0">
@@ -209,10 +237,14 @@ type ColumnRenderContext = {
   priceFromPrefix: boolean;
   showCodeSubline: boolean;
   listingMode: CatalogListingMode;
+  needsRegion: boolean;
+  stockFacts: VariantStockFact[];
+  selectedRegion: StoreRegionOption | null;
+  onRequestRegion: () => void;
 };
 
 const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContext) => {
-  const { item, showBuyButton, priceFromPrefix, listingMode } = context;
+  const { item, showBuyButton, priceFromPrefix, listingMode, needsRegion } = context;
 
   switch (columnId) {
     case "name":
@@ -229,14 +261,42 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
       );
     case "site":
       return <span className="text-xs font-semibold text-muted-foreground">{item.productionSite}</span>;
-    case "stock":
-      return <span className="text-sm">{item.stock} шт</span>;
+    case "stock": {
+      const region: VariantStockRegion | null = context.selectedRegion;
+      const stock =
+        needsRegion || !region ? null : computeVariantRegionStock(context.stockFacts, item.id, region);
+      return (
+        <span className="pointer-events-auto relative z-20">
+          <VariantStockSummary
+            stock={stock}
+            needsRegion={needsRegion}
+            onRequestRegion={context.onRequestRegion}
+            compact
+          />
+        </span>
+      );
+    }
     case "updatedAt":
       return <span className="text-sm text-muted-foreground">{formatCatalogUpdatedAt(item.updatedAt)}</span>;
     case "dealer":
-      return <DealerCell item={item} showBuyButton={showBuyButton} priceFromPrefix={priceFromPrefix} />;
+      return (
+        <DealerCell
+          item={item}
+          showBuyButton={showBuyButton}
+          priceFromPrefix={priceFromPrefix}
+          needsRegion={needsRegion}
+        />
+      );
     case "retail":
-      return <PriceStatusCell price={item.retailPrice} status={item.retailStatus} from={priceFromPrefix} />;
+      return (
+        <PriceStatusCell
+          price={item.retailPrice}
+          currency={item.retailCurrency}
+          status={item.retailStatus}
+          from={priceFromPrefix}
+          needsRegion={needsRegion}
+        />
+      );
     case "family":
       return <span className="text-sm">{item.family}</span>;
     default:
@@ -263,7 +323,7 @@ const renderColumnSkeleton = (columnId: CatalogColumnId, showBuyButton: boolean,
     case "site":
       return <Skeleton className="h-3.5 w-12" />;
     case "stock":
-      return <Skeleton className="h-3.5 w-12" />;
+      return <Skeleton className="h-3.5 w-24" />;
     case "updatedAt":
       return <Skeleton className="h-3.5 w-24" />;
     case "dealer":
@@ -297,6 +357,10 @@ type CatalogTableRowProps = {
   showBuyButton: boolean;
   priceFromPrefix: boolean;
   showCodeSubline: boolean;
+  needsRegion: boolean;
+  stockFacts: VariantStockFact[];
+  selectedRegion: StoreRegionOption | null;
+  onRequestRegion: () => void;
 };
 
 const CatalogTableRow = ({
@@ -306,9 +370,13 @@ const CatalogTableRow = ({
   showBuyButton,
   priceFromPrefix,
   showCodeSubline,
+  needsRegion,
+  stockFacts,
+  selectedRegion,
+  onRequestRegion,
 }: CatalogTableRowProps) => {
   const displayName = getDisplayProductName(item.name);
-  const productHref = getCatalogItemDetailHref(item.id, listingMode);
+  const productHref = getCatalogItemDetailHref(item, listingMode);
 
   return (
     <TableRow className="relative hover:bg-muted/50">
@@ -328,6 +396,10 @@ const CatalogTableRow = ({
               priceFromPrefix,
               showCodeSubline,
               listingMode,
+              needsRegion,
+              stockFacts,
+              selectedRegion,
+              onRequestRegion,
             })}
           </div>
         </TableCell>
@@ -341,18 +413,22 @@ export const CatalogTable = ({
   isLoading,
   listingMode,
   visibleColumnIds,
+  stockFacts,
   footer,
 }: {
   items: StoreCatalogItem[];
   isLoading: boolean;
   listingMode: CatalogListingMode;
   visibleColumnIds: CatalogColumnId[];
+  stockFacts: VariantStockFact[];
   footer?: ReactNode;
 }) => {
+  const { selectedRegion, selectedRegionCode, setSwitcherOpen } = useSelectedRegion();
   const showBuyButton = listingMode === "variants";
   const priceFromPrefix = listingMode === "products";
   const columnCount = visibleColumnIds.length;
   const showCodeSubline = true;
+  const needsRegion = !selectedRegionCode;
 
   return (
     <TooltipProvider delay={200}>
@@ -404,6 +480,10 @@ export const CatalogTable = ({
                     showBuyButton={showBuyButton}
                     priceFromPrefix={priceFromPrefix}
                     showCodeSubline={showCodeSubline}
+                    needsRegion={needsRegion}
+                    stockFacts={stockFacts}
+                    selectedRegion={selectedRegion}
+                    onRequestRegion={() => setSwitcherOpen(true)}
                   />
                 ))
               )}

@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/logistics", destination: "/store/logistics/stock", permanent: false },
       { source: "/logistics/products", destination: "/store/pim/products", permanent: false },
-      { source: "/logistics/products/:id", destination: "/store/pim/products/:id", permanent: false },
+      { source: "/logistics/products/:id", destination: "/store/pim/variants/:id", permanent: false },
       {
         source: "/logistics/releases",
         destination: "/store/logistics/reservations?operation=release",

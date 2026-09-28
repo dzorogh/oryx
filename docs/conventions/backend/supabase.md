@@ -43,6 +43,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon JWT from Dokploy supabase Environment>
 
 If env is unset, UI may keep local demo data. If env is set, talk to this Kong URL only.
 
+PostgREST on this stack returns at most **1000 rows** per request (tables and set-returning RPCs alike); the rest is silently cut off. Read large tables (prices, statuses, stock facts) with `fetchAllRows` from `src/lib/supabase/fetch-all-rows.ts` and a stable `order(...)`.
+
 Reference (Pulse Thanks): `listThankYouEntries` / `insertThankYouEntry` — no login, shared feed.
 
 ## Agent access (MCP)

@@ -37,6 +37,7 @@ import { usePricelistDisplayCurrency } from "./use-pricelist-display-currency";
 import { usePricelistParameters } from "./use-pricelist-parameters";
 import { usePricelistsController, type AvailabilityFilter } from "./use-pricelists-controller";
 import { loadPricelistDbBootstrap } from "@/features/store/store-pricelists-from-db";
+import { useSelectedRegion } from "@/features/store/region-context";
 
 const PricelistsPageFallback = () => (
   <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Загрузка прайс-листов" />
@@ -44,6 +45,7 @@ const PricelistsPageFallback = () => (
 
 const PricelistsPageContent = () => {
   const searchParams = useSearchParams();
+  const { selectedRegionCode, setSelectedRegionCode } = useSelectedRegion();
   const [dataEpoch, setDataEpoch] = useState(0);
 
   // With `output: "export"` the Next router does not update useSearchParams on
@@ -52,9 +54,19 @@ const PricelistsPageContent = () => {
   const [scope, setScope] = useState<PricelistScope>(() =>
     parsePricelistScope(searchParams.get(SCOPE_QUERY_PARAM)),
   );
-  const [regionId, setRegionId] = useState<string>(() =>
-    parseRegionId(searchParams.get(REGION_QUERY_PARAM)),
-  );
+  // Table region: `?region=` of an opened link, else the shared selection, else the
+  // pricelist default. The default is never written to storage — only a user pick is.
+  const urlRegionRef = useRef(searchParams.get(REGION_QUERY_PARAM));
+  const [regionId, setRegionId] = useState<string>(() => parseRegionId(urlRegionRef.current));
+  const syncedSharedRegionRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedRegionCode || selectedRegionCode === syncedSharedRegionRef.current) return;
+    const isFirstSync = syncedSharedRegionRef.current === null;
+    syncedSharedRegionRef.current = selectedRegionCode;
+    if (isFirstSync && urlRegionRef.current) return;
+    setRegionId(parseRegionId(selectedRegionCode));
+  }, [selectedRegionCode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,16 +137,23 @@ const PricelistsPageContent = () => {
     window.history.replaceState(window.history.state, "", url);
   }, []);
 
+  // Keep URL in sync when shared region or table default region changes.
+  useEffect(() => {
+    if (!scopeHasRegion(scope)) return;
+    syncUrl(scope, regionId);
+  }, [scope, regionId, syncUrl]);
+
   // Keep state in sync with browser back/forward navigation.
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       setScope(parsePricelistScope(params.get(SCOPE_QUERY_PARAM)));
-      setRegionId(parseRegionId(params.get(REGION_QUERY_PARAM)));
+      const fromUrl = params.get(REGION_QUERY_PARAM);
+      setRegionId(parseRegionId(fromUrl ?? selectedRegionCode));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [selectedRegionCode]);
 
   const handleScopeChange = useCallback(
     (nextScope: PricelistScope) => {
@@ -148,10 +167,11 @@ const PricelistsPageContent = () => {
   const handleRegionChange = useCallback(
     (nextRegionId: string) => {
       controller.onPageChange(1);
+      setSelectedRegionCode(nextRegionId);
       setRegionId(nextRegionId);
       syncUrl(scope, nextRegionId);
     },
-    [controller, scope, syncUrl],
+    [controller, scope, setSelectedRegionCode, syncUrl],
   );
 
   // Exports the current pricelist: the selected scope/region, every row that

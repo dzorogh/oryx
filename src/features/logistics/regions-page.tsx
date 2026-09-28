@@ -1,14 +1,22 @@
 // english-ui:ignore-file
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { hrefForRegion } from "@/features/logistics/logistics-availability";
 import { createRegion, updateRegion } from "@/features/logistics/logistics-api";
+import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { productById } from "@/features/logistics/logistics-lookups";
 import { relatedReservationsForRegion } from "@/features/logistics/logistics-related";
@@ -30,6 +38,42 @@ import { LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
 import { RelatedDocuments } from "@/features/logistics/ui/related-documents";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+
+type HubOption = { id: string; code: string };
+
+const NO_HUB_VALUE = "none";
+
+const loadRegionHubMap = async (): Promise<{
+  hubByRegionId: Map<string, string | null>;
+  hubs: HubOption[];
+}> => {
+  if (!isSupabaseConfigured()) {
+    return { hubByRegionId: new Map(), hubs: [] };
+  }
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    return { hubByRegionId: new Map(), hubs: [] };
+  }
+  const [regionsResult, hubsResult] = await Promise.all([
+    client.from("store_region").select("id,hub_warehouse_id").is("deleted_at", null),
+    client.from("store_warehouse").select("id").eq("kind", "hub").is("deleted_at", null).order("id"),
+  ]);
+  if (regionsResult.error) throw new Error(regionsResult.error.message);
+  if (hubsResult.error) throw new Error(hubsResult.error.message);
+  const hubByRegionId = new Map<string, string | null>();
+  for (const row of (regionsResult.data ?? []) as Array<{
+    id: number | string;
+    hub_warehouse_id: number | string | null;
+  }>) {
+    hubByRegionId.set(String(row.id), row.hub_warehouse_id == null ? null : String(row.hub_warehouse_id));
+  }
+  const hubs: HubOption[] = ((hubsResult.data ?? []) as Array<{ id: number | string }>).map((row) => ({
+    id: String(row.id),
+    code: formatLogisticsCode("warehouse", row.id),
+  }));
+  return { hubByRegionId, hubs };
+};
 
 export const RegionsPage = () => {
   const router = useRouter();
@@ -39,10 +83,38 @@ export const RegionsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const rows = mapRegionRows(snapshot).filter((row) => {
+  const [hubByRegionId, setHubByRegionId] = useState<Map<string, string | null>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadRegionHubMap()
+      .then((loaded) => {
+        if (!cancelled) setHubByRegionId(loaded.hubByRegionId);
+      })
+      .catch(() => {
+        // Leave hub column empty on load failure.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [snapshot.regions.length]);
+
+  const hubCodeByRegionId = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const [regionId, hubId] of hubByRegionId) {
+      map.set(regionId, hubId ? formatLogisticsCode("warehouse", hubId) : null);
+    }
+    return map;
+  }, [hubByRegionId]);
+
+  const rows = mapRegionRows(snapshot, hubCodeByRegionId).filter((row) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
-    return row.code.toLowerCase().includes(q) || row.name.toLowerCase().includes(q);
+    return (
+      row.code.toLowerCase().includes(q) ||
+      row.name.toLowerCase().includes(q) ||
+      (row.hubCode ?? "").toLowerCase().includes(q)
+    );
   });
 
   const create = async () => {
@@ -113,8 +185,37 @@ export const RegionDetailPage = () => {
   const region = snapshot.regions.find((item) => item.id === params.id);
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState("");
+  const [hubWarehouseId, setHubWarehouseId] = useState<string>("");
+  const [hubs, setHubs] = useState<HubOption[]>([]);
+  const [currentHubId, setCurrentHubId] = useState<string | null>(null);
+  const [hubsLoaded, setHubsLoaded] = useState(false);
+  const [hubsLoadError, setHubsLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHubsLoaded(false);
+    setHubsLoadError(null);
+    void loadRegionHubMap()
+      .then((loaded) => {
+        if (cancelled) return;
+        setHubs(loaded.hubs);
+        const hubId = loaded.hubByRegionId.get(String(params.id ?? "")) ?? null;
+        setCurrentHubId(hubId);
+        setHubsLoaded(true);
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return;
+        setHubs([]);
+        setCurrentHubId(null);
+        setHubsLoaded(false);
+        setHubsLoadError(caught instanceof Error ? caught.message : "Не удалось загрузить хабы.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id, snapshot.regions.length]);
 
   const reserved = region
     ? balances.filter(
@@ -134,6 +235,7 @@ export const RegionDetailPage = () => {
 
   const openEdit = () => {
     setName(region?.name ?? "");
+    setHubWarehouseId(currentHubId ?? "");
     setEditOpen(true);
   };
 
@@ -142,8 +244,13 @@ export const RegionDetailPage = () => {
     setSubmitting(true);
     setServerError(null);
     try {
-      await updateRegion({ id: region.id, name: name.trim() });
+      await updateRegion({
+        id: region.id,
+        name: name.trim(),
+        hubWarehouseId: hubWarehouseId || null,
+      });
       await reload();
+      setCurrentHubId(hubWarehouseId || null);
       setEditOpen(false);
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
@@ -161,17 +268,28 @@ export const RegionDetailPage = () => {
     );
   }
 
+  const hubCode = currentHubId ? formatLogisticsCode("warehouse", currentHubId) : "—";
+
   return (
     <LogisticsPageShell crumbs={[{ label: "Регионы", href: "/store/logistics/regions" }, { label: region.name }]}>
       <LogisticsToolbar
         title={region.name}
         titleMeta={<LogisticsCodeBadge code={region.code} />}
         actions={
-          <Button type="button" size="sm" onClick={openEdit}>
+          <Button type="button" size="sm" onClick={openEdit} disabled={!hubsLoaded}>
             Изменить
           </Button>
         }
       />
+      <p className="text-sm text-muted-foreground">
+        {hubsLoadError ? (
+          <span className="text-destructive">{hubsLoadError}</span>
+        ) : (
+          <>
+            Хаб: <span className="font-medium text-foreground tabular-nums">{hubCode}</span>
+          </>
+        )}
+      </p>
       <LogisticsTableCard
         title="Резерв"
         headers={["Товар", "Зарезервировано"]}
@@ -215,7 +333,7 @@ export const RegionDetailPage = () => {
         disabledReason="Укажите название"
         submitting={submitting}
         serverError={serverError}
-        dirty={name.trim() !== region.name}
+        dirty={name.trim() !== region.name || (hubWarehouseId || null) !== (currentHubId || null)}
       >
         <div className="flex flex-col gap-3">
           <label className="space-y-1.5 text-sm">
@@ -225,6 +343,31 @@ export const RegionDetailPage = () => {
           <label className="space-y-1.5 text-sm">
             <span className="text-muted-foreground">Название</span>
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="ОАЭ" />
+          </label>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-muted-foreground">Хаб</span>
+            <Select
+              items={[
+                { value: NO_HUB_VALUE, label: "Не задан" },
+                ...hubs.map((hub) => ({ value: hub.id, label: hub.code })),
+              ]}
+              value={hubWarehouseId || NO_HUB_VALUE}
+              onValueChange={(value) => setHubWarehouseId(!value || value === NO_HUB_VALUE ? "" : value)}
+            >
+              <SelectTrigger className="bg-background" aria-label="Хаб региона">
+                <SelectValue placeholder="Выберите хаб" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value={NO_HUB_VALUE}>Не задан</SelectItem>
+                  {hubs.map((hub) => (
+                    <SelectItem key={hub.id} value={hub.id}>
+                      {hub.code}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </DialogShell>

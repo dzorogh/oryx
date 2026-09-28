@@ -6,7 +6,7 @@ type PageProps = {
 
 const Page = async ({ params }: PageProps) => {
   const { id } = await params;
-  redirect(`/store/pim/products/${id}`);
+  redirect(`/store/pim/variants/${id}`);
 };
 
 export default Page;

@@ -9,6 +9,7 @@ import type {
 import { isCurrencyCode, isDealerStatus, isRetailStatus } from "@/components/store/pim/pricelists/pricelists-helpers";
 import { loadDbCatalogItems } from "@/features/store/store-catalog-from-logistics";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 
 export type PricelistRegionGroupRow = {
   id: string;
@@ -89,7 +90,7 @@ export const loadPricelistDbBootstrap = async (): Promise<PricelistDbBootstrap |
     return null;
   }
 
-  const [currenciesResult, groupsResult, regionsResult, pricesResult, statusesResult] =
+  const [currenciesResult, groupsResult, regionsResult, priceRows, statusRows] =
     await Promise.all([
       client.from("store_currency").select("id,code").is("deleted_at", null),
       client
@@ -103,20 +104,26 @@ export const loadPricelistDbBootstrap = async (): Promise<PricelistDbBootstrap |
         .is("deleted_at", null)
         .eq("active", true)
         .order("sort_order", { ascending: true }),
-      client
-        .from("store_product_price")
-        .select("product_variant_id,price_kind,region_id,currency_id,amount,active")
-        .eq("active", true),
-      client
-        .from("store_product_region_status")
-        .select("product_variant_id,region_id,dealer_status,retail_status"),
+      fetchAllRows<PriceRow>((from, to) =>
+        client
+          .from("store_product_price")
+          .select("product_variant_id,price_kind,region_id,currency_id,amount,active")
+          .eq("active", true)
+          .order("id", { ascending: true })
+          .range(from, to),
+      ),
+      fetchAllRows<StatusRow>((from, to) =>
+        client
+          .from("store_product_region_status")
+          .select("product_variant_id,region_id,dealer_status,retail_status")
+          .order("id", { ascending: true })
+          .range(from, to),
+      ),
     ]);
 
   if (currenciesResult.error) throw new Error(currenciesResult.error.message);
   if (groupsResult.error) throw new Error(groupsResult.error.message);
   if (regionsResult.error) throw new Error(regionsResult.error.message);
-  if (pricesResult.error) throw new Error(pricesResult.error.message);
-  if (statusesResult.error) throw new Error(statusesResult.error.message);
 
   const currencyCodeById = new Map(
     ((currenciesResult.data ?? []) as CurrencyRow[]).map((row) => [String(row.id), row.code]),
@@ -147,7 +154,7 @@ export const loadPricelistDbBootstrap = async (): Promise<PricelistDbBootstrap |
   }
 
   const prices = new Map<string, PricelistCellValue>();
-  for (const row of (pricesResult.data ?? []) as PriceRow[]) {
+  for (const row of priceRows) {
     const amount = toNumber(row.amount);
     const currencyRaw = currencyCodeById.get(String(row.currency_id));
     if (amount == null || !currencyRaw || !isCurrencyCode(currencyRaw)) continue;
@@ -170,7 +177,7 @@ export const loadPricelistDbBootstrap = async (): Promise<PricelistDbBootstrap |
 
   const dealerStatuses = new Map<string, DealerStatus>();
   const retailStatuses = new Map<string, RetailStatus>();
-  for (const row of (statusesResult.data ?? []) as StatusRow[]) {
+  for (const row of statusRows) {
     const regionCode = regionCodeById.get(String(row.region_id));
     if (!regionCode) continue;
     const variantId = String(row.product_variant_id);

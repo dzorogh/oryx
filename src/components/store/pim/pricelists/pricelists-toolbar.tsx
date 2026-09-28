@@ -14,9 +14,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CatalogCategoryTreeFilter } from "../products/catalog/catalog-category-tree-filter";
 import { CatalogQuickSearchControl } from "../products/catalog/catalog-filters";
+import { RegionSwitcher } from "@/components/store/region/region-switcher";
 import { PricelistsPresence } from "./pricelists-presence";
 import {
-  getPricelistRegions,
   PRICELIST_SCOPE_DESCRIPTIONS,
   PRICELIST_SCOPE_LABELS,
   PRICELIST_SCOPES,
@@ -61,9 +61,7 @@ export const PricelistsToolbar = ({
   onOpenColumns,
   onExport,
   isExporting,
-}: PricelistsToolbarProps) => {
-  const regions = getPricelistRegions();
-  return (
+}: PricelistsToolbarProps) => (
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
     <CardHeader className="gap-0 space-y-2 pb-0">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
@@ -109,35 +107,11 @@ export const PricelistsToolbar = ({
             </ToggleGroup>
 
             {scopeHasRegion(scope) ? (
-              <Select
-                items={regions.map((region) => ({
-                  value: region.id,
-                  label: region.label,
-                }))}
+              <RegionSwitcher
                 value={regionId}
-                onValueChange={(value) => {
-                  if (value) {
-                    onRegionChange(value);
-                  }
-                }}
-              >
-                <SelectTrigger
-                  size="default"
-                  className="min-w-[140px] flex-1 bg-background lg:w-[180px] lg:flex-none"
-                  aria-label="Выбрать регион"
-                >
-                  <SelectValue placeholder="Выберите регион" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {regions.map((region) => (
-                      <SelectItem key={region.id} value={region.id}>
-                        {region.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                onValueChange={onRegionChange}
+                className="min-w-[140px] flex-1 lg:w-[220px] lg:flex-none"
+              />
             ) : null}
 
             <Select
@@ -253,5 +227,4 @@ export const PricelistsToolbar = ({
       </TooltipProvider>
     </CardHeader>
   </Card>
-  );
-};
+);

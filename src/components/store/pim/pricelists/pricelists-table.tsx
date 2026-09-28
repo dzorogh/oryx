@@ -84,7 +84,7 @@ const ProductNameCell = ({ row }: { row: PricelistRow }) => {
       </div>
       <div className="min-w-0 flex-1 basis-0 overflow-hidden">
         <Link
-          href={getCatalogItemDetailHref(row.id, "variants")}
+          href={getCatalogItemDetailHref(row, "variants")}
           className="block truncate text-sm font-semibold text-foreground outline-none hover:underline focus-visible:underline"
         >
           {displayName}

@@ -1,14 +1,36 @@
 import type { StaticImageData } from "next/image";
 
 import { STORE_DEMO_IMAGES } from "@/assets/store/demo-images";
+import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 
-export type DealerStatus = "Hidden" | "Available for purchase" | "Unavailable for purchase";
+import type {
+  DealerStatus as PricelistDealerStatus,
+  RetailStatus as PricelistRetailStatus,
+} from "@/components/store/pim/pricelists/pricelists-helpers";
 
-export type RetailStatus = "Available for sale" | "Made to order" | "Awaiting delivery" | "Archived";
+export type DealerStatus = PricelistDealerStatus;
+export type RetailStatus = PricelistRetailStatus;
+
+export type CatalogRegionPrice = {
+  amount: number;
+  currency: CurrencyCode;
+};
+
+export type CatalogRegionPrices = {
+  dealer: CatalogRegionPrice | null;
+  retail: CatalogRegionPrice | null;
+};
+
+export type CatalogRegionStatuses = {
+  dealer: DealerStatus;
+  retail: RetailStatus;
+};
 
 export type StoreCatalogItem = {
   id: string;
+  /** Parent store_product.id; equals id for demo bike-* rows. */
+  productId: string;
   name: string;
   code: string;
   imageSrc: StaticImageData | string;
@@ -21,12 +43,18 @@ export type StoreCatalogItem = {
   updatedAt: string;
   dealerPrice: number | null;
   retailPrice: number | null;
+  dealerCurrency?: CurrencyCode | null;
+  retailCurrency?: CurrencyCode | null;
   dealerStatus: DealerStatus;
   retailStatus: RetailStatus;
   productionSite: string;
+  /** Prices keyed by region code; used when a region is selected. */
+  regionPrices?: Record<string, CatalogRegionPrices>;
+  /** Statuses keyed by region code. */
+  regionStatuses?: Record<string, CatalogRegionStatuses>;
 };
 
-type StoreCatalogSeedItem = Omit<StoreCatalogItem, "brand" | "stock" | "updatedAt" | "code">;
+type StoreCatalogSeedItem = Omit<StoreCatalogItem, "brand" | "stock" | "updatedAt" | "code" | "productId">;
 
 const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
   {
@@ -39,8 +67,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Force",
     dealerPrice: 11990,
     retailPrice: 13990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-53",
   },
   {
@@ -53,8 +81,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Force",
     dealerPrice: 9790,
     retailPrice: 11490,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Made to order",
+    dealerStatus: "available",
+    retailStatus: "preorder",
     productionSite: "SH-21",
   },
   {
@@ -67,8 +95,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Cross",
     dealerPrice: 5490,
     retailPrice: 6490,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Awaiting delivery",
+    dealerStatus: "unavailable",
+    retailStatus: "temporarily_unavailable",
     productionSite: "SH-53",
   },
   {
@@ -81,8 +109,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Cross",
     dealerPrice: 4990,
     retailPrice: 5990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-40",
   },
   {
@@ -95,8 +123,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Urban",
     dealerPrice: 2790,
     retailPrice: 3290,
-    dealerStatus: "Hidden",
-    retailStatus: "Archived",
+    dealerStatus: "unavailable",
+    retailStatus: "archived",
     productionSite: "SH-12",
   },
   {
@@ -109,8 +137,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Sprint",
     dealerPrice: 3290,
     retailPrice: 3890,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-53",
   },
   {
@@ -123,8 +151,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "GP",
     dealerPrice: 7190,
     retailPrice: 8490,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Made to order",
+    dealerStatus: "available",
+    retailStatus: "preorder",
     productionSite: "SH-53",
   },
   {
@@ -137,8 +165,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "GP",
     dealerPrice: 9290,
     retailPrice: 10990,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Awaiting delivery",
+    dealerStatus: "unavailable",
+    retailStatus: "temporarily_unavailable",
     productionSite: "SH-08",
   },
   {
@@ -151,8 +179,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "RST",
     dealerPrice: 10290,
     retailPrice: 11990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-21",
   },
   {
@@ -165,8 +193,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "RST",
     dealerPrice: 11590,
     retailPrice: 13490,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Made to order",
+    dealerStatus: "available",
+    retailStatus: "preorder",
     productionSite: "SH-53",
   },
   {
@@ -179,8 +207,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Ace",
     dealerPrice: 18990,
     retailPrice: 21990,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Awaiting delivery",
+    dealerStatus: "unavailable",
+    retailStatus: "temporarily_unavailable",
     productionSite: "SH-53",
   },
   {
@@ -193,8 +221,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Ace",
     dealerPrice: 14490,
     retailPrice: 16990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-40",
   },
   {
@@ -207,8 +235,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Force",
     dealerPrice: 8490,
     retailPrice: 9990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-53",
   },
   {
@@ -221,8 +249,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Force",
     dealerPrice: 10690,
     retailPrice: 12490,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Made to order",
+    dealerStatus: "unavailable",
+    retailStatus: "preorder",
     productionSite: "SH-21",
   },
   {
@@ -235,8 +263,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Cross",
     dealerPrice: 4990,
     retailPrice: 5990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Made to order",
+    dealerStatus: "available",
+    retailStatus: "preorder",
     productionSite: "SH-40",
   },
   {
@@ -249,8 +277,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Cross",
     dealerPrice: 6790,
     retailPrice: 7990,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Awaiting delivery",
+    dealerStatus: "unavailable",
+    retailStatus: "temporarily_unavailable",
     productionSite: "SH-53",
   },
   {
@@ -263,8 +291,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Urban",
     dealerPrice: 2290,
     retailPrice: 2790,
-    dealerStatus: "Hidden",
-    retailStatus: "Archived",
+    dealerStatus: "unavailable",
+    retailStatus: "archived",
     productionSite: "SH-12",
   },
   {
@@ -277,8 +305,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Sprint",
     dealerPrice: 3790,
     retailPrice: 4490,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-53",
   },
   {
@@ -291,8 +319,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "GP",
     dealerPrice: 5490,
     retailPrice: 6490,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-08",
   },
   {
@@ -305,8 +333,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "GP",
     dealerPrice: 9790,
     retailPrice: 11490,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Made to order",
+    dealerStatus: "unavailable",
+    retailStatus: "preorder",
     productionSite: "SH-53",
   },
   {
@@ -319,8 +347,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "RST",
     dealerPrice: 8490,
     retailPrice: 9990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Available for sale",
+    dealerStatus: "available",
+    retailStatus: "available",
     productionSite: "SH-21",
   },
   {
@@ -333,8 +361,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "RST",
     dealerPrice: 12890,
     retailPrice: 14990,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Awaiting delivery",
+    dealerStatus: "unavailable",
+    retailStatus: "temporarily_unavailable",
     productionSite: "SH-53",
   },
   {
@@ -347,8 +375,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Ace",
     dealerPrice: 16290,
     retailPrice: 18990,
-    dealerStatus: "Available for purchase",
-    retailStatus: "Made to order",
+    dealerStatus: "available",
+    retailStatus: "preorder",
     productionSite: "SH-40",
   },
   {
@@ -361,8 +389,8 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
     family: "Ace",
     dealerPrice: 20490,
     retailPrice: 23990,
-    dealerStatus: "Unavailable for purchase",
-    retailStatus: "Awaiting delivery",
+    dealerStatus: "unavailable",
+    retailStatus: "temporarily_unavailable",
     productionSite: "SH-53",
   },
 ];
@@ -370,14 +398,14 @@ const STORE_CATALOG_BASE_ITEMS: StoreCatalogSeedItem[] = [
 const GENERATED_ITEMS_COUNT = 48;
 const GENERATED_SITE_CODES = ["SH-12", "SH-21", "SH-40", "SH-53", "SH-08"] as const;
 const GENERATED_DEALER_STATUSES: DealerStatus[] = [
-  "Available for purchase",
-  "Unavailable for purchase",
-  "Hidden",
+  "available",
+  "unavailable",
+  "unavailable",
 ];
 const GENERATED_RETAIL_STATUSES: RetailStatus[] = [
-  "Available for sale",
-  "Made to order",
-  "Awaiting delivery",
+  "available",
+  "preorder",
+  "temporarily_unavailable",
 ];
 
 const GENERATED_CATALOG_ITEMS: StoreCatalogSeedItem[] = Array.from({ length: GENERATED_ITEMS_COUNT }, (_, index) => {
@@ -396,8 +424,8 @@ const GENERATED_CATALOG_ITEMS: StoreCatalogSeedItem[] = Array.from({ length: GEN
     family: baseItem.family,
     dealerPrice,
     retailPrice,
-    dealerStatus: GENERATED_DEALER_STATUSES[index % GENERATED_DEALER_STATUSES.length] ?? "Available for purchase",
-    retailStatus: GENERATED_RETAIL_STATUSES[index % GENERATED_RETAIL_STATUSES.length] ?? "Available for sale",
+    dealerStatus: GENERATED_DEALER_STATUSES[index % GENERATED_DEALER_STATUSES.length] ?? "available",
+    retailStatus: GENERATED_RETAIL_STATUSES[index % GENERATED_RETAIL_STATUSES.length] ?? "available",
     productionSite: GENERATED_SITE_CODES[index % GENERATED_SITE_CODES.length] ?? "SH-53",
   };
 });
@@ -436,6 +464,7 @@ const applyPriceGaps = (items: StoreCatalogSeedItem[]): StoreCatalogSeedItem[] =
 const applyCatalogEnrichment = (items: StoreCatalogSeedItem[]): StoreCatalogItem[] =>
   items.map((item, index) => ({
     ...item,
+    productId: item.id,
     code: formatLogisticsCode("product", item.id),
     brand: "Sharmax",
     stock: 5 + ((index * 7) % 116),

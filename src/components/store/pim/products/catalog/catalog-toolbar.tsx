@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CatalogColumnsButton } from "./catalog-columns-button";
 import { CatalogFiltersButton, CatalogQuickSearchControl } from "./catalog-filters";
 import { CatalogCategoryTreeFilter } from "./catalog-category-tree-filter";
+import { RegionSwitcher } from "@/components/store/region/region-switcher";
 import {
   CATALOG_LISTING_MODE_DESCRIPTIONS,
   CATALOG_LISTING_MODE_LABELS,
@@ -83,6 +84,8 @@ export const CatalogToolbar = ({
         </TooltipProvider>
 
         <CatalogQuickSearchControl value={filters.search.value} onChange={filters.search.onChange} />
+
+        <RegionSwitcher className="w-full lg:w-auto" />
 
         <CatalogCategoryTreeFilter
           value={filters.category.value}

@@ -5,7 +5,7 @@ export const LOGISTICS_BASE_PATH = "/store/logistics";
 export const logisticsPath = (...segments: Array<string | number>): string =>
   [LOGISTICS_BASE_PATH, ...segments.map(String)].join("/");
 
-export const hrefForStoreProduct = (id: string | number): string => `${STORE_PRODUCTS_PATH}/${id}`;
+export const hrefForStoreProduct = (id: string | number): string => `/store/pim/variants/${id}`;
 
 export const LOGISTICS_PATHS = {
   root: LOGISTICS_BASE_PATH,

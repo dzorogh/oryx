@@ -292,3 +292,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-dialog-field-alignment.md`
   summary: Перевести английские подписи в `team-directory-page.tsx` и `profile-deputy-section.tsx` на русский.
   evidence: Search / District / Department / Position, Deputy / Substitute while on vacation нарушают правило русских подписей.
+- source_spec: `_bmad-output/implementation-artifacts/spec-catalog-region-prices-variant-switcher.md`
+  summary: Вынести разбор строк цен и статусов из `loadRegionPricing` в чистую функцию и покрыть тестом (ключ — код региона, валюта своя у каждой цены, неактивные регионы и неизвестные валюты отбрасываются).
+  evidence: Сейчас маппинг завязан на вызовы клиента Supabase; перепутанный ключ или общая валюта для дилерской и розничной цены прошли бы все тесты.
+- source_spec: `_bmad-output/implementation-artifacts/spec-catalog-region-prices-variant-switcher.md`
+  summary: Вынести приоритет региона прайс-листа (`?region=` ссылки при первой синхронизации, дальше — общее значение) в чистую функцию с тестом.
+  evidence: Логика живёт в эффектах `pricelists-page.tsx`; удаление проверки `isFirstSync && urlRegionRef.current` ничего не сломает в тестах. Проверено только в браузере.
