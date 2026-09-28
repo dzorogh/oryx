@@ -45,6 +45,14 @@ const COLUMN_BORDER = "border-l border-[var(--corportal-border-grey)]";
 
 const borderedColumnIds = new Set<CatalogColumnId>(["dealer", "retail"]);
 
+/** Варианты: статус, цена и счётчик корзины вплотную, колонка не раздувается на всю ширину таблицы. */
+const DEALER_BUY_COLUMN_PX = 330;
+
+const dealerBuyColumnStyle = (columnId: CatalogColumnId, showBuyButton: boolean) =>
+  columnId === "dealer" && showBuyButton
+    ? { width: DEALER_BUY_COLUMN_PX, maxWidth: DEALER_BUY_COLUMN_PX }
+    : undefined;
+
 const getColumnCellClassName = (columnId: CatalogColumnId) =>
   cn(
     "max-w-0 min-w-0 overflow-hidden px-3 py-2",
@@ -203,10 +211,8 @@ const DealerCell = ({ item, showBuyButton, priceFromPrefix, needsRegion }: Deale
     : `«${displayName}» недоступен для заказа: ${blockReason}`;
 
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-      <div className="min-w-0 overflow-hidden">
-        {needsRegion ? null : <StatusBadge status={item.dealerStatus} />}
-      </div>
+    <div className="flex items-center justify-end gap-2">
+      {needsRegion ? null : <StatusBadge status={item.dealerStatus} />}
       <div className="flex shrink-0 items-center justify-end gap-2">
         <PriceLabel
           price={item.dealerPrice}
@@ -396,7 +402,11 @@ const CatalogTableRow = ({
   return (
     <TableRow className="relative hover:bg-muted/50">
       {visibleColumnIds.map((columnId, columnIndex) => (
-        <TableCell key={columnId} className={cn(getColumnCellClassName(columnId), "relative")}>
+        <TableCell
+          key={columnId}
+          className={cn(getColumnCellClassName(columnId), "relative")}
+          style={dealerBuyColumnStyle(columnId, showBuyButton)}
+        >
           <Link
             href={productHref}
             className="absolute inset-0 z-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
@@ -453,10 +463,23 @@ export const CatalogTable = ({
             <colgroup>
               {visibleColumnIds.map((columnId) => {
                 const columnDefinition = getCatalogColumnDefinition(columnId);
-                // The cart counter («− N +») needs room next to the status badge and price.
-                const widthClass =
-                  columnId === "dealer" && showBuyButton ? "w-[390px]" : columnDefinition?.widthClass;
-                return <col key={columnId} className={widthClass} />;
+                const flexibleName = columnId === "name";
+                const widthClass = flexibleName
+                  ? "min-w-[220px]"
+                  : columnId === "dealer" && showBuyButton
+                    ? "w-[330px]"
+                    : columnDefinition?.widthClass;
+                return (
+                  <col
+                    key={columnId}
+                    className={widthClass}
+                    style={
+                      flexibleName
+                        ? { width: "auto", minWidth: 220 }
+                        : dealerBuyColumnStyle(columnId, showBuyButton)
+                    }
+                  />
+                );
               })}
             </colgroup>
             <TableHeader>
@@ -464,7 +487,11 @@ export const CatalogTable = ({
                 {visibleColumnIds.map((columnId) => {
                   const columnDefinition = getCatalogColumnDefinition(columnId);
                   return (
-                    <TableHead key={columnId} className={getColumnHeadClassName(columnId)}>
+                    <TableHead
+                      key={columnId}
+                      className={getColumnHeadClassName(columnId)}
+                      style={dealerBuyColumnStyle(columnId, showBuyButton)}
+                    >
                       {columnDefinition?.label}
                     </TableHead>
                   );
@@ -476,7 +503,11 @@ export const CatalogTable = ({
                 Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
                   <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
                     {visibleColumnIds.map((columnId) => (
-                      <TableCell key={columnId} className={getColumnCellClassName(columnId)}>
+                      <TableCell
+                        key={columnId}
+                        className={getColumnCellClassName(columnId)}
+                        style={dealerBuyColumnStyle(columnId, showBuyButton)}
+                      >
                         {renderColumnSkeleton(columnId, showBuyButton, showCodeSubline)}
                       </TableCell>
                     ))}
