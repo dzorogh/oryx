@@ -707,12 +707,14 @@ type RowContext = {
   stickyIds: Set<string>;
 };
 
+type GroupTotalCell = { key: string; value: ReactNode; className?: string };
+
 const GroupHeaderRow = ({
   id,
   depth,
   title,
   count,
-  colSpan,
+  cells,
   collapsed,
   stickyTop,
   onToggle,
@@ -722,7 +724,8 @@ const GroupHeaderRow = ({
   depth: number;
   title: string;
   count: string;
-  colSpan: number;
+  /** Totals for every column after the identity column. */
+  cells: GroupTotalCell[];
   collapsed: boolean;
   stickyTop: string | undefined;
   onToggle: () => void;
@@ -760,16 +763,88 @@ const GroupHeaderRow = ({
         {title}
         <span className="font-normal text-muted-foreground">· {count}</span>
       </button>
-    </td>
-    <td
-      className={cn("h-8 border-b border-r border-border bg-zinc-50 px-2 py-0", stickyTop && "sticky z-[15]")}
-      style={{ top: stickyTop }}
-      colSpan={colSpan - 1}
-    >
       {tools}
     </td>
+    {cells.map((cell) => (
+      <td
+        key={cell.key}
+        className={cn(
+          "h-8 border-b border-r border-border bg-zinc-50 px-2 py-0 text-right text-xs font-semibold whitespace-nowrap tabular-nums",
+          cell.className,
+          stickyTop && "sticky z-[15]",
+        )}
+        style={{ top: stickyTop }}
+      >
+        {cell.value}
+      </td>
+    ))}
   </tr>
 );
+
+const subtreeProducts = (node: CategoryTreeNode<OutputCalendarProduct>): OutputCalendarProduct[] => {
+  const byId = new Map<string, OutputCalendarProduct>();
+  const walk = (current: CategoryTreeNode<OutputCalendarProduct>) => {
+    for (const product of current.products) byId.set(product.id, product);
+    current.children.forEach(walk);
+  };
+  walk(node);
+  return [...byId.values()];
+};
+
+/** Σ of the product rows; a product listed in several subcategories counts once. */
+const categoryTotalCells = (
+  products: OutputCalendarProduct[],
+  ctx: RowContext,
+  ownerSet: Set<string>,
+  plantId: string | null,
+): GroupTotalCell[] => {
+  const { page, columns, currentKey, today } = ctx;
+  const unit = products.every((product) => product.unit === products[0]?.unit) ? products[0]?.unit : undefined;
+  const label = (quantity: number) => (quantity > 0 ? formatQuantity(quantity, unit) : null);
+  const sum = (quantityOf: (product: OutputCalendarProduct) => number) =>
+    products.reduce((total, product) => total + quantityOf(product), 0);
+  return [
+    { key: "plant", value: null },
+    { key: "stock", value: label(sum((p) => stockQuantity(p.id, page.stock, ownerSet))) },
+    { key: "unassigned", value: label(sum((p) => unassignedCell(p.id, page.openOrders, plantId).quantity)) },
+    { key: "no-date", value: label(sum((p) => noDateCell(p.id, page.outputLines, ownerSet, plantId).quantity)) },
+    ...columns.map((column) => {
+      const quantity = sum((p) => periodCell(p.id, column.period, page.outputLines, ownerSet, plantId).quantity);
+      return {
+        key: column.key,
+        value: label(quantity),
+        className: cn(
+          isCurrentColumn(column, currentKey, today) && "bg-zinc-100",
+          quantity > 0 && isPastColumn(column, currentKey, today) && "bg-red-50 text-red-700",
+        ),
+      };
+    }),
+  ];
+};
+
+const moneyTotalCells = (rows: MoneyRow[], hiddenStatuses: UnpaidStatus[], ctx: RowContext): GroupTotalCell[] => {
+  const { page, columns, currentKey, today } = ctx;
+  const currency = page.productionCurrency;
+  const label = (amount: number) => (amount > 0 ? formatOrderMoney(amount, currency, { compact: true }) : null);
+  const unallocated = rows.reduce((total, row) => total + moneyUnallocatedCell(row, currency).amount, 0);
+  return [
+    { key: "plant", value: null },
+    { key: "stock", value: null },
+    { key: "unassigned", value: label(unallocated) },
+    { key: "no-date", value: null },
+    ...columns.map((column) => {
+      const cells = rows.map((row) => moneyPeriodCell(row, column.period, hiddenStatuses, currency, today));
+      return {
+        key: column.key,
+        value: label(cells.reduce((total, cell) => total + cell.amount, 0)),
+        className: cn(
+          isCurrentColumn(column, currentKey, today) && "bg-zinc-100",
+          cells.some((cell) => cell.overdue) && "bg-red-50 text-red-700",
+        ),
+      };
+    }),
+  ];
+};
 
 const GroupRows = ({
   node,
@@ -797,7 +872,7 @@ const GroupRows = ({
         depth={node.depth}
         title={node.name}
         count={pluralTovar(node.productCount)}
-        colSpan={5 + columns.length}
+        cells={categoryTotalCells(subtreeProducts(node), ctx, ownerSet, plantId)}
         collapsed={isCollapsed}
         stickyTop={stickyTop}
         onToggle={() => onToggleCollapse(node.id)}
@@ -805,7 +880,9 @@ const GroupRows = ({
           descendants.length > 0 ? (
             <button
               type="button"
-              className="pointer-events-none inline-flex items-center gap-1 rounded px-1 text-xs font-normal text-muted-foreground opacity-0 group-hover/category:pointer-events-auto group-hover/category:opacity-100 hover:bg-zinc-200/70 hover:text-foreground focus-visible:pointer-events-auto focus-visible:opacity-100"
+              aria-label={anyCollapsedInside ? "Развернуть всё" : "Свернуть подкатегории"}
+              title={anyCollapsedInside ? "Развернуть всё" : "Свернуть подкатегории"}
+              className="pointer-events-none ml-1.5 inline-flex size-5 items-center justify-center rounded align-middle text-muted-foreground opacity-0 group-hover/category:pointer-events-auto group-hover/category:opacity-100 hover:bg-zinc-200/70 hover:text-foreground focus-visible:pointer-events-auto focus-visible:opacity-100"
               onClick={(event) => {
                 event.stopPropagation();
                 if (anyCollapsedInside) {
@@ -820,7 +897,6 @@ const GroupRows = ({
               ) : (
                 <ChevronsDownUp className="size-3" aria-hidden />
               )}
-              {anyCollapsedInside ? "Развернуть всё" : "Свернуть подкатегории"}
             </button>
           ) : null
         }
@@ -942,7 +1018,7 @@ const MoneyGroupRows = ({
         depth={0}
         title={title}
         count={`${pluralRows(rows.length, ["строка", "строки", "строк"])} · ${ctx.page.productionCurrency}`}
-        colSpan={5 + ctx.columns.length}
+        cells={moneyTotalCells(rows, hiddenStatuses, ctx)}
         collapsed={isCollapsed}
         stickyTop={stickyTop}
         onToggle={() => ctx.onToggleCollapse(id)}
