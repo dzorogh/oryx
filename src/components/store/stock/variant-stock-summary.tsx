@@ -2,8 +2,19 @@
 
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import type { VariantRegionStock } from "@/features/store/variant-stock";
 import { cn } from "@/lib/utils";
@@ -48,7 +59,9 @@ export const VariantStockSummary = ({
   }
 
   if (!stock) {
-    return <span className={cn("text-sm text-muted-foreground", className)}>—</span>;
+    return (
+      <span className={cn("text-sm text-muted-foreground", className)}>—</span>
+    );
   }
 
   const readyLabel = stock.ready == null ? "—" : formatQty(stock.ready);
@@ -61,80 +74,102 @@ export const VariantStockSummary = ({
   };
 
   return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            size={compact ? "sm" : "default"}
-            className={cn(
-              "h-auto cursor-pointer border-[var(--corportal-border-grey)] bg-background px-1.5 py-0.5 font-medium tabular-nums text-foreground shadow-none",
-              "hover:border-foreground/30 hover:bg-accent hover:text-accent-foreground",
-              "data-popup-open:border-foreground/40 data-popup-open:bg-accent",
-              compact ? "text-xs" : "text-sm",
-              className,
-            )}
-            aria-label={buttonLabel}
-            onClick={stopRowNavigation}
-            onPointerDown={stopRowNavigation}
-          />
-        }
-      >
-        {buttonLabel}
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[min(100vw-2rem,28rem)] gap-2 p-2"
-        onClick={stopRowNavigation}
-        onPointerDown={stopRowNavigation}
-      >
-        {stock.missingHub ? (
-          <p className="px-1 text-xs text-amber-700">У региона не задан хаб</p>
-        ) : null}
-        {stock.rows.length === 0 ? (
-          <p className="px-1 py-2 text-xs text-muted-foreground">Нет данных по запасам</p>
-        ) : (
-          <div className="overflow-x-auto rounded-md border border-[var(--corportal-border-grey)]">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-8 px-2 text-[10px]">Место</TableHead>
-                  <TableHead className="h-8 px-2 text-right text-[10px]">Свободно</TableHead>
-                  <TableHead className="h-8 px-2 text-right text-[10px]">Резерв под регион</TableHead>
-                  <TableHead className="h-8 px-2 text-right text-[10px]">Резерв всего</TableHead>
-                  <TableHead className="h-8 px-2 text-right text-[10px]">В производстве</TableHead>
-                  <TableHead className="h-8 px-2 text-right text-[10px]">В пути</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stock.rows.map((row) => (
-                  <TableRow key={row.warehouseId} className="hover:bg-muted/30">
-                    <TableCell className="px-2 py-1.5 text-xs font-medium tabular-nums">
-                      {formatLogisticsCode("warehouse", row.warehouseId)}
-                    </TableCell>
-                    <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
-                      {formatQty(row.free)}
-                    </TableCell>
-                    <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
-                      {formatQty(row.regionReserve)}
-                    </TableCell>
-                    <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
-                      {formatQty(row.reserveTotal)}
-                    </TableCell>
-                    <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
-                      {formatQty(row.production)}
-                    </TableCell>
-                    <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
-                      {formatQty(row.transit)}
-                    </TableCell>
+    // Base UI mounts focus guards next to the trigger; the wrapper keeps them out of the parent's layout.
+    <span className="inline-flex">
+      <Popover>
+        <PopoverTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              size={compact ? "sm" : "default"}
+              className={cn(
+                "h-auto cursor-pointer border-[var(--corportal-border-grey)] bg-background px-1.5 py-0.5 font-medium tabular-nums text-foreground shadow-none",
+                "hover:border-foreground/30 hover:bg-accent hover:text-accent-foreground",
+                "data-popup-open:border-foreground/40 data-popup-open:bg-accent",
+                compact ? "text-xs" : "text-sm",
+                className,
+              )}
+              aria-label={buttonLabel}
+              onClick={stopRowNavigation}
+              onPointerDown={stopRowNavigation}
+            />
+          }
+        >
+          {buttonLabel}
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-[min(100vw-2rem,28rem)] gap-2 p-2"
+          onClick={stopRowNavigation}
+          onPointerDown={stopRowNavigation}
+        >
+          {stock.missingHub ? (
+            <p className="px-1 text-xs text-amber-700">
+              У региона не задан хаб
+            </p>
+          ) : null}
+          {stock.rows.length === 0 ? (
+            <p className="px-1 py-2 text-xs text-muted-foreground">
+              Нет данных по запасам
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-md border border-[var(--corportal-border-grey)]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-8 px-2 text-[10px]">
+                      Место
+                    </TableHead>
+                    <TableHead className="h-8 px-2 text-right text-[10px]">
+                      Свободно
+                    </TableHead>
+                    <TableHead className="h-8 px-2 text-right text-[10px]">
+                      Резерв под регион
+                    </TableHead>
+                    <TableHead className="h-8 px-2 text-right text-[10px]">
+                      Резерв всего
+                    </TableHead>
+                    <TableHead className="h-8 px-2 text-right text-[10px]">
+                      В производстве
+                    </TableHead>
+                    <TableHead className="h-8 px-2 text-right text-[10px]">
+                      В пути
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
+                </TableHeader>
+                <TableBody>
+                  {stock.rows.map((row) => (
+                    <TableRow
+                      key={row.warehouseId}
+                      className="hover:bg-muted/30"
+                    >
+                      <TableCell className="px-2 py-1.5 text-xs font-medium tabular-nums">
+                        {formatLogisticsCode("warehouse", row.warehouseId)}
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
+                        {formatQty(row.free)}
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
+                        {formatQty(row.regionReserve)}
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
+                        {formatQty(row.reserveTotal)}
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
+                        {formatQty(row.production)}
+                      </TableCell>
+                      <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
+                        {formatQty(row.transit)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </span>
   );
 };
