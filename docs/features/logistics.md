@@ -83,7 +83,7 @@ Seed после историй раскладывает `changed_at` монот�
 
 ## Lifecycle
 
-Словарь `draft` | `in_progress` | `done` | `cancelled` на `store_document.status` для заказа клиента, заказа на производство и перемещения. У выпуска только `draft` | `done` | `cancelled`: `draft` в интерфейсе — «Запланирован». Reservation / shipment / adjustment — без status и черновиков: только create-and-post, строки после создания не меняются. У резерва `posted_at` всегда заполнен. Строки заказа клиента и заказа на производство меняются командой `store_set_order_line_quantity` при любом статусе документа.
+Словарь `draft` | `in_progress` | `done` | `cancelled` на `store_document.status` для заказа клиента, заказа на производство и перемещения. Заказ клиента открыт в `draft` (оформлен из корзины) и `in_progress`: план, резервы, отгрузки и закрытие доступны в обоих; закрыт — `done` / `cancelled` (`isOpenCustomerOrderStatus`). У выпуска только `draft` | `done` | `cancelled`: `draft` в интерфейсе — «Запланирован». Reservation / shipment / adjustment — без status и черновиков: только create-and-post, строки после создания не меняются. У резерва `posted_at` всегда заполнен. Строки заказа клиента и заказа на производство меняются командой `store_set_order_line_quantity` при любом статусе документа.
 
 История: единственный trigger на `store_document` → `store_document_history`.
 
