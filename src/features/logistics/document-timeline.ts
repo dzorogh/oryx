@@ -115,7 +115,6 @@ const toneForStatus = (status: string | null | undefined): DocumentTimelineKind 
   }
   if (
     status === "in_progress" ||
-    status === "open" ||
     status === "sent" ||
     status === "planned" ||
     status === "reserved"

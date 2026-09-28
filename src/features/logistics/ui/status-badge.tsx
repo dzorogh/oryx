@@ -38,8 +38,7 @@ const toneFor = (value: string): PillTone => {
     value === "sent" ||
     value === "reserved" ||
     value === "in_progress" ||
-    value === "planned" ||
-    value === "open"
+    value === "planned"
   ) {
     return "work";
   }

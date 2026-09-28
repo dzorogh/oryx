@@ -217,7 +217,7 @@ describe("помощник отмены складских документов"
   });
 
   it("для открытого заказа клиента подробно описывает закрытие и не обещает откат связанных документов", () => {
-    const guidance = projectCancelGuidance(facts({ type: "customer_order", status: "open" }));
+    const guidance = projectCancelGuidance(facts({ type: "customer_order", status: "in_progress" }));
     commonCopyPresent(guidance);
     assert.equal(guidance.actions[0]?.id, "close-customer-order");
     assert.equal(guidance.actions[0]?.label, "Закрыть заказ");
@@ -544,7 +544,7 @@ describe("помощник отмены складских документов"
       {
         id: "c-open",
         number: "OMS-1",
-        status: "open",
+        status: "in_progress",
         createdAt: "",
         createdBy: "1",
         expectedEndOn: null,

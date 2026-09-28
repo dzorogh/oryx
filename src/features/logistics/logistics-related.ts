@@ -436,7 +436,6 @@ export type ProductActivityGroup = {
 };
 
 const ACTIVE_ACTIVITY_STATUSES = new Set([
-  "open",
   "draft",
   "planned",
   "in_progress",

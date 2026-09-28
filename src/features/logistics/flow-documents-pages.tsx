@@ -74,6 +74,7 @@ import {
   matchDocumentParam,
   type ShipmentDirection,
   isFreeOwner,
+  isOpenCustomerOrderStatus,
 } from "@/features/logistics/logistics-types";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
@@ -382,7 +383,7 @@ export const ShipmentDetailPage = () => {
           status={<DocumentStatusBadge status="posted" />}
           actions={
             <>
-              {order && order.status === "open" ? (
+              {order && isOpenCustomerOrderStatus(order.status) ? (
                 <Button
                   type="button"
                   size="sm"

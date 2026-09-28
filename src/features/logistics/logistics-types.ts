@@ -25,7 +25,6 @@ export type StockState = (typeof STOCK_STATES)[number];
 export const LIFECYCLE_STATUSES = ["draft", "in_progress", "done", "cancelled"] as const;
 /** Legacy UI values still compared in screens; map to lifecycle in API/DB. */
 export const LEGACY_LIFECYCLE_STATUSES = [
-  "open",
   "closed",
   "planned",
   "posted",
@@ -37,9 +36,9 @@ export type LifecycleStatus =
   | (typeof LEGACY_LIFECYCLE_STATUSES)[number];
 export type DocumentStatus = LifecycleStatus;
 
-/** DB lifecycle is `in_progress`; `open` is the legacy UI value some fixtures still use. */
+/** Черновик из корзины и заказ в работе — открытые; закрыт только `done` / `cancelled`. */
 export const isOpenCustomerOrderStatus = (status: string | null | undefined): boolean =>
-  status === "in_progress" || status === "open";
+  status === "draft" || status === "in_progress";
 
 export const DOCUMENT_KINDS = [
   "customer_order",

@@ -1,8 +1,5 @@
-export type EntityCodeGroup = "document" | "catalog";
-
 export type EntityCodeDefinition = {
   defaultPrefix: string;
-  group: EntityCodeGroup;
   label: string;
   exampleId: string;
   fixed?: boolean;
@@ -11,74 +8,62 @@ export type EntityCodeDefinition = {
 export const ENTITY_CODES = {
   customer_order: {
     defaultPrefix: "OMS",
-    group: "document",
     label: "Заказы клиента",
     exampleId: "12",
   },
   production_order: {
     defaultPrefix: "PO",
-    group: "document",
     label: "Заказы на производство",
     exampleId: "1",
   },
   reservation: {
     defaultPrefix: "RSV",
-    group: "document",
     label: "Резервы",
     exampleId: "1",
   },
   transfer: {
     defaultPrefix: "TR",
-    group: "document",
     label: "Перемещения",
     exampleId: "1",
   },
   shipment: {
     defaultPrefix: "SHP",
-    group: "document",
     label: "Отгрузки и возвраты",
     exampleId: "1",
   },
   production_output: {
     defaultPrefix: "OUT",
-    group: "document",
     label: "Выпуски",
     exampleId: "1",
   },
   adjustment: {
     defaultPrefix: "ADJ",
-    group: "document",
     label: "Корректировки",
     exampleId: "1",
   },
   stock_transaction: {
     defaultPrefix: "TXN",
-    group: "document",
     label: "Проводки",
     exampleId: "1",
     fixed: true as const,
   },
   plant: {
     defaultPrefix: "PLT",
-    group: "catalog",
     label: "Заводы",
     exampleId: "4",
   },
   product: {
     defaultPrefix: "PRD",
-    group: "catalog",
     label: "Товары",
     exampleId: "12",
   },
   warehouse: {
     defaultPrefix: "WH",
-    group: "catalog",
     label: "Склады",
     exampleId: "7",
   },
   region: {
     defaultPrefix: "REG",
-    group: "catalog",
     label: "Регионы",
     exampleId: "3",
     fixed: true as const,
@@ -88,16 +73,10 @@ export const ENTITY_CODES = {
 export type EntityCodeKind = keyof typeof ENTITY_CODES;
 export type EntityCodePrefixes = { [K in EntityCodeKind]: string };
 
-export const ENTITY_CODE_GROUP_TITLES: Record<EntityCodeGroup, string> = {
-  document: "Префиксы документов",
-  catalog: "Префиксы справочников",
-};
-
 export type EntityCodeField = {
   entity: EntityCodeKind;
   label: string;
   exampleId: string;
-  group: EntityCodeGroup;
 };
 
 const entityKinds = Object.keys(ENTITY_CODES) as EntityCodeKind[];
@@ -108,20 +87,12 @@ export const ENTITY_CODE_FIELDS: EntityCodeField[] = entityKinds.map((entity) =>
     entity,
     label: def.label,
     exampleId: def.exampleId,
-    group: def.group,
   };
 });
 
 export const EDITABLE_ENTITY_CODE_FIELDS: EntityCodeField[] = ENTITY_CODE_FIELDS.filter(
   (field) => !(ENTITY_CODES[field.entity] as EntityCodeDefinition).fixed,
 );
-
-export const ENTITY_CODE_PREFIX_SECTIONS: Array<{ title: string; fields: EntityCodeField[] }> = (
-  Object.keys(ENTITY_CODE_GROUP_TITLES) as EntityCodeGroup[]
-).map((group) => ({
-  title: ENTITY_CODE_GROUP_TITLES[group],
-  fields: EDITABLE_ENTITY_CODE_FIELDS.filter((field) => field.group === group),
-}));
 
 const defaultPrefixes = (): EntityCodePrefixes => {
   const next = {} as EntityCodePrefixes;

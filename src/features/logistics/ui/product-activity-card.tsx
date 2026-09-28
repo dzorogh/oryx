@@ -52,7 +52,7 @@ const statusVariant = (status: string): "outline" | "secondary" | "default" | "d
   if (status === "posted" || status === "delivered" || status === "closed" || status === "done") {
     return "default";
   }
-  if (status === "sent" || status === "in_progress" || status === "open") {
+  if (status === "sent" || status === "in_progress") {
     return "secondary";
   }
   return "outline";

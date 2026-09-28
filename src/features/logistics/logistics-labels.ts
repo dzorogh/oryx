@@ -54,7 +54,6 @@ export const DOCUMENT_STATUS_LABELS: Partial<Record<DocumentStatus, string>> = {
   done: "Готов",
   posted: "Проведён",
   cancelled: "Отменён",
-  open: "Открыт",
   closed: "Закрыт",
   planned: "Запланирован",
   sent: "Отправлен",
@@ -66,7 +65,6 @@ export const CUSTOMER_ORDER_STATUS_LABELS: Partial<Record<CustomerOrderStatus, s
   in_progress: "Открыт",
   done: "Закрыт",
   cancelled: "Отменён",
-  open: "Открыт",
   closed: "Закрыт",
 };
 
@@ -77,7 +75,6 @@ export const PRODUCTION_STATUS_LABELS: Partial<Record<ProductionStatus, string>>
   done: "Готов",
   closed: "Закрыт",
   cancelled: "Отменён",
-  open: "Открыт",
   posted: "Проведён",
   sent: "Отправлен",
   delivered: "Доставлен",

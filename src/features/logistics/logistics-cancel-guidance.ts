@@ -7,6 +7,7 @@ import {
 import { freeWarehouseQuantity, type AdjustmentSourceDocumentType } from "@/features/logistics/logistics-adjustments";
 import { plantById } from "@/features/logistics/logistics-lookups";
 import {
+  isOpenCustomerOrderStatus,
   reservationDirection,
   shipmentDirection,
   shipmentWarehouseId,
@@ -304,7 +305,7 @@ export const projectCancelGuidance = (facts: CancelGuidanceFacts): CancelGuidanc
   }
 
   if (facts.type === "customer_order") {
-    if (facts.status !== "open") {
+    if (!isOpenCustomerOrderStatus(facts.status)) {
       return hiddenGuidance(facts.id);
     }
     return withCommon({

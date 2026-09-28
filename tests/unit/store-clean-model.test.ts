@@ -61,8 +61,8 @@ describe("чистая модель Store — инварианты контра�
     assert.equal(formatEntityCode("product", 12, custom), "ART-12");
     assert.equal(formatEntityCode("warehouse", 7, custom), "SKL-7");
     assert.equal(formatEntityCode("region", 3, custom), "REG-3");
-    assert.equal(ENTITY_CODES.product.group, "catalog");
-    assert.equal(ENTITY_CODES.warehouse.group, "catalog");
+    assert.ok(!("fixed" in ENTITY_CODES.product));
+    assert.ok(!("fixed" in ENTITY_CODES.warehouse));
     assert.equal(storedEntityCode("region", "ae", 3, custom), "ae");
     assert.equal(storedEntityCode("region", "", 3, custom), "REG-3");
     assert.equal(storedEntityCode("region", "   ", 3, custom), "REG-3");

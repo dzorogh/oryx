@@ -46,7 +46,7 @@ const statusVariant = (meta: string): "outline" | "secondary" | "default" | "des
   if (status === "posted" || status === "delivered" || status === "closed" || status === "done") {
     return "default";
   }
-  if (status === "sent" || status === "in_progress" || status === "reserved" || status === "open") {
+  if (status === "sent" || status === "in_progress" || status === "reserved") {
     return "secondary";
   }
   return "outline";

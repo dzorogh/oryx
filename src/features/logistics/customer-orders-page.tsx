@@ -53,6 +53,7 @@ import {
 import {
   documentKey,
   documentKeysForAssignedEntity,
+  isOpenCustomerOrderStatus,
   matchDocumentParam,
   type CustomerOrderLine,
   type CustomerOrderStatus,
@@ -107,9 +108,6 @@ const STATUS_TOGGLE = [
   { value: "in_progress", label: "Открыт" },
   { value: "done", label: "Закрыт" },
 ] as const;
-
-const isOpenCustomerOrderStatus = (status: string) =>
-  status === "open" || status === "in_progress";
 
 const customerOrderColumns: ListColumnDef<CustomerOrderListRow>[] = [
   listNumberColumn((row) => `/store/logistics/customer-orders/${row.sequenceNumber}`),

@@ -8,4 +8,5 @@ export const SETTINGS_SUBNAV_ITEMS: ModuleSubnavItem[] = [
   { href: "/settings/companies", label: "Companies" },
   { href: "/settings/apps", label: "Apps" },
   { href: "/settings/announcements", label: "Announcements" },
+  { href: "/settings/entity-codes", label: "Префиксы кодов" },
 ];
