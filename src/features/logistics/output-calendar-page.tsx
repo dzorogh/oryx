@@ -42,7 +42,9 @@ export const OutputCalendarPage = () => {
   const [panel, setPanel] = useState<CalendarPanel | null>(null);
   const [orderSearch, setOrderSearch] = useState("");
   const [incomingSearch, setIncomingSearch] = useState("");
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(
+    () => new Set([MONEY_PLANTS_GROUP_ID, MONEY_REGIONS_GROUP_ID]),
+  );
   const [expandedMonths, setExpandedMonths] = useState<Set<number>>(() => new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

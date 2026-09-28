@@ -1070,26 +1070,6 @@ export const OutputCalendarMatrix = ({
             </tr>
           ) : null}
         </thead>
-        {roots.map((node) => (
-          <tbody key={node.id}>
-            <GroupRows node={node} {...groupProps} />
-          </tbody>
-        ))}
-        {uncategorized.length > 0 ? (
-          <tbody>
-            <GroupRows
-              node={{
-                id: UNCATEGORIZED_GROUP_ID,
-                name: "Без категории",
-                depth: 0,
-                productCount: uncategorized.length,
-                products: uncategorized,
-                children: [],
-              }}
-              {...groupProps}
-            />
-          </tbody>
-        ) : null}
         <tbody>
           <MoneyGroupRows
             id={MONEY_PLANTS_GROUP_ID}
@@ -1110,6 +1090,26 @@ export const OutputCalendarMatrix = ({
             {...ctx}
           />
         </tbody>
+        {roots.map((node) => (
+          <tbody key={node.id}>
+            <GroupRows node={node} {...groupProps} />
+          </tbody>
+        ))}
+        {uncategorized.length > 0 ? (
+          <tbody>
+            <GroupRows
+              node={{
+                id: UNCATEGORIZED_GROUP_ID,
+                name: "Без категории",
+                depth: 0,
+                productCount: uncategorized.length,
+                products: uncategorized,
+                children: [],
+              }}
+              {...groupProps}
+            />
+          </tbody>
+        ) : null}
       </table>
       {visibleIds.size === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-muted-foreground">Нет товаров для отображения</p>
