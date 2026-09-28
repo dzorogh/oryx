@@ -302,3 +302,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-cart-checkout-hub-or-plant.md`
   summary: Повторяемая проверка SQL оформления: валюта заказов региона в деньгах заказа, статус draft, отказ при товаре чужой площадки.
   evidence: В репозитории нет SQL/интеграционных тестов; поведение `store_checkout_customer_order` и `store_order_money_init` проверено только вручную в демо-БД.
+- source_spec: `_bmad-output/implementation-artifacts/spec-catalog-group-products-by-plant.md`
+  summary: Нет автоматической проверки, что каталог отдаёт в таблицу все отфильтрованные строки, а не первые 48.
+  evidence: `groupCatalogItemsBySite` тестируется на 0–3 строках. Вернуть `slice(0, 48)` перед группировкой можно так, что юнит-тесты останутся зелёными. В браузере список длиннее 48 и без страниц.

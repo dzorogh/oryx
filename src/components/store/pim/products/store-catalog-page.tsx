@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { CatalogColumnsSheet } from "./catalog/catalog-columns-sheet";
 import { CatalogFiltersSheet } from "./catalog/catalog-filters-sheet";
-import { CatalogFooter } from "./catalog/catalog-footer";
 import { CatalogTable } from "./catalog/catalog-table";
 import { CatalogToolbar } from "./catalog/catalog-toolbar";
 import {
@@ -128,7 +127,6 @@ const StoreCatalogPageContent = () => {
 
   const handleListingModeChange = useCallback(
     (mode: CatalogListingMode) => {
-      catalog.onPageChange(1);
       catalog.setColumnSheetOpen(false);
 
       const storage = window.localStorage;
@@ -140,18 +138,6 @@ const StoreCatalogPageContent = () => {
       syncUrl(mode);
     },
     [catalog, syncUrl],
-  );
-
-  const catalogFooter = (
-    <CatalogFooter
-      shownCount={catalog.paginatedItems.length}
-      totalCount={catalog.filteredItems.length}
-      isLoading={dbItems === null}
-      visiblePage={catalog.visiblePage}
-      totalPages={catalog.totalPages}
-      paginationItems={catalog.paginationItems}
-      onPageChange={catalog.onPageChange}
-    />
   );
 
   return (
@@ -182,15 +168,18 @@ const StoreCatalogPageContent = () => {
             columns={catalog.columns}
             onOpenFilters={() => catalog.setFilterSheetOpen(true)}
             onOpenColumns={() => catalog.setColumnSheetOpen(true)}
+            onCollapseAllSites={catalog.collapseAllSites}
+            onExpandAllSites={catalog.expandAllSites}
           />
 
           <CatalogTable
-            items={catalog.paginatedItems}
+            siteGroups={catalog.siteGroups}
             isLoading={dbItems === null || catalog.isLoading}
             listingMode={listingMode}
             visibleColumnIds={catalog.columns.visibleIds}
             stockFacts={stockFacts}
-            footer={catalogFooter}
+            collapsedSiteKeys={catalog.collapsedSiteKeys}
+            onToggleSiteCollapsed={catalog.toggleSiteCollapsed}
           />
         </div>
       </section>

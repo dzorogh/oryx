@@ -144,6 +144,14 @@ export const statusBadgeClassMap: Record<DealerStatus | RetailStatus, string> = 
 export const formatCatalogUpdatedAt = (updatedAt: string) =>
   new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(new Date(updatedAt));
 
+export {
+  CATALOG_NO_SITE_KEY,
+  CATALOG_NO_SITE_LABEL,
+  compareCatalogSiteKeys,
+  groupCatalogItemsBySite,
+  type CatalogSiteGroup,
+} from "./catalog-site-groups";
+
 export const buildPaginationItems = (currentPage: number, totalPages: number): Array<number | "ellipsis"> => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);

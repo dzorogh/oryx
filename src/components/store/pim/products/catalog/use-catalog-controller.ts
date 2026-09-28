@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { itemMatchesCategoryFilter } from "@/features/store/category-tree";
 import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
 import {
@@ -12,8 +12,6 @@ import {
 } from "./catalog-columns";
 import {
   ALL_VALUE,
-  PAGE_SIZE,
-  buildPaginationItems,
   extractSortedOptions,
   formatCatalogStatus,
   getSelectValue,
@@ -21,6 +19,13 @@ import {
   type CatalogListingMode,
   type QuickFilterOption,
 } from "./catalog-helpers";
+import {
+  catalogSiteKeysForCollapseAll,
+  compareCatalogSiteKeys,
+  groupCatalogItemsBySite,
+  toggleCatalogSiteCollapsed,
+  type CatalogSiteGroup,
+} from "./catalog-site-groups";
 
 type FilterControl = {
   value: string;
@@ -60,12 +65,12 @@ export type CatalogController = {
   filters: CatalogFilters;
   columns: CatalogColumns;
   filteredItems: StoreCatalogItem[];
-  paginatedItems: StoreCatalogItem[];
+  siteGroups: CatalogSiteGroup[];
+  collapsedSiteKeys: ReadonlySet<string>;
+  toggleSiteCollapsed: (siteKey: string) => void;
+  collapseAllSites: () => void;
+  expandAllSites: () => void;
   isLoading: boolean;
-  visiblePage: number;
-  totalPages: number;
-  paginationItems: Array<number | "ellipsis">;
-  onPageChange: (page: number) => void;
 };
 
 // Имитация задержки ответа сервера при загрузке данных каталога.
@@ -85,12 +90,12 @@ export const useCatalogController = (
   const [columnsHydratedKey, setColumnsHydratedKey] = useState<string | null>(null);
   const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [categoryFilter, setCategoryFilter] = useState(ALL_VALUE);
   const [dealerStatusFilter, setDealerStatusFilter] = useState(ALL_VALUE);
   const [retailStatusFilter, setRetailStatusFilter] = useState(ALL_VALUE);
   const [siteFilter, setSiteFilter] = useState(ALL_VALUE);
   const [familyFilter, setFamilyFilter] = useState(ALL_VALUE);
+  const [collapsedSiteKeys, setCollapsedSiteKeys] = useState<Set<string>>(() => new Set());
 
   const dealerStatusOptions = useMemo(
     () =>
@@ -107,7 +112,12 @@ export const useCatalogController = (
     [sourceItems],
   );
   const siteOptions = useMemo(
-    () => toFilterOptions(extractSortedOptions(sourceItems, "productionSite")),
+    () =>
+      toFilterOptions(
+        Array.from(new Set(sourceItems.map((item) => String(item.productionSite)))).sort(
+          compareCatalogSiteKeys,
+        ),
+      ),
     [sourceItems],
   );
   const familyOptions = useMemo(() => toFilterOptions(extractSortedOptions(sourceItems, "family")), [sourceItems]);
@@ -140,6 +150,8 @@ export const useCatalogController = (
     [categoryFilter, dealerStatusFilter, familyFilter, normalizedQuery, retailStatusFilter, siteFilter, sourceItems],
   );
 
+  const siteGroups = useMemo(() => groupCatalogItemsBySite(filteredItems), [filteredItems]);
+
   const hasActiveFilters =
     searchQuery.length > 0 ||
     categoryFilter !== ALL_VALUE ||
@@ -148,12 +160,7 @@ export const useCatalogController = (
     siteFilter !== ALL_VALUE ||
     familyFilter !== ALL_VALUE;
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
-  const visiblePage = Math.min(currentPage, totalPages);
-  const paginatedItems = filteredItems.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE);
-  const paginationItems = useMemo(() => buildPaginationItems(visiblePage, totalPages), [totalPages, visiblePage]);
-
-  // Ключ «запроса»: меняется при смене фильтров, поиска или страницы — как обращение к серверу.
+  // Ключ «запроса»: меняется при смене фильтров или поиска — как обращение к серверу.
   const requestKey = [
     listingMode,
     normalizedQuery,
@@ -162,7 +169,6 @@ export const useCatalogController = (
     retailStatusFilter,
     siteFilter,
     familyFilter,
-    visiblePage,
   ].join("|");
 
   // Пока загруженный ключ не совпал с текущим запросом — показываем состояние загрузки.
@@ -173,16 +179,12 @@ export const useCatalogController = (
     return () => window.clearTimeout(timer);
   }, [requestKey]);
 
-  const resetToFirstPage = () => setCurrentPage(1);
-
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    resetToFirstPage();
   };
 
   const makeFilterHandler = (setter: (value: string) => void) => (value: string | null) => {
     setter(getSelectValue(value));
-    resetToFirstPage();
   };
 
   const handleResetFilters = () => {
@@ -192,7 +194,6 @@ export const useCatalogController = (
     setRetailStatusFilter(ALL_VALUE);
     setSiteFilter(ALL_VALUE);
     setFamilyFilter(ALL_VALUE);
-    resetToFirstPage();
   };
 
   const handleResetColumns = () => {
@@ -213,6 +214,18 @@ export const useCatalogController = (
       return getOrderedVisibleColumns([...currentIds, columnId]);
     });
   };
+
+  const toggleSiteCollapsed = useCallback((siteKey: string) => {
+    setCollapsedSiteKeys((current) => toggleCatalogSiteCollapsed(current, siteKey));
+  }, []);
+
+  const collapseAllSites = useCallback(() => {
+    setCollapsedSiteKeys(new Set(catalogSiteKeysForCollapseAll(siteGroups)));
+  }, [siteGroups]);
+
+  const expandAllSites = useCallback(() => {
+    setCollapsedSiteKeys(new Set());
+  }, []);
 
   useEffect(() => {
     if (!columnsStorageKey) {
@@ -283,11 +296,11 @@ export const useCatalogController = (
     filters,
     columns,
     filteredItems,
-    paginatedItems,
+    siteGroups,
+    collapsedSiteKeys,
+    toggleSiteCollapsed,
+    collapseAllSites,
+    expandAllSites,
     isLoading,
-    visiblePage,
-    totalPages,
-    paginationItems,
-    onPageChange: setCurrentPage,
   };
 };

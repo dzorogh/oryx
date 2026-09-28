@@ -1,5 +1,5 @@
 // english-ui:ignore-file
-import { Plus } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -25,6 +25,8 @@ type CatalogToolbarProps = {
   columns: CatalogColumns;
   onOpenFilters: () => void;
   onOpenColumns: () => void;
+  onCollapseAllSites: () => void;
+  onExpandAllSites: () => void;
 };
 
 export const CatalogToolbar = ({
@@ -35,6 +37,8 @@ export const CatalogToolbar = ({
   columns,
   onOpenFilters,
   onOpenColumns,
+  onCollapseAllSites,
+  onExpandAllSites,
 }: CatalogToolbarProps) => (
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
     <CardHeader className="gap-0 space-y-2 pb-0">
@@ -98,6 +102,29 @@ export const CatalogToolbar = ({
 
         <CatalogFiltersButton hasActiveFilters={filters.hasActive} onClick={onOpenFilters} />
         <CatalogColumnsButton hasCustomColumns={columns.hasCustom} onClick={onOpenColumns} />
+
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={onCollapseAllSites}
+          >
+            <ChevronsDownUp aria-hidden className="size-3.5" />
+            Свернуть все
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={onExpandAllSites}
+          >
+            <ChevronsUpDown aria-hidden className="size-3.5" />
+            Развернуть все
+          </Button>
+        </div>
       </div>
     </CardHeader>
   </Card>

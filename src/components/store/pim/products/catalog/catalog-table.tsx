@@ -2,20 +2,21 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
-import type { ReactNode } from "react";
+import { Fragment } from "react";
+import { ChevronRight, ShoppingCart } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SelectRegionStub } from "@/components/store/region/region-switcher";
 import { VariantStockSummary } from "@/components/store/stock/variant-stock-summary";
 import { cn } from "@/lib/utils";
 import { ProductPhoto } from "@/features/store/product-photo";
 import { getCategoryNodeLabel } from "@/features/store/category-tree";
+import { pluralTovar } from "@/features/logistics/category-tree";
 import { useSelectedRegion } from "@/features/store/region-context";
 import {
   computeVariantRegionStock,
@@ -36,10 +37,19 @@ import {
   statusBadgeClassMap,
   type CatalogListingMode,
 } from "./catalog-helpers";
+import {
+  areCatalogSiteGroupRowsVisible,
+  catalogTableSection,
+  type CatalogSiteGroup,
+} from "./catalog-site-groups";
 import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
 import { useCart } from "@/features/store/cart/cart-context";
 import type { StoreRegionOption } from "@/features/store/region-context";
 import type { VariantStockRegion } from "@/features/store/variant-stock";
+
+/** Высота шапки таблицы (`TableHead` h-9) — для sticky заголовков площадок. */
+const CATALOG_TABLE_HEAD_OFFSET = "2.25rem";
+const CATALOG_SCROLL_CLASS = "max-h-[calc(100vh-220px)] overflow-auto";
 
 const COLUMN_BORDER = "border-l border-[var(--corportal-border-grey)]";
 
@@ -434,19 +444,21 @@ const CatalogTableRow = ({
 };
 
 export const CatalogTable = ({
-  items,
+  siteGroups,
   isLoading,
   listingMode,
   visibleColumnIds,
   stockFacts,
-  footer,
+  collapsedSiteKeys,
+  onToggleSiteCollapsed,
 }: {
-  items: StoreCatalogItem[];
+  siteGroups: CatalogSiteGroup[];
   isLoading: boolean;
   listingMode: CatalogListingMode;
   visibleColumnIds: CatalogColumnId[];
   stockFacts: VariantStockFact[];
-  footer?: ReactNode;
+  collapsedSiteKeys: ReadonlySet<string>;
+  onToggleSiteCollapsed: (siteKey: string) => void;
 }) => {
   const { selectedRegion, selectedRegionCode, setSwitcherOpen } = useSelectedRegion();
   const showBuyButton = listingMode === "variants";
@@ -454,12 +466,18 @@ export const CatalogTable = ({
   const columnCount = visibleColumnIds.length;
   const showCodeSubline = true;
   const needsRegion = !selectedRegionCode;
+  const tableSection = catalogTableSection(isLoading, siteGroups.length);
 
   return (
     <TooltipProvider delay={200}>
       <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
-        <div className="overflow-x-auto">
-          <Table aria-busy={isLoading} aria-label="Каталог товаров" className="table-fixed">
+        {/* Сырой table без ui/Table-обёртки: sticky работает только у общего overflow-auto. */}
+        <div className={CATALOG_SCROLL_CLASS}>
+          <table
+            aria-busy={isLoading}
+            aria-label="Каталог товаров"
+            className="w-full caption-bottom table-fixed border-separate border-spacing-0 text-sm"
+          >
             <colgroup>
               {visibleColumnIds.map((columnId) => {
                 const columnDefinition = getCatalogColumnDefinition(columnId);
@@ -489,7 +507,7 @@ export const CatalogTable = ({
                   return (
                     <TableHead
                       key={columnId}
-                      className={getColumnHeadClassName(columnId)}
+                      className={cn(getColumnHeadClassName(columnId), "sticky top-0 z-20 bg-card")}
                       style={dealerBuyColumnStyle(columnId, showBuyButton)}
                     >
                       {columnDefinition?.label}
@@ -499,7 +517,7 @@ export const CatalogTable = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {tableSection === "skeletons" ? (
                 Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
                   <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
                     {visibleColumnIds.map((columnId) => (
@@ -513,33 +531,67 @@ export const CatalogTable = ({
                     ))}
                   </TableRow>
                 ))
-              ) : items.length === 0 ? (
+              ) : tableSection === "empty" ? (
                 <TableRow>
                   <TableCell colSpan={columnCount} className="px-3 py-8 text-center text-sm text-muted-foreground">
                     Нет товаров, подходящих под выбранные фильтры.
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((item) => (
-                  <CatalogTableRow
-                    key={item.id}
-                    item={item}
-                    listingMode={listingMode}
-                    visibleColumnIds={visibleColumnIds}
-                    showBuyButton={showBuyButton}
-                    priceFromPrefix={priceFromPrefix}
-                    showCodeSubline={showCodeSubline}
-                    needsRegion={needsRegion}
-                    stockFacts={stockFacts}
-                    selectedRegion={selectedRegion}
-                    onRequestRegion={() => setSwitcherOpen(true)}
-                  />
-                ))
+                siteGroups.map((group) => {
+                  const rowsVisible = areCatalogSiteGroupRowsVisible(collapsedSiteKeys, group.siteKey);
+                  return (
+                    <Fragment key={`site-${group.siteKey}`}>
+                      <TableRow className="bg-muted hover:bg-muted/90">
+                        <TableCell
+                          colSpan={columnCount}
+                          className="sticky z-10 bg-muted px-3 py-2 text-sm font-semibold"
+                          style={{ top: CATALOG_TABLE_HEAD_OFFSET }}
+                        >
+                          <button
+                            type="button"
+                            aria-expanded={rowsVisible}
+                            className="inline-flex w-full cursor-pointer items-center gap-2 text-left"
+                            onClick={() => onToggleSiteCollapsed(group.siteKey)}
+                          >
+                            <ChevronRight
+                              aria-hidden
+                              className={cn(
+                                "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                                rowsVisible && "rotate-90",
+                              )}
+                            />
+                            <span>{group.label}</span>
+                            <span className="text-xs font-normal text-muted-foreground">
+                              {pluralTovar(group.items.length)}
+                            </span>
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                      {rowsVisible
+                        ? group.items.map((item) => (
+                            <CatalogTableRow
+                              key={item.id}
+                              item={item}
+                              listingMode={listingMode}
+                              visibleColumnIds={visibleColumnIds}
+                              showBuyButton={showBuyButton}
+                              priceFromPrefix={priceFromPrefix}
+                              showCodeSubline={showCodeSubline}
+                              needsRegion={needsRegion}
+                              stockFacts={stockFacts}
+                              selectedRegion={selectedRegion}
+                              onRequestRegion={() => setSwitcherOpen(true)}
+                            />
+                          ))
+                        : null}
+                    </Fragment>
+                  );
+                })
               )}
             </TableBody>
-          </Table>
+          </table>
         </div>
-        {footer}
       </Card>
     </TooltipProvider>
   );
