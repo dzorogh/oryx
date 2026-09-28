@@ -244,38 +244,108 @@ const PaymentDialog = ({
   );
 };
 
-const RateInput = ({
-  code,
-  rate,
-  onSave,
+const parseRate = (raw: string): number | null => {
+  const value = Number(raw.replace(/[\s\u00a0]/g, "").replace(",", "."));
+  return raw.trim() && Number.isFinite(value) && value > 0 ? value : null;
+};
+
+const RatesDialog = ({
+  open,
+  codes,
+  rates,
+  nameByCode,
+  onClose,
+  onSubmit,
 }: {
-  code: string;
-  rate: number;
-  onSave: (code: string, raw: string) => void;
+  open: boolean;
+  codes: string[];
+  rates: Record<string, number>;
+  nameByCode: Map<string, string>;
+  onClose: () => void;
+  onSubmit: (changed: Record<string, number>) => Promise<boolean>;
 }) => {
-  const [draft, setDraft] = useState<string | null>(null);
-  const readOnly = code === "USD";
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setDrafts({});
+      setServerError(null);
+    }
+  }
+
+  const changed: Record<string, number> = {};
+  const invalid: string[] = [];
+  for (const [code, raw] of Object.entries(drafts)) {
+    const value = parseRate(raw);
+    if (value == null) invalid.push(code);
+    else if (value !== rates[code]) changed[code] = value;
+  }
+  const changedCount = Object.keys(changed).length;
+  const invalidReason =
+    invalid.length > 0
+      ? `Курс ${invalid.join(", ")} — число больше нуля`
+      : changedCount === 0
+        ? "Курсы не изменены"
+        : null;
+
   return (
-    <Input
-      aria-label={`Курс ${code}`}
-      inputMode="decimal"
-      readOnly={readOnly}
-      value={draft ?? String(rate)}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => {
-        if (draft == null) return;
-        const raw = draft;
-        setDraft(null);
-        if (raw.trim() !== String(rate)) onSave(code, raw);
+    <DialogShell
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && !submitting) onClose();
       }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          event.currentTarget.blur();
-        }
+      size="lg"
+      kicker="Снимок на момент создания заказа"
+      title="Курсы валют"
+      description="Единиц валюты за 1 USD. Новые курсы меняют расчётную стоимость и суммы в календаре."
+      footerSummary={changedCount > 0 ? `Изменено курсов: ${changedCount}` : undefined}
+      submitLabel="Сохранить"
+      pendingLabel="Сохраняем…"
+      submitDisabled={invalidReason != null}
+      disabledReason={invalidReason ?? undefined}
+      submitting={submitting}
+      serverError={serverError}
+      dirty={Object.keys(drafts).length > 0}
+      onSubmit={() => {
+        if (invalidReason) return;
+        setSubmitting(true);
+        setServerError(null);
+        void onSubmit(changed)
+          .then((ok) => {
+            if (!ok) setServerError("Курсы не сохранены");
+          })
+          .finally(() => setSubmitting(false));
       }}
-      className={cn("h-8 w-32 text-right tabular-nums", readOnly && "bg-muted/40 text-muted-foreground")}
-    />
+    >
+      <div className="grid grid-cols-1 gap-x-6 gap-y-2 py-1 sm:grid-cols-2">
+        {codes.map((code) => {
+          const readOnly = code === "USD";
+          return (
+            <label key={code} className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate">
+                <span className="font-medium">{code}</span>
+                {nameByCode.get(code) ? <span className="text-muted-foreground"> · {nameByCode.get(code)}</span> : null}
+              </span>
+              <Input
+                aria-label={`Курс ${code}`}
+                inputMode="decimal"
+                readOnly={readOnly}
+                value={drafts[code] ?? String(rates[code])}
+                onChange={(event) => setDrafts({ ...drafts, [code]: event.target.value })}
+                className={cn(
+                  "h-8 w-32 shrink-0 text-right tabular-nums",
+                  readOnly && "bg-muted/40 text-muted-foreground",
+                  invalid.includes(code) && "border-destructive",
+                )}
+              />
+            </label>
+          );
+        })}
+      </div>
+    </DialogShell>
   );
 };
 
@@ -292,6 +362,7 @@ export const OrderMoneyTab = ({
 }) => {
   const [paymentDraft, setPaymentDraft] = useState<PaymentDraft | null>(null);
   const [statusPending, setStatusPending] = useState<string | null>(null);
+  const [ratesOpen, setRatesOpen] = useState(false);
   const { money, payments, currencies } = context;
   const summary = summarizeOrderMoney(snapshot, documentId, context);
 
@@ -311,13 +382,10 @@ export const OrderMoneyTab = ({
   const currencyItems = snapshotCodes.map((code) => ({ value: code, label: code }));
   const today = todayIso();
 
-  const saveRate = (code: string, raw: string) => {
-    const value = Number(raw.replace(/[\s\u00a0]/g, "").replace(",", "."));
-    if (!raw.trim() || !Number.isFinite(value)) {
-      toast.error("Не удалось выполнить действие", { description: `Курс ${code} — число больше нуля` });
-      return;
-    }
-    void runLogisticsAction(() => setOrderRates(documentId, { [code]: value }), `Курс ${code} сохранён`, reload);
+  const saveRates = async (changed: Record<string, number>) => {
+    const ok = await runLogisticsAction(() => setOrderRates(documentId, changed), "Курсы сохранены", reload);
+    if (ok) setRatesOpen(false);
+    return ok;
   };
 
   const submitPayment = async (draft: PaymentDraft) => {
@@ -387,6 +455,9 @@ export const OrderMoneyTab = ({
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <Button type="button" size="sm" variant="outline" className="ml-2" onClick={() => setRatesOpen(true)}>
+              Курсы
+            </Button>
           </SummaryCell>
           <SummaryCell label="Расчётная стоимость" hint="Цены строк по снимку курсов заказа">
             <span className="tabular-nums">{formatOrderMoney(summary.estimated, currencyCode)}</span>
@@ -523,27 +594,14 @@ export const OrderMoneyTab = ({
         )}
       </DocumentSection>
 
-      <DocumentSection title="Курсы снимка">
-        <div className="px-4 py-3">
-          <p className="mb-3 text-xs text-muted-foreground">
-            Единиц валюты за 1 USD на момент создания заказа. Правка курса сразу меняет расчётную стоимость и суммы в
-            календаре.
-          </p>
-          <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
-            {snapshotCodes.map((code) => (
-              <label key={code} className="flex items-center justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate">
-                  <span className="font-medium">{code}</span>
-                  {nameByCode.get(code) ? (
-                    <span className="text-muted-foreground"> · {nameByCode.get(code)}</span>
-                  ) : null}
-                </span>
-                <RateInput code={code} rate={money.rates[code]} onSave={saveRate} />
-              </label>
-            ))}
-          </div>
-        </div>
-      </DocumentSection>
+      <RatesDialog
+        open={ratesOpen}
+        codes={snapshotCodes}
+        rates={money.rates}
+        nameByCode={nameByCode}
+        onClose={() => setRatesOpen(false)}
+        onSubmit={saveRates}
+      />
 
       <PaymentDialog
         draft={paymentDraft}
