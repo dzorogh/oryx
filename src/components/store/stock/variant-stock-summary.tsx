@@ -100,7 +100,7 @@ export const VariantStockSummary = ({
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="w-[min(100vw-2rem,28rem)] gap-2 p-2"
+          className="w-[min(100vw-2rem,36rem)] gap-2 p-2"
           onClick={stopRowNavigation}
           onPointerDown={stopRowNavigation}
         >
@@ -142,12 +142,24 @@ export const VariantStockSummary = ({
                   {stock.rows.map((row) => (
                     <TableRow
                       key={row.warehouseId}
-                      className="hover:bg-muted/30"
+                      className={cn(
+                        row.isHub ? "bg-sky-50 hover:bg-sky-50" : "hover:bg-muted/30",
+                      )}
                     >
                       <TableCell className="px-2 py-1.5 text-xs font-medium tabular-nums">
                         {formatLogisticsCode("warehouse", row.warehouseId)}
+                        {row.isHub ? (
+                          <span className="ml-1.5 rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-800">
+                            хаб региона
+                          </span>
+                        ) : null}
                       </TableCell>
-                      <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
+                      <TableCell
+                        className={cn(
+                          "px-2 py-1.5 text-right text-xs tabular-nums",
+                          row.isHub && "bg-sky-100 font-semibold text-sky-900",
+                        )}
+                      >
                         {formatQty(row.free)}
                       </TableCell>
                       <TableCell className="px-2 py-1.5 text-right text-xs tabular-nums">
