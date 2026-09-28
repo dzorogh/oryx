@@ -66,10 +66,12 @@ export const VariantStockSummary = ({
         render={
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size={compact ? "sm" : "default"}
             className={cn(
-              "h-auto px-1.5 py-0.5 font-medium tabular-nums text-foreground hover:bg-muted/60",
+              "h-auto cursor-pointer border-[var(--corportal-border-grey)] bg-background px-1.5 py-0.5 font-medium tabular-nums text-foreground shadow-none",
+              "hover:border-foreground/30 hover:bg-accent hover:text-accent-foreground",
+              "data-popup-open:border-foreground/40 data-popup-open:bg-accent",
               compact ? "text-xs" : "text-sm",
               className,
             )}
