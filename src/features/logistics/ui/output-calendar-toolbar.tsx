@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { formatLogisticsCode } from "@/features/logistics/logistics-codes";
 import { PAYMENT_STATUS_LABELS } from "@/features/logistics/order-money";
@@ -163,26 +164,32 @@ export const OutputCalendarToolbar = ({
 );
 
 const SidePanel = ({
+  open,
   title,
   onClose,
   footer,
   children,
 }: {
+  open: boolean;
   title: string;
   onClose: () => void;
   footer: ReactNode;
   children: ReactNode;
 }) => (
-  <aside className="flex w-[380px] shrink-0 flex-col border-l border-border bg-background shadow-[-8px_0_24px_rgba(24,24,27,0.08)]">
-    <div className="flex items-center justify-between border-b border-border px-3.5 py-3">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-        Закрыть
-      </Button>
-    </div>
-    <div className="flex-1 space-y-1 overflow-auto px-3.5 py-3 text-xs">{children}</div>
-    <div className="flex gap-2 border-t border-border px-3.5 py-2.5">{footer}</div>
-  </aside>
+  <Sheet
+    open={open}
+    onOpenChange={(next) => {
+      if (!next) onClose();
+    }}
+  >
+    <SheetContent side="right" className="w-full gap-0 px-0 sm:max-w-[380px]">
+      <SheetHeader className="border-b border-border px-3.5 py-3 pr-12">
+        <SheetTitle className="text-sm font-semibold">{title}</SheetTitle>
+      </SheetHeader>
+      <div className="flex-1 space-y-1 overflow-auto px-3.5 py-3 text-xs">{children}</div>
+      <div className="flex gap-2 border-t border-border px-3.5 py-2.5">{footer}</div>
+    </SheetContent>
+  </Sheet>
 );
 
 const SectionTitle = ({ children }: { children: ReactNode }) => (
@@ -265,6 +272,7 @@ const StatusChecks = ({
 );
 
 type OutputsPanelProps = {
+  open: boolean;
   page: OutputCalendarPage;
   filter: OutputCalendarOwnerFilter;
   plantId: string | null;
@@ -280,6 +288,7 @@ type OutputsPanelProps = {
 
 /** «Выпуски»: для кого считаем + завод. Acts on product rows only. */
 export const OutputCalendarOutputsPanel = ({
+  open,
   page,
   filter,
   plantId,
@@ -301,6 +310,7 @@ export const OutputCalendarOutputsPanel = ({
 
   return (
     <SidePanel
+      open={open}
       title={PANEL_TITLES.outputs}
       onClose={onClose}
       footer={
@@ -413,17 +423,20 @@ export const OutputCalendarOutputsPanel = ({
 
 /** «Платежи заводам»: заводы и статусы. Acts on the plant money group only. */
 export const OutputCalendarPlantPaymentsPanel = ({
+  open,
   page,
   filter,
   onChange,
   onClose,
 }: {
+  open: boolean;
   page: OutputCalendarPage;
   filter: PlantPaymentsFilter;
   onChange: (next: PlantPaymentsFilter) => void;
   onClose: () => void;
 }) => (
   <SidePanel
+    open={open}
     title={PANEL_TITLES.plants}
     onClose={onClose}
     footer={
@@ -446,6 +459,7 @@ export const OutputCalendarPlantPaymentsPanel = ({
 
 /** «Поступления»: регионы, заказы клиента, статусы. Acts on the incoming money group only. */
 export const OutputCalendarIncomingPanel = ({
+  open,
   page,
   filter,
   orderSearch,
@@ -453,6 +467,7 @@ export const OutputCalendarIncomingPanel = ({
   onChange,
   onClose,
 }: {
+  open: boolean;
   page: OutputCalendarPage;
   filter: IncomingFilter;
   orderSearch: string;
@@ -469,6 +484,7 @@ export const OutputCalendarIncomingPanel = ({
   }));
   return (
     <SidePanel
+      open={open}
       title={PANEL_TITLES.incoming}
       onClose={onClose}
       footer={

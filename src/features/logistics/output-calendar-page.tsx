@@ -185,49 +185,46 @@ export const OutputCalendarPage = () => {
             onCreate={setCreateTarget}
           />
         </div>
-        {panel === "outputs" ? (
-          <OutputCalendarOutputsPanel
-            page={page}
-            filter={filter}
-            plantId={plantId}
-            plantOptions={plantOptions}
-            orderSearch={orderSearch}
-            onOrderSearchChange={setOrderSearch}
-            onChange={setFilter}
-            onPlantChange={setPlantId}
-            onClose={closePanel}
-            onSelectAll={() => {
-              setFilter(defaultOwnerFilter(page));
-              setPlantId(null);
-            }}
-            onReset={() =>
-              setFilter({
-                free: false,
-                regionIds: [],
-                withRegionOrders: true,
-                orderIds: [],
-              })
-            }
-          />
-        ) : null}
-        {panel === "plants" ? (
-          <OutputCalendarPlantPaymentsPanel
-            page={page}
-            filter={plantPaymentsFilter}
-            onChange={setPlantPaymentsFilter}
-            onClose={closePanel}
-          />
-        ) : null}
-        {panel === "incoming" ? (
-          <OutputCalendarIncomingPanel
-            page={page}
-            filter={incomingFilter}
-            orderSearch={incomingSearch}
-            onOrderSearchChange={setIncomingSearch}
-            onChange={setIncomingFilter}
-            onClose={closePanel}
-          />
-        ) : null}
+        <OutputCalendarOutputsPanel
+          open={panel === "outputs"}
+          page={page}
+          filter={filter}
+          plantId={plantId}
+          plantOptions={plantOptions}
+          orderSearch={orderSearch}
+          onOrderSearchChange={setOrderSearch}
+          onChange={setFilter}
+          onPlantChange={setPlantId}
+          onClose={closePanel}
+          onSelectAll={() => {
+            setFilter(defaultOwnerFilter(page));
+            setPlantId(null);
+          }}
+          onReset={() =>
+            setFilter({
+              free: false,
+              regionIds: [],
+              withRegionOrders: true,
+              orderIds: [],
+            })
+          }
+        />
+        <OutputCalendarPlantPaymentsPanel
+          open={panel === "plants"}
+          page={page}
+          filter={plantPaymentsFilter}
+          onChange={setPlantPaymentsFilter}
+          onClose={closePanel}
+        />
+        <OutputCalendarIncomingPanel
+          open={panel === "incoming"}
+          page={page}
+          filter={incomingFilter}
+          orderSearch={incomingSearch}
+          onOrderSearchChange={setIncomingSearch}
+          onChange={setIncomingFilter}
+          onClose={closePanel}
+        />
       </div>
       <OutputCalendarCreateDialog
         target={createTarget}
