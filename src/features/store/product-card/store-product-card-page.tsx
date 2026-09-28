@@ -486,7 +486,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                     sizes="128px"
                     className="size-28"
                   />
-                  <div className="min-w-0 flex-1 space-y-2">
+                  <div className="min-w-48 flex-1 space-y-2">
                     <h2 className="text-xl font-semibold">{selectedVariant.name}</h2>
                     {regionStatuses ? (
                       <div className="flex flex-wrap items-center gap-3">
@@ -523,7 +523,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-2 text-right">
+                    <div className="ml-auto flex shrink-0 flex-col items-end gap-2 text-right">
                       <div>
                         <p className="text-[11px] uppercase text-muted-foreground">Дилер</p>
                         <p className="text-xl font-bold tabular-nums">
@@ -540,46 +540,47 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                           })}
                         </p>
                       </div>
-                      <VariantStockSummary stock={stock} className="-mr-1.5" />
-                      {(() => {
-                        const blockReason = getPurchaseBlockReason({
-                          dealerStatus: regionStatuses?.dealer ?? "unavailable",
-                          dealerPrice: regionPrices?.dealer?.amount ?? null,
-                        });
-                        const canBuy = blockReason == null;
-                        const qty = cart.quantityOf(selectedVariant.id);
-                        if (qty > 0) {
+                      <div className="flex shrink-0 items-center justify-end gap-2">
+                        <VariantStockSummary stock={stock} />
+                        {(() => {
+                          const blockReason = getPurchaseBlockReason({
+                            dealerStatus: regionStatuses?.dealer ?? "unavailable",
+                            dealerPrice: regionPrices?.dealer?.amount ?? null,
+                          });
+                          const canBuy = blockReason == null;
+                          const qty = cart.quantityOf(selectedVariant.id);
+                          if (qty > 0) {
+                            return (
+                              <CartQuantityControl
+                                itemName={selectedVariant.name}
+                                quantity={qty}
+                                quantityPerUnit={cart.catalogById.get(selectedVariant.id)?.quantityPerUnit ?? 1}
+                                onChange={(next) => cart.setQuantity(selectedVariant.id, next)}
+                              />
+                            );
+                          }
                           return (
-                            <CartQuantityControl
-                              itemName={selectedVariant.name}
-                              quantity={qty}
-                              quantityPerUnit={cart.catalogById.get(selectedVariant.id)?.quantityPerUnit ?? 1}
-                              onChange={(next) => cart.setQuantity(selectedVariant.id, next)}
-                              className="justify-end"
-                            />
+                            <CatalogBuyTooltip reason={blockReason} className="inline-flex shrink-0">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={!canBuy}
+                                className={cn("shrink-0", !canBuy && "pointer-events-none")}
+                                aria-label={
+                                  canBuy
+                                    ? `Добавить «${selectedVariant.name}» в корзину`
+                                    : `Недоступен: ${blockReason}`
+                                }
+                                onClick={() => cart.addPack(selectedVariant.id)}
+                              >
+                                <ShoppingCart aria-hidden className="size-4" />
+                                В корзину
+                              </Button>
+                            </CatalogBuyTooltip>
                           );
-                        }
-                        return (
-                          <CatalogBuyTooltip reason={blockReason} className="inline-flex justify-end">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={!canBuy}
-                              className={cn(!canBuy && "pointer-events-none")}
-                              aria-label={
-                                canBuy
-                                  ? `Добавить «${selectedVariant.name}» в корзину`
-                                  : `Недоступен: ${blockReason}`
-                              }
-                              onClick={() => cart.addPack(selectedVariant.id)}
-                            >
-                              <ShoppingCart aria-hidden className="size-4" />
-                              В корзину
-                            </Button>
-                          </CatalogBuyTooltip>
-                        );
-                      })()}
+                        })()}
+                      </div>
                     </div>
                   )}
                 </div>
