@@ -85,10 +85,11 @@ export const loadPricelistDbBootstrap = async (): Promise<PricelistDbBootstrap |
     return null;
   }
 
-  const catalogItems = await loadDbCatalogItems();
-  if (!catalogItems) {
+  const catalogPage = await loadDbCatalogItems();
+  if (!catalogPage) {
     return null;
   }
+  const catalogItems = catalogPage.items;
 
   const [currenciesResult, groupsResult, regionsResult, priceRows, statusRows] =
     await Promise.all([

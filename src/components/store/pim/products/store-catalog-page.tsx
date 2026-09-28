@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
@@ -17,20 +17,29 @@ import { CatalogFiltersSheet } from "./catalog/catalog-filters-sheet";
 import { CatalogTable } from "./catalog/catalog-table";
 import { CatalogToolbar } from "./catalog/catalog-toolbar";
 import {
+  ALL_VALUE,
   CATALOG_LISTING_MODE_STORAGE_KEY,
   CATALOG_LISTING_QUERY_PARAM,
+  PAGE_SIZE,
   STORE_CATALOG_PAGE,
   getCatalogAddButtonAriaLabel,
   getCatalogColumnsStorageKey,
   parseCatalogListingMode,
   type CatalogListingMode,
 } from "./catalog/catalog-helpers";
+import { mergeCatalogPageItems } from "./catalog/catalog-site-groups";
 import { resolveCatalogItemForRegion } from "./catalog/catalog-region";
 import { useCatalogController } from "./catalog/use-catalog-controller";
 import { useSelectedRegion } from "@/features/store/region-context";
-import { loadDbCatalogItems } from "@/features/store/store-catalog-from-logistics";
+import {
+  loadCatalogFilterOptions,
+  loadDbCatalogItems,
+  type CatalogQueryFilters,
+} from "@/features/store/store-catalog-from-logistics";
 import { loadVariantStockFacts, type VariantStockFact } from "@/features/store/variant-stock";
 import type { StoreCatalogItem } from "./store-catalog-demo-data";
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 const StoreCatalogPageFallback = () => (
   <div className="min-h-screen bg-muted/30" aria-busy="true" aria-label="Загрузка каталога" />
@@ -49,20 +58,101 @@ const StoreCatalogPageContent = () => {
 
   const columnsStorageKey = getCatalogColumnsStorageKey(listingMode);
   const [dbItems, setDbItems] = useState<StoreCatalogItem[] | null>(null);
+  const [groupTotals, setGroupTotals] = useState<Record<string, number>>({});
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   const [stockFacts, setStockFacts] = useState<VariantStockFact[]>([]);
+  const [siteOptions, setSiteOptions] = useState<string[]>([]);
+  const [familyOptions, setFamilyOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterSnapshot, setFilterSnapshot] = useState({
+    category: ALL_VALUE,
+    dealerStatus: ALL_VALUE,
+    retailStatus: ALL_VALUE,
+    site: ALL_VALUE,
+    family: ALL_VALUE,
+    search: "",
+  });
+
+  const loadGenerationRef = useRef(0);
+  const isLoadingMoreRef = useRef(false);
+
+  const regionResolvedItems = useMemo(
+    () => (dbItems ?? []).map((item) => resolveCatalogItemForRegion(item, selectedRegionCode)),
+    [dbItems, selectedRegionCode],
+  );
+
+  const catalog = useCatalogController(listingMode, columnsStorageKey, {
+    items: regionResolvedItems,
+    groupTotals,
+    isInitialLoading: dbItems === null,
+    siteOptions,
+    familyOptions,
+  });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(catalog.filters.search.value.trim());
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [catalog.filters.search.value]);
+
+  useEffect(() => {
+    setFilterSnapshot({
+      category: catalog.filters.category.value,
+      dealerStatus: catalog.filters.dealerStatus.value,
+      retailStatus: catalog.filters.retailStatus.value,
+      site: catalog.filters.site.value,
+      family: catalog.filters.family.value,
+      search: debouncedSearch,
+    });
+  }, [
+    catalog.filters.category.value,
+    catalog.filters.dealerStatus.value,
+    catalog.filters.family.value,
+    catalog.filters.retailStatus.value,
+    catalog.filters.site.value,
+    debouncedSearch,
+  ]);
+
+  const queryFilters = useMemo((): CatalogQueryFilters => {
+    return {
+      search: filterSnapshot.search,
+      category: filterSnapshot.category === ALL_VALUE ? undefined : filterSnapshot.category,
+      familyId: filterSnapshot.family === ALL_VALUE ? undefined : filterSnapshot.family,
+      site: filterSnapshot.site === ALL_VALUE ? undefined : filterSnapshot.site,
+      dealerStatus: filterSnapshot.dealerStatus === ALL_VALUE ? undefined : filterSnapshot.dealerStatus,
+      retailStatus: filterSnapshot.retailStatus === ALL_VALUE ? undefined : filterSnapshot.retailStatus,
+      regionCode: selectedRegionCode,
+    };
+  }, [filterSnapshot, selectedRegionCode]);
+
+  const queryKey = useMemo(() => JSON.stringify(queryFilters), [queryFilters]);
+  const queryFiltersRef = useRef(queryFilters);
+  queryFiltersRef.current = queryFilters;
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([loadDbCatalogItems(), loadVariantStockFacts().catch(() => null)])
-      .then(([items, facts]) => {
+    void loadCatalogFilterOptions()
+      .then((options) => {
+        if (cancelled || !options) {
+          return;
+        }
+        setSiteOptions(options.sites);
+        setFamilyOptions(options.families);
+      })
+      .catch(() => {
+        /* options stay empty — dropdowns still usable with ALL */
+      });
+    void loadVariantStockFacts()
+      .then((facts) => {
         if (!cancelled) {
-          setDbItems(items ?? []);
           setStockFacts(facts ?? []);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setDbItems([]);
           setStockFacts([]);
         }
       });
@@ -71,12 +161,79 @@ const StoreCatalogPageContent = () => {
     };
   }, []);
 
-  const regionResolvedItems = useMemo(
-    () => (dbItems ?? []).map((item) => resolveCatalogItemForRegion(item, selectedRegionCode)),
-    [dbItems, selectedRegionCode],
-  );
+  useEffect(() => {
+    const generation = ++loadGenerationRef.current;
+    const filters = queryFiltersRef.current;
+    setDbItems(null);
+    setHasMore(false);
+    setIsLoadingMore(false);
+    setLoadMoreError(false);
+    isLoadingMoreRef.current = false;
 
-  const catalog = useCatalogController(listingMode, columnsStorageKey, regionResolvedItems);
+    void loadDbCatalogItems({ offset: 0, limit: PAGE_SIZE, filters })
+      .then((page) => {
+        if (loadGenerationRef.current !== generation) {
+          return;
+        }
+        if (!page) {
+          setDbItems([]);
+          setGroupTotals({});
+          setHasMore(false);
+          return;
+        }
+        setDbItems(page.items);
+        setGroupTotals(page.groupTotals);
+        setHasMore(page.hasMore);
+      })
+      .catch(() => {
+        if (loadGenerationRef.current !== generation) {
+          return;
+        }
+        setDbItems([]);
+        setGroupTotals({});
+        setHasMore(false);
+      });
+  }, [queryKey]);
+
+  const handleLoadMore = useCallback(() => {
+    if (isLoadingMoreRef.current || !hasMore || dbItems === null) {
+      return;
+    }
+    const generation = loadGenerationRef.current;
+    const offset = dbItems.length;
+    const filters = queryFiltersRef.current;
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
+
+    void loadDbCatalogItems({ offset, limit: PAGE_SIZE, filters })
+      .then((page) => {
+        if (loadGenerationRef.current !== generation) {
+          return;
+        }
+        if (!page || page.items.length === 0) {
+          setHasMore(false);
+          setLoadMoreError(!page);
+          return;
+        }
+        setDbItems((current) => mergeCatalogPageItems(current ?? [], { ok: true, items: page.items }));
+        setGroupTotals(page.groupTotals);
+        setHasMore(page.hasMore);
+        setLoadMoreError(false);
+      })
+      .catch(() => {
+        if (loadGenerationRef.current !== generation) {
+          return;
+        }
+        setDbItems((current) => mergeCatalogPageItems(current ?? [], { ok: false }));
+        setLoadMoreError(true);
+      })
+      .finally(() => {
+        if (loadGenerationRef.current === generation) {
+          isLoadingMoreRef.current = false;
+          setIsLoadingMore(false);
+        }
+      });
+  }, [dbItems, hasMore]);
 
   const syncUrl = useCallback((mode: CatalogListingMode) => {
     if (typeof window === "undefined") {
@@ -174,7 +331,11 @@ const StoreCatalogPageContent = () => {
 
           <CatalogTable
             siteGroups={catalog.siteGroups}
-            isLoading={dbItems === null || catalog.isLoading}
+            isLoading={catalog.isLoading}
+            isLoadingMore={isLoadingMore}
+            loadMoreError={loadMoreError}
+            hasMore={hasMore}
+            onLoadMore={handleLoadMore}
             listingMode={listingMode}
             visibleColumnIds={catalog.columns.visibleIds}
             stockFacts={stockFacts}

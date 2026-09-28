@@ -3,7 +3,10 @@ import { describe, it } from "node:test";
 import {
   CATALOG_NO_SITE_KEY,
   CATALOG_NO_SITE_LABEL,
+  activeCatalogSiteLabel,
   areCatalogSiteGroupRowsVisible,
+  buildCatalogVirtualElements,
+  mergeCatalogPageItems,
   catalogSiteKeysForCollapseAll,
   catalogTableSection,
   compareCatalogSiteKeys,
@@ -38,6 +41,7 @@ describe("groupCatalogItemsBySite", () => {
     );
     assert.equal(groups[0]?.label, "PLT-2");
     assert.equal(groups[0]?.items.length, 2);
+    assert.equal(groups[0]?.totalCount, 2);
   });
 
   it("puts empty site («—») last with «Без площадки» label", () => {
@@ -69,6 +73,95 @@ describe("groupCatalogItemsBySite", () => {
   it("returns no groups for an empty list", () => {
     assert.deepEqual(groupCatalogItemsBySite([]), []);
     assert.equal(catalogTableSection(false, 0), "empty");
+  });
+
+  it("uses full group totals when they exceed loaded rows", () => {
+    const groups = groupCatalogItemsBySite([item("a", "PLT-2"), item("b", "PLT-2")], {
+      "PLT-2": 5,
+      "PLT-10": 1,
+    });
+
+    assert.deepEqual(
+      groups.map((group) => ({ key: group.siteKey, loaded: group.items.length, total: group.totalCount })),
+      [{ key: "PLT-2", loaded: 2, total: 5 }],
+    );
+    assert.ok((groups[0]?.totalCount ?? 0) > (groups[0]?.items.length ?? 0));
+  });
+});
+
+describe("buildCatalogVirtualElements", () => {
+  it("emits header then rows for two sites", () => {
+    const groups = groupCatalogItemsBySite([
+      item("a", "PLT-2"),
+      item("b", "PLT-2"),
+      item("c", "PLT-10"),
+    ]);
+    const elements = buildCatalogVirtualElements(groups, new Set());
+
+    assert.deepEqual(
+      elements.map((element) =>
+        element.kind === "header"
+          ? { kind: element.kind, siteKey: element.siteKey, totalCount: element.totalCount }
+          : { kind: element.kind, id: element.item.id, siteKey: element.siteKey },
+      ),
+      [
+        { kind: "header", siteKey: "PLT-2", totalCount: 2 },
+        { kind: "row", id: "a", siteKey: "PLT-2" },
+        { kind: "row", id: "b", siteKey: "PLT-2" },
+        { kind: "header", siteKey: "PLT-10", totalCount: 1 },
+        { kind: "row", id: "c", siteKey: "PLT-10" },
+      ],
+    );
+  });
+
+  it("keeps only the header for a collapsed group", () => {
+    const groups = groupCatalogItemsBySite([
+      item("a", "PLT-2"),
+      item("b", "PLT-2"),
+      item("c", "PLT-10"),
+    ]);
+    const elements = buildCatalogVirtualElements(groups, new Set(["PLT-2"]));
+
+    assert.deepEqual(
+      elements.map((element) => (element.kind === "header" ? element.siteKey : element.item.id)),
+      ["PLT-2", "PLT-10", "c"],
+    );
+  });
+
+  it("keeps the full filter total on the header when only some rows are loaded", () => {
+    const groups = groupCatalogItemsBySite([item("a", "PLT-2")], { "PLT-2": 5 });
+    const [header] = buildCatalogVirtualElements(groups, new Set());
+    assert.equal(header?.kind, "header");
+    if (header?.kind === "header") {
+      assert.equal(header.totalCount, 5);
+    }
+  });
+
+  it("returns an empty list when there are no groups", () => {
+    assert.deepEqual(buildCatalogVirtualElements([], new Set()), []);
+  });
+});
+
+describe("mergeCatalogPageItems", () => {
+  it("appends the next page and keeps current rows when the request fails", () => {
+    assert.deepEqual(mergeCatalogPageItems(["a", "b"], { ok: true, items: ["c"] }), ["a", "b", "c"]);
+    assert.deepEqual(mergeCatalogPageItems(["a", "b"], { ok: false }), ["a", "b"]);
+  });
+});
+
+describe("activeCatalogSiteLabel", () => {
+  it("tracks the last header at or above the top index", () => {
+    const groups = groupCatalogItemsBySite([
+      item("a", "PLT-2"),
+      item("b", "PLT-2"),
+      item("c", "PLT-10"),
+    ]);
+    const elements = buildCatalogVirtualElements(groups, new Set());
+
+    assert.equal(activeCatalogSiteLabel(elements, 0), "PLT-2");
+    assert.equal(activeCatalogSiteLabel(elements, 2), "PLT-2");
+    assert.equal(activeCatalogSiteLabel(elements, 3), "PLT-10");
+    assert.equal(activeCatalogSiteLabel(elements, -1), null);
   });
 });
 

@@ -113,6 +113,71 @@ export const itemMatchesCategoryFilter = (itemCategoryId: string, filterValue: s
   return matchingLeafIds.includes(itemCategoryId);
 };
 
+/**
+ * UI-дерево → коды `store_category.code` в демо-сиде.
+ * Фильтр каталога режет по этим кодам через `store_product_category`, не по угадыванию из названия.
+ */
+export const CATALOG_TREE_LEAF_TO_CATEGORY_CODES: Readonly<Record<string, readonly string[]>> = {
+  "atv-4x4": ["pim-37"],
+  "atv-side-by-side": ["pim-18"],
+  "atv-4x2": ["pim-25"],
+  "atv-electric-motorcycles": ["pim-38", "pim-35"],
+  "atv-golf-cart": ["pim-19"],
+  "off-road-enduro": ["pim-3"],
+  "off-road-pitbike": ["pim-4"],
+  "off-road-snowmobile": ["pim-36"],
+  "road-scooter": ["pim-7"],
+  "road-naked-bike": ["pim-9"],
+  "road-street-bike": ["pim-13"],
+  "road-sport-travel": ["pim-14"],
+  "road-super-sport": ["pim-10"],
+  "road-touring-bike": ["pim-12"],
+  "road-enduro-travel": ["pim-6"],
+  "road-custom-bike": ["pim-15"],
+  "road-maxi-scooter": ["pim-8"],
+  "road-mini-bike": ["pim-17"],
+  "road-road-bike": ["pim-11"],
+  "road-tricycle": ["pim-16"],
+};
+
+const CATEGORY_CODE_TO_TREE_LEAF = new Map<string, string>();
+for (const [treeId, codes] of Object.entries(CATALOG_TREE_LEAF_TO_CATEGORY_CODES)) {
+  for (const code of codes) {
+    if (!CATEGORY_CODE_TO_TREE_LEAF.has(code)) {
+      CATEGORY_CODE_TO_TREE_LEAF.set(code, treeId);
+    }
+  }
+}
+
+/** Коды `store_category` для выбранного узла зашитого дерева (лист или группа). */
+export const catalogCategoryCodesForFilter = (filterValue: string): string[] => {
+  if (filterValue === ALL_VALUE) {
+    return [];
+  }
+  const leafIds = LEAF_IDS_BY_NODE_ID.get(filterValue) ?? [filterValue];
+  const codes = new Set<string>();
+  for (const leafId of leafIds) {
+    const mapped = CATALOG_TREE_LEAF_TO_CATEGORY_CODES[leafId];
+    if (mapped) {
+      for (const code of mapped) {
+        codes.add(code);
+      }
+    }
+  }
+  return [...codes];
+};
+
+/** Узел дерева для отображения колонки Category по кодам из БД. */
+export const catalogTreeIdForCategoryCodes = (codes: readonly string[]): string | null => {
+  for (const code of codes) {
+    const treeId = CATEGORY_CODE_TO_TREE_LEAF.get(code);
+    if (treeId) {
+      return treeId;
+    }
+  }
+  return null;
+};
+
 export const getDefaultExpandedCategoryIds = (): string[] =>
   getSortedCategoryTree()
     .filter((node) => node.children?.length)

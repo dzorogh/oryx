@@ -1,6 +1,6 @@
 # Store PIM — каталог товаров
 
-Единая страница **Products** (`/store/pim/products`): просмотр вариантов в таблице, фильтрация, настройка колонок, группировка по площадке в одном скролле. Источник — `store_product_variant` (+ `store_product` / `store_plant` / `store_product_price`) в demo Supabase. Пока запрос не завершён, таблица показывает скелетоны. Если Supabase не настроен, запрос вернул `null` или упал с ошибкой, список пустой — локальный demo-массив на этой странице не используется.
+Единая страница **Products** (`/store/pim/products`): просмотр вариантов в таблице, фильтрация на стороне запроса, настройка колонок, группировка по площадке в одном виртуальном скролле. Источник — `store_product_variant` (+ `store_product` / `store_plant` / `store_product_price` / категории и семейства) в demo Supabase. Пока первая порция не пришла, таблица показывает скелетоны. Если Supabase не настроен, запрос вернул `null` или упал с ошибкой, список пустой — локальный demo-массив на этой странице не используется.
 
 Логистика живёт в том же разделе Store (`/store/logistics/...`). Отдельного каталога товаров у логистики нет.
 
@@ -44,14 +44,14 @@
 3. Закрывается панель Columns
 4. `router.replace` обновляет URL и пишет режим в `store-catalog-listing-mode`
 
-Фильтры и поиск **общие** при переключении (не сбрасываются). Источник данных тот же (`loadDbCatalogItems`); при смене режима таблица снова показывает скелетон ~200 ms (как при смене фильтра). Группы площадок те же в обоих режимах; отличаются только префикс цены и кнопка покупки.
+Фильтры и поиск **общие** при переключении (не сбрасываются). Источник данных тот же (`loadDbCatalogItems`); смена режима не перезапрашивает порции. Группы площадок те же в обоих режимах; отличаются только префикс цены и кнопка покупки.
 
 ### Источники данных
 
 | Режим | Источник | Содержимое |
 |-------|----------|------------|
-| Base products / variants | `loadDbCatalogItems()` → `store_product_variant` + relational `store_product_price` | Те же варианты, что в логистике; завод как код `PLT-n`; цены из `store_product_price` |
-| Нет Supabase / ошибка / `null` | пустой массив | Скелетоны до ответа, затем пустое состояние |
+| Base products / variants | `loadDbCatalogItems({ offset, limit, filters })` → `store_product_variant` + relational product/category/family + `store_product_price` | Порция вариантов; завод как код `PLT-n`; цены из `store_product_price`; категория/семейство из справочников магазина |
+| Нет Supabase / ошибка / `null` | пустой массив | Скелетоны до ответа первой порции, затем пустое состояние |
 
 Ссылки с варианта ведут на карточку **родительского** товара (`getCatalogItemDetailHref`).
 
@@ -66,7 +66,7 @@
 
 ### Группировка по площадке
 
-После фильтров строки всегда сгруппированы по `productionSite` (код площадки). В заголовке группы — только код, шеврон и `pluralTovar(n)` по числу строк в группе. Клик по заголовку сворачивает/разворачивает одну группу. «—» (нет площадки) показывается как «Без площадки» и идёт после кодов. Коды сортируются численно (`PLT-2` перед `PLT-10`); внутри группы — порядок `id` из загрузчика. Названия площадок не показываются ([place-codes.md](../conventions/ui/place-codes.md)).
+После фильтров строки всегда сгруппированы по `productionSite` (код площадки). В заголовке группы — только код, шеврон и `pluralTovar(n)` по **полному** числу строк группы в текущем фильтре (не только уже скачанные). Клик по заголовку сворачивает/разворачивает одну группу. «—» (нет площадки) показывается как «Без площадки» и идёт после кодов. Коды сортируются численно (`PLT-2` перед `PLT-10`); внутри группы — порядок `id` из загрузчика. Названия площадок не показываются ([place-codes.md](../conventions/ui/place-codes.md)).
 
 ### Различия products vs variants
 
@@ -77,27 +77,31 @@
 
 ### Скролл и состояния
 
-- Пагинации нет: все отфильтрованные строки в одном скролле фиксированной высоты (`max-h-[calc(100vh-220px)]`)
-- Шапка таблицы и заголовки площадок `sticky` внутри скролла
-- Имитация загрузки ~200 ms при смене фильтров (`use-catalog-controller`); при загрузке — скелетоны без заголовков групп
-- Пустой список: «Нет товаров, подходящих под выбранные фильтры.» — без заголовков групп
+- Пагинации в UI нет: один скролл фиксированной высоты (`max-h-[calc(100vh-220px)]`)
+- Данные приходят **порциями** с demo Supabase (`PAGE_SIZE`); следующая порция — у конца уже загруженного списка. Смена поиска, фильтра или региона сбрасывает список на первую порцию
+- Поиск (название и код) и фильтры (категория, семейство, площадка, статусы дилера и розницы) уходят в запрос. Статусы — выбранного региона; без региона фильтр статуса ничего не отсекает, цены — «Выберите регион»
+- Категория — `store_category` / `store_product_category` (зашитое дерево UI мапится на коды БД); семейство — `store_product.family_id`. Угадывание по названию для фильтра и колонок не источник
+- В DOM только окно строк (`@tanstack/react-virtual`); свёрнутая группа — только заголовок. Под шапкой прилипает код площадки. Счётчик группы — полное число в текущем фильтре
+- Порядок: площадка (`plant_id`), без площадки в конце, затем `id`
+- Первая порция — скелетоны; догрузка их не ставит вместо списка. Пустой ответ — «Нет товаров, подходящих под выбранные фильтры.»
+- Цена «от …» и покупка как в режиме products / variants
 
 ## Поток данных
 
 ```mermaid
 flowchart TD
-  db[loadDbCatalogItems]
-  wait[skeletons while dbItems is null]
-  filter[useCatalogController filters]
-  groups[groupCatalogItemsBySite]
-  ui[CatalogTable]
+  db[loadDbCatalogItems page + filters]
+  wait[skeletons while first page null]
+  groups[groupCatalogItemsBySite + groupTotals]
+  virtual[buildCatalogVirtualElements]
+  ui[CatalogTable useVirtualizer]
   mode[listingMode]
 
   db --> wait
-  wait --> filter
-  filter --> groups
+  wait --> groups
+  groups --> virtual
   mode --> ui
-  groups --> ui
+  virtual --> ui
 ```
 
 ## localStorage (по режимам)
@@ -126,13 +130,13 @@ src/components/store/pim/products/
   store-catalog-page.tsx                  # listingMode state, URL, toolbar props
   store-catalog-demo-data.ts
 
-  catalog/
-    catalog-helpers.ts                    # listing labels, storage keys, re-exports site groups
-    catalog-site-groups.ts                # groupCatalogItemsBySite
-    catalog-toolbar.tsx                   # listing chips + filters + collapse/expand
-    use-catalog-controller.ts
-    catalog-table.tsx
-    ...
+    catalog/
+      catalog-helpers.ts                    # listing labels, storage keys, re-exports site groups
+      catalog-site-groups.ts                # groupCatalogItemsBySite, virtual elements, totals
+      catalog-toolbar.tsx                   # listing chips + filters + collapse/expand
+      use-catalog-controller.ts
+      catalog-table.tsx                     # useVirtualizer + sticky site strip
+      ...
 ```
 
 ## Технические нюансы
@@ -144,7 +148,7 @@ src/components/store/pim/products/
 
 ## Подключение к бэкенду
 
-Каталог читает `store_product_variant` (+ relational `store_product_price`) через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Завод варианта — nullable `store_product_variant.plant_id` (в UI — код `PLT-n`). Карточка с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
+Каталог читает порции `store_product_variant` (+ product / category / family + relational `store_product_price`) через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Завод варианта — nullable `store_product_variant.plant_id` (в UI — код `PLT-n`). Карточка с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
 
 ## Локальная проверка
 

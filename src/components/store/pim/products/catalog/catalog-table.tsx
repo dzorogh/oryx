@@ -2,7 +2,8 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronRight, ShoppingCart } from "lucide-react";
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -38,18 +39,23 @@ import {
   type CatalogListingMode,
 } from "./catalog-helpers";
 import {
-  areCatalogSiteGroupRowsVisible,
+  activeCatalogSiteLabel,
+  buildCatalogVirtualElements,
   catalogTableSection,
   type CatalogSiteGroup,
+  type CatalogVirtualElement,
 } from "./catalog-site-groups";
 import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
 import { useCart } from "@/features/store/cart/cart-context";
 import type { StoreRegionOption } from "@/features/store/region-context";
 import type { VariantStockRegion } from "@/features/store/variant-stock";
 
-/** Высота шапки таблицы (`TableHead` h-9) — для sticky заголовков площадок. */
+/** Высота шапки таблицы (`TableHead` h-9) — для sticky полоски площадки. */
 const CATALOG_TABLE_HEAD_OFFSET = "2.25rem";
 const CATALOG_SCROLL_CLASS = "max-h-[calc(100vh-220px)] overflow-auto";
+const ESTIMATED_ROW_HEIGHT = 52;
+const ESTIMATED_HEADER_HEIGHT = 40;
+const LOAD_MORE_THRESHOLD = 8;
 
 const COLUMN_BORDER = "border-l border-[var(--corportal-border-grey)]";
 
@@ -392,6 +398,8 @@ type CatalogTableRowProps = {
   stockFacts: VariantStockFact[];
   selectedRegion: StoreRegionOption | null;
   onRequestRegion: () => void;
+  measureRef?: (node: HTMLTableRowElement | null) => void;
+  style?: CSSProperties;
 };
 
 const CatalogTableRow = ({
@@ -405,12 +413,14 @@ const CatalogTableRow = ({
   stockFacts,
   selectedRegion,
   onRequestRegion,
+  measureRef,
+  style,
 }: CatalogTableRowProps) => {
   const displayName = getDisplayProductName(item.name);
   const productHref = getCatalogItemDetailHref(item, listingMode);
 
   return (
-    <TableRow className="relative hover:bg-muted/50">
+    <TableRow ref={measureRef} className="relative z-0 hover:bg-muted/50" style={style}>
       {visibleColumnIds.map((columnId, columnIndex) => (
         <TableCell
           key={columnId}
@@ -443,9 +453,50 @@ const CatalogTableRow = ({
   );
 };
 
+const CatalogSiteHeaderRow = ({
+  element,
+  columnCount,
+  rowsVisible,
+  onToggle,
+  measureRef,
+  style,
+}: {
+  element: Extract<CatalogVirtualElement, { kind: "header" }>;
+  columnCount: number;
+  rowsVisible: boolean;
+  onToggle: () => void;
+  measureRef?: (node: HTMLTableRowElement | null) => void;
+  style?: CSSProperties;
+}) => (
+  <TableRow ref={measureRef} className="bg-muted hover:bg-muted" style={style}>
+    <TableCell colSpan={columnCount} className="bg-muted px-3 py-2 text-sm font-semibold">
+      <button
+        type="button"
+        aria-expanded={rowsVisible}
+        className="inline-flex w-full cursor-pointer items-center gap-2 text-left"
+        onClick={onToggle}
+      >
+        <ChevronRight
+          aria-hidden
+          className={cn(
+            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+            rowsVisible && "rotate-90",
+          )}
+        />
+        <span>{element.label}</span>
+        <span className="text-xs font-normal text-muted-foreground">{pluralTovar(element.totalCount)}</span>
+      </button>
+    </TableCell>
+  </TableRow>
+);
+
 export const CatalogTable = ({
   siteGroups,
   isLoading,
+  isLoadingMore = false,
+  loadMoreError = false,
+  hasMore = false,
+  onLoadMore,
   listingMode,
   visibleColumnIds,
   stockFacts,
@@ -454,6 +505,10 @@ export const CatalogTable = ({
 }: {
   siteGroups: CatalogSiteGroup[];
   isLoading: boolean;
+  isLoadingMore?: boolean;
+  loadMoreError?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
   listingMode: CatalogListingMode;
   visibleColumnIds: CatalogColumnId[];
   stockFacts: VariantStockFact[];
@@ -468,13 +523,56 @@ export const CatalogTable = ({
   const needsRegion = !selectedRegionCode;
   const tableSection = catalogTableSection(isLoading, siteGroups.length);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualElements = buildCatalogVirtualElements(siteGroups, collapsedSiteKeys);
+
+  useEffect(() => {
+    if (isLoading) {
+      scrollRef.current?.scrollTo({ top: 0 });
+    }
+  }, [isLoading]);
+
+  const virtualizer = useVirtualizer({
+    count: tableSection === "groups" ? virtualElements.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) =>
+      virtualElements[index]?.kind === "header" ? ESTIMATED_HEADER_HEIGHT : ESTIMATED_ROW_HEIGHT,
+    overscan: 10,
+    measureElement:
+      typeof window !== "undefined" && !navigator.userAgent.includes("Firefox")
+        ? (element) => element.getBoundingClientRect().height
+        : undefined,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+  const paddingTop = virtualItems.length > 0 ? (virtualItems[0]?.start ?? 0) : 0;
+  const paddingBottom =
+    virtualItems.length > 0
+      ? virtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1]?.end ?? 0)
+      : 0;
+  const topIndex = virtualItems[0]?.index ?? -1;
+  const stickySiteLabel = activeCatalogSiteLabel(virtualElements, topIndex);
+
+  useEffect(() => {
+    if (loadMoreError || !onLoadMore || !hasMore || isLoadingMore || tableSection !== "groups") {
+      return;
+    }
+    const lastItem = virtualItems[virtualItems.length - 1];
+    if (!lastItem) {
+      return;
+    }
+    if (lastItem.index >= virtualElements.length - LOAD_MORE_THRESHOLD) {
+      onLoadMore();
+    }
+  }, [hasMore, isLoadingMore, loadMoreError, onLoadMore, tableSection, virtualElements.length, virtualItems]);
+
   return (
     <TooltipProvider delay={200}>
       <Card size="sm" className="overflow-hidden ring-1 ring-[var(--corportal-border-grey)] !gap-0">
         {/* Сырой table без ui/Table-обёртки: sticky работает только у общего overflow-auto. */}
-        <div className={CATALOG_SCROLL_CLASS}>
+        <div ref={scrollRef} className={CATALOG_SCROLL_CLASS}>
           <table
-            aria-busy={isLoading}
+            aria-busy={isLoading || isLoadingMore}
             aria-label="Каталог товаров"
             className="w-full caption-bottom table-fixed border-separate border-spacing-0 text-sm"
           >
@@ -507,7 +605,7 @@ export const CatalogTable = ({
                   return (
                     <TableHead
                       key={columnId}
-                      className={cn(getColumnHeadClassName(columnId), "sticky top-0 z-20 bg-card")}
+                      className={cn(getColumnHeadClassName(columnId), "sticky top-0 z-40 bg-card")}
                       style={dealerBuyColumnStyle(columnId, showBuyButton)}
                     >
                       {columnDefinition?.label}
@@ -538,56 +636,102 @@ export const CatalogTable = ({
                   </TableCell>
                 </TableRow>
               ) : (
-                siteGroups.map((group) => {
-                  const rowsVisible = areCatalogSiteGroupRowsVisible(collapsedSiteKeys, group.siteKey);
-                  return (
-                    <Fragment key={`site-${group.siteKey}`}>
-                      <TableRow className="bg-muted hover:bg-muted/90">
-                        <TableCell
-                          colSpan={columnCount}
-                          className="sticky z-10 bg-muted px-3 py-2 text-sm font-semibold"
-                          style={{ top: CATALOG_TABLE_HEAD_OFFSET }}
-                        >
-                          <button
-                            type="button"
-                            aria-expanded={rowsVisible}
-                            className="inline-flex w-full cursor-pointer items-center gap-2 text-left"
-                            onClick={() => onToggleSiteCollapsed(group.siteKey)}
-                          >
-                            <ChevronRight
-                              aria-hidden
-                              className={cn(
-                                "size-3.5 shrink-0 text-muted-foreground transition-transform",
-                                rowsVisible && "rotate-90",
-                              )}
-                            />
-                            <span>{group.label}</span>
-                            <span className="text-xs font-normal text-muted-foreground">
-                              {pluralTovar(group.items.length)}
-                            </span>
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                      {rowsVisible
-                        ? group.items.map((item) => (
-                            <CatalogTableRow
-                              key={item.id}
-                              item={item}
-                              listingMode={listingMode}
-                              visibleColumnIds={visibleColumnIds}
-                              showBuyButton={showBuyButton}
-                              priceFromPrefix={priceFromPrefix}
-                              showCodeSubline={showCodeSubline}
-                              needsRegion={needsRegion}
-                              stockFacts={stockFacts}
-                              selectedRegion={selectedRegion}
-                              onRequestRegion={() => setSwitcherOpen(true)}
-                            />
-                          ))
-                        : null}
-                    </Fragment>
-                  );
-                })
+                <>
+                  {stickySiteLabel ? (
+                    <TableRow className="bg-muted hover:bg-muted">
+                      <TableCell
+                        colSpan={columnCount}
+                        className="sticky z-30 bg-muted px-3 py-2 text-sm font-semibold"
+                        style={{
+                          top: CATALOG_TABLE_HEAD_OFFSET,
+                          backgroundColor: "var(--muted)",
+                          boxShadow: "0 1px 0 var(--muted), 0 -1px 0 var(--muted)",
+                        }}
+                      >
+                        {stickySiteLabel}
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                  {paddingTop > 0 ? (
+                    <TableRow aria-hidden className="hover:bg-transparent">
+                      <TableCell colSpan={columnCount} className="border-0 p-0" style={{ height: paddingTop }} />
+                    </TableRow>
+                  ) : null}
+                  {virtualItems.map((virtualRow) => {
+                    const element = virtualElements[virtualRow.index];
+                    if (!element) {
+                      return null;
+                    }
+                    const measureRef = virtualizer.measureElement;
+                    if (element.kind === "header") {
+                      return (
+                        <CatalogSiteHeaderRow
+                          key={`header-${element.siteKey}-${virtualRow.index}`}
+                          element={element}
+                          columnCount={columnCount}
+                          rowsVisible={!collapsedSiteKeys.has(element.siteKey)}
+                          onToggle={() => onToggleSiteCollapsed(element.siteKey)}
+                          measureRef={(node) => {
+                            if (node) {
+                              node.dataset.index = String(virtualRow.index);
+                              measureRef(node);
+                            }
+                          }}
+                        />
+                      );
+                    }
+                    return (
+                      <CatalogTableRow
+                        key={`row-${element.item.id}`}
+                        item={element.item}
+                        listingMode={listingMode}
+                        visibleColumnIds={visibleColumnIds}
+                        showBuyButton={showBuyButton}
+                        priceFromPrefix={priceFromPrefix}
+                        showCodeSubline={showCodeSubline}
+                        needsRegion={needsRegion}
+                        stockFacts={stockFacts}
+                        selectedRegion={selectedRegion}
+                        onRequestRegion={() => setSwitcherOpen(true)}
+                        measureRef={(node) => {
+                          if (node) {
+                            node.dataset.index = String(virtualRow.index);
+                            measureRef(node);
+                          }
+                        }}
+                      />
+                    );
+                  })}
+                  {paddingBottom > 0 ? (
+                    <TableRow aria-hidden className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={columnCount}
+                        className="border-0 p-0"
+                        style={{ height: paddingBottom }}
+                      />
+                    </TableRow>
+                  ) : null}
+                  {isLoadingMore ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={columnCount}
+                        className="px-3 py-3 text-center text-xs text-muted-foreground"
+                      >
+                        Загрузка…
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                  {loadMoreError ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={columnCount}
+                        className="px-3 py-3 text-center text-xs text-muted-foreground"
+                      >
+                        Не удалось загрузить ещё. Прокрутите список снова.
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </>
               )}
             </TableBody>
           </table>

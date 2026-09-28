@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { itemMatchesCategoryFilter } from "@/features/store/category-tree";
 import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
+import {
+  DEALER_STATUSES,
+  RETAIL_STATUSES,
+} from "../../pricelists/pricelists-helpers";
 import {
   DEFAULT_VISIBLE_COLUMNS,
   type CatalogColumnId,
@@ -12,14 +15,14 @@ import {
 } from "./catalog-columns";
 import {
   ALL_VALUE,
-  extractSortedOptions,
   formatCatalogStatus,
   getSelectValue,
-  matchesSearchQuery,
   type CatalogListingMode,
   type QuickFilterOption,
 } from "./catalog-helpers";
 import {
+  CATALOG_NO_SITE_KEY,
+  CATALOG_NO_SITE_LABEL,
   catalogSiteKeysForCollapseAll,
   compareCatalogSiteKeys,
   groupCatalogItemsBySite,
@@ -73,22 +76,29 @@ export type CatalogController = {
   isLoading: boolean;
 };
 
-// Имитация задержки ответа сервера при загрузке данных каталога.
-const SERVER_RESPONSE_DELAY_MS = 200;
+export type CatalogControllerSource = {
+  items: StoreCatalogItem[];
+  groupTotals: ReadonlyMap<string, number> | Readonly<Record<string, number>>;
+  /** Первая порция ещё не пришла (скелетоны). */
+  isInitialLoading: boolean;
+  siteOptions: string[];
+  familyOptions: Array<{ id: string; name: string }>;
+};
 
 const toFilterOptions = (values: string[], formatLabel?: (value: string) => string): QuickFilterOption[] =>
   values.map((value) => ({ value, label: formatLabel?.(value) ?? value }));
 
 export const useCatalogController = (
   listingMode: CatalogListingMode,
-  columnsStorageKey?: string,
-  sourceItems: StoreCatalogItem[] = [],
+  columnsStorageKey: string | undefined,
+  source: CatalogControllerSource,
 ): CatalogController => {
+  const { items: sourceItems, groupTotals, isInitialLoading, siteOptions, familyOptions } = source;
+
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
   const [visibleColumnIds, setVisibleColumnIds] = useState<CatalogColumnId[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnsHydratedKey, setColumnsHydratedKey] = useState<string | null>(null);
-  const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(ALL_VALUE);
   const [dealerStatusFilter, setDealerStatusFilter] = useState(ALL_VALUE);
@@ -99,58 +109,39 @@ export const useCatalogController = (
 
   const dealerStatusOptions = useMemo(
     () =>
-      toFilterOptions(extractSortedOptions(sourceItems, "dealerStatus"), (value) =>
-        formatCatalogStatus(value as DealerStatus),
+      toFilterOptions(
+        DEALER_STATUSES.map((status) => status.value),
+        (value) => formatCatalogStatus(value as DealerStatus),
       ),
-    [sourceItems],
+    [],
   );
   const retailStatusOptions = useMemo(
     () =>
-      toFilterOptions(extractSortedOptions(sourceItems, "retailStatus"), (value) =>
-        formatCatalogStatus(value as RetailStatus),
+      toFilterOptions(
+        RETAIL_STATUSES.map((status) => status.value),
+        (value) => formatCatalogStatus(value as RetailStatus),
       ),
-    [sourceItems],
+    [],
   );
-  const siteOptions = useMemo(
+  const siteFilterOptions = useMemo(
     () =>
       toFilterOptions(
-        Array.from(new Set(sourceItems.map((item) => String(item.productionSite)))).sort(
-          compareCatalogSiteKeys,
-        ),
+        [...siteOptions].sort(compareCatalogSiteKeys),
+        (value) => (value === CATALOG_NO_SITE_KEY ? CATALOG_NO_SITE_LABEL : value),
       ),
-    [sourceItems],
+    [siteOptions],
   );
-  const familyOptions = useMemo(() => toFilterOptions(extractSortedOptions(sourceItems, "family")), [sourceItems]);
-
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-
-  const filteredItems = useMemo(
-    () =>
-      sourceItems.filter((item) => {
-        if (!matchesSearchQuery(item, normalizedQuery)) {
-          return false;
-        }
-        if (!itemMatchesCategoryFilter(item.categoryId, categoryFilter)) {
-          return false;
-        }
-        if (dealerStatusFilter !== ALL_VALUE && item.dealerStatus !== dealerStatusFilter) {
-          return false;
-        }
-        if (retailStatusFilter !== ALL_VALUE && item.retailStatus !== retailStatusFilter) {
-          return false;
-        }
-        if (siteFilter !== ALL_VALUE && item.productionSite !== siteFilter) {
-          return false;
-        }
-        if (familyFilter !== ALL_VALUE && item.family !== familyFilter) {
-          return false;
-        }
-        return true;
-      }),
-    [categoryFilter, dealerStatusFilter, familyFilter, normalizedQuery, retailStatusFilter, siteFilter, sourceItems],
+  const familyFilterOptions = useMemo(
+    () => familyOptions.map((family) => ({ value: family.id, label: family.name })),
+    [familyOptions],
   );
 
-  const siteGroups = useMemo(() => groupCatalogItemsBySite(filteredItems), [filteredItems]);
+  // Фильтры уходят в запрос; здесь только группировка уже загруженной порции.
+  const filteredItems = sourceItems;
+  const siteGroups = useMemo(
+    () => groupCatalogItemsBySite(filteredItems, groupTotals),
+    [filteredItems, groupTotals],
+  );
 
   const hasActiveFilters =
     searchQuery.length > 0 ||
@@ -160,24 +151,7 @@ export const useCatalogController = (
     siteFilter !== ALL_VALUE ||
     familyFilter !== ALL_VALUE;
 
-  // Ключ «запроса»: меняется при смене фильтров или поиска — как обращение к серверу.
-  const requestKey = [
-    listingMode,
-    normalizedQuery,
-    categoryFilter,
-    dealerStatusFilter,
-    retailStatusFilter,
-    siteFilter,
-    familyFilter,
-  ].join("|");
-
-  // Пока загруженный ключ не совпал с текущим запросом — показываем состояние загрузки.
-  const isLoading = loadedRequestKey !== requestKey;
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoadedRequestKey(requestKey), SERVER_RESPONSE_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [requestKey]);
+  const isLoading = isInitialLoading;
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -259,6 +233,9 @@ export const useCatalogController = (
     storage.setItem(columnsStorageKey, serializeVisibleColumns(visibleColumnIds));
   }, [columnsHydratedKey, columnsStorageKey, visibleColumnIds]);
 
+  // listingMode retained in signature for callers / future per-mode filter defaults.
+  void listingMode;
+
   const filters: CatalogFilters = {
     search: { value: searchQuery, onChange: handleSearchChange },
     category: { value: categoryFilter, onChange: makeFilterHandler(setCategoryFilter) },
@@ -272,8 +249,12 @@ export const useCatalogController = (
       onChange: makeFilterHandler(setRetailStatusFilter),
       options: retailStatusOptions,
     },
-    site: { value: siteFilter, onChange: makeFilterHandler(setSiteFilter), options: siteOptions },
-    family: { value: familyFilter, onChange: makeFilterHandler(setFamilyFilter), options: familyOptions },
+    site: { value: siteFilter, onChange: makeFilterHandler(setSiteFilter), options: siteFilterOptions },
+    family: {
+      value: familyFilter,
+      onChange: makeFilterHandler(setFamilyFilter),
+      options: familyFilterOptions,
+    },
     hasActive: hasActiveFilters,
     onReset: handleResetFilters,
   };
