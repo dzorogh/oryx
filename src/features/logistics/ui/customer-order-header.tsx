@@ -191,15 +191,21 @@ const PaymentPanel = ({
             </span>{" "}
             · {paidPct}%
           </div>
-          <div
-            className={cn(
-              "mt-1 flex items-center gap-1.5 text-xs whitespace-nowrap tabular-nums",
-              progress.overdue ? "font-medium text-red-700" : progress.muted ? "text-muted-foreground/70" : "text-muted-foreground",
-            )}
-          >
-            {progress.overdue ? <AlarmClock className="size-3 shrink-0" aria-hidden /> : null}
-            {progress.dueText}
-          </div>
+          {paymentCount > 0 ? (
+            <div
+              className={cn(
+                "mt-1 flex items-center gap-1.5 text-xs whitespace-nowrap tabular-nums",
+                progress.overdue
+                  ? "font-medium text-red-700"
+                  : progress.muted
+                    ? "text-muted-foreground/70"
+                    : "text-muted-foreground",
+              )}
+            >
+              {progress.overdue ? <AlarmClock className="size-3 shrink-0" aria-hidden /> : null}
+              {progress.dueText}
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="mt-2.5 text-xs text-muted-foreground/70">
