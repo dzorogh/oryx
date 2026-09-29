@@ -75,33 +75,33 @@ const REGION_GROUPS = [
 
 /** Stable region codes match pricelist UI ids. */
 const REGIONS = [
-  { code: "ae", name: "ОАЭ", group: "mena", retail: "AED", dealer: "CNY", sort_order: 10 },
-  { code: "ru", name: "Россия", group: "cis", retail: "RUB", dealer: "CNY", sort_order: 20 },
-  { code: "kz", name: "Казахстан", group: "cis", retail: "KZT", dealer: "CNY", sort_order: 30 },
-  { code: "by", name: "Беларусь", group: "cis", retail: "BYN", dealer: "CNY", sort_order: 40 },
-  { code: "uz", name: "Узбекистан", group: "cis", retail: "UZS", dealer: "CNY", sort_order: 50 },
-  { code: "mx", name: "Мексика", group: "americas", retail: "MXN", dealer: "CNY", sort_order: 60 },
-  { code: "de", name: "Германия", group: "europe", retail: "EUR", dealer: "CNY", sort_order: 70 },
-  { code: "us", name: "США", group: "americas", retail: "USD", dealer: "CNY", sort_order: 80 },
-  { code: "in", name: "Индия", group: "apac", retail: "INR", dealer: "CNY", sort_order: 90 },
-  { code: "om", name: "Оман", group: "mena", retail: "OMR", dealer: "CNY", sort_order: 100 },
+  { code: "AE", name: "ОАЭ", group: "mena", retail: "AED", dealer: "CNY", sort_order: 10 },
+  { code: "RU", name: "Россия", group: "cis", retail: "RUB", dealer: "CNY", sort_order: 20 },
+  { code: "KZ", name: "Казахстан", group: "cis", retail: "KZT", dealer: "CNY", sort_order: 30 },
+  { code: "BY", name: "Беларусь", group: "cis", retail: "BYN", dealer: "CNY", sort_order: 40 },
+  { code: "UZ", name: "Узбекистан", group: "cis", retail: "UZS", dealer: "CNY", sort_order: 50 },
+  { code: "MX", name: "Мексика", group: "americas", retail: "MXN", dealer: "CNY", sort_order: 60 },
+  { code: "DE", name: "Германия", group: "europe", retail: "EUR", dealer: "CNY", sort_order: 70 },
+  { code: "US", name: "США", group: "americas", retail: "USD", dealer: "CNY", sort_order: 80 },
+  { code: "IN", name: "Индия", group: "apac", retail: "INR", dealer: "CNY", sort_order: 90 },
+  { code: "OM", name: "Оман", group: "mena", retail: "OMR", dealer: "CNY", sort_order: 100 },
 ];
 
 /** Demo tenants (ids match src/lib/demo-tenants.ts); region by code, null — no region. */
 const TENANTS = [
-  { id: "tenant-globaldrive", name: "Globaldrive", region: "ru" },
+  { id: "tenant-globaldrive", name: "Globaldrive", region: "RU" },
   { id: "tenant-lunnar-capital", name: "Lunnar Capital", region: null },
   { id: "tenant-my-testing", name: "My Testing", region: null },
   { id: "tenant-oryxbms", name: "OryxBMS", region: null },
-  { id: "tenant-sharmax-by", name: "Sharmax Belarus", region: "by" },
-  { id: "tenant-sharmax-kz", name: "Sharmax Kazakhstan", region: "kz" },
-  { id: "tenant-sharmax-mx", name: "Sharmax Mexico", region: "mx" },
-  { id: "tenant-sharmax-om", name: "Sharmax Oman", region: "om" },
+  { id: "tenant-sharmax-by", name: "Sharmax Belarus", region: "BY" },
+  { id: "tenant-sharmax-kz", name: "Sharmax Kazakhstan", region: "KZ" },
+  { id: "tenant-sharmax-mx", name: "Sharmax Mexico", region: "MX" },
+  { id: "tenant-sharmax-om", name: "Sharmax Oman", region: "OM" },
   { id: "tenant-sharmax-qa", name: "Sharmax Qatar", region: null },
   { id: "tenant-sharmax-sa", name: "Sharmax Saudi", region: null },
   { id: "tenant-sharmax-es", name: "Sharmax Spain", region: null },
-  { id: "tenant-sharmax-ae", name: "Sharmax UAE", region: "ae" },
-  { id: "tenant-sharmax-uz", name: "Sharmax Uzbekistan", region: "uz" },
+  { id: "tenant-sharmax-ae", name: "Sharmax UAE", region: "AE" },
+  { id: "tenant-sharmax-uz", name: "Sharmax Uzbekistan", region: "UZ" },
 ];
 
 const DOCUMENT_FILE_BUCKET = "store-documents";
@@ -303,7 +303,7 @@ await postBatch(
   })),
 );
 
-const defaultRegionId = regionIdByCode.get("ae");
+const defaultRegionId = regionIdByCode.get("AE");
 if (!defaultRegionId) {
   throw new Error("default region ae missing");
 }

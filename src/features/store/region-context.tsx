@@ -59,7 +59,7 @@ type RegionRow = {
 const readStoredRegionCode = (): string | null => {
   try {
     const raw = window.localStorage.getItem(STORE_SELECTED_REGION_STORAGE_KEY);
-    return raw && raw.trim() ? raw.trim() : null;
+    return raw && raw.trim() ? raw.trim().toUpperCase() : null;
   } catch {
     return null;
   }

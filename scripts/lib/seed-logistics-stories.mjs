@@ -355,7 +355,7 @@ export const seedLogisticsStories = async (args) => {
   const bulkOrders = [
     {
       sequence: 907,
-      regionCode: "ru",
+      regionCode: "RU",
       description: "Демо: сборный заказ дилера с двух заводов",
       createdAt: "2026-09-19T08:20:00+00:00",
       expectedEndOn: "2026-11-20",
@@ -366,7 +366,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 908,
-      regionCode: "kz",
+      regionCode: "KZ",
       description: "Демо: поставка для сети салонов к Новому году",
       createdAt: "2026-09-21T11:05:00+00:00",
       expectedEndOn: "2026-12-05",
@@ -376,7 +376,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 909,
-      regionCode: "mx",
+      regionCode: "MX",
       description: "Демо: первый заказ нового дистрибьютора",
       createdAt: "2026-09-23T14:40:00+00:00",
       expectedEndOn: "2026-12-15",
@@ -388,7 +388,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 910,
-      regionCode: "de",
+      regionCode: "DE",
       description: "Демо: пополнение ассортимента к сезону",
       createdAt: "2026-09-24T09:30:00+00:00",
       expectedEndOn: "2027-01-20",
@@ -418,7 +418,7 @@ export const seedLogisticsStories = async (args) => {
   const hubOrders = [
     {
       sequence: 921,
-      regionCode: "ae",
+      regionCode: "AE",
       description: "Демо: дилер Дубая, пополнение витрины",
       createdAt: "2026-09-19T07:45:00+00:00",
       expectedEndOn: "2026-10-20",
@@ -426,7 +426,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 922,
-      regionCode: "om",
+      regionCode: "OM",
       description: "Демо: Маскат, квадроциклы и багги к сезону",
       createdAt: "2026-09-19T13:20:00+00:00",
       expectedEndOn: "2026-10-25",
@@ -434,7 +434,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 923,
-      regionCode: "in",
+      regionCode: "IN",
       description: "Демо: Мумбаи, скутеры и лёгкие мотоциклы",
       createdAt: "2026-09-20T09:10:00+00:00",
       expectedEndOn: "2026-11-05",
@@ -442,7 +442,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 924,
-      regionCode: "ru",
+      regionCode: "RU",
       description: "Демо: сборный заказ через Dubai Hub",
       createdAt: "2026-09-21T06:30:00+00:00",
       expectedEndOn: "2026-11-10",
@@ -452,7 +452,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 925,
-      regionCode: "kz",
+      regionCode: "KZ",
       description: "Демо: Алматы, срочная догрузка",
       createdAt: "2026-09-22T10:00:00+00:00",
       expectedEndOn: "2026-10-15",
@@ -460,7 +460,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 926,
-      regionCode: "uz",
+      regionCode: "UZ",
       description: "Демо: Ташкент, мопеды и детская техника",
       createdAt: "2026-09-22T15:40:00+00:00",
       expectedEndOn: "2026-11-20",
@@ -471,7 +471,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 927,
-      regionCode: "by",
+      regionCode: "BY",
       description: "Демо: Минск, эндуро и спорт",
       createdAt: "2026-09-23T08:15:00+00:00",
       expectedEndOn: "2026-11-15",
@@ -479,7 +479,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 928,
-      regionCode: "de",
+      regionCode: "DE",
       description: "Демо: гольф-кары и квадроциклы для прокатов",
       createdAt: "2026-09-24T07:05:00+00:00",
       expectedEndOn: "2026-12-01",
@@ -487,7 +487,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 929,
-      regionCode: "mx",
+      regionCode: "MX",
       description: "Демо: Монтеррей, мотоциклы Latina",
       createdAt: "2026-09-24T16:50:00+00:00",
       expectedEndOn: "2026-12-10",
@@ -495,7 +495,7 @@ export const seedLogisticsStories = async (args) => {
     },
     {
       sequence: 930,
-      regionCode: "ae",
+      regionCode: "AE",
       description: "Демо: Абу-Даби, флагманские модели",
       createdAt: "2026-09-25T09:25:00+00:00",
       expectedEndOn: "2026-11-30",
