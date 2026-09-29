@@ -133,7 +133,7 @@ export const OrderAmountInput = ({
         variant === "meta" &&
           "-ml-2 w-full max-w-[14rem] border-transparent bg-transparent hover:border-border hover:bg-muted/50",
         variant === "panel" &&
-          "-ml-2 h-9 w-auto max-w-full border-transparent bg-transparent text-xl font-semibold tracking-tight [field-sizing:content] placeholder:font-semibold placeholder:text-foreground hover:border-border hover:bg-muted/50",
+          "-ml-2 h-9 w-auto max-w-[calc(100%+0.5rem)] border-transparent bg-transparent text-xl font-semibold tracking-tight [field-sizing:content] placeholder:font-semibold placeholder:text-foreground hover:border-border hover:bg-muted/50",
       )}
     />
   );
