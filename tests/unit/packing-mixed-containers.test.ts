@@ -93,23 +93,23 @@ describe("packMixedContainers", () => {
     }
   });
 
-  describe("empty volume tie-break", () => {
+  describe("fewer containers first", () => {
     // 24 cubes of 1 m³; a small container holds 20, so two smalls (40 m³, 16 m³ empty) compete with one big.
     const small: MixedContainerType = { code: "small", width: 5000, length: 2000, height: 2000, maxWeightKg: 30000 };
     const cube = box({ id: 1, quantity: 24, lengthMm: 1000, widthMm: 1000, heightMm: 1000, weightKg: 10 });
 
-    it("takes one container when it leaves at most 2% more empty volume than two", () => {
-      // 40.24 m³ → 16.24 m³ empty, 1.5% more than two smalls.
-      const big: MixedContainerType = { code: "big", width: 10060, length: 2000, height: 2000, maxWeightKg: 30000 };
+    it("takes one big container even when it leaves much more empty volume than two small", () => {
+      // 60 m³ → 36 m³ empty vs 16 m³ for two smalls.
+      const big: MixedContainerType = { code: "big", width: 15000, length: 2000, height: 2000, maxWeightKg: 30000 };
       const result = packMixedContainers([cube], [small, big]);
       assert.deepEqual(result.containers.map((c) => c.typeCode), ["big"]);
     });
 
-    it("takes more containers when one leaves clearly more empty volume", () => {
-      // 40.8 m³ → 16.8 m³ empty, 5% more than two smalls.
-      const big: MixedContainerType = { code: "big", width: 10200, length: 2000, height: 2000, maxWeightKg: 30000 };
-      const result = packMixedContainers([cube], [small, big]);
-      assert.deepEqual(result.containers.map((c) => c.typeCode), ["small", "small"]);
+    it("takes the smaller type when one container of either type fits", () => {
+      const cubes = box({ id: 1, quantity: 10, lengthMm: 1000, widthMm: 1000, heightMm: 1000, weightKg: 10 });
+      const big: MixedContainerType = { code: "big", width: 15000, length: 2000, height: 2000, maxWeightKg: 30000 };
+      const result = packMixedContainers([cubes], [small, big]);
+      assert.deepEqual(result.containers.map((c) => c.typeCode), ["small"]);
     });
   });
 

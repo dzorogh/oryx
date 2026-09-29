@@ -92,8 +92,6 @@ type OpenContainer = {
   pieceCountByItem: Map<number, number>;
 };
 
-const EMPTY_VOLUME_TIE_PERCENT = 2;
-
 export const containerTypeFromInnerMm = (args: {
   code: string;
   innerLengthMm: number;
@@ -457,28 +455,13 @@ const searchFleets = (
       emptyVolume: score.emptyVolume,
       containerCount: score.containerCount,
     };
-    if (!state.best) {
-      state.best = cand;
-      return;
-    }
     const best = state.best;
-    const rel =
-      best.emptyVolume <= 0
-        ? cand.emptyVolume <= 0
-          ? 0
-          : 100
-        : (Math.abs(cand.emptyVolume - best.emptyVolume) / best.emptyVolume) * 100;
-
-    if (cand.emptyVolume + 1e-6 < best.emptyVolume) {
-      if (rel <= EMPTY_VOLUME_TIE_PERCENT && cand.containerCount > best.containerCount) return;
-      state.best = cand;
-      return;
-    }
-    if (Math.abs(cand.emptyVolume - best.emptyVolume) <= 1e-6) {
-      if (cand.containerCount < best.containerCount) state.best = cand;
-      return;
-    }
-    if (rel <= EMPTY_VOLUME_TIE_PERCENT && cand.containerCount < best.containerCount) {
+    // Fewer containers always win; among equal counts — less empty volume.
+    if (
+      !best ||
+      cand.containerCount < best.containerCount ||
+      (cand.containerCount === best.containerCount && cand.emptyVolume + 1e-6 < best.emptyVolume)
+    ) {
       state.best = cand;
     }
   };
