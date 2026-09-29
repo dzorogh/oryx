@@ -255,7 +255,7 @@ const TransferDetailSkeleton = () => (
 export const TransferDetailPage = () => {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { snapshot, balances, orderMoney, isLoading, error, reload } = useLogisticsStore({
+  const { snapshot, balances, orderMoney, isLoading, isRefreshing, error, reload } = useLogisticsStore({
     kind: "document",
     documentKind: "transfer",
     ref: String(params.id ?? ""),
@@ -322,7 +322,7 @@ export const TransferDetailPage = () => {
 
   return (
     <LogisticsPageShell crumbs={transferCrumbs(doc.number)}>
-      <div className="flex flex-col gap-3" aria-busy={pendingAction != null || isLoading}>
+      <div className="flex flex-col gap-3" aria-busy={pendingAction != null || isRefreshing}>
         <DocumentHeader
           kind="Перемещение"
           icon={ArrowLeftRight}

@@ -177,7 +177,9 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
     orderPlan,
     orderMoney,
     orderOms,
-    isLoading: enabled && (pending || loadedKey !== key),
+    // Effects re-run when a hidden route is shown again; refetching a loaded key must not blank the page.
+    isLoading: enabled && loadedKey !== key,
+    isRefreshing: enabled && pending,
     error,
     reload,
     found,
