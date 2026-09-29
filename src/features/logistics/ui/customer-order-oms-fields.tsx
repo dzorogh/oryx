@@ -1,16 +1,12 @@
 "use client";
 
-import { ExternalLink, Pencil, TriangleAlert } from "lucide-react";
-import { useRef, useState } from "react";
+import { TriangleAlert } from "lucide-react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  copyCustomerOrder,
-  setCustomerOrderAccounting,
-  setDocumentDescription,
-} from "@/features/logistics/logistics-api";
-import { MIXED_OWNERS_WARNING, validateAccountingUrl } from "@/features/logistics/customer-order-oms";
+import { copyCustomerOrder, setDocumentDescription } from "@/features/logistics/logistics-api";
+import { MIXED_OWNERS_WARNING } from "@/features/logistics/customer-order-oms";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
 import { formatOrderMoney, type DeliverySummary, type PaymentsSummary } from "@/features/logistics/order-money";
 import { formatOutputDate } from "@/features/logistics/output-calendar";
@@ -70,165 +66,6 @@ export const DeliveryMetaValue = ({
     ) : null}
   </span>
 );
-
-const ghostInput =
-  "-ml-2 h-8 w-full min-w-0 rounded-lg border border-transparent bg-transparent px-2 text-sm font-medium outline-none placeholder:font-normal placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/50 focus-visible:border-border focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/40";
-
-type AccountingProps = {
-  orderId: string;
-  number: string | null;
-  url: string | null;
-  reload: () => Promise<void>;
-};
-
-/** Ghost text input that commits on blur / Enter and discards on Escape. */
-const GhostTextInput = ({
-  value,
-  ariaLabel,
-  placeholder,
-  autoFocus,
-  onCommit,
-  onCancel,
-}: {
-  value: string;
-  ariaLabel: string;
-  placeholder: string;
-  autoFocus?: boolean;
-  /** Resolve `false` to keep the typed text in the input (invalid value or failed save). */
-  onCommit: (next: string) => Promise<boolean | void> | boolean | void;
-  onCancel?: () => void;
-}) => {
-  const [draft, setDraft] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const discardRef = useRef(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const commit = () => {
-    if (discardRef.current) {
-      discardRef.current = false;
-      setDraft(null);
-      onCancel?.();
-      return;
-    }
-    if (draft == null) {
-      onCancel?.();
-      return;
-    }
-    const next = draft;
-    if (next.trim() === value.trim()) {
-      setDraft(null);
-      onCancel?.();
-      return;
-    }
-    setPending(true);
-    void Promise.resolve(onCommit(next))
-      .then((ok) => {
-        if (ok === false) {
-          requestAnimationFrame(() => inputRef.current?.focus());
-        } else {
-          setDraft(null);
-        }
-      })
-      .finally(() => setPending(false));
-  };
-
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      aria-label={ariaLabel}
-      placeholder={placeholder}
-      autoFocus={autoFocus}
-      disabled={pending}
-      value={draft ?? value}
-      onFocus={() => setDraft((current) => current ?? value)}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          event.currentTarget.blur();
-        }
-        if (event.key === "Escape") {
-          discardRef.current = true;
-          event.currentTarget.blur();
-        }
-      }}
-      className={ghostInput}
-    />
-  );
-};
-
-export const AccountingNumberInput = ({ orderId, number, url, reload }: AccountingProps) => (
-  <GhostTextInput
-    value={number ?? ""}
-    ariaLabel="Номер в учётной системе"
-    placeholder="—"
-    onCommit={(next) =>
-      runLogisticsAction(
-        () => setCustomerOrderAccounting({ orderId, number: next.trim() || null, url }),
-        next.trim() ? "Номер в учётной системе сохранён" : "Номер в учётной системе очищен",
-        reload,
-      )
-    }
-  />
-);
-
-/** Link opens in a new tab; the pencil switches to the input. Invalid links are not saved. */
-export const AccountingUrlInput = ({ orderId, number, url, reload }: AccountingProps) => {
-  const [editing, setEditing] = useState(false);
-
-  if (url && !editing) {
-    return (
-      <span className="group/url inline-flex min-w-0 items-center gap-1">
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-w-0 items-center gap-1 text-foreground hover:underline hover:underline-offset-2"
-          title={url}
-        >
-          <span className="truncate">{url.replace(/^https?:\/\//i, "")}</span>
-          <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-        </a>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Изменить ссылку в учётной системе"
-          className="shrink-0 text-muted-foreground opacity-0 group-hover/url:opacity-100 focus-visible:opacity-100"
-          onClick={() => setEditing(true)}
-        >
-          <Pencil className="size-3.5" aria-hidden />
-        </Button>
-      </span>
-    );
-  }
-
-  return (
-    <GhostTextInput
-      value={url ?? ""}
-      ariaLabel="Ссылка в учётной системе"
-      placeholder="—"
-      autoFocus={editing}
-      onCancel={() => setEditing(false)}
-      onCommit={async (next) => {
-        const checked = validateAccountingUrl(next);
-        if (!checked.ok) {
-          toast.error("Ссылка не сохранена", { description: checked.error });
-          return false;
-        }
-        const ok = await runLogisticsAction(
-          () => setCustomerOrderAccounting({ orderId, number, url: checked.value }),
-          checked.value ? "Ссылка в учётной системе сохранена" : "Ссылка в учётной системе очищена",
-          reload,
-        );
-        if (ok) setEditing(false);
-        return ok;
-      }}
-    />
-  );
-};
 
 /** Order note under the header: text, «Изменить заметку» → textarea with «Сохранить». Closed orders are read-only. */
 export const CustomerOrderNote = ({
@@ -352,8 +189,8 @@ export const CopyCustomerOrderAction = ({ orderId, orderNumber }: { orderId: str
         }}
       >
         <p className="text-sm">
-          Новый черновик с тем же регионом, источником и строками. Заметка, платежи, файлы, комментарии и поля
-          учётной системы не копируются.
+          Новый черновик с тем же регионом, источником и строками. Заметка, платежи, файлы и комментарии не
+          копируются.
         </p>
       </DialogShell>
     </>

@@ -166,8 +166,6 @@ describe("mapLogisticsPayload", () => {
           region_id: 1,
           stock_location_id: 100,
           stock_owner_id: 50,
-          accounting_number: "ERP-12",
-          accounting_url: "https://erp.example.com/orders/12",
         },
       ],
       regions: [{ id: 1, code: "REG-1", name: "Север", stock_owner_id: 2 }],
@@ -192,8 +190,6 @@ describe("mapLogisticsPayload", () => {
     assert.equal(mapped.snapshot.customerOrders.length, 1);
     assert.equal(mapped.snapshot.customerOrders[0]?.number, "OMS-12");
     assert.equal(mapped.snapshot.customerOrders[0]?.sequenceNumber, "12");
-    assert.equal(mapped.snapshot.customerOrders[0]?.accountingNumber, "ERP-12");
-    assert.equal(mapped.snapshot.customerOrders[0]?.accountingUrl, "https://erp.example.com/orders/12");
     assert.deepEqual(mapped.orderOms.tenants, [
       { id: "tenant-globaldrive", name: "Globaldrive", regionId: "1", sortOrder: 10 },
     ]);
@@ -202,7 +198,7 @@ describe("mapLogisticsPayload", () => {
     assert.deepEqual(mapped.orderOms.paymentEvents, []);
   });
 
-  it("maps missing accounting fields to null and missing oms keys to empty lists", () => {
+  it("maps missing oms keys to empty lists", () => {
     const mapped = mapLogisticsPayload({
       documents: [
         {
@@ -217,11 +213,9 @@ describe("mapLogisticsPayload", () => {
         },
       ],
       customer_orders: [
-        { id: 12, region_id: 1, stock_location_id: 100, stock_owner_id: 50, accounting_number: null },
+        { id: 12, region_id: 1, stock_location_id: 100, stock_owner_id: 50 },
       ],
     });
-    assert.equal(mapped.snapshot.customerOrders[0]?.accountingNumber, null);
-    assert.equal(mapped.snapshot.customerOrders[0]?.accountingUrl, null);
     assert.deepEqual(mapped.orderOms, {
       tenants: [],
       variantLogistics: [],

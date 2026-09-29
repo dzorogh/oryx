@@ -1,4 +1,4 @@
-/** Customer order card facts from `store_document_context`: tenants, packing, files, payment events, accounting. */
+/** Customer order card facts from `store_document_context`: tenants, packing, files, payment events. */
 
 import type { MixedPackItem } from "@/domain/packing/mixed-containers";
 import type { DocumentTimelineEntry } from "@/features/logistics/document-timeline";
@@ -192,26 +192,6 @@ export const lineAmount = (unitPrice: number | null, quantity: number): number |
 
 /** Transfer carries goods of more than one owner (another order, a region, free stock). */
 export const MIXED_OWNERS_WARNING = "В перемещении товары разных владельцев";
-
-export const ACCOUNTING_URL_ERROR = "Ссылка должна начинаться с http:// или https://";
-
-const ACCOUNTING_URL_PATTERN = /^https?:\/\/\S+$/i;
-
-/** Empty clears the field; otherwise only http(s) URLs with a host. */
-export const validateAccountingUrl = (
-  raw: string,
-): { ok: true; value: string | null } | { ok: false; error: string } => {
-  const value = raw.trim();
-  if (!value) return { ok: true, value: null };
-  if (!ACCOUNTING_URL_PATTERN.test(value)) return { ok: false, error: ACCOUNTING_URL_ERROR };
-  try {
-    const url = new URL(value);
-    if (!url.hostname) return { ok: false, error: ACCOUNTING_URL_ERROR };
-  } catch {
-    return { ok: false, error: ACCOUNTING_URL_ERROR };
-  }
-  return { ok: true, value };
-};
 
 export const DOCUMENT_FILE_MAX_BYTES = 10 * 1024 * 1024;
 export const DOCUMENT_FILE_LIMIT_LABEL = "10 МБ";

@@ -455,8 +455,6 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       sourceKind: row.source_kind === "plant" || row.source_kind === "hub" ? row.source_kind : null,
       sourcePlantId: strOrNull(row.source_plant_id),
       sourceWarehouseId: strOrNull(row.source_warehouse_id),
-      accountingNumber: strOrNull(row.accounting_number),
-      accountingUrl: strOrNull(row.accounting_url),
       createdAt: doc.created_at,
       createdBy: doc.created_by,
       expectedEndOn: doc.expected_end_on,
@@ -1471,13 +1469,6 @@ export const copyCustomerOrder = async (orderId: string) => {
 
 export const setDocumentDescription = (documentId: string, description: string) =>
   rpc("store_set_document_description", { p_document_id: Number(documentId), p_description: description });
-
-export const setCustomerOrderAccounting = (args: { orderId: string; number: string | null; url: string | null }) =>
-  rpc("store_set_customer_order_accounting", {
-    p_id: Number(args.orderId),
-    p_number: args.number,
-    p_url: args.url,
-  });
 
 export type StoreTenantRow = { id: string; name: string; regionId: string | null; sortOrder: number };
 export type StoreRegionOption = { id: string; code: string; name: string };

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  ACCOUNTING_URL_ERROR,
   buildOrderSystemNotices,
   deliveryTransferIds,
   documentFileSizeError,
@@ -11,7 +10,6 @@ import {
   mapCustomerOrderOmsContext,
   orderPackingItems,
   tenantLabel,
-  validateAccountingUrl,
   type StoreTenant,
 } from "@/features/logistics/customer-order-oms";
 import {
@@ -158,26 +156,6 @@ describe("lineAmount", () => {
       return amount == null ? sum : sum + (convert(amount, line.currencyCode ?? "CNY", "CNY", rates) ?? 0);
     }, 0);
     assert.ok(Math.abs(summed - estimatedCost(lines, "CNY", rates)) < 1e-9);
-  });
-});
-
-describe("validateAccountingUrl", () => {
-  it("accepts http and https links", () => {
-    assert.deepEqual(validateAccountingUrl(" https://erp.example.com/orders/42 "), {
-      ok: true,
-      value: "https://erp.example.com/orders/42",
-    });
-    assert.deepEqual(validateAccountingUrl("http://1c.local/doc?id=7"), { ok: true, value: "http://1c.local/doc?id=7" });
-  });
-
-  it("rejects other schemes and bare hosts", () => {
-    assert.deepEqual(validateAccountingUrl("ftp://x"), { ok: false, error: ACCOUNTING_URL_ERROR });
-    assert.deepEqual(validateAccountingUrl("example.com"), { ok: false, error: ACCOUNTING_URL_ERROR });
-    assert.deepEqual(validateAccountingUrl("https://"), { ok: false, error: ACCOUNTING_URL_ERROR });
-  });
-
-  it("clears the field on an empty string", () => {
-    assert.deepEqual(validateAccountingUrl("   "), { ok: true, value: null });
   });
 });
 

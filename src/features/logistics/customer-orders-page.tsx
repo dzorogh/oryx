@@ -113,8 +113,6 @@ import { buildOrderSystemNotices, deliveryTransferIds, MIXED_OWNERS_WARNING, ten
 import { projectTransferDetail, transferHasMixedOwners } from "@/features/logistics/transfer-detail-projection";
 import { hrefForRegion } from "@/features/logistics/logistics-availability";
 import {
-  AccountingNumberInput,
-  AccountingUrlInput,
   CopyCustomerOrderAction,
   CustomerOrderNote,
   DeliveryMetaValue,
@@ -690,30 +688,6 @@ export const CustomerOrderDetailPage = () => {
             hint: deliveryMixedOwners ? (
               <span className="font-medium text-amber-700">{MIXED_OWNERS_WARNING}</span>
             ) : undefined,
-          },
-          {
-            label: "Номер в учётной системе",
-            wide: true,
-            value: (
-              <AccountingNumberInput
-                orderId={order.id}
-                number={order.accountingNumber}
-                url={order.accountingUrl}
-                reload={reload}
-              />
-            ),
-          },
-          {
-            label: "Ссылка в учётной системе",
-            wide: true,
-            value: (
-              <AccountingUrlInput
-                orderId={order.id}
-                number={order.accountingNumber}
-                url={order.accountingUrl}
-                reload={reload}
-              />
-            ),
           },
         ]}
       />
