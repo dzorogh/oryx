@@ -5,10 +5,12 @@ import {
   Ban,
   CalendarClock,
   Copy,
+  Factory,
   MoreHorizontal,
   PackageCheck,
   ShoppingCart,
   Wallet,
+  Warehouse,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,7 @@ import {
 import {
   deadlineCountdown,
   deadlineCountdownLabel,
+  deadlineProgress,
   fulfillmentSegments,
   paymentProgress,
   summarizeOrderFulfillment,
@@ -60,6 +63,35 @@ const PanelTitle = ({ icon: Icon, children }: { icon: typeof PackageCheck; child
   </div>
 );
 
+const ORDER_TYPE = {
+  hub: { label: "Склад региона", icon: Warehouse, className: "bg-sky-50 text-sky-800 ring-sky-200" },
+  plant: { label: "Производственная площадка", icon: Factory, className: "bg-violet-50 text-violet-800 ring-violet-200" },
+} as const;
+
+/** Checkout method of the order: regional hub stock or a production site. */
+const OrderTypeBadge = ({ kind, code }: { kind: "plant" | "hub" | null; code: string | null }) => {
+  if (!kind) return null;
+  const type = ORDER_TYPE[kind];
+  const Icon = type.icon;
+  return (
+    <span
+      className={cn(
+        "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium ring-1 ring-inset",
+        type.className,
+      )}
+    >
+      <Icon className="size-3.5" aria-hidden />
+      {type.label}
+      {code ? <span className="font-mono text-xs font-semibold tracking-wide opacity-80">{code}</span> : null}
+    </span>
+  );
+};
+
+/** Same height in every panel so the progress bars under it line up. */
+const PanelValue = ({ children }: { children: ReactNode }) => (
+  <div className="flex h-9 items-center">{children}</div>
+);
+
 const LegendDot = ({ className }: { className: string }) => (
   <span className={cn("inline-block size-2 rounded-full", className)} aria-hidden />
 );
@@ -72,16 +104,18 @@ const FulfillmentPanel = ({ fulfillment, open }: { fulfillment: OrderFulfillment
   return (
     <section className="px-6 py-4">
       <PanelTitle icon={PackageCheck}>Выполнение</PanelTitle>
-      {empty ? (
-        <div className="text-xl font-semibold tracking-tight text-muted-foreground">Товаров нет</div>
-      ) : (
-        <div className="flex flex-wrap items-baseline gap-1.5">
-          <span className="text-xl font-semibold tracking-tight tabular-nums">{formatQuantity(shipped)}</span>
-          <span className="text-sm text-muted-foreground tabular-nums">
-            из {formatQuantity(ordered)} шт отгружено
+      <PanelValue>
+        {empty ? (
+          <span className="text-xl font-semibold tracking-tight text-muted-foreground">Товаров нет</span>
+        ) : (
+          <span className="flex items-baseline gap-1.5">
+            <span className="text-xl font-semibold tracking-tight tabular-nums">{formatQuantity(shipped)}</span>
+            <span className="text-sm text-muted-foreground tabular-nums">
+              из {formatQuantity(ordered)} шт отгружено
+            </span>
           </span>
-        </div>
-      )}
+        )}
+      </PanelValue>
       <div className="mt-2.5 flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-muted">
         <div className="bg-green-600" style={{ width: `${segments.shipped}%` }} />
         <div className="bg-blue-500" style={{ width: `${segments.reserved}%` }} />
@@ -123,23 +157,25 @@ const PaymentPanel = ({
   return (
     <section className="px-6 py-4">
       <PanelTitle icon={Wallet}>Оплата</PanelTitle>
-      {money ? (
-        <div className="flex flex-wrap items-baseline gap-1.5">
-          <OrderAmountInput
-            variant="panel"
-            documentId={orderId}
-            amount={money.amount}
-            estimated={money.estimated}
-            currencyCode={money.currencyCode}
-            reload={reload}
-          />
-          {money.amount == null ? <span className="text-xs text-muted-foreground">расчётная</span> : null}
-        </div>
-      ) : (
-        <div className="text-xl font-semibold tracking-tight">
-          <DocumentMetaEmpty />
-        </div>
-      )}
+      <PanelValue>
+        {money ? (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <OrderAmountInput
+              variant="panel"
+              documentId={orderId}
+              amount={money.amount}
+              estimated={money.estimated}
+              currencyCode={money.currencyCode}
+              reload={reload}
+            />
+            {money.amount == null ? <span className="text-xs text-muted-foreground">расчётная</span> : null}
+          </span>
+        ) : (
+          <span className="text-xl font-semibold tracking-tight">
+            <DocumentMetaEmpty />
+          </span>
+        )}
+      </PanelValue>
       <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div className="h-1.5 rounded-full bg-green-600" style={{ width: `${paidPct}%` }} />
       </div>
@@ -171,45 +207,66 @@ const PaymentPanel = ({
   );
 };
 
+const DEADLINE_BAR_CLASS: Record<HeaderTone, string> = {
+  neutral: "bg-foreground/60",
+  warning: "bg-amber-400",
+  danger: "bg-red-500",
+};
+
 const DatesPanel = ({
   expectedEndOn,
   countdown,
   createdAt,
   completedAt,
+  open,
   onExpectedEndChange,
 }: {
   expectedEndOn: string | null;
   countdown: DeadlineCountdown | null;
   createdAt: string;
   completedAt: string | null;
+  open: boolean;
   onExpectedEndChange: (value: string | null) => void;
 }) => {
   const countdownView = countdown ? deadlineCountdownLabel(countdown) : null;
   const overdue = countdown?.kind === "overdue";
+  const progress = open ? deadlineProgress(createdAt, expectedEndOn) : completedAt ? 100 : null;
 
   return (
     <section className="px-6 py-4">
       <PanelTitle icon={CalendarClock}>Сроки</PanelTitle>
-      <div className={cn("[&_input]:text-xl [&_input]:font-semibold [&_input]:tracking-tight", overdue && "[&_input]:text-red-700")}>
-        <DocumentMetaDateInput
-          value={expectedEndOn ?? ""}
-          aria-label="Ожидаемое окончание"
-          overdueDays={0}
-          onChange={(value) => onExpectedEndChange(value || null)}
+      <PanelValue>
+        <span
+          className={cn(
+            "[&_input]:text-xl [&_input]:font-semibold [&_input]:tracking-tight",
+            overdue && "[&_input]:text-red-700",
+          )}
+        >
+          <DocumentMetaDateInput
+            value={expectedEndOn ?? ""}
+            aria-label="Ожидаемое окончание"
+            overdueDays={0}
+            onChange={(value) => onExpectedEndChange(value || null)}
+          />
+        </span>
+      </PanelValue>
+      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-1.5 rounded-full",
+            open ? DEADLINE_BAR_CLASS[countdownView?.tone ?? "neutral"] : "bg-green-600",
+          )}
+          style={{ width: `${progress ?? 0}%` }}
         />
       </div>
-      {countdownView ? (
-        <div className={cn("mt-1 text-sm font-medium", TONE_CLASS[countdownView.tone])}>{countdownView.text}</div>
-      ) : !expectedEndOn ? (
-        <div className="mt-1 text-sm text-muted-foreground/70">Не задан</div>
-      ) : null}
-      <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs tabular-nums">
-        <span className="text-muted-foreground">Создан</span>
-        <span>{formatMetaTimestamp(createdAt)}</span>
-        <span className="text-muted-foreground">Завершён</span>
-        <span className={completedAt ? undefined : "text-muted-foreground/70"}>
-          {completedAt ? formatMetaTimestamp(completedAt) : "—"}
-        </span>
+      <div className="mt-2.5 text-xs tabular-nums">
+        {!open && completedAt ? (
+          <span className="text-muted-foreground">Завершён {formatMetaTimestamp(completedAt)}</span>
+        ) : countdownView ? (
+          <span className={cn("font-medium", TONE_CLASS[countdownView.tone])}>{countdownView.text}</span>
+        ) : (
+          <span className="text-muted-foreground/70">{expectedEndOn ? "—" : "Не задан"}</span>
+        )}
       </div>
     </section>
   );
@@ -222,7 +279,8 @@ export const CustomerOrderHeader = ({
   regionCode,
   regionHref,
   tenant,
-  source,
+  sourceKind,
+  sourceCode,
   authorName,
   description,
   canAct,
@@ -246,7 +304,9 @@ export const CustomerOrderHeader = ({
   regionCode: string;
   regionHref: string;
   tenant: string;
-  source: string;
+  sourceKind: "plant" | "hub" | null;
+  /** `WH-n` for a hub, `PLT-n` for a plant. */
+  sourceCode: string | null;
   authorName: string | null;
   description: string;
   canAct: boolean;
@@ -276,8 +336,11 @@ export const CustomerOrderHeader = ({
       value: <LogisticsCodeBadge code={regionCode} href={regionHref} />,
     },
     { label: "Тенант", value: tenant },
-    { label: "Источник", value: source },
     { label: "Автор", value: authorName ?? <DocumentMetaEmpty /> },
+    { label: "Создан", value: <span className="tabular-nums">{formatMetaTimestamp(createdAt)}</span> },
+    ...(completedAt
+      ? [{ label: "Завершён", value: <span className="tabular-nums">{formatMetaTimestamp(completedAt)}</span> }]
+      : []),
   ];
 
   return (
@@ -298,6 +361,7 @@ export const CustomerOrderHeader = ({
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-[28px] leading-none font-semibold tracking-tight">{number}</h1>
               <CustomerOrderStatusBadge status={status} />
+              <OrderTypeBadge kind={sourceKind} code={sourceCode} />
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -370,6 +434,7 @@ export const CustomerOrderHeader = ({
           countdown={countdown}
           createdAt={createdAt}
           completedAt={completedAt}
+          open={canAct}
           onExpectedEndChange={onExpectedEndChange}
         />
       </div>

@@ -438,12 +438,13 @@ export const CustomerOrderDetailPage = () => {
     : null;
   const orderTransfers = relatedTransfersForOrder(snapshot, order.id);
   const authorName = snapshot.users.find((user) => user.id === order.createdBy)?.name ?? null;
-  const sourceLabel =
-    order.sourceKind === "plant" && order.sourcePlantId
-      ? `С завода ${plantCode(snapshot, order.sourcePlantId)}`
-      : order.sourceKind === "hub" && order.sourceWarehouseId
-        ? `С хаба ${warehouseCode(snapshot, order.sourceWarehouseId)}`
-        : "—";
+  const sourceKind = order.sourceKind === "plant" || order.sourceKind === "hub" ? order.sourceKind : null;
+  const sourceCode =
+    sourceKind === "plant" && order.sourcePlantId
+      ? plantCode(snapshot, order.sourcePlantId)
+      : sourceKind === "hub" && order.sourceWarehouseId
+        ? warehouseCode(snapshot, order.sourceWarehouseId)
+        : null;
   const movementFilter = (entry: StockTransaction) =>
     documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
       documentKey(entry.documentType, entry.documentId),
@@ -538,7 +539,8 @@ export const CustomerOrderDetailPage = () => {
         regionCode={regionCode(snapshot, order.regionId)}
         regionHref={hrefForRegion(order.regionId)}
         tenant={tenantLabel(orderOms.tenants, order.regionId)}
-        source={sourceLabel}
+        sourceKind={sourceKind}
+        sourceCode={sourceCode}
         authorName={authorName}
         description={order.description}
         canAct={canAct}

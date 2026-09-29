@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   deadlineCountdown,
   deadlineCountdownLabel,
+  deadlineProgress,
   fulfillmentSegments,
   headerPercent,
   paymentProgress,
@@ -218,5 +219,24 @@ describe("paymentProgress", () => {
 
   it("is 0% for a zero order amount with nothing paid", () => {
     assert.equal(paymentProgress({ paid: 0, total: 0, nextDueOn: null, overdue: false }, 0).paidPct, 0);
+  });
+});
+
+describe("deadlineProgress", () => {
+  const today = new Date(2026, 8, 29);
+
+  it("is the passed share of days from creation to the deadline", () => {
+    assert.equal(deadlineProgress("2026-09-19T11:20:00", "2026-10-09", today), 50);
+    assert.equal(deadlineProgress("2026-09-29T08:00:00", "2026-10-09", today), 0);
+  });
+
+  it("is full once the deadline passed or when it is not after creation", () => {
+    assert.equal(deadlineProgress("2026-09-02T16:05:00", "2026-09-20", today), 100);
+    assert.equal(deadlineProgress("2026-09-29T08:00:00", "2026-09-29", today), 100);
+  });
+
+  it("is empty without a valid deadline", () => {
+    assert.equal(deadlineProgress("2026-09-19T11:20:00", null, today), null);
+    assert.equal(deadlineProgress("2026-09-19T11:20:00", "not-a-date", today), null);
   });
 });

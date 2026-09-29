@@ -233,6 +233,23 @@ export const deadlineCountdown = (
   return { kind: "overdue", days: -diffDays };
 };
 
+/** Share of the time from the order creation day to the expected end already passed, 0–100; null without a date. */
+export const deadlineProgress = (
+  createdAt: string,
+  expectedEndOn: string | null | undefined,
+  today: Date = new Date(),
+): number | null => {
+  if (!expectedEndOn) return null;
+  const created = new Date(createdAt);
+  const end = new Date(`${expectedEndOn}T00:00:00`);
+  if (Number.isNaN(created.getTime()) || Number.isNaN(end.getTime())) return null;
+  const startDay = new Date(created.getFullYear(), created.getMonth(), created.getDate()).getTime();
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const total = end.getTime() - startDay;
+  if (total <= 0) return 100;
+  return Math.min(100, Math.max(0, Math.round(((todayDay - startDay) / total) * 100)));
+};
+
 export type HeaderTone = "neutral" | "warning" | "danger";
 
 const daysLabel = (days: number): string => `${days} ${pluralRu(days, "день", "дня", "дней")}`;
