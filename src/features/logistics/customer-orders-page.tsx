@@ -1,7 +1,6 @@
 // english-ui:ignore-file
 "use client";
 
-import { ShoppingCart } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -19,7 +18,6 @@ import {
 } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
 import { nextOrderLineQuantity } from "@/features/logistics/logistics-rules";
-import { DocumentCancelControl } from "@/features/logistics/ui/document-cancel-guidance";
 import { sumFreeForProduct } from "@/features/logistics/logistics-availability";
 import { CustomerOrderCatalogDialog } from "@/features/logistics/ui/customer-order-catalog-dialog";
 import { ReservationCatalogDialog } from "@/features/logistics/ui/reservation-catalog-dialog";
@@ -35,7 +33,6 @@ import {
   CUSTOMER_ORDER_STATUS_LABELS,
   formatExpectedEnd,
   formatQuantity,
-  formatMetaTimestamp,
 } from "@/features/logistics/logistics-labels";
 import {
   plantCode,
@@ -68,21 +65,13 @@ import {
 } from "@/features/logistics/logistics-types";
 import type { CustomerOrderListRow } from "@/features/logistics/logistics-list-types";
 import { buildDocumentTimeline, documentCompletedAt } from "@/features/logistics/document-timeline";
-import { sumShippedForLine, sumShippedForOrderProduct } from "@/features/logistics/logistics-balances";
+import { sumShippedForOrderProduct } from "@/features/logistics/logistics-balances";
 import { CustomerOrderLinesTable } from "@/features/logistics/ui/customer-order-lines-table";
 import { OrderLineDialog, type OrderLineDialogMode } from "@/features/logistics/ui/order-line-dialog";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
-import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
-import { DocumentHeader } from "@/features/logistics/ui/document/document-header";
 import { DocumentHistory } from "@/features/logistics/ui/document/document-history";
-import {
-  DocumentMetaDateInput,
-  DocumentMetaEmpty,
-  pluralPositions,
-  overdueDays,
-} from "@/features/logistics/ui/document/document-meta-field";
 import { DocumentSection } from "@/features/logistics/ui/document/document-section";
 import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
@@ -107,17 +96,11 @@ import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { CustomerOrderStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
-import { OrderAmountInput, OrderMoneyTab, summarizeOrderMoney } from "@/features/logistics/ui/order-money-tab";
-import { summarizeDelivery, summarizePayments } from "@/features/logistics/order-money";
-import { buildOrderSystemNotices, deliveryTransferIds, MIXED_OWNERS_WARNING, tenantLabel } from "@/features/logistics/customer-order-oms";
-import { projectTransferDetail, transferHasMixedOwners } from "@/features/logistics/transfer-detail-projection";
+import { OrderMoneyTab, summarizeOrderMoney } from "@/features/logistics/ui/order-money-tab";
+import { summarizePayments } from "@/features/logistics/order-money";
+import { buildOrderSystemNotices, tenantLabel } from "@/features/logistics/customer-order-oms";
 import { hrefForRegion } from "@/features/logistics/logistics-availability";
-import {
-  CopyCustomerOrderAction,
-  CustomerOrderNote,
-  DeliveryMetaValue,
-  PaymentsMetaValue,
-} from "@/features/logistics/ui/customer-order-oms-fields";
+import { CustomerOrderHeader } from "@/features/logistics/ui/customer-order-header";
 import { CustomerOrderContainersTab } from "@/features/logistics/ui/customer-order-containers-tab";
 import { CustomerOrderFilesTab } from "@/features/logistics/ui/customer-order-files-tab";
 import { CustomerOrderCommentsTab } from "@/features/logistics/ui/customer-order-comments-tab";
@@ -442,31 +425,18 @@ export const CustomerOrderDetailPage = () => {
   const coverage = calculateOrderDocumentCoverage(snapshot, order.id);
   const cancelGuidance = projectDocumentCancelGuidance({ type: "customer_order", id: order.id }, snapshot, balances);
   const completedAt = documentCompletedAt(snapshot, order.id);
-  const overdue = canAct ? overdueDays(order.expectedEndOn) : 0;
-  const orderedQty = lines.reduce((sum, line) => sum + line.quantity, 0);
-  const shippedQty = lines.reduce((sum, line) => sum + sumShippedForLine(balances, line), 0);
-  const shipPct = orderedQty > 0 ? Math.min(100, Math.floor((shippedQty / orderedQty) * 100)) : 0;
   const moneySummary = summarizeOrderMoney(snapshot, order.id, orderMoney);
   const paymentsSummary = moneySummary
     ? summarizePayments(orderMoney.payments, moneySummary.total, moneySummary.currencyCode)
     : null;
   const orderTransfers = relatedTransfersForOrder(snapshot, order.id);
-  const orderTransferIds = deliveryTransferIds(
-    snapshot.transfers,
-    orderTransfers.map((item) => item.id),
-  );
-  const deliverySummary = orderMoney.money
-    ? summarizeDelivery(
-        orderOms.transferMoney.filter((item) => orderTransferIds.has(item.documentId)),
-        orderMoney.money.currencyCode,
-        orderMoney.money.rates,
-      )
-    : null;
-  const deliveryMixedOwners = snapshot.transfers.some(
-    (transfer) =>
-      orderTransferIds.has(transfer.id) && transferHasMixedOwners(projectTransferDetail(snapshot, balances, transfer)),
-  );
   const authorName = snapshot.users.find((user) => user.id === order.createdBy)?.name ?? null;
+  const sourceLabel =
+    order.sourceKind === "plant" && order.sourcePlantId
+      ? `С завода ${plantCode(snapshot, order.sourcePlantId)}`
+      : order.sourceKind === "hub" && order.sourceWarehouseId
+        ? `С хаба ${warehouseCode(snapshot, order.sourceWarehouseId)}`
+        : "—";
   const movementFilter = (entry: StockTransaction) =>
     documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
       documentKey(entry.documentType, entry.documentId),
@@ -554,142 +524,58 @@ export const CustomerOrderDetailPage = () => {
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: order.number }]}>
-      <DocumentHeader
-        kind="Заказ клиента"
-        icon={ShoppingCart}
+      <CustomerOrderHeader
+        orderId={order.id}
         number={order.number}
-        status={<CustomerOrderStatusBadge status={order.status} />}
-        description={
-          <CustomerOrderNote
-            key={order.description}
-            orderId={order.id}
-            description={order.description}
-            editable={canAct}
-            reload={reload}
-          />
+        status={order.status}
+        regionCode={regionCode(snapshot, order.regionId)}
+        regionHref={hrefForRegion(order.regionId)}
+        tenant={tenantLabel(orderOms.tenants, order.regionId)}
+        source={sourceLabel}
+        authorName={authorName}
+        description={order.description}
+        canAct={canAct}
+        createdAt={order.createdAt}
+        completedAt={completedAt}
+        expectedEndOn={order.expectedEndOn}
+        lines={lines}
+        balances={balances}
+        money={
+          moneySummary && orderMoney.money
+            ? {
+                amount: orderMoney.money.amount,
+                estimated: moneySummary.estimated,
+                currencyCode: moneySummary.currencyCode,
+              }
+            : null
         }
-        actions={
-          <>
-            <CopyCustomerOrderAction orderId={order.id} orderNumber={order.number} />
-            <DocumentCancelControl
-              kicker={order.number}
-              guidance={cancelGuidance}
-              reload={reload}
-              onFollowUp={(action) => {
-                if (action.id === "close-customer-order") {
-                  void runLogisticsAction(
-                    () => closeCustomerOrder(order.id),
-                    "Открытые резервы сняты, заказ клиента закрыт",
-                    reload,
-                  );
-                }
-              }}
-            />
-            {canAct ? (
-              <Button
-                type="button"
-                onClick={() => {
-                  void runLogisticsAction(
-                    () => closeCustomerOrder(order.id),
-                    "Открытые резервы сняты, заказ клиента закрыт",
-                    reload,
-                  );
-                }}
-              >
-                Закрыть заказ клиента
-              </Button>
-            ) : null}
-          </>
-        }
-        meta={[
-          {
-            label: "Регион",
-            value: <LogisticsCodeBadge code={regionCode(snapshot, order.regionId)} href={hrefForRegion(order.regionId)} />,
-          },
-          {
-            label: "Тенант",
-            value: tenantLabel(orderOms.tenants, order.regionId),
-          },
-          {
-            label: "Источник",
-            value:
-              order.sourceKind === "plant" && order.sourcePlantId
-                ? `С завода ${plantCode(snapshot, order.sourcePlantId)}`
-                : order.sourceKind === "hub" && order.sourceWarehouseId
-                  ? `С хаба ${warehouseCode(snapshot, order.sourceWarehouseId)}`
-                  : "—",
-          },
-          { label: "Создан", value: formatMetaTimestamp(order.createdAt) },
-          { label: "Автор", value: authorName ?? <DocumentMetaEmpty /> },
-          {
-            label: "Ожидаемое окончание",
-            value: (
-              <DocumentMetaDateInput
-                value={order.expectedEndOn ?? ""}
-                aria-label="Ожидаемое окончание"
-                overdueDays={overdue}
-                onChange={(value) => {
-                  void runLogisticsAction(
-                    () => updateExpectedEnd(order.id, value || null),
-                    "Срок заказа клиента обновлён",
-                    reload,
-                  );
-                }}
-              />
-            ),
-          },
-          {
-            label: "Завершён",
-            value: completedAt ? formatMetaTimestamp(completedAt) : <DocumentMetaEmpty />,
-          },
-          {
-            label: "Товаров",
-            value: (
-              <span>
-                {pluralPositions(lines.length)}{" "}
-                <small className="font-normal text-muted-foreground">· {formatQuantity(orderedQty)} шт</small>
-              </span>
-            ),
-          },
-          {
-            label: "Отгружено",
-            value: (
-              <span>
-                {formatQuantity(shippedQty)} из {formatQuantity(orderedQty)} шт{" "}
-                <small className="font-normal text-muted-foreground">· {shipPct}%</small>
-              </span>
-            ),
-          },
-          {
-            label: "Сумма заказа",
-            value:
-              moneySummary && orderMoney.money ? (
-                <OrderAmountInput
-                  variant="meta"
-                  documentId={order.id}
-                  amount={orderMoney.money.amount}
-                  estimated={moneySummary.estimated}
-                  currencyCode={moneySummary.currencyCode}
-                  reload={reload}
-                />
-              ) : (
-                <DocumentMetaEmpty />
-              ),
-          },
-          {
-            label: "Оплата",
-            wide: true,
-            value: <PaymentsMetaValue summary={paymentsSummary} />,
-          },
-          {
-            label: "Доставка",
-            wide: true,
-            value: <DeliveryMetaValue summary={deliverySummary} mixedOwners={deliveryMixedOwners} />,
-            hint: deliveryMixedOwners ? (
-              <span className="font-medium text-amber-700">{MIXED_OWNERS_WARNING}</span>
-            ) : undefined,
-          },
-        ]}
+        paymentsSummary={paymentsSummary}
+        paymentCount={orderMoney.payments.length}
+        cancelGuidance={cancelGuidance}
+        reload={reload}
+        onExpectedEndChange={(value) => {
+          void runLogisticsAction(
+            () => updateExpectedEnd(order.id, value),
+            "Срок заказа клиента обновлён",
+            reload,
+          );
+        }}
+        onClose={() => {
+          void runLogisticsAction(
+            () => closeCustomerOrder(order.id),
+            "Открытые резервы сняты, заказ клиента закрыт",
+            reload,
+          );
+        }}
+        onCancelFollowUp={(action) => {
+          if (action.id === "close-customer-order") {
+            void runLogisticsAction(
+              () => closeCustomerOrder(order.id),
+              "Открытые резервы сняты, заказ клиента закрыт",
+              reload,
+            );
+          }
+        }}
       />
 
       <OrderProgressTracker canAct={canAct} primaryStages={primaryStages} secondaryStages={secondaryStages} />

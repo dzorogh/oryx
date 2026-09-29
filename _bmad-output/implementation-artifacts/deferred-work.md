@@ -315,3 +315,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-oms-parity.md`
   summary: Автоматическая проверка RPC `store_copy_customer_order`, `store_set_customer_order_accounting` и триггера `store_order_payment_event_trg` против базы.
   evidence: В репозитории нет тестового стенда БД (`npm test` — только чистый TS); копия проверена SQL-пробой с откатом 29.09.2026, триггер — вручную в браузере. Регрессия (потеря валюты в копии, дубли событий) сейчас ловится только ручной проверкой.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-header-redesign.md`
+  summary: Убрать `transfer_money` из `store_document_context` заказа клиента и `transferMoney` из `CustomerOrderOmsContext`/`mapCustomerOrderOmsContext` — после снятия доставки из шапки их никто не читает.
+  evidence: Поиск `transferMoney` в `src/` находит только объявление и маппинг в `customer-order-oms.ts`; RPC по-прежнему собирает деньги и платежи перемещений заказа. Спека шапки запрещала менять RPC.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-header-redesign.md`
+  summary: `DocumentCancelDialog` не сбрасывает `serverError` и `startedRef`, когда его открывают снаружи (`DocumentCancelControl`, меню «Ещё» шапки заказа клиента) — после неудачной отмены повторное открытие показывает старую ошибку.
+  evidence: Сброс есть только в внутреннем `setOpen(true)`, который вызывает лишь сам `DialogShell`; внешний `open={true}` его обходит — так на `baseline_commit` во всех карточках документов.

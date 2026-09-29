@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Шапка заказа клиента — направления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com?plugins=container-queries"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"] },
+        colors: { line: "#e7e7ea", page: "#f6f6f7" },
+      },
+    },
+  };
+</script>
+<style>
+  body { font-feature-settings: "cv11", "ss01"; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  .ring-card { box-shadow: 0 0 0 1px #e4e4e7, 0 1px 2px rgba(0,0,0,.04); }
+  .stripe { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.45) 0 4px, transparent 4px 8px); }
+</style>
+</head>
+<body class="bg-page font-sans text-zinc-900 antialiased">
+
+<div class="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
+  <div class="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3">
+    <div>
+      <div class="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Oryx · прототипы</div>
+      <div class="text-sm font-semibold">Шапка карточки заказа клиента — 4 направления</div>
+    </div>
+    <div class="ml-auto flex flex-wrap items-center gap-2 text-sm">
+      <span class="text-zinc-500">Состояние заказа:</span>
+      <div id="states" class="inline-flex rounded-lg bg-zinc-100 p-0.5"></div>
+      <span class="ml-3 text-zinc-500">Ширина:</span>
+      <div id="widths" class="inline-flex rounded-lg bg-zinc-100 p-0.5"></div>
+    </div>
+  </div>
+</div>
+
+<main id="root" class="mx-auto space-y-12 px-6 py-8"></main>
+
+<script>
+const STATES = {
+  partial: {
+    tab: "Открыт, частично",
+    number: "OMS-906", status: "open",
+    region: "AE", tenant: "Sharmax UAE", source: "С завода PLT-2", author: "Анна Королёва",
+    created: "12.09.2026, 10:24", createdDay: "12.09", deadline: "10.10.2026", deadlineDay: "10.10",
+    daysTotal: 28, daysPassed: 17, countdown: { kind: "left", days: 11 }, completed: null,
+    positions: 6, ordered: 240, shipped: 60, reserved: 120, uncovered: 60,
+    currency: "USD", amount: "48 250,00", amountEstimated: true, paid: "19 300,00", paidPct: 40,
+    nextDue: "25.09.2026", payOverdue: true,
+    delivery: { paid: "1 200,00", total: "2 850,00", pct: 42 }, mixedOwners: false,
+    note: "Клиент просит отгружать партиями по мере готовности. Предоплата 40%, остаток — по факту отгрузки.",
+    canAct: true,
+  },
+  draft: {
+    tab: "Черновик, пустой",
+    number: "OMS-935", status: "draft",
+    region: "AE", tenant: "Sharmax UAE", source: "С хаба WH-1", author: "Демо-пользователь",
+    created: "28.09.2026, 19:57", createdDay: "28.09", deadline: null, deadlineDay: null,
+    daysTotal: 0, daysPassed: 0, countdown: null, completed: null,
+    positions: 1, ordered: 11, shipped: 0, reserved: 0, uncovered: 11,
+    currency: "AED", amount: "422 665,41", amountEstimated: true, paid: "0,00", paidPct: 0,
+    nextDue: null, payOverdue: false,
+    delivery: null, mixedOwners: false,
+    note: "Оформлено из корзины · Склад региона WH-1",
+    canAct: true,
+  },
+  overdue: {
+    tab: "Просрочен",
+    number: "OMS-907", status: "open",
+    region: "RU", tenant: "Globaldrive", source: "С завода PLT-1", author: "Игорь Смирнов",
+    created: "02.09.2026, 16:05", createdDay: "02.09", deadline: "20.09.2026", deadlineDay: "20.09",
+    daysTotal: 18, daysPassed: 27, countdown: { kind: "overdue", days: 9 }, completed: null,
+    positions: 14, ordered: 200, shipped: 0, reserved: 40, uncovered: 160,
+    currency: "CNY", amount: "1 284 000,00", amountEstimated: false, paid: "1 284 000,00", paidPct: 100,
+    nextDue: null, payOverdue: false,
+    delivery: { paid: "0,00", total: "36 400,00", pct: 0 }, mixedOwners: true,
+    note: "",
+    canAct: true,
+  },
+};
+
+const STATUS = {
+  open: { label: "Открыт", cls: "bg-blue-50 text-blue-700 ring-blue-200", dot: "bg-blue-500" },
+  draft: { label: "Черновик", cls: "bg-zinc-100 text-zinc-700 ring-zinc-200", dot: "bg-zinc-400" },
+  closed: { label: "Закрыт", cls: "bg-green-50 text-green-700 ring-green-200", dot: "bg-green-600" },
+};
+
+const WIDTHS = { wide: ["1240 px", "max-w-[1240px]"], narrow: ["375 px", "max-w-[375px]"] };
+
+let current = "partial";
+let width = "wide";
+
+const icon = (name, cls = "size-3.5") => `<i data-lucide="${name}" class="${cls}"></i>`;
+const pct = (x, total) => (total > 0 ? Math.round((x / total) * 100) : 0);
+const qty = (n) => new Intl.NumberFormat("ru-RU").format(n);
+const dayWord = (n) => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return "день";
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return "дня";
+  return "дней";
+};
+const positionsWord = (n) => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return "позиция";
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return "позиции";
+  return "позиций";
+};
+
+const countdownText = (s) => {
+  if (!s.countdown) return null;
+  const { kind, days } = s.countdown;
+  if (kind === "today") return { text: "срок сегодня", tone: "text-amber-700", chip: "bg-amber-50 text-amber-800 ring-amber-200" };
+  if (kind === "overdue") return { text: `просрочен на ${days} ${dayWord(days)}`, tone: "text-red-700", chip: "bg-red-50 text-red-700 ring-red-200" };
+  return { text: `через ${days} ${dayWord(days)}`, tone: "text-zinc-600", chip: "bg-zinc-100 text-zinc-700 ring-zinc-200" };
+};
+
+const statusBadge = (s) => {
+  const st = STATUS[s.status];
+  return `<span class="inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ring-1 ring-inset ${st.cls}"><span class="size-1.5 rounded-full ${st.dot}"></span>${st.label}</span>`;
+};
+
+const codeBadge = (code) =>
+  `<a href="#" class="inline-flex h-5 items-center rounded-md bg-white px-1.5 font-mono text-[11px] font-semibold tracking-wide text-zinc-800 ring-1 ring-inset ring-zinc-300 hover:ring-zinc-400">${code}</a>`;
+
+const actions = (s, { compact = false } = {}) => `
+  <div class="flex shrink-0 items-center gap-2">
+    <details class="relative">
+      <summary class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm font-medium ring-1 ring-inset ring-zinc-200 hover:bg-zinc-50">
+        ${icon("ellipsis", "size-4")}${compact ? "" : "<span>Ещё</span>"}
+      </summary>
+      <div class="absolute right-0 z-10 mt-1.5 w-52 rounded-xl bg-white p-1 text-sm shadow-lg ring-1 ring-zinc-200">
+        <button class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-zinc-50">${icon("copy")}Создать копию</button>
+        <div class="my-1 h-px bg-zinc-100"></div>
+        <button class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-red-600 hover:bg-red-50">${icon("ban")}Отменить заказ</button>
+      </div>
+    </details>
+    ${s.canAct ? `<button class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 text-sm font-medium text-white hover:bg-zinc-800">${icon("check-check", "size-4")}Закрыть заказ</button>` : ""}
+  </div>`;
+
+const noteBlock = (s, cls = "") =>
+  s.note
+    ? `<div class="flex items-start gap-2.5 rounded-lg bg-amber-50/60 px-3 py-2 text-sm text-zinc-700 ring-1 ring-inset ring-amber-100 ${cls}">
+        <span class="mt-0.5 text-amber-600">${icon("sticky-note")}</span>
+        <p class="min-w-0 flex-1">${s.note}</p>
+        <button class="shrink-0 text-xs font-medium text-zinc-500 hover:text-zinc-900">Изменить</button>
+      </div>`
+    : s.canAct
+      ? `<button class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 ${cls}">${icon("plus")}Добавить заметку</button>`
+      : "";
+
+const fulfillBar = (s, h = "h-1.5") => {
+  const t = s.ordered;
+  return `<div class="flex ${h} w-full gap-px overflow-hidden rounded-full bg-zinc-100">
+    <div class="bg-green-600" style="width:${pct(s.shipped, t)}%"></div>
+    <div class="bg-blue-500" style="width:${pct(s.reserved, t)}%"></div>
+    <div class="stripe bg-amber-400" style="width:${pct(s.uncovered, t)}%"></div>
+  </div>`;
+};
+
+const simpleBar = (value, tone = "bg-green-600", h = "h-1.5") =>
+  `<div class="${h} w-full overflow-hidden rounded-full bg-zinc-100"><div class="${h} rounded-full ${tone}" style="width:${value}%"></div></div>`;
+
+const legendDot = (cls) => `<span class="inline-block size-2 rounded-full ${cls}"></span>`;
+
+const overdueChip = `<span class="inline-flex h-5 items-center rounded-full bg-red-50 px-2 text-[11px] font-medium text-red-700 ring-1 ring-inset ring-red-200">просрочен</span>`;
+
+const mixedWarning = (s) =>
+  s.mixedOwners
+    ? `<div class="flex items-center gap-1.5 text-xs font-medium text-amber-700">${icon("triangle-alert")}В перемещении товары разных владельцев</div>`
+    : "";
+
+const amountField = (s, size = "text-xl") => `
+  <span class="group inline-flex items-baseline gap-1.5 rounded-md -ml-1.5 px-1.5 hover:bg-zinc-100 cursor-text">
+    <span class="${size} font-semibold tnum tracking-tight">${s.amount}</span>
+    <span class="text-sm font-medium text-zinc-500">${s.currency}</span>
+    <span class="self-center text-zinc-400 opacity-0 group-hover:opacity-100">${icon("pencil", "size-3")}</span>
+  </span>`;
+
+const dateField = (s, size = "text-xl") => `
+  <span class="group inline-flex items-baseline gap-1.5 rounded-md -ml-1.5 px-1.5 hover:bg-zinc-100 cursor-pointer">
+    ${s.deadline ? `<span class="${size} font-semibold tnum tracking-tight ${s.countdown?.kind === "overdue" ? "text-red-700" : ""}">${s.deadline}</span>` : `<span class="${size} font-semibold text-zinc-300">Не задан</span>`}
+    <span class="self-center text-zinc-400 opacity-0 group-hover:opacity-100">${icon("calendar", "size-3.5")}</span>
+  </span>`;
+
+const panelTitle = (text, ic) =>
+  `<div class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">${ic ? icon(ic, "size-3.5") : ""}${text}</div>`;
+
+/* ---------- Направление A: Паспорт с тремя панелями ---------- */
+const dirA = (s) => {
+  const cd = countdownText(s);
+  const ctx = [
+    ["Регион", codeBadge(s.region)],
+    ["Тенант", s.tenant],
+    ["Источник", s.source],
+    ["Автор", s.author],
+  ];
+  return `
+  <div class="overflow-hidden rounded-2xl bg-white ring-card">
+    <div class="px-6 pt-5 pb-4">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">${icon("shopping-cart")}Заказ клиента</div>
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-[28px] leading-none font-semibold tracking-[-0.02em]">${s.number}</h1>
+            ${statusBadge(s)}
+          </div>
+        </div>
+        ${actions(s)}
+      </div>
+      <dl class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+        ${ctx.map(([k, v]) => `<div class="flex items-center gap-1.5"><dt class="text-zinc-500">${k}</dt><dd class="font-medium">${v}</dd></div>`).join("")}
+      </dl>
+      ${noteBlock(s, "mt-3")}
+    </div>
+    <div class="grid grid-cols-1 border-t border-line @3xl:grid-cols-3 @3xl:divide-x divide-y @3xl:divide-y-0 divide-line">
+      <section class="px-6 py-4">
+        ${panelTitle("Выполнение", "package-check")}
+        <div class="flex items-baseline gap-1.5"><span class="text-xl font-semibold tnum tracking-tight">${qty(s.shipped)}</span><span class="text-sm text-zinc-500">из ${qty(s.ordered)} шт отгружено</span></div>
+        <div class="mt-2.5">${fulfillBar(s)}</div>
+        <div class="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-600 tnum">
+          <span class="inline-flex items-center gap-1.5">${legendDot("bg-blue-500")}В резерве ${qty(s.reserved)}</span>
+          <span class="inline-flex items-center gap-1.5">${legendDot("bg-amber-400")}Не обеспечено ${qty(s.uncovered)}</span>
+          <span class="text-zinc-400">${s.positions} ${positionsWord(s.positions)}</span>
+        </div>
+      </section>
+      <section class="px-6 py-4">
+        ${panelTitle("Оплата", "wallet")}
+        ${amountField(s)}
+        ${s.amountEstimated ? `<span class="ml-1 text-xs text-zinc-400">расчётная</span>` : ""}
+        <div class="mt-2.5">${simpleBar(s.paidPct)}</div>
+        <div class="mt-2.5 text-xs text-zinc-600 tnum">Оплачено <b class="font-semibold text-zinc-900">${s.paid}</b> ${s.currency} · ${s.paidPct}%</div>
+        ${s.nextDue
+          ? `<div class="mt-1 flex items-center gap-1.5 whitespace-nowrap text-xs tnum ${s.payOverdue ? "font-medium text-red-700" : "text-zinc-600"}">${s.payOverdue ? icon("alarm-clock", "size-3") : ""}Срок платежа ${s.nextDue}${s.payOverdue ? " · просрочен" : ""}</div>`
+          : `<div class="mt-1 text-xs text-zinc-400">${s.paidPct >= 100 ? "Оплачен полностью" : "Платежей в графике нет"}</div>`}
+      </section>
+      <section class="px-6 py-4">
+        ${panelTitle("Сроки", "calendar-clock")}
+        ${dateField(s)}
+        ${cd ? `<div class="mt-1 text-sm font-medium ${cd.tone}">${cd.text}</div>` : `<div class="mt-1 text-sm text-zinc-400">Срок не задан</div>`}
+        <div class="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs tnum">
+          <span class="text-zinc-500">Создан</span><span>${s.created}</span>
+          <span class="text-zinc-500">Завершён</span><span class="${s.completed ? "" : "text-zinc-400"}">${s.completed ?? "—"}</span>
+        </div>
+      </section>
+    </div>
+  </div>`;
+};
+
+/* ---------- Направление B: Витрина показателей ---------- */
+const ring = (value, color, size = 56) => {
+  const r = (size - 8) / 2, c = 2 * Math.PI * r, off = c * (1 - value / 100);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="-rotate-90 shrink-0">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="#f1f1f3" stroke-width="6"/>
+    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
+  </svg>`;
+};
+
+const dirB = (s) => {
+  const cd = countdownText(s);
+  const shippedPct = pct(s.shipped, s.ordered);
+  const coveredPct = pct(s.shipped + s.reserved, s.ordered);
+  const chip = (ic, label, value) =>
+    `<span class="inline-flex h-7 items-center gap-1.5 rounded-full bg-white/80 px-2.5 text-xs ring-1 ring-inset ring-zinc-200"><span class="text-zinc-400">${icon(ic)}</span><span class="text-zinc-500">${label}</span><span class="font-medium text-zinc-900">${value}</span></span>`;
+  const tile = (inner, extra = "") => `<div class="rounded-xl bg-white p-4 ring-1 ring-inset ring-zinc-200 ${extra}">${inner}</div>`;
+  return `
+  <div class="overflow-hidden rounded-2xl bg-white ring-card">
+    <div class="bg-gradient-to-b from-zinc-50 to-white px-6 pt-5 pb-5">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-4">
+          <div class="grid size-12 shrink-0 place-items-center rounded-xl bg-zinc-900 text-white shadow-sm">${icon("shopping-cart", "size-5")}</div>
+          <div class="min-w-0">
+            <div class="text-xs font-medium text-zinc-500">Заказ клиента · создан ${s.created} · ${s.author}</div>
+            <div class="mt-0.5 flex flex-wrap items-center gap-3">
+              <h1 class="text-[30px] leading-none font-semibold tracking-[-0.025em]">${s.number}</h1>
+              ${statusBadge(s)}
+            </div>
+          </div>
+        </div>
+        ${actions(s)}
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        ${chip("map-pin", "Регион", codeBadge(s.region))}
+        ${chip("building-2", "Тенант", s.tenant)}
+        ${chip(s.source.includes("хаба") ? "warehouse" : "factory", "Источник", s.source)}
+      </div>
+      ${noteBlock(s, "mt-3")}
+    </div>
+    <div class="grid grid-cols-1 gap-3 px-6 pb-6 @2xl:grid-cols-2 @6xl:grid-cols-4">
+      ${tile(`
+        <div class="flex items-center gap-3.5">
+          <div class="relative">${ring(coveredPct, "#3b82f6")}<div class="absolute inset-0 grid place-items-center text-xs font-semibold tnum">${coveredPct}%</div></div>
+          <div class="min-w-0">
+            <div class="text-xs text-zinc-500">Обеспечено</div>
+            <div class="text-lg font-semibold tnum">${qty(s.shipped + s.reserved)} <span class="text-sm font-normal text-zinc-500">из ${qty(s.ordered)} шт</span></div>
+          </div>
+        </div>
+        <div class="mt-3 text-xs text-zinc-600 tnum">${s.uncovered > 0 ? `<span class="font-medium text-amber-700">Не обеспечено ${qty(s.uncovered)} шт</span>` : "Всё обеспечено"} · ${s.positions} ${positionsWord(s.positions)}</div>`)}
+      ${tile(`
+        <div class="flex items-center gap-3.5">
+          <div class="relative">${ring(shippedPct, "#16a34a")}<div class="absolute inset-0 grid place-items-center text-xs font-semibold tnum">${shippedPct}%</div></div>
+          <div class="min-w-0">
+            <div class="text-xs text-zinc-500">Отгружено</div>
+            <div class="text-lg font-semibold tnum">${qty(s.shipped)} <span class="text-sm font-normal text-zinc-500">из ${qty(s.ordered)} шт</span></div>
+          </div>
+        </div>
+        <div class="mt-3 text-xs text-zinc-600 tnum">В резерве ${qty(s.reserved)} шт</div>`)}
+      ${tile(`
+        <div class="flex items-center gap-3.5">
+          <div class="relative">${ring(s.paidPct, s.payOverdue ? "#dc2626" : "#16a34a")}<div class="absolute inset-0 grid place-items-center text-xs font-semibold tnum">${s.paidPct}%</div></div>
+          <div class="min-w-0">
+            <div class="text-xs text-zinc-500">Оплачено из суммы заказа</div>
+            ${amountField(s, "text-lg")}
+          </div>
+        </div>
+        <div class="mt-3 text-xs text-zinc-600 tnum">Оплачено <b class="font-semibold text-zinc-900">${s.paid}</b> ${s.currency}</div>
+        ${s.nextDue
+          ? `<div class="mt-1 flex items-center gap-1.5 whitespace-nowrap text-xs tnum ${s.payOverdue ? "font-medium text-red-700" : "text-zinc-600"}">${s.payOverdue ? icon("alarm-clock", "size-3") : ""}Срок платежа ${s.nextDue}${s.payOverdue ? " · просрочен" : ""}</div>`
+          : `<div class="mt-1 text-xs text-zinc-400">${s.paidPct >= 100 ? "Оплачен полностью" : "Платежей в графике нет"}</div>`}`)}
+      ${tile(`
+        <div class="text-xs text-zinc-500">Ожидаемое окончание</div>
+        <div class="mt-1">${dateField(s, "text-lg")}</div>
+        ${cd ? `<div class="mt-2 inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ring-1 ring-inset ${cd.chip}">${icon(s.countdown.kind === "overdue" ? "alarm-clock" : "hourglass", "size-3")}${cd.text}</div>` : `<div class="mt-2 text-xs text-zinc-400">Срок не задан</div>`}
+        <div class="mt-2 text-xs text-zinc-500 tnum">Завершён: ${s.completed ?? "—"}</div>`,
+        s.countdown?.kind === "overdue" ? "ring-red-200 bg-red-50/30" : "")}
+    </div>
+  </div>`;
+};
+
+/* ---------- Направление C: Паспорт + колонка состояния ---------- */
+const dirC = (s) => {
+  const cd = countdownText(s);
+  const metric = (label, valueHtml, bar, sub = "") => `
+    <div>
+      <div class="flex items-baseline justify-between gap-3 text-sm"><span class="text-zinc-600">${label}</span><span class="font-semibold tnum">${valueHtml}</span></div>
+      <div class="mt-1.5">${bar}</div>
+      ${sub ? `<div class="mt-1 text-xs text-zinc-500 tnum">${sub}</div>` : ""}
+    </div>`;
+  const row = (k, v) => `<div class="flex min-w-0 flex-col gap-0.5 py-2"><dt class="text-xs text-zinc-500">${k}</dt><dd class="text-sm font-medium">${v}</dd></div>`;
+  return `
+  <div class="grid overflow-hidden rounded-2xl bg-white ring-card @5xl:grid-cols-[1fr_380px]">
+    <div class="px-6 py-5">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="mb-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500">${icon("shopping-cart")}Заказ клиента</div>
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-[28px] leading-none font-semibold tracking-[-0.02em]">${s.number}</h1>
+            ${statusBadge(s)}
+          </div>
+        </div>
+        ${actions(s, { compact: true })}
+      </div>
+      ${noteBlock(s, "mt-4")}
+      <dl class="mt-3 grid grid-cols-2 gap-x-6 border-t border-line pt-1 @2xl:grid-cols-3">
+        ${row("Регион", codeBadge(s.region))}
+        ${row("Тенант", s.tenant)}
+        ${row("Источник", s.source)}
+        ${row("Автор", s.author)}
+        ${row("Создан", `<span class="tnum">${s.created}</span>`)}
+        ${row("Завершён", s.completed ?? `<span class="text-zinc-400">—</span>`)}
+      </dl>
+    </div>
+    <aside class="flex flex-col gap-4 border-t border-line bg-zinc-50/70 px-6 py-5 @5xl:border-t-0 @5xl:border-l">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-xs text-zinc-500">Ожидаемое окончание</div>
+          <div class="mt-0.5">${dateField(s, "text-lg")}</div>
+        </div>
+        ${cd ? `<span class="mt-4 inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium ring-1 ring-inset ${cd.chip}">${cd.text}</span>` : ""}
+      </div>
+      ${metric("Отгружено", `${qty(s.shipped)} / ${qty(s.ordered)} шт`, fulfillBar(s),
+        `В резерве ${qty(s.reserved)} · <span class="${s.uncovered ? "text-amber-700 font-medium" : ""}">не обеспечено ${qty(s.uncovered)}</span> · ${s.positions} ${positionsWord(s.positions)}`)}
+      <div>
+        <div class="flex items-baseline justify-between gap-3 text-sm"><span class="text-zinc-600">Сумма заказа</span>${amountField(s, "text-sm")}</div>
+      </div>
+      ${metric("Оплачено", `${s.paidPct}%`, simpleBar(s.paidPct, s.payOverdue ? "bg-red-500" : "bg-green-600"),
+        `${s.paid} ${s.currency}${s.nextDue ? ` · срок <span class="${s.payOverdue ? "text-red-700 font-medium" : ""}">${s.nextDue}${s.payOverdue ? ", просрочен" : ""}</span>` : ""}`)}
+      ${metric("Доставка оплачена", s.delivery ? `${s.delivery.pct}%` : `<span class="text-zinc-400 font-normal">—</span>`,
+        simpleBar(s.delivery ? s.delivery.pct : 0, "bg-zinc-700"),
+        s.delivery ? `${s.delivery.paid} из ${s.delivery.total} ${s.currency}` : "Нет платежей по перемещениям")}
+      ${mixedWarning(s)}
+    </aside>
+  </div>`;
+};
+
+/* ---------- Направление D: Лента времени ---------- */
+const dirD = (s) => {
+  const cd = countdownText(s);
+  const overdue = s.countdown?.kind === "overdue";
+  const span = s.daysTotal > 0 ? Math.max(s.daysTotal, s.daysPassed) : 0;
+  const todayPos = span ? Math.min(100, (s.daysPassed / span) * 100) : 0;
+  const deadlinePos = span ? (s.daysTotal / span) * 100 : 100;
+  const anchor = (pos) => (pos > 85 ? "-translate-x-full" : pos < 15 ? "" : "-translate-x-1/2");
+  const mini = (label, value, bar, tone = "") => `
+    <div class="min-w-0 px-5 py-3.5">
+      <div class="flex items-baseline justify-between gap-2"><span class="text-xs text-zinc-500">${label}</span><span class="text-sm font-semibold tnum ${tone}">${value}</span></div>
+      <div class="mt-2">${bar}</div>
+    </div>`;
+  return `
+  <div class="overflow-hidden rounded-2xl bg-white ring-card">
+    <div class="px-6 pt-5">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-[28px] leading-none font-semibold tracking-[-0.02em]">${s.number}</h1>
+            ${statusBadge(s)}
+          </div>
+          <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600">
+            <span class="inline-flex items-center gap-1.5 font-medium text-zinc-900">${icon("shopping-cart")}Заказ клиента</span>
+            <span class="text-zinc-300">/</span>${codeBadge(s.region)}<span>${s.tenant}</span>
+            <span class="text-zinc-300">/</span><span>${s.source}</span>
+            <span class="text-zinc-300">/</span><span>${s.author}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <div class="text-xs text-zinc-500">Сумма заказа</div>
+            ${amountField(s, "text-lg")}
+          </div>
+          ${actions(s)}
+        </div>
+      </div>
+      ${noteBlock(s, "mt-3")}
+
+      <div class="mt-5 mb-4">
+        ${span ? `
+        <div class="relative h-12">
+          <div class="absolute inset-x-0 top-5 h-2 rounded-full bg-zinc-100"></div>
+          <div class="absolute top-5 left-0 h-2 rounded-l-full ${overdue ? "bg-zinc-800" : "bg-zinc-800"}" style="width:${Math.min(todayPos, deadlinePos)}%"></div>
+          ${overdue ? `<div class="absolute top-5 h-2 rounded-r-full bg-red-500" style="left:${deadlinePos}%;width:${todayPos - deadlinePos}%"></div>` : ""}
+          <div class="absolute top-0 left-0 text-[11px] text-zinc-500 tnum">Создан ${s.createdDay}</div>
+          <div class="absolute top-3.5 left-0 size-4 rounded-full border-2 border-white bg-zinc-800 shadow"></div>
+          <div class="absolute top-3 -translate-x-1/2" style="left:${deadlinePos}%"><div class="h-5 w-0.5 rounded bg-zinc-900 mx-auto"></div></div>
+          <div class="absolute top-8 ${anchor(deadlinePos)} whitespace-nowrap text-[11px] font-semibold tnum ${overdue ? "text-red-700" : "text-zinc-900"}" style="left:${deadlinePos}%">Срок ${s.deadlineDay}</div>
+          <div class="absolute top-3.5 -translate-x-1/2" style="left:${todayPos}%"><div class="size-4 rounded-full border-2 border-white ${overdue ? "bg-red-500" : "bg-blue-500"} shadow ring-4 ${overdue ? "ring-red-100" : "ring-blue-100"}"></div></div>
+          <div class="absolute top-0 ${anchor(todayPos)} whitespace-nowrap text-[11px] font-medium ${cd?.tone ?? ""}" style="left:${todayPos}%">Сегодня · ${cd?.text ?? ""}</div>
+        </div>` : `
+        <div class="flex items-center gap-3 rounded-lg border border-dashed border-zinc-300 px-4 py-3 text-sm text-zinc-500">
+          ${icon("calendar-plus", "size-4")}Срок не задан — <button class="font-medium text-zinc-900 underline-offset-2 hover:underline">задать ожидаемое окончание</button>
+          <span class="ml-auto text-xs tnum">Создан ${s.created}</span>
+        </div>`}
+      </div>
+    </div>
+    <div class="grid grid-cols-2 border-t border-line @5xl:grid-cols-4 divide-x divide-line">
+      ${mini("Отгружено", `${qty(s.shipped)} / ${qty(s.ordered)}`, simpleBar(pct(s.shipped, s.ordered)))}
+      ${mini("Обеспечено", `${pct(s.shipped + s.reserved, s.ordered)}%`, fulfillBar(s), s.uncovered ? "text-amber-700" : "")}
+      ${mini("Оплачено", `${s.paidPct}%${s.payOverdue ? " · просрочен" : ""}`, simpleBar(s.paidPct, s.payOverdue ? "bg-red-500" : "bg-green-600"), s.payOverdue ? "text-red-700" : "")}
+      ${mini("Доставка", s.delivery ? `${s.delivery.pct}%` : "—", simpleBar(s.delivery ? s.delivery.pct : 0, "bg-zinc-700"))}
+    </div>
+    ${s.mixedOwners ? `<div class="border-t border-line bg-amber-50/50 px-6 py-2">${mixedWarning(s)}</div>` : ""}
+  </div>`;
+};
+
+const DIRECTIONS = [
+  { id: "A", name: "Паспорт с тремя панелями", render: dirA,
+    pitch: "Сдержанно и понятно: сверху кто и откуда, ниже три смысловые панели «Выполнение · Оплата · Сроки». Ближе всего к спеке, минимум новой визуальной лексики." },
+  { id: "B", name: "Витрина показателей", render: dirB,
+    pitch: "Самый «премиальный»: плотная идентичность с аватаром документа, контекст чипами, четыре плитки с кольцами прогресса. Считывается за секунду, но выше и декоративнее." },
+  { id: "C", name: "Паспорт + колонка состояния", render: dirC,
+    pitch: "Слева — справочные факты документа, справа — серая колонка «здоровья» заказа: срок, отгрузка, оплата, доставка. Факты и состояние не смешиваются." },
+  { id: "D", name: "Лента времени", render: dirD,
+    pitch: "Главный герой — срок: шкала от создания до окончания с отметкой «сегодня», просрочка красным хвостом. Показатели — компактной строкой снизу." },
+];
+
+const render = () => {
+  const s = STATES[current];
+  document.getElementById("states").innerHTML = Object.entries(STATES).map(([id, st]) =>
+    `<button data-state="${id}" class="rounded-md px-2.5 py-1 text-sm font-medium ${id === current ? "bg-white shadow-sm" : "text-zinc-500 hover:text-zinc-900"}">${st.tab}</button>`).join("");
+  document.getElementById("widths").innerHTML = Object.entries(WIDTHS).map(([id, [label]]) =>
+    `<button data-width="${id}" class="rounded-md px-2.5 py-1 text-sm font-medium ${id === width ? "bg-white shadow-sm" : "text-zinc-500 hover:text-zinc-900"}">${label}</button>`).join("");
+  document.getElementById("root").className = `mx-auto space-y-12 px-6 py-8 ${WIDTHS[width][1]}`;
+  document.getElementById("root").innerHTML = DIRECTIONS.map((d) => `
+    <section id="dir-${d.id}" class="@container">
+      <div class="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span class="grid size-6 place-items-center rounded-md bg-zinc-900 text-xs font-bold text-white">${d.id}</span>
+        <h2 class="text-base font-semibold">${d.name}</h2>
+        <p class="basis-full text-sm text-zinc-500 @3xl:basis-auto">${d.pitch}</p>
+      </div>
+      <div class="mb-2 flex items-center gap-1.5 text-xs text-zinc-400">Магазин ${icon("chevron-right", "size-3")} Логистика ${icon("chevron-right", "size-3")} Заказы клиента ${icon("chevron-right", "size-3")} <span class="text-zinc-700">${s.number}</span></div>
+      ${d.render(s)}
+      <div class="mt-3 h-24 rounded-2xl border border-dashed border-zinc-200 bg-white/40 grid place-items-center text-xs text-zinc-400">Полоса этапов и вкладки — без изменений</div>
+    </section>`).join("");
+  lucide.createIcons();
+};
+
+document.addEventListener("click", (e) => {
+  const st = e.target.closest("[data-state]");
+  if (st) { current = st.dataset.state; render(); return; }
+  const w = e.target.closest("[data-width]");
+  if (w) { width = w.dataset.width; render(); }
+});
+
+render();
+</script>
+</body>
+</html>

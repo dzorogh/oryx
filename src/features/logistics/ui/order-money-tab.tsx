@@ -69,7 +69,8 @@ export const OrderAmountInput = ({
   estimated: number;
   currencyCode: string;
   reload: () => Promise<void>;
-  variant?: "field" | "meta";
+  /** `panel` — large ghost value that fits its text, for the customer-order header. */
+  variant?: "field" | "meta" | "panel";
 }) => {
   const [draft, setDraft] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -107,9 +108,9 @@ export const OrderAmountInput = ({
       disabled={pending}
       value={shown}
       placeholder={
-        variant === "meta"
-          ? formatOrderMoney(estimated, currencyCode)
-          : `${formatOrderMoney(estimated, currencyCode)} · расчётная`
+        variant === "field"
+          ? `${formatOrderMoney(estimated, currencyCode)} · расчётная`
+          : formatOrderMoney(estimated, currencyCode)
       }
       title={amount == null ? "Равна расчётной стоимости" : undefined}
       onFocus={() => setDraft(formatMoneyInput(amount))}
@@ -128,9 +129,11 @@ export const OrderAmountInput = ({
       className={cn(
         "h-8 min-w-0 rounded-lg border px-2 text-sm font-medium tabular-nums outline-none placeholder:font-normal placeholder:text-muted-foreground",
         "focus-visible:border-border focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/40",
-        variant === "meta"
-          ? "-ml-2 w-full max-w-[14rem] border-transparent bg-transparent hover:border-border hover:bg-muted/50"
-          : "w-full border-input bg-background",
+        variant === "field" && "w-full border-input bg-background",
+        variant === "meta" &&
+          "-ml-2 w-full max-w-[14rem] border-transparent bg-transparent hover:border-border hover:bg-muted/50",
+        variant === "panel" &&
+          "-ml-2 h-9 w-auto max-w-full border-transparent bg-transparent text-xl font-semibold tracking-tight [field-sizing:content] placeholder:font-semibold placeholder:text-foreground hover:border-border hover:bg-muted/50",
       )}
     />
   );

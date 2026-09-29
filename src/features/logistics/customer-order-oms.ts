@@ -2,14 +2,18 @@
 
 import type { MixedPackItem } from "@/domain/packing/mixed-containers";
 import type { DocumentTimelineEntry } from "@/features/logistics/document-timeline";
+import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
+import type { CustomerOrderLine, StockBalance } from "@/features/logistics/logistics-types";
 import {
   formatOrderMoney,
   mapTransferMoney,
   PAYMENT_STATUS_LABELS,
   isPaymentStatus,
+  type PaymentsSummary,
   type PaymentStatus,
   type TransferMoney,
 } from "@/features/logistics/order-money";
+import { pluralRu } from "@/features/logistics/order-plan/order-plan-model";
 
 export type StoreTenant = {
   id: string;
@@ -175,15 +179,115 @@ export const tenantLabel = (tenants: StoreTenant[], regionId: string): string =>
   return names.length ? names.join(", ") : "—";
 };
 
-/** Transfers of the order that count for «Доставка» and the mixed-owners flag: related and not cancelled. */
-export const deliveryTransferIds = (
-  transfers: Array<{ id: string; status: string }>,
-  relatedIds: Iterable<string>,
-): Set<string> => {
-  const related = new Set(relatedIds);
-  return new Set(
-    transfers.filter((transfer) => related.has(transfer.id) && transfer.status !== "cancelled").map((t) => t.id),
-  );
+export type OrderFulfillmentSummary = {
+  positions: number;
+  ordered: number;
+  shipped: number;
+  reserved: number;
+  uncovered: number;
+};
+
+/**
+ * Header fulfillment totals: per line reserved is capped at ordered − shipped;
+ * uncovered is Σ(остаток − резерв) and 0 when the order is not open.
+ */
+export const summarizeOrderFulfillment = (
+  lines: CustomerOrderLine[],
+  balances: StockBalance[],
+  open: boolean,
+): OrderFulfillmentSummary => {
+  let ordered = 0;
+  let shipped = 0;
+  let reserved = 0;
+  let uncovered = 0;
+  for (const line of lines) {
+    const lineShipped = sumShippedForLine(balances, line);
+    const remaining = Math.max(0, line.quantity - lineShipped);
+    const lineReserved = Math.min(sumReservedForLine(balances, line), remaining);
+    ordered += line.quantity;
+    shipped += lineShipped;
+    reserved += lineReserved;
+    if (open) uncovered += remaining - lineReserved;
+  }
+  return { positions: lines.length, ordered, shipped, reserved, uncovered };
+};
+
+export type DeadlineCountdown = {
+  kind: "left" | "today" | "overdue";
+  days: number;
+};
+
+/** Days until / past expected end for an open order; null when closed or no date. */
+export const deadlineCountdown = (
+  expectedEndOn: string | null | undefined,
+  open: boolean,
+  today: Date = new Date(),
+): DeadlineCountdown | null => {
+  if (!open || !expectedEndOn) return null;
+  const end = new Date(`${expectedEndOn}T00:00:00`);
+  if (Number.isNaN(end.getTime())) return null;
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.round((end.getTime() - startOfToday.getTime()) / 86_400_000);
+  if (diffDays > 0) return { kind: "left", days: diffDays };
+  if (diffDays === 0) return { kind: "today", days: 0 };
+  return { kind: "overdue", days: -diffDays };
+};
+
+export type HeaderTone = "neutral" | "warning" | "danger";
+
+const daysLabel = (days: number): string => `${days} ${pluralRu(days, "день", "дня", "дней")}`;
+
+/** «через 11 дней» / «срок сегодня» / «просрочен на 9 дней». */
+export const deadlineCountdownLabel = (countdown: DeadlineCountdown): { text: string; tone: HeaderTone } => {
+  if (countdown.kind === "today") return { text: "срок сегодня", tone: "warning" };
+  if (countdown.kind === "overdue") return { text: `просрочен на ${daysLabel(countdown.days)}`, tone: "danger" };
+  return { text: `через ${daysLabel(countdown.days)}`, tone: "neutral" };
+};
+
+export const headerPercent = (part: number, total: number): number => {
+  if (total <= 0) return part > 0 ? 100 : 0;
+  if (part <= 0) return 0;
+  if (part >= total) return 100;
+  return Math.min(99, Math.round((part / total) * 100));
+};
+
+/** Widths of the «Выполнение» bar segments in percent of ordered; never more than 100 together. */
+export const fulfillmentSegments = (
+  summary: OrderFulfillmentSummary,
+): { shipped: number; reserved: number; uncovered: number } => {
+  const segment = (qty: number): number => {
+    if (!(qty > 0) || !(summary.ordered > 0)) return 0;
+    return Math.max(1, headerPercent(qty, summary.ordered));
+  };
+  const shipped = segment(summary.shipped);
+  const reserved = Math.min(segment(summary.reserved), 100 - shipped);
+  const uncovered = Math.min(segment(summary.uncovered), 100 - shipped - reserved);
+  return { shipped, reserved, uncovered };
+};
+
+/** «Оплата» panel: percent paid and one due line — «Срок платежа 25.09.2026 · просрочен» or a closing note. */
+export const paymentProgress = (
+  summary: Pick<PaymentsSummary, "paid" | "total" | "nextDueOn" | "overdue">,
+  paymentCount: number,
+): { paidPct: number; dueText: string; overdue: boolean; muted: boolean } => {
+  const paidPct = headerPercent(summary.paid, summary.total);
+  if (summary.nextDueOn) {
+    const [year, month, day] = summary.nextDueOn.slice(0, 10).split("-");
+    const date = day && month && year ? `${day}.${month}.${year}` : summary.nextDueOn;
+    return {
+      paidPct,
+      dueText: `Срок платежа ${date}${summary.overdue ? " · просрочен" : ""}`,
+      overdue: summary.overdue,
+      muted: false,
+    };
+  }
+  if (paymentCount <= 0) {
+    return { paidPct, dueText: "Платежей в графике нет", overdue: false, muted: true };
+  }
+  if (summary.paid >= summary.total) {
+    return { paidPct, dueText: "Оплачен полностью", overdue: false, muted: true };
+  }
+  return { paidPct, dueText: "Все платежи графика оплачены", overdue: false, muted: true };
 };
 
 /** Price × ordered quantity in the price currency; null without a price. */

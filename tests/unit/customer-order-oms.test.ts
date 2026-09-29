@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildOrderSystemNotices,
-  deliveryTransferIds,
   documentFileSizeError,
   documentFileStoragePath,
   fileExtension,
@@ -15,10 +14,8 @@ import {
 import {
   convert,
   estimatedCost,
-  summarizeDelivery,
   summarizePayments,
   type OrderPayment,
-  type TransferMoney,
 } from "@/features/logistics/order-money";
 
 const payment = (overrides: Partial<OrderPayment>): OrderPayment => ({
@@ -83,58 +80,6 @@ describe("summarizePayments", () => {
     const summary = summarizePayments([payment({ amount: 100, status: "paid" })], 100, "USD", "2026-09-29");
     assert.equal(summary.nextDueOn, null);
     assert.equal(summary.overdue, false);
-  });
-});
-
-describe("summarizeDelivery", () => {
-  const orderRates = { USD: 1, CNY: 7, EUR: 0.875 };
-
-  it("converts payments of every transfer to the order currency by the order snapshot", () => {
-    const transfers: TransferMoney[] = [
-      {
-        documentId: "1",
-        currencyCode: "USD",
-        rates: { USD: 1, CNY: 99 },
-        payments: [payment({ amount: 100, status: "paid" }), payment({ id: "2", amount: 50, status: "planned" })],
-      },
-      {
-        documentId: "2",
-        currencyCode: "EUR",
-        rates: { USD: 1, EUR: 1 },
-        payments: [payment({ id: "3", amount: 87.5, status: "invoiced" })],
-      },
-    ];
-    const summary = summarizeDelivery(transfers, "CNY", orderRates);
-    assert.ok(summary);
-    assert.equal(summary.currencyCode, "CNY");
-    assert.ok(Math.abs(summary.paid - 700) < 1e-9);
-    assert.ok(Math.abs(summary.total - (1050 + 700)) < 1e-9);
-    assert.equal(summary.skipped, 0);
-  });
-
-  it("skips payments in a currency missing from the order snapshot", () => {
-    const summary = summarizeDelivery(
-      [
-        {
-          documentId: "1",
-          currencyCode: "KZT",
-          rates: { USD: 1, KZT: 480 },
-          payments: [payment({ amount: 480, status: "paid" })],
-        },
-        { documentId: "2", currencyCode: "USD", rates: { USD: 1 }, payments: [payment({ id: "2", amount: 10 })] },
-      ],
-      "CNY",
-      orderRates,
-    );
-    assert.ok(summary);
-    assert.equal(summary.paid, 0);
-    assert.equal(summary.total, 70);
-    assert.equal(summary.skipped, 1);
-  });
-
-  it("is empty without delivery payments", () => {
-    assert.equal(summarizeDelivery([], "CNY", orderRates), null);
-    assert.equal(summarizeDelivery([{ documentId: "1", currencyCode: "USD", rates: {}, payments: [] }], "CNY", orderRates), null);
   });
 });
 
@@ -259,21 +204,6 @@ describe("buildOrderSystemNotices", () => {
     assert.equal(notices[0].createdAtIso, "2026-09-20T10:00:00.000Z");
     assert.equal(notices[3].tone, "success");
     assert.match(notices[2].description ?? "", /срок 28\.09\.2026/);
-  });
-});
-
-describe("deliveryTransferIds", () => {
-  it("keeps related transfers and drops cancelled ones", () => {
-    const ids = deliveryTransferIds(
-      [
-        { id: "1", status: "in_progress" },
-        { id: "2", status: "cancelled" },
-        { id: "3", status: "done" },
-        { id: "4", status: "in_progress" },
-      ],
-      ["1", "2", "3"],
-    );
-    assert.deepEqual([...ids].sort(), ["1", "3"]);
   });
 });
 

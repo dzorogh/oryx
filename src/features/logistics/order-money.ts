@@ -312,42 +312,6 @@ export type TransferMoney = {
   payments: OrderPayment[];
 };
 
-export type DeliverySummary = {
-  currencyCode: string;
-  paid: number;
-  total: number;
-  /** Payments left out because the order snapshot has no rate for their currency. */
-  skipped: number;
-};
-
-/**
- * «Доставка: оплачено X из Y» in the order currency: every payment of every given transfer, whole,
- * converted by the order snapshot. Null when there is nothing to count.
- */
-export const summarizeDelivery = (
-  transfers: TransferMoney[],
-  orderCurrency: string,
-  orderRates: OrderRates,
-): DeliverySummary | null => {
-  let paid = 0;
-  let total = 0;
-  let counted = 0;
-  let skipped = 0;
-  for (const transfer of transfers) {
-    for (const payment of transfer.payments) {
-      const amount = convert(payment.amount, transfer.currencyCode, orderCurrency, orderRates);
-      if (amount == null) {
-        skipped += 1;
-        continue;
-      }
-      counted += 1;
-      total += amount;
-      if (payment.status === "paid") paid += amount;
-    }
-  }
-  return counted > 0 ? { currencyCode: orderCurrency, paid, total, skipped } : null;
-};
-
 /** Maps `transfer_money` of a customer order context. */
 export const mapTransferMoney = (raw: unknown): TransferMoney[] =>
   (Array.isArray(raw) ? raw : []).map((item) => {
