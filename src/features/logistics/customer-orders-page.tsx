@@ -587,7 +587,7 @@ export const CustomerOrderDetailPage = () => {
             label: "Товары",
             count: lines.length,
             panel: (
-              <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+              <div className="flex flex-col gap-4">
                 <DocumentSection
                   title="Товары"
                   tools={
@@ -657,9 +657,7 @@ export const CustomerOrderDetailPage = () => {
                     }}
                   />
                 </DocumentSection>
-                <div className="xl:sticky xl:top-4">
-                  <CustomerOrderContainersTab lines={lines} oms={orderOms} variant="aside" />
-                </div>
+                <CustomerOrderContainersTab lines={lines} oms={orderOms} variant="compact" />
               </div>
             ),
           },

@@ -8,7 +8,7 @@ import { ContainerLoadCalculator } from "@/features/store/packing/container-load
 
 /**
  * Checkout calculator on the order lines; recalculates after a quantity change.
- * `tab` — the «Контейнеры» tab; `aside` — compact column next to the «Товары» table.
+ * `tab` — the «Контейнеры» tab; `compact` — block under the «Товары» table.
  */
 export const CustomerOrderContainersTab = ({
   lines,
@@ -17,7 +17,7 @@ export const CustomerOrderContainersTab = ({
 }: {
   lines: CustomerOrderLine[];
   oms: CustomerOrderOmsContext;
-  variant?: "tab" | "aside";
+  variant?: "tab" | "compact";
 }) => {
   const { items, missing } = useMemo(
     () =>
@@ -27,10 +27,10 @@ export const CustomerOrderContainersTab = ({
       ),
     [lines, oms.variantLogistics],
   );
-  const aside = variant === "aside";
+  const compact = variant === "compact";
 
   return (
-    <DocumentSection title={aside ? "Контейнеры" : "Калькулятор контейнеров"}>
+    <DocumentSection title={compact ? "Контейнеры" : "Калькулятор контейнеров"}>
       {oms.containerTypes.length === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">Типы контейнеров не заведены.</p>
       ) : (
@@ -39,14 +39,14 @@ export const CustomerOrderContainersTab = ({
           items={items}
           missingNames={missing.map((line) => line.productName)}
           heading={
-            aside ? null : (
+            compact ? null : (
               <p className="text-sm text-muted-foreground">
                 Строки заказа с габаритами товара. Выберите типы контейнеров — укладка пересчитается.
               </p>
             )
           }
           className="space-y-3 px-4 py-4"
-          sceneClassName={aside ? "h-[min(300px,45vh)]" : undefined}
+          sceneClassName={compact ? "h-[min(300px,45vh)]" : undefined}
         />
       )}
     </DocumentSection>
