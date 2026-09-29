@@ -1,7 +1,7 @@
 // english-ui:ignore-file
 "use client";
 
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -45,12 +45,14 @@ import { DocumentSection } from "@/features/logistics/ui/document/document-secti
 import { DocumentTabs } from "@/features/logistics/ui/document/document-tabs";
 import { TransferProductManifest } from "@/features/logistics/ui/transfer-product-manifest";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
-import { projectTransferDetail } from "@/features/logistics/transfer-detail-projection";
+import { projectTransferDetail, transferHasMixedOwners } from "@/features/logistics/transfer-detail-projection";
 import {
   freeTransferPayload,
   openSentTransfer,
 } from "@/features/logistics/transfer-direct-send";
 import { warehouseCode } from "@/features/logistics/logistics-lookups";
+import { OrderMoneyTab } from "@/features/logistics/ui/order-money-tab";
+import { MIXED_OWNERS_WARNING } from "@/features/logistics/customer-order-oms";
 
 type TransferDetailPendingAction = "reserve" | "deliver" | "expected" | null;
 
@@ -253,7 +255,7 @@ const TransferDetailSkeleton = () => (
 export const TransferDetailPage = () => {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { snapshot, balances, isLoading, error, reload } = useLogisticsStore({
+  const { snapshot, balances, orderMoney, isLoading, error, reload } = useLogisticsStore({
     kind: "document",
     documentKind: "transfer",
     ref: String(params.id ?? ""),
@@ -326,6 +328,14 @@ export const TransferDetailPage = () => {
           icon={ArrowLeftRight}
           number={doc.number}
           status={<TransferStatusBadge status={doc.status} />}
+          description={
+            transferHasMixedOwners(projection) ? (
+              <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
+                <TriangleAlert className="size-3.5" aria-hidden />
+                {MIXED_OWNERS_WARNING}
+              </span>
+            ) : null
+          }
           actions={
             <>
               {doc.status === "sent" && projection.canReserveInTransit ? (
@@ -453,6 +463,20 @@ export const TransferDetailPage = () => {
                     products={projection.products}
                   />
                 </DocumentSection>
+              ),
+            },
+            {
+              id: "money",
+              label: "Деньги",
+              count: orderMoney.payments.length,
+              panel: (
+                <OrderMoneyTab
+                  variant="transfer"
+                  snapshot={snapshot}
+                  documentId={doc.id}
+                  context={orderMoney}
+                  reload={reload}
+                />
               ),
             },
             {

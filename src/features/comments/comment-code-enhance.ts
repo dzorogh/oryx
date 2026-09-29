@@ -46,7 +46,7 @@ export const enhanceCodeHtml = (html: string): string => {
     return (
       `<pre class="comment-code-block">` +
       `<code class="hljs${langClass}">${tokens}</code>` +
-      `<button type="button" class="comment-code-copy" aria-label="Copy code" data-code-copy>Copy</button>` +
+      `<button type="button" class="comment-code-copy" aria-label="Копировать код" data-code-copy>Копировать</button>` +
       `</pre>`
     );
   });
@@ -68,10 +68,10 @@ export const attachCodeCopy = (root: HTMLElement): (() => void) => {
     }
     const text = button.closest("pre")?.querySelector("code")?.textContent ?? "";
     void navigator.clipboard?.writeText(text);
-    button.textContent = "Copied";
+    button.textContent = "Скопировано";
     button.dataset.copied = "true";
     window.setTimeout(() => {
-      button.textContent = "Copy";
+      button.textContent = "Копировать";
       delete button.dataset.copied;
     }, 1500);
   };

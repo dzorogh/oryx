@@ -57,7 +57,7 @@ export const MentionList = forwardRef<MentionListHandle, MentionListProps>(
     if (items.length === 0) {
       return (
         <div className="rounded-lg bg-popover p-2 text-sm text-muted-foreground shadow-md ring-1 ring-foreground/10">
-          No people found
+          Никого не нашли
         </div>
       );
     }

@@ -9,11 +9,14 @@ export const DocumentMetaField = ({
   children,
   className,
   wide,
+  hint,
 }: {
   label: string;
   children: ReactNode;
   className?: string;
   wide?: boolean;
+  /** Small line under the value; wraps instead of being clipped by the one-line value cell. */
+  hint?: ReactNode;
 }) => (
   <div className={cn("min-w-0 border-l border-border/60 px-5 py-2.5 first:border-l-0", wide && "sm:col-span-2", className)}>
     <dt className="mb-0.5 truncate text-xs whitespace-nowrap text-muted-foreground">{label}</dt>
@@ -21,6 +24,7 @@ export const DocumentMetaField = ({
     <dd className="m-0 -ml-2 flex h-8 min-w-0 items-center gap-1.5 overflow-hidden pl-2 text-sm font-medium whitespace-nowrap [&_[data-slot=badge]]:h-6 [&_[data-slot=status-pill]]:h-6">
       {children}
     </dd>
+    {hint ? <dd className="m-0 pb-0.5 text-xs leading-snug">{hint}</dd> : null}
   </div>
 );
 

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { pluralRu } from "@/features/comments/comment-text";
 import type { CommentUser } from "@/features/comments/comments-types";
 
 type PresenceUser = Pick<CommentUser, "id" | "name" | "avatarUrl">;
@@ -52,11 +53,11 @@ export const CommentPresenceBar = ({
         <>
           <AvatarStack users={onlineUsers} />
           <span className="hidden sm:inline">
-            {onlineUsers.length} {onlineUsers.length === 1 ? "other viewing" : "others viewing"}
+            Ещё {onlineUsers.length} {pluralRu(onlineUsers.length, "смотрит", "смотрят", "смотрят")}
           </span>
         </>
       ) : (
-        <span>Live</span>
+        <span>В сети</span>
       )}
     </div>
   );
@@ -75,10 +76,10 @@ export const CommentTypingLine = ({
   }
   const names =
     users.length === 1
-      ? `${users[0].name} is typing`
+      ? `${users[0].name} печатает`
       : users.length === 2
-        ? `${users[0].name} and ${users[1].name} are typing`
-        : `${users[0].name} and ${users.length - 1} others are typing`;
+        ? `${users[0].name} и ${users[1].name} печатают`
+        : `${users[0].name} и ещё ${users.length - 1} печатают`;
   return (
     <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
       <span className="flex gap-0.5">

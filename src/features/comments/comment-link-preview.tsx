@@ -44,17 +44,17 @@ const detectProvider = (raw: string): Provider | null => {
       name: "YouTube",
       icon: "play",
       thumbnail: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`,
-      title: "Watch on YouTube",
+      title: "Смотреть на YouTube",
     };
   }
   if (url.hostname.includes("loom.com")) {
-    return { name: "Loom", icon: "video", title: "Loom recording" };
+    return { name: "Loom", icon: "video", title: "Запись Loom" };
   }
   if (url.hostname.includes("figma.com")) {
-    return { name: "Figma", icon: "video", title: "Figma file" };
+    return { name: "Figma", icon: "video", title: "Файл Figma" };
   }
   if (url.hostname.includes("vimeo.com")) {
-    return { name: "Vimeo", icon: "play", title: "Watch on Vimeo" };
+    return { name: "Vimeo", icon: "play", title: "Смотреть на Vimeo" };
   }
   return null;
 };

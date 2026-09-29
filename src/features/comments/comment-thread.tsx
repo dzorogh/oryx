@@ -9,6 +9,7 @@ import type {
   CommentUser,
 } from "@/features/comments/comments-types";
 import { CommentItem } from "@/features/comments/comment-item";
+import { pluralRu } from "@/features/comments/comment-text";
 import {
   CommentComposer,
   type CommentSubmitPayload,
@@ -110,7 +111,7 @@ export const CommentThread = ({
               onClick={() => setExpanded(true)}
             >
               <ChevronDown />
-              Show {hiddenCount} earlier {hiddenCount === 1 ? "reply" : "replies"}
+              Показать ещё {hiddenCount} {pluralRu(hiddenCount, "ответ", "ответа", "ответов")}
             </Button>
           ) : null}
 
@@ -149,8 +150,8 @@ export const CommentThread = ({
                 quoteSeeds.length > 0 ? buildQuotedHtmlMany(quoteSeeds) : undefined
               }
               autoFocus
-              submitLabel="Reply"
-              placeholder={`Reply to ${root.author.name}…`}
+              submitLabel="Ответить"
+              placeholder={`Ответ для ${root.author.name}…`}
               onSubmit={(payload) => {
                 onAddReply(root.id, payload);
                 onCloseReply();

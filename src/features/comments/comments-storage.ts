@@ -5,6 +5,7 @@ import type { JSONContent } from "@tiptap/react";
 import type {
   CommentDraft,
   CommentPrefs,
+  CommentRecord,
   CommentScope,
 } from "@/features/comments/comments-types";
 import { DEFAULT_COMMENT_PREFS } from "@/features/comments/comments-types";
@@ -141,6 +142,36 @@ export const writeDraft = (
 
 export const clearDraft = (scope: CommentScope, target: string): void =>
   removeKey(draftKey(scope, target));
+
+// ---------------------------------------------------------------------------
+// Persisted feed (opt-in per panel: comment records only, system notices are rebuilt by the host)
+// ---------------------------------------------------------------------------
+
+const feedKey = (scope: CommentScope): string => scopeKey(scope, "feed");
+
+/** Stored comments of a scope, or null when nothing was saved yet. Unsent states come back as sent. */
+export const readFeed = (scope: CommentScope): CommentRecord[] | null => {
+  const stored = readJson<CommentRecord[] | null>(feedKey(scope), null);
+  if (!Array.isArray(stored)) {
+    return null;
+  }
+  return stored
+    .filter((item) => item && item.kind === "comment")
+    .map((item) =>
+      item.delivery && item.delivery !== "scheduled" ? { ...item, delivery: undefined } : item,
+    );
+};
+
+/** Object-URL attachments die with the tab, so they are not stored. */
+export const writeFeed = (scope: CommentScope, records: CommentRecord[]): void => {
+  writeJson(
+    feedKey(scope),
+    records.map((record) => ({
+      ...record,
+      attachments: record.attachments.filter((attachment) => !attachment.url.startsWith("blob:")),
+    })),
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Last-visit marker (drives the "New since last visit" divider)

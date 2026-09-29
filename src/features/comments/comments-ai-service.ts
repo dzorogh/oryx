@@ -35,10 +35,10 @@ export const looksHostile = (text: string): boolean => HOSTILE_PATTERNS.test(tex
 
 const softenText = (text: string): string => {
   const cleaned = text
-    .replace(HOSTILE_PATTERNS, "not ideal")
+    .replace(HOSTILE_PATTERNS, "не лучший вариант")
     .replace(/!+/g, ".")
-    .replace(/\b(you always|you never)\b/gi, "it sometimes feels like");
-  return `I want to flag a concern constructively: ${tidyGrammar(cleaned)}`;
+    .replace(/\b(you always|you never)\b/gi, "иногда кажется, что");
+  return `Хочу конструктивно обозначить проблему: ${tidyGrammar(cleaned)}`;
 };
 
 /** Deterministic offline transforms — stand-in when no AI provider is configured. */
@@ -49,7 +49,7 @@ export const mockAiAction = (
 ): string => {
   const text = raw.trim();
   if (!text) {
-    return "Thanks for the update — this looks good to me. I'll review the details and follow up shortly.";
+    return "Спасибо за обновление — выглядит хорошо. Посмотрю детали и скоро вернусь с ответом.";
   }
   const sentences = splitSentences(tidyGrammar(text));
   switch (action) {
@@ -60,18 +60,18 @@ export const mockAiAction = (
     case "shorten":
       return sentences.slice(0, Math.max(1, Math.ceil(sentences.length * 0.5))).join(" ");
     case "lengthen":
-      return `${sentences.join(" ")} To add context, this should help align everyone and make the next steps clear.`;
+      return `${sentences.join(" ")} Для контекста: это поможет всем договориться и прояснит следующие шаги.`;
     case "summarize":
-      return `In short: ${sentences[0] ?? tidyGrammar(text)}`;
+      return `Коротко: ${sentences[0] ?? tidyGrammar(text)}`;
     case "tldr":
       return sentences
         .slice(0, 4)
         .map((sentence) => `- ${sentence}`)
         .join("\n");
     case "translate":
-      return `[${targetLang ?? "translation"}] ${text}`;
+      return `[${targetLang ?? "перевод"}] ${text}`;
     case "smart-reply":
-      return "Thanks for sharing — that makes sense. I'll take a look and follow up shortly.";
+      return "Спасибо, что поделились, — звучит разумно. Посмотрю и скоро отвечу.";
     case "soften":
       return softenText(text);
     case "toxicity":

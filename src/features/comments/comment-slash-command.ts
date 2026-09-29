@@ -35,66 +35,66 @@ export type SlashCommandItem = {
 /** The block palette offered by the `/` menu (mirrors the toolbar's blocks). */
 export const SLASH_COMMANDS: SlashCommandItem[] = [
   {
-    title: "Text",
-    subtitle: "Plain paragraph",
+    title: "Текст",
+    subtitle: "Обычный абзац",
     icon: Type,
     keywords: ["text", "paragraph", "plain"],
     run: (editor, range) => editor.chain().focus().deleteRange(range).setParagraph().run(),
   },
   {
-    title: "Heading 2",
-    subtitle: "Section heading",
+    title: "Заголовок 2",
+    subtitle: "Заголовок раздела",
     icon: Heading2,
     keywords: ["heading", "h2", "title"],
     run: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run(),
   },
   {
-    title: "Heading 3",
-    subtitle: "Subsection heading",
+    title: "Заголовок 3",
+    subtitle: "Заголовок подраздела",
     icon: Heading3,
     keywords: ["heading", "h3", "subtitle"],
     run: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleHeading({ level: 3 }).run(),
   },
   {
-    title: "Bulleted list",
-    subtitle: "Simple bullet list",
+    title: "Маркированный список",
+    subtitle: "Простой список",
     icon: List,
     keywords: ["bullet", "list", "unordered", "ul"],
     run: (editor, range) => editor.chain().focus().deleteRange(range).toggleBulletList().run(),
   },
   {
-    title: "Numbered list",
-    subtitle: "Ordered list",
+    title: "Нумерованный список",
+    subtitle: "Список по порядку",
     icon: ListOrdered,
     keywords: ["numbered", "ordered", "list", "ol"],
     run: (editor, range) => editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
   },
   {
-    title: "Checklist",
-    subtitle: "To-do list with checkboxes",
+    title: "Чек-лист",
+    subtitle: "Список дел с флажками",
     icon: ListChecks,
     keywords: ["check", "task", "todo", "checklist"],
     run: (editor, range) => editor.chain().focus().deleteRange(range).toggleTaskList().run(),
   },
   {
-    title: "Quote",
-    subtitle: "Blockquote",
+    title: "Цитата",
+    subtitle: "Блок цитаты",
     icon: Quote,
     keywords: ["quote", "blockquote", "citation"],
     run: (editor, range) => editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
   },
   {
-    title: "Code block",
-    subtitle: "Monospaced code",
+    title: "Блок кода",
+    subtitle: "Моноширинный код",
     icon: Code,
     keywords: ["code", "snippet", "pre"],
     run: (editor, range) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
   },
   {
-    title: "Table",
-    subtitle: "3×3 table with header",
+    title: "Таблица",
+    subtitle: "Таблица 3×3 с заголовком",
     icon: TableIcon,
     keywords: ["table", "grid", "rows", "columns"],
     run: (editor, range) =>
@@ -106,44 +106,44 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
         .run(),
   },
   {
-    title: "Callout: info",
-    subtitle: "Highlighted note",
+    title: "Выноска: информация",
+    subtitle: "Выделенная заметка",
     icon: Info,
     keywords: ["callout", "info", "note", "tip"],
     run: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleCallout({ tone: "info" }).run(),
   },
   {
-    title: "Callout: warning",
-    subtitle: "Highlighted warning",
+    title: "Выноска: предупреждение",
+    subtitle: "Выделенное предупреждение",
     icon: TriangleAlert,
     keywords: ["callout", "warning", "caution", "alert"],
     run: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleCallout({ tone: "warning" }).run(),
   },
   {
-    title: "Callout: success",
-    subtitle: "Highlighted success",
+    title: "Выноска: успех",
+    subtitle: "Выделенный успех",
     icon: CircleCheck,
     keywords: ["callout", "success", "done", "ok"],
     run: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleCallout({ tone: "success" }).run(),
   },
   {
-    title: "Divider",
-    subtitle: "Horizontal rule",
+    title: "Разделитель",
+    subtitle: "Горизонтальная линия",
     icon: Minus,
     keywords: ["divider", "hr", "separator", "rule"],
     run: (editor, range) => editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
   },
   {
-    title: "Image",
-    subtitle: "Embed image by URL",
+    title: "Изображение",
+    subtitle: "Вставить по адресу",
     icon: ImageIcon,
     keywords: ["image", "picture", "photo", "embed"],
     run: (editor, range) => {
       editor.chain().focus().deleteRange(range).run();
-      const url = window.prompt("Image URL", "https://");
+      const url = window.prompt("Адрес изображения", "https://");
       if (url) {
         editor.chain().focus().setImage({ src: url }).run();
       }

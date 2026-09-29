@@ -14,6 +14,8 @@ import type {
   SystemNotification,
 } from "@/features/comments/comments-types";
 import { DEFAULT_COMMENT_PREFS, isComment } from "@/features/comments/comments-types";
+import type { CommentScope } from "@/features/comments/comments-types";
+import { readFeed, writeFeed } from "@/features/comments/comments-storage";
 
 /** Demo delay before an optimistic "sending" comment flips to "sent". */
 const SEND_SETTLE_MS = 700;
@@ -61,6 +63,10 @@ type UseCommentsStateOptions = {
   currentUserId?: string;
   sort?: CommentSort;
   filters?: CommentFilters;
+  /** Host-built notices merged into the feed on every render (not stored). */
+  systemNotices?: SystemNotification[];
+  /** When set, comments of this scope are restored from and saved to localStorage. */
+  persistScope?: CommentScope;
 };
 
 export type UseCommentsStateResult = {
@@ -98,9 +104,32 @@ export const useCommentsState = ({
   currentUserId = "",
   sort = DEFAULT_COMMENT_PREFS.sort,
   filters = DEFAULT_COMMENT_PREFS.filters,
+  systemNotices,
+  persistScope,
 }: UseCommentsStateOptions): UseCommentsStateResult => {
-  const [items, setItems] = useState<CommentFeedItem[]>(() =>
-    [...initialItems].sort(sortByCreatedAtAsc),
+  const [items, setItems] = useState<CommentFeedItem[]>(() => {
+    const stored = persistScope ? readFeed(persistScope) : null;
+    const seed = stored
+      ? [...initialItems.filter((item) => !isComment(item)), ...stored]
+      : initialItems;
+    return [...seed].sort(sortByCreatedAtAsc);
+  });
+
+  const persistType = persistScope?.type;
+  const persistId = persistScope?.id;
+  useEffect(() => {
+    if (persistType == null || persistId == null) {
+      return;
+    }
+    writeFeed({ type: persistType, id: persistId }, items.filter(isComment));
+  }, [items, persistType, persistId]);
+
+  const feedItems = useMemo<CommentFeedItem[]>(
+    () =>
+      systemNotices && systemNotices.length > 0
+        ? [...items, ...systemNotices].sort(sortByCreatedAtAsc)
+        : items,
+    [items, systemNotices],
   );
   const [visibleRootCount, setVisibleRootCount] = useState(pageSize);
   const sendTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
@@ -143,7 +172,7 @@ export const useCommentsState = ({
   /** Build ordered root rows; each comment thread carries its replies. */
   const allRows = useMemo<CommentFeedRow[]>(() => {
     const repliesByParent = new Map<string, CommentRecord[]>();
-    for (const item of items) {
+    for (const item of feedItems) {
       if (isComment(item) && item.parentId) {
         const list = repliesByParent.get(item.parentId) ?? [];
         list.push(item);
@@ -152,7 +181,7 @@ export const useCommentsState = ({
     }
 
     const rows: CommentFeedRow[] = [];
-    for (const item of items) {
+    for (const item of feedItems) {
       if (!isComment(item)) {
         rows.push({ kind: "system", notification: item as SystemNotification });
         continue;
@@ -168,7 +197,7 @@ export const useCommentsState = ({
       rows.push({ kind: "thread", thread: { root: item, replies } });
     }
     return rows;
-  }, [items]);
+  }, [feedItems]);
 
   // Pinned threads are pulled out and shown above the (sorted/filtered) feed.
   const pinnedRows = useMemo<CommentFeedRow[]>(

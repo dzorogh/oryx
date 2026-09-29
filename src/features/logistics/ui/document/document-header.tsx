@@ -13,6 +13,7 @@ export type DocumentMetaItem = {
   value: ReactNode;
   wide?: boolean;
   className?: string;
+  hint?: ReactNode;
 };
 
 export const DocumentHeader = ({
@@ -43,8 +44,8 @@ export const DocumentHeader = ({
     )}
   >
     <header className="px-5 pt-4.5">
-      <div className="flex items-start justify-between gap-5">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
+        <div className="min-w-[14rem] flex-1">
           <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             {Icon ? <Icon className="size-3.5" aria-hidden /> : null}
             <span>{kind}</span>
@@ -66,6 +67,7 @@ export const DocumentHeader = ({
           key={item.label}
           label={item.label}
           wide={item.wide}
+          hint={item.hint}
           className={item.className}
         >
           {item.value}

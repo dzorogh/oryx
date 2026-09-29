@@ -184,6 +184,21 @@ export const mapOrderRates = (raw: unknown): OrderRates => {
   return rates;
 };
 
+const mapPaymentRows = (raw: unknown): OrderPayment[] =>
+  (Array.isArray(raw) ? raw : []).flatMap((item) => {
+    const row = item as Record<string, unknown>;
+    if (!isPaymentStatus(row.status)) return [];
+    return [
+      {
+        id: String(row.id),
+        documentId: String(row.document_id ?? ""),
+        dueOn: String(row.due_on ?? "").slice(0, 10),
+        amount: asNumberOrNull(row.amount) ?? 0,
+        status: row.status,
+      },
+    ];
+  });
+
 export type OrderMoneyContext = {
   money: OrderMoney | null;
   payments: OrderPayment[];
@@ -206,21 +221,7 @@ export const mapOrderMoneyContext = (payload: {
           rates: mapOrderRates(raw.rates),
         }
       : null;
-  const payments: OrderPayment[] = (Array.isArray(payload.order_payments) ? payload.order_payments : []).flatMap(
-    (item) => {
-      const row = item as Record<string, unknown>;
-      if (!isPaymentStatus(row.status)) return [];
-      return [
-        {
-          id: String(row.id),
-          documentId: String(row.document_id ?? ""),
-          dueOn: String(row.due_on ?? "").slice(0, 10),
-          amount: asNumberOrNull(row.amount) ?? 0,
-          status: row.status,
-        },
-      ];
-    },
-  );
+  const payments = mapPaymentRows(payload.order_payments);
   const currencies: OrderCurrency[] = (Array.isArray(payload.currencies) ? payload.currencies : []).map((item) => {
     const row = item as Record<string, unknown>;
     return { id: String(row.id), code: String(row.code), name: String(row.name ?? row.code) };
@@ -270,3 +271,91 @@ export const summarizeOrderMoney = (
   const total = orderTotal(money.amount, estimated);
   return { currencyCode: money.currencyCode, estimated, total, rest: unallocated(total, context.payments) };
 };
+
+export type PaymentsSummary = {
+  currencyCode: string;
+  /** Σ payments with status «Оплачен». */
+  paid: number;
+  total: number;
+  /** Earliest due date among unpaid payments. */
+  nextDueOn: string | null;
+  /** Some unpaid payment is past its due date. */
+  overdue: boolean;
+};
+
+/** «Оплачено X из Y»: X — paid payments, Y — the order amount, both in the order currency. */
+export const summarizePayments = (
+  payments: Array<Pick<OrderPayment, "amount" | "status" | "dueOn">>,
+  total: number,
+  currencyCode: string,
+  today: string = todayIso(),
+): PaymentsSummary => {
+  let paid = 0;
+  let nextDueOn: string | null = null;
+  let overdue = false;
+  for (const payment of payments) {
+    if (payment.status === "paid") {
+      paid += payment.amount;
+      continue;
+    }
+    if (nextDueOn == null || payment.dueOn < nextDueOn) nextDueOn = payment.dueOn;
+    if (isPaymentOverdue(payment, today)) overdue = true;
+  }
+  return { currencyCode, paid, total, nextDueOn, overdue };
+};
+
+/** Money of a transfer (delivery payments) as it comes in the customer order context. */
+export type TransferMoney = {
+  documentId: string;
+  currencyCode: string;
+  rates: OrderRates;
+  payments: OrderPayment[];
+};
+
+export type DeliverySummary = {
+  currencyCode: string;
+  paid: number;
+  total: number;
+  /** Payments left out because the order snapshot has no rate for their currency. */
+  skipped: number;
+};
+
+/**
+ * «Доставка: оплачено X из Y» in the order currency: every payment of every given transfer, whole,
+ * converted by the order snapshot. Null when there is nothing to count.
+ */
+export const summarizeDelivery = (
+  transfers: TransferMoney[],
+  orderCurrency: string,
+  orderRates: OrderRates,
+): DeliverySummary | null => {
+  let paid = 0;
+  let total = 0;
+  let counted = 0;
+  let skipped = 0;
+  for (const transfer of transfers) {
+    for (const payment of transfer.payments) {
+      const amount = convert(payment.amount, transfer.currencyCode, orderCurrency, orderRates);
+      if (amount == null) {
+        skipped += 1;
+        continue;
+      }
+      counted += 1;
+      total += amount;
+      if (payment.status === "paid") paid += amount;
+    }
+  }
+  return counted > 0 ? { currencyCode: orderCurrency, paid, total, skipped } : null;
+};
+
+/** Maps `transfer_money` of a customer order context. */
+export const mapTransferMoney = (raw: unknown): TransferMoney[] =>
+  (Array.isArray(raw) ? raw : []).map((item) => {
+    const row = item as Record<string, unknown>;
+    return {
+      documentId: String(row.document_id ?? ""),
+      currencyCode: String(row.currency_code ?? "USD"),
+      rates: mapOrderRates(row.rates),
+      payments: mapPaymentRows(row.payments),
+    };
+  });

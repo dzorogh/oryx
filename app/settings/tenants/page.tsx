@@ -1,5 +1,5 @@
-import { ModulePlaceholderPage } from "@/components/layout/module-placeholder-page";
+import { TenantsSettingsPage } from "@/features/settings/tenants/tenants-settings-page";
 
-const SettingsTenantsPage = () => <ModulePlaceholderPage title="Tenants" />;
+const SettingsTenantsPage = () => <TenantsSettingsPage />;
 
 export default SettingsTenantsPage;

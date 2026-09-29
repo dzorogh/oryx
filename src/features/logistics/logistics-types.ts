@@ -219,6 +219,10 @@ export type CustomerOrder = {
   sourceKind: "plant" | "hub" | null;
   sourcePlantId: string | null;
   sourceWarehouseId: string | null;
+  /** Manual number in the accounting system; no integration. */
+  accountingNumber: string | null;
+  /** Manual http(s) link to the accounting system record. */
+  accountingUrl: string | null;
   createdAt: string;
   createdBy: string;
   expectedEndOn: string | null;

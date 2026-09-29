@@ -161,7 +161,14 @@ describe("mapLogisticsPayload", () => {
         },
       ],
       customer_orders: [
-        { id: 12, region_id: 1, stock_location_id: 100, stock_owner_id: 50 },
+        {
+          id: 12,
+          region_id: 1,
+          stock_location_id: 100,
+          stock_owner_id: 50,
+          accounting_number: "ERP-12",
+          accounting_url: "https://erp.example.com/orders/12",
+        },
       ],
       regions: [{ id: 1, code: "REG-1", name: "Север", stock_owner_id: 2 }],
       stock_locations: [{ id: 100, kind: "customer_order" }],
@@ -169,10 +176,60 @@ describe("mapLogisticsPayload", () => {
         { id: 1, kind: "free" },
         { id: 50, kind: "customer_order" },
       ],
+      tenants: [{ id: "tenant-globaldrive", name: "Globaldrive", region_id: 1, sort_order: 10 }],
+      document_files: [
+        {
+          id: 3,
+          document_id: 12,
+          storage_path: "12/a-invoice.pdf",
+          name: "invoice.pdf",
+          size_bytes: 10,
+          mime_type: "application/pdf",
+          created_at: "2026-01-02T00:00:00Z",
+        },
+      ],
     });
     assert.equal(mapped.snapshot.customerOrders.length, 1);
     assert.equal(mapped.snapshot.customerOrders[0]?.number, "OMS-12");
     assert.equal(mapped.snapshot.customerOrders[0]?.sequenceNumber, "12");
+    assert.equal(mapped.snapshot.customerOrders[0]?.accountingNumber, "ERP-12");
+    assert.equal(mapped.snapshot.customerOrders[0]?.accountingUrl, "https://erp.example.com/orders/12");
+    assert.deepEqual(mapped.orderOms.tenants, [
+      { id: "tenant-globaldrive", name: "Globaldrive", regionId: "1", sortOrder: 10 },
+    ]);
+    assert.equal(mapped.orderOms.files[0]?.storagePath, "12/a-invoice.pdf");
+    assert.deepEqual(mapped.orderOms.transferMoney, []);
+    assert.deepEqual(mapped.orderOms.paymentEvents, []);
+  });
+
+  it("maps missing accounting fields to null and missing oms keys to empty lists", () => {
+    const mapped = mapLogisticsPayload({
+      documents: [
+        {
+          id: 12,
+          kind: "customer_order",
+          sequence_number: 12,
+          description: "",
+          status: "in_progress",
+          expected_end_on: null,
+          created_at: "2026-01-01T00:00:00Z",
+          created_by: 1,
+        },
+      ],
+      customer_orders: [
+        { id: 12, region_id: 1, stock_location_id: 100, stock_owner_id: 50, accounting_number: null },
+      ],
+    });
+    assert.equal(mapped.snapshot.customerOrders[0]?.accountingNumber, null);
+    assert.equal(mapped.snapshot.customerOrders[0]?.accountingUrl, null);
+    assert.deepEqual(mapped.orderOms, {
+      tenants: [],
+      variantLogistics: [],
+      containerTypes: [],
+      transferMoney: [],
+      paymentEvents: [],
+      files: [],
+    });
   });
 
   it("maps warehouse kind, customer order source and dealer prices", () => {

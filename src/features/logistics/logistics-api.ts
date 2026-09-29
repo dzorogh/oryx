@@ -37,6 +37,11 @@ import type {
 } from "@/features/logistics/logistics-types";
 import { mapOutputCalendarPage } from "@/features/logistics/output-calendar";
 import {
+  DOCUMENT_FILE_BUCKET,
+  mapCustomerOrderOmsContext,
+  type CustomerOrderOmsContext,
+} from "@/features/logistics/customer-order-oms";
+import {
   mapOrderMoneyContext,
   type OrderCurrency,
   type OrderMoneyContext,
@@ -191,6 +196,12 @@ export type LogisticsPayload = {
   order_money?: unknown;
   order_payments?: unknown;
   currencies?: unknown;
+  tenants?: unknown;
+  variant_logistics?: unknown;
+  container_types?: unknown;
+  transfer_money?: unknown;
+  order_payment_events?: unknown;
+  document_files?: unknown;
   found?: boolean;
 };
 
@@ -202,6 +213,8 @@ export type MappedLogistics = {
   orderPlan: unknown;
   /** Money of a production order or customer order context; `money` is null for other documents. */
   orderMoney: OrderMoneyContext;
+  /** Tenants, packing, delivery money, payment events and files of a customer order context. */
+  orderOms: CustomerOrderOmsContext;
   found: boolean;
 };
 
@@ -442,6 +455,8 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       sourceKind: row.source_kind === "plant" || row.source_kind === "hub" ? row.source_kind : null,
       sourcePlantId: strOrNull(row.source_plant_id),
       sourceWarehouseId: strOrNull(row.source_warehouse_id),
+      accountingNumber: strOrNull(row.accounting_number),
+      accountingUrl: strOrNull(row.accounting_url),
       createdAt: doc.created_at,
       createdBy: doc.created_by,
       expectedEndOn: doc.expected_end_on,
@@ -816,6 +831,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     balances,
     orderPlan: payload.order_plan ?? null,
     orderMoney: mapOrderMoneyContext(payload),
+    orderOms: mapCustomerOrderOmsContext(payload),
     found: payload.found !== false,
   };
 };
@@ -1444,6 +1460,96 @@ export const saveOrderPayment = (args: {
 
 export const deleteOrderPayment = (paymentId: string) =>
   rpc("store_delete_order_payment", { p_payment_id: Number(paymentId) });
+
+export const copyCustomerOrder = async (orderId: string) => {
+  const created = await rpcJson<{ id: number | string; sequence_number: number | string }>(
+    "store_copy_customer_order",
+    { p_id: Number(orderId) },
+  );
+  return { id: String(created.id), sequenceNumber: String(created.sequence_number) };
+};
+
+export const setDocumentDescription = (documentId: string, description: string) =>
+  rpc("store_set_document_description", { p_document_id: Number(documentId), p_description: description });
+
+export const setCustomerOrderAccounting = (args: { orderId: string; number: string | null; url: string | null }) =>
+  rpc("store_set_customer_order_accounting", {
+    p_id: Number(args.orderId),
+    p_number: args.number,
+    p_url: args.url,
+  });
+
+export type StoreTenantRow = { id: string; name: string; regionId: string | null; sortOrder: number };
+export type StoreRegionOption = { id: string; code: string; name: string };
+
+/** Settings → Тенанты: tenants and live regions (anon SELECT). */
+export const loadTenantSettings = async (): Promise<{ tenants: StoreTenantRow[]; regions: StoreRegionOption[] }> => {
+  const client = requireClient();
+  const [tenants, regions] = await Promise.all([
+    client.from("store_tenant").select("id,name,region_id,sort_order").order("sort_order", { ascending: true }),
+    client.from("store_region").select("id,code,name").is("deleted_at", null).order("sort_order", { ascending: true }),
+  ]);
+  return {
+    tenants: requireData(tenants.data, tenants.error).map((row) => ({
+      id: str(row.id),
+      name: str(row.name),
+      regionId: strOrNull(row.region_id),
+      sortOrder: Number(row.sort_order ?? 0),
+    })),
+    regions: requireData(regions.data, regions.error).map((row) => ({
+      id: str(row.id),
+      code: storedEntityCode("region", row.code, str(row.id)),
+      name: str(row.name),
+    })),
+  };
+};
+
+export const setTenantRegion = (tenantId: string, regionId: string | null) =>
+  rpc("store_set_tenant_region", { p_tenant_id: tenantId, p_region_id: regionId ? Number(regionId) : null });
+
+/** Uploads to the `store-documents` bucket, then records metadata; removes the object if the record fails. */
+export const uploadDocumentFile = async (args: { documentId: string; file: File; storagePath: string }) => {
+  const client = requireClient();
+  const bucket = client.storage.from(DOCUMENT_FILE_BUCKET);
+  const { error } = await bucket.upload(args.storagePath, args.file, {
+    contentType: args.file.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+  try {
+    return await rpcJson<number | string>("store_add_document_file", {
+      p_document_id: Number(args.documentId),
+      p_storage_path: args.storagePath,
+      p_name: args.file.name,
+      p_size_bytes: args.file.size,
+      p_mime_type: args.file.type || "",
+    }).then(String);
+  } catch (caught) {
+    await bucket.remove([args.storagePath]);
+    throw caught;
+  }
+};
+
+/** Deletes the record first (the file disappears from the card), then the object. */
+export const deleteDocumentFile = async (fileId: string) => {
+  const client = requireClient();
+  const path = await rpc("store_delete_document_file", { p_file_id: Number(fileId) });
+  await client.storage.from(DOCUMENT_FILE_BUCKET).remove([path]);
+};
+
+/** Short-lived signed URL that downloads the object under its original name. */
+export const documentFileDownloadUrl = async (storagePath: string, name: string) => {
+  const client = requireClient();
+  const { data, error } = await client.storage
+    .from(DOCUMENT_FILE_BUCKET)
+    .createSignedUrl(storagePath, 60, { download: name });
+  if (error || !data) {
+    throw new Error(error?.message ?? "Не удалось получить ссылку на файл");
+  }
+  return data.signedUrl;
+};
 
 export type StoreMoneySettings = {
   productionCurrencyCode: string | null;

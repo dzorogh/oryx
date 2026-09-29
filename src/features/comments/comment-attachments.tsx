@@ -8,9 +8,9 @@ import type { CommentAttachment } from "@/features/comments/comments-types";
 
 export const formatBytes = (bytes: number): string => {
   if (bytes < 1024) {
-    return `${bytes} B`;
+    return `${bytes} Б`;
   }
-  const units = ["KB", "MB", "GB"];
+  const units = ["КБ", "МБ", "ГБ"];
   let value = bytes / 1024;
   let unitIndex = 0;
   while (value >= 1024 && unitIndex < units.length - 1) {
@@ -143,7 +143,7 @@ const RemoveButton = ({ onRemove, name }: { onRemove: () => void; name: string }
     type="button"
     variant="ghost"
     size="icon-xs"
-    aria-label={`Remove ${name}`}
+    aria-label={`Убрать ${name}`}
     className="bg-background/80 text-muted-foreground hover:text-foreground"
     onClick={onRemove}
   >

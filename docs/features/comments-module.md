@@ -30,7 +30,7 @@ behavioral changes — only a different `scope` and seed data.
 - **Edit own comments**; reachable via a context menu on **right-click** and via a **⋯ button
   in the top-right** of the comment.
 - **Delete own comments** with a **confirmation** dialog. Deleting a comment that still has a
-  reply thread under it leaves a **"Comment deleted" tombstone** so the thread stays readable;
+  reply thread under it leaves a **«Комментарий удалён» tombstone** so the thread stays readable;
   a comment with no replies is removed entirely.
 - **Like** comments. When there are no likes we do **not** render "0" — only the like
   affordance; the count appears once ≥ 1.
@@ -57,13 +57,34 @@ Folder: `src/features/comments/`
   currentUser={currentUser}                   // CommentUser
   mentionableUsers={mentionableUsers}          // CommentUser[]
   initialComments={seed}                       // CommentRecord[]
-  pageSize={8}                                 // "Load earlier" page size (default 8)
+  pageSize={8}                                 // "load earlier" page size (default 8)
   maxHeight="32rem"                            // bounded scroll area (default 32rem)
 />
 ```
 
 Business sections reuse the panel by passing their own `scope`, `currentUser`,
 `mentionableUsers`, and seed. Nothing else changes.
+
+Two optional props for business sections (the news page passes neither and behaves as before):
+
+- `systemNotices?: SystemNotification[]` — live author-less entries built by the host from its own
+  data on every render (for example order events). They are merged into the feed by time and are
+  **not** stored.
+- `persist?: boolean` — comments of this `scope` are restored from and saved to localStorage
+  (`oryx-comments:<type>:<id>:feed`). Unsent delivery states come back as sent; object-URL
+  attachments are dropped on save (they die with the tab).
+
+First business integration: the customer order card (`scope={{ type: "customer_order", id }}`,
+`persist`, notices «Заказ создан», status and planned date changes from `store_document_history`,
+payment status changes from `store_order_payment_event`) — see
+[logistics.md](logistics.md#карточка-заказа-клиента).
+
+**Interface language.** Every piece of UI chrome of the module — header («Комментарии»), search,
+filters («Мои», «С вложениями»), sort («Сначала старые» / «Сначала новые» / «Популярные»), «Кратко»
+(TL;DR), composer, toolbar and slash menu, actions menu, reactions, drafts / scheduled / offline
+indicators, dialogs, toasts, aria-labels and relative times (`Intl.RelativeTimeFormat("ru")`:
+«5 часов назад», «вчера») — is Russian, per [russian-labels.md](../conventions/ui/russian-labels.md).
+Seeded demo comments of the news page are content and stay as they are.
 
 ## Types (`comments-types.ts`)
 
@@ -121,7 +142,7 @@ Only **root** feed items can be a `SystemNotification`; replies are always `Comm
 | `comment-thread.tsx` | One root comment + its replies + inline reply composer. Reply/quote state is controlled by `comments-panel.tsx`; the thread tags its root with `data-thread-root`. |
 | `comment-quote.ts` | Quote helpers: `seedFromComment` / `seedFromRange` build a `QuoteSeed` (author + HTML), and `buildQuotedHtml` wraps it in an attributed `blockquote`. Preserves nested `blockquote`s → quote-of-quote at any depth. |
 | `comment-quote-selection.tsx` | Floating `Quote` button shown when text is selected inside a rendered comment body (`data-comment-body`); quotes the exact selection into the enclosing thread's composer. |
-| `comment-item.tsx` | Single comment: avatar, name/role/time + "edited" marker, rendered body, attachment chips, like button, actions trigger (⋯ button + right-click). Inline edit mode reuses the composer. Renders a "Comment deleted" tombstone when `deleted`. Delete confirmation via `alert-dialog`. |
+| `comment-item.tsx` | Single comment: avatar, name/role/time + «(изменено)» marker, rendered body, attachment chips, like button, actions trigger (⋯ button + right-click). Inline edit mode reuses the composer. Renders a «Комментарий удалён» tombstone when `deleted`. Delete confirmation via `alert-dialog`. |
 | `comment-system-notice.tsx` | Author-less system notice row: centered, subtle, tone icon, optional title + description (or single line). |
 | `comment-actions-menu.tsx` | Context menu opened by right-click **and** the ⋯ button: Reply (roots), Edit/Delete (own), Copy text. Built on `dropdown-menu`. |
 | `comment-composer.tsx` | Editor + toolbar + attach button + send; `variant="root" | "reply" | "edit"`. |
@@ -190,7 +211,7 @@ seeds from `contentJson` and runs its own Tiptap node view.
   newest (newest at the bottom). **On mount the panel is scrolled to the bottom** (newest
   comment); after posting, it scrolls to the bottom again.
 - **Pagination + lazy-load**: only the latest `pageSize` root rows render. A **floating pill**
-  at the top of the scroll area ("Scroll up to load earlier comments") signals there is more
+  at the top of the scroll area («Прокрутите вверх, чтобы загрузить предыдущие») signals there is more
   history. Scrolling near the top (or clicking the pill) triggers a **simulated async load**
   (short spinner state), then prepends the next page. The scroll position is **anchored from
   the bottom** so the view does not jump, and newly revealed rows animate in
@@ -209,7 +230,7 @@ seeds from `contentJson` and runs its own Tiptap node view.
   - **Whole comment**: the actions menu on any comment (root or reply) has a `Quote reply` item.
   - **Selection**: selecting text inside a rendered comment body shows a floating `Quote` button
     (`comment-quote-selection.tsx`) anchored to the selection; clicking it quotes exactly the
-    selected fragment. The injected code "Copy" button is stripped from the cloned HTML.
+    selected fragment. The injected code «Копировать» button is stripped from the cloned HTML.
   Either way the thread's reply composer opens pre-filled with a `blockquote` citing the source
   (bold author name + the quoted **HTML**, structure preserved). Because the quoted HTML can itself
   contain a `blockquote`, **quote-of-quote nests cleanly to any depth**. Reply/quote state lives in
@@ -218,7 +239,7 @@ seeds from `contentJson` and runs its own Tiptap node view.
   root); quoting a reply just seeds the citation. The composer is remounted (`key`) when the quoted
   source changes so the draft resets correctly.
 - **Attachments**: paperclip button → hidden multi-file input, **or drag & drop** files onto the
-  editor (a dashed "Drop files to attach" overlay appears while dragging, tracked with a drag-depth
+  editor (a dashed «Отпустите файлы, чтобы прикрепить» overlay appears while dragging, tracked with a drag-depth
   counter to avoid child-element flicker). The editor's `handleDOMEvents` returns `true` for file
   drags so ProseMirror's dropcursor (the insertion line) and default drop never engage — files are
   always treated as attachments, never inserted into the body. Newly added files show a
@@ -241,7 +262,7 @@ seeds from `contentJson` and runs its own Tiptap node view.
   be undone."). On confirm:
   - a **leaf** comment (reply, or a root without replies) is **removed** from the feed;
   - a **root with replies** becomes a **tombstone** — its author/body/attachments/like/menu
-    are dropped and it renders a muted "Comment deleted" line, keeping the replies intact and
+    are dropped and it renders a muted «Комментарий удалён» line, keeping the replies intact and
     correctly threaded. A tombstone has no actions and cannot be edited/liked/replied-to.
 - **Actions menu** (`comment-actions-menu.tsx`): opened by **right-click anywhere on the
   comment** and by the **⋯ button top-right** (the button is always available; it makes the
@@ -272,6 +293,8 @@ seeds from `contentJson` and runs its own Tiptap node view.
   "Pinned by editorial team").
 - `currentUser` = demo "Alexey Nazarov"; `mentionableUsers` from `EMPLOYEE_OPTIONS`.
 - Remove the now-unused `news-article-comments.tsx`.
+- Customer order card (`/store/logistics/customer-orders/[id]`, tab «Комментарии») — `persist` +
+  `systemNotices`, no seed.
 
 ## Advanced features (Phases 0–8)
 
@@ -309,9 +332,9 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
 ### Navigation & UX (Phase 2)
 
 - Hover toolbar on each comment (reaction picker + Reply) over the header.
-- Long threads collapse older replies behind "Show N earlier replies".
+- Long threads collapse older replies behind «Показать ещё N ответов».
 - Panel toolbar: sort (oldest/newest/most-liked) + filters (Mine / Attachments),
-  persisted in prefs; pinned threads in a dedicated top section; "New since last visit" divider.
+  persisted in prefs; pinned threads in a dedicated top section; «Новое с прошлого визита» divider.
 - Skeleton rows during simulated lazy-load; `content-visibility:auto` windowing above a row
   threshold; `navigator.vibrate` haptics on like/reaction.
 
@@ -330,7 +353,7 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
 - `#` entity mentions for tasks/orders: a second Tiptap suggestion (`EntityMention` +
   `comment-entity-list.tsx`) backed by a demo registry (`comment-entities.ts`); renders as a
   `.comment-entity` chip-link; ids collected via `collectEntityRefs`.
-- "Convert to task" in the actions menu → demo toast with a generated `GP-xxxx` Tracker link.
+- «Создать задачу» in the actions menu → demo toast with a generated `GP-xxxx` Tracker link.
 
 ### Reactions, badges, read receipts (Phase 5)
 
@@ -338,19 +361,19 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
   `toggleReaction` in `use-comments-state.ts`. The "like" is the leading heart chip in the
   same reactions strip.
 - Author badges (author / reporter / assignee) in the comment header.
-- Read receipts ("Read by N").
+- Read receipts («Прочитали: N»).
 
 ### Drafts, offline, scheduled send (Phase 6)
 
 - Draft autosave per `scope` + target (`root` / `reply:<id>`), debounced; restored on mount
   (unless the composer was seeded with a quote) and cleared on send/cancel. An unobtrusive
-  **"Draft saved"** status (not a button) shows in the composer footer only while a draft is
+  **«Черновик сохранён»** status (not a button) shows in the composer footer only while a draft is
   persisted.
 - Offline send queue: new comments are `sending → sent` when online, `queued` when offline,
   `failed` on a retry while still offline; an `online` event flushes the queue; per-comment
   **Retry** affordance. Indicators render in the comment header.
 - **Scheduled send**: the Send split-button offers presets; scheduled comments show a
-  "Scheduled · <time>" badge and auto-publish via a 15s interval check.
+  «Запланировано · <время>» badge and auto-publish via a 15s interval check.
 
 ### Realtime (Phase 7)
 
@@ -360,7 +383,7 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
 - Panel publishes only locally-changed records (tracked in a `synced` ref to avoid echo) and
   ingests remote records by id (`ingestRecords`, last-write-wins by JSON equality).
 - `comment-presence.tsx`: header presence bar (live dot + avatar stack) and a composer-adjacent
-  "X is typing…" line. **Graceful fallback**: when the collab server is unreachable everything
+  «X печатает…» line. **Graceful fallback**: when the collab server is unreachable everything
   is a no-op (empty presence, local-only state).
 - Config: `NEXT_PUBLIC_COLLAB_WS_URL` (default `ws://127.0.0.1:1234`); ws server is the existing
   [scripts/collab-server.mjs](../../scripts/collab-server.mjs) (`npm run collab` / `npm run dev:collab`).
@@ -375,7 +398,7 @@ realtime and AI are **server-backed** (the app runs `output: "standalone"`, see
   **falls back to a deterministic local mock** when the provider is unconfigured/unreachable,
   so the UI never blocks. `looksHostile`/`checkToxicity` back the soften flow.
 - UI surfaces: editor AI-assist dropdown (now real service), per-comment **Translate** toggle,
-  header **TL;DR** thread summary banner, **soften?** banner before sending a harsh-sounding
+  header **«Кратко»** (TL;DR) thread summary banner, **soften?** banner before sending a harsh-sounding
   comment, and toolbar **search**. Searching replaces the threaded feed with a compact,
   snippet-only result list (`comment-search-results.tsx`, `buildHighlightedSnippet` in
   `comment-text.ts`); selecting a result clears the query and reveals the full comment in

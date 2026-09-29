@@ -69,7 +69,7 @@ export const CommentActionsMenu = ({
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label="Comment actions"
+            aria-label="Действия с комментарием"
             className="text-muted-foreground"
           />
         }
@@ -80,23 +80,23 @@ export const CommentActionsMenu = ({
         {canReply ? (
           <DropdownMenuItem onClick={onReply}>
             <Reply />
-            Reply
+            Ответить
           </DropdownMenuItem>
         ) : null}
         {onQuote ? (
           <DropdownMenuItem onClick={onQuote}>
             <Quote />
-            Quote reply
+            Ответить с цитатой
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem onClick={onCopy}>
           <Copy />
-          Copy text
+          Копировать текст
         </DropdownMenuItem>
         {onTranslate ? (
           <DropdownMenuItem onClick={onTranslate}>
             <Languages />
-            {translated ? "Show original" : "Translate"}
+            {translated ? "Показать оригинал" : "Перевести"}
           </DropdownMenuItem>
         ) : null}
 
@@ -104,13 +104,13 @@ export const CommentActionsMenu = ({
         {onTogglePin ? (
           <DropdownMenuItem onClick={onTogglePin}>
             {pinned ? <PinOff /> : <Pin />}
-            {pinned ? "Unpin" : "Pin to top"}
+            {pinned ? "Открепить" : "Закрепить наверху"}
           </DropdownMenuItem>
         ) : null}
         {onConvertToTask ? (
           <DropdownMenuItem onClick={onConvertToTask}>
             <ListTodo />
-            Convert to task
+            Создать задачу
           </DropdownMenuItem>
         ) : null}
 
@@ -118,13 +118,13 @@ export const CommentActionsMenu = ({
         {canEdit ? (
           <DropdownMenuItem onClick={onEdit}>
             <Pencil />
-            Edit
+            Изменить
           </DropdownMenuItem>
         ) : null}
         {canDelete ? (
           <DropdownMenuItem variant="destructive" onClick={onDelete}>
             <Trash2 />
-            Delete
+            Удалить
           </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>

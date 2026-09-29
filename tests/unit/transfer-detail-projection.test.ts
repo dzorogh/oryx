@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ENTITY_CODE_DEFAULTS } from "@/lib/entity-codes";
-import { projectTransferDetail } from "@/features/logistics/transfer-detail-projection";
-import type { LogisticsSnapshot, Transfer } from "@/features/logistics/logistics-types";
+import { projectTransferDetail, transferHasMixedOwners } from "@/features/logistics/transfer-detail-projection";
+import type { LogisticsSnapshot, StockBalance, Transfer } from "@/features/logistics/logistics-types";
 
 const emptySnapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
   ({
@@ -60,5 +60,38 @@ describe("projectTransferDetail", () => {
     const doc = transfer({ id: "t1", status: "done" });
     const projection = projectTransferDetail(snapshot, [], doc);
     assert.equal(projection.route.currentKind, "destination");
+  });
+});
+
+const inTransit = (
+  productId: string,
+  quantity: number,
+  owner: { type: "order" | "region"; id: string } | null,
+): StockBalance => ({
+  productId,
+  locationType: "transfer",
+  locationId: "t1",
+  stockState: owner ? "reserved" : "free",
+  quantity,
+  ownerType: owner?.type ?? null,
+  ownerId: owner?.id ?? null,
+});
+
+describe("transferHasMixedOwners", () => {
+  const sent = transfer({ id: "t1", status: "sent" });
+
+  it("is true when the transfer carries an order's goods and free stock", () => {
+    const balances = [inTransit("p1", 2, { type: "order", id: "o1" }), inTransit("p2", 4, null)];
+    assert.equal(transferHasMixedOwners(projectTransferDetail(emptySnapshot(), balances, sent)), true);
+  });
+
+  it("is true for two different orders", () => {
+    const balances = [inTransit("p1", 2, { type: "order", id: "o1" }), inTransit("p1", 1, { type: "order", id: "o2" })];
+    assert.equal(transferHasMixedOwners(projectTransferDetail(emptySnapshot(), balances, sent)), true);
+  });
+
+  it("is false when every product belongs to one order", () => {
+    const balances = [inTransit("p1", 2, { type: "order", id: "o1" }), inTransit("p2", 3, { type: "order", id: "o1" })];
+    assert.equal(transferHasMixedOwners(projectTransferDetail(emptySnapshot(), balances, sent)), false);
   });
 });

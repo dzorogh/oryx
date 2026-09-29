@@ -40,11 +40,10 @@ npm run dev
 - `/` — главная панель Oryx BMS
 - `/pulse/news`, `/pulse/ideas`, `/pulse/thanks`, `/pulse/polls`, `/pulse/company`, `/pulse/approvals/*` — Pulse
 - `/store` — редирект на `/store/pim/products` (каталог товаров)
-- `/store/orders`, `/store/orders/[orderId]` — заказы и страница упаковки
 - `/store/logistics/*` — Logistics (корень ведёт на `/store/logistics/stock`); `/store/settings` — префиксы кодов
 - `/team/*`, `/tracker/*`, `/users/[userId]` — сотрудники, задачи и проекты, профиль
 - `/crm/*`, `/analytics/*`, `/learning/*`, `/library/*`, `/settings/*` — заглушки будущих разделов
-- `/pim`, `/pim/orders/[orderId]`, `/logistics/*` — старые адреса, редиректят в `/store`
+- `/pim`, `/logistics/*` — старые адреса, редиректят в `/store`; `/pim/orders/[orderId]` ведёт на карточку заказа клиента
 - `/[section]` — placeholder-страницы (`activity`, `catalog`, `help`, `search`, `services`)
 
 ## Conventions (agents and contributors)
@@ -59,8 +58,8 @@ Tool-neutral guidelines for UI and layout live in **[docs/conventions/](docs/con
 
 1. **UI (App + components + features)**  
    Роутинг, layout, навигационный рейл, контентные страницы, Store/Logistics-экраны и 3D-визуализация.
-2. **Domain (packing + report)**  
-   Расчет упаковки, проверка ограничений размещения, валидация результата и сводка по размещению.
+2. **Domain (packing)**  
+   Смешанная укладка товаров по контейнерам (`mixed-containers.ts`) для калькулятора в оформлении заказа и в карточке заказа клиента.
 
 ## Структура проекта
 
@@ -69,7 +68,7 @@ app/
   layout.tsx                      # Корневой layout и NavRail
   page.tsx                        # Главная панель BMS
   pulse/                          # Новости, идеи, благодарности, опросы, согласования
-  store/                          # Каталог PIM, заказы с упаковкой, logistics/, settings
+  store/                          # Каталог PIM, корзина и оформление, logistics/, settings
   team/, tracker/, users/         # Сотрудники, трекер задач, профиль
   crm/, analytics/, learning/,
   library/, settings/             # Заглушки будущих разделов
@@ -81,18 +80,15 @@ src/
   components/
     layout/                       # NavRail, поиск, shell-компоненты модулей
     home/                         # Блоки главной страницы
-    store/                        # Каталог PIM, заказы, шапка страницы упаковки
+    store/                        # Каталог PIM, прайс-листы, остатки
     ui/                           # Базовые UI-компоненты
   features/
     logistics/                    # Logistics: страницы, диалоги, API, правила
     comments/                     # Переиспользуемый модуль комментариев
     pulse/, users/, store/, ...   # Остальные модули
-    packing-visualization/        # UI/хуки 3D-визуализации упаковки
+    packing-visualization/        # 3D-сцена укладки контейнеров
   domain/
-    packing/                      # Алгоритм упаковки и проверки
-    report/                       # Summary-логика
-  workers/
-    packing-result.worker.ts      # Вычисление упаковки в Web Worker
+    packing/                      # Смешанная укладка по контейнерам
   lib/                            # Утилиты, клиент Supabase
 
 supabase/migrations/              # Схема демо-бэкенда (store_*, thank_you_entry)
@@ -104,16 +100,9 @@ scripts/
 tests/unit/                       # Unit-тесты доменной логики (node:test)
 ```
 
-## PIM / Packing подсистема
+## Калькулятор контейнеров
 
-PIM-модуль использует доменную логику из `src/domain/packing` и визуальный слой из `src/features/packing-visualization`.
-
-Базовый поток:
-
-1. Пользователь открывает заказ (`/store/orders/[orderId]`).
-2. `usePackingResult` запускает расчет через `runPackingAsync`.
-3. В браузере расчет выполняется в `Web Worker` (`packing-result.worker.ts`), где вызывается `generatePackingResult`.
-4. Результат проходит валидацию; при валидном размещении рендерится 3D-сцена, при невалидном — показываются ошибки аудита.
+Общий компонент `src/features/store/packing/container-load-calculator.tsx`: выбор типов контейнеров (`store_container_type`), укладка `packMixedContainers` из `src/domain/packing/mixed-containers.ts` и 3D-сцена `MultiContainerScene` с процентом заполнения. Используется в оформлении заказа (`/store/checkout`, блоки площадок) и во вкладке «Контейнеры» карточки заказа клиента. Песочница `/store/orders` с пресетами удалена.
 
 ## Скрипты
 
@@ -154,7 +143,6 @@ npm test
 
 - Часть разделов пока реализована как placeholder-страницы (CRM, Analytics, Learning, Library, Settings и `app/[section]/page.tsx`).
 - Контент на главной странице и на отдельных экранах в основном demo-данные. Pulse Thanks и Store/Logistics при заданных `NEXT_PUBLIC_SUPABASE_*` ходят в **свой** self-hosted Supabase (Dokploy compose `supabase`). Как работать: [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md).
-- PIM-модуль работает на преднастроенных пресетах заказов из `src/domain/packing/constants.ts`.
 
 ## Документация по спецификации упаковки
 

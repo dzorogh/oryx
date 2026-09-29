@@ -78,9 +78,9 @@ type CommentComposerProps = {
 };
 
 const SCHEDULE_PRESETS: { label: string; minutes: number }[] = [
-  { label: "In 1 hour", minutes: 60 },
-  { label: "In 3 hours", minutes: 180 },
-  { label: "Tomorrow morning", minutes: 60 * 16 },
+  { label: "Через час", minutes: 60 },
+  { label: "Через 3 часа", minutes: 180 },
+  { label: "Завтра утром", minutes: 60 * 16 },
 ];
 
 
@@ -95,7 +95,7 @@ export const CommentComposer = ({
   initialAttachments = [],
   autoFocus,
   submitLabel,
-  placeholder = "Write a comment…  Use @ to mention, / for blocks.",
+  placeholder = "Напишите комментарий…  @ — упомянуть, / — блоки.",
   scope,
   draftTarget,
   allowSchedule = false,
@@ -340,9 +340,9 @@ export const CommentComposer = ({
         };
       } catch (error) {
         console.error("Comment composer: failed to read editor content", error);
-        toast.error("Couldn't send your comment", {
+        toast.error("Не удалось отправить комментарий", {
           description:
-            "The editor hit an error (often caused by a browser extension). Your text is kept — try again, or reload the page.",
+            "В редакторе произошла ошибка (часто из-за расширения браузера). Текст сохранён — попробуйте ещё раз или перезагрузите страницу.",
         });
         return;
       }
@@ -351,8 +351,8 @@ export const CommentComposer = ({
         onSubmit(payload);
       } catch (error) {
         console.error("Comment composer: onSubmit handler threw", error);
-        toast.error("Couldn't send your comment", {
-          description: "Something went wrong while posting. Your text is kept — please try again.",
+        toast.error("Не удалось отправить комментарий", {
+          description: "Что-то пошло не так при публикации. Текст сохранён — попробуйте ещё раз.",
         });
         return;
       }
@@ -463,7 +463,7 @@ export const CommentComposer = ({
         {softenOpen ? (
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs dark:border-amber-500/40 dark:bg-amber-400/10">
             <span className="flex-1 text-amber-800 dark:text-amber-300">
-              This message reads a little harsh. Want to soften the tone before sending?
+              Сообщение звучит резковато. Смягчить тон перед отправкой?
             </span>
             <Button
               type="button"
@@ -472,10 +472,10 @@ export const CommentComposer = ({
               disabled={softening}
               onClick={softenDraft}
             >
-              {softening ? "Softening…" : "Soften"}
+              {softening ? "Смягчаем…" : "Смягчить"}
             </Button>
             <Button type="button" size="xs" variant="ghost" onClick={sendAnyway}>
-              Send anyway
+              Отправить как есть
             </Button>
           </div>
         ) : null}
@@ -500,7 +500,7 @@ export const CommentComposer = ({
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-ring bg-background/85 text-sm font-medium text-foreground backdrop-blur-[1px]">
               <span className="flex items-center gap-2">
                 <Paperclip className="size-4" />
-                Drop files to attach
+                Отпустите файлы, чтобы прикрепить
               </span>
             </div>
           ) : null}
@@ -529,7 +529,7 @@ export const CommentComposer = ({
               onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip />
-              <span className="hidden sm:inline">Attach</span>
+              <span className="hidden sm:inline">Прикрепить</span>
             </Button>
             <CommentRecorder onRecorded={(file) => addFiles([file])} />
             {hydrated && scope && variant !== "edit" && draftSaved ? (
@@ -538,7 +538,7 @@ export const CommentComposer = ({
                 className="ml-1 inline-flex items-center gap-1 text-xs text-muted-foreground"
               >
                 <Check aria-hidden className="size-3" />
-                Draft saved
+                Черновик сохранён
               </span>
             ) : null}
           </div>
@@ -546,7 +546,7 @@ export const CommentComposer = ({
           <div className="flex items-center gap-2">
             {onCancel ? (
               <Button type="button" variant="ghost" size="sm" onClick={handleCancel}>
-                Cancel
+                Отмена
               </Button>
             ) : null}
             <div className="flex items-center">
@@ -558,7 +558,7 @@ export const CommentComposer = ({
                 className={cn(allowSchedule && "rounded-r-none")}
               >
                 <SendHorizontal />
-                {submitLabel ?? (variant === "edit" ? "Save" : "Send")}
+                {submitLabel ?? (variant === "edit" ? "Сохранить" : "Отправить")}
               </Button>
               {allowSchedule ? (
                 <DropdownMenu>
@@ -568,7 +568,7 @@ export const CommentComposer = ({
                         type="button"
                         size="sm"
                         disabled={!canSubmit}
-                        aria-label="Schedule send"
+                        aria-label="Отправить позже"
                         className="rounded-l-none border-l border-primary-foreground/20 px-2"
                       >
                         <ChevronDown />
@@ -576,7 +576,7 @@ export const CommentComposer = ({
                     }
                   />
                   <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuLabel>Schedule send</DropdownMenuLabel>
+                    <DropdownMenuLabel>Отправить позже</DropdownMenuLabel>
                     {SCHEDULE_PRESETS.map((preset) => (
                       <DropdownMenuItem
                         key={preset.minutes}

@@ -38,6 +38,7 @@ import type {
   CommentScope,
   CommentSort,
   CommentUser,
+  SystemNotification,
 } from "@/features/comments/comments-types";
 import { isComment } from "@/features/comments/comments-types";
 import {
@@ -81,9 +82,9 @@ const SCROLL_STICK_THRESHOLD_PX = 96;
 const WINDOWING_THRESHOLD = 30;
 
 const SORT_LABELS: Record<CommentSort, string> = {
-  oldest: "Oldest first",
-  newest: "Newest first",
-  popular: "Most liked",
+  oldest: "Сначала старые",
+  newest: "Сначала новые",
+  popular: "Популярные",
 };
 
 const rowKey = (row: CommentFeedRow): string =>
@@ -113,6 +114,10 @@ type CommentsPanelProps = {
   currentUser: CommentUser;
   mentionableUsers: CommentUser[];
   initialItems: CommentFeedItem[];
+  /** Live author-less entries rebuilt by the host (e.g. order events); never stored. */
+  systemNotices?: SystemNotification[];
+  /** Keep this scope's comments in localStorage across reloads. */
+  persist?: boolean;
   pageSize?: number;
   maxHeight?: string;
   className?: string;
@@ -123,6 +128,8 @@ export const CommentsPanel = ({
   currentUser,
   mentionableUsers,
   initialItems,
+  systemNotices,
+  persist = false,
   pageSize = 8,
   maxHeight = "32rem",
   className,
@@ -216,6 +223,8 @@ export const CommentsPanel = ({
     currentUserId: currentUser.id,
     sort: prefs.sort,
     filters: prefs.filters,
+    systemNotices,
+    persistScope: persist ? scope : undefined,
   });
 
   // Realtime: track records already in sync so we publish only local changes
@@ -557,10 +566,10 @@ export const CommentsPanel = ({
     (rootId: string) => {
       const taskId = `GP-${2400 + (Math.abs(hashString(rootId)) % 600)}`;
       const href = `/tracker/tasks/${taskId}`;
-      toast.success(`Task ${taskId} created from comment`, {
-        description: "Tracked in Tracker (demo).",
+      toast.success(`Задача ${taskId} создана из комментария`, {
+        description: "Задача в Трекере (демо).",
         action: {
-          label: "Open",
+          label: "Открыть",
           onClick: () => window.open(href, "_blank", "noopener,noreferrer"),
         },
       });
@@ -671,12 +680,12 @@ export const CommentsPanel = ({
   return (
     <Card
       className={cn("flex flex-col gap-0 overflow-hidden p-0", className)}
-      aria-label={`Comments for ${scope.type}`}
+      aria-label="Комментарии"
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-4 py-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <MessagesSquare aria-hidden className="size-4 text-muted-foreground" />
-          Comments
+          Комментарии
           <span className="font-normal text-muted-foreground tabular-nums">
             {totalCommentCount}
           </span>
@@ -691,14 +700,14 @@ export const CommentsPanel = ({
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search…"
-              aria-label="Search comments"
+              placeholder="Поиск…"
+              aria-label="Поиск по комментариям"
               className="h-7 w-28 rounded-md border border-input bg-background pl-7 pr-6 text-xs outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 sm:w-40"
             />
             {search ? (
               <button
                 type="button"
-                aria-label="Clear search"
+                aria-label="Очистить поиск"
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 onClick={() => setSearch("")}
               >
@@ -716,21 +725,21 @@ export const CommentsPanel = ({
             disabled={tldrBusy}
           >
             {tldrBusy ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkle className="size-3.5" />}
-            TL;DR
+            Кратко
           </Button>
 
           <FilterChip
             active={prefs.filters.mineOnly}
             onClick={() => toggleFilter("mineOnly")}
           >
-            Mine
+            Мои
           </FilterChip>
           <FilterChip
             active={prefs.filters.withAttachments}
             onClick={() => toggleFilter("withAttachments")}
           >
             <Paperclip className="size-3" />
-            Attachments
+            С вложениями
           </FilterChip>
 
           <DropdownMenu>
@@ -763,13 +772,13 @@ export const CommentsPanel = ({
           <Sparkle className="mt-0.5 size-4 shrink-0 text-violet-600 dark:text-violet-400" />
           <div className="min-w-0 flex-1">
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-violet-700 dark:text-violet-400">
-              Thread summary
+              Кратко об обсуждении
             </p>
             <p className="whitespace-pre-wrap leading-6 text-foreground/90">{tldr}</p>
           </div>
           <button
             type="button"
-            aria-label="Dismiss summary"
+            aria-label="Скрыть краткое содержание"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => setTldr(null)}
           >
@@ -782,7 +791,7 @@ export const CommentsPanel = ({
         <div className="flex flex-col gap-3 border-b border-border bg-amber-50/60 px-4 py-3 dark:bg-amber-400/5">
           <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
             <Pin aria-hidden className="size-3.5" />
-            Pinned
+            Закреплённые
           </p>
           {pinnedRows.map((row) =>
             row.kind === "thread" ? (
@@ -798,7 +807,7 @@ export const CommentsPanel = ({
             {isLoadingEarlier ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-popover px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm ring-1 ring-foreground/10">
                 <Spinner className="size-3.5" />
-                Loading earlier comments…
+                Загружаем предыдущие комментарии…
               </span>
             ) : (
               <Button
@@ -809,7 +818,7 @@ export const CommentsPanel = ({
                 onClick={handleLoadEarlierClick}
               >
                 <ChevronUp />
-                Scroll up to load earlier comments
+                Прокрутите вверх, чтобы загрузить предыдущие
               </Button>
             )}
           </div>
@@ -836,7 +845,7 @@ export const CommentsPanel = ({
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     {filtersActive ? (
                       <span className="inline-flex flex-col items-center gap-2">
-                        No comments match the current filters.
+                        Нет комментариев по выбранным фильтрам.
                         <Button
                           type="button"
                           variant="outline"
@@ -851,11 +860,11 @@ export const CommentsPanel = ({
                             })
                           }
                         >
-                          Clear filters
+                          Сбросить фильтры
                         </Button>
                       </span>
                     ) : (
-                      "No comments yet. Be the first to start the discussion."
+                      "Комментариев пока нет. Начните обсуждение первым."
                     )}
                   </div>
                 ) : (
@@ -929,11 +938,11 @@ const FilterChip = ({
 );
 
 const NewSinceDivider = () => (
-  <div className="mb-3 flex items-center gap-2" aria-label="New since your last visit">
+  <div className="mb-3 flex items-center gap-2" aria-label="Новое с прошлого визита">
     <span className="h-px flex-1 bg-primary/30" />
     <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
       <Sparkle className="size-3" />
-      New since last visit
+      Новое с прошлого визита
     </span>
     <span className="h-px flex-1 bg-primary/30" />
   </div>

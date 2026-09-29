@@ -1,8 +1,5 @@
 import { redirect } from "next/navigation";
-import { ORDER_PRESETS } from "@/domain/packing/constants";
-
-export const generateStaticParams = () =>
-  ORDER_PRESETS.map((preset) => ({ orderId: String(preset.orderId) }));
+import { logisticsPath } from "@/features/logistics/logistics-paths";
 
 type OrderPageProps = {
   params: Promise<{ orderId: string }>;
@@ -10,7 +7,7 @@ type OrderPageProps = {
 
 const OrderPage = async ({ params }: OrderPageProps) => {
   const { orderId } = await params;
-  redirect(`/store/orders/${orderId}`);
+  redirect(logisticsPath("customer-orders", encodeURIComponent(orderId)));
 };
 
 export default OrderPage;

@@ -102,5 +102,6 @@ CORS is `*` on Kong. After a live probe (`TEST`, dummy, wiring-check), **delete 
 
 - Open Studio through the Oryx Kong URL (`https://supabase.oryx.indenbom.ru/`). Login: Dokploy → Oryx → `supabase` → Environment → `DASHBOARD_USERNAME` / `DASHBOARD_PASSWORD`.
 - Studio (+ `postgres-meta`) is a **separate** Dokploy compose named **`studio`**. Start/stop it from the Dokploy UI without taking REST down. Kong `/rest/v1` stays on the main `supabase` compose.
-- The demo stack does **not** run Storage, Realtime, or imgproxy.
+- Storage runs in the main `supabase` compose (`storage` service, `supabase/storage-api`, file backend on the `../files/volumes/storage` volume, no imgproxy); Kong routes `/storage/v1/`. The demo stack does **not** run Realtime or imgproxy.
+- The only bucket is **`store-documents`** (private, 10 MB per file) — files of a customer order. The browser uploads, downloads (signed URL) and deletes objects of this bucket with the anon key; `storage.objects` policies allow anon only for `bucket_id = 'store-documents'`. File metadata lives in `store_document_file` and is written only by the `store_add_document_file` / `store_delete_document_file` RPCs. Migration: `20260929120000_store_customer_order_oms_parity.sql`.
 - Rotate or set secrets only in that Environment tab (or local gitignored `.env.local` for the two `NEXT_PUBLIC_*` keys). In chat say the **key name and where to open it**, never the value.

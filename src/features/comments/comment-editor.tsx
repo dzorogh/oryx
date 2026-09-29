@@ -345,7 +345,7 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
 
   const promptLink = () => {
     const previous = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Link URL", previous ?? "https://");
+    const url = window.prompt("Адрес ссылки", previous ?? "https://");
     if (url === null) {
       return;
     }
@@ -357,7 +357,7 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
   };
 
   const insertImageByUrl = () => {
-    const url = window.prompt("Image URL", "https://");
+    const url = window.prompt("Адрес изображения", "https://");
     if (!url) {
       return;
     }
@@ -367,28 +367,28 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-1.5 py-1">
       <ToolbarButton
-        label="Bold"
+        label="Жирный"
         active={editor.isActive("bold")}
         onClick={() => editor.chain().focus().toggleBold().run()}
       >
         <Bold />
       </ToolbarButton>
       <ToolbarButton
-        label="Italic"
+        label="Курсив"
         active={editor.isActive("italic")}
         onClick={() => editor.chain().focus().toggleItalic().run()}
       >
         <Italic />
       </ToolbarButton>
       <ToolbarButton
-        label="Underline"
+        label="Подчёркнутый"
         active={editor.isActive("underline")}
         onClick={() => editor.chain().focus().toggleUnderline().run()}
       >
         <UnderlineIcon />
       </ToolbarButton>
       <ToolbarButton
-        label="Strikethrough"
+        label="Зачёркнутый"
         active={editor.isActive("strike")}
         onClick={() => editor.chain().focus().toggleStrike().run()}
       >
@@ -398,28 +398,28 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
       <Separator orientation="vertical" className="mx-1 h-5" />
 
       <ToolbarButton
-        label="Bulleted list"
+        label="Маркированный список"
         active={editor.isActive("bulletList")}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
       >
         <List />
       </ToolbarButton>
       <ToolbarButton
-        label="Numbered list"
+        label="Нумерованный список"
         active={editor.isActive("orderedList")}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       >
         <ListOrdered />
       </ToolbarButton>
       <ToolbarButton
-        label="Quote"
+        label="Цитата"
         active={editor.isActive("blockquote")}
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
       >
         <Quote />
       </ToolbarButton>
       <ToolbarButton
-        label="Code block"
+        label="Блок кода"
         active={editor.isActive("codeBlock")}
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
       >
@@ -429,14 +429,14 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
       <Separator orientation="vertical" className="mx-1 h-5" />
 
       <ToolbarButton
-        label="Checklist"
+        label="Чек-лист"
         active={editor.isActive("taskList")}
         onClick={() => editor.chain().focus().toggleTaskList().run()}
       >
         <ListChecks />
       </ToolbarButton>
       <ToolbarButton
-        label="Table"
+        label="Таблица"
         active={editor.isActive("table")}
         onClick={() =>
           editor
@@ -452,10 +452,10 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
 
       <Separator orientation="vertical" className="mx-1 h-5" />
 
-      <ToolbarButton label="Link" active={editor.isActive("link")} onClick={promptLink}>
+      <ToolbarButton label="Ссылка" active={editor.isActive("link")} onClick={promptLink}>
         <LinkIcon />
       </ToolbarButton>
-      <ToolbarButton label="Insert image" onClick={insertImageByUrl}>
+      <ToolbarButton label="Вставить изображение" onClick={insertImageByUrl}>
         <ImageIcon />
       </ToolbarButton>
 
@@ -469,11 +469,11 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
 type AiActionId = "improve" | "grammar" | "shorten" | "lengthen" | "summarize";
 
 const AI_ACTIONS: { id: AiActionId; label: string; icon: React.ReactNode }[] = [
-  { id: "improve", label: "Improve writing", icon: <Wand2 /> },
-  { id: "grammar", label: "Fix spelling & grammar", icon: <SpellCheck /> },
-  { id: "shorten", label: "Make shorter", icon: <Minimize2 /> },
-  { id: "lengthen", label: "Make longer", icon: <Maximize2 /> },
-  { id: "summarize", label: "Summarize", icon: <Sparkles /> },
+  { id: "improve", label: "Улучшить текст", icon: <Wand2 /> },
+  { id: "grammar", label: "Исправить орфографию", icon: <SpellCheck /> },
+  { id: "shorten", label: "Сократить", icon: <Minimize2 /> },
+  { id: "lengthen", label: "Расширить", icon: <Maximize2 /> },
+  { id: "summarize", label: "Кратко изложить", icon: <Sparkles /> },
 ];
 
 /**
@@ -505,7 +505,7 @@ const AiAssistMenu = ({ editor }: { editor: Editor }) => {
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label="AI assist"
+            aria-label="Помощь ИИ"
             disabled={busy}
             className="text-violet-600 hover:text-violet-700 dark:text-violet-400"
           />
@@ -526,9 +526,9 @@ const AiAssistMenu = ({ editor }: { editor: Editor }) => {
 };
 
 const CALLOUT_OPTIONS: { tone: CalloutTone; label: string; icon: React.ReactNode }[] = [
-  { tone: "info", label: "Info", icon: <Info /> },
-  { tone: "warning", label: "Warning", icon: <TriangleAlert /> },
-  { tone: "success", label: "Success", icon: <CircleCheck /> },
+  { tone: "info", label: "Информация", icon: <Info /> },
+  { tone: "warning", label: "Предупреждение", icon: <TriangleAlert /> },
+  { tone: "success", label: "Успех", icon: <CircleCheck /> },
 ];
 
 /** Toolbar dropdown that inserts/retones/removes a callout block. */
@@ -555,7 +555,7 @@ const CalloutMenu = ({ editor }: { editor: Editor }) => {
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label="Callout"
+            aria-label="Выноска"
             aria-pressed={isActive}
             data-active={isActive ? "" : undefined}
             className="text-muted-foreground data-active:bg-muted data-active:text-foreground"

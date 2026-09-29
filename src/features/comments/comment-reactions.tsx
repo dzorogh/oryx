@@ -50,7 +50,7 @@ export const CommentReactionBar = ({
         type="button"
         title={likeWho || undefined}
         aria-pressed={likedByMe}
-        aria-label={likedByMe ? "Remove like" : "Like comment"}
+        aria-label={likedByMe ? "Убрать лайк" : "Нравится"}
         onClick={onToggleLike}
         className={cn(
           "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs leading-none transition-colors",
@@ -104,7 +104,7 @@ export const ReactionPicker = ({ onPick, className }: ReactionPickerProps) => {
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label="Add reaction"
+            aria-label="Добавить реакцию"
             className={cn("text-muted-foreground", className)}
           />
         }
@@ -116,7 +116,7 @@ export const ReactionPicker = ({ onPick, className }: ReactionPickerProps) => {
           <button
             key={emoji}
             type="button"
-            aria-label={`React ${emoji}`}
+            aria-label={`Реакция ${emoji}`}
             className="rounded-md px-1.5 py-1 text-base leading-none transition-transform hover:scale-125 hover:bg-muted"
             onClick={() => {
               onPick(emoji);

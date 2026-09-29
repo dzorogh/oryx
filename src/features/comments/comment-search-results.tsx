@@ -4,7 +4,7 @@ import Image from "next/image";
 import { CornerDownRight, SearchX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CommentRecord } from "@/features/comments/comments-types";
-import { buildHighlightedSnippet } from "@/features/comments/comment-text";
+import { buildHighlightedSnippet, pluralRu } from "@/features/comments/comment-text";
 import { formatRelativeTime } from "@/features/comments/comment-item";
 
 export type CommentSearchMatch = {
@@ -33,7 +33,7 @@ export const CommentSearchResults = ({
     return (
       <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
         <SearchX aria-hidden className="size-5" />
-        No comments match “{query.trim()}”.
+        По запросу «{query.trim()}» ничего не найдено.
       </div>
     );
   }
@@ -41,7 +41,7 @@ export const CommentSearchResults = ({
   return (
     <div className="flex flex-col gap-1">
       <p className="px-1 pb-1 text-xs text-muted-foreground">
-        {matches.length} {matches.length === 1 ? "result" : "results"} for “{query.trim()}”
+        {matches.length} {pluralRu(matches.length, "результат", "результата", "результатов")} по запросу «{query.trim()}»
       </p>
       {matches.map(({ comment, isReply }) => (
         <button

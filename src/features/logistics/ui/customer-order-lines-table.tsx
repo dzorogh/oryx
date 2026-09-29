@@ -37,6 +37,8 @@ import type {
   StockBalance,
 } from "@/features/logistics/logistics-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
+import { lineAmount, type VariantLogistics } from "@/features/logistics/customer-order-oms";
+import { formatOrderMoney, type OrderCurrency } from "@/features/logistics/order-money";
 import { cn } from "@/lib/utils";
 
 const Qty = ({ quantity, className }: { quantity: number; className?: string }) => {
@@ -53,6 +55,14 @@ const IN_PRODUCTION_HELP =
   "Назначение потребности этому заказу на производстве. Не складывайте с «Выпущено».";
 const PRODUCED_HELP =
   "Накопленный завершённый выпуск по этой строке. Не складывайте с колонками текущих мест.";
+const MAX_PER_CONTAINER_HELP = "Максимальное количество в 40-футовом контейнере";
+
+const Money = ({ amount, currencyCode }: { amount: number | null; currencyCode: string | null }) =>
+  amount == null || !currencyCode ? (
+    <span className="tabular-nums text-muted-foreground/50">—</span>
+  ) : (
+    <span className="tabular-nums">{formatOrderMoney(amount, currencyCode)}</span>
+  );
 
 const CompactProduct = ({
   snapshot,
@@ -176,6 +186,9 @@ export const CustomerOrderLinesTable = ({
   onRelease,
   onReleaseOutput,
   onEditQuantity,
+  currencies = [],
+  orderCurrencyCode = null,
+  variantLogistics = [],
   bare = false,
 }: {
   snapshot: LogisticsSnapshot;
@@ -191,11 +204,29 @@ export const CustomerOrderLinesTable = ({
   }) => void;
   onReleaseOutput: (line: CustomerOrderLine, hold: DraftOutputHold) => void;
   onEditQuantity: (line: CustomerOrderLine) => void;
+  /** Resolves line price currency ids to codes. */
+  currencies?: OrderCurrency[];
+  /** Currency of a line price without its own currency. */
+  orderCurrencyCode?: string | null;
+  variantLogistics?: VariantLogistics[];
   /** When true, render only the table (DocumentSection provides the card). */
   bare?: boolean;
 }) => {
   const warehouseIds = warehouseIdsWithReservedForOrder(snapshot, balances, lines);
-  const colSpan = 6 + warehouseIds.length;
+  const colSpan = 9 + warehouseIds.length;
+  const currencyCodeById = new Map(currencies.map((currency) => [currency.id, currency.code]));
+  const priceByLineId = new Map(
+    snapshot.documentProductLines.map((row) => [
+      row.id,
+      {
+        unitPrice: row.unitPrice,
+        currencyCode: row.currencyId ? currencyCodeById.get(row.currencyId) ?? null : orderCurrencyCode,
+      },
+    ]),
+  );
+  const maxPerContainerByVariant = new Map(
+    variantLogistics.map((row) => [row.productVariantId, row.maxPerContainer]),
+  );
 
   const table = (
     <div className="overflow-x-auto">
@@ -208,6 +239,15 @@ export const CustomerOrderLinesTable = ({
             </TableHead>
             <TableHead rowSpan={2} className={cn(thNum, book)}>
               Заказано
+            </TableHead>
+            <TableHead rowSpan={2} className={cn(thNum, sep)}>
+              Цена
+            </TableHead>
+            <TableHead rowSpan={2} className={thNum}>
+              Сумма
+            </TableHead>
+            <TableHead rowSpan={2} title={MAX_PER_CONTAINER_HELP} className={thNum}>
+              Макс. в конт.
             </TableHead>
             <TableHead colSpan={3} className={cn(thGroup, sep)}>
               Поток
@@ -268,6 +308,8 @@ export const CustomerOrderLinesTable = ({
               const canShipLine = canAct && warehouseReserved.length > 0;
               const complete = isLineFullyShipped(line.quantity, shippedQty);
               const pct = Math.min(100, Math.round((shippedQty / Math.max(line.quantity, 1)) * 100));
+              const price = priceByLineId.get(line.id);
+              const maxPerContainer = maxPerContainerByVariant.get(line.productId) ?? null;
 
               return (
                 <TableRow key={line.id} className="group/row hover:bg-muted/40">
@@ -314,6 +356,22 @@ export const CustomerOrderLinesTable = ({
                         резерв больше заказа на {formatQuantity(reserveExcess)}
                       </span>
                     ) : null}
+                  </TableCell>
+                  <TableCell className={cn(tdNum, sep, "whitespace-nowrap")}>
+                    <Money amount={price?.unitPrice ?? null} currencyCode={price?.currencyCode ?? null} />
+                  </TableCell>
+                  <TableCell className={cn(tdNum, "whitespace-nowrap")}>
+                    <Money
+                      amount={lineAmount(price?.unitPrice ?? null, line.quantity)}
+                      currencyCode={price?.currencyCode ?? null}
+                    />
+                  </TableCell>
+                  <TableCell className={tdNum} title={MAX_PER_CONTAINER_HELP}>
+                    {maxPerContainer == null ? (
+                      <span className="tabular-nums text-muted-foreground/50">—</span>
+                    ) : (
+                      <span className="tabular-nums">{formatQuantity(maxPerContainer)}</span>
+                    )}
                   </TableCell>
                   <TableCell className={cn(tdNum, sep)}>
                     <Qty quantity={locations.inProduction} />

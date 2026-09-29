@@ -22,6 +22,7 @@ import {
 } from "@/features/logistics/logistics-api";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
 import {
+  allocatedAmount,
   formatMoneyInput,
   formatOrderMoney,
   isPaymentOverdue,
@@ -29,6 +30,7 @@ import {
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUSES,
   summarizeOrderMoney,
+  summarizePayments,
   todayIso,
   type OrderMoneyContext,
   type OrderPayment,
@@ -152,11 +154,13 @@ type PaymentDraft = {
 const PaymentDialog = ({
   draft,
   currencyCode,
+  currencyLabel,
   onClose,
   onSubmit,
 }: {
   draft: PaymentDraft | null;
   currencyCode: string;
+  currencyLabel: string;
   onClose: () => void;
   onSubmit: (draft: PaymentDraft) => Promise<boolean>;
 }) => {
@@ -180,7 +184,7 @@ const PaymentDialog = ({
         if (!next && !submitting) onClose();
       }}
       size="sm"
-      kicker={`Валюта заказа ${currencyCode}`}
+      kicker={`${currencyLabel} ${currencyCode}`}
       title={form.id ? "Изменить платёж" : "Новый платёж"}
       footerSummary={amount && amount > 0 ? formatOrderMoney(amount, currencyCode) : ""}
       submitLabel={form.id ? "Сохранить" : "Добавить"}
@@ -254,9 +258,13 @@ const RatesDialog = ({
   codes,
   rates,
   nameByCode,
+  kicker,
+  description,
   onClose,
   onSubmit,
 }: {
+  kicker: string;
+  description: string;
   open: boolean;
   codes: string[];
   rates: Record<string, number>;
@@ -298,9 +306,9 @@ const RatesDialog = ({
         if (!next && !submitting) onClose();
       }}
       size="lg"
-      kicker="Снимок на момент создания заказа"
+      kicker={kicker}
       title="Курсы валют"
-      description="Единиц валюты за 1 USD. Новые курсы меняют расчётную стоимость и суммы в календаре."
+      description={description}
       footerSummary={changedCount > 0 ? `Изменено курсов: ${changedCount}` : undefined}
       submitLabel="Сохранить"
       pendingLabel="Сохраняем…"
@@ -349,17 +357,44 @@ const RatesDialog = ({
   );
 };
 
+const TEXTS = {
+  order: {
+    missing: "Деньги заказа не найдены.",
+    currencyLabel: "Валюта заказа",
+    currencyHint: "Числа суммы и платежей не пересчитываются",
+    ratesKicker: "Снимок на момент создания заказа",
+    ratesDescription: "Единиц валюты за 1 USD. Новые курсы меняют расчётную стоимость и суммы в календаре.",
+    sectionTitle: "Сумма заказа",
+  },
+  transfer: {
+    missing: "Деньги перемещения не найдены.",
+    currencyLabel: "Валюта перемещения",
+    currencyHint: "Числа платежей не пересчитываются",
+    ratesKicker: "Снимок на момент создания перемещения",
+    ratesDescription: "Единиц валюты за 1 USD. Сводка доставки в заказе пересчитывает платежи по снимку заказа.",
+    sectionTitle: "Оплата доставки",
+  },
+} as const;
+
+/**
+ * «Деньги» of a production order, customer order (`variant="order"`) or transfer (`variant="transfer"`:
+ * delivery payments only — no estimated cost, amount or «Не распределено»).
+ */
 export const OrderMoneyTab = ({
   snapshot,
   documentId,
   context,
   reload,
+  variant = "order",
 }: {
   snapshot: LogisticsSnapshot;
   documentId: string;
   context: OrderMoneyContext;
   reload: () => Promise<void>;
+  variant?: "order" | "transfer";
 }) => {
+  const texts = TEXTS[variant];
+  const isTransfer = variant === "transfer";
   const [paymentDraft, setPaymentDraft] = useState<PaymentDraft | null>(null);
   const [statusPending, setStatusPending] = useState<string | null>(null);
   const [ratesOpen, setRatesOpen] = useState(false);
@@ -369,7 +404,7 @@ export const OrderMoneyTab = ({
   if (!money || !summary) {
     return (
       <DocumentSection title="Деньги">
-        <p className="px-4 py-6 text-sm text-muted-foreground">Деньги заказа не найдены.</p>
+        <p className="px-4 py-6 text-sm text-muted-foreground">{texts.missing}</p>
       </DocumentSection>
     );
   }
@@ -381,6 +416,7 @@ export const OrderMoneyTab = ({
   );
   const currencyItems = snapshotCodes.map((code) => ({ value: code, label: code }));
   const today = todayIso();
+  const paymentsSummary = summarizePayments(payments, allocatedAmount(payments), currencyCode, today);
 
   const saveRates = async (changed: Record<string, number>) => {
     const ok = await runLogisticsAction(() => setOrderRates(documentId, changed), "Курсы сохранены", reload);
@@ -426,9 +462,9 @@ export const OrderMoneyTab = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <DocumentSection title="Сумма заказа">
+      <DocumentSection title={texts.sectionTitle}>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCell label="Валюта заказа" hint="Числа суммы и платежей не пересчитываются">
+          <SummaryCell label={texts.currencyLabel} hint={texts.currencyHint}>
             <Select
               items={currencyItems}
               value={currencyCode}
@@ -436,12 +472,12 @@ export const OrderMoneyTab = ({
                 if (!value || value === currencyCode) return;
                 void runLogisticsAction(
                   () => setOrderCurrency(documentId, value),
-                  `Валюта заказа — ${value}`,
+                  `${texts.currencyLabel} — ${value}`,
                   reload,
                 );
               }}
             >
-              <SelectTrigger className="h-8 w-40 bg-background" aria-label="Валюта заказа">
+              <SelectTrigger className="h-8 w-40 bg-background" aria-label={texts.currencyLabel}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -459,26 +495,38 @@ export const OrderMoneyTab = ({
               Курсы
             </Button>
           </SummaryCell>
-          <SummaryCell label="Расчётная стоимость" hint="Цены строк по снимку курсов заказа">
-            <span className="tabular-nums">{formatOrderMoney(summary.estimated, currencyCode)}</span>
-          </SummaryCell>
-          <SummaryCell
-            label="Сумма заказа"
-            hint={money.amount == null ? "Пусто — равна расчётной" : "Очистите, чтобы вернуть расчётную"}
-          >
-            <OrderAmountInput
-              documentId={documentId}
-              amount={money.amount}
-              estimated={summary.estimated}
-              currencyCode={currencyCode}
-              reload={reload}
-            />
-          </SummaryCell>
-          <SummaryCell label="Не распределено" hint="Сумма заказа минус все платежи">
-            <span className={cn("tabular-nums", summary.rest < 0 && "font-semibold text-red-700")}>
-              {formatOrderMoney(summary.rest, currencyCode)}
-            </span>
-          </SummaryCell>
+          {isTransfer ? (
+            <SummaryCell label="Оплачено" hint="Платежи со статусом «Оплачен» из всех платежей перемещения">
+              <span className="tabular-nums">
+                {formatOrderMoney(paymentsSummary.paid, currencyCode)} из{" "}
+                {formatOrderMoney(paymentsSummary.total, currencyCode)}
+              </span>
+            </SummaryCell>
+          ) : null}
+          {isTransfer ? null : (
+            <>
+              <SummaryCell label="Расчётная стоимость" hint="Цены строк по снимку курсов заказа">
+                <span className="tabular-nums">{formatOrderMoney(summary.estimated, currencyCode)}</span>
+              </SummaryCell>
+              <SummaryCell
+                label="Сумма заказа"
+                hint={money.amount == null ? "Пусто — равна расчётной" : "Очистите, чтобы вернуть расчётную"}
+              >
+                <OrderAmountInput
+                  documentId={documentId}
+                  amount={money.amount}
+                  estimated={summary.estimated}
+                  currencyCode={currencyCode}
+                  reload={reload}
+                />
+              </SummaryCell>
+              <SummaryCell label="Не распределено" hint="Сумма заказа минус все платежи">
+                <span className={cn("tabular-nums", summary.rest < 0 && "font-semibold text-red-700")}>
+                  {formatOrderMoney(summary.rest, currencyCode)}
+                </span>
+              </SummaryCell>
+            </>
+          )}
         </div>
       </DocumentSection>
 
@@ -492,7 +540,7 @@ export const OrderMoneyTab = ({
               setPaymentDraft({
                 id: null,
                 dueOn: "",
-                amount: summary.rest > 0 ? formatMoneyInput(summary.rest) : "",
+                amount: !isTransfer && summary.rest > 0 ? formatMoneyInput(summary.rest) : "",
                 status: "planned",
               })
             }
@@ -599,6 +647,8 @@ export const OrderMoneyTab = ({
         codes={snapshotCodes}
         rates={money.rates}
         nameByCode={nameByCode}
+        kicker={texts.ratesKicker}
+        description={texts.ratesDescription}
         onClose={() => setRatesOpen(false)}
         onSubmit={saveRates}
       />
@@ -606,6 +656,7 @@ export const OrderMoneyTab = ({
       <PaymentDialog
         draft={paymentDraft}
         currencyCode={currencyCode}
+        currencyLabel={texts.currencyLabel}
         onClose={() => setPaymentDraft(null)}
         onSubmit={submitPayment}
       />

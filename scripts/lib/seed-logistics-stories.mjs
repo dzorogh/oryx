@@ -1086,6 +1086,43 @@ export const seedLogisticsStories = async (args) => {
     p_lines: [{ product_variant_id: v("force1100"), quantity: 3, owner_id: 1 }],
   });
 
+  // OMS-906 delivery: its plant reserve travels to Dubai Hub. The first transfer carries only the order's
+  // goods and has two delivery payments in CNY (order currency USD); the second mixes the order's goods
+  // with free stock, so the card warns about owners of different kinds.
+  const delivery906 = await call("store_create_and_send_transfer", {
+    p_from_warehouse_id: taotaoWh,
+    p_to_warehouse_id: dubaiWh,
+    p_expected_end_on: "2026-10-11",
+    p_description: "Резерв OMS-906 → Dubai Hub",
+    p_lines: [
+      { product_variant_id: v("activator280"), quantity: 2, owner_id: meta906.ownerId },
+      { product_variant_id: v("crossE200"), quantity: 2, owner_id: meta906.ownerId },
+    ],
+  });
+  await call("store_save_order_payment", {
+    p_document_id: Number(delivery906.id),
+    p_due_on: "2026-09-27",
+    p_amount: 4200,
+    p_status: "paid",
+  });
+  await call("store_save_order_payment", {
+    p_document_id: Number(delivery906.id),
+    p_due_on: "2026-10-19",
+    p_amount: 6800,
+    p_status: "planned",
+  });
+  await call("store_create_and_send_transfer", {
+    p_from_warehouse_id: qianjiangWh,
+    p_to_warehouse_id: dubaiWh,
+    p_expected_end_on: "2026-10-17",
+    p_description: "Резерв OMS-906 и свободный остаток → Dubai Hub",
+    p_lines: [
+      { product_variant_id: v("fx350"), quantity: 2, owner_id: meta906.ownerId },
+      { product_variant_id: v("rst240"), quantity: 2, owner_id: meta906.ownerId },
+      { product_variant_id: v("rst240"), quantity: 4, owner_id: 1 },
+    ],
+  });
+
   // Extra shipment Dubai → order for density
   await reserve({
     locationId: dubaiLoc,

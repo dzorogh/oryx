@@ -70,17 +70,17 @@ const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ["minute", 60],
 ];
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("ru", { numeric: "auto" });
 
 const BADGE_LABELS: Record<CommentBadge, string> = {
-  author: "Author",
-  reporter: "Reporter",
-  assignee: "Assignee",
+  author: "Автор",
+  reporter: "Заявитель",
+  assignee: "Исполнитель",
 };
 
 // Deterministic (fixed locale + UTC) label used on the server and the first client
 // render so hydration matches; the live relative/local time is swapped in after mount.
-const absoluteTimeFormatter = new Intl.DateTimeFormat("en-US", {
+const absoluteTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
   month: "short",
   day: "numeric",
   hour: "2-digit",
@@ -119,19 +119,19 @@ export const formatRelativeTime = (iso: string): string => {
   const deltaSeconds = Math.round((target - Date.now()) / 1000);
   const absSeconds = Math.abs(deltaSeconds);
   if (absSeconds < 45) {
-    return "just now";
+    return "только что";
   }
   for (const [unit, secondsInUnit] of RELATIVE_UNITS) {
     if (absSeconds >= secondsInUnit) {
       return relativeTimeFormatter.format(Math.round(deltaSeconds / secondsInUnit), unit);
     }
   }
-  return "just now";
+  return "только что";
 };
 
 const scheduleFormatter =
   typeof Intl !== "undefined"
-    ? new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", weekday: "short" })
+    ? new Intl.DateTimeFormat("ru", { hour: "2-digit", minute: "2-digit", weekday: "short" })
     : null;
 
 /** Short "when will it publish" label for a scheduled comment badge. */
@@ -236,7 +236,7 @@ export const CommentItem = ({
     return (
       <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground italic">
         <Ban aria-hidden className="size-3.5 shrink-0" />
-        Comment deleted
+        Комментарий удалён
       </div>
     );
   }
@@ -250,9 +250,9 @@ export const CommentItem = ({
       .body.textContent?.trim();
     try {
       await navigator.clipboard.writeText(text ?? "");
-      toast.success("Comment copied");
+      toast.success("Комментарий скопирован");
     } catch {
-      toast.error("Could not copy comment");
+      toast.error("Не удалось скопировать комментарий");
     }
   };
 
@@ -300,41 +300,41 @@ export const CommentItem = ({
             <time
               dateTime={comment.createdAtIso}
               className="text-xs text-muted-foreground"
-              title={mounted ? new Date(comment.createdAtIso).toLocaleString() : undefined}
+              title={mounted ? new Date(comment.createdAtIso).toLocaleString("ru-RU") : undefined}
             >
               {mounted ? formatRelativeTime(comment.createdAtIso) : stableTimeLabel}
             </time>
             {comment.editedAtIso ? (
-              <span className="text-xs text-muted-foreground/70">(edited)</span>
+              <span className="text-xs text-muted-foreground/70">(изменено)</span>
             ) : null}
             {pinned ? (
               <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                 <Pin aria-hidden className="size-3" />
-                Pinned
+                Закреплено
               </span>
             ) : null}
             {comment.delivery === "scheduled" ? (
               <Badge variant="outline" className="gap-1 px-1.5 py-0 text-[10px]">
                 <Clock3 aria-hidden className="size-3" />
-                {comment.scheduledAtIso ? `Scheduled · ${scheduleLabel(comment.scheduledAtIso)}` : "Scheduled"}
+                {comment.scheduledAtIso ? `Запланировано · ${scheduleLabel(comment.scheduledAtIso)}` : "Запланировано"}
               </Badge>
             ) : null}
             {comment.delivery === "sending" ? (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Loader2 aria-hidden className="size-3 animate-spin" />
-                Sending…
+                Отправляем…
               </span>
             ) : null}
             {comment.delivery === "queued" ? (
               <Badge variant="outline" className="gap-1 px-1.5 py-0 text-[10px] text-muted-foreground">
                 <CloudOff aria-hidden className="size-3" />
-                Queued
+                В очереди
               </Badge>
             ) : null}
             {comment.delivery === "failed" ? (
               <span className="inline-flex items-center gap-1 text-xs text-destructive">
                 <TriangleAlert aria-hidden className="size-3" />
-                Failed to send
+                Не отправлено
               </span>
             ) : null}
             {onRetry && (comment.delivery === "failed" || comment.delivery === "queued") ? (
@@ -346,7 +346,7 @@ export const CommentItem = ({
                 onClick={onRetry}
               >
                 <RotateCcw className="size-3" />
-                Retry
+                Повторить
               </Button>
             ) : null}
           </div>
@@ -360,7 +360,7 @@ export const CommentItem = ({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Reply"
+                    aria-label="Ответить"
                     className="text-muted-foreground"
                     onClick={onReply}
                   >
@@ -398,7 +398,7 @@ export const CommentItem = ({
               initialContent={comment.contentJson}
               initialAttachments={comment.attachments}
               autoFocus
-              submitLabel="Save changes"
+              submitLabel="Сохранить"
               onSubmit={(payload) => {
                 onEdit(comment.id, payload);
                 setIsEditing(false);
@@ -420,14 +420,14 @@ export const CommentItem = ({
             {translating ? (
               <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Loader2 className="size-3 animate-spin" />
-                Translating…
+                Переводим…
               </p>
             ) : null}
             {translation !== null ? (
               <div className="mt-1.5 rounded-md border border-dashed border-border bg-muted/40 p-2 text-sm leading-6 text-foreground/90">
                 <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   <Languages className="size-3" />
-                  Translation
+                  Перевод
                 </p>
                 <p className="whitespace-pre-wrap">{translation}</p>
               </div>
@@ -458,7 +458,7 @@ export const CommentItem = ({
                   className="-ml-2 text-muted-foreground"
                   onClick={onReply}
                 >
-                  Reply
+                  Ответить
                 </Button>
               ) : null}
               {comment.readBy && comment.readBy.length > 0 ? (
@@ -471,7 +471,7 @@ export const CommentItem = ({
                   title={comment.readBy.map(resolveName).filter(Boolean).join(", ")}
                 >
                   <Eye aria-hidden className="size-3" />
-                  Read by {comment.readBy.length}
+                  Прочитали: {comment.readBy.length}
                 </span>
               ) : null}
             </div>
@@ -482,13 +482,13 @@ export const CommentItem = ({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete comment?</AlertDialogTitle>
+            <AlertDialogTitle>Удалить комментарий?</AlertDialogTitle>
             <AlertDialogDescription>
-              This can&apos;t be undone. The comment will be removed from the discussion.
+              Это действие нельзя отменить. Комментарий исчезнет из обсуждения.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
@@ -496,7 +496,7 @@ export const CommentItem = ({
                 setConfirmOpen(false);
               }}
             >
-              Delete
+              Удалить
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

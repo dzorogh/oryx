@@ -37,7 +37,13 @@ import {
   formatQuantity,
   formatMetaTimestamp,
 } from "@/features/logistics/logistics-labels";
-import { plantCode, productById, productIdentityLabel, warehouseCode } from "@/features/logistics/logistics-lookups";
+import {
+  plantCode,
+  productById,
+  productIdentityLabel,
+  regionCode,
+  warehouseCode,
+} from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import {
   relatedOutputsForOrder,
@@ -102,6 +108,21 @@ import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { CustomerOrderStatusBadge, StatusPill } from "@/features/logistics/ui/status-badge";
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { OrderAmountInput, OrderMoneyTab, summarizeOrderMoney } from "@/features/logistics/ui/order-money-tab";
+import { summarizeDelivery, summarizePayments } from "@/features/logistics/order-money";
+import { buildOrderSystemNotices, deliveryTransferIds, MIXED_OWNERS_WARNING, tenantLabel } from "@/features/logistics/customer-order-oms";
+import { projectTransferDetail, transferHasMixedOwners } from "@/features/logistics/transfer-detail-projection";
+import { hrefForRegion } from "@/features/logistics/logistics-availability";
+import {
+  AccountingNumberInput,
+  AccountingUrlInput,
+  CopyCustomerOrderAction,
+  CustomerOrderNote,
+  DeliveryMetaValue,
+  PaymentsMetaValue,
+} from "@/features/logistics/ui/customer-order-oms-fields";
+import { CustomerOrderContainersTab } from "@/features/logistics/ui/customer-order-containers-tab";
+import { CustomerOrderFilesTab } from "@/features/logistics/ui/customer-order-files-tab";
+import { CustomerOrderCommentsTab } from "@/features/logistics/ui/customer-order-comments-tab";
 
 const STATUS_TOGGLE = [
   { value: "all", label: "Все" },
@@ -361,7 +382,7 @@ export const CustomerOrdersPage = () => {
 
 export const CustomerOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
-  const { snapshot, balances, orderPlan, orderMoney, isLoading, error, reload, found } = useLogisticsStore({
+  const { snapshot, balances, orderPlan, orderMoney, orderOms, isLoading, error, reload, found } = useLogisticsStore({
     kind: "document",
     documentKind: "customer_order",
     ref: String(params.orderId ?? ""),
@@ -428,6 +449,26 @@ export const CustomerOrderDetailPage = () => {
   const shippedQty = lines.reduce((sum, line) => sum + sumShippedForLine(balances, line), 0);
   const shipPct = orderedQty > 0 ? Math.min(100, Math.floor((shippedQty / orderedQty) * 100)) : 0;
   const moneySummary = summarizeOrderMoney(snapshot, order.id, orderMoney);
+  const paymentsSummary = moneySummary
+    ? summarizePayments(orderMoney.payments, moneySummary.total, moneySummary.currencyCode)
+    : null;
+  const orderTransfers = relatedTransfersForOrder(snapshot, order.id);
+  const orderTransferIds = deliveryTransferIds(
+    snapshot.transfers,
+    orderTransfers.map((item) => item.id),
+  );
+  const deliverySummary = orderMoney.money
+    ? summarizeDelivery(
+        orderOms.transferMoney.filter((item) => orderTransferIds.has(item.documentId)),
+        orderMoney.money.currencyCode,
+        orderMoney.money.rates,
+      )
+    : null;
+  const deliveryMixedOwners = snapshot.transfers.some(
+    (transfer) =>
+      orderTransferIds.has(transfer.id) && transferHasMixedOwners(projectTransferDetail(snapshot, balances, transfer)),
+  );
+  const authorName = snapshot.users.find((user) => user.id === order.createdBy)?.name ?? null;
   const movementFilter = (entry: StockTransaction) =>
     documentKeysForAssignedEntity(snapshot.transactions, "order", order.id).has(
       documentKey(entry.documentType, entry.documentId),
@@ -438,6 +479,13 @@ export const CustomerOrderDetailPage = () => {
     createdAt: order.createdAt,
     createdBy: order.createdBy,
     statusLabels: CUSTOMER_ORDER_STATUS_LABELS,
+  });
+  const systemNotices = buildOrderSystemNotices({
+    documentId: order.id,
+    createdAt: order.createdAt,
+    timeline: historyEntries,
+    paymentEvents: orderOms.paymentEvents,
+    currencyCode: orderMoney.money?.currencyCode ?? null,
   });
 
   const primaryStages = [
@@ -459,7 +507,7 @@ export const CustomerOrderDetailPage = () => {
       id: "transfer",
       title: "Перемещения",
       href: "/store/logistics/transfers",
-      items: withOrderCoverage(relatedTransfersForOrder(snapshot, order.id), coverage.transfer),
+      items: withOrderCoverage(orderTransfers, coverage.transfer),
       doneStatuses: ["delivered"] as const,
       actions: canAct
         ? [
@@ -513,9 +561,18 @@ export const CustomerOrderDetailPage = () => {
         icon={ShoppingCart}
         number={order.number}
         status={<CustomerOrderStatusBadge status={order.status} />}
-        description={order.description || null}
+        description={
+          <CustomerOrderNote
+            key={order.description}
+            orderId={order.id}
+            description={order.description}
+            editable={canAct}
+            reload={reload}
+          />
+        }
         actions={
           <>
+            <CopyCustomerOrderAction orderId={order.id} orderNumber={order.number} />
             <DocumentCancelControl
               kicker={order.number}
               guidance={cancelGuidance}
@@ -548,6 +605,14 @@ export const CustomerOrderDetailPage = () => {
         }
         meta={[
           {
+            label: "Регион",
+            value: <LogisticsCodeBadge code={regionCode(snapshot, order.regionId)} href={hrefForRegion(order.regionId)} />,
+          },
+          {
+            label: "Тенант",
+            value: tenantLabel(orderOms.tenants, order.regionId),
+          },
+          {
             label: "Источник",
             value:
               order.sourceKind === "plant" && order.sourcePlantId
@@ -557,6 +622,7 @@ export const CustomerOrderDetailPage = () => {
                   : "—",
           },
           { label: "Создан", value: formatMetaTimestamp(order.createdAt) },
+          { label: "Автор", value: authorName ?? <DocumentMetaEmpty /> },
           {
             label: "Ожидаемое окончание",
             value: (
@@ -612,6 +678,43 @@ export const CustomerOrderDetailPage = () => {
                 <DocumentMetaEmpty />
               ),
           },
+          {
+            label: "Оплата",
+            wide: true,
+            value: <PaymentsMetaValue summary={paymentsSummary} />,
+          },
+          {
+            label: "Доставка",
+            wide: true,
+            value: <DeliveryMetaValue summary={deliverySummary} mixedOwners={deliveryMixedOwners} />,
+            hint: deliveryMixedOwners ? (
+              <span className="font-medium text-amber-700">{MIXED_OWNERS_WARNING}</span>
+            ) : undefined,
+          },
+          {
+            label: "Номер в учётной системе",
+            wide: true,
+            value: (
+              <AccountingNumberInput
+                orderId={order.id}
+                number={order.accountingNumber}
+                url={order.accountingUrl}
+                reload={reload}
+              />
+            ),
+          },
+          {
+            label: "Ссылка в учётной системе",
+            wide: true,
+            value: (
+              <AccountingUrlInput
+                orderId={order.id}
+                number={order.accountingNumber}
+                url={order.accountingUrl}
+                reload={reload}
+              />
+            ),
+          },
         ]}
       />
 
@@ -662,6 +765,9 @@ export const CustomerOrderDetailPage = () => {
                   balances={balances}
                   lines={lines}
                   canAct={canAct}
+                  currencies={orderMoney.currencies}
+                  orderCurrencyCode={orderMoney.money?.currencyCode ?? null}
+                  variantLogistics={orderOms.variantLogistics}
                   onReserve={(line) => {
                     setReserveLine(line);
                     setReserveOpen(true);
@@ -711,6 +817,22 @@ export const CustomerOrderDetailPage = () => {
                 reload={reload}
               />
             ),
+          },
+          {
+            id: "containers",
+            label: "Контейнеры",
+            panel: <CustomerOrderContainersTab lines={lines} oms={orderOms} />,
+          },
+          {
+            id: "files",
+            label: "Файлы",
+            count: orderOms.files.length,
+            panel: <CustomerOrderFilesTab orderId={order.id} files={orderOms.files} reload={reload} />,
+          },
+          {
+            id: "comments",
+            label: "Комментарии",
+            panel: <CustomerOrderCommentsTab orderId={order.id} notices={systemNotices} />,
           },
           {
             id: "movements",

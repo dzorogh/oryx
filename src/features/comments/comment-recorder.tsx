@@ -69,7 +69,7 @@ export const CommentRecorder = ({ onRecorded, disabled }: CommentRecorderProps) 
 
   const begin = async (kind: RecordMode) => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices) {
-      toast.error("Recording is not supported in this browser");
+      toast.error("Этот браузер не поддерживает запись");
       return;
     }
     try {
@@ -88,7 +88,7 @@ export const CommentRecorder = ({ onRecorded, disabled }: CommentRecorderProps) 
       recorder.onstop = () => {
         const type = kind === "audio" ? "audio/webm" : "video/webm";
         const blob = new Blob(chunksRef.current, { type });
-        const label = kind === "audio" ? "voice-note" : "screen-recording";
+        const label = kind === "audio" ? "голосовое" : "запись-экрана";
         onRecorded(new File([blob], `${label}-${Date.now()}.webm`, { type }));
         cleanupStream();
       };
@@ -101,7 +101,7 @@ export const CommentRecorder = ({ onRecorded, disabled }: CommentRecorderProps) 
       stream.getVideoTracks()[0]?.addEventListener("ended", stop);
     } catch {
       cleanupStream();
-      toast.error("Could not start recording");
+      toast.error("Не удалось начать запись");
     }
   };
 
@@ -119,7 +119,7 @@ export const CommentRecorder = ({ onRecorded, disabled }: CommentRecorderProps) 
         </span>
         <Square className="size-3.5" />
         <span className="tabular-nums">{formatClock(seconds)}</span>
-        <span className="hidden sm:inline">Stop</span>
+        <span className="hidden sm:inline">Стоп</span>
       </Button>
     );
   }
@@ -133,22 +133,22 @@ export const CommentRecorder = ({ onRecorded, disabled }: CommentRecorderProps) 
             variant="ghost"
             size="sm"
             disabled={disabled}
-            aria-label="Record"
+            aria-label="Записать"
             className="text-muted-foreground"
           />
         }
       >
         <Mic />
-        <span className="hidden sm:inline">Record</span>
+        <span className="hidden sm:inline">Записать</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-44">
         <DropdownMenuItem onClick={() => void begin("audio")}>
           <Mic />
-          Record voice note
+          Голосовое сообщение
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => void begin("screen")}>
           <MonitorUp />
-          Record screen
+          Запись экрана
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

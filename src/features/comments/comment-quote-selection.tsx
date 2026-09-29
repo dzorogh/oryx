@@ -147,7 +147,7 @@ export const CommentQuoteSelectionButton = ({
       className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background shadow-md ring-1 ring-foreground/10 transition hover:opacity-90"
     >
       <Quote className="size-3.5" />
-      Quote
+      Цитировать
     </button>
   );
 };

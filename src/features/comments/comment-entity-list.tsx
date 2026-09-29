@@ -61,7 +61,7 @@ export const EntityList = forwardRef<EntityListHandle, EntityListProps>(
     if (items.length === 0) {
       return (
         <div className="rounded-lg bg-popover p-2 text-sm text-muted-foreground shadow-md ring-1 ring-foreground/10">
-          No tasks or orders found
+          Задачи и заказы не найдены
         </div>
       );
     }

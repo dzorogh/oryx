@@ -16,6 +16,7 @@ import {
 } from "@/features/logistics/logistics-api";
 import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import type { OrderMoneyContext } from "@/features/logistics/order-money";
+import { EMPTY_CUSTOMER_ORDER_OMS, type CustomerOrderOmsContext } from "@/features/logistics/customer-order-oms";
 
 const EMPTY_ORDER_MONEY: OrderMoneyContext = { money: null, payments: [], currencies: [] };
 
@@ -108,6 +109,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
   const [payloadBalances, setPayloadBalances] = useState<StockBalance[] | null>(null);
   const [orderPlan, setOrderPlan] = useState<unknown>(null);
   const [orderMoney, setOrderMoney] = useState<OrderMoneyContext>(EMPTY_ORDER_MONEY);
+  const [orderOms, setOrderOms] = useState<CustomerOrderOmsContext>(EMPTY_CUSTOMER_ORDER_OMS);
   const [found, setFound] = useState(true);
   const [pending, setPending] = useState(false);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -138,6 +140,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
       setPayloadBalances(next.balances);
       setOrderPlan(next.orderPlan);
       setOrderMoney(next.orderMoney);
+      setOrderOms(next.orderOms);
       setFound(next.found);
       setError(null);
     } catch (caught: unknown) {
@@ -173,6 +176,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
     balances,
     orderPlan,
     orderMoney,
+    orderOms,
     isLoading: enabled && (pending || loadedKey !== key),
     error,
     reload,

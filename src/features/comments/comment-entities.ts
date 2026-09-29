@@ -21,16 +21,16 @@ export const COMMENT_ENTITIES: CommentEntityRef[] = [
     href: "/tracker/tasks/GP-2356",
   },
   {
-    id: "OMS-1041",
+    id: "OMS-921",
     type: "oms",
-    label: "OMS-1041 · Acme Corp rollout order",
-    href: "/store/orders/OMS-1041",
+    label: "OMS-921 · Hub order for AE",
+    href: "/store/logistics/customer-orders/921",
   },
   {
-    id: "OMS-1088",
+    id: "OMS-907",
     type: "oms",
-    label: "OMS-1088 · APAC hardware refresh",
-    href: "/store/orders/OMS-1088",
+    label: "OMS-907 · Large order for RU",
+    href: "/store/logistics/customer-orders/907",
   },
 ];
 

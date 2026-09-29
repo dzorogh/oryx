@@ -471,3 +471,7 @@ export const projectTransferDetail = (
     source,
   };
 };
+
+/** Goods of more than one owner (another order, a region, free stock) — same groups as «Товары и резервы». */
+export const transferHasMixedOwners = (projection: Pick<TransferDetailProjection, "groups">): boolean =>
+  projection.groups.length > 1;

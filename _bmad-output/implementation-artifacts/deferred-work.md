@@ -311,3 +311,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-universal-entity-code-prefixes.md`
   summary: Нет теста на кэш и повтор загрузки в `ensureEntityCodePrefixes` и на цикл сохранения `saveEntityCodePrefixes`.
   evidence: Модуль завязан на браузерный Supabase-клиент; юнит-тесты покрывают только чистую `entityCodePrefixesFromRows`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-oms-parity.md`
+  summary: Автоматическая проверка RPC `store_copy_customer_order`, `store_set_customer_order_accounting` и триггера `store_order_payment_event_trg` против базы.
+  evidence: В репозитории нет тестового стенда БД (`npm test` — только чистый TS); копия проверена SQL-пробой с откатом 29.09.2026, триггер — вручную в браузере. Регрессия (потеря валюты в копии, дубли событий) сейчас ловится только ручной проверкой.
