@@ -701,75 +701,80 @@ export const CustomerOrderDetailPage = () => {
             label: "Товары",
             count: lines.length,
             panel: (
-              <DocumentSection
-                title="Товары"
-                tools={
-                  <>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => setAddCatalogOpen(true)}
-                    >
-                      Добавить товар
-                    </Button>
-                    {canAct ? (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setReserveLine(null);
-                            setReserveOpen(true);
-                          }}
-                        >
-                          Зарезервировать
-                        </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setShipOpen(true)}>
-                          Отгрузить
-                        </Button>
-                      </>
-                    ) : null}
-                  </>
-                }
-              >
-                <CustomerOrderLinesTable
-                  bare
-                  snapshot={snapshot}
-                  balances={balances}
-                  lines={lines}
-                  canAct={canAct}
-                  currencies={orderMoney.currencies}
-                  orderCurrencyCode={orderMoney.money?.currencyCode ?? null}
-                  variantLogistics={orderOms.variantLogistics}
-                  onReserve={(line) => {
-                    setReserveLine(line);
-                    setReserveOpen(true);
-                  }}
-                  onShip={() => setShipOpen(true)}
-                  onRelease={(place) => {
-                    setReleasePlace(place);
-                    setReleaseOpen(true);
-                  }}
-                  onReleaseOutput={(line, hold) =>
-                    setOutputReleaseTarget({
-                      outputId: hold.outputId,
-                      outputNumber: hold.outputNumber,
-                      ownerType: "order",
-                      ownerId: order.id,
-                      productId: line.productId,
-                      quantity: hold.quantity,
-                    })
+              <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+                <DocumentSection
+                  title="Товары"
+                  tools={
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setAddCatalogOpen(true)}
+                      >
+                        Добавить товар
+                      </Button>
+                      {canAct ? (
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setReserveLine(null);
+                              setReserveOpen(true);
+                            }}
+                          >
+                            Зарезервировать
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" onClick={() => setShipOpen(true)}>
+                            Отгрузить
+                          </Button>
+                        </>
+                      ) : null}
+                    </>
                   }
-                  onEditQuantity={(line) => {
-                    setLineMode("edit");
-                    setLineProductId(line.productId);
-                    setLineQuantity(String(line.quantity));
-                    setLineError(null);
-                    setLineOpen(true);
-                  }}
-                />
-              </DocumentSection>
+                >
+                  <CustomerOrderLinesTable
+                    bare
+                    snapshot={snapshot}
+                    balances={balances}
+                    lines={lines}
+                    canAct={canAct}
+                    currencies={orderMoney.currencies}
+                    orderCurrencyCode={orderMoney.money?.currencyCode ?? null}
+                    variantLogistics={orderOms.variantLogistics}
+                    onReserve={(line) => {
+                      setReserveLine(line);
+                      setReserveOpen(true);
+                    }}
+                    onShip={() => setShipOpen(true)}
+                    onRelease={(place) => {
+                      setReleasePlace(place);
+                      setReleaseOpen(true);
+                    }}
+                    onReleaseOutput={(line, hold) =>
+                      setOutputReleaseTarget({
+                        outputId: hold.outputId,
+                        outputNumber: hold.outputNumber,
+                        ownerType: "order",
+                        ownerId: order.id,
+                        productId: line.productId,
+                        quantity: hold.quantity,
+                      })
+                    }
+                    onEditQuantity={(line) => {
+                      setLineMode("edit");
+                      setLineProductId(line.productId);
+                      setLineQuantity(String(line.quantity));
+                      setLineError(null);
+                      setLineOpen(true);
+                    }}
+                  />
+                </DocumentSection>
+                <div className="xl:sticky xl:top-4">
+                  <CustomerOrderContainersTab lines={lines} oms={orderOms} variant="aside" />
+                </div>
+              </div>
             ),
           },
           {

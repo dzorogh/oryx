@@ -26,6 +26,7 @@ export const ContainerLoadCalculator = ({
   missingNames,
   heading = <p className="text-sm font-medium">Калькулятор контейнеров</p>,
   className = "space-y-3 border-t pt-3",
+  sceneClassName = "h-[min(360px,50vh)]",
 }: {
   containerTypes: ContainerLoadType[];
   items: MixedPackItem[];
@@ -33,6 +34,7 @@ export const ContainerLoadCalculator = ({
   missingNames: string[];
   heading?: ReactNode;
   className?: string;
+  sceneClassName?: string;
 }) => {
   const defaultCodes = useMemo(() => containerTypes.map((type) => type.code), [containerTypes]);
   const [selectedOverride, setSelectedOverride] = useState<string[] | null>(null);
@@ -137,7 +139,7 @@ export const ContainerLoadCalculator = ({
             }))}
             containerSize={defaultSize}
             orderItems={orderItems}
-            className="h-[min(360px,50vh)]"
+            className={sceneClassName}
           />
         </>
       ) : allowed.length ? (
