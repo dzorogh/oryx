@@ -467,7 +467,7 @@ export const CustomerOrderDetailPage = () => {
   const primaryStages = [
     {
       id: "output",
-      title: "Выпуск производства",
+      title: "Производство",
       href: "/store/logistics/outputs",
       items: withOrderCoverage(relatedOutputsForOrder(snapshot, order.id), coverage.output),
       doneStatuses: ["done"] as const,
@@ -481,7 +481,7 @@ export const CustomerOrderDetailPage = () => {
     },
     {
       id: "transfer",
-      title: "Перемещения",
+      title: "Доставка",
       href: "/store/logistics/transfers",
       items: withOrderCoverage(orderTransfers, coverage.transfer),
       doneStatuses: ["delivered"] as const,
@@ -494,7 +494,7 @@ export const CustomerOrderDetailPage = () => {
     },
     {
       id: "shipment",
-      title: "Отгрузки",
+      title: "Отгрузка",
       href: "/store/logistics/shipments",
       items: withOrderCoverage(relatedShipments(snapshot, order.id), coverage.shipment),
       doneStatuses: ["posted"] as const,

@@ -346,7 +346,7 @@ type OrderProgressTrackerProps = {
 };
 
 /**
- * Customer-order journey card (Выпуск производства → Перемещения → Отгрузки) with collapsible related stages.
+ * Customer-order journey card (Производство → Доставка → Отгрузка) with collapsible related stages.
  * Document passport lives in DocumentHeader — this is only the flow strip.
  */
 export const OrderProgressTracker = ({
