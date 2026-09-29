@@ -115,6 +115,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
+  const requestedKeyRef = useRef<string | null>(null);
   const enabled = source.kind !== "form" || source.enabled !== false;
   const key = sourceKey(source);
 
@@ -129,6 +130,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
       return;
     }
     const request = ++requestRef.current;
+    requestedKeyRef.current = key;
     setPending(true);
     setError(null);
     try {
@@ -147,6 +149,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
       if (request !== requestRef.current) {
         return;
       }
+      requestedKeyRef.current = null;
       setError(caught instanceof Error ? caught.message : LOAD_ERROR);
     } finally {
       if (request === requestRef.current) {
@@ -159,10 +162,16 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
   }, [key]);
 
   useEffect(() => {
-    if (enabled) {
+    if (!enabled) {
+      requestedKeyRef.current = null;
+      return;
+    }
+    // React re-runs effects when a hidden route is shown again and in Strict Mode; one fetch per key is enough,
+    // actions refresh through `reload()`.
+    if (requestedKeyRef.current !== key) {
       void reload();
     }
-  }, [reload, enabled]);
+  }, [reload, enabled, key]);
 
   const balances = useMemo<StockBalance[]>(() => {
     if (payloadBalances != null) {
@@ -177,7 +186,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
     orderPlan,
     orderMoney,
     orderOms,
-    // Effects re-run when a hidden route is shown again; refetching a loaded key must not blank the page.
+    // An explicit `reload()` of a loaded key keeps the current data on screen.
     isLoading: enabled && loadedKey !== key,
     isRefreshing: enabled && pending,
     error,
