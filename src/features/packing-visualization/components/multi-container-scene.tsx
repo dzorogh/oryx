@@ -3,7 +3,7 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text } from "@react-three/drei";
-import { useMemo, useRef, useState, type RefObject } from "react";
+import { Suspense, useMemo, useRef, useState, type RefObject } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { ContainerInstance, OrderItemType } from "@/domain/packing/types";
 import { cn } from "@/lib/utils";
@@ -229,18 +229,21 @@ export const MultiContainerScene = ({
                   <meshBasicMaterial color="#334155" wireframe transparent opacity={0.18} />
                 </mesh>
 
-                <Text
-                  position={[size.width + 400, 2, size.length / 2]}
-                  rotation={[-Math.PI / 2, 0, 0]}
-                  fontSize={200}
-                  color="#94a3b8"
-                  anchorX="left"
-                  anchorY="middle"
-                  textAlign="left"
-                  lineHeight={1.2}
-                >
-                  {textContent}
-                </Text>
+                {/* drei Text suspends while its font loads; without a local boundary the page-level Suspense hides the whole page. */}
+                <Suspense fallback={null}>
+                  <Text
+                    position={[size.width + 400, 2, size.length / 2]}
+                    rotation={[-Math.PI / 2, 0, 0]}
+                    fontSize={200}
+                    color="#94a3b8"
+                    anchorX="left"
+                    anchorY="middle"
+                    textAlign="left"
+                    lineHeight={1.2}
+                  >
+                    {textContent}
+                  </Text>
+                </Suspense>
               </group>
             );
           })}
