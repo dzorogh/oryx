@@ -34,7 +34,7 @@ import {
   type OrderFulfillmentSummary,
 } from "@/features/logistics/customer-order-oms";
 import type { CancelGuidance, CancelGuidanceAction } from "@/features/logistics/logistics-cancel-guidance";
-import { formatMetaTimestamp, formatQuantity } from "@/features/logistics/logistics-labels";
+import { CUSTOMER_ORDER_STATUS_LABELS, formatMetaTimestamp, formatQuantity } from "@/features/logistics/logistics-labels";
 import type { CustomerOrderLine, CustomerOrderStatus, StockBalance } from "@/features/logistics/logistics-types";
 import { formatOrderMoney, type PaymentsSummary } from "@/features/logistics/order-money";
 import { CopyCustomerOrderDialog, CustomerOrderNote } from "@/features/logistics/ui/customer-order-oms-fields";
@@ -47,7 +47,7 @@ import {
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
 import { OrderAmountInput } from "@/features/logistics/ui/order-money-tab";
-import { CustomerOrderStatusBadge } from "@/features/logistics/ui/status-badge";
+import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
 
 const TONE_CLASS: Record<HeaderTone, string> = {
@@ -63,9 +63,11 @@ const PanelTitle = ({ icon: Icon, children }: { icon: typeof PackageCheck; child
   </div>
 );
 
+const HEADER_BADGE_CLASS = "h-6 px-2.5";
+
 const ORDER_TYPE = {
-  hub: { label: "Склад региона", icon: Warehouse, className: "bg-sky-50 text-sky-800 ring-sky-200" },
-  plant: { label: "Производственная площадка", icon: Factory, className: "bg-violet-50 text-violet-800 ring-violet-200" },
+  hub: { label: "Склад региона", icon: Warehouse, className: "border-sky-200 bg-sky-50 text-sky-800" },
+  plant: { label: "Производственная площадка", icon: Factory, className: "border-violet-200 bg-violet-50 text-violet-800" },
 } as const;
 
 /** Checkout method of the order: regional hub stock or a production site. */
@@ -76,13 +78,14 @@ const OrderTypeBadge = ({ kind, code }: { kind: "plant" | "hub" | null; code: st
   return (
     <span
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium ring-1 ring-inset",
+        "inline-flex items-center gap-1.5 rounded-full border text-xs font-medium whitespace-nowrap",
+        HEADER_BADGE_CLASS,
         type.className,
       )}
     >
-      <Icon className="size-3.5" aria-hidden />
+      <Icon className="size-3 shrink-0" aria-hidden />
       {type.label}
-      {code ? <span className="font-mono text-xs font-semibold tracking-wide opacity-80">{code}</span> : null}
+      {code ? <span className="font-mono text-[11px] font-semibold tracking-wide opacity-80">{code}</span> : null}
     </span>
   );
 };
@@ -360,7 +363,7 @@ export const CustomerOrderHeader = ({
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-[28px] leading-none font-semibold tracking-tight">{number}</h1>
-              <CustomerOrderStatusBadge status={status} />
+              <StatusPill status={status} label={CUSTOMER_ORDER_STATUS_LABELS[status]} className={HEADER_BADGE_CLASS} />
               <OrderTypeBadge kind={sourceKind} code={sourceCode} />
             </div>
           </div>
