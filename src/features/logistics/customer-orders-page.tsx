@@ -9,6 +9,7 @@ import { CatalogQuickSelectControl } from "@/components/store/pim/products/catal
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { formatEntityCode } from "@/lib/entity-codes";
 import {
   closeCustomerOrder,
   createCustomerOrder,
@@ -397,9 +398,15 @@ export const CustomerOrderDetailPage = () => {
     [order, snapshot.customerOrderLines],
   );
 
+  const orderRef = String(params.orderId ?? "");
+  const pendingCrumbs = [
+    { label: "Заказы клиента", href: "/store/logistics/customer-orders" },
+    { label: /^\d+$/.test(orderRef) ? formatEntityCode("customer_order", orderRef) : "Заказ клиента" },
+  ];
+
   if (isLoading) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: "Заказ клиента" }]}>
+      <LogisticsPageShell crumbs={pendingCrumbs}>
         <LogisticsLoading />
       </LogisticsPageShell>
     );
@@ -407,7 +414,7 @@ export const CustomerOrderDetailPage = () => {
 
   if (error) {
     return (
-      <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: "Заказ клиента" }]}>
+      <LogisticsPageShell crumbs={pendingCrumbs}>
         <LogisticsError message={error} />
       </LogisticsPageShell>
     );
