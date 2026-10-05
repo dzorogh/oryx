@@ -13,7 +13,7 @@ import {
   ProductionForOrderOutputError,
   reserveInProductionOutput,
 } from "@/features/logistics/logistics-api";
-import { sentTransferLink } from "@/features/logistics/transfer-direct-send";
+import { openSentTransfer } from "@/features/logistics/transfer-direct-send";
 import {
   freeInDraftOutput,
   freeTransfersForProduct,
@@ -39,11 +39,7 @@ import { ContextRowsTable, type ContextQuantityRow } from "@/features/logistics/
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { firstErrorKey, formatLimitNumber, parseDecimalQuantity } from "@/features/logistics/ui/catalog-quantity-model";
 import { focusQuantityInput } from "@/features/logistics/ui/catalog-quantity-table";
-import {
-  finishCreatedDocuments,
-  reportPartialCreate,
-  type CreateIntent,
-} from "@/features/logistics/ui/open-created-documents";
+import { openCreatedDocuments, reportPartialCreate } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { LOGISTICS_PATHS, logisticsPath } from "@/features/logistics/logistics-paths";
 import {
@@ -201,7 +197,7 @@ export const ProductionFromOrderForm = ({
   const plantLabel = plantItems.find((item) => item.value === plantId)?.label;
   const expectedRelative = relativeDayLabel(expectedEndOn);
 
-  const submit = async (intent: CreateIntent) => {
+  const submit = async () => {
     if (submitting) return;
     const errorKey = firstErrorKey(
       rows.map((row) => ({ key: row.key, raw: quantities[row.key] ?? "", limit: row.limit, mode: "hard" as const })),
@@ -220,33 +216,28 @@ export const ProductionFromOrderForm = ({
         expectedEndOn: expectedEndOn || null,
         lines: payload,
       });
+      await reload();
       onOpenChange(false);
-      await finishCreatedDocuments({
-        intent,
-        navigate: (href) => router.push(href),
-        main: {
+      openCreatedDocuments(
+        (href) => router.push(href),
+        {
           href: logisticsPath("production-orders", created.sequenceNumber ?? created.productionOrderId),
           label: "Заказ на производство",
         },
-        rest: [{ href: logisticsPath("outputs", created.outputId), label: "Запланированный выпуск" }],
-        message: "Заказ на производство создан",
-        refresh: reload,
-      });
+        [{ href: logisticsPath("outputs", created.outputId), label: "Запланированный выпуск" }],
+      );
     } catch (caught: unknown) {
       if (caught instanceof ProductionForOrderOutputError) {
         await reload();
         onOpenChange(false);
-        const href = caught.sequenceNumber
-          ? logisticsPath("production-orders", caught.sequenceNumber)
-          : LOGISTICS_PATHS.productionOrders;
         toast.error("Заказ на производство создан, выпуск не создан", {
           description: translateLogisticsError(caught.message),
-          action:
-            intent === "close" && caught.sequenceNumber
-              ? { label: "Открыть", onClick: () => router.push(href) }
-              : undefined,
         });
-        if (intent === "open") router.push(href);
+        router.push(
+          caught.sequenceNumber
+            ? logisticsPath("production-orders", caught.sequenceNumber)
+            : LOGISTICS_PATHS.productionOrders,
+        );
         return;
       }
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
@@ -300,8 +291,7 @@ export const ProductionFromOrderForm = ({
           : "Нет строк"
       }
       submitLabel="Запустить"
-      createIntents
-      onSubmit={(intent) => void submit(intent)}
+      onSubmit={() => void submit()}
       submitDisabled={!plantId || payload.length === 0}
       disabledReason="Выберите завод и количество"
       submitting={submitting}
@@ -427,7 +417,7 @@ export const ReserveOnProductionForm = ({
 
   const picked = positiveEntries(quantities);
 
-  const submit = async (intent: CreateIntent) => {
+  const submit = async () => {
     if (submitting || picked.length === 0) return;
     const errorKey = firstErrorKey(
       rows.map((row) => ({ key: row.key, raw: quantities[row.key] ?? "", limit: row.limit, mode: "hard" as const })),
@@ -482,22 +472,13 @@ export const ReserveOnProductionForm = ({
       onOpenChange(false);
       setQuantities({});
       const [main, ...rest] = created;
-      if (main) {
-        await finishCreatedDocuments({
-          intent,
-          navigate: (href) => router.push(href),
-          main,
-          rest,
-          message: "Резерв в выпуске создан",
-          refresh: reload,
-        });
-      }
+      if (main) openCreatedDocuments((href) => router.push(href), main, rest);
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       if (created.length > 0) {
         onOpenChange(false);
         setQuantities({});
-        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), reload, intent);
+        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), reload);
         return;
       }
       setServerError(translateLogisticsError(raw));
@@ -518,8 +499,7 @@ export const ReserveOnProductionForm = ({
       title="Зарезервировать в выпуске"
       footerSummary={picked.length ? pluralTovar(picked.length) : "Нет строк"}
       submitLabel="Зарезервировать"
-      createIntents
-      onSubmit={(intent) => void submit(intent)}
+      onSubmit={() => void submit()}
       submitDisabled={picked.length === 0}
       disabledReason="Введите количество"
       submitting={submitting}
@@ -608,7 +588,7 @@ export const OutputFromOrderForm = ({
       ? "Весь план уже в запланированных выпусках — завершите выпуск на его странице"
       : "Нет доступного заказа на производство";
 
-  const submit = async (intent: CreateIntent) => {
+  const submit = async () => {
     if (submitting || picked.length === 0) return;
     const errorKey = firstErrorKey(
       rows.map((row) => ({ key: row.key, raw: quantities[row.key] ?? "", limit: row.limit, mode: "hard" as const })),
@@ -648,22 +628,13 @@ export const OutputFromOrderForm = ({
       onOpenChange(false);
       setQuantities({});
       const [main, ...rest] = created;
-      if (main) {
-        await finishCreatedDocuments({
-          intent,
-          navigate: (href) => router.push(href),
-          main,
-          rest,
-          message: "Выпуск создан",
-          refresh: reload,
-        });
-      }
+      if (main) openCreatedDocuments((href) => router.push(href), main, rest);
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       if (created.length > 0) {
         onOpenChange(false);
         setQuantities({});
-        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), reload, intent);
+        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), reload);
         return;
       }
       setServerError(translateLogisticsError(raw));
@@ -695,8 +666,7 @@ export const OutputFromOrderForm = ({
       }
       footerSummary={picked.length ? pluralTovar(picked.length) : "Нет строк"}
       submitLabel="Выпустить"
-      createIntents
-      onSubmit={(intent) => void submit(intent)}
+      onSubmit={() => void submit()}
       submitDisabled={picked.length === 0}
       disabledReason="Введите количество"
       submitting={submitting}
@@ -731,20 +701,15 @@ export const TransferReservedForm = ({
       snapshot={snapshot}
       balances={balances}
       context={{ kind: "order", customerOrderId, orderLines: lines }}
-      onSubmit={async (value, intent) => {
+      onSubmit={async (value) => {
         const created = await createAndSendTransfer({
           fromWarehouseId: value.fromWarehouseId,
           toWarehouseId: value.toWarehouseId,
           expectedEndOn: value.expectedEndOn,
           lines: value.lines,
         });
-        await finishCreatedDocuments({
-          intent,
-          navigate: (href) => router.push(href),
-          main: sentTransferLink(created),
-          message: "Перемещение создано",
-          refresh: reload,
-        });
+        await reload();
+        openSentTransfer(created, (href) => router.push(href));
         return true;
       }}
     />
@@ -810,7 +775,7 @@ export const ReserveOnTransferForm = ({
   });
   const picked = positiveEntries(quantities);
 
-  const submit = async (intent: CreateIntent) => {
+  const submit = async () => {
     if (submitting || picked.length === 0) return;
     const errorKey = firstErrorKey(
       rows.map((row) => ({ key: row.key, raw: quantities[row.key] ?? "", limit: row.limit, mode: "hard" as const })),
@@ -850,22 +815,13 @@ export const ReserveOnTransferForm = ({
       onOpenChange(false);
       setQuantities({});
       const [main, ...rest] = created;
-      if (main) {
-        await finishCreatedDocuments({
-          intent,
-          navigate: (href) => router.push(href),
-          main,
-          rest,
-          message: "Резерв в перемещении создан",
-          refresh: reload,
-        });
-      }
+      if (main) openCreatedDocuments((href) => router.push(href), main, rest);
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       if (created.length > 0) {
         onOpenChange(false);
         setQuantities({});
-        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), reload, intent);
+        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), reload);
         return;
       }
       setServerError(translateLogisticsError(raw));
@@ -886,8 +842,7 @@ export const ReserveOnTransferForm = ({
       title="Зарезервировать в перемещении"
       footerSummary={picked.length ? pluralTovar(picked.length) : "Нет строк"}
       submitLabel="Зарезервировать"
-      createIntents
-      onSubmit={(intent) => void submit(intent)}
+      onSubmit={() => void submit()}
       submitDisabled={picked.length === 0}
       disabledReason="Введите количество"
       submitting={submitting}

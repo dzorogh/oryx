@@ -52,9 +52,8 @@ import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-lo
 import { projectTransferDetail, transferHasMixedOwners } from "@/features/logistics/transfer-detail-projection";
 import {
   freeTransferPayload,
-  sentTransferLink,
+  openSentTransfer,
 } from "@/features/logistics/transfer-direct-send";
-import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { warehouseCode } from "@/features/logistics/logistics-lookups";
 import { OrderMoneyTab } from "@/features/logistics/ui/order-money-tab";
 import { MIXED_OWNERS_WARNING } from "@/features/logistics/customer-order-oms";
@@ -125,20 +124,17 @@ export const TransfersPage = () => {
     [deadlineFilter, fromFilter, listRows, search, status, toFilter],
   );
 
-  const create = async (
-    value: {
-      fromWarehouseId: string;
-      toWarehouseId: string;
-      expectedEndOn: string | null;
-      lines: Array<{
-        productId: string;
-        quantity: number;
-        ownerType?: import("@/features/logistics/logistics-types").OwnerType | null;
-        ownerId?: string | null;
-      }>;
-    },
-    intent: CreateIntent,
-  ) => {
+  const create = async (value: {
+    fromWarehouseId: string;
+    toWarehouseId: string;
+    expectedEndOn: string | null;
+    lines: Array<{
+      productId: string;
+      quantity: number;
+      ownerType?: import("@/features/logistics/logistics-types").OwnerType | null;
+      ownerId?: string | null;
+    }>;
+  }) => {
     const created = await createAndSendTransfer(
       freeTransferPayload({
         fromWarehouseId: value.fromWarehouseId,
@@ -147,13 +143,8 @@ export const TransfersPage = () => {
         lines: value.lines,
       }),
     );
-    await finishCreatedDocuments({
-      intent,
-      navigate: (href) => router.push(href),
-      main: sentTransferLink(created),
-      message: "Перемещение создано",
-      refresh: reload,
-    });
+    await reload();
+    openSentTransfer(created, (href) => router.push(href));
     return true;
   };
 
@@ -553,7 +544,7 @@ export const TransferDetailPage = () => {
         balances={balances}
         context={{ kind: "free" }}
         preset={cancelGuidance?.transferPreset}
-        onSubmit={async (value, intent) => {
+        onSubmit={async (value) => {
           const created = await createAndSendTransfer(
             freeTransferPayload({
               fromWarehouseId: value.fromWarehouseId,
@@ -562,13 +553,8 @@ export const TransferDetailPage = () => {
               lines: value.lines,
             }),
           );
-          await finishCreatedDocuments({
-            intent,
-            navigate: (href) => router.push(href),
-            main: sentTransferLink(created),
-            message: "Обратное перемещение создано",
-            refresh: reload,
-          });
+          await reload();
+          openSentTransfer(created, (href) => router.push(href));
           return true;
         }}
       />

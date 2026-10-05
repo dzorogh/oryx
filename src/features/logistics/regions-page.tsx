@@ -23,7 +23,6 @@ import { relatedReservationsForRegion } from "@/features/logistics/logistics-rel
 import { documentKey, documentKeysForAssignedEntity } from "@/features/logistics/logistics-types";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
-import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
@@ -143,21 +142,16 @@ export const RegionsPage = () => {
     );
   });
 
-  const create = async (intent: CreateIntent) => {
+  const create = async () => {
     if (submitting || !name.trim()) return;
     setSubmitting(true);
     setServerError(null);
     try {
       const id = await createRegion({ name: name.trim() });
+      await reload();
       setOpen(false);
       setName("");
-      await finishCreatedDocuments({
-        intent,
-        navigate: (href) => router.push(href),
-        main: { href: hrefForRegion(id), label: "Регион" },
-        message: "Регион создан",
-        refresh: reload,
-      });
+      router.push(hrefForRegion(id));
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -190,8 +184,7 @@ export const RegionsPage = () => {
         kicker="Регионы"
         title="Новый регион"
         submitLabel="Добавить"
-        createIntents
-        onSubmit={(intent) => void create(intent)}
+        onSubmit={() => void create()}
         submitDisabled={!name.trim()}
         disabledReason="Укажите название"
         submitting={submitting}
