@@ -52,7 +52,10 @@ export type CatalogHintColumn = {
   header: string;
   muted?: boolean;
   bold?: boolean;
+  align?: "left" | "right";
 };
+
+const columnAlign = (column: CatalogHintColumn) => (column.align === "left" ? "text-left" : "text-right");
 
 export const focusQuantityInput = (key: string) => {
   document.querySelector<HTMLInputElement>(`[data-qty-key="${CSS.escape(key)}"]`)?.focus();
@@ -181,7 +184,7 @@ export const CatalogQuantityTable = ({
           <tr className="border-b text-left text-xs text-muted-foreground">
             <th className="px-3 py-2 font-medium">Товар</th>
             {columns.map((column) => (
-              <th key={column.id} className="px-2 py-2 text-right font-medium">
+              <th key={column.id} className={cn("px-2 py-2 font-medium", columnAlign(column))}>
                 {column.header}
               </th>
             ))}
@@ -392,7 +395,8 @@ const ProductBlock = ({
           <td
             key={column.id}
             className={cn(
-              "px-2 py-2 text-right tabular-nums",
+              "px-2 py-2 tabular-nums",
+              columnAlign(column),
               column.muted ? "text-muted-foreground" : "text-foreground",
               column.bold && "font-semibold",
             )}
@@ -458,7 +462,8 @@ const ProductBlock = ({
               <td
                 key={column.id}
                 className={cn(
-                  "px-2 py-1.5 text-right text-xs tabular-nums",
+                  "px-2 py-1.5 text-xs tabular-nums",
+                  columnAlign(column),
                   column.muted && "text-muted-foreground",
                   column.bold && "font-medium text-foreground",
                 )}

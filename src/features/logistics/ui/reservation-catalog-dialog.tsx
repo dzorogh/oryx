@@ -8,6 +8,7 @@ import { formatQuantity } from "@/features/logistics/logistics-labels";
 import {
   customerOrderById,
   locationLabel,
+  ownerLabel,
   regionCode,
 } from "@/features/logistics/logistics-lookups";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
@@ -31,11 +32,17 @@ import {
   CatalogQuantityTable,
   focusQuantityInput,
   useCatalogCollapse,
+  type CatalogProductRow,
 } from "@/features/logistics/ui/catalog-quantity-table";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { catalogProductsFromPlace, parseOwnerQuantityKey, placeOwnersByProduct } from "@/features/logistics/ui/place-catalog";
-import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
+import {
+  finishCreatedDocuments,
+  reportPartialCreate,
+  type CreatedDocLink,
+  type CreateIntent,
+} from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 export type ReservationCatalogPreset = {
@@ -74,7 +81,30 @@ export const inferReservationDirection = (preset?: ReservationCatalogPreset): Re
   return "reserve";
 };
 
+const ALL_PLACES = "all";
+
 const placeKey = (type: string, id: string) => `${type}:${id}`;
+
+/** Ключ количества: `тип:место|товар:владелец:id` — одна подстрока на место и владельца. */
+const placeQuantityKey = (place: string, ownerKey: string) => `${place}|${ownerKey}`;
+
+const parsePlaceQuantityKey = (key: string) => {
+  const separator = key.indexOf("|");
+  if (separator < 0) return null;
+  const [locationType, locationId] = key.slice(0, separator).split(":");
+  const owner = parseOwnerQuantityKey(key.slice(separator + 1));
+  if (!owner || (locationType !== "warehouse" && locationType !== "transfer") || !locationId) return null;
+  return { ...owner, locationType: locationType as ReservationLocationType, locationId };
+};
+
+const matchesSourceOwner = (
+  sourceType: OwnerType | null,
+  sourceId: string | null,
+  ownerType: OwnerType | null,
+  ownerId: string | null,
+) => !sourceType || ownersEqual(ownerType, ownerId, sourceType, sourceId);
+
+type PlaceOption = { key: string; locationType: ReservationLocationType; locationId: string; label: string };
 
 export const ReservationCatalogDialog = ({
   open,
@@ -83,6 +113,8 @@ export const ReservationCatalogDialog = ({
   balances,
   preset,
   direction: directionProp,
+  lockDestination,
+  lockSource,
   loading,
   loadError,
 }: {
@@ -92,12 +124,16 @@ export const ReservationCatalogDialog = ({
   balances: StockBalance[];
   preset?: ReservationCatalogPreset;
   direction?: ReservationDirection;
+  /** Назначение берётся из `preset.toOwner*` и не меняется в форме. */
+  lockDestination?: boolean;
+  /** Списываются только резервы владельца `preset.fromOwner*`. */
+  lockSource?: boolean;
   loading?: boolean;
   loadError?: string | null;
 }) => {
   const router = useRouter();
   const direction = directionProp ?? inferReservationDirection(preset);
-  const [place, setPlace] = useState("");
+  const [place, setPlace] = useState(ALL_PLACES);
   const [destKind, setDestKind] = useState<"order" | "region" | "free">("order");
   const [destId, setDestId] = useState("");
   const [quantities, setQuantities] = useState<Record<string, string>>({});
@@ -112,7 +148,7 @@ export const ReservationCatalogDialog = ({
     wasOpen.current = open;
     if (!becameOpen) return;
     const nextPlace = preset?.locationType && preset.locationId ? placeKey(preset.locationType, preset.locationId) : "";
-    setPlace(nextPlace);
+    setPlace(nextPlace || ALL_PLACES);
     if (direction === "release") {
       setDestKind("free");
       setDestId("");
@@ -128,7 +164,7 @@ export const ReservationCatalogDialog = ({
       const ownerType = preset.fromOwnerType ?? (direction === "reserve" ? null : preset.fromOwnerType);
       const ownerId = isFreeOwner(ownerType, preset.fromOwnerId) ? "" : (preset.fromOwnerId ?? "");
       const keyOwner = isFreeOwner(ownerType, preset.fromOwnerId) ? "free" : ownerType;
-      if (keyOwner) seeded[`${preset.productId}:${keyOwner}:${ownerId}`] = "";
+      if (keyOwner) seeded[placeQuantityKey(nextPlace, `${preset.productId}:${keyOwner}:${ownerId}`)] = "";
     }
     setQuantities(seeded);
     setSearch("");
@@ -137,13 +173,15 @@ export const ReservationCatalogDialog = ({
     setServerError(null);
   }, [open, preset, direction]);
 
-  const [locationType, locationId] = place.split(":") as [ReservationLocationType | "", string];
+  const showAllPlaces = place === ALL_PLACES;
+  const sourceOwnerType = lockSource && direction !== "reserve" ? (preset?.fromOwnerType ?? null) : null;
+  const sourceOwnerId = sourceOwnerType ? (preset?.fromOwnerId ?? null) : null;
   const destOwnerType: OwnerType | null = destKind === "free" ? null : destKind;
   const destOwnerId = destKind === "free" ? null : destId || null;
 
-  const placeItems = useMemo(() => {
+  const places = useMemo(() => {
     const seen = new Set<string>();
-    const items: Array<{ value: string; label: string }> = [];
+    const items: PlaceOption[] = [];
     const presetKey = preset?.locationType && preset.locationId ? placeKey(preset.locationType, preset.locationId) : "";
     const add = (locationType: string, locationId: string) => {
       if (locationType !== "warehouse" && locationType !== "transfer") return;
@@ -153,39 +191,64 @@ export const ReservationCatalogDialog = ({
       const relevant = [...owners.values()].some((list) =>
         list.some((owner) => {
           const free = isFreeOwner(owner.ownerType, owner.ownerId);
-          return direction === "reserve" ? free : !free;
+          return direction === "reserve"
+            ? free
+            : !free && matchesSourceOwner(sourceOwnerType, sourceOwnerId, owner.ownerType, owner.ownerId);
         }),
       );
       if (!relevant && key !== presetKey) return;
       seen.add(key);
-      items.push({ value: key, label: locationLabel(snapshot, locationType, locationId) });
+      items.push({ key, locationType, locationId, label: locationLabel(snapshot, locationType, locationId) });
     };
     for (const entry of balances) add(entry.locationType, entry.locationId);
     if (preset?.locationType && preset.locationId) add(preset.locationType, preset.locationId);
     return items;
-  }, [balances, direction, preset?.locationId, preset?.locationType, snapshot]);
+  }, [balances, direction, preset?.locationId, preset?.locationType, snapshot, sourceOwnerId, sourceOwnerType]);
+
+  const placeItems = useMemo(
+    () =>
+      places.length > 0
+        ? [{ value: ALL_PLACES, label: "Все" }, ...places.map((entry) => ({ value: entry.key, label: entry.label }))]
+        : [],
+    [places],
+  );
 
   const products = useMemo(() => {
-    if (!locationType || !locationId) return [];
-    const owners = placeOwnersByProduct(balances, locationType, locationId);
-    for (const [productId, list] of owners) {
-      owners.set(
-        productId,
-        list.filter((owner) => {
-          const free = isFreeOwner(owner.ownerType, owner.ownerId);
-          if (direction === "reserve") return free;
-          if (direction === "release") return !free;
-          return !free && !ownersEqual(owner.ownerType, owner.ownerId, destOwnerType, destOwnerId);
-        }),
-      );
+    const sources = showAllPlaces ? places : places.filter((entry) => entry.key === place);
+    const byProduct = new Map<string, CatalogProductRow>();
+    for (const source of sources) {
+      const owners = placeOwnersByProduct(balances, source.locationType, source.locationId);
+      for (const [productId, list] of owners) {
+        owners.set(
+          productId,
+          list.filter((owner) => {
+            const free = isFreeOwner(owner.ownerType, owner.ownerId);
+            if (direction === "reserve") return free;
+            if (!matchesSourceOwner(sourceOwnerType, sourceOwnerId, owner.ownerType, owner.ownerId)) return false;
+            if (direction === "release") return !free;
+            return !free && !ownersEqual(owner.ownerType, owner.ownerId, destOwnerType, destOwnerId);
+          }),
+        );
+      }
+      for (const row of catalogProductsFromPlace(snapshot, owners)) {
+        const merged = byProduct.get(row.id) ?? { ...row, owners: [] };
+        merged.owners.push(
+          ...row.owners.map((owner) => ({
+            ...owner,
+            key: placeQuantityKey(source.key, owner.key),
+            hints: showAllPlaces ? [source.label, ...owner.hints] : owner.hints,
+          })),
+        );
+        byProduct.set(row.id, merged);
+      }
     }
-    return catalogProductsFromPlace(snapshot, owners);
-  }, [balances, destOwnerId, destOwnerType, direction, locationId, locationType, snapshot]);
+    return snapshot.products.flatMap((product) => byProduct.get(product.id) ?? []);
+  }, [balances, destOwnerId, destOwnerType, direction, place, places, showAllPlaces, snapshot, sourceOwnerId, sourceOwnerType]);
 
   const collapse = useCatalogCollapse(snapshot.categories, products, quantities, search);
   const lines = products.flatMap((product) =>
     product.owners.flatMap((owner) => {
-      const parsed = parseOwnerQuantityKey(owner.key);
+      const parsed = parsePlaceQuantityKey(owner.key);
       const quantity = parseDecimalQuantity(quantities[owner.key] ?? "");
       if (!parsed || quantity == null || quantity <= 0) return [];
       return [{ ...parsed, quantity, limit: owner.limit, key: owner.key }];
@@ -204,7 +267,6 @@ export const ReservationCatalogDialog = ({
 
   const submit = async (intent: CreateIntent) => {
     if (submitting) return;
-    if (!locationType || !locationId) return;
     if (direction !== "release" && !destOwnerId) {
       setServerError(direction === "reserve" ? "Выберите, под кого резервировать" : "Выберите владельца назначения");
       return;
@@ -216,28 +278,50 @@ export const ReservationCatalogDialog = ({
     if (lines.length === 0) return;
     setSubmitting(true);
     setServerError(null);
+    const byPlace = new Map<string, typeof lines>();
+    for (const line of lines) {
+      const key = placeKey(line.locationType, line.locationId);
+      byPlace.set(key, [...(byPlace.get(key) ?? []), line]);
+    }
+    const created: CreatedDocLink[] = [];
     try {
-      const id = await createAndPostReservation({
-        locationType,
-        locationId,
-        toOwnerType: destOwnerType,
-        toOwnerId: destOwnerId,
-        lines: lines.map((line) => ({
-          productId: line.productId,
-          quantity: line.quantity,
-          fromOwnerType: line.ownerType,
-          fromOwnerId: line.ownerId,
-        })),
-      });
+      for (const group of byPlace.values()) {
+        const { locationType, locationId } = group[0];
+        const id = await createAndPostReservation({
+          locationType,
+          locationId,
+          toOwnerType: destOwnerType,
+          toOwnerId: destOwnerId,
+          lines: group.map((line) => ({
+            productId: line.productId,
+            quantity: line.quantity,
+            fromOwnerType: line.ownerType,
+            fromOwnerId: line.ownerId,
+          })),
+        });
+        created.push({
+          href: logisticsPath("reservations", id),
+          label: byPlace.size > 1 ? `Резерв · ${locationLabel(snapshot, locationType, locationId)}` : "Резерв",
+        });
+      }
       onOpenChange(false);
-      await finishCreatedDocuments({
-        intent,
-        navigate: (href) => router.push(href),
-        main: { href: logisticsPath("reservations", id), label: "Резерв" },
-        message: DONE_MESSAGES[direction],
-      });
+      const [main, ...rest] = created;
+      if (main) {
+        await finishCreatedDocuments({
+          intent,
+          navigate: (href) => router.push(href),
+          main,
+          rest,
+          message: DONE_MESSAGES[direction],
+        });
+      }
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
+      if (created.length > 0) {
+        onOpenChange(false);
+        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), undefined, intent);
+        return;
+      }
       setServerError(translateLogisticsError(raw));
     } finally {
       setSubmitting(false);
@@ -249,6 +333,10 @@ export const ReservationCatalogDialog = ({
     .filter((order) => isOpenCustomerOrderStatus(order.status))
     .map((order) => ({ value: order.id, label: order.number }));
   const regionItems = snapshot.regions.map((region) => ({ value: region.id, label: region.code || regionCode(snapshot, region.id) }));
+  const lockedDestinationLabel =
+    destKind === "region"
+      ? `Регион: ${regionCode(snapshot, destId)}`
+      : `Заказ: ${customerOrderById(snapshot, destId)?.number ?? "—"}`;
 
   return (
     <DialogShell
@@ -265,12 +353,17 @@ export const ReservationCatalogDialog = ({
             label="Место"
             value={place}
             items={placeItems}
-            onChange={setPlace}
-            placeholder="Выберите место"
+            onChange={(value) => setPlace(value || ALL_PLACES)}
             emptyLabel="Нет места с остатком"
           />
           {direction === "release" ? (
-            <p className="mb-1.5 text-sm text-muted-foreground">Назначение: Свободно</p>
+            <p className="mb-1.5 text-sm text-muted-foreground">
+              {sourceOwnerType && sourceOwnerId
+                ? `${sourceOwnerType === "region" ? "Регион" : "Заказ"}: ${ownerLabel(snapshot, sourceOwnerType, sourceOwnerId)} → Свободно`
+                : "Назначение: Свободно"}
+            </p>
+          ) : lockDestination ? (
+            <p className="mb-1.5 text-sm text-muted-foreground">{lockedDestinationLabel}</p>
           ) : (
             <>
               <FieldSelect
@@ -314,31 +407,32 @@ export const ReservationCatalogDialog = ({
       submitLabel={VERBS[direction]}
       createIntents
       onSubmit={(intent) => void submit(intent)}
-      submitDisabled={!place || !destReady || lines.length === 0}
-      disabledReason={!place ? "Выберите место" : !destReady ? "Выберите назначение" : "Введите количество"}
+      submitDisabled={!destReady || lines.length === 0}
+      disabledReason={!destReady ? "Выберите назначение" : "Введите количество"}
       submitting={submitting}
       serverError={serverError}
-      dirty={Boolean(place || destId || enteredQuantityKeys(quantities).length)}
+      dirty={Boolean(destId || enteredQuantityKeys(quantities).length)}
     >
-      {!place ? (
-        <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-          Выберите место, чтобы увидеть остаток
-        </div>
-      ) : (
-        <CatalogQuantityTable
-          categories={snapshot.categories}
-          products={products}
-          columns={[{ id: "stock", header: "Остаток" }]}
-          quantities={quantities}
-          onQuantityChange={(key, raw) => setQuantities((current) => ({ ...current, [key]: raw }))}
-          limitMode="hard"
-          search={search}
-          collapsed={collapse.collapsed}
-          onToggleGroup={collapse.toggle}
-          onlySelected={onlySelected}
-          empty={customerOrderById(snapshot, destId) ? "Нет остатка кроме назначения" : "Нет остатка"}
-        />
-      )}
+      <CatalogQuantityTable
+        categories={snapshot.categories}
+        products={products}
+        columns={
+          showAllPlaces
+            ? [
+                { id: "place", header: "Место", align: "left" },
+                { id: "stock", header: "Остаток" },
+              ]
+            : [{ id: "stock", header: "Остаток" }]
+        }
+        quantities={quantities}
+        onQuantityChange={(key, raw) => setQuantities((current) => ({ ...current, [key]: raw }))}
+        limitMode="hard"
+        search={search}
+        collapsed={collapse.collapsed}
+        onToggleGroup={collapse.toggle}
+        onlySelected={onlySelected}
+        empty={customerOrderById(snapshot, destId) ? "Нет остатка кроме назначения" : "Нет остатка"}
+      />
     </DialogShell>
   );
 };
