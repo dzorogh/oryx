@@ -15,7 +15,17 @@ import { cn } from "@/lib/utils";
 export type FieldSelectItem = {
   value: string;
   label: string;
+  hint?: string;
 };
+
+const ItemContent = ({ item }: { item: FieldSelectItem }) => (
+  <>
+    {item.label}
+    {item.hint ? (
+      <span className="rounded-sm bg-primary/10 px-1.5 text-xs font-medium text-primary">{item.hint}</span>
+    ) : null}
+  </>
+);
 
 export const FieldSelect = ({
   label,
@@ -72,13 +82,18 @@ export const FieldSelect = ({
             aria-invalid={invalid || undefined}
             autoFocus={autoFocus}
           >
-            <SelectValue placeholder={placeholder} />
+            <SelectValue placeholder={placeholder}>
+              {(selected: string | null) => {
+                const item = items.find((entry) => entry.value === selected);
+                return item ? <ItemContent item={item} /> : placeholder;
+              }}
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="w-auto min-w-(--anchor-width)">
             <SelectGroup>
               {items.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
-                  {item.label}
+                  <ItemContent item={item} />
                 </SelectItem>
               ))}
             </SelectGroup>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { pluralTovar } from "@/features/logistics/category-tree";
 import { formatQuantity } from "@/features/logistics/logistics-labels";
-import { customerOrderById, warehouseCode, warehouseSelectItems } from "@/features/logistics/logistics-lookups";
+import { customerOrderById, regionById, warehouseCode, warehouseSelectItems } from "@/features/logistics/logistics-lookups";
 import type { CustomerOrderLine, LogisticsSnapshot, OwnerType, StockBalance } from "@/features/logistics/logistics-types";
 import {
   enteredQuantityKeys,
@@ -22,7 +22,7 @@ import {
 } from "@/features/logistics/ui/catalog-quantity-table";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
-import { FieldSelect } from "@/features/logistics/ui/field-select";
+import { FieldSelect, type FieldSelectItem } from "@/features/logistics/ui/field-select";
 import { catalogProductsFromPlace, catalogSourceWarehouseIds, parseOwnerQuantityKey, placeOwnersByProduct } from "@/features/logistics/ui/place-catalog";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
@@ -52,6 +52,8 @@ export type TransferCreatePreset = {
     ownerId?: string | null;
   }>;
 };
+
+const PICKUP_HINT = "забирает клиент";
 
 const presetQuantities = (preset?: TransferCreatePreset): Record<string, string> => {
   const quantities: Record<string, string> = {};
@@ -94,7 +96,11 @@ export const TransferCreateDialog = ({
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const orderId = context.kind === "order" ? context.customerOrderId : null;
-  const orderNumber = orderId ? (customerOrderById(snapshot, orderId)?.number ?? orderId) : "";
+  const order = orderId ? customerOrderById(snapshot, orderId) : undefined;
+  const orderNumber = orderId ? (order?.number ?? orderId) : "";
+  const pickupWarehouseId = order ? (regionById(snapshot, order.regionId)?.hubWarehouseId ?? null) : null;
+  const markPickup = (items: FieldSelectItem[]) =>
+    items.map((item) => (item.value === pickupWarehouseId ? { ...item, hint: PICKUP_HINT } : item));
   const wasOpen = useRef(false);
 
   useEffect(() => {
@@ -126,6 +132,11 @@ export const TransferCreateDialog = ({
     () => warehouseSelectItems(snapshot).filter((item) => sourceIds.includes(item.value)),
     [snapshot, sourceIds],
   );
+  const destinationItems = useMemo(() => {
+    const items = warehouseSelectItems(snapshot, fromId);
+    const pickup = items.find((item) => item.value === pickupWarehouseId);
+    return pickup ? [pickup, ...items.filter((item) => item !== pickup)] : items;
+  }, [fromId, pickupWarehouseId, snapshot]);
 
   useEffect(() => {
     if (fromId && !sourceIds.includes(fromId)) setFromId(preset?.fromWarehouseId && sourceIds.includes(preset.fromWarehouseId) ? preset.fromWarehouseId : "");
@@ -225,7 +236,7 @@ export const TransferCreateDialog = ({
           <FieldSelect
             label="Со склада"
             value={fromId}
-            items={sourceItems.filter((item) => item.value !== toId)}
+            items={markPickup(sourceItems.filter((item) => item.value !== toId))}
             onChange={setFromId}
             placeholder="Выберите склад"
             emptyLabel={orderId ? "Нет склада с товарами этого заказа" : "Нет склада с остатком"}
@@ -234,7 +245,7 @@ export const TransferCreateDialog = ({
           <FieldSelect
             label="На склад"
             value={toId}
-            items={warehouseSelectItems(snapshot, fromId)}
+            items={markPickup(destinationItems)}
             onChange={setToId}
             placeholder="Выберите склад"
           />

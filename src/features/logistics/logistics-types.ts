@@ -180,6 +180,7 @@ export type LogisticsRegion = {
   code: string;
   name: string;
   stockOwnerId: string;
+  hubWarehouseId: string | null;
 };
 
 export type LogisticsSetting = {

@@ -349,6 +349,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
       code: storedEntityCode("region", row.code, id),
       name: str(row.name),
       stockOwnerId: str(row.stock_owner_id),
+      hubWarehouseId: strOrNull(row.hub_warehouse_id),
     };
   });
 
