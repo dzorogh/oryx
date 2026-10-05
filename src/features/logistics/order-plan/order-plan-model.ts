@@ -7,6 +7,8 @@ import {
   type OrderPlanAction,
   type OrderPlanActionKey,
   type OrderPlanCoverage,
+  type OrderPlanCoverageDocument,
+  type OrderPlanCoverageKind,
   type OrderPlanPayload,
 } from "@/features/logistics/order-plan/order-plan-types";
 
@@ -216,6 +218,48 @@ const buildBar = (ordered: number, parts: BarSegment[]): BarModel => {
   return { segments, overflow: Math.max(0, total - ordered), base };
 };
 
+export const HAVE_KINDS: OrderPlanCoverageKind[] = ["shipped", "warehouse", "transfer", "production_output"];
+
+export type DocumentLink = { number: string; href: string | null };
+
+export type HaveRow = {
+  keyString: string;
+  kind: OrderPlanCoverageKind;
+  /** Пусто у «отгружено» и у ранних снимков «Было» без мест. */
+  place: PlaceInfo | null;
+  quantity: number;
+  documents: DocumentLink[];
+};
+
+export type HaveGroup = { kind: OrderPlanCoverageKind; rows: HaveRow[]; total: number };
+
+const DOCUMENT_PATHS: Record<string, string> = {
+  reservation: "reservations",
+  shipment: "shipments",
+};
+
+const documentLink = (doc: OrderPlanCoverageDocument): DocumentLink => {
+  const segment = DOCUMENT_PATHS[doc.kind];
+  return { number: doc.number, href: segment && doc.sequence ? logisticsPath(segment, doc.sequence) : null };
+};
+
+const buildHaveGroups = (coverage: OrderPlanCoverage | undefined, places: Map<string, PlaceInfo>): HaveGroup[] =>
+  HAVE_KINDS.map((kind) => {
+    const rows = (coverage?.places ?? [])
+      .filter((item) => item.kind === kind && Math.abs(item.quantity) > EPS)
+      .map(
+        (item): HaveRow => ({
+          keyString: `have|${kind}|${item.locationId ?? ""}`,
+          kind,
+          place: item.locationId && kind !== "shipped" ? placeFor(places, item.locationId) : null,
+          quantity: item.quantity,
+          documents: item.documents.map(documentLink),
+        }),
+      )
+      .sort((left, right) => (left.place?.order ?? 0) - (right.place?.order ?? 0));
+    return { kind, rows, total: rows.reduce((sum, row) => sum + row.quantity, 0) };
+  }).filter((group) => group.rows.length > 0);
+
 export type ProductPlan = {
   variantId: string;
   name: string;
@@ -225,6 +269,8 @@ export type ProductPlan = {
   ordered: number;
   have: number;
   haveByKind: Record<BarKind, number>;
+  /** Из чего состоит «Уже есть»: по местам, с документами резерва и отгрузки. */
+  haveGroups: HaveGroup[];
   plan: number;
   planByKind: Record<BarKind, number>;
   shortageByKind: Record<BarKind, number>;
@@ -303,6 +349,7 @@ export const buildProductPlans = (args: {
       ordered,
       have,
       haveByKind,
+      haveGroups: buildHaveGroups(cover, places),
       plan: planTotal,
       planByKind,
       shortageByKind,
@@ -477,7 +524,7 @@ export type SummaryRow = {
 
 export type SummaryGroup = {
   id: string;
-  kind: SourcePlaceKind | "new_po";
+  kind: SourcePlaceKind | "new_po" | "shipped";
   title: string;
   hint: string | null;
   goneLabel: string | null;
@@ -487,6 +534,8 @@ export type SummaryGroup = {
 };
 
 export type PlanSummary = {
+  /** «Уже есть» (у запущенного — «Было»): по местам, строки — товары. */
+  have: SummaryGroup[];
   take: SummaryGroup[];
   order: SummaryGroup[];
   uncovered: Array<{ variantId: string; name: string; quantity: number }>;
@@ -508,6 +557,57 @@ const resultOf = (actions: OrderPlanAction[]): SummaryGroup["result"] => {
     number: action.resultNumber,
     href: segment && action.resultSequence ? logisticsPath(segment, action.resultSequence) : null,
   };
+};
+
+export const HAVE_LABELS: Record<OrderPlanCoverageKind, string> = {
+  shipped: "Отгружено",
+  warehouse: "Склад",
+  transfer: "В пути",
+  production_output: "Выпуск",
+};
+
+const buildHaveSummary = (products: ProductPlan[]): SummaryGroup[] => {
+  const groups = new Map<string, { group: SummaryGroup; documents: Set<string>; order: number }>();
+  for (const product of products) {
+    for (const haveGroup of product.haveGroups) {
+      for (const row of haveGroup.rows) {
+        const id = `have:${row.kind}:${row.place?.locationId ?? ""}`;
+        const entry = groups.get(id) ?? {
+          group: {
+            id,
+            kind: row.kind,
+            title: row.place?.code ?? HAVE_LABELS[row.kind],
+            hint: row.place?.hint ?? null,
+            goneLabel: row.place?.goneLabel ?? null,
+            href: row.place?.href ?? null,
+            result: null,
+            rows: [],
+          },
+          documents: new Set<string>(),
+          order: HAVE_KINDS.indexOf(row.kind) * 1e7 + (row.place?.order ?? 0),
+        };
+        for (const doc of row.documents) {
+          entry.documents.add(doc.number);
+        }
+        entry.group.rows.push({
+          keyString: `${id}:${product.variantId}`,
+          variantId: product.variantId,
+          name: product.name,
+          owner: null,
+          quantity: row.quantity,
+          shortage: 0,
+          excess: false,
+        });
+        groups.set(id, entry);
+      }
+    }
+  }
+  return [...groups.values()]
+    .sort((left, right) => left.order - right.order)
+    .map(({ group, documents }) => ({
+      ...group,
+      hint: [group.hint, ...documents].filter(Boolean).join(" · ") || null,
+    }));
 };
 
 export const buildPlanSummary = (args: {
@@ -583,6 +683,7 @@ export const buildPlanSummary = (args: {
     );
   }
   return {
+    have: buildHaveSummary(products),
     take: sorted.filter((entry) => entry.section === "take").map((entry) => entry.group),
     order: sorted.filter((entry) => entry.section === "order").map((entry) => entry.group),
     uncovered: products

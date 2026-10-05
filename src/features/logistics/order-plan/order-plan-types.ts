@@ -1,5 +1,17 @@
 export type OrderPlanActionKind = "reserve" | "produce";
 
+export type OrderPlanCoverageKind = "shipped" | "warehouse" | "transfer" | "production_output";
+
+export type OrderPlanCoverageDocument = { kind: string; number: string; sequence: string };
+
+/** Часть «Уже есть» в одном месте. У ранних снимков «Было» места нет — `locationId` пустой. */
+export type OrderPlanCoveragePlace = {
+  kind: OrderPlanCoverageKind;
+  locationId: string | null;
+  quantity: number;
+  documents: OrderPlanCoverageDocument[];
+};
+
 /** «Уже есть» по товару заказа: отгружено, резерв заказа на складах и в пути, строки в черновиках выпусков. */
 export type OrderPlanCoverage = {
   variantId: string;
@@ -8,6 +20,7 @@ export type OrderPlanCoverage = {
   warehouse: number;
   transfer: number;
   output: number;
+  places: OrderPlanCoveragePlace[];
 };
 
 /** Строка источника: место × владелец с доступным количеством. */
@@ -71,14 +84,40 @@ const strOrNull = (value: unknown): string | null => (value == null || value ===
 const num = (value: unknown): number => Number(value ?? 0);
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : []);
 
-const mapCoverage = (row: Row): OrderPlanCoverage => ({
-  variantId: str(row.variantId),
-  ordered: num(row.ordered),
-  shipped: num(row.shipped),
-  warehouse: num(row.warehouse),
-  transfer: num(row.transfer),
-  output: num(row.output),
+const COVERAGE_KINDS: OrderPlanCoverageKind[] = ["shipped", "warehouse", "transfer", "production_output"];
+
+const mapCoveragePlace = (row: Row): OrderPlanCoveragePlace => ({
+  kind: COVERAGE_KINDS.find((kind) => kind === row.kind) ?? "warehouse",
+  locationId: strOrNull(row.locationId),
+  quantity: num(row.quantity),
+  documents: rows(row.documents).map((doc) => ({
+    kind: str(doc.kind),
+    number: str(doc.number),
+    sequence: str(doc.sequence),
+  })),
 });
+
+const mapCoverage = (row: Row): OrderPlanCoverage => {
+  const totals = {
+    shipped: num(row.shipped),
+    warehouse: num(row.warehouse),
+    transfer: num(row.transfer),
+    output: num(row.output),
+  };
+  const places = Array.isArray(row.places)
+    ? rows(row.places).map(mapCoveragePlace)
+    : (
+        [
+          ["shipped", totals.shipped],
+          ["warehouse", totals.warehouse],
+          ["transfer", totals.transfer],
+          ["production_output", totals.output],
+        ] as const
+      )
+        .filter(([, quantity]) => quantity !== 0)
+        .map(([kind, quantity]) => ({ kind, locationId: null, quantity, documents: [] }));
+  return { variantId: str(row.variantId), ordered: num(row.ordered), ...totals, places };
+};
 
 const mapAction = (row: Row): OrderPlanAction => ({
   id: str(row.id),

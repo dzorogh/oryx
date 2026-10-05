@@ -353,6 +353,7 @@ export const OrderPlanTab = ({
           <div className="min-w-0 @3xl/plan:col-span-2 @6xl/plan:col-span-1 @6xl/plan:self-stretch">
             <OrderPlanSummary
               summary={summary}
+              launched={launched}
               selectedId={selected?.variantId ?? null}
               onSelect={selectProduct}
               footer={footer}

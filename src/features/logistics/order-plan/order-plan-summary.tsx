@@ -22,6 +22,16 @@ const MARKERS: Record<SummaryGroup["kind"], MarkerTone> = {
   production_output: "plan-output",
   production_order: "production_order",
   new_po: "plan-output",
+  shipped: "plan-warehouse",
+};
+
+const HAVE_MARKERS: Record<SummaryGroup["kind"], MarkerTone> = {
+  warehouse: "warehouse",
+  transfer: "transfer",
+  production_output: "output",
+  production_order: "production_order",
+  new_po: "output",
+  shipped: "warehouse",
 };
 
 const Section = ({ title, count, children }: { title: string; count: number; children: ReactNode }) => (
@@ -37,15 +47,21 @@ const Section = ({ title, count, children }: { title: string; count: number; chi
 const GroupBlock = ({
   group,
   plus,
+  have = false,
   selectedId,
   onSelect,
 }: {
   group: SummaryGroup;
   plus: boolean;
+  have?: boolean;
   selectedId: string | null;
   onSelect: (variantId: string) => void;
 }) => {
-  const marker = group.kind === "production_order" && plus ? "plan-output" : MARKERS[group.kind];
+  const marker = have
+    ? HAVE_MARKERS[group.kind]
+    : group.kind === "production_order" && plus
+      ? "plan-output"
+      : MARKERS[group.kind];
   return (
     <div>
       <div className="flex min-h-7 items-center gap-1.5 px-2 pt-[7px] pb-[3px] text-xs text-zinc-600">
@@ -111,11 +127,13 @@ const GroupBlock = ({
 
 export const OrderPlanSummary = ({
   summary,
+  launched,
   selectedId,
   onSelect,
   footer,
 }: {
   summary: PlanSummary;
+  launched: boolean;
   selectedId: string | null;
   onSelect: (variantId: string) => void;
   footer: ReactNode;
@@ -131,6 +149,13 @@ export const OrderPlanSummary = ({
       <h3 className="text-[13px] font-semibold">План</h3>
     </div>
     <div className="px-2 pt-0.5 pb-2">
+      {summary.have.length > 0 ? (
+        <Section title={launched ? "Было" : "Уже есть"} count={summary.have.length}>
+          {summary.have.map((group) => (
+            <GroupBlock key={group.id} group={group} plus={false} have selectedId={selectedId} onSelect={onSelect} />
+          ))}
+        </Section>
+      ) : null}
       {summary.take.length > 0 ? (
         <Section title="Зарезервировать" count={summary.take.length}>
           {summary.take.map((group) => (

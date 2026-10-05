@@ -12,13 +12,17 @@ import {
 import { formatQuantity } from "@/features/logistics/logistics-labels";
 import { plantCode } from "@/features/logistics/logistics-lookups";
 import type { LogisticsSnapshot, ProductionStatus } from "@/features/logistics/logistics-types";
-import type {
-  ProduceRow,
-  ProductPlan,
-  SourceGroup,
-  SourcePlaceKind,
-  SourceRow,
+import {
+  HAVE_LABELS,
+  type DocumentLink,
+  type HaveRow,
+  type ProduceRow,
+  type ProductPlan,
+  type SourceGroup,
+  type SourcePlaceKind,
+  type SourceRow,
 } from "@/features/logistics/order-plan/order-plan-model";
+import type { OrderPlanCoverageKind } from "@/features/logistics/order-plan/order-plan-types";
 import type { OrderPlanActionKey } from "@/features/logistics/order-plan/order-plan-types";
 import {
   CoverageBar,
@@ -46,6 +50,13 @@ const GROUP_MARKERS: Record<SourcePlaceKind, MarkerTone> = {
   transfer: "transfer",
   production_output: "output",
   production_order: "production_order",
+};
+
+const HAVE_MARKERS: Record<OrderPlanCoverageKind, MarkerTone> = {
+  shipped: "warehouse",
+  warehouse: "warehouse",
+  transfer: "transfer",
+  production_output: "output",
 };
 
 const EDIT_GRID = "grid grid-cols-[minmax(0,1fr)_132px_64px_110px] items-center gap-2.5";
@@ -260,6 +271,37 @@ const NewPoLine = ({
   );
 };
 
+const DocumentLinks = ({ documents }: { documents: DocumentLink[] }) => (
+  <span className="flex min-w-0 flex-wrap gap-x-1.5 text-[12.5px]">
+    {documents.map((doc) =>
+      doc.href ? (
+        <a key={doc.number} href={doc.href} className="font-medium hover:underline">
+          {doc.number}
+        </a>
+      ) : (
+        <span key={doc.number} className="font-medium">
+          {doc.number}
+        </span>
+      ),
+    )}
+  </span>
+);
+
+const HaveLine = ({ row, editable }: { row: HaveRow; editable: boolean }) => (
+  <div className={cn(editable ? EDIT_GRID : VIEW_GRID, "min-h-10 rounded-md px-2 py-1.5")}>
+    {row.place ? (
+      <PlaceCell code={row.place.code} hint={row.place.hint} gone={row.place.goneLabel} href={row.place.href} />
+    ) : row.kind === "shipped" ? (
+      <b className="font-semibold">Клиенту</b>
+    ) : (
+      <span className="text-zinc-400">Место не сохранено</span>
+    )}
+    <DocumentLinks documents={row.documents} />
+    {editable ? <div /> : null}
+    <div className="pr-2 text-right font-semibold tabular-nums">{formatQuantity(row.quantity)}</div>
+  </div>
+);
+
 const SectionHead = ({ title, total, grid }: { title: string; total: string; grid: string }) => (
   <div className={cn(grid, "px-2 pt-1 pb-1.5 text-[13px] font-semibold")}>
     <span className="col-span-full flex items-center justify-between">
@@ -329,6 +371,27 @@ export const OrderPlanDetail = ({
         </div>
         <CoverageBar bar={product.bar} size="large" />
       </div>
+
+      {product.haveGroups.length > 0 ? (
+        <div className="border-b border-border/60 px-4 pt-2.5 pb-3">
+          <SectionHead title={launched ? "Было" : "Уже есть"} total={formatQuantity(product.have)} grid={grid} />
+          <ColumnHead labels={editable ? ["Источник", "Документ", "", "Количество"] : ["Источник", "Документ", "Количество"]} grid={grid} />
+          {product.haveGroups.map((group) => (
+            <div key={group.kind}>
+              <div className={cn(grid, "px-2 pt-2.5 pb-0.5 text-xs font-semibold text-zinc-600")}>
+                <span className={cn("flex items-center gap-1.5", editable ? "col-span-3" : "col-span-2")}>
+                  <Marker tone={HAVE_MARKERS[group.kind]} />
+                  {HAVE_LABELS[group.kind]}
+                </span>
+                <span className="pr-2 text-right text-zinc-500 tabular-nums">{formatQuantity(group.total)}</span>
+              </div>
+              {group.rows.map((row) => (
+                <HaveLine key={row.keyString} row={row} editable={editable} />
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {product.isCovered ? (
         <p className="px-4 py-3 text-[13px] text-zinc-500">Товар обеспечен</p>
