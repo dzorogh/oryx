@@ -119,7 +119,7 @@ const SourceLine = ({
               value={row.take}
               invalid={bad}
               disabled={row.take <= 0 && (row.available <= 0 || remaining <= 0)}
-              ariaLabel={`Взять ${row.place.code} ${row.owner.label}`}
+              ariaLabel={`Зарезервировать ${row.place.code} ${row.owner.label}`}
               onCommit={(quantity) => onSet(row.key, quantity)}
             />
           </div>
@@ -334,9 +334,12 @@ export const OrderPlanDetail = ({
         <p className="px-4 py-3 text-[13px] text-zinc-500">Товар обеспечен</p>
       ) : (
         <div className="border-b border-border/60 px-4 pt-2.5 pb-3 last:border-b-0">
-          <SectionHead title="Взять" total={formatQuantity(takeTotal)} grid={grid} />
+          <SectionHead title="Зарезервировать" total={formatQuantity(takeTotal)} grid={grid} />
           {groups.length > 0 ? (
-            <ColumnHead labels={editable ? ["Источник", "Владелец", "Доступно", "Взять"] : ["Источник", "Владелец", "Взято"]} grid={grid} />
+            <ColumnHead
+              labels={editable ? ["Источник", "Владелец", "Доступно", "Зарезервировать"] : ["Источник", "Владелец", "Зарезервировано"]}
+              grid={grid}
+            />
           ) : null}
           {groups.map((group) => (
             <div key={group.kind}>

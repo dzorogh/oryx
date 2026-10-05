@@ -161,7 +161,7 @@ export const buildOwnerResolver = (snapshot: LogisticsSnapshot) => {
 const barKindForPlace = (kind: LocationKind | null): BarKind =>
   kind === "warehouse" ? "warehouse" : kind === "transfer" ? "transfer" : "output";
 
-/** Минус действия: взято больше доступного; PO для «докинуть» отменён. У запущенного плана не считается. */
+/** Минус действия: зарезервировано больше доступного; PO для «докинуть» отменён. У запущенного плана не считается. */
 export const actionShortage = (
   action: OrderPlanAction,
   places: Map<string, PlaceInfo>,

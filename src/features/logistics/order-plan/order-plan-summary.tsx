@@ -124,7 +124,7 @@ export const OrderPlanSummary = ({
     size="sm"
     className={cn(
       logisticsCardClass,
-      "gap-0 py-0 shadow-sm data-[size=sm]:gap-0 data-[size=sm]:py-0 xl:sticky xl:top-4",
+      "gap-0 py-0 shadow-sm data-[size=sm]:gap-0 data-[size=sm]:py-0 @6xl/plan:sticky @6xl/plan:top-4",
     )}
   >
     <div className="border-b border-border/60 px-3.5 py-2.5">
@@ -132,7 +132,7 @@ export const OrderPlanSummary = ({
     </div>
     <div className="px-2 pt-0.5 pb-2">
       {summary.take.length > 0 ? (
-        <Section title="Взять" count={summary.take.length}>
+        <Section title="Зарезервировать" count={summary.take.length}>
           {summary.take.map((group) => (
             <GroupBlock key={group.id} group={group} plus={false} selectedId={selectedId} onSelect={onSelect} />
           ))}

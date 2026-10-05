@@ -310,7 +310,7 @@ export const OrderPlanTab = ({
   );
 
   return (
-    <div className="flex min-w-0 flex-col gap-3">
+    <div className="@container/plan flex min-w-0 flex-col gap-3">
       {plan || unsaved ? (
         <OrderPlanBar
           plans={payload.plans}
@@ -334,7 +334,7 @@ export const OrderPlanTab = ({
           <p className="text-sm text-muted-foreground">В заказе нет товаров</p>
         </Card>
       ) : (
-        <div className="grid items-start gap-3 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[288px_minmax(0,1fr)_424px]">
+        <div className="grid items-start gap-3 @3xl/plan:grid-cols-[240px_minmax(0,1fr)] @6xl/plan:grid-cols-[288px_minmax(0,1fr)_424px]">
           <OrderPlanProducts products={products} selectedId={selected?.variantId ?? null} onSelect={selectProduct} />
           <div ref={detailRef} className="min-w-0 scroll-mt-4">
             {selected ? (
@@ -350,7 +350,7 @@ export const OrderPlanTab = ({
               />
             ) : null}
           </div>
-          <div className="min-w-0 lg:col-span-2 xl:col-span-1 xl:self-stretch">
+          <div className="min-w-0 @3xl/plan:col-span-2 @6xl/plan:col-span-1 @6xl/plan:self-stretch">
             <OrderPlanSummary
               summary={summary}
               selectedId={selected?.variantId ?? null}
