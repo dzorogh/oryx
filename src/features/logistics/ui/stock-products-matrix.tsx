@@ -1,13 +1,15 @@
 // english-ui:ignore-file
 "use client";
 
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, type ReactNode } from "react";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   descendantCategoryIds,
+  groupByBaseProduct,
   pluralTovar,
+  pluralVariant,
   UNCATEGORIZED_GROUP_ID,
   type CategoryTreeNode,
 } from "@/features/logistics/category-tree";
@@ -18,7 +20,9 @@ import type { StockGroup } from "@/features/logistics/stock-filters";
 import {
   buildStockProductTree,
   type StockProductMatrixRow,
+  type StockRegionProductRow,
   type StockRegionSection,
+  type StockWarehouseProductRow,
   type StockWarehouseSection,
 } from "@/features/logistics/stock-product-matrix";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
@@ -108,7 +112,9 @@ const CollapsedHead = ({ id, columns }: { id: StockMatrixGroupId; columns: Stock
   </TableHead>
 );
 
-const CollapsedCell = () => <TableCell className="border-l border-border/60 bg-muted/40 p-0" style={{ width: 28 }} aria-hidden />;
+const CollapsedCell = ({ className, top }: { className?: string; top?: string }) => (
+  <TableCell className={cn("border-l border-border/60 bg-muted/40 p-0", className)} style={{ width: 28, top }} aria-hidden />
+);
 
 const GroupHead = ({
   id,
@@ -134,11 +140,24 @@ const GroupHead = ({
   </TableHead>
 );
 
-type StockTreeProduct = StockProductMatrixRow & {
-  id: string;
-  name: string;
-  categoryIds: string[];
-};
+type StockTreeProduct = ReturnType<typeof buildStockProductTree>["uncategorized"][number];
+
+/** Group row of a base product: identity replaces the product cell, quantities are the variants' sums. */
+type ProductMatrixSummary = { identity: ReactNode; stickyTop?: string };
+
+const sumStockRows = (rows: StockProductMatrixRow[]): StockProductMatrixRow => ({
+  productId: rows[0]?.productId ?? "",
+  owner: {
+    free: rows.reduce((sum, row) => sum + row.owner.free, 0),
+    regionReserve: rows.reduce((sum, row) => sum + row.owner.regionReserve, 0),
+    orderReserve: rows.reduce((sum, row) => sum + row.owner.orderReserve, 0),
+  },
+  location: {
+    warehouses: rows.reduce((sum, row) => sum + row.location.warehouses, 0),
+    production: rows.reduce((sum, row) => sum + row.location.production, 0),
+    transfers: rows.reduce((sum, row) => sum + row.location.transfers, 0),
+  },
+});
 
 const ProductMatrixCells = ({
   snapshot,
@@ -146,53 +165,61 @@ const ProductMatrixCells = ({
   show,
   columnCollapsed,
   depth = 0,
+  summary,
 }: {
   snapshot: LogisticsSnapshot;
   row: StockProductMatrixRow;
   show: (id: StockMatrixGroupId) => boolean;
   columnCollapsed: (id: StockMatrixGroupId) => boolean;
   depth?: number;
+  summary?: ProductMatrixSummary;
 }) => {
   const unit = unitFor(snapshot, row.productId);
   const total = row.location.warehouses + row.location.production + row.location.transfers;
   const ownerTotal = row.owner.free + row.owner.regionReserve + row.owner.orderReserve || 1;
+  const top = summary?.stickyTop;
+  const cell = (className: string) =>
+    cn(className, summary && "h-8 border-b border-border bg-zinc-50 py-0 font-semibold", top && "sticky z-[15]");
   return (
     <>
-      <TableCell className={IDENTITY_CELL} style={{ paddingLeft: 16 + depth * 14 + 20 }}>
-        <ProductIdentity snapshot={snapshot} productId={row.productId} />
+      <TableCell
+        className={cn(IDENTITY_CELL, summary && "h-8 border-b border-border bg-zinc-50 py-0 font-semibold whitespace-nowrap", top && "z-[16]")}
+        style={{ paddingLeft: summary ? 16 + depth * 14 : 16 + depth * 14 + 20, top }}
+      >
+        {summary ? summary.identity : <ProductIdentity snapshot={snapshot} productId={row.productId} />}
       </TableCell>
       {show("owner") ? (
         <>
-          <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#f7f7f8]")}>
+          <TableCell className={cell(cn(QUANTITY_CELL, "border-l border-border/60 bg-[#f7f7f8]"))} style={{ top }}>
             <StockQty quantity={row.owner.free} unit={unit} />
           </TableCell>
-          <TableCell className={cn(QUANTITY_CELL, "bg-[#f4f7ff]")}>
+          <TableCell className={cell(cn(QUANTITY_CELL, "bg-[#f4f7ff]"))} style={{ top }}>
             <StockQty quantity={row.owner.regionReserve} unit={unit} />
           </TableCell>
-          <TableCell className={cn(QUANTITY_CELL, "bg-[#eef3fe]")}>
+          <TableCell className={cell(cn(QUANTITY_CELL, "bg-[#eef3fe]"))} style={{ top }}>
             <StockQty quantity={row.owner.orderReserve} unit={unit} />
           </TableCell>
         </>
       ) : columnCollapsed("owner") ? (
-        <CollapsedCell />
+        <CollapsedCell className={top ? "sticky z-[15]" : undefined} top={top} />
       ) : null}
       {show("location") ? (
         <>
-          <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60")}>
+          <TableCell className={cell(cn(QUANTITY_CELL, "border-l border-border/60"))} style={{ top }}>
             <StockQty quantity={row.location.warehouses} unit={unit} />
           </TableCell>
-          <TableCell className={QUANTITY_CELL}>
+          <TableCell className={cell(QUANTITY_CELL)} style={{ top }}>
             <StockQty quantity={row.location.production} unit={unit} />
           </TableCell>
-          <TableCell className={QUANTITY_CELL}>
+          <TableCell className={cell(QUANTITY_CELL)} style={{ top }}>
             <StockQty quantity={row.location.transfers} unit={unit} />
           </TableCell>
         </>
       ) : columnCollapsed("location") ? (
-        <CollapsedCell />
+        <CollapsedCell className={top ? "sticky z-[15]" : undefined} top={top} />
       ) : null}
       {show("total") ? (
-        <TableCell className={cn(QUANTITY_CELL, "border-l border-border/60 bg-[#fcfcfc]")}>
+        <TableCell className={cell(cn(QUANTITY_CELL, "border-l border-border/60 bg-[#fcfcfc]"))} style={{ top }}>
           <div className="flex flex-col items-end gap-1">
             <span className="font-semibold tabular-nums">{formatQuantity(total, unit)}</span>
             <span className="flex h-1 w-[84px] overflow-hidden rounded-full bg-muted" aria-hidden>
@@ -209,7 +236,7 @@ const ProductMatrixCells = ({
           </div>
         </TableCell>
       ) : columnCollapsed("total") ? (
-        <CollapsedCell />
+        <CollapsedCell className={top ? "sticky z-[15]" : undefined} top={top} />
       ) : null}
     </>
   );
@@ -305,17 +332,67 @@ const StockGroupRows = ({
       </TableRow>
       {!isCollapsed ? (
         <>
-          {node.products.map((product) => (
-            <TableRow key={`${node.id}-${product.id}`} className="hover:bg-muted/40">
-              <ProductMatrixCells
-                snapshot={snapshot}
-                row={product}
-                show={show}
-                columnCollapsed={columnCollapsed}
-                depth={node.depth}
-              />
-            </TableRow>
-          ))}
+          {groupByBaseProduct(node.id, node.products, (product) => ({
+            id: product.baseProductId,
+            name: product.baseProductName,
+          })).map((entry) => {
+            const productRow = (product: StockTreeProduct, depth: number) => (
+              <TableRow key={`${node.id}-${product.id}`} className="hover:bg-muted/40">
+                <ProductMatrixCells
+                  snapshot={snapshot}
+                  row={product}
+                  show={show}
+                  columnCollapsed={columnCollapsed}
+                  depth={depth}
+                />
+              </TableRow>
+            );
+            if (entry.kind === "item") return productRow(entry.item, node.depth);
+            const { group } = entry;
+            const groupDepth = node.depth + 1;
+            const groupCollapsed = collapsed.has(group.id);
+            return (
+              <Fragment key={group.id}>
+                <TableRow
+                  data-group-id={group.id}
+                  data-group-depth={groupDepth}
+                  className="cursor-pointer hover:bg-transparent"
+                  onClick={() => onToggleCollapse(group.id)}
+                >
+                  <ProductMatrixCells
+                    snapshot={snapshot}
+                    row={sumStockRows(group.items)}
+                    show={show}
+                    columnCollapsed={columnCollapsed}
+                    depth={groupDepth}
+                    summary={{
+                      stickyTop: stickyIds.has(group.id) ? groupStickyTop(groupDepth) : undefined,
+                      identity: (
+                        <button
+                          type="button"
+                          aria-expanded={!groupCollapsed}
+                          className="inline-flex items-center gap-1"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onToggleCollapse(group.id);
+                          }}
+                        >
+                          {groupCollapsed ? (
+                            <ChevronRight className="size-3 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="size-3 text-muted-foreground" />
+                          )}
+                          {group.name}
+                          <span className="font-normal text-muted-foreground"> · {pluralVariant(group.items.length)}</span>
+                        </button>
+                      ),
+                    }}
+                  />
+                </TableRow>
+                {!groupCollapsed ? group.items.map((product) => productRow(product, groupDepth)) : null}
+              </Fragment>
+            );
+          })}
           {node.children.map((child) => (
             <StockGroupRows
               key={child.id}
@@ -484,6 +561,81 @@ const ProductsMatrixTable = ({
   );
 };
 
+const WAREHOUSE_ROW_VALUES: Array<(row: StockWarehouseProductRow) => number> = [
+  (row) => row.free,
+  (row) => row.regionReserve,
+  (row) => row.orderReserve,
+  (row) => row.onHand,
+];
+
+const REGION_ROW_VALUES: Array<(row: StockRegionProductRow) => number> = [
+  (row) => row.warehouses,
+  (row) => row.production,
+  (row) => row.transfers,
+  (row) => row.regionReserve,
+];
+
+/** Section rows with variants of one base product under a base product row with the sums. */
+const SectionProductRows = <TRow extends { productId: string }>({
+  snapshot,
+  sectionId,
+  rows,
+  values,
+}: {
+  snapshot: LogisticsSnapshot;
+  sectionId: string;
+  rows: TRow[];
+  values: Array<(row: TRow) => number>;
+}) => {
+  const variantRow = (row: TRow, nested: boolean) => {
+    const unit = unitFor(snapshot, row.productId);
+    return (
+      <TableRow key={`${sectionId}:${row.productId}`}>
+        <TableCell className={IDENTITY_CELL} style={nested ? { paddingLeft: 34 } : undefined}>
+          <ProductIdentity snapshot={snapshot} productId={row.productId} />
+        </TableCell>
+        {values.map((value, index) => (
+          <TableCell key={index} className={QUANTITY_CELL}>
+            <StockQty quantity={value(row)} unit={unit} />
+          </TableCell>
+        ))}
+      </TableRow>
+    );
+  };
+  const entries = groupByBaseProduct(sectionId, rows, (row) => {
+    const product = productById(snapshot, row.productId);
+    return {
+      id: product?.productId ?? `variant:${row.productId}`,
+      name: product?.productName ?? product?.name ?? "",
+    };
+  });
+  return (
+    <>
+      {entries.map((entry) => {
+        if (entry.kind === "item") return variantRow(entry.item, false);
+        const { group } = entry;
+        const unit = unitFor(snapshot, group.items[0]?.productId ?? "");
+        return (
+          <Fragment key={group.id}>
+            <TableRow className="hover:bg-transparent">
+              <TableCell className={cn(IDENTITY_CELL, "bg-zinc-50 py-1.5 font-semibold whitespace-nowrap")}>
+                {group.name}
+                <span className="font-normal text-muted-foreground"> · {pluralVariant(group.items.length)}</span>
+              </TableCell>
+              {values.map((value, index) => (
+                <TableCell key={index} className={cn(QUANTITY_CELL, "bg-zinc-50 py-1.5 font-semibold")}>
+                  <StockQty quantity={group.items.reduce((sum, row) => sum + value(row), 0)} unit={unit} />
+                </TableCell>
+              ))}
+            </TableRow>
+            {group.items.map((row) => variantRow(row, true))}
+          </Fragment>
+        );
+      })}
+    </>
+  );
+};
+
 const WarehousesMatrixTable = ({
   snapshot,
   sections,
@@ -522,28 +674,12 @@ const WarehousesMatrixTable = ({
           return (
             <Fragment key={section.warehouseId}>
               <SectionRow label={label} colSpan={5} />
-              {section.rows.map((row) => {
-                const unit = unitFor(snapshot, row.productId);
-                return (
-                  <TableRow key={`${section.warehouseId}:${row.productId}`}>
-                    <TableCell className={IDENTITY_CELL}>
-                      <ProductIdentity snapshot={snapshot} productId={row.productId} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.free} unit={unit} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.regionReserve} unit={unit} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.orderReserve} unit={unit} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.onHand} unit={unit} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              <SectionProductRows
+                snapshot={snapshot}
+                sectionId={`warehouse:${section.warehouseId}`}
+                rows={section.rows}
+                values={WAREHOUSE_ROW_VALUES}
+              />
             </Fragment>
           );
         })
@@ -591,28 +727,12 @@ const RegionsMatrixTable = ({
           return (
             <Fragment key={section.regionId}>
               <SectionRow label={label} colSpan={5} />
-              {section.rows.map((row) => {
-                const unit = unitFor(snapshot, row.productId);
-                return (
-                  <TableRow key={`${section.regionId}:${row.productId}`}>
-                    <TableCell className={IDENTITY_CELL}>
-                      <ProductIdentity snapshot={snapshot} productId={row.productId} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.warehouses} unit={unit} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.production} unit={unit} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.transfers} unit={unit} />
-                    </TableCell>
-                    <TableCell className={QUANTITY_CELL}>
-                      <StockQty quantity={row.regionReserve} unit={unit} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              <SectionProductRows
+                snapshot={snapshot}
+                sectionId={`region:${section.regionId}`}
+                rows={section.rows}
+                values={REGION_ROW_VALUES}
+              />
             </Fragment>
           );
         })

@@ -24,6 +24,9 @@ export type OutputCalendarCategory = {
 
 export type OutputCalendarProduct = {
   id: string;
+  /** Base product (`store_product.id`). */
+  productId: string;
+  productName: string;
   name: string;
   unit: string;
   plantId: string | null;
@@ -171,6 +174,8 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
       const cats = Array.isArray(p.categoryIds) ? p.categoryIds : [];
       return {
         id: asId(p.id),
+        productId: asId(p.productId ?? p.id),
+        productName: String(p.productName ?? p.name ?? ""),
         name: String(p.name ?? ""),
         unit: String(p.unit ?? "шт"),
         plantId: asNullableId(p.plantId),

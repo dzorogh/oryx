@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildCategoryTree, type CategoryProduct, type CategoryRef } from "@/features/logistics/category-tree";
+import { buildCategoryTree, groupByBaseProduct, type CategoryProduct, type CategoryRef } from "@/features/logistics/category-tree";
 import { buildStockProductTree, type StockProductMatrixRow } from "@/features/logistics/stock-product-matrix";
 
 const categories: CategoryRef[] = [
@@ -72,8 +72,8 @@ describe("buildStockProductTree", () => {
   const snapshot = {
     categories,
     products: [
-      { id: "1", productId: "1", code: "PRD-1", name: "Zebra", unit: "шт", plantId: null, categoryIds: ["2", "10"] },
-      { id: "3", productId: "3", code: "PRD-3", name: "Alpha", unit: "шт", plantId: null, categoryIds: ["2"] },
+      { id: "1", productId: "1", productName: "Zebra", code: "PRD-1", name: "Zebra", unit: "шт", plantId: null, categoryIds: ["2", "10"] },
+      { id: "3", productId: "3", productName: "Alpha", code: "PRD-3", name: "Alpha", unit: "шт", plantId: null, categoryIds: ["2"] },
     ],
   };
 
@@ -98,5 +98,45 @@ describe("buildStockProductTree", () => {
       ["404"],
     );
     assert.deepEqual(uncategorized[0]?.categoryIds, []);
+  });
+});
+
+describe("groupByBaseProduct", () => {
+  const variant = (id: string, baseId: string) => ({ id, baseId, baseName: `Base ${baseId}` });
+  const baseOf = (item: ReturnType<typeof variant>) => ({ id: item.baseId, name: item.baseName });
+
+  it("groups variants of one base product and keeps a lone variant as a plain row", () => {
+    const entries = groupByBaseProduct("cat", [variant("9", "9"), variant("4", "4"), variant("226", "9")], baseOf);
+    assert.deepEqual(
+      entries.map((entry) =>
+        entry.kind === "item" ? entry.item.id : `${entry.group.id}=${entry.group.items.map((item) => item.id).join(",")}`,
+      ),
+      ["cat:base:9=9,226", "4"],
+    );
+  });
+
+  it("names the group after the base product", () => {
+    const [entry] = groupByBaseProduct("cat", [variant("1", "7"), variant("2", "7")], baseOf);
+    assert.equal(entry?.kind === "group" ? entry.group.name : null, "Base 7");
+  });
+
+  it("reads the base product from the snapshot in the stock tree", () => {
+    const { roots } = buildStockProductTree(
+      {
+        categories,
+        products: [
+          { id: "9", productId: "9", productName: "Cruiser", code: "PRD-9", name: "Cruiser", unit: "шт", plantId: null, categoryIds: ["3"] },
+          { id: "226", productId: "9", productName: "Cruiser", code: "PRD-226", name: "Cruiser · Чёрный", unit: "шт", plantId: null, categoryIds: ["3"] },
+        ],
+      },
+      [stockRow("9"), stockRow("226"), stockRow("404")],
+    );
+    assert.deepEqual(
+      roots[0]?.products.map((product) => [product.id, product.baseProductId, product.baseProductName]),
+      [
+        ["9", "9", "Cruiser"],
+        ["226", "9", "Cruiser"],
+      ],
+    );
   });
 });

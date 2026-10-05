@@ -104,6 +104,45 @@ export const pluralTovar = (n: number): string => {
   return `${n} товаров`;
 };
 
+export const pluralVariant = (n: number): string => {
+  const n10 = n % 10;
+  const n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return `${n} вариант`;
+  if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return `${n} варианта`;
+  return `${n} вариантов`;
+};
+
+export type BaseProductGroup<T> = {
+  /** Unique per parent group: collapse key and sticky row id. */
+  id: string;
+  baseId: string;
+  name: string;
+  items: T[];
+};
+
+export type BaseProductEntry<T> = { kind: "item"; item: T } | { kind: "group"; group: BaseProductGroup<T> };
+
+/**
+ * Variants of one base product go into one group; a base product with a single variant stays a plain row.
+ * Groups and variants keep the order of their first occurrence in `items`.
+ */
+export const groupByBaseProduct = <T>(
+  parentId: string,
+  items: T[],
+  baseOf: (item: T) => { id: string; name: string },
+): BaseProductEntry<T>[] => {
+  const groups = new Map<string, BaseProductGroup<T>>();
+  for (const item of items) {
+    const base = baseOf(item);
+    const group = groups.get(base.id) ?? { id: `${parentId}:base:${base.id}`, baseId: base.id, name: base.name, items: [] };
+    group.items.push(item);
+    groups.set(base.id, group);
+  }
+  return [...groups.values()].map((group) =>
+    group.items.length > 1 ? { kind: "group", group } : { kind: "item", item: group.items[0]! },
+  );
+};
+
 export const pluralPozicii = (n: number): string => {
   const n10 = n % 10;
   const n100 = n % 100;

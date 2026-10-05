@@ -47,9 +47,9 @@ const pageFixture = (): OutputCalendarPage => ({
     { id: "3", parentId: null, name: "Off Road" },
   ],
   products: [
-    { id: "1", name: "Force 1100 EFI", unit: "шт", plantId: "5", categoryIds: ["2", "10"] },
-    { id: "2", name: "Cross 180", unit: "шт", plantId: "4", categoryIds: ["2"] },
-    { id: "99", name: "Orphan Bike", unit: "шт", plantId: null, categoryIds: [] },
+    { id: "1", productId: "1", productName: "Force 1100 EFI", name: "Force 1100 EFI", unit: "шт", plantId: "5", categoryIds: ["2", "10"] },
+    { id: "2", productId: "2", productName: "Cross 180", name: "Cross 180", unit: "шт", plantId: "4", categoryIds: ["2"] },
+    { id: "99", productId: "99", productName: "Orphan Bike", name: "Orphan Bike", unit: "шт", plantId: null, categoryIds: [] },
   ],
   plants: [{ id: "3" }, { id: "5" }],
   regions: [
@@ -454,7 +454,7 @@ describe("category collapse helpers", () => {
         { id: "10", parentId: "2", name: "4x4" },
         { id: "11", parentId: "10", name: "Sport" },
       ],
-      products: [{ id: "1", name: "Force", unit: "шт", plantId: "5", categoryIds: ["11"] }],
+      products: [{ id: "1", productId: "1", productName: "Force", name: "Force", unit: "шт", plantId: "5", categoryIds: ["11"] }],
     };
     const { roots } = buildCategoryTree(page.categories, page.products, new Set(["1"]));
     assert.deepEqual(descendantCategoryIds(roots[0]), ["10", "11"]);

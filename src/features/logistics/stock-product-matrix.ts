@@ -266,6 +266,8 @@ export const buildStockProductTree = (
       ...row,
       id: row.productId,
       name: product?.name ?? "",
+      baseProductId: product?.productId ?? `variant:${row.productId}`,
+      baseProductName: product?.productName ?? product?.name ?? "",
       categoryIds: product?.categoryIds ?? [],
     };
   });

@@ -146,7 +146,10 @@ export type LogisticsCategory = {
 
 export type LogisticsProduct = {
   id: string;
+  /** Base product (`store_product.id`). */
   productId: string;
+  /** Base product name; variant name when the payload has none. */
+  productName: string;
   code: string;
   name: string;
   unit: string;

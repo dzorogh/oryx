@@ -424,6 +424,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     return {
       id,
       productId: str(row.product_id),
+      productName: str(row.product_name ?? row.name),
       code: formatEntityCode("product", id),
       name: str(row.name),
       unit: str(row.unit ?? "шт"),

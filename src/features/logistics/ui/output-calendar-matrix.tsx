@@ -14,7 +14,9 @@ import { formatQuantity } from "@/features/logistics/logistics-labels";
 import {
   buildCategoryTree,
   descendantCategoryIds,
+  groupByBaseProduct,
   pluralTovar,
+  pluralVariant,
   UNCATEGORIZED_GROUP_ID,
   type CategoryTreeNode,
 } from "@/features/logistics/category-tree";
@@ -903,20 +905,44 @@ const GroupRows = ({
       />
       {!isCollapsed ? (
         <>
-          {node.products.map((product) => (
-            <ProductRow
-              key={`${node.id}-${product.id}`}
-              product={product}
-              depth={node.depth}
-              columns={columns}
-              currentKey={ctx.currentKey}
-              today={ctx.today}
-              ownerSet={ownerSet}
-              plantId={plantId}
-              page={ctx.page}
-              onCreate={onCreate}
-            />
-          ))}
+          {groupByBaseProduct(node.id, node.products, (product) => ({
+            id: product.productId,
+            name: product.productName,
+          })).map((entry) => {
+            const productRow = (product: OutputCalendarProduct, depth: number) => (
+              <ProductRow
+                key={`${node.id}-${product.id}`}
+                product={product}
+                depth={depth}
+                columns={columns}
+                currentKey={ctx.currentKey}
+                today={ctx.today}
+                ownerSet={ownerSet}
+                plantId={plantId}
+                page={ctx.page}
+                onCreate={onCreate}
+              />
+            );
+            if (entry.kind === "item") return productRow(entry.item, node.depth);
+            const { group } = entry;
+            const groupDepth = node.depth + 1;
+            const groupCollapsed = collapsed.has(group.id);
+            return (
+              <Fragment key={group.id}>
+                <GroupHeaderRow
+                  id={group.id}
+                  depth={groupDepth}
+                  title={group.name}
+                  count={pluralVariant(group.items.length)}
+                  cells={categoryTotalCells(group.items, ctx, ownerSet, plantId)}
+                  collapsed={groupCollapsed}
+                  stickyTop={stickyIds.has(group.id) ? groupStickyTop(groupDepth) : undefined}
+                  onToggle={() => onToggleCollapse(group.id)}
+                />
+                {!groupCollapsed ? group.items.map((product) => productRow(product, groupDepth)) : null}
+              </Fragment>
+            );
+          })}
           {node.children.map((child) => (
             <GroupRows
               key={child.id}
