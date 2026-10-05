@@ -100,6 +100,22 @@ const sourceKey = (source: LogisticsStoreSource): string => {
   }
 };
 
+const LOGISTICS_CHANGED_EVENT = "oryx:logistics-changed";
+
+/** Asks every mounted logistics store and list to reload, e.g. after a dialog created a document and stayed. */
+export const notifyLogisticsChanged = () => {
+  window.dispatchEvent(new Event(LOGISTICS_CHANGED_EVENT));
+};
+
+export const useOnLogisticsChanged = (reload: () => Promise<void>, enabled = true) => {
+  useEffect(() => {
+    if (!enabled) return;
+    const onChanged = () => void reload();
+    window.addEventListener(LOGISTICS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(LOGISTICS_CHANGED_EVENT, onChanged);
+  }, [enabled, reload]);
+};
+
 const NOT_CONFIGURED_ERROR =
   "Supabase не настроен. Добавьте NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY.";
 const LOAD_ERROR = "Не удалось загрузить данные логистики";
@@ -173,6 +189,8 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
     }
   }, [reload, enabled, key]);
 
+  useOnLogisticsChanged(reload, enabled);
+
   const balances = useMemo<StockBalance[]>(() => {
     if (payloadBalances != null) {
       return payloadBalances;
@@ -232,6 +250,8 @@ export const useLogisticsList = <T,>(loader: () => Promise<T[]>) => {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useOnLogisticsChanged(reload);
 
   return { rows, isLoading, error, reload, configured: isSupabaseConfigured() };
 };

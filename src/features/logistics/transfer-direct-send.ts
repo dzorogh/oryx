@@ -86,11 +86,7 @@ export const transferCreateRpcArgs = async (
 export const transferCreateSuccessHref = (transferId: string, sequenceNumber?: string): string =>
   hrefForTransfer(sequenceNumber ?? transferId);
 
-export const openSentTransfer = (
-  created: { id: string; sequenceNumber?: string },
-  navigate?: (href: string) => void,
-): string => {
-  const href = hrefForTransfer(created.sequenceNumber ?? created.id);
-  navigate?.(href);
-  return href;
-};
+export const sentTransferLink = (created: { id: string; sequenceNumber?: string }) => ({
+  href: hrefForTransfer(created.sequenceNumber ?? created.id),
+  label: "Перемещение",
+});

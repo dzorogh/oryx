@@ -32,6 +32,7 @@ import {
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
+import { useOnLogisticsChanged } from "@/features/logistics/use-logistics-store";
 
 export const OutputCalendarPage = () => {
   const [page, setPage] = useState<OutputCalendarPageData | null>(null);
@@ -91,6 +92,9 @@ export const OutputCalendarPage = () => {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const softReload = useCallback(() => load({ soft: true }), [load]);
+  useOnLogisticsChanged(softReload);
 
   const plantOptions = useMemo(
     () => (page ? plantFilterOptions(page.outputLines, page.openOrders) : []),

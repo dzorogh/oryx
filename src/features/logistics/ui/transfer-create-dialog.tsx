@@ -24,6 +24,7 @@ import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect, type FieldSelectItem } from "@/features/logistics/ui/field-select";
 import { catalogProductsFromPlace, catalogSourceWarehouseIds, parseOwnerQuantityKey, placeOwnersByProduct } from "@/features/logistics/ui/place-catalog";
+import type { CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 export type TransferCreateSubmitValue = {
@@ -81,7 +82,7 @@ export const TransferCreateDialog = ({
   snapshot: LogisticsSnapshot;
   balances: StockBalance[];
   context: TransferCreateContext;
-  onSubmit: (value: TransferCreateSubmitValue) => Promise<boolean>;
+  onSubmit: (value: TransferCreateSubmitValue, intent: CreateIntent) => Promise<boolean>;
   preset?: TransferCreatePreset;
   loading?: boolean;
   loadError?: string | null;
@@ -183,7 +184,7 @@ export const TransferCreateDialog = ({
   const fromCode = fromId ? warehouseCode(snapshot, fromId) : "";
   const toCode = toId ? warehouseCode(snapshot, toId) : "";
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (submitting) return;
     if (!fromId) return;
     if (errorKey) {
@@ -207,7 +208,7 @@ export const TransferCreateDialog = ({
           ownerType,
           ownerId: lineOwner,
         })),
-      });
+      }, intent);
       if (!ok) {
         setServerError("Не удалось выполнить действие");
         return;
@@ -282,7 +283,8 @@ export const TransferCreateDialog = ({
           : "Нет строк"
       }
       submitLabel="Переместить"
-      onSubmit={() => void submit()}
+      createIntents
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={lines.length === 0 || !fromId}
       disabledReason={!fromId ? "Выберите склад-источник" : "Введите количество"}
       submitting={submitting}

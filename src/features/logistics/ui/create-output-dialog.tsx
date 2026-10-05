@@ -15,6 +15,7 @@ import { ContextRowsTable } from "@/features/logistics/ui/context-rows-table";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
+import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 const openOrders = (snapshot: LogisticsSnapshot) =>
@@ -73,7 +74,7 @@ export const CreateOutputDialog = ({
     return [{ productId: row.key, quantity, limit: row.limit }];
   });
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (submitting || !selectedOrderId) return;
     const errorKey = firstErrorKey(rows.map((row) => ({ key: row.key, raw: quantities[row.key] ?? "", limit: row.limit, mode: "hard" as const })));
     if (errorKey) {
@@ -91,7 +92,12 @@ export const CreateOutputDialog = ({
         lines: picked.map((line) => ({ productId: line.productId, quantity: line.quantity })),
       });
       onOpenChange(false);
-      router.push(logisticsPath("outputs", outputId));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: { href: logisticsPath("outputs", outputId), label: "Выпуск" },
+        message: "Выпуск создан",
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -140,8 +146,9 @@ export const CreateOutputDialog = ({
         </div>
       }
       footerSummary={picked.length ? pluralTovar(picked.length) : "Нет строк"}
-      submitLabel="Создать выпуск"
-      onSubmit={() => void submit()}
+      submitLabel="Создать"
+      createIntents
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={!selectedOrderId || picked.length === 0}
       disabledReason={selectedOrderId ? "Введите количество" : "Выберите заказ на производство"}
       submitting={submitting}

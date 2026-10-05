@@ -13,6 +13,7 @@ import { CatalogQuantityTable, useCatalogCollapse, type CatalogProductRow } from
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
+import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
 
@@ -115,7 +116,7 @@ export const ProductionOrderCatalogDialog = ({
     return [{ productId: product.id, quantity }];
   });
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (submitting || !plantId || lines.length === 0 || ratesLoading) return;
     setSubmitting(true);
     setServerError(null);
@@ -142,7 +143,15 @@ export const ProductionOrderCatalogDialog = ({
         rates: floatRates.rates,
       });
       onOpenChange(false);
-      router.push(logisticsPath("production-orders", created.sequenceNumber ?? created.id));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: {
+          href: logisticsPath("production-orders", created.sequenceNumber ?? created.id),
+          label: "Заказ на производство",
+        },
+        message: "Заказ на производство создан",
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -189,8 +198,9 @@ export const ProductionOrderCatalogDialog = ({
           ? `${pluralTovar(lines.length)} · ${formatQuantity(lines.reduce((sum, line) => sum + line.quantity, 0), "шт")}`
           : "Нет строк"
       }
-      submitLabel={order ? "Добавить" : "Создать PO"}
-      onSubmit={() => void submit()}
+      submitLabel={order ? "Добавить" : "Создать"}
+      createIntents={!order}
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={!plantId || lines.length === 0 || ratesLoading}
       disabledReason={!plantId ? "Выберите завод" : lines.length === 0 ? "Введите количество" : "Загружаем курсы валют…"}
       submitting={submitting}

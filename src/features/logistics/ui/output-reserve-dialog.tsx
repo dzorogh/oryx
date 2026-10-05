@@ -27,7 +27,11 @@ import { ContextRowsTable, type ContextQuantityRow } from "@/features/logistics/
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { markHighlightedRows } from "@/features/logistics/ui/highlight-rows";
-import { openCreatedDocuments, reportPartialCreate } from "@/features/logistics/ui/open-created-documents";
+import {
+  finishCreatedDocuments,
+  reportPartialCreate,
+  type CreateIntent,
+} from "@/features/logistics/ui/open-created-documents";
 import { pluralTovar } from "@/features/logistics/category-tree";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
@@ -159,7 +163,7 @@ export const OutputReserveDialog = ({
     onClose();
   };
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (!target || !destination || pending || picked.length === 0) return;
     const errorKey = firstErrorKey(
       rows.map((row) => ({ key: row.key, raw: quantities[row.key] ?? "", limit: row.limit, mode: "hard" as const })),
@@ -197,13 +201,17 @@ export const OutputReserveDialog = ({
             lines: [{ productId: target.productId, quantity: row.quantity }],
           });
         }
-        await reload();
         close();
-        openCreatedDocuments(
-          (href) => router.push(href),
-          created[0],
-          productionOrder ? [{ href: logisticsPath("production-orders", productionOrder.sequenceNumber ?? productionOrder.id), label: productionOrder.number }] : [],
-        );
+        await finishCreatedDocuments({
+          intent,
+          navigate: (href) => router.push(href),
+          main: created[0],
+          rest: productionOrder
+            ? [{ href: logisticsPath("production-orders", productionOrder.sequenceNumber ?? productionOrder.id), label: productionOrder.number }]
+            : [],
+          message: "Выпуск с резервом создан",
+          refresh: reload,
+        });
         return;
       }
       for (const row of picked) {
@@ -225,7 +233,13 @@ export const OutputReserveDialog = ({
       if (created.length > 0) {
         if (target.lineId && destination.kind !== "new") markHighlightedRows(destination.outputId, [target.lineId]);
         close();
-        await reportPartialCreate((href) => router.push(href), created.slice(0, 1), translateLogisticsError(raw), reload);
+        await reportPartialCreate(
+          (href) => router.push(href),
+          created.slice(0, 1),
+          translateLogisticsError(raw),
+          reload,
+          destination.kind === "new" ? intent : "open",
+        );
         return;
       }
       setServerError(translateLogisticsError(raw));
@@ -284,7 +298,8 @@ export const OutputReserveDialog = ({
       }
       footerSummary={picked.length ? pluralTovar(picked.length) : "Нет строк"}
       submitLabel="Зарезервировать"
-      onSubmit={() => void submit()}
+      createIntents={destination?.kind === "new"}
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={!destination || picked.length === 0}
       disabledReason="Введите количество"
       submitting={pending}

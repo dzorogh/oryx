@@ -23,7 +23,11 @@ import {
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { catalogProductsFromPlace, placeOwnersByProduct } from "@/features/logistics/ui/place-catalog";
-import { reportPartialCreate } from "@/features/logistics/ui/open-created-documents";
+import {
+  finishCreatedDocuments,
+  reportPartialCreate,
+  type CreateIntent,
+} from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { RichTextEditor } from "@/features/logistics/ui/rich-text";
 import { richTextToPlain } from "@/features/logistics/rich-text-plain";
@@ -129,7 +133,7 @@ export const AdjustmentCatalogDialog = ({
       balances,
     );
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (submitting || !warehouseId) return;
     if (!richTextToPlain(explanation)) {
       setServerError("Укажите объяснение корректировки");
@@ -165,12 +169,19 @@ export const AdjustmentCatalogDialog = ({
         created.push({ href: logisticsPath("adjustments", second.id), label: "Списание" });
       }
       onOpenChange(false);
-      router.push(created[0].href);
+      const [main, ...rest] = created;
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main,
+        rest,
+        message: rest.length ? "Корректировки проведены" : "Корректировка проведена",
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       if (created.length > 0 && created.length < 2) {
         onOpenChange(false);
-        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw));
+        await reportPartialCreate((href) => router.push(href), created, translateLogisticsError(raw), undefined, intent);
         return;
       }
       setServerError(translateLogisticsError(raw));
@@ -227,7 +238,8 @@ export const AdjustmentCatalogDialog = ({
       }
       footerSummary={filled ? pluralTovar(filled) : "Нет строк"}
       submitLabel="Провести"
-      onSubmit={() => void submit()}
+      createIntents
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={!warehouseId || filled === 0}
       disabledReason={!warehouseId ? "Выберите склад" : "Введите количество"}
       submitting={submitting}
