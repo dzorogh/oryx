@@ -26,6 +26,7 @@ import {
 } from "@/features/logistics/ui/catalog-quantity-table";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
+import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 export type ShipmentCatalogPreset = {
@@ -143,7 +144,7 @@ export const ShipmentCatalogDialog = ({
     ),
   );
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (submitting || !orderId || !warehouseId) return;
     if (errorKey) {
       focusQuantityInput(errorKey);
@@ -183,7 +184,15 @@ export const ShipmentCatalogDialog = ({
             },
       );
       onOpenChange(false);
-      router.push(logisticsPath("shipments", created.id));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: {
+          href: logisticsPath("shipments", created.id),
+          label: intention === "shipment" ? "Отгрузка" : "Возврат",
+        },
+        message: intention === "shipment" ? "Отгрузка проведена" : "Возврат оформлен",
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -237,8 +246,9 @@ export const ShipmentCatalogDialog = ({
           ? `${pluralTovar(lines.length)} · ${formatQuantity(lines.reduce((sum, line) => sum + line.quantity, 0), "шт")}`
           : "Нет строк"
       }
-      submitLabel={intention === "shipment" ? "Отгрузить" : "Оформить возврат"}
-      onSubmit={() => void submit()}
+      submitLabel={intention === "shipment" ? "Отгрузить" : "Оформить"}
+      createIntents
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={!orderId || !warehouseId || lines.length === 0}
       disabledReason={!orderId || !warehouseId ? "Выберите заказ и склад" : "Введите количество"}
       submitting={submitting}

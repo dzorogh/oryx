@@ -8,6 +8,8 @@ import { freeWarehouseQuantity, type AdjustmentSourceDocumentType } from "@/feat
 import { plantById } from "@/features/logistics/logistics-lookups";
 import {
   isOpenCustomerOrderStatus,
+  isTransferDeliveredStatus,
+  isTransferInTransitStatus,
   reservationDirection,
   shipmentDirection,
   shipmentWarehouseId,
@@ -236,7 +238,7 @@ export const projectCancelGuidance = (facts: CancelGuidanceFacts): CancelGuidanc
   }
 
   if (facts.type === "transfer") {
-    if (facts.status === "sent") {
+    if (isTransferInTransitStatus(facts.status)) {
       return withCommon({
         mode: "guidance",
         title: "Отправленное перемещение нельзя отменить",
@@ -245,7 +247,7 @@ export const projectCancelGuidance = (facts: CancelGuidanceFacts): CancelGuidanc
         actions: [action("mark-delivered", "Отметить доставленным", true)],
       });
     }
-    if (facts.status !== "delivered") {
+    if (!isTransferDeliveredStatus(facts.status)) {
       return hiddenGuidance(facts.id);
     }
     return withCommon({
@@ -468,7 +470,7 @@ export const cancelGuidanceFactsFromSnapshot = (
       status: doc.status,
       availableQuantity,
       reservedQuantity,
-      transferInTransit: doc.status === "sent",
+      transferInTransit: isTransferInTransitStatus(doc.status),
     };
   }
 

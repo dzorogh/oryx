@@ -25,7 +25,8 @@ import { ContextRowsTable } from "@/features/logistics/ui/context-rows-table";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { ExpectedEndField } from "@/features/logistics/ui/expected-end-field";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
-import { openCreatedDocuments } from "@/features/logistics/ui/open-created-documents";
+import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
+import { notifyLogisticsChanged } from "@/features/logistics/use-logistics-store";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import type { CreateDialogTarget } from "@/features/logistics/ui/output-calendar-matrix";
 
@@ -101,7 +102,7 @@ const CreateForm = ({
     return [{ productId: row.key, quantity }];
   });
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (busy || picked.length === 0 || !expectedEndOn) return;
     if (target.kind === "new" && !plantId) return;
     const errorKey = firstErrorKey(
@@ -127,7 +128,12 @@ const CreateForm = ({
           lines: picked,
         });
         onClose();
-        router.push(logisticsPath("outputs", outputId));
+        await finishCreatedDocuments({
+          intent,
+          navigate: (href) => router.push(href),
+          main: { href: logisticsPath("outputs", outputId), label: "Выпуск" },
+          message: "Выпуск создан",
+        });
         return;
       }
       const line = picked[0];
@@ -139,10 +145,11 @@ const CreateForm = ({
         expectedEndOn,
       });
       onClose();
-      openCreatedDocuments(
-        (href) => router.push(href),
-        { href: logisticsPath("outputs", created.outputId), label: "Выпуск" },
-        [
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: { href: logisticsPath("outputs", created.outputId), label: "Выпуск" },
+        rest: [
           {
             href: logisticsPath("production-orders", created.sequenceNumber ?? created.productionOrderId),
             label: created.sequenceNumber
@@ -150,7 +157,8 @@ const CreateForm = ({
               : "Заказ на производство",
           },
         ],
-      );
+        message: "Заказ на производство и выпуск созданы",
+      });
     } catch (caught) {
       if (caught instanceof ProductionForOrderOutputError) {
         const poLabel = caught.sequenceNumber
@@ -161,9 +169,11 @@ const CreateForm = ({
           : logisticsPath("production-orders", caught.productionOrderId);
         toast.error(`${poLabel} создан, выпуск не создан`, {
           description: translateLogisticsError(caught.message),
+          action: intent === "close" ? { label: "Открыть", onClick: () => router.push(href) } : undefined,
         });
         onClose();
-        router.push(href);
+        if (intent === "open") router.push(href);
+        else notifyLogisticsChanged();
         return;
       }
       const raw = caught instanceof Error ? caught.message : "Не удалось создать";
@@ -202,8 +212,9 @@ const CreateForm = ({
         </div>
       }
       footerSummary={picked.length ? pluralTovar(picked.length) : "Нет строк"}
-      submitLabel="Создать выпуск"
-      onSubmit={() => void submit()}
+      submitLabel="Создать"
+      createIntents
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={picked.length === 0 || !expectedEndOn || (target.kind === "new" && !plantId)}
       disabledReason="Введите количество"
       submitting={busy}

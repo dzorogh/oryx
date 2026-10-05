@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { copyCustomerOrder, setDocumentDescription } from "@/features/logistics/logistics-api";
 import { logisticsPath } from "@/features/logistics/logistics-paths";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
+import { finishCreatedDocuments } from "@/features/logistics/ui/open-created-documents";
 import { runLogisticsAction, translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { cn } from "@/lib/utils";
 
@@ -134,18 +135,24 @@ export const CopyCustomerOrderDialog = ({
       kicker={orderNumber}
       title="Создать копию заказа?"
       dismissLabel="Назад"
-      submitLabel="Создать копию"
+      submitLabel="Создать"
+      createIntents
       pendingLabel="Создаём…"
       submitting={pending}
       serverError={error}
-      onSubmit={() => {
+      onSubmit={(intent) => {
         setPending(true);
         setError(null);
         void copyCustomerOrder(orderId)
-          .then((created) => {
-            toast.success("Копия заказа создана — черновик");
+          .then(async (created) => {
+            if (intent === "open") toast.success("Копия заказа создана — черновик");
             onOpenChange(false);
-            router.push(logisticsPath("customer-orders", created.sequenceNumber));
+            await finishCreatedDocuments({
+              intent,
+              navigate: (href) => router.push(href),
+              main: { href: logisticsPath("customer-orders", created.sequenceNumber), label: "Копия заказа" },
+              message: "Копия заказа создана — черновик",
+            });
           })
           .catch((caught: unknown) => {
             setError(translateLogisticsError(caught instanceof Error ? caught.message : "Копия не создана"));

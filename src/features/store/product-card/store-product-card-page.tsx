@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Plus, Search, ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -31,6 +32,7 @@ import { pluralRu } from "@/features/logistics/order-plan/order-plan-model";
 import { createProductVariant } from "@/features/logistics/logistics-api";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
+import type { CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { ProductActivityCard } from "@/features/logistics/ui/product-activity-card";
 import { ProductBalancesTable } from "@/features/logistics/ui/product-balances-table";
@@ -291,7 +293,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
       ? computeVariantRegionStock(stockFacts, selectedVariant.id, selectedRegion)
       : null;
 
-  const createVariant = async () => {
+  const createVariant = async (intent: CreateIntent) => {
     if (submitting || !newName.trim()) return;
     setSubmitting(true);
     setServerError(null);
@@ -300,7 +302,13 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
       await reload();
       setAddOpen(false);
       setNewName("");
-      selectVariant(created.variantId);
+      if (intent === "open") {
+        selectVariant(created.variantId);
+      } else {
+        toast.success("Вариант создан", {
+          action: { label: "Открыть", onClick: () => selectVariant(created.variantId) },
+        });
+      }
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -649,7 +657,8 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
         kicker="Варианты"
         title="Новый вариант"
         submitLabel="Добавить"
-        onSubmit={() => void createVariant()}
+        createIntents
+        onSubmit={(intent) => void createVariant(intent)}
         submitDisabled={!newName.trim()}
         disabledReason="Укажите название"
         submitting={submitting}

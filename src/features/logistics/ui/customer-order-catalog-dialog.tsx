@@ -26,6 +26,7 @@ import {
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
+import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
 import { Button } from "@/components/ui/button";
@@ -243,7 +244,7 @@ export const CustomerOrderCatalogDialog = ({
   const lockedSource = Boolean(order?.sourceKind);
   const priceErrorId = lines.find((line) => priceIssue(line.priceRaw))?.productId ?? null;
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (submitting || lines.length === 0 || ratesLoading) return;
     if (needsSource && !sourceId) return;
     if (!order && !regionId) {
@@ -276,7 +277,12 @@ export const CustomerOrderCatalogDialog = ({
         rates: floatRates.rates,
       });
       onOpenChange(false);
-      router.push(logisticsPath("customer-orders", created.id));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: { href: logisticsPath("customer-orders", created.id), label: "Заказ клиента" },
+        message: "Заказ клиента создан",
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -393,8 +399,9 @@ export const CustomerOrderCatalogDialog = ({
           ? `${pluralTovar(lines.length)} · ${formatQuantity(lines.reduce((total, line) => total + line.quantity, 0), "шт")} · ${formatCatalogMoney(sum, moneySymbol)}${sourceLabel ? ` · ${sourceLabel}` : ""}`
           : "Нет строк"
       }
-      submitLabel={order ? "Добавить" : "Создать заказ"}
-      onSubmit={() => void submit()}
+      submitLabel={order ? "Добавить" : "Создать"}
+      createIntents={!order}
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={(needsSource && !sourceId) || lines.length === 0 || ratesLoading}
       disabledReason={
         needsSource && !sourceId

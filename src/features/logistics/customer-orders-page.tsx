@@ -484,7 +484,7 @@ export const CustomerOrderDetailPage = () => {
       title: "Доставка",
       href: "/store/logistics/transfers",
       items: withOrderCoverage(orderTransfers, coverage.transfer),
-      doneStatuses: ["delivered"] as const,
+      doneStatuses: ["done", "delivered"] as const,
       actions: canAct
         ? [
             { label: "Переместить занятое", onClick: () => setTransferOpen(true) },

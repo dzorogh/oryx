@@ -35,6 +35,7 @@ import {
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { catalogProductsFromPlace, parseOwnerQuantityKey, placeOwnersByProduct } from "@/features/logistics/ui/place-catalog";
+import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 
 export type ReservationCatalogPreset = {
@@ -58,6 +59,12 @@ const VERBS: Record<ReservationDirection, string> = {
   reserve: "Зарезервировать",
   release: "Снять",
   reassign: "Передать",
+};
+
+const DONE_MESSAGES: Record<ReservationDirection, string> = {
+  reserve: "Резерв проведён",
+  release: "Резерв снят",
+  reassign: "Резерв передан",
 };
 
 export const inferReservationDirection = (preset?: ReservationCatalogPreset): ReservationDirection => {
@@ -195,7 +202,7 @@ export const ReservationCatalogDialog = ({
     ),
   );
 
-  const submit = async () => {
+  const submit = async (intent: CreateIntent) => {
     if (submitting) return;
     if (!locationType || !locationId) return;
     if (direction !== "release" && !destOwnerId) {
@@ -223,7 +230,12 @@ export const ReservationCatalogDialog = ({
         })),
       });
       onOpenChange(false);
-      router.push(logisticsPath("reservations", id));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: { href: logisticsPath("reservations", id), label: "Резерв" },
+        message: DONE_MESSAGES[direction],
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -300,7 +312,8 @@ export const ReservationCatalogDialog = ({
           : "Нет строк"
       }
       submitLabel={VERBS[direction]}
-      onSubmit={() => void submit()}
+      createIntents
+      onSubmit={(intent) => void submit(intent)}
       submitDisabled={!place || !destReady || lines.length === 0}
       disabledReason={!place ? "Выберите место" : !destReady ? "Выберите назначение" : "Введите количество"}
       submitting={submitting}

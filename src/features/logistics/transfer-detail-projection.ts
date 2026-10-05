@@ -10,6 +10,8 @@ import {
 } from "@/features/logistics/logistics-lookups";
 import {
   isFreeOwner,
+  isTransferDeliveredStatus,
+  isTransferInTransitStatus,
   ownerKey,
   type LogisticsSnapshot,
   type OwnerType,
@@ -410,7 +412,7 @@ const projectRoute = (
   const transferValue = `Перемещение ${transfer.number}`;
 
   let currentKind: TransferCurrentKind = "transfer";
-  if (transfer.status === "delivered" || transfer.status === "done") {
+  if (isTransferDeliveredStatus(transfer.status)) {
     currentKind = "destination";
   } else if (transfer.status === "cancelled") {
     currentKind = source === "live" ? "transfer" : "origin";
@@ -467,7 +469,7 @@ export const projectTransferDetail = (
     groups,
     products,
     freeTotal,
-    canReserveInTransit: transfer.status === "sent" && isPositive(freeTotal),
+    canReserveInTransit: isTransferInTransitStatus(transfer.status) && isPositive(freeTotal),
     source,
   };
 };

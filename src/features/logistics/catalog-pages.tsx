@@ -65,6 +65,7 @@ import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { LogisticsMetaField, LogisticsToolbar } from "@/features/logistics/ui/logistics-toolbar";
+import { finishCreatedDocuments, type CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
@@ -79,17 +80,22 @@ export const ProductsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const create = async () => {
+  const create = async (intent: CreateIntent) => {
     if (submitting || !name.trim() || !unit.trim()) return;
     setSubmitting(true);
     setServerError(null);
     try {
       const id = await createProduct({ name: name.trim(), unit: unit.trim() });
-      await reload();
       setOpen(false);
       setName("");
       setUnit("шт");
-      router.push(hrefForProduct(id));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: { href: hrefForProduct(id), label: "Товар" },
+        message: "Товар создан",
+        refresh: reload,
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -135,7 +141,8 @@ export const ProductsPage = () => {
         kicker="Товары"
         title="Новый товар"
         submitLabel="Добавить"
-        onSubmit={() => void create()}
+        createIntents
+        onSubmit={(intent) => void create(intent)}
         submitDisabled={!name.trim() || !unit.trim()}
         disabledReason="Заполните название и единицу"
         submitting={submitting}
@@ -291,17 +298,22 @@ export const WarehousesPage = () => {
     return true;
   });
 
-  const create = async () => {
+  const create = async (intent: CreateIntent) => {
     if (submitting || !name.trim()) return;
     setSubmitting(true);
     setServerError(null);
     try {
       const id = await createWarehouse({ name: name.trim(), kind });
-      await reload();
       setOpen(false);
       setName("");
       setKind("customer");
-      router.push(hrefForWarehouse(id));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: { href: hrefForWarehouse(id), label: "Склад" },
+        message: "Склад создан",
+        refresh: reload,
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -342,7 +354,8 @@ export const WarehousesPage = () => {
         kicker="Склады"
         title="Новый склад"
         submitLabel="Добавить"
-        onSubmit={() => void create()}
+        createIntents
+        onSubmit={(intent) => void create(intent)}
         submitDisabled={!name.trim()}
         disabledReason="Укажите название"
         submitting={submitting}
@@ -558,16 +571,21 @@ export const PlantsPage = () => {
     return row.code.toLowerCase().includes(q) || row.name.toLowerCase().includes(q);
   });
 
-  const create = async () => {
+  const create = async (intent: CreateIntent) => {
     if (submitting || !name.trim()) return;
     setSubmitting(true);
     setServerError(null);
     try {
       const id = await createPlant({ name: name.trim() });
-      await reload();
       setOpen(false);
       setName("");
-      router.push(hrefForPlant(id));
+      await finishCreatedDocuments({
+        intent,
+        navigate: (href) => router.push(href),
+        main: { href: hrefForPlant(id), label: "Завод" },
+        message: "Завод создан",
+        refresh: reload,
+      });
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
       setServerError(translateLogisticsError(raw));
@@ -599,7 +617,8 @@ export const PlantsPage = () => {
         kicker="Заводы"
         title="Новый завод"
         submitLabel="Добавить"
-        onSubmit={() => void create()}
+        createIntents
+        onSubmit={(intent) => void create(intent)}
         submitDisabled={!name.trim()}
         disabledReason="Укажите название"
         submitting={submitting}

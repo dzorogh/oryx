@@ -40,6 +40,13 @@ export type DocumentStatus = LifecycleStatus;
 export const isOpenCustomerOrderStatus = (status: string | null | undefined): boolean =>
   status === "draft" || status === "in_progress";
 
+/** БД хранит отправленное перемещение как `in_progress`, доставленное — как `done`. */
+export const isTransferInTransitStatus = (status: string | null | undefined): boolean =>
+  status === "in_progress" || status === "sent";
+
+export const isTransferDeliveredStatus = (status: string | null | undefined): boolean =>
+  status === "done" || status === "delivered";
+
 export const DOCUMENT_KINDS = [
   "customer_order",
   "production_order",

@@ -25,6 +25,7 @@ import {
   DIRTY_CLOSE_PROMPT,
   SUBMIT_PENDING_LABEL,
 } from "@/features/logistics/ui/catalog-quantity-model";
+import type { CreateIntent } from "@/features/logistics/ui/open-created-documents";
 import { cn } from "@/lib/utils";
 
 export type DialogShellSize = "sm" | "md" | "lg" | "catalog";
@@ -60,6 +61,8 @@ export const DialogShell = ({
   pendingLabel = SUBMIT_PENDING_LABEL,
   /** Тип D: «Назад» справа, без итога и подсказки клавиш. */
   dismissLabel,
+  /** Создание сущности: «{submitLabel} и закрыть» и «{submitLabel} и открыть»; Cmd/Ctrl+Enter — «и открыть». */
+  createIntents = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -73,7 +76,7 @@ export const DialogShell = ({
   children: ReactNode;
   footerSummary?: ReactNode;
   submitLabel: string;
-  onSubmit: () => void;
+  onSubmit: (intent: CreateIntent) => void;
   submitDisabled?: boolean;
   disabledReason?: string;
   submitting?: boolean;
@@ -83,9 +86,11 @@ export const DialogShell = ({
   error?: string | null;
   pendingLabel?: string;
   dismissLabel?: string;
+  createIntents?: boolean;
 }) => {
   const formId = useId();
   const [confirmClose, setConfirmClose] = useState(false);
+  const [pendingIntent, setPendingIntent] = useState<CreateIntent>("open");
   const contentRef = useRef<HTMLFormElement>(null);
   const submittingRef = useRef(false);
   const submitDisabledRef = useRef(submitDisabled);
@@ -112,9 +117,10 @@ export const DialogShell = ({
     requestCloseRef.current = requestClose;
   });
 
-  const runSubmit = () => {
+  const runSubmit = (intent: CreateIntent = "open") => {
     if (confirmCloseRef.current || submittingRef.current || submitDisabledRef.current) return;
-    onSubmitRef.current();
+    setPendingIntent(intent);
+    onSubmitRef.current(intent);
   };
 
   useEffect(() => {
@@ -167,7 +173,7 @@ export const DialogShell = ({
         <DialogContent
           className={cn(
             "flex! max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-md",
-            SIZE_CLASS[size],
+            SIZE_CLASS[createIntents && size === "sm" ? "md" : size],
           )}
         >
           <form
@@ -202,6 +208,7 @@ export const DialogShell = ({
             className={cn(
               "mx-0 mb-0 shrink-0 flex-row items-center gap-3 rounded-none border-t bg-background px-5 py-3 sm:flex-row",
               dismissLabel ? "justify-end sm:justify-end" : "justify-between sm:justify-between",
+              createIntents && "max-sm:flex-wrap",
             )}
           >
             {dismissLabel ? null : (
@@ -215,19 +222,35 @@ export const DialogShell = ({
                 ) : (
                   <>
                     <div className="font-medium">{footerSummary}</div>
-                    <p className="text-xs text-muted-foreground">{shortcut} отправить</p>
+                    <p className={cn("text-xs text-muted-foreground", createIntents && "max-sm:hidden")}>
+                      {shortcut} {createIntents ? "— и открыть" : "отправить"}
+                    </p>
                   </>
                 )}
               </div>
             )}
-            <div className="flex shrink-0 gap-2">
+            <div className={cn("flex shrink-0 gap-2", createIntents && "max-sm:w-full max-sm:flex-col-reverse")}>
               {dismissLabel ? (
                 <Button type="button" variant="outline" disabled={submitting} onClick={requestClose}>
                   {dismissLabel}
                 </Button>
               ) : null}
+              {createIntents ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={submitDisabled || submitting || loading || Boolean(error)}
+                  onClick={() => runSubmit("close")}
+                >
+                  {submitting && pendingIntent === "close" ? pendingLabel : `${submitLabel} и закрыть`}
+                </Button>
+              ) : null}
               <Button type="submit" disabled={submitDisabled || submitting || loading}>
-                {submitting ? pendingLabel : submitLabel}
+                {submitting && (!createIntents || pendingIntent === "open")
+                  ? pendingLabel
+                  : createIntents
+                    ? `${submitLabel} и открыть`
+                    : submitLabel}
               </Button>
             </div>
           </DialogFooter>
