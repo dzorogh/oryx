@@ -99,7 +99,7 @@ import { CustomerOrderStatusBadge, StatusPill } from "@/features/logistics/ui/st
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { OrderMoneyTab, summarizeOrderMoney } from "@/features/logistics/ui/order-money-tab";
 import { summarizePayments } from "@/features/logistics/order-money";
-import { buildOrderSystemNotices, tenantLabel } from "@/features/logistics/customer-order-oms";
+import { buildOrderSystemNotices, plannedOutputQuantities, tenantLabel } from "@/features/logistics/customer-order-oms";
 import { hrefForRegion } from "@/features/logistics/logistics-availability";
 import { CustomerOrderHeader } from "@/features/logistics/ui/customer-order-header";
 import { CustomerOrderContainersTab } from "@/features/logistics/ui/customer-order-containers-tab";
@@ -549,6 +549,7 @@ export const CustomerOrderDetailPage = () => {
         expectedEndOn={order.expectedEndOn}
         lines={lines}
         balances={balances}
+        plannedByProduct={plannedOutputQuantities(snapshot, order.id)}
         money={
           moneySummary && orderMoney.money
             ? {

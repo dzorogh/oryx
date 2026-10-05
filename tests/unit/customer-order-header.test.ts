@@ -7,9 +7,10 @@ import {
   fulfillmentSegments,
   headerPercent,
   paymentProgress,
+  plannedOutputQuantities,
   summarizeOrderFulfillment,
 } from "@/features/logistics/customer-order-oms";
-import type { CustomerOrderLine, StockBalance } from "@/features/logistics/logistics-types";
+import type { CustomerOrderLine, LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 
 const line = (patch: Partial<CustomerOrderLine> & Pick<CustomerOrderLine, "productId" | "quantity">): CustomerOrderLine => ({
   id: patch.id ?? `line-${patch.productId}`,
@@ -51,6 +52,7 @@ describe("summarizeOrderFulfillment", () => {
       ordered: 240,
       shipped: 60,
       reserved: 120,
+      inProduction: 0,
       uncovered: 60,
     });
   });
@@ -67,6 +69,7 @@ describe("summarizeOrderFulfillment", () => {
       ordered: 100,
       shipped: 20,
       reserved: 80,
+      inProduction: 0,
       uncovered: 0,
     });
     assert.ok(summary.shipped + summary.reserved + summary.uncovered <= summary.ordered);
@@ -83,6 +86,7 @@ describe("summarizeOrderFulfillment", () => {
       ordered: 100,
       shipped: 10,
       reserved: 20,
+      inProduction: 0,
       uncovered: 0,
     });
   });
@@ -93,6 +97,7 @@ describe("summarizeOrderFulfillment", () => {
       ordered: 0,
       shipped: 0,
       reserved: 0,
+      inProduction: 0,
       uncovered: 0,
     });
   });
@@ -110,6 +115,49 @@ describe("summarizeOrderFulfillment", () => {
       balance({ productId: "a", quantity: 40, stockState: "reserved", ownerId: "ord-2" }),
     ];
     assert.deepEqual(summarizeOrderFulfillment(lines, withNoise, true), summarizeOrderFulfillment(lines, own, true));
+  });
+
+  it("moves planned output quantity from uncovered to in production, capped at what is not reserved", () => {
+    const lines = [line({ productId: "a", quantity: 4 }), line({ productId: "b", quantity: 3 })];
+    const balances = [
+      balance({ productId: "a", quantity: 2, stockState: "reserved" }),
+      balance({ productId: "b", quantity: 2, stockState: "reserved" }),
+    ];
+    const planned = new Map([
+      ["a", 2],
+      ["b", 5],
+    ]);
+    assert.deepEqual(summarizeOrderFulfillment(lines, balances, true, planned), {
+      positions: 2,
+      ordered: 7,
+      shipped: 0,
+      reserved: 4,
+      inProduction: 3,
+      uncovered: 0,
+    });
+    assert.equal(summarizeOrderFulfillment(lines, balances, false, planned).inProduction, 0);
+  });
+});
+
+describe("plannedOutputQuantities", () => {
+  const output = (id: string, status: "draft" | "done" | "cancelled") =>
+    ({ id, status }) as LogisticsSnapshot["outputs"][number];
+  const outputLine = (outputId: string, productId: string, quantity: number, toOwnerId: string | null) =>
+    ({ outputId, productId, quantity, toOwnerType: toOwnerId ? "order" : null, toOwnerId }) as LogisticsSnapshot["outputLines"][number];
+
+  it("sums draft output lines assigned to the order by product", () => {
+    const snapshot = {
+      outputs: [output("o1", "draft"), output("o2", "draft"), output("o3", "done"), output("o4", "cancelled")],
+      outputLines: [
+        outputLine("o1", "a", 2, "ord-1"),
+        outputLine("o2", "a", 1, "ord-1"),
+        outputLine("o2", "b", 3, "ord-2"),
+        outputLine("o2", "c", 4, null),
+        outputLine("o3", "a", 5, "ord-1"),
+        outputLine("o4", "a", 6, "ord-1"),
+      ],
+    };
+    assert.deepEqual([...plannedOutputQuantities(snapshot, "ord-1")], [["a", 3]]);
   });
 });
 
@@ -163,24 +211,29 @@ describe("headerPercent", () => {
 describe("fulfillmentSegments", () => {
   it("splits 240 ordered into 25% shipped, 50% reserved, 25% uncovered", () => {
     assert.deepEqual(
-      fulfillmentSegments({ positions: 6, ordered: 240, shipped: 60, reserved: 120, uncovered: 60 }),
-      { shipped: 25, reserved: 50, uncovered: 25 },
+      fulfillmentSegments({ positions: 6, ordered: 240, shipped: 60, reserved: 120, inProduction: 0, uncovered: 60 }),
+      { shipped: 25, reserved: 50, inProduction: 0, uncovered: 25 },
+    );
+    assert.deepEqual(
+      fulfillmentSegments({ positions: 2, ordered: 8, shipped: 0, reserved: 4, inProduction: 2, uncovered: 2 }),
+      { shipped: 0, reserved: 50, inProduction: 25, uncovered: 25 },
     );
   });
 
   it("never exceeds 100% after rounding and keeps a 1% floor for tiny nonzero parts", () => {
-    const over = fulfillmentSegments({ positions: 3, ordered: 200, shipped: 67, reserved: 67, uncovered: 66 });
+    const over = fulfillmentSegments({ positions: 3, ordered: 200, shipped: 67, reserved: 67, inProduction: 0, uncovered: 66 });
     assert.equal(over.shipped + over.reserved + over.uncovered, 100);
     assert.ok(over.shipped + over.reserved + over.uncovered <= 100);
 
-    const tiny = fulfillmentSegments({ positions: 1, ordered: 1000, shipped: 1, reserved: 1, uncovered: 998 });
+    const tiny = fulfillmentSegments({ positions: 1, ordered: 1000, shipped: 1, reserved: 1, inProduction: 0, uncovered: 998 });
     assert.equal(tiny.shipped, 1);
     assert.equal(tiny.reserved, 1);
     assert.ok(tiny.shipped + tiny.reserved + tiny.uncovered <= 100);
 
-    assert.deepEqual(fulfillmentSegments({ positions: 0, ordered: 0, shipped: 0, reserved: 0, uncovered: 0 }), {
+    assert.deepEqual(fulfillmentSegments({ positions: 0, ordered: 0, shipped: 0, reserved: 0, inProduction: 0, uncovered: 0 }), {
       shipped: 0,
       reserved: 0,
+      inProduction: 0,
       uncovered: 0,
     });
   });

@@ -3,7 +3,12 @@
 import type { MixedPackItem } from "@/domain/packing/mixed-containers";
 import type { DocumentTimelineEntry } from "@/features/logistics/document-timeline";
 import { sumReservedForLine, sumShippedForLine } from "@/features/logistics/logistics-balances";
-import type { CustomerOrderLine, StockBalance } from "@/features/logistics/logistics-types";
+import {
+  ownersEqual,
+  type CustomerOrderLine,
+  type LogisticsSnapshot,
+  type StockBalance,
+} from "@/features/logistics/logistics-types";
 import {
   formatOrderMoney,
   mapTransferMoney,
@@ -184,22 +189,43 @@ export type OrderFulfillmentSummary = {
   ordered: number;
   shipped: number;
   reserved: number;
+  /** Planned in draft outputs for the order and not reserved yet. */
+  inProduction: number;
   uncovered: number;
 };
 
+/** Quantity by product in draft (planned) outputs assigned to the order; finished outputs are already reserved stock. */
+export const plannedOutputQuantities = (
+  snapshot: Pick<LogisticsSnapshot, "outputs" | "outputLines">,
+  customerOrderId: string,
+): Map<string, number> => {
+  const draftOutputs = new Set(snapshot.outputs.filter((output) => output.status === "draft").map((output) => output.id));
+  const quantities = new Map<string, number>();
+  for (const line of snapshot.outputLines) {
+    if (!draftOutputs.has(line.outputId) || !ownersEqual(line.toOwnerType, line.toOwnerId, "order", customerOrderId)) {
+      continue;
+    }
+    quantities.set(line.productId, (quantities.get(line.productId) ?? 0) + line.quantity);
+  }
+  return quantities;
+};
+
 /**
- * Header fulfillment totals: per line reserved is capped at ordered − shipped;
- * uncovered is Σ(остаток − резерв) and 0 when the order is not open.
+ * Header fulfillment totals: per line reserved is capped at ordered − shipped, in production at what is
+ * still left after reserve; uncovered is the rest. In production and uncovered are 0 when the order is not open.
  */
 export const summarizeOrderFulfillment = (
   lines: CustomerOrderLine[],
   balances: StockBalance[],
   open: boolean,
+  plannedByProduct: ReadonlyMap<string, number> = new Map(),
 ): OrderFulfillmentSummary => {
   let ordered = 0;
   let shipped = 0;
   let reserved = 0;
+  let inProduction = 0;
   let uncovered = 0;
+  const plannedLeft = new Map(plannedByProduct);
   for (const line of lines) {
     const lineShipped = sumShippedForLine(balances, line);
     const remaining = Math.max(0, line.quantity - lineShipped);
@@ -207,9 +233,14 @@ export const summarizeOrderFulfillment = (
     ordered += line.quantity;
     shipped += lineShipped;
     reserved += lineReserved;
-    if (open) uncovered += remaining - lineReserved;
+    if (!open) continue;
+    const planned = plannedLeft.get(line.productId) ?? 0;
+    const lineInProduction = Math.min(Math.max(0, planned), remaining - lineReserved);
+    plannedLeft.set(line.productId, planned - lineInProduction);
+    inProduction += lineInProduction;
+    uncovered += remaining - lineReserved - lineInProduction;
   }
-  return { positions: lines.length, ordered, shipped, reserved, uncovered };
+  return { positions: lines.length, ordered, shipped, reserved, inProduction, uncovered };
 };
 
 export type DeadlineCountdown = {
@@ -271,15 +302,16 @@ export const headerPercent = (part: number, total: number): number => {
 /** Widths of the «Выполнение» bar segments in percent of ordered; never more than 100 together. */
 export const fulfillmentSegments = (
   summary: OrderFulfillmentSummary,
-): { shipped: number; reserved: number; uncovered: number } => {
+): { shipped: number; reserved: number; inProduction: number; uncovered: number } => {
   const segment = (qty: number): number => {
     if (!(qty > 0) || !(summary.ordered > 0)) return 0;
     return Math.max(1, headerPercent(qty, summary.ordered));
   };
   const shipped = segment(summary.shipped);
   const reserved = Math.min(segment(summary.reserved), 100 - shipped);
-  const uncovered = Math.min(segment(summary.uncovered), 100 - shipped - reserved);
-  return { shipped, reserved, uncovered };
+  const inProduction = Math.min(segment(summary.inProduction), 100 - shipped - reserved);
+  const uncovered = Math.min(segment(summary.uncovered), 100 - shipped - reserved - inProduction);
+  return { shipped, reserved, inProduction, uncovered };
 };
 
 /** «Оплата» panel: percent paid and one due line — «Срок платежа 25.09.2026 · просрочен» or a closing note. */

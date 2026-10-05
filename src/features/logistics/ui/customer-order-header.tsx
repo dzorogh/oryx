@@ -100,7 +100,7 @@ const LegendDot = ({ className }: { className: string }) => (
 );
 
 const FulfillmentPanel = ({ fulfillment, open }: { fulfillment: OrderFulfillmentSummary; open: boolean }) => {
-  const { positions, ordered, shipped, reserved, uncovered } = fulfillment;
+  const { positions, ordered, shipped, reserved, inProduction, uncovered } = fulfillment;
   const empty = positions === 0;
   const segments = fulfillmentSegments(fulfillment);
 
@@ -122,6 +122,7 @@ const FulfillmentPanel = ({ fulfillment, open }: { fulfillment: OrderFulfillment
       <div className="mt-2.5 flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-muted">
         <div className="bg-green-600" style={{ width: `${segments.shipped}%` }} />
         <div className="bg-blue-500" style={{ width: `${segments.reserved}%` }} />
+        {inProduction > 0 ? <div className="bg-violet-500" style={{ width: `${segments.inProduction}%` }} /> : null}
         {open && uncovered > 0 ? <div className="bg-amber-400" style={{ width: `${segments.uncovered}%` }} /> : null}
       </div>
       {!empty ? (
@@ -129,6 +130,11 @@ const FulfillmentPanel = ({ fulfillment, open }: { fulfillment: OrderFulfillment
           <span className="inline-flex items-center gap-1.5">
             <LegendDot className="bg-blue-500" />В резерве {formatQuantity(reserved)}
           </span>
+          {inProduction > 0 ? (
+            <span className="inline-flex items-center gap-1.5">
+              <LegendDot className="bg-violet-500" />В производстве {formatQuantity(inProduction)}
+            </span>
+          ) : null}
           {open ? (
             <span className="inline-flex items-center gap-1.5">
               <LegendDot className="bg-amber-400" />Не обеспечено {formatQuantity(uncovered)}
@@ -298,6 +304,7 @@ export const CustomerOrderHeader = ({
   expectedEndOn,
   lines,
   balances,
+  plannedByProduct,
   money,
   paymentsSummary,
   paymentCount,
@@ -324,6 +331,8 @@ export const CustomerOrderHeader = ({
   expectedEndOn: string | null;
   lines: CustomerOrderLine[];
   balances: StockBalance[];
+  /** Product id → quantity in draft outputs assigned to the order. */
+  plannedByProduct: ReadonlyMap<string, number>;
   money: { amount: number | null; estimated: number; currencyCode: string } | null;
   paymentsSummary: PaymentsSummary | null;
   paymentCount: number;
@@ -335,7 +344,7 @@ export const CustomerOrderHeader = ({
 }) => {
   const [copyOpen, setCopyOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const fulfillment = summarizeOrderFulfillment(lines, balances, canAct);
+  const fulfillment = summarizeOrderFulfillment(lines, balances, canAct, plannedByProduct);
   const countdown = deadlineCountdown(expectedEndOn, canAct);
   const showCancel = cancelGuidance.mode !== "hidden";
 
