@@ -311,6 +311,7 @@ export const CustomerOrderHeader = ({
   cancelGuidance,
   reload,
   onExpectedEndChange,
+  onStart,
   onClose,
   onCancelFollowUp,
 }: {
@@ -339,6 +340,7 @@ export const CustomerOrderHeader = ({
   cancelGuidance: CancelGuidance;
   reload: () => Promise<void>;
   onExpectedEndChange: (value: string | null) => void;
+  onStart: () => void;
   onClose: () => void;
   onCancelFollowUp: (action: CancelGuidanceAction, guidance: CancelGuidance) => void;
 }) => {
@@ -408,8 +410,13 @@ export const CustomerOrderHeader = ({
                 ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
+            {canAct && status === "draft" ? (
+              <Button type="button" onClick={onStart}>
+                В работу
+              </Button>
+            ) : null}
             {canAct ? (
-              <Button type="button" onClick={onClose}>
+              <Button type="button" variant={status === "draft" ? "outline" : "default"} onClick={onClose}>
                 Закрыть заказ клиента
               </Button>
             ) : null}

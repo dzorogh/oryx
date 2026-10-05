@@ -15,6 +15,7 @@ import {
   createCustomerOrder,
   loadCustomerOrderList,
   setOrderLineQuantity,
+  startCustomerOrder,
   updateExpectedEnd,
 } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
@@ -569,6 +570,9 @@ export const CustomerOrderDetailPage = () => {
             "Срок заказа клиента обновлён",
             reload,
           );
+        }}
+        onStart={() => {
+          void runLogisticsAction(() => startCustomerOrder(order.id), "Заказ клиента переведён в работу", reload);
         }}
         onClose={() => {
           void runLogisticsAction(

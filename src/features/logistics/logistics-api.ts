@@ -1308,6 +1308,7 @@ export const createAndSendTransfer = async (
 
 export const sendTransfer = (id: string) => rpc("store_send_transfer", { p_id: id });
 export const completeTransfer = (id: string) => rpc("store_complete_transfer", { p_id: id });
+export const startCustomerOrder = (id: string) => rpc("store_start_customer_order", { p_id: id });
 export const closeCustomerOrder = (id: string) => rpc("store_close_customer_order", { p_id: id });
 
 export const createCustomerOrder = async (args: {
