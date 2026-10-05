@@ -13,6 +13,7 @@ import {
   SHIPMENT_DIRECTION_LABELS,
 } from "@/features/logistics/logistics-labels";
 import {
+  isOutputDocumentKind,
   ownersEqual,
   reservationDirection,
   reservationTouchesOrder,
@@ -38,6 +39,8 @@ export type RelatedDocumentItem = {
   expectedEndOn?: string | null;
   operation?: ReservationDirection;
   coveragePercent?: number;
+  /** Nested documents shown under this one (e.g. outputs of a production order). */
+  children?: RelatedDocumentItem[];
 };
 
 const statusMeta = (status: DocumentStatus | TransferStatus | string): string => status;
@@ -139,7 +142,7 @@ export const relatedOutputsForOrder = (snapshot: LogisticsSnapshot, customerOrde
   const outputIds = new Set<string>();
   for (const entry of snapshot.transactions) {
     if (
-      entry.documentType === "output" &&
+      isOutputDocumentKind(entry.documentType) &&
       ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId)
     ) {
       outputIds.add(entry.documentId);
@@ -235,6 +238,51 @@ export const relatedProductionsForOrder = (
     });
 };
 
+type CoveragePercents = ReadonlyMap<string, number>;
+
+/**
+ * Production orders that serve the customer order, each with its outputs for that order as children.
+ * Outputs whose production order is missing from the snapshot stay at the top level.
+ */
+export const relatedProductionGroupsForOrder = (
+  snapshot: LogisticsSnapshot,
+  customerOrderId: string,
+  coverage?: { production: CoveragePercents; output: CoveragePercents },
+): RelatedDocumentItem[] => {
+  const withPercent = (item: RelatedDocumentItem, percents?: CoveragePercents): RelatedDocumentItem =>
+    percents ? { ...item, coveragePercent: percents.get(item.id) ?? 0 } : item;
+
+  const outputs = relatedOutputsForOrder(snapshot, customerOrderId).map((item) =>
+    withPercent(item, coverage?.output),
+  );
+  const productionIdByOutput = new Map(snapshot.outputs.map((item) => [item.id, item.productionOrderId]));
+  const productions = relatedProductionsForOrder(snapshot, customerOrderId);
+  const knownIds = new Set(productions.map((item) => item.id));
+  const extraIds = new Set(
+    outputs
+      .map((item) => productionIdByOutput.get(item.id))
+      .filter((id): id is string => Boolean(id) && !knownIds.has(id as string)),
+  );
+  const extras: RelatedDocumentItem[] = snapshot.productionOrders
+    .filter((item) => extraIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: `/store/logistics/production-orders/${publicDocumentParam(item)}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+      statusKey: item.status,
+      expectedEndOn: item.expectedEndOn,
+    }));
+
+  const groups = [...productions, ...extras].map((production) => ({
+    ...withPercent(production, coverage?.production),
+    children: outputs.filter((output) => productionIdByOutput.get(output.id) === production.id),
+  }));
+  const groupedIds = new Set(groups.map((item) => item.id));
+  const orphans = outputs.filter((output) => !groupedIds.has(productionIdByOutput.get(output.id) ?? ""));
+  return [...groups, ...orphans];
+};
+
 export const relatedOrdersForOutput = (
   snapshot: LogisticsSnapshot,
   outputId: string,
@@ -242,7 +290,7 @@ export const relatedOrdersForOutput = (
   const fromLedger = snapshot.transactions
     .filter(
       (entry) =>
-        entry.documentType === "output" &&
+        isOutputDocumentKind(entry.documentType) &&
         entry.documentId === outputId &&
         entry.ownerType === "order" &&
         entry.ownerId &&

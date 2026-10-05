@@ -11,6 +11,7 @@ import { calculateOrderDocumentCoverage } from "@/features/logistics/order-docum
 import {
   productActivity,
   relatedOutputsForOrder,
+  relatedProductionGroupsForOrder,
   relatedProductionsForOrder,
 } from "@/features/logistics/logistics-related";
 import {
@@ -427,5 +428,54 @@ describe("связанные документы и покрытие этапов
     assert.equal(coverage.production.get("po-1"), 70);
     assert.equal(coverage.output.get("out-draft"), 40);
     assert.equal(coverage.output.get("out-done"), 30);
+  });
+
+  it("этап «Производство» группирует выпуски под заказом на производство", () => {
+    const view = base();
+    const coverage = calculateOrderDocumentCoverage(view, "12");
+    const groups = relatedProductionGroupsForOrder(view, "12", coverage);
+    assert.deepEqual(
+      groups.map((item) => item.id),
+      ["po-1"],
+    );
+    const [production] = groups;
+    assert.equal(production.coveragePercent, 70);
+    assert.deepEqual(
+      production.children?.map((item) => [item.id, item.coveragePercent]),
+      [
+        ["out-draft", 40],
+        ["out-done", 30],
+      ],
+    );
+  });
+
+  it("проводка с типом production_output даёт процент готовому выпуску", () => {
+    const view = base();
+    const backendView: LogisticsSnapshot = {
+      ...view,
+      transactions: view.transactions.map((entry) => ({
+        ...entry,
+        documentType: "production_output",
+        documentKind: "production_output",
+      })),
+    };
+    const coverage = calculateOrderDocumentCoverage(backendView, "12");
+    assert.equal(coverage.output.get("out-done"), 30);
+  });
+
+  it("резерв в свободном выпуске даёт заказ на производство с процентом", () => {
+    const view = base();
+    const freeView: LogisticsSnapshot = {
+      ...view,
+      outputLines: view.outputLines.map((line) =>
+        line.id === "ol-draft" ? { ...line, toOwnerType: null, toOwnerId: null } : line,
+      ),
+      outputAllocations: [{ id: "oa-1", lineId: "ol-draft", ownerType: "order", ownerId: "12", quantity: 2 }],
+    } as LogisticsSnapshot;
+    const coverage = calculateOrderDocumentCoverage(freeView, "12");
+    assert.equal(coverage.production.get("po-1"), 50);
+    const [production] = relatedProductionGroupsForOrder(freeView, "12", coverage);
+    assert.equal(production.id, "po-1");
+    assert.deepEqual(production.children?.map((item) => item.id).sort(), ["out-done", "out-draft"]);
   });
 });

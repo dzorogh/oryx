@@ -1,4 +1,5 @@
 import {
+  isOutputDocumentKind,
   orderLineForProduct,
   ownersEqual,
   reservationDirection,
@@ -183,6 +184,21 @@ export const calculateOrderDocumentCoverage = (
       continue;
     }
     outputsWithAllocations.add(outputLine.outputId);
+    const output = snapshot.outputs.find((item) => item.id === outputLine.outputId);
+    if (
+      output &&
+      output.status !== "cancelled" &&
+      !ownersEqual(outputLine.toOwnerType, outputLine.toOwnerId, "order", customerOrderId)
+    ) {
+      addForProduct(
+        quantities.production,
+        output.productionOrderId,
+        orderLines,
+        customerOrderId,
+        outputLine.productId,
+        allocation.quantity,
+      );
+    }
     addForProduct(
       quantities.output,
       outputLine.outputId,
@@ -195,7 +211,7 @@ export const calculateOrderDocumentCoverage = (
 
   for (const transaction of snapshot.transactions) {
     if (
-      transaction.documentType !== "output" ||
+      !isOutputDocumentKind(transaction.documentType) ||
       !ownersEqual(transaction.ownerType, transaction.ownerId, "order", customerOrderId) ||
       transaction.quantity <= 0 ||
       outputsWithAllocations.has(transaction.documentId)

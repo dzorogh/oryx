@@ -54,6 +54,8 @@ export const DOCUMENT_KINDS = [
   "return",
 ] as const;
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
+/** Ledger rows from the backend carry `production_output`; fixtures may still use the `output` alias. */
+export const isOutputDocumentKind = (kind: string): boolean => kind === "production_output" || kind === "output";
 /** @deprecated Use DocumentKind */
 export type DocumentType = DocumentKind;
 export const DOCUMENT_TYPES = DOCUMENT_KINDS;

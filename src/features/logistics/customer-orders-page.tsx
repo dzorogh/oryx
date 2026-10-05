@@ -44,7 +44,7 @@ import {
 } from "@/features/logistics/logistics-lookups";
 import { DocumentProductLines } from "@/features/logistics/ui/document-product-lines";
 import {
-  relatedOutputsForOrder,
+  relatedProductionGroupsForOrder,
   relatedReservations,
   relatedReturnsForOrder,
   relatedShipments,
@@ -468,9 +468,9 @@ export const CustomerOrderDetailPage = () => {
     {
       id: "output",
       title: "Производство",
-      href: "/store/logistics/outputs",
-      items: withOrderCoverage(relatedOutputsForOrder(snapshot, order.id), coverage.output),
-      doneStatuses: ["done"] as const,
+      href: "/store/logistics/production-orders",
+      items: relatedProductionGroupsForOrder(snapshot, order.id, coverage),
+      doneStatuses: ["done", "closed"] as const,
       actions: canAct
         ? [
             { label: "Новый заказ на производство", onClick: () => setProductionOpen(true) },

@@ -3,7 +3,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, MoreHorizontal } from "lucide-react";
+import { Check, ChevronDown, CornerDownRight, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -110,10 +110,15 @@ export const isDocumentActive = (
 
 type StageProgress = "empty" | "active" | "complete";
 
+/** Documents that drive stage progress: a parent with children is tracked by its children. */
+export const stageDocuments = (items: RelatedDocumentItem[]): RelatedDocumentItem[] =>
+  items.flatMap((item) => (item.children && item.children.length > 0 ? item.children : [item]));
+
 export const stageProgress = (
-  items: RelatedDocumentItem[],
+  stageItems: RelatedDocumentItem[],
   doneStatuses: readonly string[],
 ): StageProgress => {
+  const items = stageDocuments(stageItems);
   if (items.length === 0) {
     return "empty";
   }
@@ -140,8 +145,10 @@ const sortStageItems = (
   doneStatuses: readonly string[],
 ): RelatedDocumentItem[] =>
   [...items].sort((left, right) => {
-    const leftActive = isDocumentActive(left, doneStatuses) ? 0 : 1;
-    const rightActive = isDocumentActive(right, doneStatuses) ? 0 : 1;
+    const isActive = (item: RelatedDocumentItem) =>
+      stageDocuments([item]).some((document) => isDocumentActive(document, doneStatuses));
+    const leftActive = isActive(left) ? 0 : 1;
+    const rightActive = isActive(right) ? 0 : 1;
     if (leftActive !== rightActive) {
       return leftActive - rightActive;
     }
@@ -234,10 +241,10 @@ const documentCaption = (item: RelatedDocumentItem, parsedExtra?: string): strin
 
 const DocumentCard = ({
   item,
-  doneStatuses,
+  nested = false,
 }: {
   item: RelatedDocumentItem;
-  doneStatuses: readonly string[];
+  nested?: boolean;
 }) => {
   const parsed = parseTrackerMeta(item.meta);
   const statusKey = item.statusKey ?? parsed.statusKey;
@@ -251,8 +258,12 @@ const DocumentCard = ({
   return (
     <Link
       href={item.href}
-      className="flex min-h-9 min-w-0 items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted/60"
+      className={cn(
+        "flex min-h-9 min-w-0 items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-muted/60",
+        nested && "min-h-8 pl-4",
+      )}
     >
+      {nested ? <CornerDownRight className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden /> : null}
       <LogisticsCodeBadge code={item.label} className="shrink-0" />
       <span className="min-w-0 flex-1 truncate text-muted-foreground" title={caption ?? undefined}>
         {caption}
@@ -308,7 +319,7 @@ const JourneyStage = ({
 }) => {
   const actions = showActions && stage.actions && stage.actions.length > 0 ? stage.actions : null;
   const items = sortStageItems(stage.items, stage.doneStatuses);
-  const caption = stageCaption(marker, stage.items, stage.doneStatuses);
+  const caption = stageCaption(marker, stageDocuments(stage.items), stage.doneStatuses);
 
   return (
     <div
@@ -327,7 +338,16 @@ const JourneyStage = ({
       {items.length > 0 ? (
         <div className="mt-2.5 flex flex-col divide-y divide-border/60 overflow-hidden rounded-lg border border-border/70 bg-muted/30">
           {items.map((item) => (
-            <DocumentCard key={item.id} item={item} doneStatuses={stage.doneStatuses} />
+            <div key={item.href} className="flex flex-col">
+              <DocumentCard item={item} />
+              {item.children && item.children.length > 0 ? (
+                <div className="flex flex-col divide-y divide-border/40 border-t border-border/40 bg-background/60">
+                  {sortStageItems(item.children, stage.doneStatuses).map((child) => (
+                    <DocumentCard key={child.href} item={child} nested />
+                  ))}
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       ) : (
