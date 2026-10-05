@@ -742,6 +742,8 @@ export const CustomerOrderDetailPage = () => {
         open={reserveOpen}
         onOpenChange={setReserveOpen}
         direction="reserve"
+        lockDestination
+        allowTakeover
         preset={{
           toOwnerType: "order",
           toOwnerId: order.id,
@@ -762,6 +764,7 @@ export const CustomerOrderDetailPage = () => {
         open={releaseOpen}
         onOpenChange={setReleaseOpen}
         direction="release"
+        lockSource
         preset={{
           toOwnerType: null,
           toOwnerId: null,

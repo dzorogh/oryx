@@ -104,6 +104,24 @@ const matchesSourceOwner = (
   ownerId: string | null,
 ) => !sourceType || ownersEqual(ownerType, ownerId, sourceType, sourceId);
 
+type OwnerFilter = {
+  direction: ReservationDirection;
+  takeover: boolean;
+  sourceType: OwnerType | null;
+  sourceId: string | null;
+  destType: OwnerType | null;
+  destId: string | null;
+};
+
+const isPickableOwner = (filter: OwnerFilter, ownerType: OwnerType | null, ownerId: string | null) => {
+  const free = isFreeOwner(ownerType, ownerId);
+  if (filter.direction === "reserve") {
+    return free || (filter.takeover && !ownersEqual(ownerType, ownerId, filter.destType, filter.destId));
+  }
+  if (free || !matchesSourceOwner(filter.sourceType, filter.sourceId, ownerType, ownerId)) return false;
+  return filter.direction === "release" || !ownersEqual(ownerType, ownerId, filter.destType, filter.destId);
+};
+
 type PlaceOption = { key: string; locationType: ReservationLocationType; locationId: string; label: string };
 
 export const ReservationCatalogDialog = ({
@@ -115,6 +133,7 @@ export const ReservationCatalogDialog = ({
   direction: directionProp,
   lockDestination,
   lockSource,
+  allowTakeover,
   loading,
   loadError,
 }: {
@@ -128,6 +147,8 @@ export const ReservationCatalogDialog = ({
   lockDestination?: boolean;
   /** Списываются только резервы владельца `preset.fromOwner*`. */
   lockSource?: boolean;
+  /** При резервировании можно забрать и чужой резерв: такие строки уходят отдельным документом передачи. */
+  allowTakeover?: boolean;
   loading?: boolean;
   loadError?: string | null;
 }) => {
@@ -178,6 +199,18 @@ export const ReservationCatalogDialog = ({
   const sourceOwnerId = sourceOwnerType ? (preset?.fromOwnerId ?? null) : null;
   const destOwnerType: OwnerType | null = destKind === "free" ? null : destKind;
   const destOwnerId = destKind === "free" ? null : destId || null;
+  const takeover = Boolean(allowTakeover) && direction === "reserve";
+  const ownerFilter = useMemo<OwnerFilter>(
+    () => ({
+      direction,
+      takeover,
+      sourceType: sourceOwnerType,
+      sourceId: sourceOwnerId,
+      destType: destOwnerType,
+      destId: destOwnerId,
+    }),
+    [destOwnerId, destOwnerType, direction, sourceOwnerId, sourceOwnerType, takeover],
+  );
 
   const places = useMemo(() => {
     const seen = new Set<string>();
@@ -189,12 +222,7 @@ export const ReservationCatalogDialog = ({
       if (seen.has(key)) return;
       const owners = placeOwnersByProduct(balances, locationType, locationId);
       const relevant = [...owners.values()].some((list) =>
-        list.some((owner) => {
-          const free = isFreeOwner(owner.ownerType, owner.ownerId);
-          return direction === "reserve"
-            ? free
-            : !free && matchesSourceOwner(sourceOwnerType, sourceOwnerId, owner.ownerType, owner.ownerId);
-        }),
+        list.some((owner) => isPickableOwner(ownerFilter, owner.ownerType, owner.ownerId)),
       );
       if (!relevant && key !== presetKey) return;
       seen.add(key);
@@ -203,7 +231,7 @@ export const ReservationCatalogDialog = ({
     for (const entry of balances) add(entry.locationType, entry.locationId);
     if (preset?.locationType && preset.locationId) add(preset.locationType, preset.locationId);
     return items;
-  }, [balances, direction, preset?.locationId, preset?.locationType, snapshot, sourceOwnerId, sourceOwnerType]);
+  }, [balances, ownerFilter, preset?.locationId, preset?.locationType, snapshot]);
 
   const placeItems = useMemo(
     () =>
@@ -221,13 +249,12 @@ export const ReservationCatalogDialog = ({
       for (const [productId, list] of owners) {
         owners.set(
           productId,
-          list.filter((owner) => {
-            const free = isFreeOwner(owner.ownerType, owner.ownerId);
-            if (direction === "reserve") return free;
-            if (!matchesSourceOwner(sourceOwnerType, sourceOwnerId, owner.ownerType, owner.ownerId)) return false;
-            if (direction === "release") return !free;
-            return !free && !ownersEqual(owner.ownerType, owner.ownerId, destOwnerType, destOwnerId);
-          }),
+          list
+            .filter((owner) => isPickableOwner(ownerFilter, owner.ownerType, owner.ownerId))
+            .sort(
+              (a, b) =>
+                Number(!isFreeOwner(a.ownerType, a.ownerId)) - Number(!isFreeOwner(b.ownerType, b.ownerId)),
+            ),
         );
       }
       for (const row of catalogProductsFromPlace(snapshot, owners)) {
@@ -243,7 +270,7 @@ export const ReservationCatalogDialog = ({
       }
     }
     return snapshot.products.flatMap((product) => byProduct.get(product.id) ?? []);
-  }, [balances, destOwnerId, destOwnerType, direction, place, places, showAllPlaces, snapshot, sourceOwnerId, sourceOwnerType]);
+  }, [balances, ownerFilter, place, places, showAllPlaces, snapshot]);
 
   const collapse = useCatalogCollapse(snapshot.categories, products, quantities, search);
   const lines = products.flatMap((product) =>
@@ -278,15 +305,19 @@ export const ReservationCatalogDialog = ({
     if (lines.length === 0) return;
     setSubmitting(true);
     setServerError(null);
-    const byPlace = new Map<string, typeof lines>();
+    const lineKind = (line: (typeof lines)[number]) =>
+      takeover && !isFreeOwner(line.ownerType, line.ownerId) ? "reassign" : direction;
+    const groups = new Map<string, typeof lines>();
     for (const line of lines) {
-      const key = placeKey(line.locationType, line.locationId);
-      byPlace.set(key, [...(byPlace.get(key) ?? []), line]);
+      const key = `${placeKey(line.locationType, line.locationId)}|${lineKind(line)}`;
+      groups.set(key, [...(groups.get(key) ?? []), line]);
     }
+    const placeCount = new Set(lines.map((line) => placeKey(line.locationType, line.locationId))).size;
     const created: CreatedDocLink[] = [];
     try {
-      for (const group of byPlace.values()) {
+      for (const group of groups.values()) {
         const { locationType, locationId } = group[0];
+        const kindLabel = lineKind(group[0]) === "reassign" ? "Передача резерва" : "Резерв";
         const id = await createAndPostReservation({
           locationType,
           locationId,
@@ -301,7 +332,7 @@ export const ReservationCatalogDialog = ({
         });
         created.push({
           href: logisticsPath("reservations", id),
-          label: byPlace.size > 1 ? `Резерв · ${locationLabel(snapshot, locationType, locationId)}` : "Резерв",
+          label: placeCount > 1 ? `${kindLabel} · ${locationLabel(snapshot, locationType, locationId)}` : kindLabel,
         });
       }
       onOpenChange(false);
@@ -344,7 +375,7 @@ export const ReservationCatalogDialog = ({
       onOpenChange={onOpenChange}
       size="catalog"
       kicker="Резервы"
-      title={TITLES[direction]}
+      title={takeover ? "Зарезервировать" : TITLES[direction]}
       loading={loading}
       error={loadError}
       header={
