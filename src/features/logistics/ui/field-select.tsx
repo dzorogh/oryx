@@ -16,6 +16,7 @@ export type FieldSelectItem = {
   value: string;
   label: string;
   hint?: string;
+  disabled?: boolean;
 };
 
 const ItemContent = ({ item }: { item: FieldSelectItem }) => (
@@ -92,7 +93,7 @@ export const FieldSelect = ({
           <SelectContent className="w-auto min-w-(--anchor-width)">
             <SelectGroup>
               {items.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
+                <SelectItem key={item.value} value={item.value} disabled={item.disabled}>
                   <ItemContent item={item} />
                 </SelectItem>
               ))}

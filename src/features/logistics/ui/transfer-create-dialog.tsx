@@ -56,6 +56,13 @@ export type TransferCreatePreset = {
 
 const PICKUP_HINT = "забирает клиент";
 
+const warehouseOptions = (items: FieldSelectItem[], pickupId: string | null, otherSideId: string) =>
+  items.map((item) => ({
+    ...item,
+    hint: item.value === pickupId ? PICKUP_HINT : undefined,
+    disabled: item.value === otherSideId,
+  }));
+
 const presetQuantities = (preset?: TransferCreatePreset): Record<string, string> => {
   const quantities: Record<string, string> = {};
   for (const line of preset?.lines ?? []) {
@@ -100,8 +107,6 @@ export const TransferCreateDialog = ({
   const order = orderId ? customerOrderById(snapshot, orderId) : undefined;
   const orderNumber = orderId ? (order?.number ?? orderId) : "";
   const pickupWarehouseId = order ? (regionById(snapshot, order.regionId)?.hubWarehouseId ?? null) : null;
-  const markPickup = (items: FieldSelectItem[]) =>
-    items.map((item) => (item.value === pickupWarehouseId ? { ...item, hint: PICKUP_HINT } : item));
   const wasOpen = useRef(false);
 
   useEffect(() => {
@@ -130,11 +135,16 @@ export const TransferCreateDialog = ({
     [balances, context, orderId, preset?.fromWarehouseId, showAll, snapshot],
   );
   const sourceItems = useMemo(
-    () => warehouseSelectItems(snapshot).filter((item) => sourceIds.includes(item.value)),
-    [snapshot, sourceIds],
+    () =>
+      warehouseOptions(
+        warehouseSelectItems(snapshot).filter((item) => sourceIds.includes(item.value)),
+        pickupWarehouseId,
+        toId,
+      ),
+    [pickupWarehouseId, snapshot, sourceIds, toId],
   );
   const destinationItems = useMemo(() => {
-    const items = warehouseSelectItems(snapshot, fromId);
+    const items = warehouseOptions(warehouseSelectItems(snapshot), pickupWarehouseId, fromId);
     const pickup = items.find((item) => item.value === pickupWarehouseId);
     return pickup ? [pickup, ...items.filter((item) => item !== pickup)] : items;
   }, [fromId, pickupWarehouseId, snapshot]);
@@ -237,7 +247,7 @@ export const TransferCreateDialog = ({
           <FieldSelect
             label="Со склада"
             value={fromId}
-            items={markPickup(sourceItems.filter((item) => item.value !== toId))}
+            items={sourceItems}
             onChange={setFromId}
             placeholder="Выберите склад"
             emptyLabel={orderId ? "Нет склада с товарами этого заказа" : "Нет склада с остатком"}
@@ -246,7 +256,7 @@ export const TransferCreateDialog = ({
           <FieldSelect
             label="На склад"
             value={toId}
-            items={markPickup(destinationItems)}
+            items={destinationItems}
             onChange={setToId}
             placeholder="Выберите склад"
           />

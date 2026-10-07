@@ -128,6 +128,8 @@ export const DialogShell = ({
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         if (confirmCloseRef.current) return;
+        const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest("[role='listbox'], [role='menu'], [aria-expanded='true']")) return;
         event.preventDefault();
         event.stopPropagation();
         requestCloseRef.current();
