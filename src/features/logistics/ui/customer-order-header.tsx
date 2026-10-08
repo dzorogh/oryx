@@ -4,6 +4,7 @@ import {
   AlarmClock,
   Ban,
   CalendarClock,
+  CalendarPlus,
   Copy,
   Factory,
   MoreHorizontal,
@@ -12,7 +13,7 @@ import {
   Wallet,
   Warehouse,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -228,6 +229,36 @@ const DEADLINE_BAR_CLASS: Record<HeaderTone, string> = {
   danger: "bg-red-500",
 };
 
+/** Native date picker opened from a visible button; the input sits under the button so the picker anchors to it. */
+const SetDateButton = ({ onChange }: { onChange: (value: string | null) => void }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const openPicker = () => {
+    const input = inputRef.current;
+    if (!input) return;
+    try {
+      input.showPicker();
+    } catch {
+      input.focus();
+    }
+  };
+  return (
+    <span className="relative inline-flex">
+      <Button type="button" variant="outline" className="gap-1.5" onClick={openPicker}>
+        <CalendarPlus className="size-4" aria-hidden />
+        Установить дату
+      </Button>
+      <input
+        ref={inputRef}
+        type="date"
+        tabIndex={-1}
+        aria-label="Ожидаемое окончание"
+        className="pointer-events-none absolute inset-0 opacity-0"
+        onChange={(event) => onChange(event.target.value || null)}
+      />
+    </span>
+  );
+};
+
 const DatesPanel = ({
   expectedEndOn,
   countdown,
@@ -251,19 +282,23 @@ const DatesPanel = ({
     <section className="px-6 py-4">
       <PanelTitle icon={CalendarClock}>Сроки</PanelTitle>
       <PanelValue>
-        <span
-          className={cn(
-            "[&_input]:text-xl [&_input]:font-semibold [&_input]:tracking-tight",
-            overdue && "[&_input]:text-red-700",
-          )}
-        >
-          <DocumentMetaDateInput
-            value={expectedEndOn ?? ""}
-            aria-label="Ожидаемое окончание"
-            overdueDays={0}
-            onChange={(value) => onExpectedEndChange(value || null)}
-          />
-        </span>
+        {open && !expectedEndOn ? (
+          <SetDateButton onChange={onExpectedEndChange} />
+        ) : (
+          <span
+            className={cn(
+              "[&_input]:text-xl [&_input]:font-semibold [&_input]:tracking-tight",
+              overdue && "[&_input]:text-red-700",
+            )}
+          >
+            <DocumentMetaDateInput
+              value={expectedEndOn ?? ""}
+              aria-label="Ожидаемое окончание"
+              overdueDays={0}
+              onChange={(value) => onExpectedEndChange(value || null)}
+            />
+          </span>
+        )}
       </PanelValue>
       <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div
