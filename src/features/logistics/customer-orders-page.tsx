@@ -85,13 +85,18 @@ import {
   listProductsColumn,
   ListQuantity,
 } from "@/features/logistics/ui/list/list-helpers";
+import {
+  CustomerOrderAmountCell,
+  CustomerOrderClosedCell,
+  CustomerOrderFulfillmentCell,
+  CustomerOrderPaymentCell,
+  CustomerOrderPositionsCell,
+} from "@/features/logistics/ui/customer-order-list-cells";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
+import { listOrderMoney, listOrderPayment } from "@/features/logistics/customer-order-list-money";
 import {
-  CUSTOMER_ORDER_PAYMENT_STATE_LABELS,
-  CUSTOMER_ORDER_PAYMENT_STATES,
-  customerOrderPaymentState,
   customerOrderSourceKey,
   customerOrderFilters,
   customerOrderTenantLabel,
@@ -139,44 +144,30 @@ const customerOrderColumns: ListColumnDef<CustomerOrderListRow>[] = [
   },
   listProductsColumn<CustomerOrderListRow>(),
   {
-    id: "ordered",
-    label: "Заказано",
-    align: "right",
+    id: "fulfillment",
+    label: "Выполнение",
+    description: "Отгружено, в резерве и не обеспечено. Янтарная часть — только у открытого заказа.",
+    minWidth: "160px",
     sortType: "number",
-    sortValue: (row) => row.ordered,
-    render: (row) => <ListQuantity value={row.ordered} />,
+    sortValue: (row) => (row.ordered > 0 ? row.shipped / row.ordered : null),
+    render: (row) => <CustomerOrderFulfillmentCell row={row} />,
   },
   {
-    id: "shipped",
-    label: "Отгружено",
+    id: "amount",
+    label: "Сумма",
+    description: "Ручная сумма заказа, иначе расчётная (≈). Сортировка — эквивалент в долларах по курсу заказа.",
     align: "right",
-    description: "Отгружено клиенту за вычетом возвратов",
     sortType: "number",
-    sortValue: (row) => row.shipped,
-    render: (row) => <ListQuantity value={row.shipped} />,
+    sortValue: (row) => listOrderMoney(row.money).usd,
+    render: (row) => <CustomerOrderAmountCell row={row} />,
   },
   {
-    id: "reserved",
-    label: "В резерве",
-    align: "right",
-    description: "Закреплено за заказом на складах, в производстве и в пути",
+    id: "payment",
+    label: "Оплата",
+    description: "Доля оплаченных платежей от суммы. Красным — просроченный ближайший срок.",
     sortType: "number",
-    sortValue: (row) => row.reserved,
-    render: (row) => <ListQuantity value={row.reserved} />,
-  },
-  {
-    id: "unfulfilled",
-    label: "Не обеспечено",
-    align: "right",
-    description: "Заказано − отгружено − в резерве, по каждой строке. Под это количество пока нечего отгрузить.",
-    sortType: "number",
-    sortValue: (row) => (isOpenCustomerOrderStatus(row.status) ? row.openToReserve : null),
-    render: (row) =>
-      isOpenCustomerOrderStatus(row.status) ? (
-        <ListQuantity value={row.openToReserve} tone="warn" />
-      ) : (
-        <span className="text-muted-foreground/60">—</span>
-      ),
+    sortValue: (row) => listOrderPayment(row.payments, listOrderMoney(row.money).total).paidPct,
+    render: (row) => <CustomerOrderPaymentCell row={row} />,
   },
   listDeadlineColumn<CustomerOrderListRow>(isOpenCustomerOrderStatus),
   {
@@ -210,12 +201,67 @@ const customerOrderColumns: ListColumnDef<CustomerOrderListRow>[] = [
       ),
   },
   {
-    id: "payment",
-    label: "Оплата",
+    id: "ordered",
+    label: "Заказано",
     defaultHidden: true,
+    align: "right",
     sortType: "number",
-    sortValue: (row) => CUSTOMER_ORDER_PAYMENT_STATES.indexOf(customerOrderPaymentState(row.payments)),
-    render: (row) => CUSTOMER_ORDER_PAYMENT_STATE_LABELS[customerOrderPaymentState(row.payments)],
+    sortValue: (row) => row.ordered,
+    render: (row) => <ListQuantity value={row.ordered} />,
+  },
+  {
+    id: "shipped",
+    label: "Отгружено",
+    defaultHidden: true,
+    align: "right",
+    description: "Отгружено клиенту за вычетом возвратов",
+    sortType: "number",
+    sortValue: (row) => row.shipped,
+    render: (row) => <ListQuantity value={row.shipped} />,
+  },
+  {
+    id: "reserved",
+    label: "В резерве",
+    defaultHidden: true,
+    align: "right",
+    description: "Закреплено за заказом на складах, в производстве и в пути",
+    sortType: "number",
+    sortValue: (row) => row.reserved,
+    render: (row) => <ListQuantity value={row.reserved} />,
+  },
+  {
+    id: "unfulfilled",
+    label: "Не обеспечено",
+    defaultHidden: true,
+    align: "right",
+    description: "Заказано − отгружено − в резерве, по каждой строке. Под это количество пока нечего отгрузить.",
+    sortType: "number",
+    sortValue: (row) => (isOpenCustomerOrderStatus(row.status) ? row.openToReserve : null),
+    render: (row) =>
+      isOpenCustomerOrderStatus(row.status) ? (
+        <ListQuantity value={row.openToReserve} tone="warn" />
+      ) : (
+        <span className="text-muted-foreground/60">—</span>
+      ),
+  },
+  {
+    id: "closed",
+    label: "Закрыт",
+    defaultHidden: true,
+    description: "Дата закрытия: первый снимок со статусом «закрыт» в последней серии истории.",
+    sortType: "date",
+    sortValue: (row) => row.completedAt,
+    render: (row) => <CustomerOrderClosedCell row={row} />,
+  },
+  {
+    id: "positions",
+    label: "Позиций",
+    defaultHidden: true,
+    description: "Число строк заказа.",
+    align: "right",
+    sortType: "number",
+    sortValue: (row) => row.positions,
+    render: (row) => <CustomerOrderPositionsCell row={row} />,
   },
   listCreatedColumn<CustomerOrderListRow>(),
   {
@@ -277,7 +323,7 @@ export const CustomerOrdersPage = () => {
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы клиента" }]}>
       <LogisticsListPageContent
-        listId="customer-orders"
+        listId="customer-orders-v2"
         title="Заказы клиента"
         actionLabel={isCustomer ? undefined : "Новый заказ клиента"}
         onAction={isCustomer ? undefined : () => setOpen(true)}

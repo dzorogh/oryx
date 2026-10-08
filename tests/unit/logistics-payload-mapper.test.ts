@@ -28,6 +28,10 @@ describe("mapCustomerOrderListRow", () => {
     assert.equal(row.shipped, 0);
     assert.equal(row.openToReserve, 0);
     assert.equal(row.description, "");
+    assert.equal(row.money, null);
+    assert.equal(row.completedAt, null);
+    assert.equal(row.positions, 0);
+    assert.deepEqual(row.payments, []);
   });
 
   it("maps ready product lines and totals", () => {
@@ -94,7 +98,48 @@ describe("mapCustomerOrderListRow", () => {
     assert.deepEqual(row.tenants, [{ id: "tenant-sharmax-ae", name: "Sharmax UAE" }]);
     assert.equal(row.sourceKind, "hub");
     assert.equal(row.sourceId, "3");
-    assert.deepEqual(row.payments, [{ dueOn: "2026-10-01", status: "paid" }]);
+    assert.deepEqual(row.payments, [{ dueOn: "2026-10-01", status: "paid", amount: 0 }]);
+    assert.equal(row.money, null);
+    assert.equal(row.completedAt, null);
+    assert.equal(row.positions, 0);
+  });
+
+  it("maps money, payment amounts, closed date and positions", () => {
+    const row = mapCustomerOrderListRow({
+      id: "8",
+      sequenceNumber: "8",
+      number: "OMS-8",
+      status: "done",
+      expectedEndOn: null,
+      createdAt: "2026-09-01T10:00:00+00:00",
+      products: [],
+      payments: [
+        { dueOn: "2026-09-25", status: "paid", amount: "40.5" },
+        { dueOn: "2026-10-01", status: "nope", amount: 10 },
+      ],
+      money: {
+        currencyCode: "cny",
+        amount: null,
+        rates: { usd: 1, cny: "7.12" },
+        lineTotals: [
+          { currencyCode: "usd", total: "100" },
+          { currencyCode: null, total: 20 },
+          { total: "bad" },
+        ],
+      },
+      completedAt: "2026-09-12T14:05:00Z",
+      positions: "3",
+    });
+    assert.deepEqual(row.payments, [{ dueOn: "2026-09-25", status: "paid", amount: 40.5 }]);
+    assert.equal(row.money?.currencyCode, "CNY");
+    assert.equal(row.money?.amount, null);
+    assert.deepEqual(row.money?.rates, { USD: 1, CNY: 7.12 });
+    assert.deepEqual(row.money?.lineTotals, [
+      { currencyCode: "USD", total: 100 },
+      { currencyCode: null, total: 20 },
+    ]);
+    assert.equal(row.completedAt, "2026-09-12T14:05:00Z");
+    assert.equal(row.positions, 3);
   });
 
   it("maps a row without region, source and payments to empty values", () => {

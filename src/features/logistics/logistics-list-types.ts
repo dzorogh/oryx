@@ -9,7 +9,7 @@ import type {
   ShipmentDirection,
   TransferStatus,
 } from "@/features/logistics/logistics-types";
-import type { PaymentStatus } from "@/features/logistics/order-money";
+import type { MoneyLineTotal, OrderRates, PaymentStatus } from "@/features/logistics/order-money";
 
 /** Product line preview as returned by list RPCs (ready for DocumentProductLines). */
 export type LogisticsListProductLine = {
@@ -17,6 +17,15 @@ export type LogisticsListProductLine = {
   quantity: number;
   productName?: string | null;
   productUnit?: string | null;
+};
+
+/** Money snapshot for a customer-order list row. Null when the order has no money record. */
+export type CustomerOrderListMoney = {
+  currencyCode: string;
+  /** Manual order amount; null — use `lineTotals`. */
+  amount: number | null;
+  rates: OrderRates;
+  lineTotals: MoneyLineTotal[];
 };
 
 export type CustomerOrderListRow = {
@@ -38,7 +47,12 @@ export type CustomerOrderListRow = {
   tenants: { id: string; name: string }[];
   sourceKind: "plant" | "hub" | null;
   sourceId: string | null;
-  payments: { dueOn: string; status: PaymentStatus }[];
+  payments: { dueOn: string; status: PaymentStatus; amount: number }[];
+  money: CustomerOrderListMoney | null;
+  /** First done/closed/delivered snapshot of the latest terminal run; null while the order is open. */
+  completedAt: string | null;
+  /** Number of order lines. */
+  positions: number;
 };
 
 export type ProductionOrderListRow = {

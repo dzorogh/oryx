@@ -43,6 +43,7 @@ import {
 } from "@/features/logistics/customer-order-oms";
 import {
   mapOrderMoneyContext,
+  mapOrderRates,
   type OrderCurrency,
   type OrderMoneyContext,
   type OrderRates,
@@ -50,6 +51,7 @@ import {
 } from "@/features/logistics/order-money";
 import type {
   AdjustmentListRow,
+  CustomerOrderListMoney,
   CustomerOrderListRow,
   LogisticsListProductLine,
   OutputListRow,
@@ -861,6 +863,36 @@ const loadListRpc = async <T>(name: string, map: (row: Record<string, unknown>) 
   return data.map((item) => map(item as Record<string, unknown>));
 };
 
+const finiteNumber = (value: unknown): number | null => {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const mapListMoney = (raw: unknown): CustomerOrderListMoney | null => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  const currencyCode = str(row.currencyCode ?? "").trim().toUpperCase();
+  if (!currencyCode) return null;
+  const lineTotals = (Array.isArray(row.lineTotals) ? row.lineTotals : []).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const line = item as Record<string, unknown>;
+    const total = finiteNumber(line.total);
+    if (total == null) return [];
+    const code =
+      line.currencyCode == null || String(line.currencyCode).trim() === ""
+        ? null
+        : str(line.currencyCode).trim().toUpperCase();
+    return [{ currencyCode: code, total }];
+  });
+  return {
+    currencyCode,
+    amount: finiteNumber(row.amount),
+    rates: mapOrderRates(row.rates),
+    lineTotals,
+  };
+};
+
 export const mapCustomerOrderListRow = (row: Record<string, unknown>): CustomerOrderListRow => ({
   id: str(row.id),
   sequenceNumber: str(row.sequenceNumber),
@@ -884,8 +916,13 @@ export const mapCustomerOrderListRow = (row: Record<string, unknown>): CustomerO
   sourceKind: row.sourceKind === "plant" || row.sourceKind === "hub" ? row.sourceKind : null,
   sourceId: strOrNull(row.sourceId),
   payments: (Array.isArray(row.payments) ? (row.payments as Record<string, unknown>[]) : []).flatMap((payment) =>
-    isPaymentStatus(payment.status) ? [{ dueOn: str(payment.dueOn).slice(0, 10), status: payment.status }] : [],
+    isPaymentStatus(payment.status)
+      ? [{ dueOn: str(payment.dueOn).slice(0, 10), status: payment.status, amount: finiteNumber(payment.amount) ?? 0 }]
+      : [],
   ),
+  money: mapListMoney(row.money),
+  completedAt: dateOrNull(row.completedAt),
+  positions: finiteNumber(row.positions) ?? 0,
 });
 
 export const loadCustomerOrderList = () =>

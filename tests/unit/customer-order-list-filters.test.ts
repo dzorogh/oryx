@@ -34,6 +34,9 @@ const row = (patch: Partial<CustomerOrderListRow> = {}): CustomerOrderListRow =>
   sourceKind: "plant",
   sourceId: "4",
   payments: [],
+  money: null,
+  completedAt: null,
+  positions: 1,
   ...patch,
 });
 
@@ -49,24 +52,24 @@ const filterDef = (id: string) => {
 describe("customerOrderPaymentState", () => {
   it("derives the state from the payment schedule", () => {
     assert.equal(customerOrderPaymentState([]), "none");
-    assert.equal(customerOrderPaymentState([{ dueOn: "2026-10-01", status: "invoiced" }]), "unpaid");
+    assert.equal(customerOrderPaymentState([{ dueOn: "2026-10-01", status: "invoiced", amount: 10 }]), "unpaid");
     assert.equal(
       customerOrderPaymentState([
-        { dueOn: "2026-10-01", status: "paid" },
-        { dueOn: "2026-11-01", status: "planned" },
+        { dueOn: "2026-10-01", status: "paid", amount: 10 },
+        { dueOn: "2026-11-01", status: "planned", amount: 20 },
       ]),
       "partial",
     );
-    assert.equal(customerOrderPaymentState([{ dueOn: "2026-10-01", status: "paid" }]), "paid");
+    assert.equal(customerOrderPaymentState([{ dueOn: "2026-10-01", status: "paid", amount: 10 }]), "paid");
   });
 
   it("finds the earliest unpaid due date", () => {
     assert.equal(nextUnpaidDueOn([]), null);
     assert.equal(
       nextUnpaidDueOn([
-        { dueOn: "2026-09-01", status: "paid" },
-        { dueOn: "2026-12-01", status: "planned" },
-        { dueOn: "2026-11-01", status: "invoiced" },
+        { dueOn: "2026-09-01", status: "paid", amount: 10 },
+        { dueOn: "2026-12-01", status: "planned", amount: 20 },
+        { dueOn: "2026-11-01", status: "invoiced", amount: 30 },
       ]),
       "2026-11-01",
     );
@@ -148,8 +151,8 @@ describe("customerOrderFilters", () => {
     const partial = row({
       id: "p",
       payments: [
-        { dueOn: "2026-10-05", status: "paid" },
-        { dueOn: "2026-11-10", status: "invoiced" },
+        { dueOn: "2026-10-05", status: "paid", amount: 10 },
+        { dueOn: "2026-11-10", status: "invoiced", amount: 20 },
       ],
     });
     assert.deepEqual(pick([partial, ae], { payment: ["partial", "paid"] }), ["p"]);

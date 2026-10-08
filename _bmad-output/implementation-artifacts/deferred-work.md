@@ -323,3 +323,10 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-header-redesign.md`
   summary: `DocumentCancelDialog` не сбрасывает `serverError` и `startedRef`, когда его открывают снаружи (`DocumentCancelControl`, меню «Ещё» шапки заказа клиента) — после неудачной отмены повторное открытие показывает старую ошибку.
   evidence: Сброс есть только в внутреннем `setOpen(true)`, который вызывает лишь сам `DialogShell`; внешний `open={true}` его обходит — так на `baseline_commit` во всех карточках документов.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-list-money-columns.md`
+  summary: Проверка SQL `store_customer_order_list()` (дата закрытия по сериям истории, ключи `money` / `payments[].amount`) против `documentCompletedAt` и маппера.
+  evidence: Юнит-тесты видят только маппер на ручном объекте; харнесса для RPC в репозитории нет. Ручная сверка 101 заказа 2026-10-08 совпала.
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-list-money-columns.md`
+  summary: Тест конфига колонок списка заказов клиента (видимые по умолчанию, порядок, `sortValue` суммы в USD).
+  evidence: `customerOrderColumns` не экспортируется, тестов конфигов страниц нет; проверено вручную в браузере.
