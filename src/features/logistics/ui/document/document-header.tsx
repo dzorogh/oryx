@@ -61,7 +61,7 @@ export const DocumentHeader = ({
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
     </header>
-    <dl className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] border-t border-border/50">
+    <dl className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] border-t border-border/50">
       {meta.map((item) => (
         <DocumentMetaField
           key={item.label}
