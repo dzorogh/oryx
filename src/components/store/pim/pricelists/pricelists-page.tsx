@@ -36,7 +36,7 @@ import { usePricelistColumns } from "./use-pricelist-columns";
 import { usePricelistDisplayCurrency } from "./use-pricelist-display-currency";
 import { usePricelistParameters } from "./use-pricelist-parameters";
 import { usePricelistsController, type AvailabilityFilter } from "./use-pricelists-controller";
-import { loadPricelistDbBootstrap } from "@/features/store/store-pricelists-from-db";
+import { loadPricelistDbBootstrap } from "@/components/store/pim/pricelists/pricelists-from-db";
 import { useSelectedRegion } from "@/features/store/region-context";
 
 const PricelistsPageFallback = () => (

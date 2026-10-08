@@ -13,17 +13,9 @@ import {
   type PricelistScope,
 } from "./pricelists-demo-data";
 import { SYSTEM_PARAMETER_ID } from "./pricelists-parameters";
-import {
-  buildPriceCellId,
-  buildRetailStatusCellId,
-  buildStatusCellId,
-  computeMarkupPercent,
-  convertAmount,
-  formatRetailStatus,
-  toUsd,
-  type CurrencyCode,
-  type PriceField,
-} from "./pricelists-helpers";
+import { buildPriceCellId, buildRetailStatusCellId, buildStatusCellId, computeMarkupPercent, convertAmount, toUsd, type PriceField } from "./pricelists-helpers";
+import { formatRetailStatus } from "@/features/store/domain/statuses";
+import type { CurrencyCode } from "@/features/store/domain/currency";
 import type { PricelistsCollab } from "./collab/use-yjs-pricelists";
 import type { PricelistParameters } from "./use-pricelist-parameters";
 

@@ -47,15 +47,8 @@ import {
   isSystemParameter,
   type ParameterDef,
 } from "./pricelists-parameters";
-import {
-  buildPriceCellId,
-  buildRetailStatusCellId,
-  buildStatusCellId,
-  formatMarkupValue,
-  type CurrencyCode,
-  type PriceField,
-  type PricelistCellValue,
-} from "./pricelists-helpers";
+import { buildPriceCellId, buildRetailStatusCellId, buildStatusCellId, formatMarkupValue, type PriceField, type PricelistCellValue } from "./pricelists-helpers";
+import type { CurrencyCode } from "@/features/store/domain/currency";
 import type { PricelistsCollab } from "./collab/use-yjs-pricelists";
 import type { PricelistParameters } from "./use-pricelist-parameters";
 

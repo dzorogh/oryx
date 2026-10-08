@@ -5,15 +5,8 @@ import { useState, type ChangeEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { CollabUser } from "./collab/collab-config";
 import { PricelistCurrencyPopover } from "./pricelist-currency-popover";
-import {
-  convertAmount,
-  focusNextPricelistCellOnEnter,
-  formatConvertedValue,
-  formatMoney,
-  PRICE_AMOUNT_TYPOGRAPHY,
-  type CurrencyCode,
-  type PricelistCellValue,
-} from "./pricelists-helpers";
+import { convertAmount, focusNextPricelistCellOnEnter, formatConvertedValue, formatMoney, PRICE_AMOUNT_TYPOGRAPHY, type PricelistCellValue } from "./pricelists-helpers";
+import type { CurrencyCode } from "@/features/store/domain/currency";
 
 type PricelistPriceDualCellProps = {
   /** The stored price in its source currency — the single source of truth. */

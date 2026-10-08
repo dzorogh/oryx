@@ -6,15 +6,15 @@ import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { CatalogBuyTooltip } from "../catalog/catalog-buy-tooltip";
+import { CatalogBuyTooltip } from "@/features/store/catalog-buy-tooltip";
 import {
   formatCatalogPrice,
   formatCatalogStatus,
   formatPrice,
   getPurchaseBlockReason,
   statusBadgeClassMap,
-} from "../catalog/catalog-helpers";
-import type { DealerStatus, RetailStatus } from "../store-catalog-demo-data";
+} from "@/features/store/catalog-presentation";
+import type { DealerStatus, RetailStatus } from "@/features/store/domain/statuses";
 import type { ProductVariant } from "./product-detail-demo-data";
 import { VariantAttributes } from "./variant-attributes";
 

@@ -2,8 +2,8 @@
 
 import { formatEntityCode } from "@/lib/entity-codes";
 import { convert, type OrderRates } from "@/features/logistics/order-money";
-import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
-import type { DealerStatus } from "@/components/store/pim/products/store-catalog-demo-data";
+import type { CurrencyCode } from "@/features/store/domain/currency";
+import type { DealerStatus } from "@/features/store/domain/statuses";
 
 export type CheckoutFulfillmentMode = "hub" | "plant";
 

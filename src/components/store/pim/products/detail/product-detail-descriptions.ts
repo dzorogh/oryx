@@ -1,4 +1,4 @@
-import type { StoreCatalogItem } from "../store-catalog-demo-data";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
 import { getDisplayProductName } from "../catalog/catalog-display";
 
 export type ProductDescriptions = {

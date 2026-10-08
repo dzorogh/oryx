@@ -10,7 +10,11 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { CollabUser } from "./collab/collab-config";
-import { formatRetailStatus, RETAIL_STATUSES, type RetailStatus } from "./pricelists-helpers";
+import {
+  formatRetailStatus,
+  RETAIL_STATUSES,
+  type RetailStatus,
+} from "@/features/store/domain/statuses";
 
 type PricelistRetailStatusCellProps = {
   value: RetailStatus;

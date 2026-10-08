@@ -2,12 +2,9 @@
 import type { StaticImageData } from "next/image";
 
 import { STORE_DEMO_IMAGE_LIST } from "@/assets/store/demo-images";
-import {
-  STORE_CATALOG_ITEMS,
-  type DealerStatus,
-  type RetailStatus,
-  type StoreCatalogItem,
-} from "../store-catalog-demo-data";
+import { STORE_CATALOG_ITEMS } from "../store-catalog-demo-data";
+import type { DealerStatus, RetailStatus } from "@/features/store/domain/statuses";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
 import { getCategoryNodeLabel } from "@/features/store/category-tree";
 import { formatEntityCode } from "@/lib/entity-codes";
 import { getDisplayProductName } from "../catalog/catalog-display";

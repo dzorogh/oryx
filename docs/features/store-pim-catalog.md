@@ -126,9 +126,15 @@ flowchart TD
 ```text
 app/store/pim/products/page.tsx
 
+src/features/store/
+  domain/catalog-item.ts                  # StoreCatalogItem, CATALOG_PAGE_SIZE, CATALOG_NO_SITE_KEY
+  domain/statuses.ts, domain/currency.ts  # статусы и валюты
+  catalog-presentation.ts                 # formatCatalogPrice, getPurchaseBlockReason, бейджи статусов
+  catalog-buy-tooltip.tsx, region-switcher.tsx, variant-stock-summary.tsx
+
 src/components/store/pim/products/
   store-catalog-page.tsx                  # listingMode state, URL, toolbar props
-  store-catalog-demo-data.ts
+  store-catalog-demo-data.ts              # только demo-строки bike-*
 
     catalog/
       catalog-helpers.ts                    # listing labels, storage keys, re-exports site groups

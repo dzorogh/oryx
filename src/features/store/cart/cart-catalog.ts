@@ -1,8 +1,7 @@
 /** Load cart variant facts: name, photo, plant, logistics, packing, supply costs, prices. */
 
-import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
-import { isCurrencyCode, isDealerStatus } from "@/components/store/pim/pricelists/pricelists-helpers";
-import type { DealerStatus } from "@/components/store/pim/products/store-catalog-demo-data";
+import { isCurrencyCode, type CurrencyCode } from "@/features/store/domain/currency";
+import { isDealerStatus, type DealerStatus } from "@/features/store/domain/statuses";
 import { loadLogisticsSettings } from "@/features/logistics/logistics-api";
 import { formatEntityCode } from "@/lib/entity-codes";
 import { loadRegionPricing } from "@/features/store/store-catalog-from-logistics";

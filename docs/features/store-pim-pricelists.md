@@ -272,7 +272,8 @@ src/components/store/pim/pricelists/
   use-pricelist-parameters.ts                # параметры/overrides per region
 
   pricelists-demo-data.ts                    # scope, регионы, seed-значения, rows
-  pricelists-helpers.ts                      # валюты, форматирование, cell-id
+  pricelists-helpers.ts                      # демо-курсы, форматирование, cell-id (типы валют и статусов — features/store/domain)
+  pricelists-from-db.ts                      # loadPricelistDbBootstrap: регионы, цены, статусы из БД
   pricelists-export.ts                       # сборка матрицы и выгрузка .xlsx (write-excel-file)
   pricelists-columns.ts                      # определения и порядок колонок
   pricelists-parameters.ts                   # ParameterDef, seed, normalize, slug

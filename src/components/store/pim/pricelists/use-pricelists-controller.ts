@@ -1,14 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { itemMatchesCategoryFilter } from "@/features/store/category-tree";
-import {
-  ALL_VALUE,
-  PAGE_SIZE,
-  buildPaginationItems,
-  extractSortedOptions,
-  getSelectValue,
-  matchesSearchQuery,
-  type QuickFilterOption,
-} from "../products/catalog/catalog-helpers";
+import { ALL_VALUE, buildPaginationItems, extractSortedOptions, getSelectValue, matchesSearchQuery, type QuickFilterOption } from "../products/catalog/catalog-helpers";
+import { CATALOG_PAGE_SIZE } from "@/features/store/domain/catalog-item";
 import { getPricelistRows, type PricelistRow, type PricelistScope } from "./pricelists-demo-data";
 
 type FilterControl = {
@@ -126,9 +119,9 @@ export const usePricelistsController = (
     brandFilter !== ALL_VALUE ||
     familyFilter !== ALL_VALUE;
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / CATALOG_PAGE_SIZE));
   const visiblePage = Math.min(currentPage, totalPages);
-  const paginatedItems = filteredItems.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE);
+  const paginatedItems = filteredItems.slice((visiblePage - 1) * CATALOG_PAGE_SIZE, visiblePage * CATALOG_PAGE_SIZE);
   const paginationItems = useMemo(() => buildPaginationItems(visiblePage, totalPages), [totalPages, visiblePage]);
 
   const requestKey = [

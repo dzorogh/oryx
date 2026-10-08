@@ -1,19 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  CATALOG_NO_SITE_KEY,
-  CATALOG_NO_SITE_LABEL,
-  activeCatalogSiteLabel,
-  areCatalogSiteGroupRowsVisible,
-  buildCatalogVirtualElements,
-  mergeCatalogPageItems,
-  catalogSiteKeysForCollapseAll,
-  catalogTableSection,
-  compareCatalogSiteKeys,
-  groupCatalogItemsBySite,
-  toggleCatalogSiteCollapsed,
-} from "@/components/store/pim/products/catalog/catalog-site-groups";
-import type { StoreCatalogItem } from "@/components/store/pim/products/store-catalog-demo-data";
+import { CATALOG_NO_SITE_LABEL, activeCatalogSiteLabel, areCatalogSiteGroupRowsVisible, buildCatalogVirtualElements, mergeCatalogPageItems, catalogSiteKeysForCollapseAll, catalogTableSection, compareCatalogSiteKeys, groupCatalogItemsBySite, toggleCatalogSiteCollapsed } from "@/components/store/pim/products/catalog/catalog-site-groups";
+import { CATALOG_NO_SITE_KEY, type StoreCatalogItem } from "@/features/store/domain/catalog-item";
 
 const item = (id: string, productionSite: string): StoreCatalogItem =>
   ({

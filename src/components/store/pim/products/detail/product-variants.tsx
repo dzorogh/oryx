@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatCatalogPrice } from "../catalog/catalog-helpers";
+import { formatCatalogPrice } from "@/features/store/catalog-presentation";
 import type { ProductVariant } from "./product-detail-demo-data";
 import { VariantCard } from "./variant-card";
 

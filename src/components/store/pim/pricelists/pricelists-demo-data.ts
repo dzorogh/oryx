@@ -1,19 +1,14 @@
 // english-ui:ignore-file
 import { getVariantCatalogItems } from "../products/detail/product-detail-demo-data";
-import type { StoreCatalogItem } from "../products/store-catalog-demo-data";
-import type { PricelistDbBootstrap } from "@/features/store/store-pricelists-from-db";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
+import type { PricelistDbBootstrap } from "@/components/store/pim/pricelists/pricelists-from-db";
+import { buildPriceCellId, buildRetailStatusCellId, buildStatusCellId, CURRENCY_USD_RATE, type PriceField, type PricelistCellValue } from "./pricelists-helpers";
 import {
-  buildPriceCellId,
-  buildRetailStatusCellId,
-  buildStatusCellId,
-  CURRENCY_USD_RATE,
   RETAIL_STATUSES,
-  type CurrencyCode,
   type DealerStatus,
-  type PriceField,
-  type PricelistCellValue,
   type RetailStatus,
-} from "./pricelists-helpers";
+} from "@/features/store/domain/statuses";
+import type { CurrencyCode } from "@/features/store/domain/currency";
 
 export type PricelistScope = "global" | "supplier" | "dealer";
 

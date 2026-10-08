@@ -27,14 +27,9 @@ import {
   type PricelistRegionGroup,
   type PricelistRow,
 } from "./pricelists-demo-data";
-import {
-  buildPriceCellId,
-  buildStatusCellId,
-  DEALER_STATUSES,
-  formatMarkupValue,
-  type CurrencyCode,
-  type DealerStatus,
-} from "./pricelists-helpers";
+import { buildPriceCellId, buildStatusCellId, formatMarkupValue } from "./pricelists-helpers";
+import { DEALER_STATUSES, type DealerStatus } from "@/features/store/domain/statuses";
+import type { CurrencyCode } from "@/features/store/domain/currency";
 
 type PricelistsExpandedRegionsProps = {
   row: PricelistRow;

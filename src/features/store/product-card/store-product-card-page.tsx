@@ -16,17 +16,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { SelectRegionStub, RegionSwitcher } from "@/components/store/region/region-switcher";
-import { VariantStockSummary } from "@/components/store/stock/variant-stock-summary";
+import { SelectRegionStub, RegionSwitcher } from "@/features/store/region-switcher";
+import { VariantStockSummary } from "@/features/store/variant-stock-summary";
 import {
   formatCatalogPrice,
   formatCatalogStatus,
   getPurchaseBlockReason,
   statusBadgeClassMap,
-} from "@/components/store/pim/products/catalog/catalog-helpers";
-import { CatalogBuyTooltip } from "@/components/store/pim/products/catalog/catalog-buy-tooltip";
-import type { DealerStatus, RetailStatus } from "@/components/store/pim/products/store-catalog-demo-data";
-import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
+} from "@/features/store/catalog-presentation";
+import { CatalogBuyTooltip } from "@/features/store/catalog-buy-tooltip";
+import type { DealerStatus, RetailStatus } from "@/features/store/domain/statuses";
+import type { CurrencyCode } from "@/features/store/domain/currency";
 import { formatEntityCode } from "@/lib/entity-codes";
 import { pluralRu } from "@/features/logistics/order-plan/order-plan-model";
 import { createProductVariant } from "@/features/logistics/logistics-api";

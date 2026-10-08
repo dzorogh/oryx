@@ -12,8 +12,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SelectRegionStub } from "@/components/store/region/region-switcher";
-import { VariantStockSummary } from "@/components/store/stock/variant-stock-summary";
+import { SelectRegionStub } from "@/features/store/region-switcher";
+import { VariantStockSummary } from "@/features/store/variant-stock-summary";
 import { cn } from "@/lib/utils";
 import { ProductPhoto } from "@/features/store/product-photo";
 import { getCategoryNodeLabel } from "@/features/store/category-tree";
@@ -24,20 +24,18 @@ import {
   type VariantStockFact,
 } from "@/features/store/variant-stock";
 import { getCatalogItemDetailHref } from "./catalog-helpers";
-import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
-import { CatalogBuyTooltip } from "./catalog-buy-tooltip";
+import type { DealerStatus, RetailStatus } from "@/features/store/domain/statuses";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
+import { CatalogBuyTooltip } from "@/features/store/catalog-buy-tooltip";
 import { type CatalogColumnId, getCatalogColumnDefinition } from "./catalog-columns";
+import { SKELETON_ROW_COUNT, formatCatalogUpdatedAt, getDisplayProductName, type CatalogListingMode } from "./catalog-helpers";
 import {
-  SKELETON_ROW_COUNT,
   formatCatalogPrice,
   formatCatalogStatus,
-  formatCatalogUpdatedAt,
   formatPrice,
-  getDisplayProductName,
   getPurchaseBlockReason,
   statusBadgeClassMap,
-  type CatalogListingMode,
-} from "./catalog-helpers";
+} from "@/features/store/catalog-presentation";
 import {
   activeCatalogSiteLabel,
   buildCatalogVirtualElements,

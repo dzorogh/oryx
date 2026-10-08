@@ -16,17 +16,8 @@ import { CatalogColumnsSheet } from "./catalog/catalog-columns-sheet";
 import { CatalogFiltersSheet } from "./catalog/catalog-filters-sheet";
 import { CatalogTable } from "./catalog/catalog-table";
 import { CatalogToolbar } from "./catalog/catalog-toolbar";
-import {
-  ALL_VALUE,
-  CATALOG_LISTING_MODE_STORAGE_KEY,
-  CATALOG_LISTING_QUERY_PARAM,
-  PAGE_SIZE,
-  STORE_CATALOG_PAGE,
-  getCatalogAddButtonAriaLabel,
-  getCatalogColumnsStorageKey,
-  parseCatalogListingMode,
-  type CatalogListingMode,
-} from "./catalog/catalog-helpers";
+import { ALL_VALUE, CATALOG_LISTING_MODE_STORAGE_KEY, CATALOG_LISTING_QUERY_PARAM, STORE_CATALOG_PAGE, getCatalogAddButtonAriaLabel, getCatalogColumnsStorageKey, parseCatalogListingMode, type CatalogListingMode } from "./catalog/catalog-helpers";
+import { CATALOG_PAGE_SIZE, type StoreCatalogItem } from "@/features/store/domain/catalog-item";
 import { mergeCatalogPageItems } from "./catalog/catalog-site-groups";
 import { resolveCatalogItemForRegion } from "./catalog/catalog-region";
 import { useCatalogController } from "./catalog/use-catalog-controller";
@@ -37,7 +28,6 @@ import {
   type CatalogQueryFilters,
 } from "@/features/store/store-catalog-from-logistics";
 import { loadVariantStockFacts, type VariantStockFact } from "@/features/store/variant-stock";
-import type { StoreCatalogItem } from "./store-catalog-demo-data";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -170,7 +160,7 @@ const StoreCatalogPageContent = () => {
     setLoadMoreError(false);
     isLoadingMoreRef.current = false;
 
-    void loadDbCatalogItems({ offset: 0, limit: PAGE_SIZE, filters })
+    void loadDbCatalogItems({ offset: 0, limit: CATALOG_PAGE_SIZE, filters })
       .then((page) => {
         if (loadGenerationRef.current !== generation) {
           return;
@@ -205,7 +195,7 @@ const StoreCatalogPageContent = () => {
     isLoadingMoreRef.current = true;
     setIsLoadingMore(true);
 
-    void loadDbCatalogItems({ offset, limit: PAGE_SIZE, filters })
+    void loadDbCatalogItems({ offset, limit: CATALOG_PAGE_SIZE, filters })
       .then((page) => {
         if (loadGenerationRef.current !== generation) {
           return;

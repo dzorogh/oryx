@@ -1,20 +1,23 @@
-import type {
-  CatalogRegionPrices,
-  CatalogRegionStatuses,
-  DealerStatus,
-  RetailStatus,
-  StoreCatalogItem,
-} from "@/components/store/pim/products/store-catalog-demo-data";
-import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
-import { isCurrencyCode, isDealerStatus, isRetailStatus } from "@/components/store/pim/pricelists/pricelists-helpers";
-import { CATALOG_NO_SITE_KEY } from "@/components/store/pim/products/catalog/catalog-site-groups";
-import { PAGE_SIZE } from "@/components/store/pim/products/catalog/catalog-helpers";
+import {
+  CATALOG_NO_SITE_KEY,
+  CATALOG_PAGE_SIZE,
+  type CatalogRegionPrices,
+  type CatalogRegionStatuses,
+  type StoreCatalogItem,
+} from "@/features/store/domain/catalog-item";
+import {
+  isDealerStatus,
+  isRetailStatus,
+  type DealerStatus,
+  type RetailStatus,
+} from "@/features/store/domain/statuses";
+import { isCurrencyCode, type CurrencyCode } from "@/features/store/domain/currency";
 import {
   catalogCategoryCodesForFilter,
   catalogTreeIdForCategoryCodes,
 } from "@/features/store/category-tree";
 import { loadLogisticsSettings } from "@/features/logistics/logistics-api";
-import { formatEntityCode } from "@/lib/entity-codes";
+import { formatEntityCode, parseEntityCodeId } from "@/lib/entity-codes";
 import { preferKorportalMediaConversion } from "@/lib/korportal-media-url";
 import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -131,15 +134,6 @@ export const catalogProductionSite = (
 ): string => {
   if (plantId == null || plantId === "") return CATALOG_NO_SITE_KEY;
   return formatEntityCode("plant", plantId);
-};
-
-const parsePlantIdFromSiteCode = (site: string): number | null => {
-  const match = site.trim().match(/^(?:PLT-)?(\d+)$/i);
-  if (!match?.[1]) {
-    return null;
-  }
-  const parsed = Number(match[1]);
-  return Number.isFinite(parsed) ? parsed : null;
 };
 
 const resolveCategoryFromProduct = (
@@ -395,7 +389,7 @@ const buildVariantQuery = (
     if (filters.site === CATALOG_NO_SITE_KEY) {
       query = query.is("plant_id", null);
     } else {
-      const plantId = parsePlantIdFromSiteCode(filters.site);
+      const plantId = parseEntityCodeId("plant", filters.site);
       if (plantId == null) {
         query = query.eq("id", -1);
       } else {
@@ -407,9 +401,9 @@ const buildVariantQuery = (
   const search = filters.search?.trim() ?? "";
   if (search) {
     const escaped = search.replace(/[%_,.()]/g, "");
-    const codeMatch = search.match(/^(?:PRD-)?(\d+)$/i);
-    if (codeMatch?.[1]) {
-      query = query.or(`name.ilike.%${escaped}%,id.eq.${codeMatch[1]}`);
+    const codeId = parseEntityCodeId("product", search);
+    if (codeId != null) {
+      query = query.or(`name.ilike.%${escaped}%,id.eq.${codeId}`);
     } else {
       query = query.ilike("name", `%${escaped}%`);
     }
@@ -461,6 +455,7 @@ export const loadCatalogFilterOptions = async (): Promise<CatalogFilterOptions |
       .select("id,name")
       .is("deleted_at", null)
       .order("name", { ascending: true }),
+    loadLogisticsSettings(),
   ]);
 
   if (plantsResult.error) {
@@ -506,7 +501,7 @@ export const loadDbCatalogItems = async (options?: {
   const offset = Math.max(0, options?.offset ?? 0);
   const limit = options?.limit;
   const paginate = limit != null && Number.isFinite(limit) && limit > 0;
-  const pageSize = paginate ? Math.max(1, Math.floor(limit)) : PAGE_SIZE;
+  const pageSize = paginate ? Math.max(1, Math.floor(limit)) : CATALOG_PAGE_SIZE;
 
   const [categoryIds, regionId] = await Promise.all([
     resolveCategoryIds(client, filters.category),

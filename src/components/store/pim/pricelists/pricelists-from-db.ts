@@ -1,12 +1,12 @@
-import type { StoreCatalogItem } from "@/components/store/pim/products/store-catalog-demo-data";
-import type {
-  CurrencyCode,
-  DealerStatus,
-  PricelistCellValue,
-  PriceField,
-  RetailStatus,
-} from "@/components/store/pim/pricelists/pricelists-helpers";
-import { isCurrencyCode, isDealerStatus, isRetailStatus } from "@/components/store/pim/pricelists/pricelists-helpers";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
+import type { PricelistCellValue, PriceField } from "@/components/store/pim/pricelists/pricelists-helpers";
+import { isCurrencyCode, type CurrencyCode } from "@/features/store/domain/currency";
+import {
+  isDealerStatus,
+  isRetailStatus,
+  type DealerStatus,
+  type RetailStatus,
+} from "@/features/store/domain/statuses";
 import { loadDbCatalogItems } from "@/features/store/store-catalog-from-logistics";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";

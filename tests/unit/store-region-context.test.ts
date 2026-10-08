@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { resolveCatalogItemForRegion } from "@/components/store/pim/products/catalog/catalog-region";
-import type { StoreCatalogItem } from "@/components/store/pim/products/store-catalog-demo-data";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
 import { resolveSelectedVariant } from "@/features/store/product-card/variant-selection";
 import { resolveSelectedRegionCode } from "@/features/store/region-selection";
 import { hrefForStoreProduct, redirectLegacyLogisticsPath } from "@/features/logistics/logistics-paths";

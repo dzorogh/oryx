@@ -10,8 +10,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
-import { isCurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
+import { isCurrencyCode, type CurrencyCode } from "@/features/store/domain/currency";
 import { formatEntityCode } from "@/lib/entity-codes";
 import { resolveSelectedRegionCode } from "@/features/store/region-selection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";

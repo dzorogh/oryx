@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CatalogColumnsButton } from "./catalog-columns-button";
 import { CatalogFiltersButton, CatalogQuickSearchControl } from "./catalog-filters";
 import { CatalogCategoryTreeFilter } from "./catalog-category-tree-filter";
-import { RegionSwitcher } from "@/components/store/region/region-switcher";
+import { RegionSwitcher } from "@/features/store/region-switcher";
 import {
   CATALOG_LISTING_MODE_DESCRIPTIONS,
   CATALOG_LISTING_MODE_LABELS,

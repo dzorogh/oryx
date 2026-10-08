@@ -1,8 +1,83 @@
 import nextVitals from "eslint-config-next/core-web-vitals";
 
+// Store layering (docs/conventions/code/store-module-layers.md).
+const STORE_BASE_FILES = [
+  "src/features/store/domain/**",
+  "src/features/store/region-context.tsx",
+  "src/features/store/region-selection.ts",
+  "src/features/store/region-switcher.tsx",
+  "src/features/store/product-photo.tsx",
+  "src/features/store/packing/**",
+];
+
+const NO_PIM_UI = {
+  group: ["@/components/store/*"],
+  message: "features/store must not depend on PIM UI in components/store — move the shared piece into features/store.",
+};
+
 /** @type {import("eslint").Linter.Config[]} */
 const config = [
   ...nextVitals,
+  {
+    files: ["src/features/store/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [NO_PIM_UI] }],
+    },
+  },
+  {
+    files: STORE_BASE_FILES,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            NO_PIM_UI,
+            {
+              group: ["@/features/logistics/*"],
+              message: "Store base modules are shared with logistics and must not import it back.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/features/store/domain/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            NO_PIM_UI,
+            {
+              regex: "^@/features/(logistics/|store/(?!domain/))",
+              message: "store/domain holds pure types and guards; it imports only other domain modules.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/features/logistics/**/*.{ts,tsx}", "app/store/logistics/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/components/store/*"],
+              message: "Logistics must not depend on PIM UI in components/store.",
+            },
+            {
+              regex: "^@/features/store/(?!(domain|packing)/|(region-context|region-switcher|product-photo)$)",
+              message: "Logistics may import only the store base layer (domain, region, product photo, packing).",
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ["src/domain/packing/**/*.ts"],
     rules: {

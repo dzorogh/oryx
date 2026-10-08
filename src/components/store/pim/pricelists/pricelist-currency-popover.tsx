@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { CURRENCY_CODES, type CurrencyCode } from "./pricelists-helpers";
+import { CURRENCY_CODES, type CurrencyCode } from "@/features/store/domain/currency";
 
 type CurrencyGridProps = {
   selected: CurrencyCode;

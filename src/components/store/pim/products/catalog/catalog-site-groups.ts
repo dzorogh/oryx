@@ -1,7 +1,5 @@
-import type { StoreCatalogItem } from "../store-catalog-demo-data";
+import { CATALOG_NO_SITE_KEY, type StoreCatalogItem } from "@/features/store/domain/catalog-item";
 
-/** Ключ группы без площадки — то же значение, что даёт `catalogProductionSite` при пустом plant. */
-export const CATALOG_NO_SITE_KEY = "—";
 export const CATALOG_NO_SITE_LABEL = "Без площадки";
 
 export type CatalogSiteGroup = {

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import type { DealerStatus, PricelistCellValue, RetailStatus } from "../pricelists-helpers";
+import type { PricelistCellValue } from "../pricelists-helpers";
+import type { DealerStatus, RetailStatus } from "@/features/store/domain/statuses";
 import type { ParameterDef } from "../pricelists-parameters";
 import type { ComputedEntry } from "../pricelist-recalc";
 import {

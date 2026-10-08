@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { CollabUser } from "./collab/collab-config";
-import { DEALER_STATUSES, type DealerStatus } from "./pricelists-helpers";
+import { DEALER_STATUSES, type DealerStatus } from "@/features/store/domain/statuses";
 
 type PricelistStatusCellProps = {
   value: DealerStatus;

@@ -1,58 +1,7 @@
-import type { StaticImageData } from "next/image";
-
 import { STORE_DEMO_IMAGES } from "@/assets/store/demo-images";
-import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
+import type { DealerStatus, RetailStatus } from "@/features/store/domain/statuses";
 import { formatEntityCode } from "@/lib/entity-codes";
-
-import type {
-  DealerStatus as PricelistDealerStatus,
-  RetailStatus as PricelistRetailStatus,
-} from "@/components/store/pim/pricelists/pricelists-helpers";
-
-export type DealerStatus = PricelistDealerStatus;
-export type RetailStatus = PricelistRetailStatus;
-
-export type CatalogRegionPrice = {
-  amount: number;
-  currency: CurrencyCode;
-};
-
-export type CatalogRegionPrices = {
-  dealer: CatalogRegionPrice | null;
-  retail: CatalogRegionPrice | null;
-};
-
-export type CatalogRegionStatuses = {
-  dealer: DealerStatus;
-  retail: RetailStatus;
-};
-
-export type StoreCatalogItem = {
-  id: string;
-  /** Parent store_product.id; equals id for demo bike-* rows. */
-  productId: string;
-  name: string;
-  code: string;
-  imageSrc: StaticImageData | string;
-  imageAlt: string;
-  categoryId: string;
-  category: string;
-  family: string;
-  brand: string;
-  stock: number;
-  updatedAt: string;
-  dealerPrice: number | null;
-  retailPrice: number | null;
-  dealerCurrency?: CurrencyCode | null;
-  retailCurrency?: CurrencyCode | null;
-  dealerStatus: DealerStatus;
-  retailStatus: RetailStatus;
-  productionSite: string;
-  /** Prices keyed by region code; used when a region is selected. */
-  regionPrices?: Record<string, CatalogRegionPrices>;
-  /** Statuses keyed by region code. */
-  regionStatuses?: Record<string, CatalogRegionStatuses>;
-};
 
 type StoreCatalogSeedItem = Omit<StoreCatalogItem, "brand" | "stock" | "updatedAt" | "code" | "productId">;
 

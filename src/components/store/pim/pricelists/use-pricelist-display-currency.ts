@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { isCurrencyCode, type CurrencyCode } from "./pricelists-helpers";
+import { isCurrencyCode, type CurrencyCode } from "@/features/store/domain/currency";
 
 export const DISPLAY_CURRENCY_STORAGE_KEY = "store-pricelists-display-currency";
 

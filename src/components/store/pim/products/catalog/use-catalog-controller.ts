@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { DealerStatus, RetailStatus, StoreCatalogItem } from "../store-catalog-demo-data";
 import {
   DEALER_STATUSES,
   RETAIL_STATUSES,
-} from "../../pricelists/pricelists-helpers";
+  type DealerStatus,
+  type RetailStatus,
+} from "@/features/store/domain/statuses";
+import { CATALOG_NO_SITE_KEY, type StoreCatalogItem } from "@/features/store/domain/catalog-item";
 import {
   DEFAULT_VISIBLE_COLUMNS,
   type CatalogColumnId,
@@ -13,22 +15,9 @@ import {
   parseStoredColumns,
   serializeVisibleColumns,
 } from "./catalog-columns";
-import {
-  ALL_VALUE,
-  formatCatalogStatus,
-  getSelectValue,
-  type CatalogListingMode,
-  type QuickFilterOption,
-} from "./catalog-helpers";
-import {
-  CATALOG_NO_SITE_KEY,
-  CATALOG_NO_SITE_LABEL,
-  catalogSiteKeysForCollapseAll,
-  compareCatalogSiteKeys,
-  groupCatalogItemsBySite,
-  toggleCatalogSiteCollapsed,
-  type CatalogSiteGroup,
-} from "./catalog-site-groups";
+import { ALL_VALUE, getSelectValue, type CatalogListingMode, type QuickFilterOption } from "./catalog-helpers";
+import { formatCatalogStatus } from "@/features/store/catalog-presentation";
+import { CATALOG_NO_SITE_LABEL, catalogSiteKeysForCollapseAll, compareCatalogSiteKeys, groupCatalogItemsBySite, toggleCatalogSiteCollapsed, type CatalogSiteGroup } from "./catalog-site-groups";
 
 type FilterControl = {
   value: string;

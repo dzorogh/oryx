@@ -9,8 +9,7 @@ import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control
 import { useCart } from "@/features/store/cart/cart-context";
 import { useSelectedRegion } from "@/features/store/region-context";
 import { formatEntityCode } from "@/lib/entity-codes";
-import { formatCatalogPrice } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { getPurchaseBlockReason } from "@/components/store/pim/products/catalog/catalog-helpers";
+import { formatCatalogPrice, getPurchaseBlockReason } from "@/features/store/catalog-presentation";
 
 export const CartSheet = () => {
   const { lines, catalogById, catalogError, sheetOpen, setSheetOpen, setQuantity, removeVariants } = useCart();

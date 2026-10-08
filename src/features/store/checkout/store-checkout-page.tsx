@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatCatalogPrice } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { VariantStockSummary } from "@/components/store/stock/variant-stock-summary";
-import { RegionSwitcher } from "@/components/store/region/region-switcher";
+import { formatCatalogPrice } from "@/features/store/catalog-presentation";
+import { VariantStockSummary } from "@/features/store/variant-stock-summary";
+import { RegionSwitcher } from "@/features/store/region-switcher";
 import type { MixedPackItem } from "@/domain/packing/mixed-containers";
 import type { OrderRates } from "@/features/logistics/order-money";
 import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
@@ -46,7 +46,7 @@ import {
 } from "@/features/store/variant-stock";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import type { CurrencyCode } from "@/components/store/pim/pricelists/pricelists-helpers";
+import type { CurrencyCode } from "@/features/store/domain/currency";
 
 type BlockResult =
   | { blockId: string; blockLabel: string; status: "created"; orderId: string; orderNumber: string }
@@ -395,18 +395,24 @@ export const StoreCheckoutPage = () => {
                 })()}
               </CardDescription>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              disabled={
-                submittingBlockId != null ||
-                !blockHasSubmittableLines(block) ||
-                regionsLoading
-              }
-              onClick={() => void handleSubmitBlock(block)}
-            >
-              {submittingBlockId === block.id ? "Оформляем…" : "Оформить блок"}
-            </Button>
+            {block.mode === "plant" ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={
+                  submittingBlockId != null ||
+                  !blockHasSubmittableLines(block) ||
+                  regionsLoading
+                }
+                onClick={() => void handleSubmitBlock(block)}
+              >
+                {submittingBlockId === block.id
+                  ? "Оформляем…"
+                  : visibleBlocks.length > 1
+                    ? "Оформить подзаказ"
+                    : "Оформить заказ"}
+              </Button>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-3">
             {block.lines.map((line) => {

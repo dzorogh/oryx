@@ -124,7 +124,7 @@ import {
   resolveCustomerOrderVisibility,
 } from "@/features/logistics/order-view-role";
 import { useCurrentViewRole, useViewRole } from "@/features/logistics/use-view-role";
-import { RegionSwitcher } from "@/components/store/region/region-switcher";
+import { RegionSwitcher } from "@/features/store/region-switcher";
 import { useSelectedRegion } from "@/features/store/region-context";
 
 const STATUS_TOGGLE = [

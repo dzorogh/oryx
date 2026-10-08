@@ -1,4 +1,4 @@
-import type { StoreCatalogItem } from "../store-catalog-demo-data";
+import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
 
 /** Catalog row with prices and statuses of one region; no region means no prices. */
 export const resolveCatalogItemForRegion = (

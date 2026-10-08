@@ -14,7 +14,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CatalogCategoryTreeFilter } from "../products/catalog/catalog-category-tree-filter";
 import { CatalogQuickSearchControl } from "../products/catalog/catalog-filters";
-import { RegionSwitcher } from "@/components/store/region/region-switcher";
+import { RegionSwitcher } from "@/features/store/region-switcher";
 import { PricelistsPresence } from "./pricelists-presence";
 import {
   PRICELIST_SCOPE_DESCRIPTIONS,
@@ -24,7 +24,7 @@ import {
   scopeHasRegion,
   type PricelistScope,
 } from "./pricelists-demo-data";
-import { CURRENCY_CODES, type CurrencyCode } from "./pricelists-helpers";
+import { CURRENCY_CODES, type CurrencyCode } from "@/features/store/domain/currency";
 import type { PricelistFilters } from "./use-pricelists-controller";
 import type { PricelistColumns } from "./use-pricelist-columns";
 import type { CollabUser } from "./collab/collab-config";
