@@ -36,6 +36,7 @@ export const DocumentTabs = ({
   const tabIds = tabs.map((tab) => tab.id);
   const [activeId, setActiveId] = useState(() => tabIds[0] ?? "");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const select = useCallback(
     (id: string, { focusPanel = false }: { focusPanel?: boolean } = {}) => {
@@ -67,6 +68,7 @@ export const DocumentTabs = ({
       const next = readHashTab(tabIds);
       if (next) {
         setActiveId(next);
+        rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     };
     window.addEventListener("hashchange", onHash);
@@ -102,7 +104,7 @@ export const DocumentTabs = ({
   }
 
   return (
-    <div className={cn("min-w-0", className)}>
+    <div ref={rootRef} className={cn("min-w-0 scroll-mt-4", className)}>
       <div
         role="tablist"
         aria-label={ariaLabel}

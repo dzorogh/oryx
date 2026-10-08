@@ -9,6 +9,7 @@ import {
   Factory,
   MoreHorizontal,
   PackageCheck,
+  Plus,
   ShoppingCart,
   Wallet,
   Warehouse,
@@ -47,7 +48,8 @@ import {
 } from "@/features/logistics/ui/document/document-meta-field";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { logisticsCardClass } from "@/features/logistics/ui/logistics-panel";
-import { OrderAmountInput } from "@/features/logistics/ui/order-money-tab";
+import { openDocumentTab } from "@/features/logistics/ui/document/document-tab-hash";
+import { AddPaymentDialog, OrderAmountInput } from "@/features/logistics/ui/order-money-tab";
 import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
 
@@ -57,12 +59,44 @@ const TONE_CLASS: Record<HeaderTone, string> = {
   danger: "text-red-700",
 };
 
-const PanelTitle = ({ icon: Icon, children }: { icon: typeof PackageCheck; children: ReactNode }) => (
-  <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-    <Icon className="size-3.5" aria-hidden />
-    {children}
-  </div>
-);
+const PANEL_LINK_CLASS =
+  "cursor-pointer rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40";
+
+/** `onClick` — the title opens the related tab; `action` sits on the right without changing the row height. */
+const PanelTitle = ({
+  icon: Icon,
+  children,
+  onClick,
+  action,
+}: {
+  icon: typeof PackageCheck;
+  children: ReactNode;
+  onClick?: () => void;
+  action?: ReactNode;
+}) => {
+  const content = (
+    <>
+      <Icon className="size-3.5" aria-hidden />
+      {children}
+    </>
+  );
+  return (
+    <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+      {onClick ? (
+        <button
+          type="button"
+          className={cn("inline-flex items-center gap-1.5 uppercase transition-colors", PANEL_LINK_CLASS)}
+          onClick={onClick}
+        >
+          {content}
+        </button>
+      ) : (
+        <span className="inline-flex items-center gap-1.5">{content}</span>
+      )}
+      {action ? <div className="-my-1 shrink-0 normal-case">{action}</div> : null}
+    </div>
+  );
+};
 
 const HEADER_BADGE_CLASS = "h-6 px-2.5";
 
@@ -156,17 +190,44 @@ const PaymentPanel = ({
   reload,
 }: {
   orderId: string;
-  money: { amount: number | null; estimated: number; currencyCode: string } | null;
+  /** `rest` — «Не распределено»: order amount minus all payments. */
+  money: { amount: number | null; estimated: number; currencyCode: string; rest: number } | null;
   paymentsSummary: PaymentsSummary | null;
   paymentCount: number;
   reload: () => Promise<void>;
 }) => {
+  const [addOpen, setAddOpen] = useState(false);
   const progress = paymentsSummary ? paymentProgress(paymentsSummary, paymentCount) : null;
   const paidPct = progress?.paidPct ?? 0;
+  const openMoney = () => openDocumentTab("money");
 
   return (
     <section className="px-6 py-4">
-      <PanelTitle icon={Wallet}>Оплата</PanelTitle>
+      <PanelTitle
+        icon={Wallet}
+        onClick={openMoney}
+        action={
+          money ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button type="button" variant="ghost" size="icon-xs" aria-label="Действия с оплатой">
+                    <MoreHorizontal className="size-4" aria-hidden />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="min-w-44">
+                <DropdownMenuItem onClick={() => setAddOpen(true)}>
+                  <Plus className="size-4" aria-hidden />
+                  Добавить платёж
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null
+        }
+      >
+        Оплата
+      </PanelTitle>
       <PanelValue>
         {money ? (
           <span className="flex min-w-0 items-center gap-1.5">
@@ -191,13 +252,17 @@ const PaymentPanel = ({
       </div>
       {paymentsSummary && progress ? (
         <>
-          <div className="mt-2.5 text-xs text-muted-foreground tabular-nums">
+          <button
+            type="button"
+            className={cn("mt-2.5 block text-left text-xs text-muted-foreground tabular-nums", PANEL_LINK_CLASS)}
+            onClick={openMoney}
+          >
             Оплачено{" "}
             <span className="font-semibold text-foreground">
               {formatOrderMoney(paymentsSummary.paid, paymentsSummary.currencyCode)}
             </span>{" "}
             · {paidPct}%
-          </div>
+          </button>
           {paymentCount > 0 ? (
             <div
               className={cn(
@@ -219,6 +284,16 @@ const PaymentPanel = ({
           <DocumentMetaEmpty />
         </div>
       )}
+      {money ? (
+        <AddPaymentDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          documentId={orderId}
+          currencyCode={money.currencyCode}
+          suggestedAmount={money.rest}
+          reload={reload}
+        />
+      ) : null}
     </section>
   );
 };
@@ -277,10 +352,13 @@ const DatesPanel = ({
   const countdownView = countdown ? deadlineCountdownLabel(countdown) : null;
   const overdue = countdown?.kind === "overdue";
   const progress = open ? deadlineProgress(createdAt, expectedEndOn) : completedAt ? 100 : null;
+  const openHistory = () => openDocumentTab("history");
 
   return (
     <section className="px-6 py-4">
-      <PanelTitle icon={CalendarClock}>Сроки</PanelTitle>
+      <PanelTitle icon={CalendarClock} onClick={openHistory}>
+        Сроки
+      </PanelTitle>
       <PanelValue>
         {open && !expectedEndOn ? (
           <SetDateButton onChange={onExpectedEndChange} />
@@ -309,7 +387,11 @@ const DatesPanel = ({
           style={{ width: `${progress ?? 0}%` }}
         />
       </div>
-      <div className="mt-2.5 text-xs tabular-nums">
+      <button
+        type="button"
+        className={cn("mt-2.5 block text-left text-xs tabular-nums", PANEL_LINK_CLASS)}
+        onClick={openHistory}
+      >
         {!open && completedAt ? (
           <span className="text-muted-foreground">Завершён {formatMetaTimestamp(completedAt)}</span>
         ) : countdownView ? (
@@ -317,7 +399,7 @@ const DatesPanel = ({
         ) : (
           <span className="text-muted-foreground/70">{expectedEndOn ? "—" : "Не задан"}</span>
         )}
-      </div>
+      </button>
     </section>
   );
 };
@@ -369,7 +451,8 @@ export const CustomerOrderHeader = ({
   balances: StockBalance[];
   /** Product id → quantity in draft outputs assigned to the order. */
   plannedByProduct: ReadonlyMap<string, number>;
-  money: { amount: number | null; estimated: number; currencyCode: string } | null;
+  /** `rest` — «Не распределено»: order amount minus all payments. */
+  money: { amount: number | null; estimated: number; currencyCode: string; rest: number } | null;
   paymentsSummary: PaymentsSummary | null;
   paymentCount: number;
   cancelGuidance: CancelGuidance;

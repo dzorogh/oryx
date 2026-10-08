@@ -251,6 +251,69 @@ const PaymentDialog = ({
   );
 };
 
+const savePaymentDraft = async (documentId: string, draft: PaymentDraft, reload: () => Promise<void>) => {
+  const amount = parseMoneyInput(draft.amount);
+  if (amount == null) return false;
+  return runLogisticsAction(
+    () =>
+      saveOrderPayment({
+        documentId,
+        paymentId: draft.id,
+        dueOn: draft.dueOn,
+        amount,
+        status: draft.status,
+      }),
+    draft.id ? "Платёж сохранён" : "Платёж добавлен",
+    reload,
+  );
+};
+
+const newPaymentDraft = (suggestedAmount: number): PaymentDraft => ({
+  id: null,
+  dueOn: "",
+  amount: suggestedAmount > 0 ? formatMoneyInput(suggestedAmount) : "",
+  status: "planned",
+});
+
+/** «Новый платёж» outside the «Деньги» tab (customer-order header menu). */
+export const AddPaymentDialog = ({
+  open,
+  onOpenChange,
+  documentId,
+  currencyCode,
+  suggestedAmount,
+  reload,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  documentId: string;
+  currencyCode: string;
+  /** Prefilled amount — «Не распределено» of the order; ≤ 0 leaves the field empty. */
+  suggestedAmount: number;
+  reload: () => Promise<void>;
+}) => {
+  const [draft, setDraft] = useState<PaymentDraft | null>(null);
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setDraft(open ? newPaymentDraft(suggestedAmount) : null);
+  }
+
+  return (
+    <PaymentDialog
+      draft={draft}
+      currencyCode={currencyCode}
+      currencyLabel={TEXTS.order.currencyLabel}
+      onClose={() => onOpenChange(false)}
+      onSubmit={async (next) => {
+        const ok = await savePaymentDraft(documentId, next, reload);
+        if (ok) onOpenChange(false);
+        return ok;
+      }}
+    />
+  );
+};
+
 const parseRate = (raw: string): number | null => {
   const value = Number(raw.replace(/[\s\u00a0]/g, "").replace(",", "."));
   return raw.trim() && Number.isFinite(value) && value > 0 ? value : null;
@@ -428,20 +491,7 @@ export const OrderMoneyTab = ({
   };
 
   const submitPayment = async (draft: PaymentDraft) => {
-    const amount = parseMoneyInput(draft.amount);
-    if (amount == null) return false;
-    const ok = await runLogisticsAction(
-      () =>
-        saveOrderPayment({
-          documentId,
-          paymentId: draft.id,
-          dueOn: draft.dueOn,
-          amount,
-          status: draft.status,
-        }),
-      draft.id ? "Платёж сохранён" : "Платёж добавлен",
-      reload,
-    );
+    const ok = await savePaymentDraft(documentId, draft, reload);
     if (ok) setPaymentDraft(null);
     return ok;
   };
@@ -539,14 +589,7 @@ export const OrderMoneyTab = ({
           <Button
             type="button"
             size="sm"
-            onClick={() =>
-              setPaymentDraft({
-                id: null,
-                dueOn: "",
-                amount: !isTransfer && summary.rest > 0 ? formatMoneyInput(summary.rest) : "",
-                status: "planned",
-              })
-            }
+            onClick={() => setPaymentDraft(newPaymentDraft(isTransfer ? 0 : summary.rest))}
           >
             Добавить платёж
           </Button>

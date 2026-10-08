@@ -560,6 +560,7 @@ export const CustomerOrderDetailPage = () => {
                 amount: orderMoney.money.amount,
                 estimated: moneySummary.estimated,
                 currencyCode: moneySummary.currencyCode,
+                rest: moneySummary.rest,
               }
             : null
         }
