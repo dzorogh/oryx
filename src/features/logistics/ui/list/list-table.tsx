@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type MouseEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +22,8 @@ type ListTableProps<TRow> = {
   view: ListViewController<TRow>;
   groupDefs?: ListGroupDef<TRow>[];
   rowKey: (row: TRow) => string;
+  /** Makes the whole row open this URL; links and buttons inside cells keep their own behavior. */
+  rowHref?: (row: TRow) => string;
   /** Quantity summed into each group header, e.g. total pieces of the group's documents. */
   groupQuantity?: (row: TRow) => number | null;
   groupUnitLabel?: string;
@@ -28,6 +31,8 @@ type ListTableProps<TRow> = {
   onResetFilters?: () => void;
   footer?: ReactNode;
 };
+
+const INTERACTIVE_SELECTOR = "a, button, input, select, textarea, label, [role='button'], [role='menuitem']";
 
 const collapsedStyle = { width: COLLAPSED_COLUMN_WIDTH, minWidth: COLLAPSED_COLUMN_WIDTH, maxWidth: COLLAPSED_COLUMN_WIDTH };
 
@@ -37,38 +42,64 @@ export const ListTable = <TRow,>({
   view,
   groupDefs = [],
   rowKey,
+  rowHref,
   groupQuantity,
   groupUnitLabel = "док.",
   emptyMessage = "Ничего не найдено",
   onResetFilters,
   footer,
 }: ListTableProps<TRow>) => {
+  const router = useRouter();
   const displayColumns = columns
     .filter((column) => view.isColumnVisible(column.id))
     .map((column) => ({ column, collapsed: view.isColumnCollapsed(column.id) }));
   const hasCollapsed = displayColumns.some((item) => item.collapsed);
   const groupDef = view.groupId ? groupDefs.find((item) => item.id === view.groupId) : undefined;
 
-  const renderRow = (row: TRow) => (
-    <TableRow key={rowKey(row)}>
-      {displayColumns.map(({ column, collapsed }) =>
-        collapsed ? (
-          <TableCell key={column.id} className="bg-muted/40 p-0" style={collapsedStyle} aria-hidden />
-        ) : (
-          <TableCell
-            key={column.id}
-            className={cn(
-              "px-3 py-2 align-top text-sm whitespace-normal",
-              column.align === "right" && "text-right tabular-nums",
-            )}
-            style={column.minWidth ? { minWidth: column.minWidth } : undefined}
-          >
-            {column.render(row)}
-          </TableCell>
-        ),
-      )}
-    </TableRow>
-  );
+  const openRow = (event: MouseEvent<HTMLTableRowElement>, href: string) => {
+    const target = event.target as Element;
+    if (
+      !event.currentTarget.contains(target) ||
+      target.closest(INTERACTIVE_SELECTOR) ||
+      (window.getSelection()?.toString() ?? "") !== ""
+    ) {
+      return;
+    }
+    if (event.metaKey || event.ctrlKey || event.button === 1) {
+      window.open(href, "_blank", "noopener");
+      return;
+    }
+    router.push(href);
+  };
+
+  const renderRow = (row: TRow) => {
+    const href = rowHref?.(row);
+    return (
+      <TableRow
+        key={rowKey(row)}
+        className={href ? "cursor-pointer" : undefined}
+        onClick={href ? (event) => openRow(event, href) : undefined}
+        onAuxClick={href ? (event) => event.button === 1 && openRow(event, href) : undefined}
+      >
+        {displayColumns.map(({ column, collapsed }) =>
+          collapsed ? (
+            <TableCell key={column.id} className="bg-muted/40 p-0" style={collapsedStyle} aria-hidden />
+          ) : (
+            <TableCell
+              key={column.id}
+              className={cn(
+                "px-3 py-2 align-top text-sm whitespace-normal",
+                column.align === "right" && "text-right tabular-nums",
+              )}
+              style={column.minWidth ? { minWidth: column.minWidth } : undefined}
+            >
+              {column.render(row)}
+            </TableCell>
+          ),
+        )}
+      </TableRow>
+    );
+  };
 
   const renderGroups = () =>
     groupRows(rows, view.groupId, groupDefs).map((group) => {

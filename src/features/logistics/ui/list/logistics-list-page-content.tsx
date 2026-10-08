@@ -24,6 +24,7 @@ type LogisticsListPageContentProps<TRow> = {
   defaultSort?: ListSortState;
   rows: TRow[];
   rowKey: (row: TRow) => string;
+  rowHref?: (row: TRow) => string;
   isLoading?: boolean;
   error?: string | null;
   toggleOptions?: ListToggleOption[];
@@ -62,6 +63,7 @@ export const LogisticsListPageContent = <TRow,>({
   defaultSort,
   rows,
   rowKey,
+  rowHref,
   isLoading = false,
   error = null,
   toggleOptions,
@@ -121,6 +123,7 @@ export const LogisticsListPageContent = <TRow,>({
           view={view}
           groupDefs={groupDefs}
           rowKey={rowKey}
+          rowHref={rowHref}
           groupQuantity={groupQuantity ?? undefined}
           groupUnitLabel={groupUnitLabel}
           onResetFilters={hasActiveFilters ? onResetFilters : undefined}

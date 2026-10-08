@@ -113,8 +113,10 @@ const STATUS_TOGGLE = [
   { value: "done", label: "Закрыт" },
 ] as const;
 
+const customerOrderHref = (row: CustomerOrderListRow) => `/store/logistics/customer-orders/${row.sequenceNumber}`;
+
 const customerOrderColumns: ListColumnDef<CustomerOrderListRow>[] = [
-  listNumberColumn((row) => `/store/logistics/customer-orders/${row.sequenceNumber}`),
+  listNumberColumn(customerOrderHref),
   {
     id: "status",
     label: "Статус",
@@ -288,6 +290,7 @@ export const CustomerOrdersPage = () => {
         groupDefs={customerOrderGroupDefs}
         rows={filtered}
         rowKey={(row) => row.id}
+        rowHref={customerOrderHref}
         groupQuantity={(row) => row.ordered}
         isLoading={isLoading}
         error={error}
