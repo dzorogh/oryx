@@ -346,10 +346,13 @@ export const OutputCalendarOutputsPanel = ({
         </SelectContent>
       </Select>
 
-      <SectionTitle>Для кого считаем</SectionTitle>
+      <SectionTitle>Без резерва</SectionTitle>
       <label className="flex cursor-pointer items-start gap-2 py-1">
         <Checkbox checked={filter.free} onCheckedChange={(v) => onChange({ ...filter, free: v === true })} />
-        <span>Свободно</span>
+        <span>
+          Свободные выпуски
+          <span className="block text-xs text-muted-foreground">Не закреплены за регионом или заказом</span>
+        </span>
       </label>
 
       <SectionTitle>Регионы</SectionTitle>

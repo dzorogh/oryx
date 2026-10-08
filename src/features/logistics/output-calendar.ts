@@ -868,7 +868,7 @@ export const outputsFilterSummary = (
   plantId: string | null,
 ): string => {
   const parts: string[] = [];
-  if (filter.free) parts.push("Свободно");
+  if (filter.free) parts.push("без резерва");
   const regionNames = page.regions.filter((r) => filter.regionIds.includes(r.id)).map((r) => r.name);
   if (regionNames.length > 0) {
     const label =
