@@ -96,6 +96,7 @@ import {
   type TransferCreateAndSendInput,
   type TransferCreateAndSendResult,
 } from "@/features/logistics/transfer-direct-send";
+import { mapRoleVisibilityRow, type RoleVisibilityRule } from "@/features/logistics/order-view-role";
 import { preferKorportalMediaConversion } from "@/lib/korportal-media-url";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -1591,6 +1592,16 @@ export const documentFileDownloadUrl = async (storagePath: string, name: string)
     throw new Error(error?.message ?? "Не удалось получить ссылку на файл");
   }
   return data.signedUrl;
+};
+
+export const loadRoleVisibility = async (page: string): Promise<RoleVisibilityRule[]> => {
+  const client = requireClient();
+  const { data, error } = await client
+    .from("store_role_visibility")
+    .select("element_key,label,manager_visible,customer_visible")
+    .eq("page", page)
+    .order("sort_order", { ascending: true });
+  return requireData(data, error).map((row) => mapRoleVisibilityRow(row as Record<string, unknown>));
 };
 
 export type StoreMoneySettings = {

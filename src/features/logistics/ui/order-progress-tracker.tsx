@@ -403,22 +403,27 @@ export const OrderProgressTracker = ({
 
   return (
     <Card size="sm" className={cn(logisticsCardClass, "mt-3 gap-0 overflow-hidden py-0 shadow-sm data-[size=sm]:gap-0 data-[size=sm]:py-0")} aria-label="Ход заказа">
-      <div
-        className="-mt-px -ml-px grid grid-cols-1 lg:grid-cols-3"
-        aria-label="Ход заказа клиента"
-      >
-        {primaryStages.map((stage, index) => (
-          <JourneyStage
-            key={stage.id}
-            stage={stage}
-            marker={primaryMarkers[index] ?? "pending"}
-            showActions={canAct}
-          />
-        ))}
-      </div>
+      {primaryStages.length > 0 ? (
+        <div
+          className="-mt-px -ml-px grid grid-cols-1 lg:grid-cols-3"
+          aria-label="Ход заказа клиента"
+        >
+          {primaryStages.map((stage, index) => (
+            <JourneyStage
+              key={stage.id}
+              stage={stage}
+              marker={primaryMarkers[index] ?? "pending"}
+              showActions={canAct}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {secondaryStages.length > 0 ? (
-        <Collapsible defaultOpen={false} className="group border-t border-border/60 bg-muted/30">
+        <Collapsible
+          defaultOpen={false}
+          className={cn("group bg-muted/30", primaryStages.length > 0 && "border-t border-border/60")}
+        >
           <div className="flex items-center gap-3.5 px-5 py-2 text-sm text-muted-foreground">
             <b className="shrink-0 font-semibold text-foreground/80">Связанные</b>
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">

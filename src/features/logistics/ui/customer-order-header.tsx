@@ -36,8 +36,14 @@ import {
   type OrderFulfillmentSummary,
 } from "@/features/logistics/customer-order-oms";
 import type { CancelGuidance, CancelGuidanceAction } from "@/features/logistics/logistics-cancel-guidance";
-import { CUSTOMER_ORDER_STATUS_LABELS, formatMetaTimestamp, formatQuantity } from "@/features/logistics/logistics-labels";
+import {
+  CUSTOMER_ORDER_STATUS_LABELS,
+  formatExpectedEnd,
+  formatMetaTimestamp,
+  formatQuantity,
+} from "@/features/logistics/logistics-labels";
 import type { CustomerOrderLine, CustomerOrderStatus, StockBalance } from "@/features/logistics/logistics-types";
+import type { CustomerOrderVisibility } from "@/features/logistics/order-view-role";
 import { formatOrderMoney, type PaymentsSummary } from "@/features/logistics/order-money";
 import { CopyCustomerOrderDialog, CustomerOrderNote } from "@/features/logistics/ui/customer-order-oms-fields";
 import { DocumentCancelDialog } from "@/features/logistics/ui/document-cancel-guidance";
@@ -134,7 +140,16 @@ const LegendDot = ({ className }: { className: string }) => (
   <span className={cn("inline-block size-2 rounded-full", className)} aria-hidden />
 );
 
-const FulfillmentPanel = ({ fulfillment, open }: { fulfillment: OrderFulfillmentSummary; open: boolean }) => {
+const FulfillmentPanel = ({
+  fulfillment,
+  open,
+  showBreakdown,
+}: {
+  fulfillment: OrderFulfillmentSummary;
+  open: boolean;
+  /** Reserve, production and uncovered parts of the bar and legend. */
+  showBreakdown: boolean;
+}) => {
   const { positions, ordered, shipped, reserved, inProduction, uncovered } = fulfillment;
   const empty = positions === 0;
   const segments = fulfillmentSegments(fulfillment);
@@ -156,21 +171,27 @@ const FulfillmentPanel = ({ fulfillment, open }: { fulfillment: OrderFulfillment
       </PanelValue>
       <div className="mt-2.5 flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-muted">
         <div className="bg-green-600" style={{ width: `${segments.shipped}%` }} />
-        <div className="bg-blue-500" style={{ width: `${segments.reserved}%` }} />
-        {inProduction > 0 ? <div className="bg-violet-500" style={{ width: `${segments.inProduction}%` }} /> : null}
-        {open && uncovered > 0 ? <div className="bg-amber-400" style={{ width: `${segments.uncovered}%` }} /> : null}
+        {showBreakdown ? (
+          <>
+            <div className="bg-blue-500" style={{ width: `${segments.reserved}%` }} />
+            {inProduction > 0 ? <div className="bg-violet-500" style={{ width: `${segments.inProduction}%` }} /> : null}
+            {open && uncovered > 0 ? <div className="bg-amber-400" style={{ width: `${segments.uncovered}%` }} /> : null}
+          </>
+        ) : null}
       </div>
       {!empty ? (
         <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
-          <span className="inline-flex items-center gap-1.5">
-            <LegendDot className="bg-blue-500" />В резерве {formatQuantity(reserved)}
-          </span>
-          {inProduction > 0 ? (
+          {showBreakdown ? (
+            <span className="inline-flex items-center gap-1.5">
+              <LegendDot className="bg-blue-500" />В резерве {formatQuantity(reserved)}
+            </span>
+          ) : null}
+          {showBreakdown && inProduction > 0 ? (
             <span className="inline-flex items-center gap-1.5">
               <LegendDot className="bg-violet-500" />В производстве {formatQuantity(inProduction)}
             </span>
           ) : null}
-          {open ? (
+          {showBreakdown && open ? (
             <span className="inline-flex items-center gap-1.5">
               <LegendDot className="bg-amber-400" />Не обеспечено {formatQuantity(uncovered)}
             </span>
@@ -187,6 +208,7 @@ const PaymentPanel = ({
   money,
   paymentsSummary,
   paymentCount,
+  editable,
   reload,
 }: {
   orderId: string;
@@ -194,6 +216,7 @@ const PaymentPanel = ({
   money: { amount: number | null; estimated: number; currencyCode: string; rest: number } | null;
   paymentsSummary: PaymentsSummary | null;
   paymentCount: number;
+  editable: boolean;
   reload: () => Promise<void>;
 }) => {
   const [addOpen, setAddOpen] = useState(false);
@@ -207,7 +230,7 @@ const PaymentPanel = ({
         icon={Wallet}
         onClick={openMoney}
         action={
-          money ? (
+          money && editable ? (
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -237,6 +260,7 @@ const PaymentPanel = ({
               amount={money.amount}
               estimated={money.estimated}
               currencyCode={money.currencyCode}
+              readOnly={!editable}
               reload={reload}
             />
             {money.amount == null ? <span className="text-xs text-muted-foreground">расчётная</span> : null}
@@ -284,7 +308,7 @@ const PaymentPanel = ({
           <DocumentMetaEmpty />
         </div>
       )}
-      {money ? (
+      {money && editable ? (
         <AddPaymentDialog
           open={addOpen}
           onOpenChange={setAddOpen}
@@ -340,6 +364,7 @@ const DatesPanel = ({
   createdAt,
   completedAt,
   open,
+  editable,
   onExpectedEndChange,
 }: {
   expectedEndOn: string | null;
@@ -347,6 +372,7 @@ const DatesPanel = ({
   createdAt: string;
   completedAt: string | null;
   open: boolean;
+  editable: boolean;
   onExpectedEndChange: (value: string | null) => void;
 }) => {
   const countdownView = countdown ? deadlineCountdownLabel(countdown) : null;
@@ -360,7 +386,11 @@ const DatesPanel = ({
         Сроки
       </PanelTitle>
       <PanelValue>
-        {open && !expectedEndOn ? (
+        {!editable ? (
+          <span className={cn("text-xl font-semibold tracking-tight tabular-nums", overdue && "text-red-700")}>
+            {expectedEndOn ? formatExpectedEnd(expectedEndOn) : <DocumentMetaEmpty />}
+          </span>
+        ) : open && !expectedEndOn ? (
           <SetDateButton onChange={onExpectedEndChange} />
         ) : (
           <span
@@ -426,6 +456,7 @@ export const CustomerOrderHeader = ({
   paymentsSummary,
   paymentCount,
   cancelGuidance,
+  visibility,
   reload,
   onExpectedEndChange,
   onStart,
@@ -456,6 +487,7 @@ export const CustomerOrderHeader = ({
   paymentsSummary: PaymentsSummary | null;
   paymentCount: number;
   cancelGuidance: CancelGuidance;
+  visibility: CustomerOrderVisibility;
   reload: () => Promise<void>;
   onExpectedEndChange: (value: string | null) => void;
   onStart: () => void;
@@ -467,14 +499,16 @@ export const CustomerOrderHeader = ({
   const fulfillment = summarizeOrderFulfillment(lines, balances, canAct, plannedByProduct);
   const countdown = deadlineCountdown(expectedEndOn, canAct);
   const showCancel = cancelGuidance.mode !== "hidden";
+  const showActions = visibility["order.actions"];
+  const editable = visibility["order.edit"];
+  const noteEditable = canAct && editable;
 
   const contextRows: Array<{ label: string; value: ReactNode }> = [
-    {
-      label: "Регион",
-      value: <LogisticsCodeBadge code={regionCode} href={regionHref} />,
-    },
-    { label: "Тенант", value: tenant },
-    { label: "Автор", value: authorName ?? <DocumentMetaEmpty /> },
+    ...(visibility["header.region"]
+      ? [{ label: "Регион", value: <LogisticsCodeBadge code={regionCode} href={regionHref} /> }]
+      : []),
+    ...(visibility["header.tenant"] ? [{ label: "Тенант", value: tenant }] : []),
+    ...(visibility["header.author"] ? [{ label: "Автор", value: authorName ?? <DocumentMetaEmpty /> }] : []),
     { label: "Создан", value: <span className="tabular-nums">{formatMetaTimestamp(createdAt)}</span> },
     ...(completedAt
       ? [{ label: "Завершён", value: <span className="tabular-nums">{formatMetaTimestamp(completedAt)}</span> }]
@@ -499,46 +533,48 @@ export const CustomerOrderHeader = ({
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-[28px] leading-none font-semibold tracking-tight">{number}</h1>
               <StatusPill status={status} label={CUSTOMER_ORDER_STATUS_LABELS[status]} className={HEADER_BADGE_CLASS} />
-              <OrderTypeBadge kind={sourceKind} code={sourceCode} />
+              {visibility["header.source"] ? <OrderTypeBadge kind={sourceKind} code={sourceCode} /> : null}
             </div>
           </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button type="button" variant="outline" className="gap-1.5">
-                    <MoreHorizontal className="size-4" aria-hidden />
-                    Ещё
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="min-w-52">
-                <DropdownMenuItem onClick={() => setCopyOpen(true)}>
-                  <Copy className="size-4" aria-hidden />
-                  Создать копию
-                </DropdownMenuItem>
-                {showCancel ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" onClick={() => setCancelOpen(true)}>
-                      <Ban className="size-4" aria-hidden />
-                      Отменить заказ
-                    </DropdownMenuItem>
-                  </>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {canAct && status === "draft" ? (
-              <Button type="button" onClick={onStart}>
-                В работу
-              </Button>
-            ) : null}
-            {canAct ? (
-              <Button type="button" variant={status === "draft" ? "outline" : "default"} onClick={onClose}>
-                Закрыть заказ клиента
-              </Button>
-            ) : null}
-          </div>
+          {showActions ? (
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button type="button" variant="outline" className="gap-1.5">
+                      <MoreHorizontal className="size-4" aria-hidden />
+                      Ещё
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="min-w-52">
+                  <DropdownMenuItem onClick={() => setCopyOpen(true)}>
+                    <Copy className="size-4" aria-hidden />
+                    Создать копию
+                  </DropdownMenuItem>
+                  {showCancel ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem variant="destructive" onClick={() => setCancelOpen(true)}>
+                        <Ban className="size-4" aria-hidden />
+                        Отменить заказ
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {canAct && status === "draft" ? (
+                <Button type="button" onClick={onStart}>
+                  В работу
+                </Button>
+              ) : null}
+              {canAct ? (
+                <Button type="button" variant={status === "draft" ? "outline" : "default"} onClick={onClose}>
+                  Закрыть заказ клиента
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <dl className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
@@ -550,13 +586,13 @@ export const CustomerOrderHeader = ({
           ))}
         </dl>
 
-        {canAct || description.trim() ? (
+        {visibility["header.note"] && (noteEditable || description.trim()) ? (
           <div className="mt-3">
             <CustomerOrderNote
               key={description}
               orderId={orderId}
               description={description}
-              editable={canAct}
+              editable={noteEditable}
               reload={reload}
             />
           </div>
@@ -564,12 +600,17 @@ export const CustomerOrderHeader = ({
       </div>
 
       <div className="grid divide-y border-t md:grid-cols-3 md:divide-x md:divide-y-0">
-        <FulfillmentPanel fulfillment={fulfillment} open={canAct} />
+        <FulfillmentPanel
+          fulfillment={fulfillment}
+          open={canAct}
+          showBreakdown={visibility["header.fulfillment_breakdown"]}
+        />
         <PaymentPanel
           orderId={orderId}
           money={money}
           paymentsSummary={paymentsSummary}
           paymentCount={paymentCount}
+          editable={editable}
           reload={reload}
         />
         <DatesPanel
@@ -578,6 +619,7 @@ export const CustomerOrderHeader = ({
           createdAt={createdAt}
           completedAt={completedAt}
           open={canAct}
+          editable={editable}
           onExpectedEndChange={onExpectedEndChange}
         />
       </div>

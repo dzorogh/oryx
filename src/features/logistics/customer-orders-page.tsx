@@ -112,6 +112,9 @@ import { CustomerOrderHeader } from "@/features/logistics/ui/customer-order-head
 import { CustomerOrderContainersTab } from "@/features/logistics/ui/customer-order-containers-tab";
 import { CustomerOrderFilesTab } from "@/features/logistics/ui/customer-order-files-tab";
 import { CustomerOrderCommentsTab } from "@/features/logistics/ui/customer-order-comments-tab";
+import { ViewRoleSwitcher } from "@/features/logistics/ui/view-role-switcher";
+import { isVisibleForRole, resolveCustomerOrderVisibility } from "@/features/logistics/order-view-role";
+import { useViewRole } from "@/features/logistics/use-view-role";
 
 const STATUS_TOGGLE = [
   { value: "all", label: "Все" },
@@ -322,6 +325,8 @@ export const CustomerOrderDetailPage = () => {
     documentKind: "customer_order",
     ref: String(params.orderId ?? ""),
   });
+  const viewRole = useViewRole("customer_order");
+  const visibility = resolveCustomerOrderVisibility(viewRole.rules, viewRole.role);
   const order = matchDocumentParam(snapshot.customerOrders, params.orderId);
   const [reserveOpen, setReserveOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
@@ -382,6 +387,7 @@ export const CustomerOrderDetailPage = () => {
   }
 
   const canAct = isOpenCustomerOrderStatus(order.status);
+  const showActions = visibility["order.actions"];
   const coverage = calculateOrderDocumentCoverage(snapshot, order.id);
   const cancelGuidance = projectDocumentCancelGuidance({ type: "customer_order", id: order.id }, snapshot, balances);
   const completedAt = documentCompletedAt(snapshot, order.id);
@@ -516,6 +522,7 @@ export const CustomerOrderDetailPage = () => {
         paymentsSummary={paymentsSummary}
         paymentCount={orderMoney.payments.length}
         cancelGuidance={cancelGuidance}
+        visibility={visibility}
         reload={reload}
         onExpectedEndChange={(value) => {
           void runLogisticsAction(
@@ -545,7 +552,13 @@ export const CustomerOrderDetailPage = () => {
         }}
       />
 
-      <OrderProgressTracker canAct={canAct} primaryStages={primaryStages} secondaryStages={secondaryStages} />
+      {visibility["progress.stages"] || visibility["progress.related"] ? (
+        <OrderProgressTracker
+          canAct={canAct && showActions}
+          primaryStages={visibility["progress.stages"] ? primaryStages : []}
+          secondaryStages={visibility["progress.related"] ? secondaryStages : []}
+        />
+      ) : null}
 
       <DocumentTabs
         tabs={[
@@ -558,33 +571,35 @@ export const CustomerOrderDetailPage = () => {
                 <DocumentSection
                   title="Товары"
                   tools={
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => setAddCatalogOpen(true)}
-                      >
-                        Добавить товар
-                      </Button>
-                      {canAct ? (
-                        <>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setReserveLine(null);
-                              setReserveOpen(true);
-                            }}
-                          >
-                            Зарезервировать
-                          </Button>
-                          <Button type="button" size="sm" variant="outline" onClick={() => setShipOpen(true)}>
-                            Отгрузить
-                          </Button>
-                        </>
-                      ) : null}
-                    </>
+                    showActions ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setAddCatalogOpen(true)}
+                        >
+                          Добавить товар
+                        </Button>
+                        {canAct ? (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setReserveLine(null);
+                                setReserveOpen(true);
+                              }}
+                            >
+                              Зарезервировать
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" onClick={() => setShipOpen(true)}>
+                              Отгрузить
+                            </Button>
+                          </>
+                        ) : null}
+                      </>
+                    ) : null
                   }
                 >
                   <CustomerOrderLinesTable
@@ -593,6 +608,13 @@ export const CustomerOrderDetailPage = () => {
                     balances={balances}
                     lines={lines}
                     canAct={canAct}
+                    showActions={showActions}
+                    columns={{
+                      prices: visibility["products.prices"],
+                      maxPerContainer: visibility["products.max_per_container"],
+                      flow: visibility["products.flow"],
+                      warehouseReserve: visibility["products.warehouse_reserve"],
+                    }}
                     currencies={orderMoney.currencies}
                     orderCurrencyCode={orderMoney.money?.currencyCode ?? null}
                     variantLogistics={orderOms.variantLogistics}
@@ -624,7 +646,9 @@ export const CustomerOrderDetailPage = () => {
                     }}
                   />
                 </DocumentSection>
-                <CustomerOrderContainersTab lines={lines} oms={orderOms} variant="compact" />
+                {visibility["products.containers"] ? (
+                  <CustomerOrderContainersTab lines={lines} oms={orderOms} variant="compact" />
+                ) : null}
               </div>
             ),
           },
@@ -632,7 +656,16 @@ export const CustomerOrderDetailPage = () => {
             id: "money",
             label: "Деньги",
             count: orderMoney.payments.length,
-            panel: <OrderMoneyTab snapshot={snapshot} documentId={order.id} context={orderMoney} reload={reload} />,
+            panel: (
+              <OrderMoneyTab
+                snapshot={snapshot}
+                documentId={order.id}
+                context={orderMoney}
+                reload={reload}
+                editable={visibility["order.edit"]}
+                showEstimate={visibility["money.estimate"]}
+              />
+            ),
           },
           {
             id: "plan",
@@ -642,7 +675,7 @@ export const CustomerOrderDetailPage = () => {
                 snapshot={snapshot}
                 orderId={order.id}
                 lines={lines}
-                canAct={canAct}
+                canAct={canAct && showActions}
                 rawPlan={orderPlan}
                 reload={reload}
               />
@@ -657,7 +690,14 @@ export const CustomerOrderDetailPage = () => {
             id: "files",
             label: "Файлы",
             count: orderOms.files.length,
-            panel: <CustomerOrderFilesTab orderId={order.id} files={orderOms.files} reload={reload} />,
+            panel: (
+              <CustomerOrderFilesTab
+                orderId={order.id}
+                files={orderOms.files}
+                reload={reload}
+                editable={visibility["order.edit"]}
+              />
+            ),
           },
           {
             id: "comments",
@@ -690,8 +730,10 @@ export const CustomerOrderDetailPage = () => {
               />
             ),
           },
-        ]}
+        ].filter((tab) => isVisibleForRole(viewRole.rules, viewRole.role, `tab.${tab.id}`))}
       />
+
+      <ViewRoleSwitcher state={viewRole} />
 
       <ReservationCatalogDialog
         snapshot={snapshot}

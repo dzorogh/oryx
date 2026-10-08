@@ -167,6 +167,21 @@ const LineActionsMenu = ({
   );
 };
 
+export type CustomerOrderLineColumns = {
+  prices: boolean;
+  maxPerContainer: boolean;
+  /** «В производстве», «Выпущено», «В пути». */
+  flow: boolean;
+  warehouseReserve: boolean;
+};
+
+const ALL_LINE_COLUMNS: CustomerOrderLineColumns = {
+  prices: true,
+  maxPerContainer: true,
+  flow: true,
+  warehouseReserve: true,
+};
+
 const th = "px-3 pt-2 pb-2 text-xs font-medium whitespace-nowrap text-muted-foreground align-bottom";
 const thNum = cn(th, "text-right");
 const thGroup =
@@ -190,6 +205,8 @@ export const CustomerOrderLinesTable = ({
   orderCurrencyCode = null,
   variantLogistics = [],
   bare = false,
+  showActions = true,
+  columns = ALL_LINE_COLUMNS,
 }: {
   snapshot: LogisticsSnapshot;
   balances: StockBalance[];
@@ -211,9 +228,15 @@ export const CustomerOrderLinesTable = ({
   variantLogistics?: VariantLogistics[];
   /** When true, render only the table (DocumentSection provides the card). */
   bare?: boolean;
+  /** Row menu: quantity, reserve, ship, release. */
+  showActions?: boolean;
+  columns?: CustomerOrderLineColumns;
 }) => {
-  const warehouseIds = warehouseIdsWithReservedForOrder(snapshot, balances, lines);
-  const colSpan = 9 + warehouseIds.length;
+  const warehouseIds = columns.warehouseReserve ? warehouseIdsWithReservedForOrder(snapshot, balances, lines) : [];
+  const colSpan =
+    3 + (columns.prices ? 2 : 0) + (columns.maxPerContainer ? 1 : 0) + (columns.flow ? 3 : 0) + warehouseIds.length;
+  const hasSecondHeaderRow = columns.flow || warehouseIds.length > 0;
+  const headerRowSpan = hasSecondHeaderRow ? 2 : 1;
   const currencyCodeById = new Map(currencies.map((currency) => [currency.id, currency.code]));
   const priceByLineId = new Map(
     snapshot.documentProductLines.map((row) => [
@@ -234,52 +257,66 @@ export const CustomerOrderLinesTable = ({
         <TableCaption className="sr-only">{ATLAS_HELP}</TableCaption>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead rowSpan={2} className={cn(th, "sticky left-0 z-20 min-w-44 bg-card")}>
+            <TableHead rowSpan={headerRowSpan} className={cn(th, "sticky left-0 z-20 min-w-44 bg-card")}>
               Товар
             </TableHead>
-            <TableHead rowSpan={2} className={cn(thNum, book)}>
+            <TableHead rowSpan={headerRowSpan} className={cn(thNum, book)}>
               Заказано
             </TableHead>
-            <TableHead rowSpan={2} className={cn(thNum, sep)}>
-              Цена
-            </TableHead>
-            <TableHead rowSpan={2} className={thNum}>
-              Сумма
-            </TableHead>
-            <TableHead rowSpan={2} title={MAX_PER_CONTAINER_HELP} className={thNum}>
-              Макс. в конт.
-            </TableHead>
-            <TableHead colSpan={3} className={cn(thGroup, sep)}>
-              Поток
-            </TableHead>
+            {columns.prices ? (
+              <>
+                <TableHead rowSpan={headerRowSpan} className={cn(thNum, sep)}>
+                  Цена
+                </TableHead>
+                <TableHead rowSpan={headerRowSpan} className={thNum}>
+                  Сумма
+                </TableHead>
+              </>
+            ) : null}
+            {columns.maxPerContainer ? (
+              <TableHead rowSpan={headerRowSpan} title={MAX_PER_CONTAINER_HELP} className={thNum}>
+                Макс. в конт.
+              </TableHead>
+            ) : null}
+            {columns.flow ? (
+              <TableHead colSpan={3} className={cn(thGroup, sep)}>
+                Поток
+              </TableHead>
+            ) : null}
             {warehouseIds.length > 0 ? (
               <TableHead colSpan={warehouseIds.length} className={cn(thGroup, sep)}>
                 Резерв на складах
               </TableHead>
             ) : null}
-            <TableHead rowSpan={2} className={cn(thNum, book, sep)}>
+            <TableHead rowSpan={headerRowSpan} className={cn(thNum, book, sep)}>
               Отгружено
             </TableHead>
           </TableRow>
-          <TableRow className="hover:bg-transparent">
-            <TableHead title={IN_PRODUCTION_HELP} className={cn(thNum, sep)}>
-              В производстве
-            </TableHead>
-            <TableHead title={PRODUCED_HELP} className={thNum}>
-              Выпущено
-            </TableHead>
-            <TableHead className={thNum}>В пути</TableHead>
-            {warehouseIds.map((warehouseId, index) => (
-              <TableHead key={warehouseId} className={cn(thNum, index === 0 && sep)}>
-                <Link
-                  href={hrefForWarehouse(warehouseId)}
-                  className="font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  {warehouseCode(snapshot, warehouseId)}
-                </Link>
-              </TableHead>
-            ))}
-          </TableRow>
+          {hasSecondHeaderRow ? (
+            <TableRow className="hover:bg-transparent">
+              {columns.flow ? (
+                <>
+                  <TableHead title={IN_PRODUCTION_HELP} className={cn(thNum, sep)}>
+                    В производстве
+                  </TableHead>
+                  <TableHead title={PRODUCED_HELP} className={thNum}>
+                    Выпущено
+                  </TableHead>
+                  <TableHead className={thNum}>В пути</TableHead>
+                </>
+              ) : null}
+              {warehouseIds.map((warehouseId, index) => (
+                <TableHead key={warehouseId} className={cn(thNum, index === 0 && sep)}>
+                  <Link
+                    href={hrefForWarehouse(warehouseId)}
+                    className="font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    {warehouseCode(snapshot, warehouseId)}
+                  </Link>
+                </TableHead>
+              ))}
+            </TableRow>
+          ) : null}
         </TableHeader>
         <TableBody>
           {lines.length === 0 ? (
@@ -320,68 +357,80 @@ export const CustomerOrderLinesTable = ({
                         productId={line.productId}
                         productName={line.productName}
                       />
-                      <LineActionsMenu
-                        productName={productName}
-                        canReserve={canReserve}
-                        canShip={canShipLine}
-                        releasePlaces={
-                          canAct
-                            ? reserved.map((place) => {
-                                const identity = locationIdentity(snapshot, place.locationType, place.locationId);
-                                return {
-                                  locationType: place.locationType,
-                                  locationId: place.locationId,
-                                  title: identity.title,
-                                  hint: identity.hint,
-                                  quantity: place.quantity,
-                                };
-                              })
-                            : []
-                        }
-                        outputHolds={
-                          canAct ? draftOutputHoldsForOrderProduct(snapshot, line.orderId, line.productId) : []
-                        }
-                        onReserve={() => onReserve(line)}
-                        onShip={onShip}
-                        onRelease={(place) => onRelease({ line, ...place })}
-                        onReleaseOutput={(hold) => onReleaseOutput(line, hold)}
-                        onEdit={() => onEditQuantity(line)}
-                      />
+                      {showActions ? (
+                        <LineActionsMenu
+                          productName={productName}
+                          canReserve={canReserve}
+                          canShip={canShipLine}
+                          releasePlaces={
+                            canAct
+                              ? reserved.map((place) => {
+                                  const identity = locationIdentity(snapshot, place.locationType, place.locationId);
+                                  return {
+                                    locationType: place.locationType,
+                                    locationId: place.locationId,
+                                    title: identity.title,
+                                    hint: identity.hint,
+                                    quantity: place.quantity,
+                                  };
+                                })
+                              : []
+                          }
+                          outputHolds={
+                            canAct ? draftOutputHoldsForOrderProduct(snapshot, line.orderId, line.productId) : []
+                          }
+                          onReserve={() => onReserve(line)}
+                          onShip={onShip}
+                          onRelease={(place) => onRelease({ line, ...place })}
+                          onReleaseOutput={(hold) => onReleaseOutput(line, hold)}
+                          onEdit={() => onEditQuantity(line)}
+                        />
+                      ) : null}
                     </div>
                   </TableCell>
                   <TableCell className={cn(tdNum, book)}>
                     <span className="font-semibold tabular-nums">{formatQuantity(line.quantity)}</span>
-                    {reserveExcess > 1e-9 ? (
+                    {columns.warehouseReserve && reserveExcess > 1e-9 ? (
                       <span className="mt-0.5 block text-xs text-amber-700">
                         резерв больше заказа на {formatQuantity(reserveExcess)}
                       </span>
                     ) : null}
                   </TableCell>
-                  <TableCell className={cn(tdNum, sep, "whitespace-nowrap")}>
-                    <Money amount={price?.unitPrice ?? null} currencyCode={price?.currencyCode ?? null} />
-                  </TableCell>
-                  <TableCell className={cn(tdNum, "whitespace-nowrap")}>
-                    <Money
-                      amount={lineAmount(price?.unitPrice ?? null, line.quantity)}
-                      currencyCode={price?.currencyCode ?? null}
-                    />
-                  </TableCell>
-                  <TableCell className={tdNum} title={MAX_PER_CONTAINER_HELP}>
-                    {maxPerContainer == null ? (
-                      <span className="tabular-nums text-muted-foreground/50">—</span>
-                    ) : (
-                      <span className="tabular-nums">{formatQuantity(maxPerContainer)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className={cn(tdNum, sep)}>
-                    <Qty quantity={locations.inProduction} />
-                  </TableCell>
-                  <TableCell className={tdNum}>
-                    <Qty quantity={producedQty} className="font-medium text-muted-foreground" />
-                  </TableCell>
-                  <TableCell className={tdNum}>
-                    <Qty quantity={locations.inTransit} />
-                  </TableCell>
+                  {columns.prices ? (
+                    <>
+                      <TableCell className={cn(tdNum, sep, "whitespace-nowrap")}>
+                        <Money amount={price?.unitPrice ?? null} currencyCode={price?.currencyCode ?? null} />
+                      </TableCell>
+                      <TableCell className={cn(tdNum, "whitespace-nowrap")}>
+                        <Money
+                          amount={lineAmount(price?.unitPrice ?? null, line.quantity)}
+                          currencyCode={price?.currencyCode ?? null}
+                        />
+                      </TableCell>
+                    </>
+                  ) : null}
+                  {columns.maxPerContainer ? (
+                    <TableCell className={tdNum} title={MAX_PER_CONTAINER_HELP}>
+                      {maxPerContainer == null ? (
+                        <span className="tabular-nums text-muted-foreground/50">—</span>
+                      ) : (
+                        <span className="tabular-nums">{formatQuantity(maxPerContainer)}</span>
+                      )}
+                    </TableCell>
+                  ) : null}
+                  {columns.flow ? (
+                    <>
+                      <TableCell className={cn(tdNum, sep)}>
+                        <Qty quantity={locations.inProduction} />
+                      </TableCell>
+                      <TableCell className={tdNum}>
+                        <Qty quantity={producedQty} className="font-medium text-muted-foreground" />
+                      </TableCell>
+                      <TableCell className={tdNum}>
+                        <Qty quantity={locations.inTransit} />
+                      </TableCell>
+                    </>
+                  ) : null}
                   {warehouseIds.map((warehouseId, index) => (
                     <TableCell key={warehouseId} className={cn(tdNum, index === 0 && sep)}>
                       <Qty quantity={locations.byWarehouseId[warehouseId] ?? 0} />

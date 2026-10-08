@@ -33,10 +33,13 @@ export const CustomerOrderFilesTab = ({
   orderId,
   files,
   reload,
+  editable = true,
 }: {
   orderId: string;
   files: DocumentFile[];
   reload: () => Promise<void>;
+  /** Upload and delete; download stays available. */
+  editable?: boolean;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -80,29 +83,33 @@ export const CustomerOrderFilesTab = ({
     <DocumentSection
       title="Файлы"
       tools={
-        <>
-          <span className="text-xs text-muted-foreground">До {DOCUMENT_FILE_LIMIT_LABEL} на файл</span>
-          <Button type="button" size="sm" disabled={uploading != null} onClick={() => inputRef.current?.click()}>
-            <Upload className="size-3.5" aria-hidden />
-            {uploading ? "Загружаем…" : "Загрузить файл"}
-          </Button>
-          <input
-            ref={inputRef}
-            type="file"
-            className="sr-only"
-            aria-label="Файл для загрузки"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (file) void upload(file);
-            }}
-          />
-        </>
+        editable ? (
+          <>
+            <span className="text-xs text-muted-foreground">До {DOCUMENT_FILE_LIMIT_LABEL} на файл</span>
+            <Button type="button" size="sm" disabled={uploading != null} onClick={() => inputRef.current?.click()}>
+              <Upload className="size-3.5" aria-hidden />
+              {uploading ? "Загружаем…" : "Загрузить файл"}
+            </Button>
+            <input
+              ref={inputRef}
+              type="file"
+              className="sr-only"
+              aria-label="Файл для загрузки"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (file) void upload(file);
+              }}
+            />
+          </>
+        ) : null
       }
     >
       {files.length === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">
-          Файлов пока нет. Загрузите счёт, договор или упаковочный лист — до {DOCUMENT_FILE_LIMIT_LABEL}.
+          {editable
+            ? `Файлов пока нет. Загрузите счёт, договор или упаковочный лист — до ${DOCUMENT_FILE_LIMIT_LABEL}.`
+            : "Файлов пока нет."}
         </p>
       ) : (
         <ul className="divide-y divide-border/60">
@@ -139,20 +146,22 @@ export const CustomerOrderFilesTab = ({
                   <Download className="size-3.5" aria-hidden />
                   Скачать
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  aria-label={`Удалить ${file.name}`}
-                  onClick={() => {
-                    setDeleteError(null);
-                    setDeleting(file);
-                  }}
-                >
-                  <Trash2 className="size-3.5" aria-hidden />
-                  Удалить
-                </Button>
+                {editable ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    aria-label={`Удалить ${file.name}`}
+                    onClick={() => {
+                      setDeleteError(null);
+                      setDeleting(file);
+                    }}
+                  >
+                    <Trash2 className="size-3.5" aria-hidden />
+                    Удалить
+                  </Button>
+                ) : null}
               </li>
             );
           })}

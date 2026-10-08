@@ -63,6 +63,7 @@ export const OrderAmountInput = ({
   currencyCode,
   reload,
   variant = "field",
+  readOnly = false,
 }: {
   documentId: string;
   amount: number | null;
@@ -71,6 +72,7 @@ export const OrderAmountInput = ({
   reload: () => Promise<void>;
   /** `panel` — large ghost value that fits its text, for the customer-order header. */
   variant?: "field" | "meta" | "panel";
+  readOnly?: boolean;
 }) => {
   const [draft, setDraft] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -106,6 +108,7 @@ export const OrderAmountInput = ({
       inputMode="decimal"
       aria-label="Сумма заказа"
       disabled={pending}
+      readOnly={readOnly}
       value={shown}
       placeholder={
         variant === "field"
@@ -113,7 +116,9 @@ export const OrderAmountInput = ({
           : formatOrderMoney(estimated, currencyCode)
       }
       title={amount == null ? "Равна расчётной стоимости" : undefined}
-      onFocus={() => setDraft(formatMoneyInput(amount))}
+      onFocus={() => {
+        if (!readOnly) setDraft(formatMoneyInput(amount));
+      }}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {
@@ -134,6 +139,8 @@ export const OrderAmountInput = ({
           "-ml-2 w-full max-w-[14rem] border-transparent bg-transparent hover:border-border hover:bg-muted/50",
         variant === "panel" &&
           "-ml-2 h-9 w-auto max-w-[calc(100%+0.5rem)] border-transparent bg-transparent text-xl font-semibold tracking-tight [field-sizing:content] placeholder:font-semibold placeholder:text-foreground hover:border-border hover:bg-muted/50",
+        readOnly &&
+          "pointer-events-none border-transparent bg-transparent hover:border-transparent hover:bg-transparent",
       )}
     />
   );
@@ -452,12 +459,18 @@ export const OrderMoneyTab = ({
   context,
   reload,
   variant = "order",
+  editable = true,
+  showEstimate = true,
 }: {
   snapshot: LogisticsSnapshot;
   documentId: string;
   context: OrderMoneyContext;
   reload: () => Promise<void>;
   variant?: "order" | "transfer";
+  /** Currency, rates, amount and payments can be changed. */
+  editable?: boolean;
+  /** «Расчётная стоимость» cell and the rates button. */
+  showEstimate?: boolean;
 }) => {
   const texts = TEXTS[variant];
   const isTransfer = variant === "transfer";
@@ -517,36 +530,45 @@ export const OrderMoneyTab = ({
     <div className="flex flex-col gap-4">
       <DocumentSection title={texts.sectionTitle}>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCell label={texts.currencyLabel} hint={texts.currencyHint}>
-            <Select
-              items={currencyItems}
-              value={currencyCode}
-              onValueChange={(value) => {
-                if (!value || value === currencyCode) return;
-                void runLogisticsAction(
-                  () => setOrderCurrency(documentId, value),
-                  `${texts.currencyLabel} — ${value}`,
-                  reload,
-                );
-              }}
-            >
-              <SelectTrigger className="h-8 w-40 bg-background" aria-label={texts.currencyLabel}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {snapshotCodes.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {code}
-                      {nameByCode.get(code) ? ` · ${nameByCode.get(code)}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <Button type="button" size="sm" variant="outline" className="ml-2" onClick={() => setRatesOpen(true)}>
-              Курсы
-            </Button>
+          <SummaryCell label={texts.currencyLabel} hint={editable ? texts.currencyHint : undefined}>
+            {editable ? (
+              <Select
+                items={currencyItems}
+                value={currencyCode}
+                onValueChange={(value) => {
+                  if (!value || value === currencyCode) return;
+                  void runLogisticsAction(
+                    () => setOrderCurrency(documentId, value),
+                    `${texts.currencyLabel} — ${value}`,
+                    reload,
+                  );
+                }}
+              >
+                <SelectTrigger className="h-8 w-40 bg-background" aria-label={texts.currencyLabel}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {snapshotCodes.map((code) => (
+                      <SelectItem key={code} value={code}>
+                        {code}
+                        {nameByCode.get(code) ? ` · ${nameByCode.get(code)}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            ) : (
+              <span>
+                {currencyCode}
+                {nameByCode.get(currencyCode) ? ` · ${nameByCode.get(currencyCode)}` : ""}
+              </span>
+            )}
+            {editable && showEstimate ? (
+              <Button type="button" size="sm" variant="outline" className="ml-2" onClick={() => setRatesOpen(true)}>
+                Курсы
+              </Button>
+            ) : null}
           </SummaryCell>
           {isTransfer ? (
             <SummaryCell label="Оплачено" hint="Платежи со статусом «Оплачен» из всех платежей перемещения">
@@ -558,18 +580,27 @@ export const OrderMoneyTab = ({
           ) : null}
           {isTransfer ? null : (
             <>
-              <SummaryCell label="Расчётная стоимость" hint="Цены строк по снимку курсов заказа">
-                <span className="tabular-nums">{formatOrderMoney(summary.estimated, currencyCode)}</span>
-              </SummaryCell>
+              {showEstimate ? (
+                <SummaryCell label="Расчётная стоимость" hint="Цены строк по снимку курсов заказа">
+                  <span className="tabular-nums">{formatOrderMoney(summary.estimated, currencyCode)}</span>
+                </SummaryCell>
+              ) : null}
               <SummaryCell
                 label="Сумма заказа"
-                hint={money.amount == null ? "Пусто — равна расчётной" : "Очистите, чтобы вернуть расчётную"}
+                hint={
+                  !editable
+                    ? undefined
+                    : money.amount == null
+                      ? "Пусто — равна расчётной"
+                      : "Очистите, чтобы вернуть расчётную"
+                }
               >
                 <OrderAmountInput
                   documentId={documentId}
                   amount={money.amount}
                   estimated={summary.estimated}
                   currencyCode={currencyCode}
+                  readOnly={!editable}
                   reload={reload}
                 />
               </SummaryCell>
@@ -586,13 +617,15 @@ export const OrderMoneyTab = ({
       <DocumentSection
         title="Платежи"
         tools={
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setPaymentDraft(newPaymentDraft(isTransfer ? 0 : summary.rest))}
-          >
-            Добавить платёж
-          </Button>
+          editable ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setPaymentDraft(newPaymentDraft(isTransfer ? 0 : summary.rest))}
+            >
+              Добавить платёж
+            </Button>
+          ) : null
         }
       >
         {payments.length === 0 ? (
@@ -625,59 +658,67 @@ export const OrderMoneyTab = ({
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">{formatOrderMoney(payment.amount, currencyCode)}</td>
                     <td className="px-4 py-2">
-                      <Select
-                        items={PAYMENT_STATUSES.map((status) => ({ value: status, label: PAYMENT_STATUS_LABELS[status] }))}
-                        value={payment.status}
-                        disabled={statusPending === payment.id}
-                        onValueChange={(value) => {
-                          if (value) setStatus(payment, value as PaymentStatus);
-                        }}
-                      >
-                        <SelectTrigger
-                          className="-ml-2 h-8 w-auto gap-1.5 border-transparent bg-transparent px-2 shadow-none hover:border-border hover:bg-muted/50"
-                          aria-label="Статус платежа"
+                      {editable ? (
+                        <Select
+                          items={PAYMENT_STATUSES.map((status) => ({ value: status, label: PAYMENT_STATUS_LABELS[status] }))}
+                          value={payment.status}
+                          disabled={statusPending === payment.id}
+                          onValueChange={(value) => {
+                            if (value) setStatus(payment, value as PaymentStatus);
+                          }}
                         >
-                          <PaymentStatusPill status={payment.status} />
-                          <SelectValue className="sr-only" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {PAYMENT_STATUSES.map((status) => (
-                              <SelectItem key={status} value={status}>
-                                {PAYMENT_STATUS_LABELS[status]}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
+                          <SelectTrigger
+                            className="-ml-2 h-8 w-auto gap-1.5 border-transparent bg-transparent px-2 shadow-none hover:border-border hover:bg-muted/50"
+                            aria-label="Статус платежа"
+                          >
+                            <PaymentStatusPill status={payment.status} />
+                            <SelectValue className="sr-only" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {PAYMENT_STATUSES.map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {PAYMENT_STATUS_LABELS[status]}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <PaymentStatusPill status={payment.status} />
+                      )}
                     </td>
                     <td className="px-4 py-2 text-right whitespace-nowrap">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          setPaymentDraft({
-                            id: payment.id,
-                            dueOn: payment.dueOn,
-                            amount: formatMoneyInput(payment.amount),
-                            status: payment.status,
-                          })
-                        }
-                      >
-                        Изменить
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() =>
-                          void runLogisticsAction(() => deleteOrderPayment(payment.id), "Платёж удалён", reload)
-                        }
-                      >
-                        Удалить
-                      </Button>
+                      {editable ? (
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setPaymentDraft({
+                                id: payment.id,
+                                dueOn: payment.dueOn,
+                                amount: formatMoneyInput(payment.amount),
+                                status: payment.status,
+                              })
+                            }
+                          >
+                            Изменить
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() =>
+                              void runLogisticsAction(() => deleteOrderPayment(payment.id), "Платёж удалён", reload)
+                            }
+                          >
+                            Удалить
+                          </Button>
+                        </>
+                      ) : null}
                     </td>
                     <td aria-hidden />
                   </tr>
