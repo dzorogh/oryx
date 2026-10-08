@@ -56,8 +56,10 @@ import {
   mapPlantRows,
   mapWarehouseRows,
   plantColumns,
+  plantFilters,
   plantSortDefs,
   warehouseColumns,
+  warehouseFilters,
   warehouseGroupDefs,
   warehouseSortDefs,
 } from "@/features/logistics/ui/list/catalog-list-configs";
@@ -345,6 +347,9 @@ export const WarehousesPage = () => {
         toggleValue={typeFilter}
         onToggleChange={setTypeFilter}
         toggleAriaLabel="Тип склада"
+        filters={warehouseFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
 
       <DialogShell
@@ -608,6 +613,9 @@ export const PlantsPage = () => {
         isLoading={isLoading}
         error={error}
         search={{ value: search, onChange: setSearch, placeholder: "Поиск: код или название" }}
+        filters={plantFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
 
       <DialogShell

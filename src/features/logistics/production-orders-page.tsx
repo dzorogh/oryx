@@ -5,8 +5,6 @@ import { Factory } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -51,8 +49,21 @@ import {
   productionOrderSortDefs,
 } from "@/features/logistics/ui/list/document-list-configs";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
-import { formatEntityCode } from "@/lib/entity-codes";
-import { deadlineFilterMatch, matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
+import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
+import type { ListFilterDef } from "@/features/logistics/ui/list/list-filters";
+import {
+  authorFilter,
+  createdFilter,
+  DOCUMENT_STATUS_ORDER,
+  deadlineBucketFilter,
+  deadlineRangeFilter,
+  lineCountFilter,
+  placeCodeFilter,
+  productFilter,
+  quantityFilter,
+  statusOptions,
+} from "@/features/logistics/ui/list/list-filter-defs";
+import type { ProductionOrderListRow } from "@/features/logistics/logistics-list-types";
 import { matchDocumentParam, PRODUCTION_STATUSES, type ProductionStatus, type StockTransaction } from "@/features/logistics/logistics-types";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
@@ -87,13 +98,31 @@ const PRODUCTION_TOGGLE = [
   })),
 ];
 
+const isOpenProductionStatus = (status: string) => status !== "done" && status !== "closed" && status !== "cancelled";
+
+const productionOrderFilters: ListFilterDef<ProductionOrderListRow>[] = [
+  placeCodeFilter<ProductionOrderListRow>("plant", "Завод", "plant", (row) => row.plantId, { quick: true }),
+  productFilter<ProductionOrderListRow>((row) => row.products, { quick: true }),
+  {
+    kind: "multi",
+    id: "status",
+    label: "Статус",
+    options: statusOptions(PRODUCTION_STATUS_LABELS, DOCUMENT_STATUS_ORDER),
+    values: (row) => row.status,
+    optionLabel: (value) => PRODUCTION_STATUS_LABELS[value as ProductionStatus] ?? value,
+  },
+  deadlineBucketFilter<ProductionOrderListRow>(isOpenProductionStatus),
+  deadlineRangeFilter<ProductionOrderListRow>(),
+  createdFilter<ProductionOrderListRow>(),
+  authorFilter<ProductionOrderListRow>(),
+  quantityFilter<ProductionOrderListRow>((row) => row.products),
+  lineCountFilter<ProductionOrderListRow>((row) => row.products),
+];
+
 export const ProductionOrdersPage = () => {
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadProductionOrderList);
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [plantFilter, setPlantFilter] = useState(ALL_VALUE);
-  const [productFilter, setProductFilter] = useState(ALL_VALUE);
-  const [deadlineFilter, setDeadlineFilter] = useState<"all" | "overdue" | "week" | "none">("all");
   const [open, setOpen] = useState(false);
   const [plantId, setPlantId] = useState("");
   const [lines, setLines] = useState<Array<{ productId: string; quantity: string }>>([
@@ -103,32 +132,6 @@ export const ProductionOrdersPage = () => {
   const formStore = useLogisticsStore({ kind: "form", form: "production_order", enabled: open });
   const snapshot = formStore.snapshot;
 
-  const plantOptions = useMemo(() => {
-    const ids = [...new Set(listRows.map((row) => row.plantId).filter(Boolean))];
-    return ids
-      .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatEntityCode("plant", id) }));
-  }, [listRows]);
-
-  const productOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of listRows) {
-      for (const line of row.products) {
-        if (line.productId) ids.add(line.productId);
-      }
-    }
-    return [...ids].map((id) => {
-      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
-      return { value: id, label: line?.productName ?? id };
-    });
-  }, [listRows]);
-
-  const hasActiveFilters =
-    search.trim().length > 0 ||
-    plantFilter !== ALL_VALUE ||
-    productFilter !== ALL_VALUE ||
-    deadlineFilter !== "all";
-
   const rows = useMemo(
     () =>
       listRows.filter((item) => {
@@ -137,20 +140,9 @@ export const ProductionOrdersPage = () => {
           const q = search.trim().toLowerCase();
           if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
         }
-        if (plantFilter !== ALL_VALUE && item.plantId !== plantFilter) return false;
-        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
-        if (
-          !deadlineFilterMatch(
-            item.expectedEndOn,
-            deadlineFilter,
-            item.status !== "done" && item.status !== "closed" && item.status !== "cancelled",
-          )
-        ) {
-          return false;
-        }
         return true;
       }),
-    [deadlineFilter, listRows, plantFilter, productFilter, search, status],
+    [listRows, search, status],
   );
   const selectedProductIds = lines.map((line) => line.productId);
   const allowedPlantIds = plantIdsForProducts(
@@ -216,56 +208,9 @@ export const ProductionOrdersPage = () => {
         onToggleChange={setStatus}
         toggleAriaLabel="Статус заказа на производство"
         search={{ value: search, onChange: setSearch }}
-        quickControls={
-          <CatalogQuickSelectControl
-            value={plantFilter}
-            onValueChange={(value) => setPlantFilter(value ?? ALL_VALUE)}
-            ariaLabel="Быстрый фильтр по заводу"
-            placeholder="Завод"
-            allLabel="Все заводы"
-            options={plantOptions}
-            widthClassName="w-[120px] shrink-0 lg:w-[160px]"
-          />
-        }
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={() => {
-          setSearch("");
-          setPlantFilter(ALL_VALUE);
-          setProductFilter(ALL_VALUE);
-          setDeadlineFilter("all");
-        }}
-        filterSheet={
-          <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Товар</span>
-              <CatalogQuickSelectControl
-                value={productFilter}
-                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
-                ariaLabel="Фильтр по товару"
-                placeholder="Все товары"
-                allLabel="Все товары"
-                options={productOptions}
-                widthClassName="w-full"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Срок</span>
-              <CatalogQuickSelectControl
-                value={deadlineFilter}
-                onValueChange={(value) => setDeadlineFilter((value ?? "all") as typeof deadlineFilter)}
-                ariaLabel="Фильтр по сроку"
-                placeholder="Любой срок"
-                allLabel="Любой срок"
-                options={[
-                  { value: "overdue", label: "Просрочен" },
-                  { value: "week", label: "Ближайшие 7 дней" },
-                  { value: "none", label: "Без срока" },
-                ]}
-                widthClassName="w-full"
-              />
-            </label>
-          </>
-        }
+        filters={productionOrderFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
 
       <ProductionOrderCatalogDialog

@@ -1,12 +1,26 @@
 // english-ui:ignore-file
 "use client";
 
-import { useMemo, useState } from "react";
-import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
-import { DOCUMENT_TYPE_LABELS } from "@/features/logistics/logistics-labels";
-import type { DocumentType } from "@/features/logistics/logistics-types";
-import { DOCUMENT_TYPES } from "@/features/logistics/logistics-types";
+import { useCallback, useMemo, useState } from "react";
+import {
+  ASSIGNED_TO_LABEL,
+  DOCUMENT_TYPE_LABELS,
+  LEDGER_ASSIGNED_TO_KIND_LABELS,
+  STOCK_STATE_LABELS,
+  locationKindLabel,
+} from "@/features/logistics/logistics-labels";
+import { documentLabel, locationIdentity, ownerLabel, productById } from "@/features/logistics/logistics-lookups";
+import {
+  DOCUMENT_TYPES,
+  STOCK_STATES,
+  isFreeOwner,
+  isOutputDocumentKind,
+  type DocumentType,
+  type LocationType,
+  type LogisticsSnapshot,
+  type StockTransaction,
+} from "@/features/logistics/logistics-types";
+import type { ListFilterDef } from "@/features/logistics/ui/list/list-filters";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import {
   LEDGER_PAGE_SIZE,
@@ -36,47 +50,125 @@ const FLOW_TOGGLE = [
   { value: "out", label: "Расход" },
 ];
 
-const DOCUMENT_OPTIONS = DOCUMENT_TYPES.map((id) => ({ value: id, label: DOCUMENT_TYPE_LABELS[id] }));
+const documentKindKey = (kind: DocumentType): DocumentType => (isOutputDocumentKind(kind) ? "production_output" : kind);
+
+const DOCUMENT_KIND_OPTIONS = DOCUMENT_TYPES.filter((id) => id !== "output").map((id) => ({
+  value: id,
+  label: DOCUMENT_TYPE_LABELS[id],
+}));
+
+const ownerKey = (row: StockTransaction) =>
+  isFreeOwner(row.assignedToType, row.assignedToId) ? "free" : `${row.assignedToType}:${row.assignedToId}`;
+
+const ledgerFilters = (snapshot: LogisticsSnapshot): ListFilterDef<StockTransaction>[] => [
+  {
+    kind: "multi",
+    id: "documentKind",
+    label: "Документ",
+    placeholder: "Документ",
+    quick: true,
+    options: DOCUMENT_KIND_OPTIONS,
+    values: (row) => documentKindKey(row.documentType),
+  },
+  {
+    kind: "multi",
+    id: "product",
+    label: "Товар",
+    placeholder: "Товар",
+    quick: true,
+    searchable: true,
+    values: (row) => row.productId,
+    optionLabel: (value) => productById(snapshot, value)?.name ?? value,
+  },
+  {
+    kind: "multi",
+    id: "document",
+    label: "Номер документа",
+    searchable: true,
+    values: (row) => `${row.documentType}:${row.documentId}`,
+    optionLabel: (_value, row) => documentLabel(snapshot, row.documentType, row.documentId),
+  },
+  {
+    kind: "multi",
+    id: "location",
+    label: "Место",
+    searchable: true,
+    values: (row) => `${row.locationType}:${row.locationId}`,
+    optionLabel: (_value, row) => locationIdentity(snapshot, row.locationType, row.locationId).title,
+  },
+  {
+    kind: "multi",
+    id: "locationKind",
+    label: "Тип места",
+    values: (row) => {
+      const place = locationIdentity(snapshot, row.locationType, row.locationId);
+      return row.locationType === "warehouse" && place.isPlantWarehouse ? "plant_warehouse" : row.locationType;
+    },
+    optionLabel: (value) =>
+      value === "plant_warehouse" ? locationKindLabel("warehouse", true) : locationKindLabel(value as LocationType),
+  },
+  {
+    kind: "multi",
+    id: "assignedTo",
+    label: ASSIGNED_TO_LABEL,
+    searchable: true,
+    options: [{ value: "free", label: LEDGER_ASSIGNED_TO_KIND_LABELS.free }],
+    values: ownerKey,
+    optionLabel: (_value, row) => ownerLabel(snapshot, row.assignedToType, row.assignedToId),
+  },
+  {
+    kind: "multi",
+    id: "assignedToKind",
+    label: `${ASSIGNED_TO_LABEL}: тип`,
+    options: (["free", "order", "region"] as const).map((value) => ({
+      value,
+      label: LEDGER_ASSIGNED_TO_KIND_LABELS[value],
+    })),
+    values: (row) =>
+      isFreeOwner(row.assignedToType, row.assignedToId) || !row.assignedToType ? "free" : row.assignedToType,
+  },
+  {
+    kind: "multi",
+    id: "stockState",
+    label: "Состояние",
+    options: STOCK_STATES.map((value) => ({ value, label: STOCK_STATE_LABELS[value] })),
+    values: (row) => row.stockState,
+  },
+  { kind: "dateRange", id: "time", label: "Дата", value: (row) => row.createdAt },
+  { kind: "numberRange", id: "change", label: "Изменение", unit: "шт", signed: true, value: (row) => row.quantity },
+];
 
 export const LedgerPage = () => {
   const { snapshot, isLoading, error } = useLogisticsStore({ kind: "ledger" });
-  const [documentFilter, setDocumentFilter] = useState<string>(ALL_VALUE);
   const [search, setSearch] = useState("");
-  const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [flowFilter, setFlowFilter] = useState<"all" | "in" | "out">("all");
   const [page, setPage] = useState(1);
-
-  const productOptions = useMemo(() => {
-    const ids = [...new Set(snapshot.transactions.map((row) => row.productId))];
-    return ids
-      .map((id) => ({ value: id, label: snapshot.products.find((item) => item.id === id)?.name ?? id }))
-      .sort((left, right) => left.label.localeCompare(right.label, "ru"));
-  }, [snapshot.products, snapshot.transactions]);
+  const filters = useMemo(() => ledgerFilters(snapshot), [snapshot]);
+  const resetPage = useCallback(() => setPage(1), []);
 
   const filteredRows = useMemo(() => {
-    const baseFilter = (entry: { documentType: DocumentType; productId: string; quantity: number }) => {
-      if (documentFilter !== ALL_VALUE && entry.documentType !== documentFilter) return false;
-      if (productFilter !== ALL_VALUE && entry.productId !== productFilter) return false;
+    const baseFilter = (entry: StockTransaction) => {
       if (flowFilter === "in" && entry.quantity <= 0) return false;
       if (flowFilter === "out" && entry.quantity >= 0) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
         const product = snapshot.products.find((item) => item.id === entry.productId);
-        if (!(product?.name.toLowerCase().includes(q) || entry.productId.toLowerCase().includes(q))) return false;
+        if (
+          !(product?.name.toLowerCase().includes(q) || entry.productId.toLowerCase().includes(q)) &&
+          !documentLabel(snapshot, entry.documentType, entry.documentId).toLowerCase().includes(q)
+        ) {
+          return false;
+        }
       }
       return true;
     };
     return documentLedgerRows(snapshot.transactions, baseFilter);
-  }, [documentFilter, flowFilter, productFilter, search, snapshot.products, snapshot.transactions]);
+  }, [flowFilter, search, snapshot]);
 
-  const pagination = paginateLedgerRows(filteredRows, page, LEDGER_PAGE_SIZE);
-  const paginationItems = buildPaginationItems(pagination.visiblePage, pagination.totalPages);
-
-  const hasActiveFilters =
-    search.trim().length > 0 || productFilter !== ALL_VALUE || documentFilter !== ALL_VALUE;
-
-  const footer =
-    pagination.total > 0 ? (
+  const footer = (rows: StockTransaction[]) => {
+    const pagination = paginateLedgerRows(rows, page, LEDGER_PAGE_SIZE);
+    const paginationItems = buildPaginationItems(pagination.visiblePage, pagination.totalPages);
+    return pagination.total > 0 ? (
       <div className="flex flex-col gap-3 border-t border-border/60 px-3 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs text-muted-foreground">
           Показано {pagination.shownCount} из {pagination.total}
@@ -135,6 +227,7 @@ export const LedgerPage = () => {
         ) : null}
       </div>
     ) : null;
+  };
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Журнал" }]}>
@@ -158,47 +251,21 @@ export const LedgerPage = () => {
           setPage(1);
         }}
         toggleAriaLabel="Приход или расход"
-        quickControls={
-          <CatalogQuickSelectControl
-            value={documentFilter}
-            onValueChange={(value) => {
-              setDocumentFilter(value ?? ALL_VALUE);
-              setPage(1);
-            }}
-            ariaLabel="Фильтр по документу"
-            placeholder="Документ"
-            allLabel="Все документы"
-            options={DOCUMENT_OPTIONS}
-            widthClassName="w-[150px] shrink-0 lg:w-[176px]"
-          />
-        }
-        search={{ value: search, onChange: (value) => { setSearch(value); setPage(1); }, placeholder: "Поиск по товару" }}
-        hasActiveFilters={hasActiveFilters}
+        search={{
+          value: search,
+          onChange: (value) => {
+            setSearch(value);
+            setPage(1);
+          },
+          placeholder: "Поиск: товар, документ",
+        }}
+        filters={filters}
+        onFiltersChange={resetPage}
+        hasActiveFilters={search.trim().length > 0}
         onResetFilters={() => {
           setSearch("");
-          setProductFilter(ALL_VALUE);
-          setDocumentFilter(ALL_VALUE);
           setPage(1);
         }}
-        filterSheet={
-          <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Товар</span>
-              <CatalogQuickSelectControl
-                value={productFilter}
-                onValueChange={(value) => {
-                  setProductFilter(value ?? ALL_VALUE);
-                  setPage(1);
-                }}
-                ariaLabel="Фильтр по товару"
-                placeholder="Все товары"
-                allLabel="Все товары"
-                options={productOptions}
-                widthClassName="w-full"
-              />
-            </label>
-          </>
-        }
         footer={footer}
         emptyMessage={snapshot.transactions.length === 0 ? "Журнал пуст." : "Ничего не найдено"}
       />

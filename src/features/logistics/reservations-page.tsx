@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { loadReservationList } from "@/features/logistics/logistics-api";
 import { projectDocumentCancelGuidance } from "@/features/logistics/logistics-cancel-guidance";
@@ -17,7 +15,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ReservationCatalogDialog } from "@/features/logistics/ui/reservation-catalog-dialog";
-import { FREE_OWNER_LABEL, OWNER_TYPE_LABELS, RESERVATION_DIRECTION_LABELS, formatMetaTimestamp, formatQuantity } from "@/features/logistics/logistics-labels";
+import {
+  FREE_OWNER_LABEL,
+  LEDGER_ASSIGNED_TO_KIND_LABELS,
+  OWNER_TYPE_LABELS,
+  RESERVATION_DIRECTION_LABELS,
+  formatMetaTimestamp,
+  formatQuantity,
+  locationKindLabel,
+} from "@/features/logistics/logistics-labels";
 import { ownerLabel, productById } from "@/features/logistics/logistics-lookups";
 import { LocationLink } from "@/features/logistics/ui/location-link";
 import { ProductIdentity } from "@/features/logistics/ui/product-identity";
@@ -29,10 +35,21 @@ import {
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { LogisticsTableCard } from "@/features/logistics/ui/logistics-table-card";
 import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
+import type { ListFilterDef } from "@/features/logistics/ui/list/list-filters";
+import {
+  authorFilter,
+  createdFilter,
+  lineCountFilter,
+  productFilter,
+  quantityFilter,
+} from "@/features/logistics/ui/list/list-filter-defs";
+import type { ReservationListRow } from "@/features/logistics/logistics-list-types";
+import { holdOwnerBadge, holdPlace } from "@/features/logistics/ui/reservation-hold-list";
 import {
   isFreeOwner,
   matchDocumentParam,
   reservationDirection,
+  type OwnerType,
   type ReservationDirection,
 } from "@/features/logistics/logistics-types";
 import { buildDocumentTimeline } from "@/features/logistics/document-timeline";
@@ -58,6 +75,110 @@ const RESERVATION_TOGGLE = [
 const parseDirectionFilter = (value: string | null): "all" | ReservationDirection =>
   value === "reserve" || value === "release" || value === "reassign" ? value : "all";
 
+const FREE_KEY = "free";
+
+const ownerKey = (ownerType: OwnerType | null, ownerId: string | null) =>
+  isFreeOwner(ownerType, ownerId) ? FREE_KEY : `${ownerType}:${ownerId}`;
+
+const ownerKindKey = (ownerType: OwnerType | null, ownerId: string | null): OwnerType | "free" =>
+  isFreeOwner(ownerType, ownerId) || !ownerType ? "free" : ownerType;
+
+const OWNER_KIND_OPTIONS = (["free", "order", "region"] as const).map((value) => ({
+  value,
+  label: LEDGER_ASSIGNED_TO_KIND_LABELS[value],
+}));
+
+const RESERVATION_ORIGIN_LABELS: Record<string, string> = {
+  manual: "Вручную",
+  customer_order_close: "Закрытие заказа клиента",
+  production_order_close: "Закрытие заказа на производство",
+};
+
+const reservationFilters: ListFilterDef<ReservationListRow>[] = [
+  {
+    kind: "multi",
+    id: "place",
+    label: "Место",
+    placeholder: "Место",
+    quick: true,
+    searchable: true,
+    values: (row) => `${row.locationType}:${row.locationId}`,
+    optionLabel: (_value, row) => holdPlace(row).label,
+  },
+  {
+    kind: "multi",
+    id: "destination",
+    label: "Назначение",
+    placeholder: "Назначение",
+    quick: true,
+    searchable: true,
+    options: [{ value: FREE_KEY, label: FREE_OWNER_LABEL }],
+    values: (row) => ownerKey(row.toOwnerType, row.toOwnerId),
+    optionLabel: (_value, row) => holdOwnerBadge(row.toOwnerType, row.toOwnerId, row.toOwnerNumber).label,
+  },
+  productFilter<ReservationListRow>((row) => row.lines),
+  {
+    kind: "multi",
+    id: "placeKind",
+    label: "Тип места",
+    options: [
+      { value: "warehouse", label: locationKindLabel("warehouse") },
+      { value: "plant_warehouse", label: locationKindLabel("warehouse", true) },
+      { value: "production_order", label: locationKindLabel("production_order") },
+      { value: "transfer", label: locationKindLabel("transfer") },
+    ],
+    values: (row) =>
+      row.locationType === "warehouse" && row.locationIsPlantWarehouse ? "plant_warehouse" : row.locationType,
+  },
+  {
+    kind: "multi",
+    id: "destinationKind",
+    label: "Тип назначения",
+    options: OWNER_KIND_OPTIONS,
+    values: (row) => ownerKindKey(row.toOwnerType, row.toOwnerId),
+  },
+  {
+    kind: "multi",
+    id: "source",
+    label: "Источник",
+    searchable: true,
+    options: [{ value: FREE_KEY, label: FREE_OWNER_LABEL }],
+    values: (row) => row.lines.map((line) => ownerKey(line.fromOwnerType, line.fromOwnerId)),
+    optionLabel: (value, row) => {
+      const line = row.lines.find((item) => ownerKey(item.fromOwnerType, item.fromOwnerId) === value);
+      return line ? holdOwnerBadge(line.fromOwnerType, line.fromOwnerId, line.fromOwnerNumber).label : value;
+    },
+  },
+  {
+    kind: "multi",
+    id: "sourceKind",
+    label: "Тип источника",
+    options: OWNER_KIND_OPTIONS,
+    values: (row) => row.lines.map((line) => ownerKindKey(line.fromOwnerType, line.fromOwnerId)),
+  },
+  {
+    kind: "multi",
+    id: "operation",
+    label: "Операция",
+    options: (["reserve", "release", "reassign"] as const).map((value) => ({
+      value,
+      label: RESERVATION_DIRECTION_LABELS[value],
+    })),
+    values: (row) => row.direction,
+  },
+  {
+    kind: "multi",
+    id: "origin",
+    label: "Как создан",
+    options: Object.entries(RESERVATION_ORIGIN_LABELS).map(([value, label]) => ({ value, label })),
+    values: (row) => row.creationSource || "manual",
+  },
+  createdFilter<ReservationListRow>(),
+  authorFilter<ReservationListRow>(),
+  quantityFilter<ReservationListRow>((row) => row.lines),
+  lineCountFilter<ReservationListRow>((row) => row.lines),
+];
+
 export const ReservationsPage = () => {
   const { rows, isLoading, error, reload } = useLogisticsList(loadReservationList);
   const searchParams = useSearchParams();
@@ -65,25 +186,9 @@ export const ReservationsPage = () => {
     parseDirectionFilter(searchParams.get("operation")),
   );
   const [search, setSearch] = useState("");
-  const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
   const [reserveDirection, setReserveDirection] = useState<ReservationDirection>("reserve");
   const formStore = useLogisticsStore({ kind: "form", form: "reservation", enabled: open });
-
-  const productOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of rows) {
-      for (const line of row.lines) {
-        if (line.productId) ids.add(line.productId);
-      }
-    }
-    return [...ids].map((id) => {
-      const line = rows.flatMap((row) => row.lines).find((item) => item.productId === id);
-      return { value: id, label: line?.productName ?? id };
-    });
-  }, [rows]);
-
-  const hasActiveFilters = search.trim().length > 0 || productFilter !== ALL_VALUE;
 
   const visible = useMemo(
     () =>
@@ -96,12 +201,19 @@ export const ReservationsPage = () => {
             quantity: line.quantity,
             productName: line.productName,
           }));
-          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(products, q)) return false;
+          if (
+            !item.number.toLowerCase().includes(q) &&
+            !item.description.toLowerCase().includes(q) &&
+            !(item.toOwnerNumber ?? "").toLowerCase().includes(q) &&
+            !(item.locationNumber ?? "").toLowerCase().includes(q) &&
+            !matchesProductSearch(products, q)
+          ) {
+            return false;
+          }
         }
-        if (productFilter !== ALL_VALUE && !item.lines.some((line) => line.productId === productFilter)) return false;
         return true;
       }),
-    [direction, productFilter, rows, search],
+    [direction, rows, search],
   );
 
   return (
@@ -136,28 +248,10 @@ export const ReservationsPage = () => {
         toggleValue={direction}
         onToggleChange={(value) => setDirection(value as "all" | ReservationDirection)}
         toggleAriaLabel="Операция резерва"
-        search={{ value: search, onChange: setSearch }}
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={() => {
-          setSearch("");
-          setProductFilter(ALL_VALUE);
-        }}
-        filterSheet={
-          <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Товар</span>
-              <CatalogQuickSelectControl
-                value={productFilter}
-                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
-                ariaLabel="Фильтр по товару"
-                placeholder="Все товары"
-                allLabel="Все товары"
-                options={productOptions}
-                widthClassName="w-full"
-              />
-            </label>
-          </>
-        }
+        search={{ value: search, onChange: setSearch, placeholder: "Поиск: номер, заказ, товар" }}
+        filters={reservationFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
       <ReservationCatalogDialog
         snapshot={formStore.snapshot}

@@ -4,12 +4,15 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { ListColumnsSheet } from "./list-columns-sheet";
+import { ListActiveFilterChips, ListFilterFields, ListQuickFilters } from "./list-filter-controls";
+import type { ListFilterDef } from "./list-filters";
 import { ListFiltersSheet } from "./list-filters-sheet";
 import { ListTable } from "./list-table";
 import { ListToolbar } from "./list-toolbar";
 import { ListGroupMenu, ListSortMenu } from "./list-view-menu";
 import type { ListColumnDef, ListGroupDef, ListSortDef, ListSortState, ListToggleOption } from "./list-types";
 import { sumProductQuantities } from "./list-view-state";
+import { useListFilters } from "./use-list-filters";
 import { useListView } from "./use-list-view";
 
 type LogisticsListPageContentProps<TRow> = {
@@ -33,17 +36,26 @@ type LogisticsListPageContentProps<TRow> = {
   toggleAriaLabel?: string;
   search?: { value: string; onChange: (value: string) => void; placeholder?: string };
   quickControls?: ReactNode;
+  /** Declarative filters: rendered in the sheet (and toolbar when `quick`), applied after `rows`. */
+  filters?: ListFilterDef<TRow>[];
+  /** Called whenever a declarative filter changes, e.g. to reset pagination. */
+  onFiltersChange?: () => void;
+  /** Extra custom fields rendered in the filter sheet after `filters`. */
   filterSheet?: ReactNode;
+  /** Page-level filters (search, custom fields) are active. */
   hasActiveFilters?: boolean;
   onResetFilters?: () => void;
   /** Defaults to the sum of `products` / `lines` quantities when the row has them. */
   groupQuantity?: ((row: TRow) => number | null) | null;
   groupUnitLabel?: string;
-  footer?: ReactNode;
+  /** A function receives rows after all filters and sorting, before `paginate`. */
+  footer?: ReactNode | ((rows: TRow[]) => ReactNode);
   emptyMessage?: string;
   /** Receives rows after filtering and sorting, e.g. for pagination. Return the rows to render. */
   paginate?: (rows: TRow[]) => TRow[];
 };
+
+const NO_FILTERS: never[] = [];
 
 const lineQuantity = (row: unknown): number | null => {
   const record = row as { products?: Array<{ quantity: number }>; lines?: Array<{ quantity: number }> };
@@ -72,6 +84,8 @@ export const LogisticsListPageContent = <TRow,>({
   toggleAriaLabel,
   search,
   quickControls,
+  filters = NO_FILTERS,
+  onFiltersChange,
   filterSheet,
   hasActiveFilters = false,
   onResetFilters,
@@ -84,9 +98,17 @@ export const LogisticsListPageContent = <TRow,>({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [columnsOpen, setColumnsOpen] = useState(false);
 
+  const filterState = useListFilters(filters, rows, onFiltersChange);
   const view = useListView({ listId, columns, sortDefs, groupDefs, defaultSort });
-  const sorted = view.applySortedRows(rows);
+  const sorted = view.applySortedRows(filterState.filteredRows);
   const visible = paginate ? paginate(sorted) : sorted;
+
+  const anyActive = hasActiveFilters || filterState.activeCount > 0;
+  const resetAll = () => {
+    filterState.reset();
+    onResetFilters?.();
+  };
+  const hasSheet = filters.length > 0 || Boolean(filterSheet);
 
   return (
     <>
@@ -100,17 +122,24 @@ export const LogisticsListPageContent = <TRow,>({
         onToggleChange={onToggleChange}
         toggleAriaLabel={toggleAriaLabel}
         search={search}
-        quickControls={quickControls}
+        quickControls={
+          <>
+            <ListQuickFilters filters={filterState} />
+            {quickControls}
+          </>
+        }
         viewControls={
           <>
             <ListSortMenu view={view} />
             {groupDefs.length > 0 ? <ListGroupMenu view={view} groupDefs={groupDefs} /> : null}
           </>
         }
-        filtersActive={hasActiveFilters}
+        filtersActive={anyActive}
+        filtersCount={filterState.activeCount}
         columnsActive={view.hasCustomColumns}
-        onOpenFilters={filterSheet ? () => setFiltersOpen(true) : undefined}
+        onOpenFilters={hasSheet ? () => setFiltersOpen(true) : undefined}
         onOpenColumns={() => setColumnsOpen(true)}
+        activeFilters={<ListActiveFilterChips filters={filterState} onResetAll={resetAll} />}
       />
 
       {isLoading ? <LogisticsLoading /> : null}
@@ -126,19 +155,15 @@ export const LogisticsListPageContent = <TRow,>({
           rowHref={rowHref}
           groupQuantity={groupQuantity ?? undefined}
           groupUnitLabel={groupUnitLabel}
-          onResetFilters={hasActiveFilters ? onResetFilters : undefined}
-          footer={footer}
+          onResetFilters={anyActive ? resetAll : undefined}
+          footer={typeof footer === "function" ? footer(sorted) : footer}
           emptyMessage={emptyMessage}
         />
       ) : null}
 
-      {filterSheet ? (
-        <ListFiltersSheet
-          open={filtersOpen}
-          onOpenChange={setFiltersOpen}
-          hasActive={hasActiveFilters}
-          onReset={onResetFilters}
-        >
+      {hasSheet ? (
+        <ListFiltersSheet open={filtersOpen} onOpenChange={setFiltersOpen} hasActive={anyActive} onReset={resetAll}>
+          <ListFilterFields filters={filterState} />
           {filterSheet}
         </ListFiltersSheet>
       ) : null}

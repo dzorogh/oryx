@@ -25,29 +25,42 @@ type ListToolbarProps = {
   /** Sort and group menus, rendered before the filter and column buttons. */
   viewControls?: ReactNode;
   filtersActive?: boolean;
+  /** Number of active sheet filters, shown on the filter button. */
+  filtersCount?: number;
   columnsActive?: boolean;
   onOpenFilters?: () => void;
   onOpenColumns?: () => void;
+  /** Chips of active filters, rendered as the last toolbar row. */
+  activeFilters?: ReactNode;
 };
 
 const IconButton = ({
   label,
   active,
   onClick,
+  count = 0,
   children,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  count?: number;
   children: ReactNode;
 }) => (
   <Tooltip>
     <TooltipTrigger
       render={
-        <Button type="button" variant={active ? "default" : "outline"} size="icon" aria-label={label} onClick={onClick} />
+        <Button
+          type="button"
+          variant={active ? "default" : "outline"}
+          size={count > 0 ? "default" : "icon"}
+          aria-label={count > 0 ? `${label}: ${count}` : label}
+          onClick={onClick}
+        />
       }
     >
       {children}
+      {count > 0 ? <span className="tabular-nums">{count}</span> : null}
     </TooltipTrigger>
     <TooltipContent side="bottom">{label}</TooltipContent>
   </Tooltip>
@@ -67,9 +80,11 @@ export const ListToolbar = ({
   quickControls,
   viewControls,
   filtersActive = false,
+  filtersCount = 0,
   columnsActive = false,
   onOpenFilters,
   onOpenColumns,
+  activeFilters,
 }: ListToolbarProps) => (
   <Card size="sm" className="ring-1 ring-[var(--corportal-border-grey)]">
     <CardHeader className="gap-0 space-y-2 pb-0">
@@ -130,7 +145,7 @@ export const ListToolbar = ({
           <div className="ml-auto flex items-center gap-2">
             {viewControls}
             {onOpenFilters ? (
-              <IconButton label="Фильтры" active={filtersActive} onClick={onOpenFilters}>
+              <IconButton label="Фильтры" active={filtersActive} count={filtersCount} onClick={onOpenFilters}>
                 <SlidersHorizontal aria-hidden />
               </IconButton>
             ) : null}
@@ -141,6 +156,7 @@ export const ListToolbar = ({
             ) : null}
           </div>
         </div>
+        {activeFilters}
       </TooltipProvider>
     </CardHeader>
   </Card>

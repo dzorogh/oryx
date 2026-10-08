@@ -28,9 +28,9 @@ export const ListFiltersSheet = ({
         <SheetDescription className="sr-only">Параметры отбора строк списка</SheetDescription>
       </SheetHeader>
 
-      <div className="grid gap-4 pb-4">{children}</div>
+      <div className="-mx-4 grid min-h-0 flex-1 content-start gap-4 overflow-y-auto px-4 pb-4">{children}</div>
 
-      <SheetFooter className="border-t bg-muted/30">
+      <SheetFooter className="mt-0 border-t bg-muted/30">
         {hasActive && onReset ? (
           <Button type="button" variant="ghost" size="sm" onClick={onReset} aria-label="Сбросить фильтры">
             <X aria-hidden className="size-3.5" />

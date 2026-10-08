@@ -5,8 +5,6 @@ import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { completeTransfer, createAndSendTransfer, loadTransferList, updateExpectedEnd } from "@/features/logistics/logistics-api";
@@ -29,7 +27,20 @@ import {
   transferSortDefs,
 } from "@/features/logistics/ui/list/document-list-configs";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
-import { deadlineFilterMatch, matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
+import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
+import type { ListFilterDef } from "@/features/logistics/ui/list/list-filters";
+import {
+  authorFilter,
+  createdFilter,
+  deadlineBucketFilter,
+  deadlineRangeFilter,
+  lineCountFilter,
+  placeCodeFilter,
+  productFilter,
+  quantityFilter,
+  statusOptions,
+} from "@/features/logistics/ui/list/list-filter-defs";
+import type { TransferListRow } from "@/features/logistics/logistics-list-types";
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
 import {
@@ -68,34 +79,55 @@ const TRANSFER_TOGGLE = [
   { value: "cancelled", label: "Отменён" },
 ];
 
+const isOpenTransferStatus = (status: string) => status === "draft" || status === "in_progress" || status === "sent";
+
+const transferStatusKey = (status: string) =>
+  status === "in_progress" ? "sent" : status === "done" ? "delivered" : status;
+
+const transferFilters: ListFilterDef<TransferListRow>[] = [
+  placeCodeFilter<TransferListRow>("from", "Откуда", "warehouse", (row) => row.fromWarehouseId, { quick: true }),
+  placeCodeFilter<TransferListRow>("to", "Куда", "warehouse", (row) => row.toWarehouseId, { quick: true }),
+  {
+    kind: "multi",
+    id: "route",
+    label: "Маршрут",
+    searchable: true,
+    values: (row) => `${row.fromWarehouseId}:${row.toWarehouseId}`,
+    optionLabel: (_value, row) =>
+      `${formatEntityCode("warehouse", row.fromWarehouseId)} → ${formatEntityCode("warehouse", row.toWarehouseId)}`,
+  },
+  {
+    kind: "multi",
+    id: "anyWarehouse",
+    label: "Склад (откуда или куда)",
+    optionSort: "number",
+    values: (row) => [row.fromWarehouseId, row.toWarehouseId],
+    optionLabel: (value) => formatEntityCode("warehouse", value),
+  },
+  productFilter<TransferListRow>((row) => row.products),
+  {
+    kind: "multi",
+    id: "status",
+    label: "Статус",
+    options: statusOptions(TRANSFER_STATUS_LABELS, ["draft", "sent", "delivered", "cancelled"]),
+    values: (row) => transferStatusKey(row.status),
+  },
+  deadlineBucketFilter<TransferListRow>(isOpenTransferStatus),
+  deadlineRangeFilter<TransferListRow>(),
+  createdFilter<TransferListRow>(),
+  authorFilter<TransferListRow>(),
+  quantityFilter<TransferListRow>((row) => row.products),
+  lineCountFilter<TransferListRow>((row) => row.products),
+];
+
 export const TransfersPage = () => {
   const router = useRouter();
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadTransferList);
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [fromFilter, setFromFilter] = useState(ALL_VALUE);
-  const [toFilter, setToFilter] = useState(ALL_VALUE);
-  const [deadlineFilter, setDeadlineFilter] = useState<"all" | "overdue" | "week" | "none">("all");
   const [open, setOpen] = useState(false);
   const formStore = useLogisticsStore({ kind: "form", form: "transfer", enabled: open });
   const snapshot = formStore.snapshot;
-
-  const warehouseOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of listRows) {
-      ids.add(row.fromWarehouseId);
-      ids.add(row.toWarehouseId);
-    }
-    return [...ids]
-      .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatEntityCode("warehouse", id) }));
-  }, [listRows]);
-
-  const hasActiveFilters =
-    search.trim().length > 0 ||
-    fromFilter !== ALL_VALUE ||
-    toFilter !== ALL_VALUE ||
-    deadlineFilter !== "all";
 
   const rows = useMemo(
     () =>
@@ -109,20 +141,9 @@ export const TransfersPage = () => {
           const q = search.trim().toLowerCase();
           if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
         }
-        if (fromFilter !== ALL_VALUE && item.fromWarehouseId !== fromFilter) return false;
-        if (toFilter !== ALL_VALUE && item.toWarehouseId !== toFilter) return false;
-        if (
-          !deadlineFilterMatch(
-            item.expectedEndOn,
-            deadlineFilter,
-            item.status === "draft" || item.status === "in_progress" || item.status === "sent",
-          )
-        ) {
-          return false;
-        }
         return true;
       }),
-    [deadlineFilter, fromFilter, listRows, search, status, toFilter],
+    [listRows, search, status],
   );
 
   const create = async (
@@ -176,53 +197,9 @@ export const TransfersPage = () => {
         onToggleChange={setStatus}
         toggleAriaLabel="Статус перемещения"
         search={{ value: search, onChange: setSearch }}
-        quickControls={
-          <>
-            <CatalogQuickSelectControl
-              value={fromFilter}
-              onValueChange={(value) => setFromFilter(value ?? ALL_VALUE)}
-              ariaLabel="Быстрый фильтр: откуда"
-              placeholder="Откуда"
-              allLabel="Любой склад"
-              options={warehouseOptions}
-              widthClassName="w-[120px] shrink-0 lg:w-[140px]"
-            />
-            <CatalogQuickSelectControl
-              value={toFilter}
-              onValueChange={(value) => setToFilter(value ?? ALL_VALUE)}
-              ariaLabel="Быстрый фильтр: куда"
-              placeholder="Куда"
-              allLabel="Любой склад"
-              options={warehouseOptions}
-              widthClassName="w-[120px] shrink-0 lg:w-[140px]"
-            />
-          </>
-        }
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={() => {
-          setSearch("");
-          setFromFilter(ALL_VALUE);
-          setToFilter(ALL_VALUE);
-          setDeadlineFilter("all");
-        }}
-        filterSheet={
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Срок</span>
-            <CatalogQuickSelectControl
-              value={deadlineFilter}
-              onValueChange={(value) => setDeadlineFilter((value ?? "all") as typeof deadlineFilter)}
-              ariaLabel="Фильтр по сроку"
-              placeholder="Любой срок"
-              allLabel="Любой срок"
-              options={[
-                { value: "overdue", label: "Просрочен" },
-                { value: "week", label: "Ближайшие 7 дней" },
-                { value: "none", label: "Без срока" },
-              ]}
-              widthClassName="w-full"
-            />
-          </label>
-        }
+        filters={transferFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
 
       <TransferCreateDialog

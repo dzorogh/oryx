@@ -4,8 +4,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CreateOutputDialog } from "@/features/logistics/ui/create-output-dialog";
@@ -48,6 +46,7 @@ import {
   formatSignedQuantity,
   formatMetaTimestamp,
   OUTPUT_STATUS_LABELS,
+  SHIPMENT_DIRECTION_LABELS,
   signedQuantityClassName,
 } from "@/features/logistics/logistics-labels";
 import {
@@ -107,6 +106,18 @@ import { HIGHLIGHT_ROW_CLASS, takeHighlightedRows } from "@/features/logistics/u
 import { OutputReleaseDialog, type OutputReleaseTarget } from "@/features/logistics/ui/output-release-dialog";
 import { OutputReserveDialog, type OutputReserveTarget } from "@/features/logistics/ui/output-reserve-dialog";
 import { matchesProductSearch } from "@/features/logistics/ui/list/list-helpers";
+import type { ListFilterDef } from "@/features/logistics/ui/list/list-filters";
+import {
+  authorFilter,
+  createdFilter,
+  deadlineBucketFilter,
+  deadlineRangeFilter,
+  lineCountFilter,
+  placeCodeFilter,
+  productFilter,
+  quantityFilter,
+} from "@/features/logistics/ui/list/list-filter-defs";
+import type { AdjustmentListRow, OutputListRow, ShipmentListRow } from "@/features/logistics/logistics-list-types";
 import { runLogisticsAction } from "@/features/logistics/ui/run-action";
 import { DocumentStatusBadge, OutputStatusBadge, ShipmentDirectionBadge } from "@/features/logistics/ui/status-badge";
 import {
@@ -134,6 +145,103 @@ const ADJUSTMENT_TOGGLE = [
   { value: "increase", label: ADJUSTMENT_OPERATION_LABELS.increase },
   { value: "write_off", label: ADJUSTMENT_OPERATION_LABELS.write_off },
   { value: "mixed", label: ADJUSTMENT_OPERATION_LABELS.mixed },
+];
+
+const NO_ORDER = "—";
+
+const shipmentRowWarehouseId = (row: ShipmentListRow) =>
+  row.fromLocationType === "warehouse" ? row.fromLocationId : row.toLocationType === "warehouse" ? row.toLocationId : "";
+
+const shipmentFilters: ListFilterDef<ShipmentListRow>[] = [
+  placeCodeFilter<ShipmentListRow>("warehouse", "Склад", "warehouse", shipmentRowWarehouseId, { quick: true }),
+  {
+    kind: "multi",
+    id: "customerOrder",
+    label: "Заказ клиента",
+    placeholder: "Заказ клиента",
+    quick: true,
+    searchable: true,
+    options: [{ value: NO_ORDER, label: "Без заказа" }],
+    values: (row) => row.customerOrderId || NO_ORDER,
+    optionLabel: (value, row) => row.customerOrderNumber || value,
+  },
+  productFilter<ShipmentListRow>((row) => row.products),
+  {
+    kind: "multi",
+    id: "direction",
+    label: "Тип",
+    options: [
+      { value: "shipment", label: SHIPMENT_DIRECTION_LABELS.shipment },
+      { value: "return", label: SHIPMENT_DIRECTION_LABELS.return },
+    ],
+    values: (row) => row.direction,
+  },
+  createdFilter<ShipmentListRow>("Дата"),
+  authorFilter<ShipmentListRow>(),
+  quantityFilter<ShipmentListRow>((row) => row.products),
+  lineCountFilter<ShipmentListRow>((row) => row.products),
+];
+
+const adjustmentFilters: ListFilterDef<AdjustmentListRow>[] = [
+  placeCodeFilter<AdjustmentListRow>("warehouse", "Склад", "warehouse", (row) => row.warehouseId, { quick: true }),
+  productFilter<AdjustmentListRow>((row) => row.products, { quick: true }),
+  {
+    kind: "multi",
+    id: "operation",
+    label: "Операция",
+    options: (["increase", "decrease", "write_off", "mixed"] as const).map((value) => ({
+      value,
+      label: ADJUSTMENT_OPERATION_LABELS[value],
+    })),
+    values: (row) => row.operation,
+  },
+  {
+    kind: "numberRange",
+    id: "change",
+    label: "Изменение",
+    unit: "шт",
+    signed: true,
+    value: (row) => row.signedQuantity,
+  },
+  createdFilter<AdjustmentListRow>("Дата"),
+  authorFilter<AdjustmentListRow>(),
+  lineCountFilter<AdjustmentListRow>((row) => row.products),
+  {
+    kind: "flag",
+    id: "hasDescription",
+    label: "С описанием",
+    description: "Указана причина корректировки",
+    match: (row) => row.description.trim().length > 0,
+  },
+];
+
+const isOpenOutputStatus = (status: string) => status !== "done" && status !== "cancelled";
+
+const outputFilters: ListFilterDef<OutputListRow>[] = [
+  placeCodeFilter<OutputListRow>("plant", "Завод", "plant", (row) => row.plantId, { quick: true }),
+  {
+    kind: "multi",
+    id: "productionOrder",
+    label: "Заказ на производство",
+    placeholder: "Заказ на производство",
+    searchable: true,
+    values: (row) => row.productionOrderId,
+    optionLabel: (value, row) => row.productionOrderNumber || value,
+  },
+  productFilter<OutputListRow>((row) => row.products, { quick: true }),
+  {
+    kind: "multi",
+    id: "status",
+    label: "Статус",
+    options: OUTPUT_STATUSES.map((value) => ({ value, label: OUTPUT_STATUS_LABELS[value] })),
+    values: (row) => row.status,
+  },
+  deadlineBucketFilter<OutputListRow>(isOpenOutputStatus),
+  deadlineRangeFilter<OutputListRow>(),
+  createdFilter<OutputListRow>(),
+  authorFilter<OutputListRow>(),
+  quantityFilter<OutputListRow>((row) => row.products),
+  lineCountFilter<OutputListRow>((row) => row.products),
 ];
 
 export const ShipmentsPage = () => {
@@ -165,47 +273,6 @@ export const ShipmentsPage = () => {
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
   const [search, setSearch] = useState("");
-  const [warehouseFilter, setWarehouseFilter] = useState(ALL_VALUE);
-  const [orderFilter, setOrderFilter] = useState(ALL_VALUE);
-  const [productFilter, setProductFilter] = useState(ALL_VALUE);
-
-  const warehouseOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of listRows) {
-      if (row.fromLocationType === "warehouse") ids.add(row.fromLocationId);
-      if (row.toLocationType === "warehouse") ids.add(row.toLocationId);
-    }
-    return [...ids]
-      .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatEntityCode("warehouse", id) }));
-  }, [listRows]);
-
-  const orderOptions = useMemo(() => {
-    const ids = [...new Set(listRows.map((row) => row.customerOrderId).filter(Boolean))];
-    return ids.map((id) => {
-      const row = listRows.find((item) => item.customerOrderId === id);
-      return { value: id, label: row?.customerOrderNumber ?? id };
-    });
-  }, [listRows]);
-
-  const productOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of listRows) {
-      for (const line of row.products) {
-        if (line.productId) ids.add(line.productId);
-      }
-    }
-    return [...ids].map((id) => {
-      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
-      return { value: id, label: line?.productName ?? id };
-    });
-  }, [listRows]);
-
-  const hasActiveFilters =
-    search.trim().length > 0 ||
-    warehouseFilter !== ALL_VALUE ||
-    orderFilter !== ALL_VALUE ||
-    productFilter !== ALL_VALUE;
 
   const rows = useMemo(
     () =>
@@ -213,22 +280,17 @@ export const ShipmentsPage = () => {
         if (direction !== "all" && item.direction !== direction) return false;
         if (search.trim()) {
           const q = search.trim().toLowerCase();
-          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
+          if (
+            !item.number.toLowerCase().includes(q) &&
+            !item.customerOrderNumber.toLowerCase().includes(q) &&
+            !matchesProductSearch(item.products, q)
+          ) {
+            return false;
+          }
         }
-        if (warehouseFilter !== ALL_VALUE) {
-          const wh =
-            item.fromLocationType === "warehouse"
-              ? item.fromLocationId
-              : item.toLocationType === "warehouse"
-                ? item.toLocationId
-                : "";
-          if (wh !== warehouseFilter) return false;
-        }
-        if (orderFilter !== ALL_VALUE && item.customerOrderId !== orderFilter) return false;
-        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
         return true;
       }),
-    [direction, listRows, orderFilter, productFilter, search, warehouseFilter],
+    [direction, listRows, search],
   );
 
   return (
@@ -260,53 +322,10 @@ export const ShipmentsPage = () => {
         toggleValue={direction}
         onToggleChange={(value) => setDirectionFilter(value as "all" | ShipmentDirection)}
         toggleAriaLabel="Тип документа"
-        search={{ value: search, onChange: setSearch }}
-        quickControls={
-          <CatalogQuickSelectControl
-            value={warehouseFilter}
-            onValueChange={(value) => setWarehouseFilter(value ?? ALL_VALUE)}
-            ariaLabel="Быстрый фильтр по складу"
-            placeholder="Склад"
-            allLabel="Все склады"
-            options={warehouseOptions}
-            widthClassName="w-[120px] shrink-0 lg:w-[140px]"
-          />
-        }
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={() => {
-          setSearch("");
-          setWarehouseFilter(ALL_VALUE);
-          setOrderFilter(ALL_VALUE);
-          setProductFilter(ALL_VALUE);
-        }}
-        filterSheet={
-          <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Заказ клиента</span>
-              <CatalogQuickSelectControl
-                value={orderFilter}
-                onValueChange={(value) => setOrderFilter(value ?? ALL_VALUE)}
-                ariaLabel="Фильтр по заказу"
-                placeholder="Все заказы"
-                allLabel="Все заказы"
-                options={orderOptions}
-                widthClassName="w-full"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Товар</span>
-              <CatalogQuickSelectControl
-                value={productFilter}
-                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
-                ariaLabel="Фильтр по товару"
-                placeholder="Все товары"
-                allLabel="Все товары"
-                options={productOptions}
-                widthClassName="w-full"
-              />
-            </label>
-          </>
-        }
+        search={{ value: search, onChange: setSearch, placeholder: "Поиск: номер, заказ, товар" }}
+        filters={shipmentFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
       <ShipmentCatalogDialog
         snapshot={formStore.snapshot}
@@ -568,33 +587,8 @@ export const AdjustmentsPage = () => {
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadAdjustmentList);
   const [operation, setOperation] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [warehouseFilter, setWarehouseFilter] = useState(ALL_VALUE);
-  const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [open, setOpen] = useState(false);
   const formStore = useLogisticsStore({ kind: "form", form: "adjustment", enabled: open });
-
-  const warehouseOptions = useMemo(() => {
-    const ids = [...new Set(listRows.map((row) => row.warehouseId).filter(Boolean))];
-    return ids
-      .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatEntityCode("warehouse", id) }));
-  }, [listRows]);
-
-  const productOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of listRows) {
-      for (const line of row.products) {
-        if (line.productId) ids.add(line.productId);
-      }
-    }
-    return [...ids].map((id) => {
-      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
-      return { value: id, label: line?.productName ?? id };
-    });
-  }, [listRows]);
-
-  const hasActiveFilters =
-    search.trim().length > 0 || warehouseFilter !== ALL_VALUE || productFilter !== ALL_VALUE;
 
   const rows = useMemo(
     () =>
@@ -610,11 +604,9 @@ export const AdjustmentsPage = () => {
             return false;
           }
         }
-        if (warehouseFilter !== ALL_VALUE && item.warehouseId !== warehouseFilter) return false;
-        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
         return true;
       }),
-    [listRows, operation, productFilter, search, warehouseFilter],
+    [listRows, operation, search],
   );
 
   return (
@@ -636,37 +628,9 @@ export const AdjustmentsPage = () => {
         onToggleChange={setOperation}
         toggleAriaLabel="Операция корректировки"
         search={{ value: search, onChange: setSearch }}
-        quickControls={
-          <CatalogQuickSelectControl
-            value={warehouseFilter}
-            onValueChange={(value) => setWarehouseFilter(value ?? ALL_VALUE)}
-            ariaLabel="Быстрый фильтр по складу"
-            placeholder="Склад"
-            allLabel="Все склады"
-            options={warehouseOptions}
-            widthClassName="w-[120px] shrink-0 lg:w-[140px]"
-          />
-        }
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={() => {
-          setSearch("");
-          setWarehouseFilter(ALL_VALUE);
-          setProductFilter(ALL_VALUE);
-        }}
-        filterSheet={
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Товар</span>
-            <CatalogQuickSelectControl
-              value={productFilter}
-              onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
-              ariaLabel="Фильтр по товару"
-              placeholder="Все товары"
-              allLabel="Все товары"
-              options={productOptions}
-              widthClassName="w-full"
-            />
-          </label>
-        }
+        filters={adjustmentFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
       <AdjustmentCatalogDialog
         snapshot={formStore.snapshot}
@@ -800,34 +764,9 @@ export const OutputsPage = () => {
   const { rows: listRows, isLoading, error, reload } = useLogisticsList(loadOutputList);
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [plantFilter, setPlantFilter] = useState(ALL_VALUE);
-  const [productFilter, setProductFilter] = useState(ALL_VALUE);
-  const [overdueOnly, setOverdueOnly] = useState(false);
   const [open, setOpen] = useState(false);
   const formStore = useLogisticsStore({ kind: "form", form: "output", enabled: open });
   const snapshot = formStore.snapshot;
-  const plantOptions = useMemo(() => {
-    const ids = [...new Set(listRows.map((row) => row.plantId).filter(Boolean))];
-    return ids
-      .sort((left, right) => Number(left) - Number(right))
-      .map((id) => ({ value: id, label: formatEntityCode("plant", id) }));
-  }, [listRows]);
-
-  const productOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of listRows) {
-      for (const line of row.products) {
-        if (line.productId) ids.add(line.productId);
-      }
-    }
-    return [...ids].map((id) => {
-      const line = listRows.flatMap((row) => row.products).find((item) => item.productId === id);
-      return { value: id, label: line?.productName ?? id };
-    });
-  }, [listRows]);
-
-  const hasActiveFilters =
-    search.trim().length > 0 || plantFilter !== ALL_VALUE || productFilter !== ALL_VALUE || overdueOnly;
 
   const rows = useMemo(
     () =>
@@ -835,14 +774,17 @@ export const OutputsPage = () => {
         if (status !== "all" && item.status !== status) return false;
         if (search.trim()) {
           const q = search.trim().toLowerCase();
-          if (!item.number.toLowerCase().includes(q) && !matchesProductSearch(item.products, q)) return false;
+          if (
+            !item.number.toLowerCase().includes(q) &&
+            !item.productionOrderNumber.toLowerCase().includes(q) &&
+            !matchesProductSearch(item.products, q)
+          ) {
+            return false;
+          }
         }
-        if (plantFilter !== ALL_VALUE && item.plantId !== plantFilter) return false;
-        if (productFilter !== ALL_VALUE && !item.products.some((line) => line.productId === productFilter)) return false;
-        if (overdueOnly && !(item.status !== "done" && overdueDays(item.expectedEndOn) > 0)) return false;
         return true;
       }),
-    [listRows, overdueOnly, plantFilter, productFilter, search, status],
+    [listRows, search, status],
   );
   return (
     <LogisticsPageShell crumbs={[{ label: "Выпуски" }]}>
@@ -862,49 +804,10 @@ export const OutputsPage = () => {
         toggleValue={status}
         onToggleChange={setStatus}
         toggleAriaLabel="Статус выпуска"
-        search={{ value: search, onChange: setSearch }}
-        quickControls={
-          <CatalogQuickSelectControl
-            value={plantFilter}
-            onValueChange={(value) => setPlantFilter(value ?? ALL_VALUE)}
-            ariaLabel="Быстрый фильтр по заводу"
-            placeholder="Завод"
-            allLabel="Все заводы"
-            options={plantOptions}
-            widthClassName="w-[120px] shrink-0 lg:w-[140px]"
-          />
-        }
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={() => {
-          setSearch("");
-          setPlantFilter(ALL_VALUE);
-          setProductFilter(ALL_VALUE);
-          setOverdueOnly(false);
-        }}
-        filterSheet={
-          <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Товар</span>
-              <CatalogQuickSelectControl
-                value={productFilter}
-                onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
-                ariaLabel="Фильтр по товару"
-                placeholder="Все товары"
-                allLabel="Все товары"
-                options={productOptions}
-                widthClassName="w-full"
-              />
-            </label>
-            <label className="flex items-center gap-3 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2.5">
-              <Checkbox
-                checked={overdueOnly}
-                onCheckedChange={(checked) => setOverdueOnly(checked === true)}
-                aria-label="Только просроченные"
-              />
-              <span className="text-sm font-medium">Просрочен</span>
-            </label>
-          </>
-        }
+        search={{ value: search, onChange: setSearch, placeholder: "Поиск: номер, заказ, товар" }}
+        filters={outputFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
       />
       <CreateOutputDialog
         open={open}
@@ -982,7 +885,7 @@ export const OutputDetailPage = () => {
     }
     const allSameKind = owners.every((owner) => owner.type === owners[0].type);
     return (
-      <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span className="inline-flex min-w-0 items-center gap-1.5">
         {allSameKind ? (
           <span className="font-medium text-foreground">{OWNER_TYPE_LABELS[owners[0].type]}</span>
         ) : null}

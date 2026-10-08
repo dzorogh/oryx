@@ -1,5 +1,5 @@
 import { hrefForCustomerOrder, hrefForRegion } from "@/features/logistics/logistics-availability";
-import { formatEntityCode } from "@/lib/entity-codes";
+import { formatEntityCode, type EntityCodeKind } from "@/lib/entity-codes";
 import {
   FREE_OWNER_LABEL,
   LOCATION_LABELS,
@@ -293,28 +293,45 @@ export const orderNumber = (snapshot: LogisticsSnapshot, orderId: string | null)
   return customerOrderById(snapshot, orderId)?.number ?? orderId;
 };
 
+const DOCUMENT_CODE_KINDS: Partial<Record<SourceType, EntityCodeKind>> = {
+  reservation: "reservation",
+  shipment: "shipment",
+  return: "shipment",
+  output: "production_output",
+  production_output: "production_output",
+  production_order: "production_order",
+  transfer: "transfer",
+  adjustment: "adjustment",
+};
+
+const documentCode = (documentType: SourceType, documentId: string) => {
+  const kind = DOCUMENT_CODE_KINDS[documentType];
+  return kind ? formatEntityCode(kind, documentId) || documentId : documentId;
+};
+
 export const documentLabel = (
   snapshot: LogisticsSnapshot,
   documentType: SourceType,
   documentId: string,
 ): string => {
+  const fallback = documentCode(documentType, documentId);
   switch (documentType) {
     case "reservation":
-      return snapshot.reservations.find((item) => item.id === documentId)?.number ?? documentId;
+      return snapshot.reservations.find((item) => item.id === documentId)?.number ?? fallback;
     case "shipment":
-      return snapshot.shipments.find((item) => item.id === documentId)?.number ?? documentId;
     case "return":
-      return snapshot.shipments.find((item) => item.id === documentId)?.number ?? documentId;
+      return snapshot.shipments.find((item) => item.id === documentId)?.number ?? fallback;
     case "output":
-      return snapshot.outputs.find((item) => item.id === documentId)?.number ?? documentId;
+    case "production_output":
+      return snapshot.outputs.find((item) => item.id === documentId)?.number ?? fallback;
     case "production_order":
-      return productionOrderById(snapshot, documentId)?.number ?? documentId;
+      return productionOrderById(snapshot, documentId)?.number ?? fallback;
     case "transfer":
-      return snapshot.transfers.find((item) => item.id === documentId)?.number ?? documentId;
+      return snapshot.transfers.find((item) => item.id === documentId)?.number ?? fallback;
     case "adjustment":
-      return snapshot.adjustments.find((item) => item.id === documentId)?.number ?? documentId;
+      return snapshot.adjustments.find((item) => item.id === documentId)?.number ?? fallback;
     default:
-      return documentId;
+      return fallback;
   }
 };
 

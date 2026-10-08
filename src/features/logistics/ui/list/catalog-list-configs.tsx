@@ -2,10 +2,11 @@
 
 import type { ReactNode } from "react";
 import { warehouseOwnerLabel } from "@/features/logistics/logistics-lookups";
-import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
+import type { LogisticsSnapshot, WarehouseKind } from "@/features/logistics/logistics-types";
 import { PlantLink } from "@/features/logistics/ui/plant-link";
 import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
 import { catalogCodeColumn, catalogNameColumn } from "./list-helpers";
+import type { ListFilterDef } from "./list-filters";
 import type { ListColumnDef, ListGroupDef, ListSortDef } from "./list-types";
 
 export type CatalogListRow = {
@@ -16,8 +17,62 @@ export type CatalogListRow = {
   relation?: string;
   relationNode?: ReactNode;
   plantOwned?: boolean;
+  plantId?: string | null;
+  kind?: WarehouseKind;
   hubCode?: string | null;
 };
+
+export const WAREHOUSE_KIND_LABELS: Record<WarehouseKind, string> = {
+  hub: "Склад-хаб",
+  customer: "Склад покупателя",
+  plant: "Склад завода",
+};
+
+const NO_VALUE = "—";
+
+export const warehouseFilters: ListFilterDef<CatalogListRow>[] = [
+  {
+    kind: "multi",
+    id: "kind",
+    label: "Тип склада",
+    placeholder: "Тип склада",
+    quick: true,
+    options: (["hub", "customer", "plant"] as const).map((value) => ({ value, label: WAREHOUSE_KIND_LABELS[value] })),
+    values: (row) => row.kind,
+  },
+  {
+    kind: "multi",
+    id: "plant",
+    label: "Завод",
+    searchable: true,
+    options: [{ value: NO_VALUE, label: "Без завода" }],
+    values: (row) => row.plantId || NO_VALUE,
+    optionLabel: (_value, row) => row.relation ?? NO_VALUE,
+  },
+];
+
+export const plantFilters: ListFilterDef<CatalogListRow>[] = [
+  {
+    kind: "multi",
+    id: "warehouse",
+    label: "Склад",
+    searchable: true,
+    options: [{ value: NO_VALUE, label: "Без склада" }],
+    values: (row) => row.relation || NO_VALUE,
+  },
+];
+
+export const regionFilters: ListFilterDef<CatalogListRow>[] = [
+  {
+    kind: "multi",
+    id: "hub",
+    label: "Хаб",
+    placeholder: "Хаб",
+    quick: true,
+    options: [{ value: NO_VALUE, label: "Без хаба" }],
+    values: (row) => row.hubCode || NO_VALUE,
+  },
+];
 
 export const regionColumns: ListColumnDef<CatalogListRow>[] = [
   catalogCodeColumn<CatalogListRow>(),
@@ -87,6 +142,8 @@ export const mapWarehouseRows = (snapshot: LogisticsSnapshot): CatalogListRow[] 
     name: warehouse.name,
     href: `/store/logistics/warehouses/${warehouse.id}`,
     plantOwned: Boolean(warehouse.plantId),
+    plantId: warehouse.plantId,
+    kind: warehouse.kind,
     relation: warehouse.plantId
       ? (snapshot.plants.find((plant) => plant.id === warehouse.plantId)?.code ?? warehouse.plantId)
       : warehouseOwnerLabel(snapshot, warehouse.id),

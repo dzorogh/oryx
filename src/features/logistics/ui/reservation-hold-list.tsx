@@ -28,7 +28,7 @@ export const holdOwnerBadge = (
     return { label: FREE_OWNER_LABEL, href };
   }
   if (ownerType === "order" && ownerId) {
-    return { label: ownerNumber ?? ownerId, href };
+    return { label: ownerNumber ?? formatEntityCode("customer_order", ownerId), href };
   }
   if (ownerType === "region" && ownerId) {
     return { label: ownerNumber ?? formatEntityCode("region", ownerId), href };

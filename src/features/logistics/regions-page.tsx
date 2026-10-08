@@ -31,6 +31,7 @@ import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell
 import {
   mapRegionRows,
   regionColumns,
+  regionFilters,
   regionSortDefs,
 } from "@/features/logistics/ui/list/catalog-list-configs";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
@@ -180,7 +181,10 @@ export const RegionsPage = () => {
         isLoading={isLoading}
         error={error}
         search={{ value: search, onChange: setSearch, placeholder: "Поиск: код или название" }}
-        emptyMessage="Пока нет регионов."
+        filters={regionFilters}
+        hasActiveFilters={search.trim().length > 0}
+        onResetFilters={() => setSearch("")}
+        emptyMessage={snapshot.regions.length === 0 ? "Пока нет регионов." : undefined}
       />
 
       <DialogShell
