@@ -67,7 +67,16 @@ import { categoryGroupStickyTop, useStickyCategoryRows } from "@/features/logist
 import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
 import { StatusPill } from "@/features/logistics/ui/status-badge";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Plus,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { Fragment, useMemo, type ReactNode } from "react";
 
@@ -711,6 +720,52 @@ type RowContext = {
 
 type GroupTotalCell = { key: string; value: ReactNode; className?: string };
 
+type MoneyTone = "outgoing" | "incoming";
+
+/** Solid backgrounds: header rows stick over scrolled content. */
+const MONEY_TONE: Record<
+  MoneyTone,
+  {
+    icon: LucideIcon;
+    iconClass: string;
+    headBg: string;
+    headCurrentBg: string;
+    headStripe: string;
+    rowStripe: string;
+  }
+> = {
+  outgoing: {
+    icon: ArrowUpRight,
+    iconClass: "text-orange-600",
+    headBg: "bg-orange-50",
+    headCurrentBg: "bg-orange-100",
+    headStripe: "shadow-[inset_3px_0_0_var(--color-orange-500)]",
+    rowStripe: "shadow-[inset_3px_0_0_var(--color-orange-200)]",
+  },
+  incoming: {
+    icon: ArrowDownLeft,
+    iconClass: "text-emerald-600",
+    headBg: "bg-emerald-50",
+    headCurrentBg: "bg-emerald-100",
+    headStripe: "shadow-[inset_3px_0_0_var(--color-emerald-500)]",
+    rowStripe: "shadow-[inset_3px_0_0_var(--color-emerald-200)]",
+  },
+};
+
+const SectionRow = ({ title, colSpan, first = false }: { title: string; colSpan: number; first?: boolean }) => (
+  <tr className="hover:bg-transparent">
+    <td
+      colSpan={colSpan}
+      className={cn(
+        "border-b border-border bg-background px-0 pb-1.5 text-xs font-semibold text-muted-foreground",
+        first ? "pt-2" : "pt-6",
+      )}
+    >
+      <span className="sticky left-0 inline-block px-2">{title}</span>
+    </td>
+  </tr>
+);
+
 const GroupHeaderRow = ({
   id,
   depth,
@@ -721,6 +776,7 @@ const GroupHeaderRow = ({
   stickyTop,
   onToggle,
   tools,
+  tone,
 }: {
   id: string;
   depth: number;
@@ -732,56 +788,66 @@ const GroupHeaderRow = ({
   stickyTop: string | undefined;
   onToggle: () => void;
   tools?: ReactNode;
-}) => (
-  <tr
-    data-group-id={id}
-    data-group-depth={depth}
-    className="group/category cursor-pointer select-none hover:bg-transparent"
-    onClick={onToggle}
-  >
-    <td
-      className={cn(
-        IDENTITY_CELL,
-        "h-8 border-b border-r border-border bg-zinc-50 py-0 font-semibold whitespace-nowrap",
-        stickyTop && "z-[16]",
-      )}
-      style={{ paddingLeft: 8 + depth * 14, top: stickyTop }}
-      colSpan={1}
+  tone?: MoneyTone;
+}) => {
+  const toneStyle = tone ? MONEY_TONE[tone] : null;
+  const ToneIcon = toneStyle?.icon;
+  const rowBg = toneStyle?.headBg ?? "bg-zinc-50";
+  return (
+    <tr
+      data-group-id={id}
+      data-group-depth={depth}
+      className="group/category cursor-pointer select-none hover:bg-transparent"
+      onClick={onToggle}
     >
-      <button
-        type="button"
-        aria-expanded={!collapsed}
-        className="inline-flex items-center gap-1"
-        onClick={(event) => {
-          event.stopPropagation();
-          onToggle();
-        }}
-      >
-        {collapsed ? (
-          <ChevronRight className="size-3 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="size-3 text-muted-foreground" />
-        )}
-        {title}
-        <span className="font-normal text-muted-foreground">· {count}</span>
-      </button>
-      {tools}
-    </td>
-    {cells.map((cell) => (
       <td
-        key={cell.key}
         className={cn(
-          "h-8 border-b border-r border-border bg-zinc-50 px-2 py-0 text-right text-xs font-semibold whitespace-nowrap tabular-nums",
-          cell.className,
-          stickyTop && "sticky z-[15]",
+          IDENTITY_CELL,
+          "h-8 border-b border-r border-border py-0 font-semibold whitespace-nowrap",
+          rowBg,
+          toneStyle?.headStripe,
+          stickyTop && "z-[16]",
         )}
-        style={{ top: stickyTop }}
+        style={{ paddingLeft: 8 + depth * 14, top: stickyTop }}
+        colSpan={1}
       >
-        {cell.value}
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          className="inline-flex items-center gap-1"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggle();
+          }}
+        >
+          {collapsed ? (
+            <ChevronRight className="size-3 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="size-3 text-muted-foreground" />
+          )}
+          {ToneIcon ? <ToneIcon className={cn("size-3.5", toneStyle?.iconClass)} aria-hidden /> : null}
+          {title}
+          <span className="font-normal text-muted-foreground">· {count}</span>
+        </button>
+        {tools}
       </td>
-    ))}
-  </tr>
-);
+      {cells.map((cell) => (
+        <td
+          key={cell.key}
+          className={cn(
+            "h-8 border-b border-r border-border px-2 py-0 text-right text-xs font-semibold whitespace-nowrap tabular-nums",
+            rowBg,
+            cell.className,
+            stickyTop && "sticky z-[15]",
+          )}
+          style={{ top: stickyTop }}
+        >
+          {cell.value}
+        </td>
+      ))}
+    </tr>
+  );
+};
 
 const subtreeProducts = (node: CategoryTreeNode<OutputCalendarProduct>): OutputCalendarProduct[] => {
   const byId = new Map<string, OutputCalendarProduct>();
@@ -824,7 +890,12 @@ const categoryTotalCells = (
   ];
 };
 
-const moneyTotalCells = (rows: MoneyRow[], hiddenStatuses: UnpaidStatus[], ctx: RowContext): GroupTotalCell[] => {
+const moneyTotalCells = (
+  rows: MoneyRow[],
+  hiddenStatuses: UnpaidStatus[],
+  tone: MoneyTone,
+  ctx: RowContext,
+): GroupTotalCell[] => {
   const { page, columns, currentKey, today } = ctx;
   const currency = page.productionCurrency;
   const label = (amount: number) => (amount > 0 ? formatOrderMoney(amount, currency, { compact: true }) : null);
@@ -840,7 +911,7 @@ const moneyTotalCells = (rows: MoneyRow[], hiddenStatuses: UnpaidStatus[], ctx: 
         key: column.key,
         value: label(cells.reduce((total, cell) => total + cell.amount, 0)),
         className: cn(
-          isCurrentColumn(column, currentKey, today) && "bg-zinc-100",
+          isCurrentColumn(column, currentKey, today) && MONEY_TONE[tone].headCurrentBg,
           cells.some((cell) => cell.overdue) && "bg-red-50 text-red-700",
         ),
       };
@@ -975,9 +1046,13 @@ const MoneyRowView = ({
   const { page, columns, currentKey, today } = ctx;
   const currency = page.productionCurrency;
   const unallocatedCell = moneyUnallocatedCell(row, currency);
+  const tone: MoneyTone = row.kind === "plant" ? "outgoing" : "incoming";
   return (
     <tr className="hover:bg-transparent">
-      <td className={cn(IDENTITY_CELL, "border-b border-r border-border")} style={{ paddingLeft: 28 }}>
+      <td
+        className={cn(IDENTITY_CELL, "border-b border-r border-border", MONEY_TONE[tone].rowStripe)}
+        style={{ paddingLeft: 28 }}
+      >
         <EntityLink href={logisticsPath(row.kind === "plant" ? "plants" : "regions", row.id)}>{row.code}</EntityLink>
         <span className="ml-2 text-[11px] text-muted-foreground">{currency}</span>
       </td>
@@ -1027,6 +1102,7 @@ const MoneyGroupRows = ({
   rows,
   hiddenStatuses,
   empty,
+  tone,
   ...ctx
 }: RowContext & {
   id: string;
@@ -1034,6 +1110,7 @@ const MoneyGroupRows = ({
   rows: MoneyRow[];
   hiddenStatuses: UnpaidStatus[];
   empty: string;
+  tone: MoneyTone;
 }) => {
   const isCollapsed = ctx.collapsed.has(id);
   const stickyTop = ctx.stickyIds.has(id) ? groupStickyTop(0) : undefined;
@@ -1044,10 +1121,11 @@ const MoneyGroupRows = ({
         depth={0}
         title={title}
         count={`${pluralRows(rows.length, ["строка", "строки", "строк"])} · ${ctx.page.productionCurrency}`}
-        cells={moneyTotalCells(rows, hiddenStatuses, ctx)}
+        cells={moneyTotalCells(rows, hiddenStatuses, tone, ctx)}
         collapsed={isCollapsed}
         stickyTop={stickyTop}
         onToggle={() => ctx.onToggleCollapse(id)}
+        tone={tone}
       />
       {!isCollapsed ? (
         rows.length > 0 ? (
@@ -1057,7 +1135,11 @@ const MoneyGroupRows = ({
         ) : (
           <tr className="hover:bg-transparent">
             <td
-              className={cn(IDENTITY_CELL, "border-b border-r border-border text-muted-foreground")}
+              className={cn(
+                IDENTITY_CELL,
+                "border-b border-r border-border text-muted-foreground",
+                MONEY_TONE[tone].rowStripe,
+              )}
               style={{ paddingLeft: 28 }}
             >
               {empty}
@@ -1119,6 +1201,7 @@ export const OutputCalendarMatrix = ({
 
   const ctx: RowContext = { columns, currentKey, today, page, collapsed, onToggleCollapse, stickyIds };
   const groupProps = { ...ctx, ownerSet, plantId, onSetCollapsed, onCreate };
+  const sectionColSpan = 5 + columns.length;
 
   return (
     <div
@@ -1206,12 +1289,14 @@ export const OutputCalendarMatrix = ({
           ) : null}
         </thead>
         <tbody>
+          <SectionRow title="Деньги" colSpan={sectionColSpan} first />
           <MoneyGroupRows
             id={MONEY_PLANTS_GROUP_ID}
             title="Платежи заводам"
             rows={plantRows}
             hiddenStatuses={plantPaymentsFilter.hiddenStatuses}
             empty="Нет неоплаченных платежей заводам"
+            tone="outgoing"
             {...ctx}
           />
         </tbody>
@@ -1222,8 +1307,12 @@ export const OutputCalendarMatrix = ({
             rows={regionRows}
             hiddenStatuses={incomingFilter.hiddenStatuses}
             empty="Нет ожидаемых поступлений"
+            tone="incoming"
             {...ctx}
           />
+        </tbody>
+        <tbody>
+          <SectionRow title="Техника" colSpan={sectionColSpan} />
         </tbody>
         {roots.map((node) => (
           <tbody key={node.id}>
