@@ -3,7 +3,6 @@
 
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -18,9 +17,13 @@ import { Switch } from "@/components/ui/switch";
 import { formatEntityCode } from "@/lib/entity-codes";
 import { PAYMENT_STATUS_LABELS } from "@/features/logistics/order-money";
 import {
+  searchCalendarCustomerOrders,
+  searchCalendarRegions,
+  type CalendarFilterScope,
+} from "@/features/logistics/logistics-api";
+import {
+  defaultIncomingFilter,
   incomingFilterChanged,
-  incomingOrderOptions,
-  incomingRegionOptions,
   outputsFilterChanged,
   outputsFilterSummary,
   plantPaymentOptions,
@@ -32,6 +35,7 @@ import {
   type PlantPaymentsFilter,
   type UnpaidStatus,
 } from "@/features/logistics/output-calendar";
+import { AsyncMultiCombobox, type AsyncComboboxLoader } from "@/features/logistics/ui/async-multi-combobox";
 import { CalendarMasterCheckbox } from "@/features/logistics/ui/output-calendar-master-checkbox";
 import { cn } from "@/lib/utils";
 import { ChevronsDownUp, ChevronsUpDown, ListFilter, RefreshCw } from "lucide-react";
@@ -119,7 +123,7 @@ export const OutputCalendarToolbar = ({
         <FilterButton
           label={PANEL_TITLES.outputs}
           open={panel === "outputs"}
-          changed={outputsFilterChanged(filter, page, plantId)}
+          changed={outputsFilterChanged(filter, plantId)}
           onClick={() => onTogglePanel("outputs")}
         />
         <FilterButton
@@ -271,14 +275,68 @@ const StatusChecks = ({
   </>
 );
 
+const orderLoader =
+  (scope: CalendarFilterScope): AsyncComboboxLoader =>
+  async (args) =>
+    (await searchCalendarCustomerOrders({ scope, ...args })).map((order) => ({
+      value: order.id,
+      label: order.number,
+      hint: order.regionCode,
+    }));
+
+const regionLoader =
+  (scope: CalendarFilterScope): AsyncComboboxLoader =>
+  async (args) =>
+    (await searchCalendarRegions({ scope, ...args })).map((region) => ({
+      value: region.id,
+      label: region.code,
+      hint: region.name,
+    }));
+
+const loadCalendarOrders = orderLoader("calendar");
+const loadCalendarRegions = regionLoader("calendar");
+const loadMoneyOrders = orderLoader("money");
+const loadMoneyRegions = regionLoader("money");
+
+/** «Все …» checkbox over a picker: picking an item turns «Все» off, checking «Все» drops the picks. */
+const AllOrPicked = ({
+  allLabel,
+  all,
+  ids,
+  onChange,
+  loadOptions,
+  placeholder,
+  ariaLabel,
+}: {
+  allLabel: string;
+  all: boolean;
+  ids: string[];
+  onChange: (all: boolean, ids: string[]) => void;
+  loadOptions: AsyncComboboxLoader;
+  placeholder: string;
+  ariaLabel: string;
+}) => (
+  <>
+    <label className="flex cursor-pointer items-start gap-2 py-1">
+      <Checkbox checked={all} onCheckedChange={(v) => onChange(v === true, [])} />
+      <span>{allLabel}</span>
+    </label>
+    <AsyncMultiCombobox
+      value={all ? [] : ids}
+      onValueChange={(next) => onChange(false, next)}
+      loadOptions={loadOptions}
+      placeholder={all ? allLabel : placeholder}
+      ariaLabel={ariaLabel}
+      className="mt-1"
+    />
+  </>
+);
+
 type OutputsPanelProps = {
   open: boolean;
-  page: OutputCalendarPage;
   filter: OutputCalendarOwnerFilter;
   plantId: string | null;
   plantOptions: string[];
-  orderSearch: string;
-  onOrderSearchChange: (value: string) => void;
   onChange: (next: OutputCalendarOwnerFilter) => void;
   onPlantChange: (plantId: string | null) => void;
   onClose: () => void;
@@ -289,25 +347,15 @@ type OutputsPanelProps = {
 /** «Выпуски»: для кого считаем + завод. Acts on product rows only. */
 export const OutputCalendarOutputsPanel = ({
   open,
-  page,
   filter,
   plantId,
   plantOptions,
-  orderSearch,
-  onOrderSearchChange,
   onChange,
   onPlantChange,
   onClose,
   onSelectAll,
   onReset,
 }: OutputsPanelProps) => {
-  const regionSelected = filter.regionIds.length;
-  const regionTotal = page.regions.length;
-  const orderSelected = filter.orderIds.length;
-  const orderTotal = page.customerOrders.length;
-  const q = orderSearch.trim().toLowerCase();
-  const regionById = new Map(page.regions.map((r) => [r.id, r]));
-
   return (
     <SidePanel
       open={open}
@@ -356,26 +404,15 @@ export const OutputCalendarOutputsPanel = ({
       </label>
 
       <SectionTitle>Регионы</SectionTitle>
-      <label className="flex cursor-pointer items-start gap-2 py-1 font-semibold">
-        <CalendarMasterCheckbox
-          checked={regionSelected === regionTotal && regionTotal > 0}
-          indeterminate={regionSelected > 0 && regionSelected < regionTotal}
-          onCheckedChange={(checked) =>
-            onChange({ ...filter, regionIds: checked ? page.regions.map((r) => r.id) : [] })
-          }
-        />
-        <span>Все регионы</span>
-      </label>
-      <Divider />
-      {page.regions.map((region) => (
-        <label key={region.id} className="flex cursor-pointer items-start gap-2 py-1">
-          <Checkbox
-            checked={filter.regionIds.includes(region.id)}
-            onCheckedChange={(v) => onChange({ ...filter, regionIds: toggleIn(filter.regionIds, region.id, v === true) })}
-          />
-          <span>{region.name}</span>
-        </label>
-      ))}
+      <AllOrPicked
+        allLabel="Все регионы"
+        all={filter.allRegions}
+        ids={filter.regionIds}
+        onChange={(allRegions, regionIds) => onChange({ ...filter, allRegions, regionIds })}
+        loadOptions={loadCalendarRegions}
+        placeholder="Выберите регионы"
+        ariaLabel="Регионы выпусков"
+      />
 
       <div className="flex items-center justify-between gap-2 py-2">
         <span>С заказами клиентов региона</span>
@@ -386,40 +423,15 @@ export const OutputCalendarOutputsPanel = ({
       </div>
 
       <SectionTitle>Заказы клиента</SectionTitle>
-      <Input
-        className="mb-1.5 h-8 bg-background text-xs"
-        aria-label="Поиск заказа клиента"
-        placeholder="Поиск OMS…"
-        value={orderSearch}
-        onChange={(e) => onOrderSearchChange(e.target.value)}
+      <AllOrPicked
+        allLabel="Все заказы"
+        all={filter.allOrders}
+        ids={filter.orderIds}
+        onChange={(allOrders, orderIds) => onChange({ ...filter, allOrders, orderIds })}
+        loadOptions={loadCalendarOrders}
+        placeholder="Выберите заказы"
+        ariaLabel="Заказы клиента выпусков"
       />
-      <div className="max-h-[220px] overflow-auto">
-        <label className="flex cursor-pointer items-start gap-2 py-1 font-semibold">
-          <CalendarMasterCheckbox
-            checked={orderSelected === orderTotal && orderTotal > 0}
-            indeterminate={orderSelected > 0 && orderSelected < orderTotal}
-            onCheckedChange={(checked) =>
-              onChange({ ...filter, orderIds: checked ? page.customerOrders.map((o) => o.id) : [] })
-            }
-          />
-          <span>Все заказы</span>
-        </label>
-        <Divider />
-        {page.customerOrders.map((order) => {
-          const regionName = regionById.get(order.regionId)?.name ?? "";
-          const label = `${order.number} · ${regionName}`;
-          if (q && !label.toLowerCase().includes(q)) return null;
-          return (
-            <label key={order.id} className="flex cursor-pointer items-start gap-2 py-1">
-              <Checkbox
-                checked={filter.orderIds.includes(order.id)}
-                onCheckedChange={(v) => onChange({ ...filter, orderIds: toggleIn(filter.orderIds, order.id, v === true) })}
-              />
-              <span>{label}</span>
-            </label>
-          );
-        })}
-      </div>
     </SidePanel>
   );
 };
@@ -463,69 +475,42 @@ export const OutputCalendarPlantPaymentsPanel = ({
 /** «Поступления»: регионы, заказы клиента, статусы. Acts on the incoming money group only. */
 export const OutputCalendarIncomingPanel = ({
   open,
-  page,
   filter,
-  orderSearch,
-  onOrderSearchChange,
   onChange,
   onClose,
 }: {
   open: boolean;
-  page: OutputCalendarPage;
   filter: IncomingFilter;
-  orderSearch: string;
-  onOrderSearchChange: (value: string) => void;
   onChange: (next: IncomingFilter) => void;
   onClose: () => void;
-}) => {
-  const regions = incomingRegionOptions(page);
-  const regionCode = new Map(page.regions.map((region) => [region.id, region.code]));
-  const q = orderSearch.trim().toLowerCase();
-  const orders = incomingOrderOptions(page).map((order) => ({
-    id: order.id,
-    label: `${order.number} · ${regionCode.get(order.regionId ?? "") ?? ""}`,
-  }));
-  return (
-    <SidePanel
-      open={open}
-      title={PANEL_TITLES.incoming}
-      onClose={onClose}
-      footer={
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => onChange({ hiddenRegionIds: [], hiddenOrderIds: [], hiddenStatuses: [] })}
-        >
-          Сбросить
-        </Button>
-      }
-    >
-      <SectionTitle>Регионы</SectionTitle>
-      <ExclusionList
-        allLabel="Все регионы"
-        items={regions.map((region) => ({ id: region.id, label: region.code }))}
-        hidden={filter.hiddenRegionIds}
-        onChange={(hiddenRegionIds) => onChange({ ...filter, hiddenRegionIds })}
-      />
-      <SectionTitle>Заказы клиента</SectionTitle>
-      <Input
-        className="mb-1.5 h-8 bg-background text-xs"
-        aria-label="Поиск заказа клиента"
-        placeholder="Поиск OMS…"
-        value={orderSearch}
-        onChange={(e) => onOrderSearchChange(e.target.value)}
-      />
-      <div className="max-h-[260px] overflow-auto">
-        <ExclusionList
-          allLabel="Все заказы"
-          items={q ? orders.filter((order) => order.label.toLowerCase().includes(q)) : orders}
-          hidden={filter.hiddenOrderIds}
-          onChange={(hiddenOrderIds) => onChange({ ...filter, hiddenOrderIds })}
-        />
-      </div>
-      <SectionTitle>Статусы</SectionTitle>
-      <StatusChecks hidden={filter.hiddenStatuses} onChange={(hiddenStatuses) => onChange({ ...filter, hiddenStatuses })} />
-    </SidePanel>
-  );
-};
+}) => (
+  <SidePanel
+    open={open}
+    title={PANEL_TITLES.incoming}
+    onClose={onClose}
+    footer={
+      <Button type="button" size="sm" variant="ghost" onClick={() => onChange(defaultIncomingFilter())}>
+        Сбросить
+      </Button>
+    }
+  >
+    <SectionTitle>Регионы</SectionTitle>
+    <AsyncMultiCombobox
+      value={filter.regionIds}
+      onValueChange={(regionIds) => onChange({ ...filter, regionIds })}
+      loadOptions={loadMoneyRegions}
+      placeholder="Все регионы"
+      ariaLabel="Регионы поступлений"
+    />
+    <SectionTitle>Заказы клиента</SectionTitle>
+    <AsyncMultiCombobox
+      value={filter.orderIds}
+      onValueChange={(orderIds) => onChange({ ...filter, orderIds })}
+      loadOptions={loadMoneyOrders}
+      placeholder="Все заказы"
+      ariaLabel="Заказы клиента поступлений"
+    />
+    <SectionTitle>Статусы</SectionTitle>
+    <StatusChecks hidden={filter.hiddenStatuses} onChange={(hiddenStatuses) => onChange({ ...filter, hiddenStatuses })} />
+  </SidePanel>
+);

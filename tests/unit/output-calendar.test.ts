@@ -6,6 +6,7 @@ import {
   buildOwnerSet,
   computeMonthRange,
   defaultOwnerFilter,
+  emptyOwnerFilter,
   lastDayOfMonthIso,
   mapOutputCalendarPage,
   monthCell,
@@ -23,7 +24,6 @@ import {
   defaultIncomingFilter,
   defaultPlantPaymentsFilter,
   incomingFilterChanged,
-  incomingOrderOptions,
   monthPeriod,
   moneyPeriodCell,
   moneyUnallocatedCell,
@@ -231,7 +231,7 @@ describe("mapOutputCalendarPage", () => {
 describe("stockBreakdown", () => {
   it("lists stock rows behind Остаток with resolved owners, filtered by owner set", () => {
     const page = pageFixture();
-    const all = stockBreakdown("1", page, buildOwnerSet(defaultOwnerFilter(page), page));
+    const all = stockBreakdown("1", page, buildOwnerSet(defaultOwnerFilter(), page));
     assert.deepEqual(
       all.map((row) => [row.owner.kind, row.quantity]),
       [
@@ -243,7 +243,7 @@ describe("stockBreakdown", () => {
     const regionOnly = stockBreakdown(
       "1",
       page,
-      buildOwnerSet({ free: false, regionIds: ["1"], withRegionOrders: false, orderIds: [] }, page),
+      buildOwnerSet({ ...emptyOwnerFilter(), regionIds: ["1"], withRegionOrders: false }, page),
     );
     assert.equal(regionOnly.length, 1);
     assert.equal(regionOnly[0]?.owner.kind === "region" && regionOnly[0].owner.region.name, "ОАЭ");
@@ -253,7 +253,7 @@ describe("stockBreakdown", () => {
 describe("I/O matrix: приход", () => {
   it("counts draft outputs in month; ignores done-like by not including them", () => {
     const page = pageFixture();
-    const W = buildOwnerSet(defaultOwnerFilter(page), page);
+    const W = buildOwnerSet(defaultOwnerFilter(), page);
     const nov = monthCell("1", { year: 2026, month: 11 }, page.outputLines, W, null);
     // OUT-A (7 free) + OUT-B (2 region) when all owners selected
     assert.equal(nov.quantity, 9);
@@ -264,7 +264,7 @@ describe("I/O matrix: приход", () => {
 describe("I/O matrix: без срока", () => {
   it("puts null expectedEndOn into no-date cell", () => {
     const page = pageFixture();
-    const W = buildOwnerSet(defaultOwnerFilter(page), page);
+    const W = buildOwnerSet(defaultOwnerFilter(), page);
     const cell = noDateCell("1", page.outputLines, W, null);
     assert.equal(cell.quantity, 3);
     assert.equal(cell.lines[0]?.outputNumber, "OUT-C");
@@ -280,7 +280,7 @@ describe("I/O matrix: просрочка и диапазон месяцев", ()
     assert.equal(months[0]?.month, 8);
     assert.equal(months[months.length - 1]?.month, 2);
     assert.equal(months[months.length - 1]?.year, 2027);
-    const W = buildOwnerSet(defaultOwnerFilter(page), page);
+    const W = buildOwnerSet(defaultOwnerFilter(), page);
     const aug = monthCell("2", { year: 2026, month: 8 }, page.outputLines, W, null);
     assert.equal(aug.quantity, 1);
   });
@@ -315,7 +315,7 @@ describe("I/O matrix: без категории", () => {
 describe("I/O matrix: переключатель заказов региона", () => {
   it("includes the region's order owners only while the switch is on", () => {
     const page = pageFixture();
-    const base = { free: false, regionIds: ["1"], orderIds: [] as string[] };
+    const base = { ...emptyOwnerFilter(), regionIds: ["1"] };
     const on = buildOwnerSet({ ...base, withRegionOrders: true }, page);
     assert.ok(on.has("2"));
     assert.ok(on.has("20"));
@@ -331,12 +331,7 @@ describe("I/O matrix: переключатель заказов региона",
 describe("I/O matrix: двойной путь владельца", () => {
   it("counts order owner once when selected directly and via region switch", () => {
     const page = pageFixture();
-    const filter = {
-      free: false,
-      regionIds: ["1"],
-      withRegionOrders: true,
-      orderIds: ["10"],
-    };
+    const filter = { ...emptyOwnerFilter(), regionIds: ["1"], orderIds: ["10"] };
     const W = buildOwnerSet(filter, page);
     assert.equal(W.size, 2); // region 2 + order 20
     assert.ok(W.has("2"));
@@ -348,7 +343,7 @@ describe("I/O matrix: двойной путь владельца", () => {
 describe("I/O matrix: фильтр завода", () => {
   it("filters month qty by plant; stock stays owner-only", () => {
     const page = pageFixture();
-    const W = buildOwnerSet(defaultOwnerFilter(page), page);
+    const W = buildOwnerSet(defaultOwnerFilter(), page);
     const novAll = monthCell("1", { year: 2026, month: 11 }, page.outputLines, W, null);
     const novPlt3 = monthCell("1", { year: 2026, month: 11 }, page.outputLines, W, "3");
     assert.equal(novAll.quantity, 9);
@@ -585,10 +580,6 @@ describe("Деньги: поступления от клиентов", () => {
     const ru = rows[1];
     assert.ok(ru);
     assert.ok(Math.abs(moneyPeriodCell(ru, monthPeriod(OCT), [], "CNY", TODAY).amount - 712) < 1e-9);
-    assert.deepEqual(
-      incomingOrderOptions(moneyFixture()).map((order) => order.number),
-      ["OMS-71", "OMS-72", "OMS-73"],
-    );
   });
 });
 
@@ -599,7 +590,7 @@ describe("Деньги: фильтры панелей независимы", () 
     assert.equal(plantMoneyRows(page, plantFilter).length, 0);
     assert.equal(regionMoneyRows(page, defaultIncomingFilter()).length, 2);
     assert.ok(plantPaymentsFilterChanged(plantFilter));
-    const incoming = { ...defaultIncomingFilter(), hiddenRegionIds: ["2"], hiddenOrderIds: ["72"] };
+    const incoming = { ...defaultIncomingFilter(), regionIds: ["1"], orderIds: ["71", "73"] };
     assert.deepEqual(
       regionMoneyRows(page, incoming).map((row) => row.code),
       ["ae"],
@@ -649,7 +640,7 @@ describe("Раскрытие месяца", () => {
 
   it("days add up to the collapsed month for products and money rows", () => {
     const page = moneyFixture();
-    const W = buildOwnerSet(defaultOwnerFilter(page), page);
+    const W = buildOwnerSet(defaultOwnerFilter(), page);
     const nov = { year: 2026, month: 11 };
     const days = buildCalendarColumns([nov], new Set([2026 * 12 + 11]));
     const productDays = days.reduce((sum, column) => sum + periodCell("1", column.period, page.outputLines, W, null).quantity, 0);

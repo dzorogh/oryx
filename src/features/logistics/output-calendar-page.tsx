@@ -9,6 +9,7 @@ import {
   defaultIncomingFilter,
   defaultOwnerFilter,
   defaultPlantPaymentsFilter,
+  emptyOwnerFilter,
   plantFilterOptions,
   type IncomingFilter,
   type OutputCalendarOwnerFilter,
@@ -41,8 +42,6 @@ export const OutputCalendarPage = () => {
   const [plantPaymentsFilter, setPlantPaymentsFilter] = useState<PlantPaymentsFilter>(defaultPlantPaymentsFilter);
   const [incomingFilter, setIncomingFilter] = useState<IncomingFilter>(defaultIncomingFilter);
   const [panel, setPanel] = useState<CalendarPanel | null>(null);
-  const [orderSearch, setOrderSearch] = useState("");
-  const [incomingSearch, setIncomingSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(
     () => new Set([MONEY_PLANTS_GROUP_ID, MONEY_REGIONS_GROUP_ID]),
   );
@@ -63,7 +62,7 @@ export const OutputCalendarPage = () => {
         const orderIds = prev.orderIds.filter((id) => next.customerOrders.some((o) => o.id === id));
         return { ...prev, regionIds, orderIds };
       }
-      return defaultOwnerFilter(next);
+      return defaultOwnerFilter();
     });
   }, []);
 
@@ -193,27 +192,17 @@ export const OutputCalendarPage = () => {
         </div>
         <OutputCalendarOutputsPanel
           open={panel === "outputs"}
-          page={page}
           filter={filter}
           plantId={plantId}
           plantOptions={plantOptions}
-          orderSearch={orderSearch}
-          onOrderSearchChange={setOrderSearch}
           onChange={setFilter}
           onPlantChange={setPlantId}
           onClose={closePanel}
           onSelectAll={() => {
-            setFilter(defaultOwnerFilter(page));
+            setFilter(defaultOwnerFilter());
             setPlantId(null);
           }}
-          onReset={() =>
-            setFilter({
-              free: false,
-              regionIds: [],
-              withRegionOrders: true,
-              orderIds: [],
-            })
-          }
+          onReset={() => setFilter(emptyOwnerFilter())}
         />
         <OutputCalendarPlantPaymentsPanel
           open={panel === "plants"}
@@ -224,10 +213,7 @@ export const OutputCalendarPage = () => {
         />
         <OutputCalendarIncomingPanel
           open={panel === "incoming"}
-          page={page}
           filter={incomingFilter}
-          orderSearch={incomingSearch}
-          onOrderSearchChange={setIncomingSearch}
           onChange={setIncomingFilter}
           onClose={closePanel}
         />

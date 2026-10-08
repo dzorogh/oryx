@@ -129,10 +129,13 @@ export type OutputCalendarPage = {
   payments: OutputCalendarPayment[];
 };
 
+/** `allRegions` / `allOrders` take every region / order of the page; otherwise only the picked ids. */
 export type OutputCalendarOwnerFilter = {
   free: boolean;
+  allRegions: boolean;
   regionIds: string[];
   withRegionOrders: boolean;
+  allOrders: boolean;
   orderIds: string[];
 };
 
@@ -287,12 +290,36 @@ export const mapOutputCalendarPage = (raw: unknown): OutputCalendarPage => {
   };
 };
 
-export const defaultOwnerFilter = (page: OutputCalendarPage): OutputCalendarOwnerFilter => ({
+export const defaultOwnerFilter = (): OutputCalendarOwnerFilter => ({
   free: true,
-  regionIds: page.regions.map((r) => r.id),
+  allRegions: true,
+  regionIds: [],
   withRegionOrders: true,
-  orderIds: page.customerOrders.map((o) => o.id),
+  allOrders: true,
+  orderIds: [],
 });
+
+/** Nothing counted: «Сбросить» of the outputs panel. */
+export const emptyOwnerFilter = (): OutputCalendarOwnerFilter => ({
+  free: false,
+  allRegions: false,
+  regionIds: [],
+  withRegionOrders: true,
+  allOrders: false,
+  orderIds: [],
+});
+
+const selectedRegions = (
+  filter: OutputCalendarOwnerFilter,
+  page: Pick<OutputCalendarPage, "regions">,
+): OutputCalendarRegion[] =>
+  filter.allRegions ? page.regions : page.regions.filter((region) => filter.regionIds.includes(region.id));
+
+const selectedOrders = (
+  filter: OutputCalendarOwnerFilter,
+  page: Pick<OutputCalendarPage, "customerOrders">,
+): OutputCalendarCustomerOrder[] =>
+  filter.allOrders ? page.customerOrders : page.customerOrders.filter((order) => filter.orderIds.includes(order.id));
 
 /** Owner set W from filter state. */
 export const buildOwnerSet = (
@@ -303,22 +330,20 @@ export const buildOwnerSet = (
   if (filter.free) {
     W.add(page.freeOwnerId);
   }
-  const regionById = new Map(page.regions.map((r) => [r.id, r]));
-  for (const regionId of filter.regionIds) {
-    const region = regionById.get(regionId);
-    if (region) W.add(region.ownerId);
+  const regionIds = new Set<string>();
+  for (const region of selectedRegions(filter, page)) {
+    regionIds.add(region.id);
+    W.add(region.ownerId);
   }
   if (filter.withRegionOrders) {
     for (const order of page.customerOrders) {
-      if (filter.regionIds.includes(order.regionId)) {
+      if (regionIds.has(order.regionId)) {
         W.add(order.ownerId);
       }
     }
   }
-  const orderById = new Map(page.customerOrders.map((o) => [o.id, o]));
-  for (const orderId of filter.orderIds) {
-    const order = orderById.get(orderId);
-    if (order) W.add(order.ownerId);
+  for (const order of selectedOrders(filter, page)) {
+    W.add(order.ownerId);
   }
   return W;
 };
@@ -595,19 +620,6 @@ export const unassignedCell = (
   return { quantity: orders.reduce((sum, order) => sum + order.remaining, 0), orders };
 };
 
-/** Count of deselected pieces vs default-all (for toolbar badge). */
-export const ownersChangedCount = (
-  filter: OutputCalendarOwnerFilter,
-  page: Pick<OutputCalendarPage, "regions" | "customerOrders">,
-): number => {
-  let n = 0;
-  if (!filter.free) n += 1;
-  n += page.regions.length - filter.regionIds.length;
-  if (!filter.withRegionOrders) n += 1;
-  n += page.customerOrders.length - filter.orderIds.length;
-  return n;
-};
-
 export const applyLocalOutput = (
   page: OutputCalendarPage,
   line: OutputCalendarOutputLine,
@@ -657,17 +669,18 @@ export const UNPAID_STATUSES: readonly UnpaidStatus[] = ["planned", "invoiced"];
 /** Exclusion sets: empty — default (everything shown); new plants after a refresh stay visible. */
 export type PlantPaymentsFilter = { hiddenPlantIds: string[]; hiddenStatuses: UnpaidStatus[] };
 
+/** `regionIds` / `orderIds`: empty — every region / order. */
 export type IncomingFilter = {
-  hiddenRegionIds: string[];
-  hiddenOrderIds: string[];
+  regionIds: string[];
+  orderIds: string[];
   hiddenStatuses: UnpaidStatus[];
 };
 
 export const defaultPlantPaymentsFilter = (): PlantPaymentsFilter => ({ hiddenPlantIds: [], hiddenStatuses: [] });
 
 export const defaultIncomingFilter = (): IncomingFilter => ({
-  hiddenRegionIds: [],
-  hiddenOrderIds: [],
+  regionIds: [],
+  orderIds: [],
   hiddenStatuses: [],
 });
 
@@ -675,13 +688,10 @@ export const plantPaymentsFilterChanged = (filter: PlantPaymentsFilter): boolean
   filter.hiddenPlantIds.length > 0 || filter.hiddenStatuses.length > 0;
 
 export const incomingFilterChanged = (filter: IncomingFilter): boolean =>
-  filter.hiddenRegionIds.length > 0 || filter.hiddenOrderIds.length > 0 || filter.hiddenStatuses.length > 0;
+  filter.regionIds.length > 0 || filter.orderIds.length > 0 || filter.hiddenStatuses.length > 0;
 
-export const outputsFilterChanged = (
-  filter: OutputCalendarOwnerFilter,
-  page: Pick<OutputCalendarPage, "regions" | "customerOrders">,
-  plantId: string | null,
-): boolean => ownersChangedCount(filter, page) > 0 || plantId != null;
+export const outputsFilterChanged = (filter: OutputCalendarOwnerFilter, plantId: string | null): boolean =>
+  !filter.free || !filter.allRegions || !filter.withRegionOrders || !filter.allOrders || plantId != null;
 
 /** One order with money totals in its own currency. */
 export type MoneyOrderFacts = {
@@ -761,22 +771,6 @@ export const plantPaymentOptions = (page: Pick<OutputCalendarPage, "moneyOrders"
     .map(([id]) => id)
     .sort(byNumericId);
 
-/** Customer orders with money to show; options of the «Поступления» panel. */
-export const incomingOrderOptions = (
-  page: Pick<OutputCalendarPage, "moneyOrders" | "payments">,
-): OutputCalendarMoneyOrder[] =>
-  liveFacts(page, "customer_order")
-    .filter((fact) => fact.order.regionId && hasMoneyToShow([fact], []))
-    .map((fact) => fact.order)
-    .sort((a, b) => byNumericId(a.sequenceNumber, b.sequenceNumber));
-
-export const incomingRegionOptions = (
-  page: Pick<OutputCalendarPage, "moneyOrders" | "payments" | "regions">,
-): OutputCalendarRegion[] => {
-  const ids = new Set(incomingOrderOptions(page).map((order) => order.regionId));
-  return page.regions.filter((region) => ids.has(region.id));
-};
-
 export const plantMoneyRows = (
   page: Pick<OutputCalendarPage, "moneyOrders" | "payments">,
   filter: PlantPaymentsFilter,
@@ -791,9 +785,15 @@ export const regionMoneyRows = (
   filter: IncomingFilter,
 ): MoneyRow[] => {
   const codeById = new Map(page.regions.map((region) => [region.id, region.code]));
-  const facts = liveFacts(page, "customer_order").filter((fact) => !filter.hiddenOrderIds.includes(fact.order.id));
+  const facts = liveFacts(page, "customer_order").filter(
+    (fact) => filter.orderIds.length === 0 || filter.orderIds.includes(fact.order.id),
+  );
   return [...groupFacts(facts, (fact) => fact.order.regionId).entries()]
-    .filter(([regionId, group]) => !filter.hiddenRegionIds.includes(regionId) && hasMoneyToShow(group, filter.hiddenStatuses))
+    .filter(
+      ([regionId, group]) =>
+        (filter.regionIds.length === 0 || filter.regionIds.includes(regionId)) &&
+        hasMoneyToShow(group, filter.hiddenStatuses),
+    )
     .sort(([a], [b]) => byNumericId(a, b))
     .map(([regionId, group]) => ({
       kind: "region",
@@ -869,15 +869,14 @@ export const outputsFilterSummary = (
 ): string => {
   const parts: string[] = [];
   if (filter.free) parts.push("без резерва");
-  const regionNames = page.regions.filter((r) => filter.regionIds.includes(r.id)).map((r) => r.name);
+  const regionNames = selectedRegions(filter, page).map((r) => r.name);
   if (regionNames.length > 0) {
-    const label =
-      regionNames.length === page.regions.length ? "все регионы" : listWithMore(regionNames);
+    const label = filter.allRegions ? "все регионы" : listWithMore(regionNames);
     parts.push(filter.withRegionOrders ? `${label} (с заказами)` : label);
   }
-  const orders = page.customerOrders.filter((o) => filter.orderIds.includes(o.id)).map((o) => o.number);
+  const orders = selectedOrders(filter, page).map((o) => o.number);
   if (orders.length > 0) {
-    parts.push(orders.length === page.customerOrders.length ? "все заказы клиента" : listWithMore(orders));
+    parts.push(filter.allOrders ? "все заказы клиента" : listWithMore(orders));
   }
   const owners = parts.length > 0 ? parts.join(" + ") : "никого";
   return `Считаем: ${owners}${plantId ? ` · ${formatEntityCode("plant", plantId)}` : ""}`;

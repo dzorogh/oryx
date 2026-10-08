@@ -1039,6 +1039,42 @@ export const loadOutputCalendarPage = async () => {
   return mapOutputCalendarPage(data);
 };
 
+/** `calendar` — orders of the calendar page; `money` — orders with money facts («Поступления»). */
+export type CalendarFilterScope = "calendar" | "money";
+
+export type CalendarFilterSearch = { scope: CalendarFilterScope } & ({ query: string } | { ids: string[] });
+
+export type CalendarCustomerOrderHit = { id: string; number: string; regionCode: string };
+
+export type CalendarRegionHit = { id: string; code: string; name: string };
+
+const calendarSearchArgs = (search: CalendarFilterSearch) => ({
+  p_query: "query" in search ? search.query : "",
+  p_scope: search.scope,
+  p_ids: "ids" in search ? search.ids.map(Number) : null,
+});
+
+export const searchCalendarCustomerOrders = async (search: CalendarFilterSearch): Promise<CalendarCustomerOrderHit[]> => {
+  const rows = await rpcJson<Array<Record<string, unknown>>>(
+    "store_calendar_customer_order_search",
+    calendarSearchArgs(search),
+  );
+  return rows.map((row) => ({
+    id: str(row.id),
+    number: str(row.number ?? ""),
+    regionCode: row.regionId == null ? "" : storedEntityCode("region", row.regionCode, str(row.regionId)),
+  }));
+};
+
+export const searchCalendarRegions = async (search: CalendarFilterSearch): Promise<CalendarRegionHit[]> => {
+  const rows = await rpcJson<Array<Record<string, unknown>>>("store_calendar_region_search", calendarSearchArgs(search));
+  return rows.map((row) => ({
+    id: str(row.id),
+    code: storedEntityCode("region", row.code, str(row.id)),
+    name: str(row.name ?? ""),
+  }));
+};
+
 export type ReservationLineInput = {
   productId: string;
   quantity: number;
