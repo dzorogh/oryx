@@ -64,6 +64,7 @@ import {
   type AdjustmentDraft,
 } from "@/features/logistics/logistics-adjustments";
 import { richTextToPlain } from "@/features/logistics/rich-text-plain";
+import { isPaymentStatus } from "@/features/logistics/order-money";
 import {
   derivedStockState,
   documentNumber,
@@ -873,6 +874,17 @@ export const mapCustomerOrderListRow = (row: Record<string, unknown>): CustomerO
   shipped: Number(row.shipped ?? 0),
   openToReserve: Number(row.openToReserve ?? 0),
   createdBy: str(row.createdBy ?? ""),
+  regionId: str(row.regionId ?? ""),
+  regionCode: row.regionId ? storedEntityCode("region", row.regionCode, str(row.regionId)) : "",
+  tenants: (Array.isArray(row.tenants) ? (row.tenants as Record<string, unknown>[]) : []).map((tenant) => ({
+    id: str(tenant.id),
+    name: str(tenant.name),
+  })),
+  sourceKind: row.sourceKind === "plant" || row.sourceKind === "hub" ? row.sourceKind : null,
+  sourceId: strOrNull(row.sourceId),
+  payments: (Array.isArray(row.payments) ? (row.payments as Record<string, unknown>[]) : []).flatMap((payment) =>
+    isPaymentStatus(payment.status) ? [{ dueOn: str(payment.dueOn).slice(0, 10), status: payment.status }] : [],
+  ),
 });
 
 export const loadCustomerOrderList = () =>

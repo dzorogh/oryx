@@ -69,6 +69,51 @@ describe("mapCustomerOrderListRow", () => {
     assert.equal(row.ordered, 12);
     assert.equal(row.createdBy, "Иван Петров");
   });
+
+  it("maps region, tenants, source and payments for list filters", () => {
+    const row = mapCustomerOrderListRow({
+      id: "4",
+      sequenceNumber: "4",
+      number: "OMS-4",
+      status: "in_progress",
+      expectedEndOn: null,
+      createdAt: "2026-09-01T10:00:00+00:00",
+      products: [],
+      regionId: "1",
+      regionCode: "AE",
+      tenants: [{ id: "tenant-sharmax-ae", name: "Sharmax UAE" }],
+      sourceKind: "hub",
+      sourceId: 3,
+      payments: [
+        { dueOn: "2026-10-01", status: "paid" },
+        { dueOn: "2026-11-01", status: "bogus" },
+      ],
+    });
+    assert.equal(row.regionId, "1");
+    assert.equal(row.regionCode, "AE");
+    assert.deepEqual(row.tenants, [{ id: "tenant-sharmax-ae", name: "Sharmax UAE" }]);
+    assert.equal(row.sourceKind, "hub");
+    assert.equal(row.sourceId, "3");
+    assert.deepEqual(row.payments, [{ dueOn: "2026-10-01", status: "paid" }]);
+  });
+
+  it("maps a row without region, source and payments to empty values", () => {
+    const row = mapCustomerOrderListRow({
+      id: "5",
+      sequenceNumber: "5",
+      number: "OMS-5",
+      status: "draft",
+      expectedEndOn: null,
+      createdAt: "2026-09-01T10:00:00+00:00",
+      products: [],
+    });
+    assert.equal(row.regionId, "");
+    assert.equal(row.regionCode, "");
+    assert.deepEqual(row.tenants, []);
+    assert.equal(row.sourceKind, null);
+    assert.equal(row.sourceId, null);
+    assert.deepEqual(row.payments, []);
+  });
 });
 
 describe("mapOutputListRow", () => {

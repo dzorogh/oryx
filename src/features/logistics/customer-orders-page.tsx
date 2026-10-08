@@ -1,13 +1,10 @@
 // english-ui:ignore-file
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { ALL_VALUE } from "@/components/store/pim/products/catalog/catalog-helpers";
-import { CatalogQuickSelectControl } from "@/components/store/pim/products/catalog/catalog-filters";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { formatEntityCode } from "@/lib/entity-codes";
 import {
@@ -80,7 +77,6 @@ import { FieldSelect } from "@/features/logistics/ui/field-select";
 import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { LogisticsPageShell } from "@/features/logistics/ui/logistics-page-shell";
 import {
-  deadlineFilterMatch,
   listAuthorColumn,
   listCreatedColumn,
   listDeadlineColumn,
@@ -88,8 +84,21 @@ import {
   listNumberColumn,
   listProductsColumn,
   ListQuantity,
-  matchesProductSearch,
 } from "@/features/logistics/ui/list/list-helpers";
+import { LogisticsCodeBadge } from "@/features/logistics/ui/logistics-code-badge";
+import { PlantLink } from "@/features/logistics/ui/plant-link";
+import { WarehouseLink } from "@/features/logistics/ui/warehouse-link";
+import {
+  CUSTOMER_ORDER_PAYMENT_STATE_LABELS,
+  CUSTOMER_ORDER_PAYMENT_STATES,
+  customerOrderPaymentState,
+  customerOrderSourceKey,
+  customerOrderSourceLabel,
+  customerOrderFilters,
+  customerOrderTenantLabel,
+  matchesCustomerOrderText,
+  type CustomerOrderPaymentState,
+} from "@/features/logistics/customer-order-list-filters";
 import type { ListColumnDef, ListGroupDef, ListSortDef } from "@/features/logistics/ui/list/list-types";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { OrderPlanTab } from "@/features/logistics/order-plan/order-plan-tab";
@@ -113,10 +122,8 @@ const STATUS_TOGGLE = [
   { value: "done", label: "Закрыт" },
 ] as const;
 
-const customerOrderHref = (row: CustomerOrderListRow) => `/store/logistics/customer-orders/${row.sequenceNumber}`;
-
 const customerOrderColumns: ListColumnDef<CustomerOrderListRow>[] = [
-  listNumberColumn(customerOrderHref),
+  listNumberColumn((row) => `/store/logistics/customer-orders/${row.sequenceNumber}`),
   {
     id: "status",
     label: "Статус",
@@ -166,6 +173,44 @@ const customerOrderColumns: ListColumnDef<CustomerOrderListRow>[] = [
       ),
   },
   listDeadlineColumn<CustomerOrderListRow>(isOpenCustomerOrderStatus),
+  {
+    id: "region",
+    label: "Регион",
+    sortType: "text",
+    sortValue: (row) => row.regionCode,
+    render: (row) =>
+      row.regionId ? <LogisticsCodeBadge code={row.regionCode} href={hrefForRegion(row.regionId)} /> : "—",
+  },
+  {
+    id: "tenant",
+    label: "Тенант",
+    sortType: "text",
+    sortValue: (row) => customerOrderTenantLabel(row),
+    render: (row) => (row.tenants.length ? customerOrderTenantLabel(row) : "—"),
+  },
+  {
+    id: "source",
+    label: "Источник",
+    defaultHidden: true,
+    sortType: "text",
+    sortValue: (row) => customerOrderSourceKey(row),
+    render: (row) =>
+      row.sourceKind === "plant" && row.sourceId ? (
+        <PlantLink plantId={row.sourceId} />
+      ) : row.sourceKind === "hub" && row.sourceId ? (
+        <WarehouseLink warehouseId={row.sourceId} />
+      ) : (
+        "—"
+      ),
+  },
+  {
+    id: "payment",
+    label: "Оплата",
+    defaultHidden: true,
+    sortType: "number",
+    sortValue: (row) => CUSTOMER_ORDER_PAYMENT_STATES.indexOf(customerOrderPaymentState(row.payments)),
+    render: (row) => CUSTOMER_ORDER_PAYMENT_STATE_LABELS[customerOrderPaymentState(row.payments)],
+  },
   listCreatedColumn<CustomerOrderListRow>(),
   {
     id: "description",
@@ -194,6 +239,31 @@ const customerOrderGroupDefs: ListGroupDef<CustomerOrderListRow>[] = [
   },
   listDeadlineGroup<CustomerOrderListRow>(isOpenCustomerOrderStatus),
   {
+    id: "region",
+    label: "Регион",
+    key: (row) => row.regionCode || "Без региона",
+    renderHeader: (key) => key,
+  },
+  {
+    id: "tenant",
+    label: "Тенант",
+    key: (row) => customerOrderTenantLabel(row),
+    renderHeader: (key) => key,
+  },
+  {
+    id: "source",
+    label: "Источник",
+    key: (row) => customerOrderSourceKey(row),
+    renderHeader: (key) => customerOrderSourceLabel(key),
+  },
+  {
+    id: "payment",
+    label: "Оплата",
+    order: [...CUSTOMER_ORDER_PAYMENT_STATES],
+    key: (row) => customerOrderPaymentState(row.payments),
+    renderHeader: (key) => CUSTOMER_ORDER_PAYMENT_STATE_LABELS[key as CustomerOrderPaymentState] ?? key,
+  },
+  {
     id: "author",
     label: "Автор",
     key: (row) => row.createdBy || "—",
@@ -201,82 +271,37 @@ const customerOrderGroupDefs: ListGroupDef<CustomerOrderListRow>[] = [
   },
 ];
 
+const FilterField = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="flex flex-col gap-1.5">
+    <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    {children}
+  </div>
+);
+
 
 export const CustomerOrdersPage = () => {
   const { rows, isLoading, error, reload } = useLogisticsList(loadCustomerOrderList);
   const [open, setOpen] = useState(false);
   const createStore = useLogisticsStore({ kind: "form", form: "customer_order", enabled: open });
   const [statusToggle, setStatusToggle] = useState<(typeof STATUS_TOGGLE)[number]["value"]>("all");
-  const [search, setSearch] = useState("");
-  const [productId, setProductId] = useState(ALL_VALUE);
-  const [deadlineFilter, setDeadlineFilter] = useState<"all" | "overdue" | "week" | "none">("all");
-  const [hasUnfulfilled, setHasUnfulfilled] = useState(false);
-  const [author, setAuthor] = useState(ALL_VALUE);
+  const [text, setText] = useState({ search: "", description: "", numbers: "" });
+  const patchText = (patch: Partial<typeof text>) => setText((current) => ({ ...current, ...patch }));
 
-  const productOptions = useMemo(() => {
-    const names = new Map<string, string>();
-    for (const line of rows.flatMap((row) => row.products)) {
-      if (line.productId && !names.has(line.productId)) {
-        names.set(line.productId, line.productName ?? line.productId);
-      }
-    }
-    return [...names]
-      .map(([value, label]) => ({ value, label }))
-      .sort((left, right) => left.label.localeCompare(right.label, "ru"));
-  }, [rows]);
+  const hasActiveFilters = Object.values(text).some((value) => value.trim().length > 0);
 
-  const authorOptions = useMemo(
+  const filtered = useMemo(
     () =>
-      [...new Set(rows.map((row) => row.createdBy).filter(Boolean))]
-        .sort((left, right) => left.localeCompare(right, "ru"))
-        .map((name) => ({ value: name, label: name })),
-    [rows],
+      rows.filter((order) => {
+        if (statusToggle === "in_progress" && !isOpenCustomerOrderStatus(order.status)) {
+          return false;
+        }
+        if (statusToggle === "done" && order.status !== "done" && order.status !== "closed") {
+          return false;
+        }
+        return matchesCustomerOrderText(order, text);
+      }),
+    [rows, statusToggle, text],
   );
-
-  const hasActiveFilters =
-    search.trim().length > 0 ||
-    productId !== ALL_VALUE ||
-    deadlineFilter !== "all" ||
-    hasUnfulfilled ||
-    author !== ALL_VALUE;
-
-  const filtered = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-    return rows.filter((order) => {
-      if (statusToggle === "in_progress" && !isOpenCustomerOrderStatus(order.status)) {
-        return false;
-      }
-      if (statusToggle === "done" && order.status !== "done" && order.status !== "closed") {
-        return false;
-      }
-      if (
-        normalizedSearch &&
-        !order.number.toLowerCase().includes(normalizedSearch) &&
-        !order.description.toLowerCase().includes(normalizedSearch) &&
-        !matchesProductSearch(order.products, normalizedSearch)
-      ) {
-        return false;
-      }
-      if (productId !== ALL_VALUE && !order.products.some((line) => line.productId === productId)) {
-        return false;
-      }
-      if (!deadlineFilterMatch(order.expectedEndOn, deadlineFilter, isOpenCustomerOrderStatus(order.status))) {
-        return false;
-      }
-      if (hasUnfulfilled && !(isOpenCustomerOrderStatus(order.status) && order.openToReserve > 0)) {
-        return false;
-      }
-      return author === ALL_VALUE || order.createdBy === author;
-    });
-  }, [author, deadlineFilter, hasUnfulfilled, productId, rows, search, statusToggle]);
-
-  const resetFilters = () => {
-    setSearch("");
-    setProductId(ALL_VALUE);
-    setDeadlineFilter("all");
-    setHasUnfulfilled(false);
-    setAuthor(ALL_VALUE);
-  };
 
   return (
     <LogisticsPageShell crumbs={[{ label: "Заказы клиента" }]}>
@@ -290,7 +315,6 @@ export const CustomerOrdersPage = () => {
         groupDefs={customerOrderGroupDefs}
         rows={filtered}
         rowKey={(row) => row.id}
-        rowHref={customerOrderHref}
         groupQuantity={(row) => row.ordered}
         isLoading={isLoading}
         error={error}
@@ -298,58 +322,28 @@ export const CustomerOrdersPage = () => {
         toggleValue={statusToggle}
         onToggleChange={(value) => setStatusToggle(value as (typeof STATUS_TOGGLE)[number]["value"])}
         toggleAriaLabel="Статус заказа клиента"
-        search={{ value: search, onChange: setSearch }}
-        quickControls={
-          <CatalogQuickSelectControl
-            value={productId}
-            onValueChange={(value) => setProductId(value ?? ALL_VALUE)}
-            ariaLabel="Быстрый фильтр по товару"
-            placeholder="Товар"
-            allLabel="Все товары"
-            options={productOptions}
-            widthClassName="w-[140px] shrink-0 lg:w-[176px]"
-          />
-        }
+        search={{ value: text.search, onChange: (search) => patchText({ search }) }}
+        filters={customerOrderFilters}
         hasActiveFilters={hasActiveFilters}
-        onResetFilters={resetFilters}
+        onResetFilters={() => setText({ search: "", description: "", numbers: "" })}
         filterSheet={
           <>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Срок</span>
-              <CatalogQuickSelectControl
-                value={deadlineFilter}
-                onValueChange={(value) => setDeadlineFilter((value ?? "all") as typeof deadlineFilter)}
-                ariaLabel="Фильтр по сроку"
-                placeholder="Любой срок"
-                allLabel="Любой срок"
-                options={[
-                  { value: "overdue", label: "Просрочен" },
-                  { value: "week", label: "Ближайшие 7 дней" },
-                  { value: "none", label: "Без срока" },
-                ]}
-                widthClassName="w-full"
+            <FilterField label="Описание">
+              <Input
+                value={text.description}
+                onChange={(event) => patchText({ description: event.target.value })}
+                placeholder="Текст в описании"
+                aria-label="Фильтр по описанию"
               />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Автор</span>
-              <CatalogQuickSelectControl
-                value={author}
-                onValueChange={(value) => setAuthor(value ?? ALL_VALUE)}
-                ariaLabel="Фильтр по автору"
-                placeholder="Все авторы"
-                allLabel="Все авторы"
-                options={authorOptions}
-                widthClassName="w-full"
+            </FilterField>
+            <FilterField label="Номера заказов">
+              <Input
+                value={text.numbers}
+                onChange={(event) => patchText({ numbers: event.target.value })}
+                placeholder="OMS-12, 15, 27"
+                aria-label="Фильтр по номерам заказов"
               />
-            </label>
-            <label className="flex items-center gap-3 rounded-lg border border-[var(--corportal-border-grey)] px-3 py-2.5">
-              <Checkbox
-                checked={hasUnfulfilled}
-                onCheckedChange={(checked) => setHasUnfulfilled(checked === true)}
-                aria-label="Только с необеспеченным количеством"
-              />
-              <span className="text-sm font-medium">Есть необеспеченное</span>
-            </label>
+            </FilterField>
           </>
         }
       />

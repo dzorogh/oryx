@@ -9,6 +9,7 @@ import type {
   ShipmentDirection,
   TransferStatus,
 } from "@/features/logistics/logistics-types";
+import type { PaymentStatus } from "@/features/logistics/order-money";
 
 /** Product line preview as returned by list RPCs (ready for DocumentProductLines). */
 export type LogisticsListProductLine = {
@@ -32,6 +33,12 @@ export type CustomerOrderListRow = {
   shipped: number;
   openToReserve: number;
   createdBy: string;
+  regionId: string;
+  regionCode: string;
+  tenants: { id: string; name: string }[];
+  sourceKind: "plant" | "hub" | null;
+  sourceId: string | null;
+  payments: { dueOn: string; status: PaymentStatus }[];
 };
 
 export type ProductionOrderListRow = {
