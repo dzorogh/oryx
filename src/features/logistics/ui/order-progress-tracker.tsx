@@ -126,19 +126,20 @@ export const stageProgress = (
   return allDone ? "complete" : "active";
 };
 
-/** Assign done/current/pending markers. Several stages can be current at once. */
+/**
+ * Assign done/current/pending markers. Several stages can be current at once.
+ * A stage without documents stays pending even when later stages have documents.
+ */
 export const resolveStageMarkers = (
   stages: Array<{ items: RelatedDocumentItem[]; doneStatuses: readonly string[] }>,
-): StageMarker[] => {
-  const progress = stages.map((stage) => stageProgress(stage.items, stage.doneStatuses));
-  return progress.map((value, index) => {
-    if (value === "complete" || value === "active") {
-      return value === "complete" ? "done" : "current";
+): StageMarker[] =>
+  stages.map((stage) => {
+    const progress = stageProgress(stage.items, stage.doneStatuses);
+    if (progress === "complete") {
+      return "done";
     }
-    const laterHasDocuments = progress.slice(index + 1).some((item) => item !== "empty");
-    return laterHasDocuments ? "done" : "pending";
+    return progress === "active" ? "current" : "pending";
   });
-};
 
 const sortStageItems = (
   items: RelatedDocumentItem[],
@@ -278,12 +279,11 @@ const DocumentCard = ({
 };
 
 const stageCaption = (
-  marker: StageMarker,
   items: RelatedDocumentItem[],
   doneStatuses: readonly string[],
 ): string => {
   if (items.length === 0) {
-    return marker === "done" ? "Пройдено" : "Не начато";
+    return "Не начато";
   }
   const activeCount = items.filter((item) => isDocumentActive(item, doneStatuses)).length;
   if (activeCount > 0) {
@@ -319,7 +319,7 @@ const JourneyStage = ({
 }) => {
   const actions = showActions && stage.actions && stage.actions.length > 0 ? stage.actions : null;
   const items = sortStageItems(stage.items, stage.doneStatuses);
-  const caption = stageCaption(marker, stageDocuments(stage.items), stage.doneStatuses);
+  const caption = stageCaption(stageDocuments(stage.items), stage.doneStatuses);
 
   return (
     <div
