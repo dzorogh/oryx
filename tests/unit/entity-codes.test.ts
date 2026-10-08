@@ -8,6 +8,7 @@ import {
   formatEntityCode,
   mergeEntityCodePrefixes,
   normalizeEntityCodePrefix,
+  parseEntityCodeId,
   storedEntityCode,
 } from "@/lib/entity-codes";
 
@@ -74,5 +75,20 @@ describe("entity-codes — реестр и форматирование", () => 
     assert.equal(normalizeEntityCodePrefix("ARTарт-"), "ART");
     assert.equal(normalizeEntityCodePrefix("арт-"), "");
     assert.equal(normalizeEntityCodePrefix("ABCDEFGHI"), "ABCDEFGH");
+  });
+
+  it("parse: обратный разбор кода со своим префиксом", () => {
+    const prefixes = mergeEntityCodePrefixes({ plant: "ZAV", product: "ART" });
+    assert.equal(parseEntityCodeId("plant", formatEntityCode("plant", 6, prefixes), prefixes), 6);
+    assert.equal(parseEntityCodeId("product", "art-12", prefixes), 12);
+    assert.equal(parseEntityCodeId("product", " 12 ", prefixes), 12);
+  });
+
+  it("parse: дефолтный префикс принимается, чужой — нет", () => {
+    const prefixes = mergeEntityCodePrefixes({ plant: "ZAV" });
+    assert.equal(parseEntityCodeId("plant", "PLT-6", prefixes), 6);
+    assert.equal(parseEntityCodeId("plant", "WH-6", prefixes), null);
+    assert.equal(parseEntityCodeId("plant", "ZAV-", prefixes), null);
+    assert.equal(parseEntityCodeId("plant", "Силовой", prefixes), null);
   });
 });

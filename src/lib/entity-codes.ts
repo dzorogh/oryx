@@ -167,6 +167,28 @@ export const formatEntityCode = (
   return `${prefix}-${id}`;
 };
 
+/**
+ * Id из кода `PREFIX-id` или голого числа. Принимает активный и дефолтный префикс:
+ * значения фильтров могли быть отформатированы до загрузки префиксов из БД.
+ */
+export const parseEntityCodeId = (
+  kind: EntityCodeKind,
+  code: string,
+  prefixes: EntityCodePrefixes = activePrefixes,
+): number | null => {
+  const match = code.trim().toUpperCase().match(/^(?:([A-Z0-9]+)-)?(\d+)$/);
+  if (!match?.[2]) {
+    return null;
+  }
+  const prefix = match[1];
+  const def = ENTITY_CODES[kind] as EntityCodeDefinition;
+  if (prefix && prefix !== prefixes[kind] && prefix !== def.defaultPrefix) {
+    return null;
+  }
+  const id = Number(match[2]);
+  return Number.isSafeInteger(id) ? id : null;
+};
+
 /** Для сущностей с собственным сохранённым кодом (регион: `store_region.code`): `prefix-id` — только при пустом коде. */
 export const storedEntityCode = (
   kind: EntityCodeKind,
