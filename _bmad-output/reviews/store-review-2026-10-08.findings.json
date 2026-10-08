@@ -1,0 +1,656 @@
+[
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/checkout/store-checkout-page.tsx:398-415",
+  "trigger_condition": "Uncommitted change: in plant mode with one block, the card shows «Оформить заказ» and the footer shows «Оформить всё», and both buttons do the same thing. With several blocks the card label «Оформить подзаказ» clashes with the mode description «На каждую площадку оформляется отдельный заказ» and with the result dialog «Создан черновик». The RPC creates independent customer orders, not sub-orders of a parent.",
+  "guard_snippet": "Hide the footer button (or the block button) when visibleBlocks.length === 1. Label the per-block action «Оформить заказ по {block.sourceCode}» instead of «подзаказ», so it matches the order model and the result dialog.",
+  "potential_consequence": "Users see duplicate CTAs. They also expect a parent order containing sub-orders, which the system never creates, so they get confused about the order structure."
+ },
+ {
+  "lens": "adversarial",
+  "location": "docs/features/store-cart-checkout.md:35",
+  "trigger_condition": "The new doc sentence says that in «Склад региона» mode there is one block because «всё везётся с одной площадки». That is wrong: hub mode is one block because there is one regional hub warehouse. The goods still come from many plants, and «площадка» means a plant elsewhere in this doc.",
+  "guard_snippet": "Reword: «В режиме «Склад региона» блок всегда один — все товары собираются на хабе региона, поэтому кнопки у блока нет — только «Оформить всё».»",
+  "potential_consequence": "The feature doc teaches the wrong domain model (hub equals one plant). Future changes built on it, such as plant splitting or container calculation in hub mode, will be designed incorrectly."
+ },
+ {
+  "lens": "adversarial",
+  "location": "supabase/migrations/20260928165138_store_code_prefix_registry.sql:508; src/features/store/checkout/store-checkout-page.tsx:238",
+  "trigger_condition": "store_checkout_customer_order calls store_apply_currency_rates(p_rates). Every cart checkout therefore overwrites the global store_currency.rate catalog with the browser's live 'float' rates. When float rates failed, the client sends null, yet the UI totals were computed with fallbackRates.",
+  "guard_snippet": "Write the rates into the order's own store_order_money.rates snapshot only, not the global store_currency catalog. Pass the same `rates` object to the RPC that the UI used for totals (floatRates ?? fallbackRates).",
+  "potential_consequence": "A customer checkout silently changes exchange rates for every other order, pricelist and money view in the demo. The order snapshot can also differ from the ≈ total the user saw before confirming."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/cart/checkout-model.ts:199,210,308",
+  "trigger_condition": "lineTotal = unitPrice * quantity and supplyCostAmount * quantity are never rounded. Currency totals are then summed as raw floats, while the server stores round(quantity, 2) × unit_price.",
+  "guard_snippet": "Wrap with roundMoney: `lineTotal: roundMoney(priced.unitPrice * item.quantity)`, apply the same to supply totals, and accumulate in integer cents.",
+  "potential_consequence": "Displayed block and grand totals can be off by a cent from the order money computed server-side, which undermines 'the price shown is the price ordered'."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/cart/cart-context.tsx:93-133; supabase/migrations/20260928165138_store_code_prefix_registry.sql:544-553",
+  "trigger_condition": "The cart catalog snapshot (`requested`) is never invalidated for the whole session. The RPC trusts the client's unit_price unconditionally and overrides store_resolve_line_price.",
+  "guard_snippet": "Refetch the cart catalog when the checkout page mounts (or on visibilitychange), or reprice on the server: compare the client price to dealer price × (1 + supply%) and reject or replace it on mismatch.",
+  "potential_consequence": "After someone edits prices or statuses, orders are created at stale prices, even for variants that are now unavailable. Order money then disagrees with the catalog."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/product-card/store-product-card-page.tsx:553-584; src/features/store/checkout/store-checkout-page.tsx:144",
+  "trigger_condition": "The «В корзину» button checks only dealerStatus and price, not selectedVariant.deletedAt, even though archived variants are selectable when «Архив» is on. cart-catalog filters out deleted rows, so the checkout line shows the raw numeric variantId as its name.",
+  "guard_snippet": "Add `if (selectedVariant.deletedAt) return \"Вариант в архиве\"` to the block reason. In checkout, show a ghost line as «Товар удалён» with a remove action, and prune lines whose ids were requested but not returned.",
+  "potential_consequence": "Users can put archived products in the cart. Checkout then shows lines named like '1234' that can never be ordered and never leave the cart on their own."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/store-catalog-from-logistics.ts:136-143,410",
+  "trigger_condition": "parsePlantIdFromSiteCode hardcodes `PLT-` and search hardcodes `PRD-`. Site filter options, however, come from formatEntityCode, which uses the configurable code-prefix registry (Settings → Префиксы кодов).",
+  "guard_snippet": "Build the regexes from getActiveEntityCodePrefixes().plant and .product (escaped), or pass the plant id itself as the filter option value instead of reparsing the label.",
+  "potential_consequence": "After the plant prefix is changed in Settings, every production-site filter matches `id = -1` and the catalog goes empty. Code search by the new product prefix also stops working."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/region-context.tsx:142",
+  "trigger_condition": "hubCode is computed once in loadStoreRegions through formatEntityCode, which reads module-global activePrefixes. RegionProvider never awaits loadEntityCodePrefixes, so the result depends on load order.",
+  "guard_snippet": "Store only hubWarehouseId in context and format the code at render time after the prefixes have loaded, or await loadEntityCodePrefixes() inside loadStoreRegions.",
+  "potential_consequence": "The hub shows as the default 'WH-n' while other screens show the custom prefix. This breaks the place-codes convention of consistent codes."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/store-catalog-from-logistics.ts:194-198; src/components/store/pim/products/catalog/catalog-table.tsx:292,316",
+  "trigger_condition": "DB catalog items get brand 'Oryx', stock 0 and updatedAt '2026-09-01' hardcoded. The «Бренд» badge and the «Обновлено» column render these constants, while the product card reads the real store_brand.name.",
+  "guard_snippet": "Select `brand:store_brand(name)` and updated_at in buildVariantQuery and map them. Drop the columns if no data exists.",
+  "potential_consequence": "The catalog shows the same fake brand and date on every row, which contradicts the product card. The demo looks broken and misleads anyone evaluating the data model."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/components/store/pim/products/store-catalog-page.tsx:178-195",
+  "trigger_condition": "Both `!page` (Supabase unset) and `.catch` (network or RPC error) set dbItems to [] with no message. Only load-more shows an error.",
+  "guard_snippet": "Add `const [loadError, setLoadError] = useState(false)` and render an error card with «Не удалось загрузить каталог» and a «Повторить» button. Show a separate «Supabase не настроен» state.",
+  "potential_consequence": "A backend failure looks like 'no products'. This is the pitfall AGENTS.md warns about: the UI can't tell a misconfigured backend from an empty one."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/store-catalog-from-logistics.ts:227-243,338-355",
+  "trigger_condition": "resolveProductIdsForCategories is not paged, so it hits the 1000-row PostgREST cap. In pricelist (no-limit) mode, loadRegionPricing puts every variant id into one `.in(...)` GET, and category product ids also go into `.in(\"product_id\", …)`.",
+  "guard_snippet": "Use fetchAllRows with an order for store_product_category. Chunk `.in` lists to about 200 ids per request, or move the filters into an RPC or view that joins on the server.",
+  "potential_consequence": "Category filters silently drop products past 1000 links. Once the catalog grows, pricelist bootstrap fails with 414/400 errors (URL too long) and falls back to fabricated seed data."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/cart/cart-catalog.ts:110-117",
+  "trigger_condition": "store_product_supply_cost is paged with fetchAllRows but ordered only by product_variant_id, which has many rows per value (one per region). fetchAllRows' own contract requires a stable unique order.",
+  "guard_snippet": ".order(\"product_variant_id\").order(\"region_id\") (or .order(\"id\"))",
+  "potential_consequence": "Past 1000 rows, pages overlap or skip rows nondeterministically, so supply-cost % is missing for some regions and hub prices drop the markup at random."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/components/store/pim/pricelists/pricelists-demo-data.ts:205-246",
+  "trigger_condition": "When DB rows are missing, the pricelist invents prices and dealer statuses from hash seeds (getSeedCellValue / getSeedDealerStatus). The catalog and checkout treat the same variants as «нет дилерской цены» or unavailable.",
+  "guard_snippet": "With a DB bootstrap present, return null or empty for missing cells and keep seeds only for the Supabase-unset offline mode. Visually mark any seed value («демо»).",
+  "potential_consequence": "A manager sees a variant as 'Доступен' at a price in the pricelist, but customers can't buy it in the catalog. The two screens contradict each other with no way to tell which is true."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/components/store/pim/pricelists/collab/use-yjs-pricelists.ts:303; scripts/collab-server.mjs:96-99; src/components/store/pim/pricelists/collab/collab-config.ts:3",
+  "trigger_condition": "Pricelist edits go only into an in-memory Yjs doc. The server destroys the doc when the last connection closes, nothing writes to store_product_price or status, and the default WS URL is ws://127.0.0.1:1234 even in the deployed demo.",
+  "guard_snippet": "Persist cell edits to Supabase (debounced upsert into store_product_price / store_product_region_status), or at least persist the Yjs doc (y-leveldb / snapshot). Show «Изменения не сохраняются» when the collab server is unreachable.",
+  "potential_consequence": "Every price edit disappears when the tabs close and never reaches the catalog or checkout. On the deployed site, collab silently tries to reach the visitor's own localhost."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/components/store/pim/pricelists/collab/collab-config.ts:23-24",
+  "trigger_condition": "Presence identities are English (\"Swift Otter\", \"Calm Falcon\") and render as user-facing names and initials in the toolbar and on cells.",
+  "guard_snippet": "Use Russian word lists, e.g. ADJECTIVES = [\"Быстрый\", \"Тихий\", …], ANIMALS = [\"Выдра\", \"Сокол\", …], with matching grammatical gender.",
+  "potential_consequence": "Violates docs/conventions/ui/russian-labels.md: English text on a Russian UI page."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/checkout/store-checkout-page.tsx:476,498",
+  "trigger_condition": "Checkout UI renders English «Supply costs» in «в т.ч. Supply costs N%» and «Supply costs: итого».",
+  "guard_snippet": "Replace with «в т.ч. расходы на доставку N%» / «Расходы на доставку: итого», and use the same term in the doc.",
+  "potential_consequence": "Russian-labels convention violation on the main customer-facing page."
+ },
+ {
+  "lens": "adversarial",
+  "location": "app/store/catalog/page.tsx:1-5; app/store/pricelists/page.tsx:1-8; app/store/exchange/page.tsx:1-8; app/store/pim/import-export/page.tsx:1-8",
+  "trigger_condition": "/store/catalog duplicates /store/pim/products. /store/pricelists is a placeholder that shadows the real /store/pim/pricelists. Two different «Импорт/Экспорт» placeholders exist (StorePlaceholderPage vs ModulePlaceholderPage). /store/catalog is also whitelisted for customers in CUSTOMER_STORE_PATHS.",
+  "guard_snippet": "Delete /store/catalog, /store/pricelists and /store/exchange, or make them `redirect()` to their /store/pim/* counterparts. Keep one placeholder component and drop /store/catalog from CUSTOMER_STORE_PATHS.",
+  "potential_consequence": "Old links open an empty «Прайс-листы» stub instead of the real page. The duplicated URLs split bookmarks and navigation highlighting and leave two placeholder components to maintain."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/logistics/order-view-role.ts:70-76; src/features/store/product-card/store-product-card-page.tsx:409,611-640",
+  "trigger_condition": "The customer role may open /store/pim/products/*, but the product card applies no role visibility. A customer sees «Добавить вариант», «Архив», the logistics tab with warehouse balances, the document ledger and the create-production-order dialog.",
+  "guard_snippet": "Add a 'product' page to store_role_visibility (e.g. variants.add, tab.logistics, production.create), resolve it in viewRolePageForPath, and gate these elements via useViewRole like the customer-order card does.",
+  "potential_consequence": "The demo's role switcher contradicts itself: the order card hides internal data from customers, but the product card lets them create variants and production orders."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/logistics/customer-orders-page.tsx:127-128; src/features/logistics/ui/customer-order-containers-tab.tsx:7; src/features/store/store-nav.ts:8-11",
+  "trigger_condition": "The dependency is circular: logistics imports store (region-context, RegionSwitcher, ContainerLoadCalculator), while store imports logistics in 11 files (nav, order-money, view roles, logistics-api, ledger UI).",
+  "guard_snippet": "Move shared pieces (region context, container calculator, view-role, order-money) into a neutral module such as src/features/commerce-shared or src/domain, so the dependency runs in one direction (store → logistics or both → shared).",
+  "potential_consequence": "Changes in either module ripple unpredictably, the two sections can't be split or lazy-loaded separately, and import cycles risk undefined-at-init bugs."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/cart/checkout-model.ts:5-6; src/features/store/cart/cart-catalog.ts:3-5; src/components/store/pim/products/store-catalog-demo-data.ts:12,30",
+  "trigger_condition": "The store module has two homes, src/features/store and src/components/store, which import each other (10 and 8 files). Core domain types (DealerStatus, StoreCatalogItem, CurrencyCode) live in *-demo-data.ts and pricelists-helpers.ts and are imported by the DB-backed cart and checkout code.",
+  "guard_snippet": "Create src/features/store/types.ts (or domain/store) for DealerStatus, RetailStatus, CurrencyCode and StoreCatalogItem. Have both demo and DB code import from it, then move the PIM UI under src/features/store/pim.",
+  "potential_consequence": "Deleting the demo data breaks production-path compile. Ownership is unclear, and new code keeps landing in whichever folder the author guesses."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/store-pricelists-from-db.ts:88-123",
+  "trigger_condition": "loadPricelistDbBootstrap first calls loadDbCatalogItems(), which already loads every variant's region prices and statuses, and then fetches all store_product_price and store_product_region_status again.",
+  "guard_snippet": "Fetch the variant list without pricing (add a `withPricing: false` option), or reuse the RegionPricing result instead of the second fetchAllRows pair.",
+  "potential_consequence": "The pricelist page startup does double the paged requests, including the `.in` with every id that fails at scale."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/product-card/store-product-card-page.tsx:281-284",
+  "trigger_condition": "useLogisticsStore({kind:\"product\"}) runs on every product card render, even though its data is used only on the «Логистика» tab. The tab is not the default.",
+  "guard_snippet": "Move the logistics tab into a child component that calls useLogisticsStore only when variantTab === \"logistics\".",
+  "potential_consequence": "Every product card view, including customers', pulls a full logistics snapshot. This slows the card and loads internal data that isn't shown."
+ },
+ {
+  "lens": "adversarial",
+  "location": "src/features/store/checkout/store-checkout-page.tsx:230-249",
+  "trigger_condition": "After the RPC succeeds, removeVariants drops the whole variant lines by id. If the quantity was changed during the in-flight request (here or in another tab synced through the storage event), the extra quantity is deleted too. A second tab can also submit the same cart again: there is no idempotency key.",
+  "guard_snippet": "Subtract the submitted quantity instead of removing the line (`setQuantity(id, current - submitted)`), and pass a client-generated idempotency token that the RPC checks before creating.",
+  "potential_consequence": "Users lose quantities they added mid-submit, or get duplicate draft orders when two tabs are open."
+ },
+ {
+  "lens": "adversarial",
+  "location": "supabase/migrations/20260923203000_store_reservations_in_outputs_fixups.sql; 20260924172000_store_order_lines_fixups.sql; 20260924182000_store_order_plan_fixups.sql; 20260928144930_store_demo_cart_checkout_seed.sql:1-3; 20260928123053_store_demo_hubs_variants_stock.sql",
+  "trigger_condition": "Schema history has *_fixups migrations, store_checkout_customer_order is redefined in two migrations, and generated demo seed data (491 lines, 'do not edit by hand') sits in the migration stream next to DDL.",
+  "guard_snippet": "Move demo data to supabase/seed.sql (or a seed script) and keep migrations DDL-only. Squash the fixup pairs while the schema is still exploratory.",
+  "potential_consequence": "You can't reset schema without demo data. Regenerating seeds requires a new migration each time, and readers must replay chains to find the live RPC body."
+ },
+ {
+  "location": "src/features/store/cart/cart-context.tsx:117-128",
+  "trigger_condition": "First catalog batch fails and a later batch for newly added ids succeeds",
+  "guard_snippet": "failed: failed || (prev.failed && [...prev.requested].some((id) => !byId.has(id)))",
+  "potential_consequence": "Error banner disappears; failed items stay nameless and blocked forever with no retry",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/cart-context.tsx:117-121",
+  "trigger_condition": "Catalog request fails; ids are still added to requested",
+  "guard_snippet": "on failure keep ids out of requested, or expose retry() that removes them from requested",
+  "potential_consequence": "No retry until a full page reload, even after the network recovers",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/cart-catalog.ts:90-120",
+  "trigger_condition": "localStorage cart holds a non-numeric variantId (legacy demo id, hand edit)",
+  "guard_snippet": "const numericIds = variantIds.filter((id) => /^\\d+$/.test(id)); loadRegionPricing(numericIds)",
+  "potential_consequence": "Raw ids passed to loadRegionPricing become NaN in .in(); bigint error fails the whole cart",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/cart-catalog.ts:83-88",
+  "trigger_condition": "Supabase client is null or env is unset",
+  "guard_snippet": "throw new Error('Supabase не настроен') so catalogError surfaces, instead of return []",
+  "potential_consequence": "Cart lines silently show raw ids as unavailable, with no explanation",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/cart-catalog.ts:93-99",
+  "trigger_condition": "Cart variant is soft-deleted after it was added",
+  "guard_snippet": "flag ids missing from variantsResult as removed; show 'Товар удалён' with a remove action",
+  "potential_consequence": "Checkout shows a misleading reason (unavailable or no plant) and the raw id as name",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/checkout/store-checkout-page.tsx:144",
+  "trigger_condition": "Catalog item missing for a cart line",
+  "guard_snippet": "name: item?.name ?? formatEntityCode('product', line.variantId)",
+  "potential_consequence": "Checkout and remainder show a bare numeric id as the product name",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/checkout/store-checkout-page.tsx:532-555",
+  "trigger_condition": "Remainder line is blocked (not excluded): deleted, unpriced, or has no plant",
+  "guard_snippet": "render a remove button: onClick={() => removeVariants([row.variantId])}",
+  "potential_consequence": "Line cannot be removed from the checkout page; user must find the cart sheet",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/checkout/store-checkout-page.tsx:90-98,154",
+  "trigger_condition": "Stock facts still loading, failed, or Supabase unset (null mapped to [])",
+  "guard_snippet": "track stockStatus; hubReady: stockStatus === 'ok' && regionForStock ? stock.ready : null",
+  "potential_consequence": "Hub shows '0 из наличия · N под заказ' as fact instead of unknown",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/checkout/store-checkout-page.tsx:230-248,445-450,425-428",
+  "trigger_condition": "User changes quantity or a checkbox while that block's RPC is in flight",
+  "guard_snippet": "disabled={submittingBlockId != null} on CartQuantityControl and Checkbox",
+  "potential_consequence": "Order uses the old quantity; removeVariants silently drops the newly edited quantity",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/checkout/store-checkout-page.tsx:230-248",
+  "trigger_condition": "RPC commits on the server but the response is lost or times out",
+  "guard_snippet": "pass a client idempotency key (cart snapshot hash) and dedupe in store_checkout_customer_order",
+  "potential_consequence": "Lines stay in cart; resubmitting creates a duplicate draft order",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/checkout-api.ts:50-60",
+  "trigger_condition": "RPC returns data null without an error",
+  "guard_snippet": "if (!data) throw new Error('Пустой ответ сервера')",
+  "potential_consequence": "TypeError text shown as the error, though the order may exist",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/checkout-model.ts:78-87,199,210 + catalog-helpers.ts:74-75",
+  "trigger_condition": "Hub price with Supply costs has cents (e.g. 2577.15)",
+  "guard_snippet": "formatPrice with maximumFractionDigits: 2; lineTotal: roundMoney(unitPrice * quantity)",
+  "potential_consequence": "Shown unit, supply and total prices are rounded and differ from the RPC price",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/checkout-model.ts:120-123,377-381",
+  "trigger_condition": "Summing unrounded float line totals across lines and blocks",
+  "guard_snippet": "map.set(c, roundMoney((map.get(c) ?? 0) + line.pricing.lineTotal))",
+  "potential_consequence": "Float drift in totals (e.g. x.0000000001), visible once decimals are shown",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/checkout-api.ts:41-45 + supabase/migrations/20260925150000_store_dialogs_warehouse_kind_and_order_source.sql (store_insert_line)",
+  "trigger_condition": "Dealer price currency or amount changed in pricelists after checkout page load",
+  "guard_snippet": "send currency code per line; RPC raises if it differs from the resolved price currency",
+  "potential_consequence": "Stale client amount saved under the new server currency; wrong order money",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/cart-quantity-control.tsx:38-43,66",
+  "trigger_condition": "User clears the input to retype, then blurs",
+  "guard_snippet": "if (raw.trim() === '') { setDraft(String(quantity)); return; }",
+  "potential_consequence": "Empty draft becomes 0, which removes the line from the cart silently",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/region-context.tsx:161-173",
+  "trigger_condition": "Region load throws, or Supabase unset returns null",
+  "guard_snippet": "add regionsError state; show it in RegionSwitcher and the checkout 'needsRegion' card",
+  "potential_consequence": "Checkout asks to pick a region but the switcher list is empty with no reason",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/region-context.tsx:124-129",
+  "trigger_condition": "Region has a dealer or retail currency that is not a known CurrencyCode",
+  "guard_snippet": "keep region with a fallback currency, or log and surface the skipped region",
+  "potential_consequence": "Stored selection silently becomes 'не выбран'; region is missing from the switcher",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/product-card/store-product-card-page.tsx:553-588",
+  "trigger_condition": "Selected variant is archived (deletedAt set) but still has a price and status",
+  "guard_snippet": "const blockReason = selectedVariant.deletedAt ? 'Вариант в архиве' : getPurchaseBlockReason(...)",
+  "potential_consequence": "Archived variant goes into the cart; catalog drops it and the RPC rejects it",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/product-card/store-product-card-page.tsx:225-246",
+  "trigger_condition": "productId changes or reload() overlaps (create variant) before the previous load resolves",
+  "guard_snippet": "track a request id/ref; ignore results whose id differs from the latest",
+  "potential_consequence": "Stale product data or loading state overwrites the current product",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/product-card/store-product-card-page.tsx:104-121",
+  "trigger_condition": "URL productId is non-numeric and not a demo id",
+  "guard_snippet": "if (!/^\\d+$/.test(productId)) return null;",
+  "potential_consequence": "Raw English Postgres bigint error shown instead of 'Товар не найден.'",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/product-card/store-product-card-page.tsx:100-102,234",
+  "trigger_condition": "Supabase unset; loadProductCard returns null",
+  "guard_snippet": "if (!isSupabaseConfigured()) setError('Демо-бэкенд не настроен')",
+  "potential_consequence": "Page claims the product does not exist instead of the backend being missing",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/product-card/store-product-card-page.tsx:116,126",
+  "trigger_condition": "categoriesResult.error is set",
+  "guard_snippet": "if (categoriesResult.error) throw new Error(categoriesResult.error.message)",
+  "potential_consequence": "Categories silently shown as '—' on query failure",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/product-card/store-product-card-page.tsx:409-412,627,634-640",
+  "trigger_condition": "View role is customer on an allowed product card path",
+  "guard_snippet": "const isManager = useCurrentViewRole() === 'manager'; render add-variant/production only if isManager",
+  "potential_consequence": "Customer can create variants and production orders from the card",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-view-role-shell.tsx:46-50 + src/features/logistics/use-view-role.ts:21",
+  "trigger_condition": "Customer role stored; hydration uses server snapshot 'manager'",
+  "guard_snippet": "render nothing until mounted (useSyncExternalStore hydrated flag) before choosing children vs denied",
+  "potential_consequence": "Forbidden page mounts briefly, fires its data loads, then switches to denied",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/catalog-scope-context.tsx:35-56",
+  "trigger_condition": "localStorage access or setItem throws (private mode, quota, SecurityError)",
+  "guard_snippet": "wrap getItem/setItem in try { ... } catch { /* ignore */ }",
+  "potential_consequence": "Uncaught exception in effect or click handler breaks the catalog scope switch",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:295-313,365-368",
+  "trigger_condition": "Status filter set with a regionCode that is unknown or inactive",
+  "guard_snippet": "if (filters.regionCode && regionId == null && statusFilterActive) return { items: [], groupTotals: {}, hasMore: false }",
+  "potential_consequence": "Status filter silently ignored; unfiltered rows shown under an active filter",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:337-355",
+  "trigger_condition": "Category resolves to more than 1000 store_product_category rows",
+  "guard_snippet": "fetchAllRows((from,to) => client.from('store_product_category').select('product_id').in(...).order('product_id').range(from,to))",
+  "potential_consequence": "PostgREST cap truncates product ids; catalog silently misses products",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:227-243,557 + src/features/store/store-pricelists-from-db.ts:88",
+  "trigger_condition": "Unpaginated loadDbCatalogItems passes every variant id into .in() (234 today)",
+  "guard_snippet": "if (!ids || ids.length > 300) query without .in() and filter client-side; or chunk ids",
+  "potential_consequence": "URL length grows with catalog; 414 or proxy rejection breaks pricelists load",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/cart/cart-catalog.ts:183-184",
+  "trigger_condition": "Region has a dealer price but no store_product_region_status row",
+  "guard_snippet": "status?.dealer ? ... : price?.dealer ? 'available' : 'unavailable' (match catalog default)",
+  "potential_consequence": "Priced item blocked in cart/checkout as 'временно недоступен'",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/checkout/store-checkout-page.tsx:99-105 + src/features/store/packing/container-load-calculator.tsx:104-106",
+  "trigger_condition": "loadContainerTypes fails or Supabase unset (containerTypes = [])",
+  "guard_snippet": "pass containerTypesError and render 'Не удалось загрузить типы контейнеров'",
+  "potential_consequence": "Calculator says 'Выберите хотя бы один тип' with no checkboxes to pick",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelist-recalc-deps.ts:52-58",
+  "trigger_condition": "DB bootstrap lands after mount; rowById memo was built from demo rows",
+  "guard_snippet": "useMemo(() => buildRecalcDeps(collab, new Map(getPricelistRows().map(r => [r.id, r]))), [getCell, getParamValue, dataEpoch])",
+  "potential_consequence": "DB variants miss rowById, so FALLBACK_CELL is used and every markup and USD target shows —",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelists-page.tsx:59-78",
+  "trigger_condition": "URL or shared region is an uppercase DB code (RU) parsed before bootstrap against lowercase fallback ids",
+  "guard_snippet": "keep the raw requested code in a ref and call parseRegionId(requestedRef.current ?? current) after applyPricelistDbBootstrap",
+  "potential_consequence": "The chosen region is replaced by the first DB region; the shared-region effect never re-runs",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelists-page.tsx:71-88",
+  "trigger_condition": "Table renders and accepts edits before loadPricelistDbBootstrap resolves",
+  "guard_snippet": "const [bootstrapped, setBootstrapped] = useState(false); render skeleton and skip useRecalcBackend until bootstrapped",
+  "potential_consequence": "Demo bike-* rows flash; edits and compute requests on demo ids go into the shared doc",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-pricelists-from-db.ts:146-151",
+  "trigger_condition": "store_region.group_id is NULL (live: REG-11) or group code is missing",
+  "guard_snippet": "group: groupCode ?? UNGROUPED_ID, and render an «Без группы» bucket in getRegionsByGroup",
+  "potential_consequence": "An ungrouped region shows under СНГ, against the schema comment saying it is not clustered",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-pricelists-from-db.ts:143-155",
+  "trigger_condition": "Region retail currency is outside the CurrencyCode union, or store_region.code is empty",
+  "guard_snippet": "if (!row.code?.trim()) use storedEntityCode('region', row.code, row.id); log skipped regions instead of silent continue",
+  "potential_consequence": "Region and all its prices vanish silently, or empty-code regions collide on cell ids",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelists-demo-data.ts:202-244",
+  "trigger_condition": "DB has no price or status row for a variant+region while Supabase is configured",
+  "guard_snippet": "if (dbBootstrap) return { amount: null, currency: getDefaultCurrency(field, region.currency) } (and \"unavailable\" / \"draft\" for statuses)",
+  "potential_consequence": "Pricelist shows fake seeded prices and random statuses where the catalog shows — or Недоступен",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:136-143",
+  "trigger_condition": "Plant or product code prefix is customised in store_code_prefix_registry",
+  "guard_snippet": "build the regex from getActiveEntityCodePrefixes().plant / .product instead of the PLT- / PRD- literals",
+  "potential_consequence": "Site filter matches nothing (id.eq.-1); searching by product code fails",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:409-412",
+  "trigger_condition": "Product code search when the product prefix is not PRD",
+  "guard_snippet": "new RegExp(`^(?:${escapeRe(prefixes.product)}-)?(\\\\d+)$`, 'i')",
+  "potential_consequence": "Code search falls back to a name ilike and finds nothing",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:448-478",
+  "trigger_condition": "loadCatalogFilterOptions runs before loadLogisticsSettings has applied the prefixes",
+  "guard_snippet": "await loadLogisticsSettings() before formatEntityCode in loadCatalogFilterOptions",
+  "potential_consequence": "Site option values use a default prefix that differs from row group keys",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:365-368",
+  "trigger_condition": "Dealer or retail status filter is set while no region is selected",
+  "guard_snippet": "if (!regionId && (dealerStatus || retailStatus)) return { items: [], groupTotals: {}, hasMore: false } or disable the filter in the UI",
+  "potential_consequence": "Status filter is silently ignored and the unfiltered list shows with the filter active",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:373-375",
+  "trigger_condition": "Filter Недоступен or Черновик for variants without a region_status row",
+  "guard_snippet": "for default statuses use a left join with or(region_status.is.null, dealer_status.eq.X) instead of !inner",
+  "potential_consequence": "Rows displayed as Недоступен/Черновик (the default) are excluded by that same filter",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/features/store/store-catalog-from-logistics.ts:407-416",
+  "trigger_condition": "Search contains *, double quote, backslash or colon",
+  "guard_snippet": "const escaped = search.replace(/[%_,.()*\"\\\\:]/g, '')",
+  "potential_consequence": "* acts as a wildcard, or a broken or() makes the catch show an empty catalog",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/products/catalog/catalog-table.tsx:559-570",
+  "trigger_condition": "A loadMore request failed (loadMoreError true)",
+  "guard_snippet": "reset loadMoreError on scroll, or render a «Повторить» button that calls onLoadMore",
+  "potential_consequence": "The effect returns early forever; «Прокрутите список снова» never retries",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/products/catalog/catalog-table.tsx:559-570",
+  "trigger_condition": "All site groups collapsed, so only header elements are virtualised",
+  "guard_snippet": "count only row elements toward LOAD_MORE_THRESHOLD; skip loading when every group is collapsed",
+  "potential_consequence": "Pages load back to back until the whole catalog is fetched",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelists-table.tsx:83",
+  "trigger_condition": "DB variant has a null image_url, so imageSrc is \"\"",
+  "guard_snippet": "<ProductPhoto src={row.imageSrc} alt={row.imageAlt} sizes=\"36px\" />",
+  "potential_consequence": "next/image errors on a missing src; the catalog guards this, the pricelist does not",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelist-derived-cell.tsx:33-45",
+  "trigger_condition": "Leader commits an entry whose hash differs from this client's hash (different seeds or stale deps)",
+  "guard_snippet": "if (entry?.status === 'ready' && entry.hash !== hash) lastRequestedRef.current = null; re-request with backoff",
+  "potential_consequence": "lastRequestedRef blocks re-requests, so the skeleton spins forever",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/collab/use-recalc-backend.ts:32-38",
+  "trigger_condition": "Lowest-id client is a throttled background tab with fresh-enough lastSeen",
+  "guard_snippet": "exclude clients where document.visibilityState is hidden (publish it in awareness) from leader election",
+  "potential_consequence": "Recompute stalls for up to a minute; every client shows skeletons",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/collab/use-yjs-pricelists.ts:249-253",
+  "trigger_condition": "Page restored from bfcache after pagehide destroyed the singleton",
+  "guard_snippet": "on pageshow with event.persisted, re-acquire the collab and rebind observers; or destroy only when !event.persisted",
+  "potential_consequence": "The mounted table writes to a destroyed provider: no sync, connected stays false",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "scripts/collab-server.mjs:96-99",
+  "trigger_condition": "Last client disconnects (single-user reload, or all tabs closed)",
+  "guard_snippet": "persist with y-leveldb / writeState on destroy, or keep the doc in memory instead of doc.destroy()",
+  "potential_consequence": "All pricelist edits are lost; nothing is written to store_product_price either",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/collab/use-yjs-pricelists.ts:338-341",
+  "trigger_condition": "Two users add, reorder or remove parameters in the same region at once",
+  "guard_snippet": "store defs as a Y.Array of Y.Map per region instead of a whole ParameterDef[] value",
+  "potential_consequence": "Last writer wins; one user's new parameter column silently disappears",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelists-parameters.ts:114-119",
+  "trigger_condition": "Parameter label typed in Cyrillic (the placeholder itself is «Доставка»)",
+  "guard_snippet": "transliterate before replace(/[^a-z0-9]+/g,'_'), and check the slug is unique among defs in the dialog",
+  "potential_consequence": "Auto-slug is empty, so the submit button is disabled with no explanation; duplicate slugs are allowed",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelist-parameter-dialog.tsx:98-99",
+  "trigger_condition": "Formula is non-numeric (e.g. logistics + customs) on create or edit",
+  "guard_snippet": "if (!Number.isFinite(parsedFormula)) show an error «формулы пока не вычисляются» and block submit",
+  "potential_consequence": "Base value silently becomes 0 (setBaseValue on edit) and zeroes the whole column",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelist-price-dual-cell.tsx:120-133",
+  "trigger_condition": "Typing in the display half when the source currency is much stronger (OMR source, UZS display)",
+  "guard_snippet": "round original to 2 decimals (Math.round(original*100)/100) and commit on blur, not per keystroke",
+  "potential_consequence": "Source rounds to 0 or jumps; clearing the field to retype broadcasts amount null",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "location": "src/components/store/pim/pricelists/pricelists-page.tsx:180-196",
+  "trigger_condition": "Export is clicked when filteredItems is empty",
+  "guard_snippet": "if (controller.filteredItems.length === 0) { toast.info('Нет товаров для экспорта'); return; }",
+  "potential_consequence": "Downloads a header-only xlsx with a success toast «Экспортировано товаров: 0»",
+  "lens": "edge-case-hunter"
+ },
+ {
+  "lens": "verification-gap",
+  "location": "Catalog site filter and code search: `parsePlantIdFromSiteCode` hardcodes the `PLT-` prefix, and search hardcodes `PRD-`. `src/features/store/store-catalog-from-logistics.ts:136-143`, `:398-401`, `:410`",
+  "trigger_condition": "Plant and product code prefixes can be configured, but the filter and search parsers accept only the default prefixes, and no test covers this round-trip.",
+  "guard_snippet": "Export `parsePlantIdFromSiteCode` (or move it into a pure helper) and add a node:test case: after `setActiveEntityCodePrefixes({ plant: 'ZAV' })`, `parsePlantIdFromSiteCode(formatEntityCode('plant', 6))` returns 6. Add the same case for the product-code search regex with `product: 'ART'`.",
+  "potential_consequence": "Real bug. `loadCatalogFilterOptions` builds the site options with `formatEntityCode('plant', id)` using the active prefixes (line 474). With a custom plant prefix such as `ZAV-6`, the regex does not match, the query falls through to `eq('id', -1)`, and the catalog shows an empty list for every plant filter. Searching by `ART-12` also stops matching by id. No test fails today: `store-clean-model.test.ts:47-80` checks only that `formatEntityCode` produces custom prefixes, never that the catalog can parse them back.",
+  "gap_shape": "regression-gap",
+  "consumer": "Catalog toolbar site filter → `loadDbCatalogItems` → `buildVariantQuery` (`store-catalog-from-logistics.ts:394-404`); site options come from `loadCatalogFilterOptions` (`:473-478`)",
+  "evidence": "`parsePlantIdFromSiteCode` is not exported. Searching `tests/` for `store-catalog-from-logistics` finds nothing. `store-clean-model.test.ts:52-71` asserts that `ZAV-6` and `ART-12` are formatted, with no parse step."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "Pricelist derived values computed by the simulated backend: `computeTargetValue`, `computeTargetHash`, `isComputedStale` and `isComputedReady`. `src/components/store/pim/pricelists/pricelist-recalc.ts:130-217`",
+  "trigger_condition": "The markup formulas (dealer, retail without expenses, retail with Total Expenses) and the staleness hash have no tests at all.",
+  "guard_snippet": "Add `tests/unit/pricelist-recalc.test.ts` with a fake `RecalcDeps`. Assert `dealerMarkup` = (dealerUsd − purchaseUsd) / purchaseUsd × 100. Assert `retailMarkup` adds `getParamResolved(region, 'total-expenses', variant)` to dealerUsd. Assert `purchaseUsd` reads region key `global`. Assert the `retailMarkup` hash changes when the expenses value changes. Assert `isComputedStale` is false only when the hash matches.",
+  "potential_consequence": "If the expenses term were dropped from the `retailMarkup` hash (lines 200-205), editing Total Expenses would leave a stale markup marked `ready` forever. Swapping the basis in `dealerMarkup`, or reading purchase per region, would silently show wrong margins in the Supplier and Dealer tables. No test imports this module.",
+  "gap_shape": "regression-gap",
+  "consumer": "`use-recalc-backend.ts:56` (writes `computeTargetValue` into the collab cache); markup cells in `pricelists-table.tsx:401` and `pricelists-expanded-regions.tsx:208`",
+  "evidence": "Searching `tests/` for `pricelist-recalc`, `computeTargetValue` and `markupDerivedTargetId` returns no matches."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "XLSX export: `buildExportMatrix`, `assembleExportColumns` and `resolveMarkupPercent`. `src/components/store/pim/pricelists/pricelists-export.ts:102-113`, `:162-210`",
+  "trigger_condition": "The export recomputes markup with its own copy of the formula instead of using `computeTargetValue`. The header comment calls it a \"pure, easily testable function\", but no test exists.",
+  "guard_snippet": "Add node:test cases for `buildExportMatrix` with a stub `ExportCollab` and `ExportParameters`. Assert each editable price column expands into a source column plus a `<label> (<displayCurrency>)` conversion column. Assert parameter columns sit between the leading and the `afterParameters` columns. Assert the retail markup cell equals the value `computeTargetValue(markupDerivedTargetId('retail', ...))` returns for the same inputs.",
+  "potential_consequence": "The table, through the recalc backend, and the export, through its inline formula, can drift apart, so the downloaded file would show a different markup or column order than the screen. Each formula is maintained by hand in its own place, and no test pins either one.",
+  "gap_shape": "missing-adoption-gap",
+  "consumer": "Export button in `pricelists-page.tsx:191` → `exportPricelistToXlsx`",
+  "evidence": "Searching `tests/` for `pricelists-export`, `buildExportMatrix` and `assembleExportColumns` returns no matches. The duplicated formula is at `pricelists-export.ts:110-112` versus `pricelist-recalc.ts:158-162`."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "Pricelist DB bootstrap builds its own cell ids (`priceCellId`, `statusCellId`, `retailStatusCellId`). `src/features/store/store-pricelists-from-db.ts:69-76`",
+  "trigger_condition": "The mapper copies the id shapes instead of importing `buildPriceCellId`, `buildStatusCellId` and `buildRetailStatusCellId`, and no test ties the two together.",
+  "guard_snippet": "Switch to the helpers from `pricelists-helpers`. Alternatively, pull the row-to-map loop into a pure function and add a test that a mapped dealer price key equals `buildPriceCellId('kz', '7', 'dealer')` and a purchase key equals `buildPriceCellId(null, '7', 'purchase')`.",
+  "potential_consequence": "If the helper id format changes, `store-clean-model.test.ts:111-115` would be updated and pass, while the DB bootstrap keeps writing the old keys. The table would then fall back to seed values and quietly ignore real DB prices and statuses.",
+  "gap_shape": "missing-adoption-gap",
+  "consumer": "`applyPricelistDbBootstrap` (`pricelists-demo-data.ts:78`) → the `collab.getCell` and `getStatus` lookups in the pricelist table and export",
+  "evidence": "The comment at `store-pricelists-from-db.ts:31` says the ids use the \"buildPriceCellId / buildStatusCellId shapes\", but the helpers are not imported. Searching `tests/` for `store-pricelists-from-db` returns no matches. The only id-shape test is `store-clean-model.test.ts:111-115`, which exercises the helpers only."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "`resolveCatalogItemForRegion` status fallback when a region has prices but no status row. `src/components/store/pim/products/catalog/catalog-region.ts:25-26`",
+  "trigger_condition": "The test named «нет цены в регионе» runs the no-status regions (`ae`, `de`) but asserts only prices, never `dealerStatus` or `retailStatus`.",
+  "guard_snippet": "In `store-region-context.test.ts:57-63`, also assert `resolved.dealerStatus === 'unavailable'` and `resolved.retailStatus === 'draft'` for `ae`, so that a region without a status row cannot become purchasable.",
+  "potential_consequence": "Changing the fallback to `'available'` or to the status of another region would make a variant buyable in a region where it has no status. No current assertion would fail.",
+  "gap_shape": "broken-verification-gap",
+  "consumer": "Catalog buy button and tooltip through `getPurchaseBlockReason` (`catalog-helpers.ts:102`). Items come from `loadDbCatalogItems`, which sets the base `dealerStatus: 'unavailable'` (`store-catalog-from-logistics.ts:574`).",
+  "evidence": "`tests/unit/store-region-context.test.ts:57-63` loops over `ae` and `de` and asserts only `dealerPrice` and `retailPrice`. The fixture's base status is `unavailable` and `regionStatuses` has only `kz`."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "`submitCheckoutBlocks` skips blocks that have nothing to submit (`blockHasSubmittableLines`). `src/features/store/cart/checkout-model.ts:337-351`",
+  "trigger_condition": "The skip branch is never run: every block in the existing submit test has lines.",
+  "guard_snippet": "Add a test: in hub mode with every item in the remainder (unchecked or no price), the hub block has `lines: []`. Assert that `submitCheckoutBlocks(layout.blocks, spy)` never calls `spy` and returns `[]`.",
+  "potential_consequence": "\"Оформить всё\" passes every block, including an empty hub block. If the skip were lost, the empty block would reach the RPC, which raises «Нужна хотя бы одна строка заказа», and the results dialog would show a false error row. `cart-checkout.test.ts:195-216` would still pass.",
+  "gap_shape": "regression-gap",
+  "consumer": "`handleSubmitAll` in `store-checkout-page.tsx:274` (passes `layout.blocks` unfiltered, unlike `visibleBlocks` at `:181`)",
+  "evidence": "`cart-checkout.test.ts:195-216` uses three plant blocks, each with one priced line. Searching `tests/` for `blockHasSubmittableLines` returns no matches."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "`adjustCartPack`, `removeCartLines` and `serializeCartLines`. `src/features/store/cart/cart-store.ts:28-33`, `:67-77`, `:99-102`",
+  "trigger_condition": "The −/+ pack stepper, bulk removal after checkout, and serialization to storage have no tests. Only `addCartPack`, `upsertCartLine`, `parseCartLines` and `normalizeCartToPacks` are tested.",
+  "guard_snippet": "Add cases to `cart-checkout.test.ts`: `adjustCartPack([{variantId:'1',quantity:4}], '1', -1, 2)` gives quantity 2; with delta −2 the line is removed; `removeCartLines` removes only the listed ids; `parseCartLines(JSON.parse(serializeCartLines(lines)))` round-trips and drops lines with quantity ≤ 0.",
+  "potential_consequence": "A sign error, or the multiplication by `step` being dropped in `adjustCartPack`, would break the cart quantity control. A bug in `removeCartLines` would leave already-ordered lines in the cart after checkout. No test runs these functions.",
+  "gap_shape": "regression-gap",
+  "consumer": "`cart-context.tsx:160` (pack stepper) and `:166` (`removeVariants`, called from `store-checkout-page.tsx:242` after each successful block)",
+  "evidence": "Searching `tests/` for `adjustCartPack`, `removeCartLines` and `serializeCartLines` returns no matches. The test file imports only `addCartPack`, `normalizeCartQuantity`, `normalizeCartToPacks`, `parseCartLines` and `upsertCartLine` (lines 3-9)."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "Mapping from loaded rows to checkout input: the `byRegion` assembly in `loadCartVariantCatalog` (`src/features/store/cart/cart-catalog.ts:157-208`) and the inline `checkoutItems` mapping (`src/features/store/checkout/store-checkout-page.tsx:136-157`)",
+  "trigger_condition": "The defaults that decide whether a line can be bought (missing status means `unavailable`, supply-only regions, `quantityPerUnit` floor of 1, `hubReady` null without a region) live inside an async loader and a React `useMemo`, so no test reaches them.",
+  "guard_snippet": "Pull the logic into pure functions, for example `buildCartRegionFacts(prices, statuses, supplyByVariantRegion, variantId)` and `toCheckoutCartItem(line, catalogItem, regionCode, stock)`. Test that a supply-only region produces `{dealerPrice:null, dealerStatus:'unavailable', supplyCostPercent:p}`, that a region with a price but no status is `unavailable`, and that a missing catalog item still maps to a blocked line.",
+  "potential_consequence": "If the missing-status default flipped to `available`, or supply % were attached to the wrong region code, checkout would offer lines that cannot be ordered or apply the wrong Supply costs markup. The `buildCheckoutLayout` tests feed hand-built `CheckoutCartItem` objects and would not notice.",
+  "gap_shape": "regression-gap",
+  "consumer": "`buildCheckoutLayout` input in `store-checkout-page.tsx:166-176`; the cart sheet through `useCart().catalogById`",
+  "evidence": "Searching `tests/` for `cart-catalog` and `loadCartVariantCatalog` returns no matches. `cart-checkout.test.ts:20-33` builds `CheckoutCartItem` directly with the `item()` factory."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "RPC `public.store_checkout_customer_order` (`supabase/migrations/20260928165138_store_code_prefix_registry.sql`) and its client wrapper `checkoutCustomerOrder` (`src/features/store/cart/checkout-api.ts:37-60`)",
+  "trigger_condition": "The server-side rules (plant–variant match, at least one line, quantity > 0, price required, hub must be `kind='hub'`) and the order-number fallback are verified only by hand.",
+  "guard_snippet": "Prototype-appropriate: pull the payload and number mapping into a pure helper. Test that it produces `{p_lines:[{product_variant_id:Number, quantity, unit_price}]}`, and that `number` falls back to `formatEntityCode('customer_order', id)` when `number_prefix` or `sequence_number` is absent. Keep the SQL guards in a short manual checklist in `docs/features/store-cart-checkout.md`.",
+  "potential_consequence": "A renamed JSON key (`unit_price` or `product_variant_id`) in the client or the SQL would make every checkout fail with «Нужна цена строки» or «Вариант не найден». No unit test pins the contract between `buildCheckoutOrderLines` and the RPC payload.",
+  "gap_shape": "regression-gap",
+  "consumer": "`submitBlock` in `store-checkout-page.tsx:230-249`",
+  "evidence": "Searching `tests/` for `store_checkout_customer_order` and `checkout-api` returns no matches. `cart-checkout.test.ts:230-238` stops at `buildCheckoutOrderLines` output in camelCase."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "Pricelist and catalog column visibility parsing: `parseStoredColumns`, `getOrderedVisibleColumns` and `isDefaultColumnSet`. `src/components/store/pim/pricelists/pricelists-columns.ts:282-341`; `src/components/store/pim/products/catalog/catalog-columns.ts:45-82`",
+  "trigger_condition": "These pure localStorage parse and serialize helpers have no tests.",
+  "guard_snippet": "node:test cases: unknown or garbage JSON returns null or the defaults; unknown ids are dropped; the output follows the definition order, not the stored order; `isDefaultColumnSet(getDefaultVisibleColumnIds(scope))` is true.",
+  "potential_consequence": "A parsing regression after a column rename (an unknown id kept, or the whole stored set discarded) would hide or show the wrong columns on every reload. No test would fail.",
+  "gap_shape": "regression-gap",
+  "consumer": "`use-pricelist-columns.ts` (pricelist table columns sheet) and `use-catalog-controller.ts` (catalog columns sheet)",
+  "evidence": "Searching `tests/` for `pricelists-columns`, `catalog-columns` and `parseStoredColumns` returns no matches."
+ },
+ {
+  "lens": "verification-gap",
+  "location": "`npm test` baseline",
+  "trigger_condition": "`npm test` currently exits with 1 failure out of 366 tests: `tests/unit/document-timeline.test.ts:148` («reservation: Создан; when posted — Проведён», expected 2, got 1). The failure is outside the store section.",
+  "guard_snippet": "Fix or update that logistics test so `npm test` is green again. Otherwise a new store regression is hard to tell apart from a failure that is already there.",
+  "potential_consequence": "With the suite already red, a new store failure is easy to miss when handing off work, which weakens every store test listed above.",
+  "gap_shape": "other"
+ }
+]
