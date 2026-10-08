@@ -4,6 +4,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatEntityCode } from "@/lib/entity-codes";
@@ -112,9 +113,14 @@ import { CustomerOrderHeader } from "@/features/logistics/ui/customer-order-head
 import { CustomerOrderContainersTab } from "@/features/logistics/ui/customer-order-containers-tab";
 import { CustomerOrderFilesTab } from "@/features/logistics/ui/customer-order-files-tab";
 import { CustomerOrderCommentsTab } from "@/features/logistics/ui/customer-order-comments-tab";
-import { ViewRoleSwitcher } from "@/features/logistics/ui/view-role-switcher";
-import { isVisibleForRole, resolveCustomerOrderVisibility } from "@/features/logistics/order-view-role";
-import { useViewRole } from "@/features/logistics/use-view-role";
+import {
+  isOrderRegionVisibleForRole,
+  isVisibleForRole,
+  resolveCustomerOrderVisibility,
+} from "@/features/logistics/order-view-role";
+import { useCurrentViewRole, useViewRole } from "@/features/logistics/use-view-role";
+import { RegionSwitcher } from "@/components/store/region/region-switcher";
+import { useSelectedRegion } from "@/features/store/region-context";
 
 const STATUS_TOGGLE = [
   { value: "all", label: "Все" },
@@ -240,6 +246,9 @@ const FilterField = ({ label, children }: { label: string; children: ReactNode }
 
 export const CustomerOrdersPage = () => {
   const { rows, isLoading, error, reload } = useLogisticsList(loadCustomerOrderList);
+  const role = useCurrentViewRole();
+  const isCustomer = role === "customer";
+  const { selectedRegion, regionsLoading } = useSelectedRegion();
   const [open, setOpen] = useState(false);
   const createStore = useLogisticsStore({ kind: "form", form: "customer_order", enabled: open });
   const [statusToggle, setStatusToggle] = useState<(typeof STATUS_TOGGLE)[number]["value"]>("all");
@@ -251,6 +260,9 @@ export const CustomerOrdersPage = () => {
   const filtered = useMemo(
     () =>
       rows.filter((order) => {
+        if (!isOrderRegionVisibleForRole(role, order.regionId, selectedRegion?.id)) {
+          return false;
+        }
         if (statusToggle === "in_progress" && !isOpenCustomerOrderStatus(order.status)) {
           return false;
         }
@@ -259,7 +271,7 @@ export const CustomerOrdersPage = () => {
         }
         return matchesCustomerOrderText(order, text);
       }),
-    [rows, statusToggle, text],
+    [rows, statusToggle, text, role, selectedRegion?.id],
   );
 
   return (
@@ -267,14 +279,16 @@ export const CustomerOrdersPage = () => {
       <LogisticsListPageContent
         listId="customer-orders"
         title="Заказы клиента"
-        actionLabel="Новый заказ клиента"
-        onAction={() => setOpen(true)}
+        actionLabel={isCustomer ? undefined : "Новый заказ клиента"}
+        onAction={isCustomer ? undefined : () => setOpen(true)}
+        quickControls={isCustomer ? <RegionSwitcher size="sm" /> : undefined}
+        emptyMessage={isCustomer && !selectedRegion ? "Выберите регион, чтобы увидеть его заказы." : undefined}
         columns={customerOrderColumns}
         sortDefs={customerOrderSortDefs}
         rows={filtered}
         rowKey={(row) => row.id}
         groupQuantity={(row) => row.ordered}
-        isLoading={isLoading}
+        isLoading={isLoading || (isCustomer && regionsLoading)}
         error={error}
         toggleOptions={[...STATUS_TOGGLE]}
         toggleValue={statusToggle}
@@ -326,6 +340,7 @@ export const CustomerOrderDetailPage = () => {
     ref: String(params.orderId ?? ""),
   });
   const viewRole = useViewRole("customer_order");
+  const { selectedRegion, regionsLoading } = useSelectedRegion();
   const visibility = resolveCustomerOrderVisibility(viewRole.rules, viewRole.role);
   const order = matchDocumentParam(snapshot.customerOrders, params.orderId);
   const [reserveOpen, setReserveOpen] = useState(false);
@@ -362,7 +377,7 @@ export const CustomerOrderDetailPage = () => {
     { label: /^\d+$/.test(orderRef) ? formatEntityCode("customer_order", orderRef) : "Заказ клиента" },
   ];
 
-  if (isLoading) {
+  if (isLoading || (viewRole.role === "customer" && regionsLoading)) {
     return (
       <LogisticsPageShell crumbs={pendingCrumbs}>
         <LogisticsLoading />
@@ -382,6 +397,21 @@ export const CustomerOrderDetailPage = () => {
     return (
       <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: "Нет заказа клиента" }]}>
         <LogisticsError message="Заказ клиента не найден." />
+      </LogisticsPageShell>
+    );
+  }
+
+  if (!isOrderRegionVisibleForRole(viewRole.role, order.regionId, selectedRegion?.id)) {
+    return (
+      <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: order.number }]}>
+        <Alert>
+          <AlertTitle>Заказ другого региона</AlertTitle>
+          <AlertDescription>
+            {selectedRegion
+              ? `Заказчику региона ${selectedRegion.code.toUpperCase()} доступны только заказы этого региона.`
+              : "Выберите свой регион в каталоге, чтобы открыть его заказы."}
+          </AlertDescription>
+        </Alert>
       </LogisticsPageShell>
     );
   }
@@ -733,8 +763,6 @@ export const CustomerOrderDetailPage = () => {
           },
         ].filter((tab) => isVisibleForRole(viewRole.rules, viewRole.role, `tab.${tab.id}`))}
       />
-
-      <ViewRoleSwitcher state={viewRole} />
 
       <ReservationCatalogDialog
         snapshot={snapshot}

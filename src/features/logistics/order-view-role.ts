@@ -67,6 +67,39 @@ export const resolveCustomerOrderVisibility = (
     CUSTOMER_ORDER_VIEW_KEYS.map((key) => [key, isVisibleForRole(rules, role, key)]),
   ) as CustomerOrderVisibility;
 
+const CUSTOMER_STORE_PATHS = [
+  "/store/catalog",
+  "/store/pim/products",
+  "/store/pim/variants",
+  "/store/checkout",
+  "/store/logistics/customer-orders",
+] as const;
+
+const CUSTOMER_ORDER_DETAIL_PATH = /^\/store\/logistics\/customer-orders\/[^/]+$/;
+
+const normalizePath = (pathname: string): string => {
+  const path = pathname.split(/[?#]/)[0] ?? "";
+  return path.length > 1 ? path.replace(/\/+$/, "") : path;
+};
+
+/** The customer sees only the catalog, checkout, and customer orders; the manager sees everything. */
+export const isStorePathAllowedForRole = (role: ViewRole, pathname: string): boolean => {
+  if (role === "manager") return true;
+  const path = normalizePath(pathname);
+  return path === "/store" || CUSTOMER_STORE_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+};
+
+/** `store_role_visibility.page` for a store path, or null when the page has no visibility rules. */
+export const viewRolePageForPath = (pathname: string): string | null =>
+  CUSTOMER_ORDER_DETAIL_PATH.test(normalizePath(pathname)) ? "customer_order" : null;
+
+/** The customer sees only orders of the selected region; without a region they see none. */
+export const isOrderRegionVisibleForRole = (
+  role: ViewRole,
+  orderRegionId: string | null | undefined,
+  customerRegionId: string | null | undefined,
+): boolean => role === "manager" || (Boolean(customerRegionId) && orderRegionId === customerRegionId);
+
 export const mapRoleVisibilityRow = (row: Record<string, unknown>): RoleVisibilityRule => ({
   elementKey: String(row.element_key),
   label: String(row.label ?? row.element_key),

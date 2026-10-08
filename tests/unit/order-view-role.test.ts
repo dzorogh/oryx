@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  isOrderRegionVisibleForRole,
+  isStorePathAllowedForRole,
   isVisibleForRole,
+  viewRolePageForPath,
   mapRoleVisibilityRow,
   parseViewRole,
   resolveCustomerOrderVisibility,
@@ -45,5 +48,32 @@ describe("order view role", () => {
       mapRoleVisibilityRow({ element_key: "tab.files", label: "Файлы", manager_visible: true, customer_visible: true }),
       { elementKey: "tab.files", label: "Файлы", managerVisible: true, customerVisible: true },
     );
+  });
+
+  it("limits the customer to the catalog, checkout and customer orders", () => {
+    assert.equal(isStorePathAllowedForRole("manager", "/store/logistics/stock"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/pim/products"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/pim/products/42/"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/pim/variants/7"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/checkout"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/logistics/customer-orders/12?tab=money"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/logistics/stock"), false);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/pim/pricelists"), false);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/logistics/customer-orders-archive"), false);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/settings"), false);
+  });
+
+  it("maps the customer order card to its visibility page", () => {
+    assert.equal(viewRolePageForPath("/store/logistics/customer-orders/12"), "customer_order");
+    assert.equal(viewRolePageForPath("/store/logistics/customer-orders"), null);
+    assert.equal(viewRolePageForPath("/store/pim/products"), null);
+  });
+
+  it("shows the customer only orders of the selected region", () => {
+    assert.equal(isOrderRegionVisibleForRole("manager", "1", null), true);
+    assert.equal(isOrderRegionVisibleForRole("customer", "1", "1"), true);
+    assert.equal(isOrderRegionVisibleForRole("customer", "2", "1"), false);
+    assert.equal(isOrderRegionVisibleForRole("customer", "", null), false);
   });
 });

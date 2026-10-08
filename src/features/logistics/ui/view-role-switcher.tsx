@@ -94,7 +94,15 @@ export const ViewRoleSwitcher = ({ state }: { state: RoleVisibilityState }) => {
           }
         >
           <ListChecks className="size-4" aria-hidden />
-          {isLoading ? "…" : error ? "!" : hiddenCount > 0 ? `скрыто ${hiddenCount}` : "всё видно"}
+          {isLoading
+            ? "…"
+            : error
+              ? "!"
+              : rules.length === 0
+                ? "правила"
+                : hiddenCount > 0
+                  ? `скрыто ${hiddenCount}`
+                  : "всё видно"}
         </PopoverTrigger>
         <PopoverContent side="top" align="end" className="w-96">
           <PopoverHeader>
@@ -108,7 +116,10 @@ export const ViewRoleSwitcher = ({ state }: { state: RoleVisibilityState }) => {
           ) : isLoading ? (
             <p className="text-xs text-muted-foreground">Загружаем правила…</p>
           ) : rules.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Для этой страницы правил нет.</p>
+            <p className="text-xs text-muted-foreground">
+              Для этой страницы правил нет. Заказчику открыты только каталог, оформление заказа и заказы своего
+              региона.
+            </p>
           ) : (
             <RulesList rules={rules} role={role} />
           )}
