@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { normalizeCartQuantity } from "@/features/store/cart/cart-store";
+import { normalizeCartQuantity, quantityFromDraft } from "@/features/store/cart/cart-store";
 
 type CartQuantityControlProps = {
   /** Added to accessible labels so rows of a list stay distinguishable. */
@@ -13,6 +13,8 @@ type CartQuantityControlProps = {
   quantity: number;
   quantityPerUnit: number;
   disabled?: boolean;
+  /** Plus and a larger typed value do nothing. Minus still works. */
+  disableIncrease?: boolean;
   onChange: (nextQuantity: number) => void;
   className?: string;
   size?: "sm" | "default";
@@ -23,6 +25,7 @@ export const CartQuantityControl = ({
   quantity,
   quantityPerUnit,
   disabled,
+  disableIncrease = false,
   onChange,
   className,
   size = "sm",
@@ -36,8 +39,11 @@ export const CartQuantityControl = ({
   }, [quantity]);
 
   const commit = (raw: string) => {
-    const parsed = Number(raw.replace(",", "."));
-    const next = normalizeCartQuantity(Number.isFinite(parsed) ? parsed : 0, step);
+    const next = quantityFromDraft(raw, step);
+    if (next == null || (disableIncrease && next > quantity)) {
+      setDraft(String(quantity));
+      return;
+    }
     onChange(next);
     setDraft(String(next > 0 ? next : 0));
   };
@@ -76,7 +82,7 @@ export const CartQuantityControl = ({
         type="button"
         variant="outline"
         size={btnSize}
-        disabled={disabled}
+        disabled={disabled || disableIncrease}
         aria-label={`Увеличить количество${suffix}`}
         onClick={() => onChange(normalizeCartQuantity(quantity + step, step))}
       >

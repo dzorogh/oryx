@@ -12,9 +12,20 @@ import { formatEntityCode } from "@/lib/entity-codes";
 import { formatCatalogPrice, getPurchaseBlockReason } from "@/features/store/catalog-presentation";
 
 export const CartSheet = () => {
-  const { lines, catalogById, catalogError, sheetOpen, setSheetOpen, setQuantity, removeVariants } = useCart();
+  const {
+    lines,
+    catalogById,
+    catalogError,
+    missingVariantIds,
+    sheetOpen,
+    setSheetOpen,
+    setQuantity,
+    removeVariants,
+    retryCatalog,
+  } = useCart();
   const { selectedRegion } = useSelectedRegion();
   const regionCode = selectedRegion?.code ?? null;
+  const missingIds = new Set(missingVariantIds);
 
   return (
     <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -27,24 +38,35 @@ export const CartSheet = () => {
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-3">
+          {catalogError ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p>Не удалось загрузить часть товаров корзины.</p>
+              <Button type="button" size="sm" variant="outline" onClick={retryCatalog}>
+                Повторить
+              </Button>
+            </div>
+          ) : null}
           {lines.length === 0 ? (
             <p className="px-1 text-sm text-muted-foreground">Корзина пуста.</p>
           ) : (
             lines.map((line) => {
               const item = catalogById.get(line.variantId);
+              const removed = missingIds.has(line.variantId);
               const region = regionCode ? item?.byRegion.get(regionCode) : null;
-              const blockReason = !item
-                ? catalogError
-                  ? "Не удалось загрузить товар"
-                  : null
-                : !regionCode
-                  ? "Выберите регион"
-                  : region
-                    ? getPurchaseBlockReason({
-                        dealerStatus: region.dealerStatus,
-                        dealerPrice: region.dealerPrice,
-                      })
-                    : "Для товара не задана дилерская цена.";
+              const blockReason = removed
+                ? null
+                : !item
+                  ? catalogError
+                    ? "Не удалось загрузить товар"
+                    : null
+                  : !regionCode
+                    ? "Выберите регион"
+                    : region
+                      ? getPurchaseBlockReason({
+                          dealerStatus: region.dealerStatus,
+                          dealerPrice: region.dealerPrice,
+                        })
+                      : "Для товара не задана дилерская цена.";
               const priceLabel =
                 region?.dealerPrice != null && region.dealerCurrency
                   ? formatCatalogPrice(region.dealerPrice, { currency: region.dealerCurrency })
@@ -71,27 +93,39 @@ export const CartSheet = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">
-                          {item?.name ?? formatEntityCode("product", line.variantId)}
+                          {removed ? "Товар удалён" : (item?.name ?? formatEntityCode("product", line.variantId))}
                         </p>
                         <p className="text-xs text-muted-foreground">{priceLabel}</p>
                         {blockReason ? (
                           <p className="text-xs text-amber-700">{blockReason}</p>
                         ) : null}
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Удалить"
-                        onClick={() => removeVariants([line.variantId])}
-                      >
-                        <Trash2 aria-hidden className="size-3.5" />
-                      </Button>
+                      {removed ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeVariants([line.variantId])}
+                        >
+                          Убрать
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Убрать"
+                          onClick={() => removeVariants([line.variantId])}
+                        >
+                          <Trash2 aria-hidden className="size-3.5" />
+                        </Button>
+                      )}
                     </div>
                     <CartQuantityControl
                       itemName={item?.name}
                       quantity={line.quantity}
                       quantityPerUnit={item?.quantityPerUnit ?? 1}
+                      disableIncrease={removed}
                       onChange={(next) =>
                         setQuantity(line.variantId, next, item?.quantityPerUnit ?? 1)
                       }

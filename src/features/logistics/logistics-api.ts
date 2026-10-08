@@ -1404,7 +1404,7 @@ export const createCustomerOrder = async (args: {
   sourceKind?: "plant" | "hub" | null;
   sourceId?: string | null;
   lines: Array<{ productId: string; quantity: number; unitPrice?: number | null }>;
-  /** floatrates rates; null — the RPC snapshots `store_currency.rate`. */
+  /** Курсы снимка этого заказа. null — снимок справочника. Справочник не меняется. */
   rates?: OrderRates | null;
 }) => {
   let regionId = args.regionId;
@@ -1468,7 +1468,7 @@ export const createProductionOrder = async (args: {
   plantId?: string;
   expectedEndOn?: string | null;
   lines: Array<{ productId: string; quantity: number }>;
-  /** floatrates rates; null — the RPC snapshots `store_currency.rate`. */
+  /** Курсы снимка этого заказа. null — снимок справочника. Справочник не меняется. */
   rates?: OrderRates | null;
 }) => {
   const plantId = args.plantId;

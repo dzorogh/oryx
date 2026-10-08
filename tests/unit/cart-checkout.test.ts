@@ -2,15 +2,32 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   addCartPack,
+  adjustCartPack,
+  catalogFailedVariantIds,
+  missingCatalogVariantIds,
   normalizeCartQuantity,
   normalizeCartToPacks,
+  noteCatalogFailure,
+  noteCatalogSuccess,
   parseCartLines,
+  quantityFromDraft,
+  removeCartLines,
+  retryCatalogState,
+  serializeCartLines,
+  subtractCartQuantities,
   upsertCartLine,
 } from "@/features/store/cart/cart-store";
 import {
   applySupplyCost,
   buildCheckoutLayout,
   buildCheckoutOrderLines,
+  CHECKOUT_SUBMIT_ALL,
+  checkoutAttemptKey,
+  checkoutBlockKey,
+  isCheckoutBlockBusy,
+  REMOVED_VARIANT_REASON,
+  resolveDisplayedRates,
+  roundMoney,
   splitHubAvailability,
   submitCheckoutBlocks,
   sumCheckoutTotals,
@@ -233,8 +250,9 @@ describe("checkout order payload and totals", () => {
       ["1"],
     );
     assert.deepEqual(buildCheckoutOrderLines(layout.blocks[0]), [
-      { productVariantId: "1", quantity: 3, unitPrice: 107.33 },
+      { productVariantId: "1", quantity: 3 },
     ]);
+    assert.equal(layout.blocks[0].lines[0].pricing?.unitPrice, 107.33);
   });
 
   it("has no order-currency total without rates or when a currency has no rate", () => {
@@ -278,6 +296,231 @@ describe("cart line order", () => {
     assert.deepEqual(
       upsertCartLine(lines, "1", 5, 1).map((line) => line.variantId),
       ["1", "2"],
+    );
+  });
+});
+
+describe("checkout money integrity", () => {
+  it("rounds half-cents like Postgres and prices a 5% hub supply on 10.10 as 10.61", () => {
+    assert.equal(roundMoney(0.505), 0.51);
+    const layout = buildCheckoutLayout({
+      mode: "hub",
+      items: [item({ variantId: "1", dealerPrice: 10.1, supplyCostPercent: 5, quantity: 1 })],
+      includedVariantIds: new Set(["1"]),
+      hasRegion: true,
+      hubWarehouseId: "44",
+      hubCode: "WH-44",
+    });
+    assert.equal(layout.blocks[0].lines[0].pricing?.unitPrice, 10.61);
+  });
+
+  it("rounds a plant line of 2577.15 × 3 to 7731.45 and an exact order total", () => {
+    const layout = buildCheckoutLayout({
+      mode: "plant",
+      items: [item({ variantId: "1", dealerPrice: 2577.15, quantity: 3, dealerCurrency: "CNY" })],
+      includedVariantIds: new Set(["1"]),
+      hasRegion: true,
+      hubWarehouseId: "44",
+      hubCode: "WH-44",
+    });
+    assert.equal(layout.blocks[0].lines[0].pricing?.lineTotal, 7731.45);
+    const totals = sumCheckoutTotals(layout.blocks, "CNY", { USD: 1, CNY: 7 });
+    assert.equal(totals.orderCurrencyTotal, 7731.45);
+  });
+
+  it("rounds a hub line of 2577.15 × 3 to 7731.45 and totals the rounded lines", () => {
+    const layout = buildCheckoutLayout({
+      mode: "hub",
+      items: [
+        item({ variantId: "1", dealerPrice: 2577.15, supplyCostPercent: null, quantity: 3, dealerCurrency: "CNY" }),
+        item({ variantId: "2", dealerPrice: 0.1, supplyCostPercent: null, quantity: 1, dealerCurrency: "CNY" }),
+        item({ variantId: "3", dealerPrice: 0.2, supplyCostPercent: null, quantity: 1, dealerCurrency: "CNY" }),
+      ],
+      includedVariantIds: new Set(["1", "2", "3"]),
+      hasRegion: true,
+      hubWarehouseId: "44",
+      hubCode: "WH-44",
+    });
+    const lines = layout.blocks[0].lines;
+    assert.equal(lines[0].pricing?.lineTotal, 7731.45);
+    assert.equal(lines[1].pricing?.lineTotal, 0.1);
+    assert.equal(lines[2].pricing?.lineTotal, 0.2);
+    const summed = lines.reduce((sum, line) => sum + (line.pricing?.lineTotal ?? 0), 0);
+    assert.equal(layout.blocks[0].currencyTotals[0].total, Math.round(summed * 100) / 100);
+    assert.equal(layout.blocks[0].currencyTotals[0].total, 7731.75);
+  });
+
+  it("builds a stable checkout key from region, source and lines", () => {
+    const block = { regionId: "5", mode: "hub" as const, sourceId: "44" };
+    const lines = [
+      { productVariantId: "2", quantity: 1 },
+      { productVariantId: "10", quantity: 4 },
+    ];
+    const key = checkoutBlockKey(block, lines);
+    assert.equal(key, checkoutBlockKey(block, [...lines].reverse()));
+    assert.equal(key, "5|hub|44|2:1,10:4");
+    assert.notEqual(key, checkoutBlockKey(block, [{ productVariantId: "10", quantity: 6 }]));
+    assert.notEqual(key, checkoutBlockKey({ ...block, regionId: "6" }, lines));
+  });
+
+  it("reuses the attempt key on retry and issues a new one after success", () => {
+    const attempts = new Map<string, string>();
+    let seq = 0;
+    const makeId = () => `a${(seq += 1)}`;
+    const first = checkoutAttemptKey(attempts, "5|hub|44|2:1", makeId);
+    assert.equal(first, "a1");
+    assert.equal(checkoutAttemptKey(attempts, "5|hub|44|2:1", makeId), first);
+    attempts.delete("5|hub|44|2:1");
+    assert.equal(checkoutAttemptKey(attempts, "5|hub|44|2:1", makeId), "a2");
+  });
+
+  it("sends fallback rates when float rates did not load", () => {
+    const fallback = { USD: 1, CNY: 7.2 };
+    assert.deepEqual(resolveDisplayedRates(null, fallback), fallback);
+    assert.deepEqual(resolveDisplayedRates({ USD: 1, CNY: 7.4 }, fallback), { USD: 1, CNY: 7.4 });
+  });
+
+  it("locks quantity and checkboxes of the block being submitted", () => {
+    assert.equal(isCheckoutBlockBusy("hub:44", "hub:44"), true);
+    assert.equal(isCheckoutBlockBusy("hub:44", "plant:3"), false);
+    assert.equal(isCheckoutBlockBusy(CHECKOUT_SUBMIT_ALL, "plant:3"), true);
+    assert.equal(isCheckoutBlockBusy(null, "hub:44"), false);
+  });
+
+  it("subtracts only the submitted quantity and keeps units added meanwhile", () => {
+    assert.deepEqual(
+      subtractCartQuantities(
+        [
+          { variantId: "1", quantity: 6 },
+          { variantId: "2", quantity: 1 },
+        ],
+        [{ variantId: "1", quantity: 4 }],
+      ),
+      [
+        { variantId: "1", quantity: 2 },
+        { variantId: "2", quantity: 1 },
+      ],
+    );
+    assert.deepEqual(
+      subtractCartQuantities([{ variantId: "1", quantity: 4 }], [{ variantId: "1", quantity: 4 }]),
+      [],
+    );
+  });
+
+  it("drops a non-numeric stored id and keeps the rest of the cart", () => {
+    assert.deepEqual(
+      parseCartLines([
+        { variantId: "abc", quantity: 2 },
+        { variantId: "12", quantity: 3 },
+        { variantId: "1.5", quantity: 1 },
+      ]),
+      [{ variantId: "12", quantity: 3 }],
+    );
+  });
+
+  it("restores the previous quantity when the field is cleared", () => {
+    assert.equal(quantityFromDraft("", 4), null);
+    assert.equal(quantityFromDraft("   ", 4), null);
+    assert.equal(quantityFromDraft("abc", 4), null);
+    assert.equal(quantityFromDraft("5", 4), 8);
+  });
+
+  it("keeps a catalog error until failed ids are retried, and lists variants the catalog did not return", () => {
+    let state = noteCatalogFailure({ requested: new Set<string>(), failed: new Set<string>() }, ["1"]);
+    state = noteCatalogSuccess(state, ["2"]);
+    assert.deepEqual(catalogFailedVariantIds(["1", "2"], state.failed), ["1"]);
+    assert.deepEqual(
+      missingCatalogVariantIds(["3"], new Set(["3"]), new Set<string>(), new Set<string>()),
+      ["3"],
+    );
+    const retried = retryCatalogState(state);
+    assert.equal(retried.requested.has("1"), false);
+    assert.equal(retried.failed.size, 0);
+    assert.equal(retried.requested.has("2"), true);
+  });
+
+  it("puts a removed variant on a deletable remainder row", () => {
+    const layout = buildCheckoutLayout({
+      mode: "hub",
+      items: [item({ variantId: "9", name: "Товар удалён", removed: true })],
+      includedVariantIds: new Set(["9"]),
+      hasRegion: true,
+      hubWarehouseId: "44",
+      hubCode: "WH-44",
+    });
+    assert.equal(layout.blocks[0].lines.length, 0);
+    assert.equal(layout.remainder[0].reason, REMOVED_VARIANT_REASON);
+    assert.equal(layout.remainder[0].name, "Товар удалён");
+
+    const plant = buildCheckoutLayout({
+      mode: "plant",
+      items: [item({ variantId: "9", name: "Товар удалён", removed: true })],
+      includedVariantIds: new Set(["9"]),
+      hasRegion: true,
+      hubWarehouseId: "44",
+      hubCode: "WH-44",
+    });
+    assert.equal(plant.blocks.length, 0);
+    assert.equal(plant.remainder[0].reason, REMOVED_VARIANT_REASON);
+
+    const noHub = buildCheckoutLayout({
+      mode: "hub",
+      items: [item({ variantId: "9", name: "Товар удалён", removed: true })],
+      includedVariantIds: new Set(["9"]),
+      hasRegion: true,
+      hubWarehouseId: null,
+      hubCode: null,
+    });
+    assert.equal(noHub.blocks.length, 0);
+    assert.equal(noHub.remainder[0].reason, REMOVED_VARIANT_REASON);
+  });
+
+  it("does not split stock when hub ready is unknown", () => {
+    assert.deepEqual(splitHubAvailability(6, null), { fromStock: null, onOrder: null });
+    const layout = buildCheckoutLayout({
+      mode: "hub",
+      items: [item({ variantId: "1", hubReady: null, quantity: 6 })],
+      includedVariantIds: new Set(["1"]),
+      hasRegion: true,
+      hubWarehouseId: "44",
+      hubCode: "WH-44",
+    });
+    assert.equal(layout.blocks[0].lines[0].pricing?.fromStock, null);
+    assert.equal(layout.blocks[0].lines[0].pricing?.onOrder, null);
+  });
+
+  it("skips an empty block and still adjusts, removes and serializes lines", async () => {
+    const layout = buildCheckoutLayout({
+      mode: "hub",
+      items: [item({ variantId: "1" })],
+      includedVariantIds: new Set(),
+      hasRegion: true,
+      hubWarehouseId: "44",
+      hubCode: "WH-44",
+    });
+    let calls = 0;
+    const outcomes = await submitCheckoutBlocks(layout.blocks, async () => {
+      calls += 1;
+      return "order";
+    });
+    assert.equal(calls, 0);
+    assert.deepEqual(outcomes, []);
+
+    const lines = [
+      { variantId: "1", quantity: 4 },
+      { variantId: "2", quantity: 2 },
+    ];
+    assert.deepEqual(adjustCartPack(lines, "1", -1, 2), [
+      { variantId: "1", quantity: 2 },
+      { variantId: "2", quantity: 2 },
+    ]);
+    assert.deepEqual(removeCartLines(lines, ["2"]), [{ variantId: "1", quantity: 4 }]);
+    assert.equal(
+      serializeCartLines([
+        { variantId: "1", quantity: 3 },
+        { variantId: "2", quantity: 0 },
+      ]),
+      JSON.stringify([{ variantId: "1", quantity: 3 }]),
     );
   });
 });

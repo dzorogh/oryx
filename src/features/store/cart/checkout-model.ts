@@ -21,6 +21,10 @@ export type CheckoutCartItem = {
   supplyCostPercent: number | null;
   /** Hub ready quantity for selected region (null when unknown / no hub). */
   hubReady: number | null;
+  /** Variant was requested and the catalog no longer has it. */
+  removed?: boolean;
+  /** Catalog request failed for this id. */
+  unloaded?: boolean;
 };
 
 export type CheckoutLinePricing = {
@@ -74,8 +78,16 @@ export type CheckoutLayout = {
   hubUnavailableReason: string | null;
 };
 
-/** Prices are kept to kopecks/cents: the line price goes to the order as is. */
-export const roundMoney = (amount: number): number => Math.round(amount * 100) / 100;
+/** Kopecks, matching Postgres `round(numeric, 2)` on binary half-cents. */
+export const roundMoney = (amount: number): number =>
+  Math.round(Number((amount * 100).toPrecision(15))) / 100;
+
+export const REMOVED_VARIANT_REASON = "Товар удалён";
+
+export const UNLOADED_VARIANT_REASON = "Не удалось загрузить товар";
+
+/** Busy id for «Оформить всё»: every block is locked. */
+export const CHECKOUT_SUBMIT_ALL = "__all__";
 
 export const applySupplyCost = (
   dealerPrice: number,
@@ -100,9 +112,12 @@ export const splitHubAvailability = (
 };
 
 export const lineBlockReason = (
-  item: Pick<CheckoutCartItem, "dealerPrice" | "dealerStatus">,
+  item: Pick<CheckoutCartItem, "dealerPrice" | "dealerStatus"> &
+    Partial<Pick<CheckoutCartItem, "removed" | "unloaded">>,
   hasRegion: boolean,
 ): string | null => {
+  if (item.removed) return REMOVED_VARIANT_REASON;
+  if (item.unloaded) return UNLOADED_VARIANT_REASON;
   if (!hasRegion) return "Выберите регион";
   if (item.dealerStatus === "unavailable") {
     return "Товар временно недоступен для заказа.";
@@ -119,7 +134,10 @@ const currencyTotalsFromLines = (
   const map = new Map<CurrencyCode, number>();
   for (const line of lines) {
     if (!line.included || !line.pricing) continue;
-    map.set(line.pricing.currency, (map.get(line.pricing.currency) ?? 0) + line.pricing.lineTotal);
+    map.set(
+      line.pricing.currency,
+      roundMoney((map.get(line.pricing.currency) ?? 0) + line.pricing.lineTotal),
+    );
   }
   return [...map.entries()]
     .map(([currency, total]) => ({ currency, total }))
@@ -134,19 +152,36 @@ export const buildCheckoutLayout = (args: {
   hubWarehouseId: string | null;
   hubCode: string | null;
 }): CheckoutLayout => {
-  const { mode, items, includedVariantIds, hasRegion, hubWarehouseId, hubCode } = args;
+  const { mode, items: sourceItems, includedVariantIds, hasRegion, hubWarehouseId, hubCode } = args;
+  const removedRemainder: CheckoutRemainderLine[] = [];
+  const items: CheckoutCartItem[] = [];
+  for (const item of sourceItems) {
+    if (item.removed) {
+      removedRemainder.push({
+        variantId: item.variantId,
+        name: item.name,
+        quantity: item.quantity,
+        reason: REMOVED_VARIANT_REASON,
+      });
+      continue;
+    }
+    items.push(item);
+  }
 
   if (mode === "hub") {
     if (!hubWarehouseId || !hubCode) {
       return {
         mode,
         blocks: [],
-        remainder: items.map((item) => ({
-          variantId: item.variantId,
-          name: item.name,
-          quantity: item.quantity,
-          reason: "У региона не задан хаб",
-        })),
+        remainder: [
+          ...items.map((item) => ({
+            variantId: item.variantId,
+            name: item.name,
+            quantity: item.quantity,
+            reason: "У региона не задан хаб",
+          })),
+          ...removedRemainder,
+        ],
         hubAvailable: false,
         hubUnavailableReason: "У региона не задан хаб — способ «Склад региона» недоступен",
       };
@@ -196,7 +231,7 @@ export const buildCheckoutLayout = (args: {
           currency,
           supplyCostPercent: priced.percent,
           supplyCostAmount: priced.supplyAmount,
-          lineTotal: priced.unitPrice * item.quantity,
+          lineTotal: roundMoney(priced.unitPrice * item.quantity),
           fromStock: split.fromStock,
           onOrder: split.onOrder,
         },
@@ -207,7 +242,10 @@ export const buildCheckoutLayout = (args: {
     for (const line of lines) {
       if (!line.pricing || line.pricing.supplyCostAmount <= 0) continue;
       const { currency, supplyCostAmount } = line.pricing;
-      supplyByCurrency.set(currency, (supplyByCurrency.get(currency) ?? 0) + supplyCostAmount * line.quantity);
+      supplyByCurrency.set(
+        currency,
+        roundMoney((supplyByCurrency.get(currency) ?? 0) + roundMoney(supplyCostAmount * line.quantity)),
+      );
     }
     const supplyCostTotals = [...supplyByCurrency.entries()]
       .map(([currency, total]) => ({ currency, total }))
@@ -217,7 +255,7 @@ export const buildCheckoutLayout = (args: {
       mode,
       hubAvailable: true,
       hubUnavailableReason: null,
-      remainder,
+      remainder: [...remainder, ...removedRemainder],
       blocks: [
         {
           id: `hub:${hubWarehouseId}`,
@@ -278,7 +316,7 @@ export const buildCheckoutLayout = (args: {
     hubAvailable: Boolean(hubWarehouseId),
     hubUnavailableReason: null,
     blocks,
-    remainder,
+    remainder: [...remainder, ...removedRemainder],
   };
 };
 
@@ -289,7 +327,7 @@ const deterministicPlantBlocks = (byPlant: Map<string, CheckoutCartItem[]>): Che
     const items = byPlant.get(plantId) ?? [];
     const plantCode = items[0]?.plantCode ?? formatEntityCode("plant", plantId);
     const lines: CheckoutBlockLine[] = items.map((item) => {
-      const dealerPrice = item.dealerPrice as number;
+      const unitPrice = roundMoney(item.dealerPrice as number);
       const currency = item.dealerCurrency as CurrencyCode;
       return {
         variantId: item.variantId,
@@ -301,11 +339,11 @@ const deterministicPlantBlocks = (byPlant: Map<string, CheckoutCartItem[]>): Che
         plantCode,
         hubReady: item.hubReady,
         pricing: {
-          unitPrice: dealerPrice,
+          unitPrice,
           currency,
           supplyCostPercent: 0,
           supplyCostAmount: 0,
-          lineTotal: dealerPrice * item.quantity,
+          lineTotal: roundMoney(unitPrice * item.quantity),
           fromStock: null,
           onOrder: null,
         },
@@ -324,13 +362,13 @@ const deterministicPlantBlocks = (byPlant: Map<string, CheckoutCartItem[]>): Che
   return blocks;
 };
 
-/** RPC lines of a block: only checked, priced lines, at the price shown (with Supply costs for the hub). */
+/** RPC lines of a block: only checked, priced lines. The server prices them. */
 export const buildCheckoutOrderLines = (
   block: CheckoutBlock,
-): Array<{ productVariantId: string; quantity: number; unitPrice: number }> =>
+): Array<{ productVariantId: string; quantity: number }> =>
   block.lines.flatMap((line) =>
     line.included && line.pricing
-      ? [{ productVariantId: line.variantId, quantity: line.quantity, unitPrice: line.pricing.unitPrice }]
+      ? [{ productVariantId: line.variantId, quantity: line.quantity }]
       : [],
   );
 
@@ -377,7 +415,7 @@ export const sumCheckoutTotals = (
   const map = new Map<CurrencyCode, number>();
   for (const block of blocks) {
     for (const row of block.currencyTotals) {
-      map.set(row.currency, (map.get(row.currency) ?? 0) + row.total);
+      map.set(row.currency, roundMoney((map.get(row.currency) ?? 0) + row.total));
     }
   }
   const byCurrency = [...map.entries()]
@@ -396,13 +434,58 @@ export const sumCheckoutTotals = (
       ok = false;
       break;
     }
-    orderTotal += converted;
+    orderTotal = roundMoney(orderTotal + converted);
   }
 
   return {
     byCurrency,
     orderCurrency,
-    orderCurrencyTotal: ok ? orderTotal : null,
+    orderCurrencyTotal: ok ? roundMoney(orderTotal) : null,
     ratesApproximate: true,
   };
 };
+
+/**
+ * Rates sent with the order are the ones the totals were calculated with.
+ * Float rates win; otherwise the dictionary fallback.
+ */
+export const resolveDisplayedRates = (
+  floatRates: OrderRates | null,
+  fallbackRates: OrderRates | null,
+): OrderRates | null => floatRates ?? fallbackRates;
+
+/** Signature of a block submit: same region, source and lines give the same string. */
+export const checkoutBlockKey = (
+  block: { regionId: string; mode: CheckoutFulfillmentMode; sourceId: string },
+  lines: readonly { productVariantId: string; quantity: number }[],
+): string => {
+  const parts = [...lines]
+    .sort((a, b) => {
+      const byId = a.productVariantId.localeCompare(b.productVariantId, "en", { numeric: true });
+      if (byId !== 0) return byId;
+      return a.quantity - b.quantity;
+    })
+    .map((line) => `${line.productVariantId}:${line.quantity}`);
+  return [block.regionId, block.mode, block.sourceId, parts.join(",")].join("|");
+};
+
+/**
+ * Idempotency key of one submit attempt: only the attempt id. The signature is the Map key, not
+ * part of the value sent to the server. A retry reuses the id until success, then it is forgotten.
+ */
+export const checkoutAttemptKey = (
+  attempts: Map<string, string>,
+  signature: string,
+  makeId: () => string,
+): string => {
+  let attempt = attempts.get(signature);
+  if (!attempt) {
+    attempt = makeId();
+    attempts.set(signature, attempt);
+  }
+  return attempt;
+};
+
+/** Quantity and checkboxes of a block are locked while that block (or every block) is submitting. */
+export const isCheckoutBlockBusy = (submittingBlockId: string | null, blockId: string): boolean =>
+  submittingBlockId === blockId || submittingBlockId === CHECKOUT_SUBMIT_ALL;

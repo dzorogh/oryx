@@ -551,20 +551,30 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                       <div className="flex shrink-0 items-center justify-end gap-2">
                         <VariantStockSummary stock={stock} />
                         {(() => {
-                          const blockReason = getPurchaseBlockReason({
-                            dealerStatus: regionStatuses?.dealer ?? "unavailable",
-                            dealerPrice: regionPrices?.dealer?.amount ?? null,
-                          });
+                          const archived = Boolean(selectedVariant.deletedAt);
+                          const blockReason = archived
+                            ? "Товар в архиве."
+                            : getPurchaseBlockReason({
+                                dealerStatus: regionStatuses?.dealer ?? "unavailable",
+                                dealerPrice: regionPrices?.dealer?.amount ?? null,
+                              });
                           const canBuy = blockReason == null;
                           const qty = cart.quantityOf(selectedVariant.id);
                           if (qty > 0) {
                             return (
-                              <CartQuantityControl
-                                itemName={selectedVariant.name}
-                                quantity={qty}
-                                quantityPerUnit={cart.catalogById.get(selectedVariant.id)?.quantityPerUnit ?? 1}
-                                onChange={(next) => cart.setQuantity(selectedVariant.id, next)}
-                              />
+                              <div className="flex flex-col items-end gap-1">
+                                {archived ? <p className="text-xs text-amber-700">Товар в архиве.</p> : null}
+                                <CartQuantityControl
+                                  itemName={selectedVariant.name}
+                                  quantity={qty}
+                                  quantityPerUnit={cart.catalogById.get(selectedVariant.id)?.quantityPerUnit ?? 1}
+                                  disableIncrease={archived}
+                                  onChange={(next) => {
+                                    if (archived && next > qty) return;
+                                    cart.setQuantity(selectedVariant.id, next);
+                                  }}
+                                />
+                              </div>
                             );
                           }
                           return (

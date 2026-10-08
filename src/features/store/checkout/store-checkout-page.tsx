@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatCatalogPrice } from "@/features/store/catalog-presentation";
 import { VariantStockSummary } from "@/features/store/variant-stock-summary";
 import { RegionSwitcher } from "@/features/store/region-switcher";
 import type { MixedPackItem } from "@/domain/packing/mixed-containers";
@@ -32,12 +31,19 @@ import {
   blockHasSubmittableLines,
   buildCheckoutLayout,
   buildCheckoutOrderLines,
+  CHECKOUT_SUBMIT_ALL,
+  checkoutAttemptKey,
+  checkoutBlockKey,
+  isCheckoutBlockBusy,
+  REMOVED_VARIANT_REASON,
+  resolveDisplayedRates,
   submitCheckoutBlocks,
   sumCheckoutTotals,
   type CheckoutBlock,
   type CheckoutCartItem,
   type CheckoutFulfillmentMode,
 } from "@/features/store/cart/checkout-model";
+import { formatEntityCode } from "@/lib/entity-codes";
 import { useSelectedRegion } from "@/features/store/region-context";
 import {
   computeVariantRegionStock,
@@ -54,6 +60,12 @@ type BlockResult =
 
 const blockLabel = (block: CheckoutBlock) =>
   `${block.mode === "hub" ? "Склад региона" : "Производственная площадка"} ${block.sourceCode}`;
+
+const formatCheckoutMoney = (amount: number, currency: string) =>
+  `${new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)} ${currency}`;
 
 const formatQty = (value: number) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
@@ -73,17 +85,29 @@ const loadSnapshotRates = async (): Promise<OrderRates | null> => {
 };
 
 export const StoreCheckoutPage = () => {
-  const { lines, catalogById, catalogLoading, catalogError, removeVariants, setQuantity } = useCart();
+  const {
+    lines,
+    catalogById,
+    catalogLoading,
+    catalogError,
+    missingVariantIds,
+    failedVariantIds,
+    removeVariants,
+    subtractSubmitted,
+    retryCatalog,
+    setQuantity,
+  } = useCart();
   const { selectedRegion, regionsLoading, setSwitcherOpen } = useSelectedRegion();
   const [mode, setMode] = useState<CheckoutFulfillmentMode>("hub");
   const hubMissing = Boolean(selectedRegion && !selectedRegion.hubWarehouseId);
   const effectiveMode: CheckoutFulfillmentMode = hubMissing ? "plant" : mode;
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
-  const [stockFacts, setStockFacts] = useState<VariantStockFact[]>([]);
   const [containerTypes, setContainerTypes] = useState<StoreContainerTypeRow[]>([]);
   const [submittingBlockId, setSubmittingBlockId] = useState<string | null>(null);
+  const [stockFacts, setStockFacts] = useState<VariantStockFact[] | null>(null);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [results, setResults] = useState<BlockResult[]>([]);
+  const attemptKeysRef = useRef(new Map<string, string>());
   const floatRates = useFloatRatesOnOpen(true);
   const [fallbackRates, setFallbackRates] = useState<OrderRates | null>(null);
 
@@ -91,10 +115,10 @@ export const StoreCheckoutPage = () => {
     let cancelled = false;
     void loadVariantStockFacts()
       .then((facts) => {
-        if (!cancelled) setStockFacts(facts ?? []);
+        if (!cancelled) setStockFacts(facts);
       })
       .catch(() => {
-        if (!cancelled) setStockFacts([]);
+        if (!cancelled) setStockFacts(null);
       });
     void loadContainerTypes()
       .then((rows) => {
@@ -118,8 +142,10 @@ export const StoreCheckoutPage = () => {
     };
   }, []);
 
-  const rates: OrderRates | null =
-    floatRates.status === "ok" ? floatRates.rates : fallbackRates;
+  const rates: OrderRates | null = resolveDisplayedRates(
+    floatRates.status === "ok" ? floatRates.rates : null,
+    fallbackRates,
+  );
 
   const regionForStock = useMemo(
     () =>
@@ -133,15 +159,20 @@ export const StoreCheckoutPage = () => {
     [selectedRegion],
   );
 
+  const missingIds = useMemo(() => new Set(missingVariantIds), [missingVariantIds]);
+  const failedIds = useMemo(() => new Set(failedVariantIds), [failedVariantIds]);
+
   const checkoutItems: CheckoutCartItem[] = useMemo(() => {
     const regionCode = selectedRegion?.code ?? null;
     return lines.map((line) => {
       const item = catalogById.get(line.variantId);
+      const removed = missingIds.has(line.variantId);
       const region = regionCode && item ? item.byRegion.get(regionCode) : null;
-      const stock = computeVariantRegionStock(stockFacts, line.variantId, regionForStock);
+      const stock =
+        stockFacts != null ? computeVariantRegionStock(stockFacts, line.variantId, regionForStock) : null;
       return {
         variantId: line.variantId,
-        name: item?.name ?? line.variantId,
+        name: removed ? REMOVED_VARIANT_REASON : (item?.name ?? formatEntityCode("product", line.variantId)),
         imageUrl: item?.imageUrl ?? null,
         plantId: item?.plantId ?? null,
         plantCode: item?.plantCode ?? null,
@@ -151,10 +182,12 @@ export const StoreCheckoutPage = () => {
         dealerCurrency: region?.dealerCurrency ?? null,
         dealerStatus: region?.dealerStatus ?? "unavailable",
         supplyCostPercent: region?.supplyCostPercent ?? null,
-        hubReady: regionForStock ? stock.ready : null,
+        hubReady: stockFacts != null && regionForStock ? stock?.ready ?? null : null,
+        removed,
+        unloaded: failedIds.has(line.variantId),
       };
     });
-  }, [lines, catalogById, selectedRegion, stockFacts, regionForStock]);
+  }, [lines, catalogById, selectedRegion, stockFacts, regionForStock, missingIds, failedIds]);
 
   const includedVariantIds = useMemo(() => {
     const set = new Set(checkoutItems.map((item) => item.variantId));
@@ -179,6 +212,9 @@ export const StoreCheckoutPage = () => {
   const loading = lines.length > 0 && (regionsLoading || catalogLoading);
   const blocked = loading || needsRegion;
   const visibleBlocks = blocked ? [] : layout.blocks.filter((block) => block.lines.length > 0);
+  const singlePlantBlock = visibleBlocks.length === 1 && visibleBlocks[0]?.mode === "plant";
+  const deletedRemainder = layout.remainder.filter((row) => row.reason === REMOVED_VARIANT_REASON);
+  const parkedRemainder = layout.remainder.filter((row) => row.reason !== REMOVED_VARIANT_REASON);
 
   const orderCurrency: CurrencyCode =
     selectedRegion?.orderCurrency ?? selectedRegion?.dealerCurrency ?? "USD";
@@ -230,19 +266,26 @@ export const StoreCheckoutPage = () => {
   const submitBlock = async (block: CheckoutBlock) => {
     if (!selectedRegion) throw new Error("Выберите регион");
     const linesPayload = buildCheckoutOrderLines(block);
+    const signature = checkoutBlockKey(
+      { regionId: selectedRegion.id, mode: block.mode, sourceId: block.sourceId },
+      linesPayload,
+    );
     const created = await checkoutCustomerOrder({
       regionId: selectedRegion.id,
       sourceKind: block.mode === "hub" ? "hub" : "plant",
       sourceId: block.sourceId,
       lines: linesPayload,
-      rates: floatRates.status === "ok" ? floatRates.rates : null,
+      rates,
+      checkoutKey: checkoutAttemptKey(attemptKeysRef.current, signature, () => crypto.randomUUID()),
       description: `Оформлено из корзины · ${blockLabel(block)}`,
     });
-    const doneIds = linesPayload.map((line) => line.productVariantId);
-    removeVariants(doneIds);
+    attemptKeysRef.current.delete(signature);
+    subtractSubmitted(
+      linesPayload.map((line) => ({ variantId: line.productVariantId, quantity: line.quantity })),
+    );
     setExcludedIds((prev) => {
       const next = new Set(prev);
-      for (const id of doneIds) next.delete(id);
+      for (const line of linesPayload) next.delete(line.productVariantId);
       return next;
     });
     return created;
@@ -271,7 +314,7 @@ export const StoreCheckoutPage = () => {
   };
 
   const handleSubmitBlock = (block: CheckoutBlock) => submitBlocks([block], block.id);
-  const handleSubmitAll = () => submitBlocks(layout.blocks, "__all__");
+  const handleSubmitAll = () => submitBlocks(layout.blocks, CHECKOUT_SUBMIT_ALL);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 bg-muted/30 p-4 sm:p-6">
@@ -298,9 +341,12 @@ export const StoreCheckoutPage = () => {
       </Card>
 
       {catalogError ? (
-        <p className="text-sm text-amber-700">
-          Не удалось загрузить часть товаров корзины — обновите страницу.
-        </p>
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p>Не удалось загрузить часть товаров корзины.</p>
+          <Button type="button" size="sm" variant="outline" onClick={retryCatalog}>
+            Повторить
+          </Button>
+        </div>
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -406,8 +452,8 @@ export const StoreCheckoutPage = () => {
                 }
                 onClick={() => void handleSubmitBlock(block)}
               >
-                {submittingBlockId === block.id
-                  ? "Оформляем…"
+                {isCheckoutBlockBusy(submittingBlockId, block.id)
+                  ? "Оформляется…"
                   : visibleBlocks.length > 1
                     ? "Оформить подзаказ"
                     : "Оформить заказ"}
@@ -416,7 +462,11 @@ export const StoreCheckoutPage = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {block.lines.map((line) => {
-              const stock = computeVariantRegionStock(stockFacts, line.variantId, regionForStock);
+              const lineLocked = isCheckoutBlockBusy(submittingBlockId, block.id);
+              const stock =
+                stockFacts != null
+                  ? computeVariantRegionStock(stockFacts, line.variantId, regionForStock)
+                  : { ready: null, total: 0, rows: [], missingHub: !regionForStock?.hubWarehouseId };
               return (
                 <div
                   key={line.variantId}
@@ -424,6 +474,7 @@ export const StoreCheckoutPage = () => {
                 >
                   <Checkbox
                     checked={!excludedIds.has(line.variantId)}
+                    disabled={lineLocked}
                     onCheckedChange={(value) => toggleLine(line.variantId, Boolean(value))}
                     aria-label={`Включить ${line.name} в заказ`}
                   />
@@ -446,6 +497,7 @@ export const StoreCheckoutPage = () => {
                         itemName={line.name}
                         quantity={line.quantity}
                         quantityPerUnit={catalogById.get(line.variantId)?.quantityPerUnit ?? 1}
+                        disabled={lineLocked}
                         onChange={(next) => setQuantity(line.variantId, next)}
                       />
                       <VariantStockSummary
@@ -467,22 +519,16 @@ export const StoreCheckoutPage = () => {
                     {line.pricing ? (
                       <>
                         <p className="font-medium tabular-nums">
-                          {formatCatalogPrice(line.pricing.unitPrice, {
-                            currency: line.pricing.currency,
-                          })}
+                          {formatCheckoutMoney(line.pricing.unitPrice, line.pricing.currency)}
                         </p>
                         {block.mode === "hub" && line.pricing.supplyCostPercent > 0 ? (
                           <p className="text-xs text-muted-foreground">
-                            в т.ч. Supply costs {line.pricing.supplyCostPercent}% ·{" "}
-                            {formatCatalogPrice(line.pricing.supplyCostAmount, {
-                              currency: line.pricing.currency,
-                            })}
+                            в т.ч. расходы на поставку {line.pricing.supplyCostPercent}% ·{" "}
+                            {formatCheckoutMoney(line.pricing.supplyCostAmount, line.pricing.currency)}
                           </p>
                         ) : null}
                         <p className="tabular-nums text-muted-foreground">
-                          {formatCatalogPrice(line.pricing.lineTotal, {
-                            currency: line.pricing.currency,
-                          })}
+                          {formatCheckoutMoney(line.pricing.lineTotal, line.pricing.currency)}
                         </p>
                       </>
                     ) : (
@@ -495,10 +541,10 @@ export const StoreCheckoutPage = () => {
 
             {block.supplyCostTotals.length ? (
               <p className="text-right text-sm text-muted-foreground">
-                Supply costs: итого{" "}
+                Расходы на поставку: итого{" "}
                 <span className="font-medium text-foreground tabular-nums">
                   {block.supplyCostTotals
-                    .map((row) => formatCatalogPrice(row.total, { currency: row.currency }))
+                    .map((row) => formatCheckoutMoney(row.total, row.currency))
                     .join(" + ")}
                 </span>
               </p>
@@ -508,7 +554,7 @@ export const StoreCheckoutPage = () => {
                 Итого по заказу:{" "}
                 <span className="font-semibold tabular-nums">
                   {block.currencyTotals
-                    .map((row) => formatCatalogPrice(row.total, { currency: row.currency }))
+                    .map((row) => formatCheckoutMoney(row.total, row.currency))
                     .join(" + ")}
                 </span>
               </p>
@@ -530,25 +576,64 @@ export const StoreCheckoutPage = () => {
         </Card>
       ))}
 
-      {!blocked && layout.remainder.length ? (
+      {!catalogLoading && deletedRemainder.length ? (
+        <Card>
+          <CardContent className="space-y-2 py-4">
+            {deletedRemainder.map((row) => (
+              <div key={row.variantId} className="flex items-center justify-between gap-3 text-sm">
+                <span>
+                  {REMOVED_VARIANT_REASON} · {formatQty(row.quantity)} шт.
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={submittingBlockId != null}
+                  onClick={() => removeVariants([row.variantId])}
+                >
+                  Убрать
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {!blocked && parkedRemainder.length ? (
         <details className="rounded-xl border bg-background p-4">
           <summary className="cursor-pointer font-medium">
-            Остаются в корзине ({layout.remainder.length})
+            Остаются в корзине ({parkedRemainder.length})
           </summary>
           <ul className="mt-3 space-y-2 text-sm">
-            {layout.remainder.map((row) => (
+            {parkedRemainder.map((row) => (
               <li key={row.variantId} className="flex items-center justify-between gap-3">
                 <span className="flex items-center gap-2">
                   {row.excluded ? (
                     <Checkbox
                       checked={false}
+                      disabled={submittingBlockId != null}
                       onCheckedChange={(value) => toggleLine(row.variantId, Boolean(value))}
                       aria-label={`Вернуть ${row.name} в заказ`}
                     />
                   ) : null}
                   {row.name} · {formatQty(row.quantity)} шт.
                 </span>
-                <span className="text-muted-foreground">{row.reason}</span>
+                {row.excluded ? (
+                  <span className="text-muted-foreground">{row.reason}</span>
+                ) : (
+                  <span className="flex items-center gap-3">
+                    <span className="text-muted-foreground">{row.reason}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={submittingBlockId != null}
+                      onClick={() => removeVariants([row.variantId])}
+                    >
+                      Убрать
+                    </Button>
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -561,15 +646,13 @@ export const StoreCheckoutPage = () => {
             <div className="space-y-1 text-sm">
               {totals.byCurrency.map((row) => (
                 <p key={row.currency} className="tabular-nums">
-                  {formatCatalogPrice(row.total, { currency: row.currency })}
+                  {formatCheckoutMoney(row.total, row.currency)}
                 </p>
               ))}
               {totals.orderCurrencyTotal != null ? (
                 <p className="text-muted-foreground">
                   ≈{" "}
-                  {formatCatalogPrice(totals.orderCurrencyTotal, {
-                    currency: totals.orderCurrency,
-                  })}{" "}
+                  {formatCheckoutMoney(totals.orderCurrencyTotal, totals.orderCurrency)}{" "}
                   · примерный курс
                 </p>
               ) : (
@@ -577,16 +660,18 @@ export const StoreCheckoutPage = () => {
               )}
               <FloatRatesNote state={floatRates} />
             </div>
-            <Button
-              type="button"
-              disabled={
-                submittingBlockId != null ||
-                !layout.blocks.some(blockHasSubmittableLines)
-              }
-              onClick={() => void handleSubmitAll()}
-            >
-              {submittingBlockId === "__all__" ? "Оформляем…" : "Оформить всё"}
-            </Button>
+            {singlePlantBlock ? null : (
+              <Button
+                type="button"
+                disabled={
+                  submittingBlockId != null ||
+                  !layout.blocks.some(blockHasSubmittableLines)
+                }
+                onClick={() => void handleSubmitAll()}
+              >
+                {submittingBlockId === CHECKOUT_SUBMIT_ALL ? "Оформляется…" : "Оформить всё"}
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : null}

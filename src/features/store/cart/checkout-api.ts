@@ -6,7 +6,6 @@ import { documentNumber } from "@/features/logistics/logistics-types";
 export type CheckoutOrderLineInput = {
   productVariantId: string;
   quantity: number;
-  unitPrice: number;
 };
 
 export type CheckoutCustomerOrderInput = {
@@ -16,6 +15,8 @@ export type CheckoutCustomerOrderInput = {
   lines: CheckoutOrderLineInput[];
   rates?: OrderRates | null;
   description?: string;
+  /** Same key returns the order already created for this block. */
+  checkoutKey?: string | null;
 };
 
 export type CheckoutCustomerOrderResult = {
@@ -41,18 +42,21 @@ export const checkoutCustomerOrder = async (
     p_lines: args.lines.map((line) => ({
       product_variant_id: Number(line.productVariantId),
       quantity: line.quantity,
-      unit_price: line.unitPrice,
     })),
     p_rates: args.rates ?? null,
     p_description: args.description ?? "",
+    p_checkout_key: args.checkoutKey ?? null,
   });
   if (error) throw new Error(error.message);
   const payload = data as {
-    id: number | string;
+    id?: number | string | null;
     lines: unknown;
     number_prefix?: string | null;
     sequence_number?: number | string | null;
-  };
+  } | null;
+  if (payload == null || payload.id == null || payload.id === "") {
+    throw new Error("Пустой ответ оформления");
+  }
   const number =
     payload.number_prefix && payload.sequence_number != null
       ? documentNumber(payload.number_prefix, payload.sequence_number)

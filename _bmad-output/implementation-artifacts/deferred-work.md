@@ -330,3 +330,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-list-money-columns.md`
   summary: Тест конфига колонок списка заказов клиента (видимые по умолчанию, порядок, `sortValue` суммы в USD).
   evidence: `customerOrderColumns` не экспортируется, тестов конфигов страниц нет; проверено вручную в браузере.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-checkout-money-integrity.md`
+  summary: `store_checkout_customer_order` не проверяет кратность количества упаковке и дубли варианта в `p_lines`.
+  evidence: В теле RPC есть только `v_qty > 0`; кратность обеспечивает клиент (`normalizeCartQuantity`), дубли корзина не порождает.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-checkout-money-integrity.md`
+  summary: Сбой загрузки остатков на оформлении не показан; `VariantStockSummary` видит пустую заглушку и показывает 0.
+  evidence: `stockFacts === null` одинаково для загрузки и ошибки; закрыть в волне 3 (состояния ошибок загрузки).
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-checkout-money-integrity.md`
+  summary: Нет автоматических тестов миграции оформления (ключ, серверная цена, снимок курсов, хаб региона).
+  evidence: SQL-тестов в репозитории нет; 2026-10-08 проверено пробой с откатом на демо-БД — все пять гарантий выполнены, строк не осталось.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-checkout-money-integrity.md`
+  summary: Нет тестов `loadCartVariantCatalog` (фильтр id, ошибка без Supabase) и `disableIncrease` в `CartQuantityControl`.
+  evidence: Тестов компонентов нет; запрет увеличения продублирован в `onChange` карточки товара.

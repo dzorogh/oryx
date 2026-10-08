@@ -81,13 +81,11 @@ const toNum = (value: number | string | null | undefined): number | null => {
 export const loadCartVariantCatalog = async (
   variantIds: readonly string[],
 ): Promise<CartVariantCatalogItem[]> => {
-  if (!variantIds.length) return [];
-  if (!isSupabaseConfigured()) return [];
-  const client = getSupabaseBrowserClient();
-  if (!client) return [];
-
-  const ids = variantIds.map(Number).filter((n) => Number.isFinite(n));
+  const ids = [...new Set(variantIds.map((id) => id.trim()).filter((id) => /^\d+$/.test(id)))].map(Number);
   if (!ids.length) return [];
+  if (!isSupabaseConfigured()) throw new Error("Supabase не настроен");
+  const client = getSupabaseBrowserClient();
+  if (!client) throw new Error("Supabase не настроен");
 
   const [, variantsResult, logisticsRows, supplyRows, regionsResult, pricing] = await Promise.all([
     loadLogisticsSettings(),
@@ -112,10 +110,11 @@ export const loadCartVariantCatalog = async (
         .select("product_variant_id,region_id,percent")
         .in("product_variant_id", ids)
         .order("product_variant_id", { ascending: true })
+        .order("region_id", { ascending: true })
         .range(from, to),
     ),
     client.from("store_region").select("id,code").is("deleted_at", null),
-    loadRegionPricing(variantIds),
+    loadRegionPricing(ids.map(String)),
   ]);
 
   if (variantsResult.error) throw new Error(variantsResult.error.message);

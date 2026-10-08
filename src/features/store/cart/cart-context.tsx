@@ -15,14 +15,21 @@ import {
   adjustCartPack,
   cartLineCount,
   cartTotalUnits,
+  catalogFailedVariantIds,
+  missingCatalogVariantIds,
+  noteCatalogFailure,
+  noteCatalogSuccess,
   parseCartLines,
   readCartFromStorage,
   removeCartLines,
+  retryCatalogState,
   STORE_CART_STORAGE_KEY,
   normalizeCartToPacks,
+  subtractCartQuantities,
   upsertCartLine,
   writeCartToStorage,
   type CartLine,
+  type CatalogTrackState,
 } from "@/features/store/cart/cart-store";
 import {
   loadCartVariantCatalog,
@@ -35,14 +42,22 @@ type CartContextValue = {
   totalUnits: number;
   catalogById: Map<string, CartVariantCatalogItem>;
   catalogLoading: boolean;
-  /** Last catalog request failed — names and prices may be missing. */
+  /** Last catalog request failed — names and prices may be missing. Stays on while those ids are still in the cart. */
   catalogError: boolean;
+  /** Requested and answered, but the variant is gone (deleted or archived). */
+  missingVariantIds: string[];
+  /** Ids whose last catalog request failed. */
+  failedVariantIds: string[];
   sheetOpen: boolean;
   setSheetOpen: (open: boolean) => void;
   addPack: (variantId: string, quantityPerUnit?: number) => void;
   setQuantity: (variantId: string, quantity: number, quantityPerUnit?: number) => void;
   adjustPacks: (variantId: string, deltaPacks: number, quantityPerUnit?: number) => void;
   removeVariants: (variantIds: readonly string[]) => void;
+  /** Remove only the quantity that was sent. Leftover units stay in the cart. */
+  subtractSubmitted: (submitted: readonly { variantId: string; quantity: number }[]) => void;
+  /** Ask again for ids whose catalog request failed. */
+  retryCatalog: () => void;
   clear: () => void;
   quantityOf: (variantId: string) => number;
 };
@@ -90,25 +105,38 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const lines = useSyncExternalStore(subscribeCart, readCartFromStorage, getServerCartSnapshot);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [catalogSnapshot, setCatalogSnapshot] = useState<{
-    /** Ids already requested (loaded or failed), so removing lines never triggers a reload. */
-    requested: ReadonlySet<string>;
+    /** Ids already requested. Cleared only for failed ids, and only by retry. */
+    track: CatalogTrackState;
     byId: Map<string, CartVariantCatalogItem>;
-    failed: boolean;
-  }>({ requested: new Set(), byId: new Map(), failed: false });
+  }>({ track: { requested: new Set(), failed: new Set() }, byId: new Map() });
 
   const missingKey = useMemo(
     () =>
       lines
         .map((line) => line.variantId)
-        .filter((id) => !catalogSnapshot.requested.has(id))
+        .filter((id) => !catalogSnapshot.track.requested.has(id))
         .sort()
         .join(","),
-    [lines, catalogSnapshot.requested],
+    [lines, catalogSnapshot.track.requested],
   );
 
+  const lineIds = useMemo(() => lines.map((line) => line.variantId), [lines]);
   const resolvedCatalog = catalogSnapshot.byId;
   const catalogLoading = missingKey.length > 0;
-  const catalogError = catalogSnapshot.failed;
+  const failedVariantIds = useMemo(
+    () => catalogFailedVariantIds(lineIds, catalogSnapshot.track.failed),
+    [lineIds, catalogSnapshot.track.failed],
+  );
+  const catalogError = failedVariantIds.length > 0;
+  const missingVariantIds = useMemo(() => {
+    const loadedIds = new Set(resolvedCatalog.keys());
+    return missingCatalogVariantIds(
+      lineIds,
+      catalogSnapshot.track.requested,
+      catalogSnapshot.track.failed,
+      loadedIds,
+    );
+  }, [lineIds, catalogSnapshot.track, resolvedCatalog]);
 
   useEffect(() => {
     if (!missingKey) return;
@@ -118,7 +146,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setCatalogSnapshot((prev) => {
         const byId = new Map(prev.byId);
         for (const item of items) byId.set(item.variantId, item);
-        return { requested: new Set([...prev.requested, ...ids]), byId, failed };
+        return {
+          track: failed ? noteCatalogFailure(prev.track, ids) : noteCatalogSuccess(prev.track, ids),
+          byId,
+        };
       });
     void loadCartVariantCatalog(ids)
       .then((items) => {
@@ -166,6 +197,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     commitCart(removeCartLines(readCartFromStorage(), variantIds));
   }, []);
 
+  const subtractSubmitted = useCallback((submitted: readonly { variantId: string; quantity: number }[]) => {
+    commitCart(subtractCartQuantities(readCartFromStorage(), submitted));
+  }, []);
+
+  const retryCatalog = useCallback(() => {
+    setCatalogSnapshot((prev) => ({ ...prev, track: retryCatalogState(prev.track) }));
+  }, []);
+
   const clear = useCallback(() => {
     commitCart([]);
   }, []);
@@ -183,12 +222,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       catalogById: resolvedCatalog,
       catalogLoading,
       catalogError,
+      missingVariantIds,
+      failedVariantIds,
       sheetOpen,
       setSheetOpen,
       addPack,
       setQuantity,
       adjustPacks,
       removeVariants,
+      subtractSubmitted,
+      retryCatalog,
       clear,
       quantityOf,
     }),
@@ -197,11 +240,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       resolvedCatalog,
       catalogLoading,
       catalogError,
+      missingVariantIds,
+      failedVariantIds,
       sheetOpen,
       addPack,
       setQuantity,
       adjustPacks,
       removeVariants,
+      subtractSubmitted,
+      retryCatalog,
       clear,
       quantityOf,
     ],
