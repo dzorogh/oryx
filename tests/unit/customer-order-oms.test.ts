@@ -24,6 +24,9 @@ const payment = (overrides: Partial<OrderPayment>): OrderPayment => ({
   dueOn: "2026-09-28",
   amount: 0,
   status: "planned",
+  createdAt: "",
+  createdBy: "",
+  history: [],
   ...overrides,
 });
 
@@ -264,7 +267,18 @@ describe("mapCustomerOrderOmsContext", () => {
             documentId: "213",
             currencyCode: "CNY",
             rates: { USD: 1, CNY: 7.12 },
-            payments: [{ id: "105", documentId: "213", dueOn: "2026-09-27", amount: 4200, status: "paid" }],
+            payments: [
+              {
+                id: "105",
+                documentId: "213",
+                dueOn: "2026-09-27",
+                amount: 4200,
+                status: "paid",
+                createdAt: "",
+                createdBy: "",
+                history: [],
+              },
+            ],
           },
           { documentId: "214", currencyCode: "USD", rates: {}, payments: [] },
         ],

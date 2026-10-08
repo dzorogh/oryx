@@ -21,12 +21,14 @@ import {
   setOrderRates,
 } from "@/features/logistics/logistics-api";
 import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
+import { formatMetaTimestamp } from "@/features/logistics/logistics-labels";
 import {
   allocatedAmount,
   formatMoneyInput,
   formatOrderMoney,
   isPaymentOverdue,
   parseMoneyInput,
+  paymentHistoryChanges,
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUSES,
   summarizeOrderMoney,
@@ -34,6 +36,7 @@ import {
   todayIso,
   type OrderMoneyContext,
   type OrderPayment,
+  type PaymentHistoryChange,
   type PaymentStatus,
 } from "@/features/logistics/order-money";
 import { formatOutputDate } from "@/features/logistics/output-calendar";
@@ -321,6 +324,111 @@ export const AddPaymentDialog = ({
   );
 };
 
+const HISTORY_FIELD_LABEL: Record<PaymentHistoryChange["field"], string> = {
+  status: "Статус",
+  dueOn: "Срок оплаты",
+  amount: "Сумма",
+};
+
+const historySideText = (
+  change: PaymentHistoryChange,
+  side: "from" | "to",
+  currencyCode: string,
+): string | null => {
+  if (change.field === "status") {
+    const value = side === "from" ? change.from : change.to;
+    return value == null ? null : PAYMENT_STATUS_LABELS[value];
+  }
+  if (change.field === "dueOn") {
+    const value = side === "from" ? change.from : change.to;
+    return value == null ? null : formatOutputDate(value);
+  }
+  const value = side === "from" ? change.from : change.to;
+  return value == null ? null : formatOrderMoney(value, currencyCode);
+};
+
+/** Read-only chronology of one payment: creation, then each change of status, due date or amount. */
+const PaymentHistoryDialog = ({
+  open,
+  payment,
+  currencyCode,
+  userName,
+  onClose,
+}: {
+  open: boolean;
+  /** Stays set while closing so the content does not blank during the close animation. */
+  payment: OrderPayment | null;
+  currencyCode: string;
+  /** null — authors are hidden for the current role. */
+  userName: ((userId: string) => string) | null;
+  onClose: () => void;
+}) => (
+  <DialogShell
+    open={open && payment != null}
+    onOpenChange={(next) => {
+      if (!next) onClose();
+    }}
+    size="md"
+    title="История платежа"
+    kicker={
+      payment
+        ? `${formatOutputDate(payment.dueOn)} · ${formatOrderMoney(payment.amount, currencyCode)}`
+        : undefined
+    }
+    dismissLabel="Закрыть"
+  >
+    {payment == null ? null : payment.history.length === 0 ? (
+      <p className="py-6 text-sm text-muted-foreground">Истории пока нет.</p>
+    ) : (
+      <ol className="list-none">
+        {payment.history.map((event, index) => {
+          const changes = paymentHistoryChanges(event);
+          return (
+            <li
+              key={`${event.kind}-${event.changedAt}-${index}`}
+              className="flex items-start justify-between gap-4 border-b border-border/60 py-3 last:border-b-0"
+            >
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">{event.kind === "create" ? "Создан" : "Изменён"}</div>
+                {event.kind === "create" ? (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                    <PaymentStatusPill status={event.status} />
+                    <span className="tabular-nums">{formatOutputDate(event.dueOn)}</span>
+                    <span className="tabular-nums">{formatOrderMoney(event.amount, currencyCode)}</span>
+                  </div>
+                ) : (
+                  <dl className="mt-1.5 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3.5 gap-y-1 text-sm">
+                    {changes.map((change) => {
+                      const from = historySideText(change, "from", currencyCode);
+                      const to = historySideText(change, "to", currencyCode);
+                      return (
+                        <div key={change.field} className="contents">
+                          <dt className="text-muted-foreground">{HISTORY_FIELD_LABEL[change.field]}</dt>
+                          <dd className="m-0 flex flex-wrap items-center gap-1.5">
+                            {from != null ? (
+                              <s className="text-muted-foreground/60">{from}</s>
+                            ) : null}
+                            <span aria-hidden>→</span>
+                            <span className="font-medium">{to}</span>
+                          </dd>
+                        </div>
+                      );
+                    })}
+                  </dl>
+                )}
+              </div>
+              <div className="shrink-0 pt-0.5 text-right text-xs whitespace-nowrap text-muted-foreground">
+                <div className="font-medium tabular-nums text-foreground/80">{formatMetaTimestamp(event.changedAt)}</div>
+                {userName ? <div>{userName(event.changedBy)}</div> : null}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    )}
+  </DialogShell>
+);
+
 const parseRate = (raw: string): number | null => {
   const value = Number(raw.replace(/[\s\u00a0]/g, "").replace(",", "."));
   return raw.trim() && Number.isFinite(value) && value > 0 ? value : null;
@@ -461,6 +569,7 @@ export const OrderMoneyTab = ({
   variant = "order",
   editable = true,
   showEstimate = true,
+  showAuthors = true,
 }: {
   snapshot: LogisticsSnapshot;
   documentId: string;
@@ -471,10 +580,14 @@ export const OrderMoneyTab = ({
   editable?: boolean;
   /** «Расчётная стоимость» cell and the rates button. */
   showEstimate?: boolean;
+  /** Payment authors in «Создан» and the history window. */
+  showAuthors?: boolean;
 }) => {
   const texts = TEXTS[variant];
   const isTransfer = variant === "transfer";
   const [paymentDraft, setPaymentDraft] = useState<PaymentDraft | null>(null);
+  const [historyPaymentId, setHistoryPaymentId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [statusPending, setStatusPending] = useState<string | null>(null);
   const [ratesOpen, setRatesOpen] = useState(false);
   const { money, payments, currencies } = context;
@@ -489,6 +602,7 @@ export const OrderMoneyTab = ({
   }
 
   const currencyCode = money.currencyCode;
+  const userName = (userId: string) => snapshot.users.find((user) => user.id === userId)?.name ?? "—";
   const nameByCode = new Map(currencies.map((currency) => [currency.code, currency.name]));
   const snapshotCodes = Object.keys(money.rates).sort((a, b) =>
     a === "USD" ? -1 : b === "USD" ? 1 : a.localeCompare(b),
@@ -631,101 +745,121 @@ export const OrderMoneyTab = ({
         {payments.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">Платежей пока нет.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
-                <th className="w-48 px-4 py-2 font-medium whitespace-nowrap">Срок оплаты</th>
-                <th className="w-36 px-4 py-2 text-right font-medium whitespace-nowrap">Сумма</th>
-                <th className="w-44 px-4 py-2 font-medium">Статус</th>
-                <th className="w-px px-4 py-2" aria-label="Действия" />
-                <th aria-hidden />
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((payment) => {
-                const overdue = isPaymentOverdue(payment, today);
-                return (
-                  <tr key={payment.id} className="border-b border-border/60 last:border-b-0">
-                    <td className="px-4 py-2">
-                      <span className={cn("tabular-nums", overdue && "font-medium text-red-700")}>
-                        {formatOutputDate(payment.dueOn)}
-                      </span>
-                      {overdue ? (
-                        <span className="ml-2 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-                          просрочен
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
+                  <th className="w-48 px-4 py-2 font-medium whitespace-nowrap">Срок оплаты</th>
+                  <th className="w-36 px-4 py-2 text-right font-medium whitespace-nowrap">Сумма</th>
+                  <th className="w-44 px-4 py-2 font-medium">Статус</th>
+                  <th className="px-4 py-2 font-medium whitespace-nowrap">Создан</th>
+                  <th className="w-px px-4 py-2" aria-label="Действия" />
+                  <th aria-hidden />
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => {
+                  const overdue = isPaymentOverdue(payment, today);
+                  return (
+                    <tr key={payment.id} className="border-b border-border/60 last:border-b-0">
+                      <td className="px-4 py-2">
+                        <span className={cn("tabular-nums", overdue && "font-medium text-red-700")}>
+                          {formatOutputDate(payment.dueOn)}
                         </span>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums">{formatOrderMoney(payment.amount, currencyCode)}</td>
-                    <td className="px-4 py-2">
-                      {editable ? (
-                        <Select
-                          items={PAYMENT_STATUSES.map((status) => ({ value: status, label: PAYMENT_STATUS_LABELS[status] }))}
-                          value={payment.status}
-                          disabled={statusPending === payment.id}
-                          onValueChange={(value) => {
-                            if (value) setStatus(payment, value as PaymentStatus);
-                          }}
+                        {overdue ? (
+                          <span className="ml-2 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                            просрочен
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatOrderMoney(payment.amount, currencyCode)}</td>
+                      <td className="px-4 py-2">
+                        {editable ? (
+                          <Select
+                            items={PAYMENT_STATUSES.map((status) => ({ value: status, label: PAYMENT_STATUS_LABELS[status] }))}
+                            value={payment.status}
+                            disabled={statusPending === payment.id}
+                            onValueChange={(value) => {
+                              if (value) setStatus(payment, value as PaymentStatus);
+                            }}
+                          >
+                            <SelectTrigger
+                              className="-ml-2 h-8 w-auto gap-1.5 border-transparent bg-transparent px-2 shadow-none hover:border-border hover:bg-muted/50"
+                              aria-label="Статус платежа"
+                            >
+                              <PaymentStatusPill status={payment.status} />
+                              <SelectValue className="sr-only" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {PAYMENT_STATUSES.map((status) => (
+                                  <SelectItem key={status} value={status}>
+                                    {PAYMENT_STATUS_LABELS[status]}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <PaymentStatusPill status={payment.status} />
+                        )}
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="tabular-nums whitespace-nowrap">{formatMetaTimestamp(payment.createdAt)}</div>
+                        {showAuthors ? (
+                          <div className="text-xs text-muted-foreground">{userName(payment.createdBy)}</div>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-2 text-right whitespace-nowrap">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                          setHistoryPaymentId(payment.id);
+                          setHistoryOpen(true);
+                        }}
                         >
-                          <SelectTrigger
-                            className="-ml-2 h-8 w-auto gap-1.5 border-transparent bg-transparent px-2 shadow-none hover:border-border hover:bg-muted/50"
-                            aria-label="Статус платежа"
-                          >
-                            <PaymentStatusPill status={payment.status} />
-                            <SelectValue className="sr-only" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {PAYMENT_STATUSES.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {PAYMENT_STATUS_LABELS[status]}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <PaymentStatusPill status={payment.status} />
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-right whitespace-nowrap">
-                      {editable ? (
-                        <>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              setPaymentDraft({
-                                id: payment.id,
-                                dueOn: payment.dueOn,
-                                amount: formatMoneyInput(payment.amount),
-                                status: payment.status,
-                              })
-                            }
-                          >
-                            Изменить
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() =>
-                              void runLogisticsAction(() => deleteOrderPayment(payment.id), "Платёж удалён", reload)
-                            }
-                          >
-                            Удалить
-                          </Button>
-                        </>
-                      ) : null}
-                    </td>
-                    <td aria-hidden />
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          История
+                        </Button>
+                        {editable ? (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                setPaymentDraft({
+                                  id: payment.id,
+                                  dueOn: payment.dueOn,
+                                  amount: formatMoneyInput(payment.amount),
+                                  status: payment.status,
+                                })
+                              }
+                            >
+                              Изменить
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() =>
+                                void runLogisticsAction(() => deleteOrderPayment(payment.id), "Платёж удалён", reload)
+                              }
+                            >
+                              Удалить
+                            </Button>
+                          </>
+                        ) : null}
+                      </td>
+                      <td aria-hidden />
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </DocumentSection>
 
@@ -746,6 +880,14 @@ export const OrderMoneyTab = ({
         currencyLabel={texts.currencyLabel}
         onClose={() => setPaymentDraft(null)}
         onSubmit={submitPayment}
+      />
+
+      <PaymentHistoryDialog
+        open={historyOpen}
+        payment={payments.find((payment) => payment.id === historyPaymentId) ?? null}
+        currencyCode={currencyCode}
+        userName={showAuthors ? userName : null}
+        onClose={() => setHistoryOpen(false)}
       />
     </div>
   );

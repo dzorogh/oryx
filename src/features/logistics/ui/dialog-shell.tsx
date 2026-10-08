@@ -75,8 +75,9 @@ export const DialogShell = ({
   panel?: ReactNode;
   children: ReactNode;
   footerSummary?: ReactNode;
-  submitLabel: string;
-  onSubmit: (intent: CreateIntent) => void;
+  /** Без `onSubmit` — окно просмотра: в подвале только `dismissLabel`. */
+  submitLabel?: string;
+  onSubmit?: (intent: CreateIntent) => void;
   submitDisabled?: boolean;
   disabledReason?: string;
   submitting?: boolean;
@@ -118,9 +119,10 @@ export const DialogShell = ({
   });
 
   const runSubmit = (intent: CreateIntent = "open") => {
-    if (confirmCloseRef.current || submittingRef.current || submitDisabledRef.current) return;
+    const submit = onSubmitRef.current;
+    if (!submit || confirmCloseRef.current || submittingRef.current || submitDisabledRef.current) return;
     setPendingIntent(intent);
-    onSubmitRef.current(intent);
+    submit(intent);
   };
 
   useEffect(() => {
@@ -237,7 +239,7 @@ export const DialogShell = ({
                   {dismissLabel}
                 </Button>
               ) : null}
-              {createIntents ? (
+              {createIntents && onSubmit ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -247,13 +249,15 @@ export const DialogShell = ({
                   {submitting && pendingIntent === "close" ? pendingLabel : `${submitLabel} и закрыть`}
                 </Button>
               ) : null}
-              <Button type="submit" disabled={submitDisabled || submitting || loading}>
-                {submitting && (!createIntents || pendingIntent === "open")
-                  ? pendingLabel
-                  : createIntents
-                    ? `${submitLabel} и открыть`
-                    : submitLabel}
-              </Button>
+              {onSubmit ? (
+                <Button type="submit" disabled={submitDisabled || submitting || loading}>
+                  {submitting && (!createIntents || pendingIntent === "open")
+                    ? pendingLabel
+                    : createIntents
+                      ? `${submitLabel} и открыть`
+                      : submitLabel}
+                </Button>
+              ) : null}
             </div>
           </DialogFooter>
           </form>

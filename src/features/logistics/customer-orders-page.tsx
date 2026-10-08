@@ -664,6 +664,7 @@ export const CustomerOrderDetailPage = () => {
                 reload={reload}
                 editable={visibility["order.edit"]}
                 showEstimate={visibility["money.estimate"]}
+                showAuthors={visibility["header.author"]}
               />
             ),
           },

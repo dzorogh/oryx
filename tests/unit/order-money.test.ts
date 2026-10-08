@@ -10,9 +10,11 @@ import {
   orderTotal,
   orderMoneyLines,
   parseMoneyInput,
+  paymentHistoryChanges,
   summarizeOrderMoney,
   unallocated,
   type OrderMoneyContext,
+  type OrderPaymentHistoryEvent,
 } from "@/features/logistics/order-money";
 
 const RATES = { USD: 1, CNY: 7.12, EUR: 0.86 };
@@ -136,9 +138,176 @@ describe("mapOrderMoneyContext", () => {
       currencies: [{ id: 4, code: "CNY", name: "Юань" }],
     });
     assert.deepEqual(mapped.money, { documentId: "90", currencyCode: "CNY", amount: 1500, rates: { USD: 1, CNY: 7.12 } });
-    assert.deepEqual(mapped.payments, [{ id: "3", documentId: "90", dueOn: "2026-10-12", amount: 500, status: "planned" }]);
+    assert.deepEqual(mapped.payments, [
+      {
+        id: "3",
+        documentId: "90",
+        dueOn: "2026-10-12",
+        amount: 500,
+        status: "planned",
+        createdAt: "",
+        createdBy: "",
+        history: [],
+      },
+    ]);
     assert.deepEqual(mapped.currencies, [{ id: "4", code: "CNY", name: "Юань" }]);
     assert.equal(mapOrderMoneyContext({}).money, null);
+  });
+
+  it("maps created_at, created_by and history in chronological order", () => {
+    const mapped = mapOrderMoneyContext({
+      order_payments: [
+        {
+          id: 9,
+          document_id: 90,
+          due_on: "2026-11-02",
+          amount: "40.0000",
+          status: "invoiced",
+          created_at: "2026-08-01T00:00:00+00:00",
+          created_by: 1,
+          history: [
+            {
+              kind: "update",
+              status: "invoiced",
+              amount: "40.0000",
+              due_on: "2026-11-02",
+              prev_status: "planned",
+              prev_amount: "40.0000",
+              prev_due_on: "2026-10-01",
+              changed_at: "2026-08-02T00:00:00+00:00",
+              changed_by: 1,
+            },
+            {
+              kind: "create",
+              status: "planned",
+              amount: "40.0000",
+              due_on: "2026-10-01",
+              prev_status: null,
+              prev_amount: null,
+              prev_due_on: null,
+              changed_at: "2026-08-01T00:00:00+00:00",
+              changed_by: 1,
+            },
+            { kind: "update", status: "nope", amount: 1, due_on: "2026-10-01", changed_at: "x", changed_by: 1 },
+          ],
+        },
+      ],
+    });
+    const payment = mapped.payments[0];
+    assert.equal(payment.createdAt, "2026-08-01T00:00:00+00:00");
+    assert.equal(payment.createdBy, "1");
+    assert.deepEqual(
+      payment.history.map((event) => event.kind),
+      ["create", "update"],
+    );
+    assert.equal(payment.history[0].changedAt, payment.createdAt);
+    assert.equal(payment.history[0].status, "planned");
+    assert.equal(payment.history[0].dueOn, "2026-10-01");
+    assert.equal(payment.history[0].amount, 40);
+    assert.equal(payment.history[0].changedBy, "1");
+    assert.equal(payment.history[1].prevStatus, "planned");
+    assert.equal(payment.history[1].prevDueOn, "2026-10-01");
+    assert.equal(payment.history[1].prevAmount, 40);
+  });
+});
+
+const historyEvent = (overrides: Partial<OrderPaymentHistoryEvent> & Pick<OrderPaymentHistoryEvent, "kind">): OrderPaymentHistoryEvent => ({
+  status: "planned",
+  amount: 500,
+  dueOn: "2026-10-12",
+  prevStatus: null,
+  prevAmount: null,
+  prevDueOn: null,
+  changedAt: "2026-09-23T11:09:00+00:00",
+  changedBy: "1",
+  ...overrides,
+});
+
+describe("paymentHistoryChanges", () => {
+  it("returns nothing for a create, even when previous values are filled", () => {
+    assert.deepEqual(
+      paymentHistoryChanges(
+        historyEvent({
+          kind: "create",
+          status: "invoiced",
+          amount: 40,
+          dueOn: "2026-11-02",
+          prevStatus: "planned",
+          prevAmount: 10,
+          prevDueOn: "2026-10-01",
+        }),
+      ),
+      [],
+    );
+  });
+
+  it("returns due and amount rows when the status stays the same", () => {
+    assert.deepEqual(
+      paymentHistoryChanges(
+        historyEvent({
+          kind: "update",
+          status: "planned",
+          amount: 800,
+          dueOn: "2026-10-12",
+          prevStatus: "planned",
+          prevAmount: 500,
+          prevDueOn: "2026-10-01",
+        }),
+      ),
+      [
+        { field: "dueOn", from: "2026-10-01", to: "2026-10-12" },
+        { field: "amount", from: 500, to: 800 },
+      ],
+    );
+  });
+
+  it("returns status, due and amount rows in that order when all three change", () => {
+    assert.deepEqual(
+      paymentHistoryChanges(
+        historyEvent({
+          kind: "update",
+          status: "paid",
+          amount: 500.0001,
+          dueOn: "2026-10-20",
+          prevStatus: "planned",
+          prevAmount: 500,
+          prevDueOn: "2026-10-12",
+        }),
+      ),
+      [
+        { field: "status", from: "planned", to: "paid" },
+        { field: "dueOn", from: "2026-10-12", to: "2026-10-20" },
+        { field: "amount", from: 500, to: 500.0001 },
+      ],
+    );
+  });
+
+  it("returns nothing when an update keeps status, due date and amount", () => {
+    assert.deepEqual(
+      paymentHistoryChanges(
+        historyEvent({
+          kind: "update",
+          prevStatus: "planned",
+          prevAmount: 500,
+          prevDueOn: "2026-10-12",
+        }),
+      ),
+      [],
+    );
+  });
+
+  it("shows only the new status when an old status event has empty prev fields", () => {
+    assert.deepEqual(
+      paymentHistoryChanges(
+        historyEvent({
+          kind: "update",
+          status: "paid",
+          amount: 1200,
+          dueOn: "2026-09-28",
+        }),
+      ),
+      [{ field: "status", from: null, to: "paid" }],
+    );
   });
 });
 
@@ -154,8 +323,26 @@ describe("summarizeOrderMoney", () => {
   const context = (amount: number | null): OrderMoneyContext => ({
     money: { documentId: "90", currencyCode: "CNY", amount, rates: RATES },
     payments: [
-      { id: "1", documentId: "90", dueOn: "2026-10-01", amount: 400, status: "paid" },
-      { id: "2", documentId: "90", dueOn: "2026-11-01", amount: 200, status: "planned" },
+      {
+        id: "1",
+        documentId: "90",
+        dueOn: "2026-10-01",
+        amount: 400,
+        status: "paid",
+        createdAt: "2026-09-01T00:00:00.000Z",
+        createdBy: "1",
+        history: [],
+      },
+      {
+        id: "2",
+        documentId: "90",
+        dueOn: "2026-11-01",
+        amount: 200,
+        status: "planned",
+        createdAt: "2026-09-01T00:00:00.000Z",
+        createdBy: "1",
+        history: [],
+      },
     ],
     currencies: [
       { id: "1", code: "USD", name: "Доллар США" },

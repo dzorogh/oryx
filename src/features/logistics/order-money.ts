@@ -21,12 +21,32 @@ export type OrderMoney = {
   rates: OrderRates;
 };
 
+export type OrderPaymentHistoryEvent = {
+  kind: "create" | "update";
+  status: PaymentStatus;
+  amount: number;
+  dueOn: string;
+  prevStatus: PaymentStatus | null;
+  prevAmount: number | null;
+  prevDueOn: string | null;
+  changedAt: string;
+  changedBy: string;
+};
+
+export type PaymentHistoryChange =
+  | { field: "status"; from: PaymentStatus | null; to: PaymentStatus }
+  | { field: "dueOn"; from: string | null; to: string }
+  | { field: "amount"; from: number | null; to: number };
+
 export type OrderPayment = {
   id: string;
   documentId: string;
   dueOn: string;
   amount: number;
   status: PaymentStatus;
+  createdAt: string;
+  createdBy: string;
+  history: OrderPaymentHistoryEvent[];
 };
 
 export type OrderCurrency = { id: string; code: string; name: string };
@@ -93,6 +113,26 @@ export const isPaymentOverdue = (
   payment: Pick<OrderPayment, "dueOn" | "status">,
   today: string = todayIso(),
 ): boolean => payment.status !== "paid" && payment.dueOn < today;
+
+/**
+ * Lines of an update for the history window, in order: status, due date, amount.
+ * A create has no «было → стало». An old status event with empty `prev_*` yields one status
+ * line whose `from` is null. A field is omitted when its previous value is known and unchanged.
+ */
+export const paymentHistoryChanges = (event: OrderPaymentHistoryEvent): PaymentHistoryChange[] => {
+  if (event.kind === "create") return [];
+  const changes: PaymentHistoryChange[] = [];
+  if (event.prevStatus == null || event.prevStatus !== event.status) {
+    changes.push({ field: "status", from: event.prevStatus, to: event.status });
+  }
+  if (event.prevDueOn != null && event.prevDueOn !== event.dueOn) {
+    changes.push({ field: "dueOn", from: event.prevDueOn, to: event.dueOn });
+  }
+  if (event.prevAmount != null && event.prevAmount !== event.amount) {
+    changes.push({ field: "amount", from: event.prevAmount, to: event.amount });
+  }
+  return changes;
+};
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: "$",
@@ -184,6 +224,37 @@ export const mapOrderRates = (raw: unknown): OrderRates => {
   return rates;
 };
 
+const mapHistoryEvent = (item: unknown): OrderPaymentHistoryEvent | null => {
+  const row = item as Record<string, unknown>;
+  if (row.kind !== "create" && row.kind !== "update") return null;
+  if (!isPaymentStatus(row.status)) return null;
+  const prevDue = row.prev_due_on;
+  return {
+    kind: row.kind,
+    status: row.status,
+    amount: asNumberOrNull(row.amount) ?? 0,
+    dueOn: String(row.due_on ?? "").slice(0, 10),
+    prevStatus: isPaymentStatus(row.prev_status) ? row.prev_status : null,
+    prevAmount: asNumberOrNull(row.prev_amount),
+    prevDueOn: prevDue == null || prevDue === "" ? null : String(prevDue).slice(0, 10),
+    changedAt: String(row.changed_at ?? ""),
+    changedBy: String(row.changed_by ?? ""),
+  };
+};
+
+const mapHistory = (raw: unknown): OrderPaymentHistoryEvent[] =>
+  (Array.isArray(raw) ? raw : [])
+    .flatMap((item) => {
+      const event = mapHistoryEvent(item);
+      return event ? [event] : [];
+    })
+    .sort((left, right) => {
+      if (left.changedAt < right.changedAt) return -1;
+      if (left.changedAt > right.changedAt) return 1;
+      if (left.kind === right.kind) return 0;
+      return left.kind === "create" ? -1 : 1;
+    });
+
 const mapPaymentRows = (raw: unknown): OrderPayment[] =>
   (Array.isArray(raw) ? raw : []).flatMap((item) => {
     const row = item as Record<string, unknown>;
@@ -195,6 +266,9 @@ const mapPaymentRows = (raw: unknown): OrderPayment[] =>
         dueOn: String(row.due_on ?? "").slice(0, 10),
         amount: asNumberOrNull(row.amount) ?? 0,
         status: row.status,
+        createdAt: String(row.created_at ?? ""),
+        createdBy: String(row.created_by ?? ""),
+        history: mapHistory(row.history),
       },
     ];
   });
