@@ -80,7 +80,6 @@ import {
   listAuthorColumn,
   listCreatedColumn,
   listDeadlineColumn,
-  listDeadlineGroup,
   listNumberColumn,
   listProductsColumn,
   ListQuantity,
@@ -93,13 +92,11 @@ import {
   CUSTOMER_ORDER_PAYMENT_STATES,
   customerOrderPaymentState,
   customerOrderSourceKey,
-  customerOrderSourceLabel,
   customerOrderFilters,
   customerOrderTenantLabel,
   matchesCustomerOrderText,
-  type CustomerOrderPaymentState,
 } from "@/features/logistics/customer-order-list-filters";
-import type { ListColumnDef, ListGroupDef, ListSortDef } from "@/features/logistics/ui/list/list-types";
+import type { ListColumnDef, ListSortDef } from "@/features/logistics/ui/list/list-types";
 import { LogisticsListPageContent } from "@/features/logistics/ui/list/logistics-list-page-content";
 import { OrderPlanTab } from "@/features/logistics/order-plan/order-plan-tab";
 import { OrderProgressTracker } from "@/features/logistics/ui/order-progress-tracker";
@@ -230,47 +227,6 @@ const customerOrderSortDefs: ListSortDef<CustomerOrderListRow>[] = [
   { id: "unfulfilled", label: "Не обеспечено", type: "number", value: (row) => (isOpenCustomerOrderStatus(row.status) ? row.openToReserve : null) },
 ];
 
-const customerOrderGroupDefs: ListGroupDef<CustomerOrderListRow>[] = [
-  {
-    id: "status",
-    label: "Статус",
-    key: (row) => row.status,
-    renderHeader: (key) => CUSTOMER_ORDER_STATUS_LABELS[key as CustomerOrderStatus] ?? key,
-  },
-  listDeadlineGroup<CustomerOrderListRow>(isOpenCustomerOrderStatus),
-  {
-    id: "region",
-    label: "Регион",
-    key: (row) => row.regionCode || "Без региона",
-    renderHeader: (key) => key,
-  },
-  {
-    id: "tenant",
-    label: "Тенант",
-    key: (row) => customerOrderTenantLabel(row),
-    renderHeader: (key) => key,
-  },
-  {
-    id: "source",
-    label: "Источник",
-    key: (row) => customerOrderSourceKey(row),
-    renderHeader: (key) => customerOrderSourceLabel(key),
-  },
-  {
-    id: "payment",
-    label: "Оплата",
-    order: [...CUSTOMER_ORDER_PAYMENT_STATES],
-    key: (row) => customerOrderPaymentState(row.payments),
-    renderHeader: (key) => CUSTOMER_ORDER_PAYMENT_STATE_LABELS[key as CustomerOrderPaymentState] ?? key,
-  },
-  {
-    id: "author",
-    label: "Автор",
-    key: (row) => row.createdBy || "—",
-    renderHeader: (key) => key,
-  },
-];
-
 const FilterField = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="flex flex-col gap-1.5">
     <span className="text-xs font-medium text-muted-foreground">{label}</span>
@@ -312,7 +268,6 @@ export const CustomerOrdersPage = () => {
         onAction={() => setOpen(true)}
         columns={customerOrderColumns}
         sortDefs={customerOrderSortDefs}
-        groupDefs={customerOrderGroupDefs}
         rows={filtered}
         rowKey={(row) => row.id}
         groupQuantity={(row) => row.ordered}
