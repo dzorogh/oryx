@@ -21,6 +21,7 @@ type CatalogToolbarProps = {
   listingMode: CatalogListingMode;
   onListingModeChange: (mode: CatalogListingMode) => void;
   addButtonAriaLabel: string;
+  canAdd: boolean;
   filters: CatalogFilters;
   columns: CatalogColumns;
   onOpenFilters: () => void;
@@ -33,6 +34,7 @@ export const CatalogToolbar = ({
   listingMode,
   onListingModeChange,
   addButtonAriaLabel,
+  canAdd,
   filters,
   columns,
   onOpenFilters,
@@ -47,10 +49,12 @@ export const CatalogToolbar = ({
           <h1 className="text-lg font-semibold text-foreground">{STORE_CATALOG_PAGE.pageTitle}</h1>
         </div>
 
-        <Button type="button" size="default" className="shrink-0" aria-label={addButtonAriaLabel}>
-          <Plus aria-hidden className="size-3.5" />
-          Добавить
-        </Button>
+        {canAdd ? (
+          <Button type="button" size="default" className="shrink-0" aria-label={addButtonAriaLabel}>
+            <Plus aria-hidden className="size-3.5" />
+            Добавить
+          </Button>
+        ) : null}
       </div>
 
       <div className="-mx-3 border-t border-[var(--corportal-border-grey)]" aria-hidden />

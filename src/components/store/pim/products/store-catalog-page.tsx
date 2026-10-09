@@ -28,6 +28,8 @@ import {
   type CatalogQueryFilters,
 } from "@/features/store/store-catalog-from-logistics";
 import { loadVariantStockFacts, type VariantStockFact } from "@/features/store/variant-stock";
+import { CATALOG_VIEW_KEYS, resolveVisibility } from "@/features/logistics/order-view-role";
+import { useViewRole } from "@/features/logistics/use-view-role";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -38,6 +40,8 @@ const StoreCatalogPageFallback = () => (
 const StoreCatalogPageContent = () => {
   const searchParams = useSearchParams();
   const { selectedRegionCode } = useSelectedRegion();
+  const viewRole = useViewRole("catalog");
+  const visibility = resolveVisibility(CATALOG_VIEW_KEYS, viewRole.rules, viewRole.role);
 
   // With `output: "export"` the Next router does not update useSearchParams on
   // client-side router.replace (a no-op after a hard reload), so we own the
@@ -311,6 +315,7 @@ const StoreCatalogPageContent = () => {
             listingMode={listingMode}
             onListingModeChange={handleListingModeChange}
             addButtonAriaLabel={getCatalogAddButtonAriaLabel(listingMode)}
+            canAdd={visibility["catalog.add"]}
             filters={catalog.filters}
             columns={catalog.columns}
             onOpenFilters={() => catalog.setFilterSheetOpen(true)}

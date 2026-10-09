@@ -342,3 +342,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-checkout-money-integrity.md`
   summary: Нет тестов `loadCartVariantCatalog` (фильтр id, ошибка без Supabase) и `disableIncrease` в `CartQuantityControl`.
   evidence: Тестов компонентов нет; запрет увеличения продублирован в `onChange` карточки товара.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-view-roles.md`
+  summary: Демо-карточка товара `StoreDemoProductDetailPage` (id `bike-*`) не применяет правила видимости, у заказчика видна «Редактировать».
+  evidence: `app/store/pim/products/[productId]/page.tsx` выбирает демо-страницу по `getProductDetail`; убрать вместе с дублями маршрутов в волне 4.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-view-roles.md`
+  summary: Нет автоматических тестов применения ролей в React: флаги карточки товара, `enabled` источника `product`, гейт гидрации оболочки.
+  evidence: Тестов компонентов и хуков в репозитории нет; 2026-10-09 проверено в браузере под менеджером и заказчиком.

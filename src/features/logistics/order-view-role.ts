@@ -57,15 +57,28 @@ export const isVisibleForRole = (
   return role === "manager" ? rule.managerVisible : rule.customerVisible;
 };
 
+export const PRODUCT_VIEW_KEYS = [
+  "variants.add",
+  "variants.archived",
+  "tab.logistics",
+  "logistics.production",
+] as const;
+
+export const CATALOG_VIEW_KEYS = ["catalog.add"] as const;
+
+export const resolveVisibility = <K extends string>(
+  keys: readonly K[],
+  rules: readonly RoleVisibilityRule[],
+  role: ViewRole,
+): Record<K, boolean> =>
+  Object.fromEntries(keys.map((key) => [key, isVisibleForRole(rules, role, key)])) as Record<K, boolean>;
+
 export type CustomerOrderVisibility = Record<CustomerOrderViewKey, boolean>;
 
 export const resolveCustomerOrderVisibility = (
   rules: readonly RoleVisibilityRule[],
   role: ViewRole,
-): CustomerOrderVisibility =>
-  Object.fromEntries(
-    CUSTOMER_ORDER_VIEW_KEYS.map((key) => [key, isVisibleForRole(rules, role, key)]),
-  ) as CustomerOrderVisibility;
+): CustomerOrderVisibility => resolveVisibility(CUSTOMER_ORDER_VIEW_KEYS, rules, role);
 
 const CUSTOMER_STORE_PATHS = [
   "/store/catalog",
@@ -76,6 +89,8 @@ const CUSTOMER_STORE_PATHS = [
 ] as const;
 
 const CUSTOMER_ORDER_DETAIL_PATH = /^\/store\/logistics\/customer-orders\/[^/]+$/;
+const PRODUCT_CARD_PATH = /^\/store\/pim\/products\/[^/]+$/;
+const CATALOG_PATHS = new Set(["/store/pim/products", "/store/catalog"]);
 
 const normalizePath = (pathname: string): string => {
   const path = pathname.split(/[?#]/)[0] ?? "";
@@ -90,8 +105,13 @@ export const isStorePathAllowedForRole = (role: ViewRole, pathname: string): boo
 };
 
 /** `store_role_visibility.page` for a store path, or null when the page has no visibility rules. */
-export const viewRolePageForPath = (pathname: string): string | null =>
-  CUSTOMER_ORDER_DETAIL_PATH.test(normalizePath(pathname)) ? "customer_order" : null;
+export const viewRolePageForPath = (pathname: string): string | null => {
+  const path = normalizePath(pathname);
+  if (CUSTOMER_ORDER_DETAIL_PATH.test(path)) return "customer_order";
+  if (PRODUCT_CARD_PATH.test(path)) return "product";
+  if (CATALOG_PATHS.has(path)) return "catalog";
+  return null;
+};
 
 /** The customer sees only orders of the selected region; without a region they see none. */
 export const isOrderRegionVisibleForRole = (

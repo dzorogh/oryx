@@ -49,6 +49,12 @@ type LoadedRules = { page: string; rules: RoleVisibilityRule[]; error: string | 
 /** Current demo role without visibility rules. */
 export const useCurrentViewRole = (): ViewRole => useSyncExternalStore(subscribeRole, readRole, serverRole);
 
+const unknownRole = (): ViewRole | null => null;
+
+/** Null on the server and during hydration, until the stored role is read. */
+export const useHydratedViewRole = (): ViewRole | null =>
+  useSyncExternalStore<ViewRole | null>(subscribeRole, readRole, unknownRole);
+
 /** `page` is `store_role_visibility.page`; null means the page has no rules. */
 export const useViewRole = (page: string | null): RoleVisibilityState => {
   const role = useCurrentViewRole();

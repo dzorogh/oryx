@@ -39,6 +39,8 @@ import { ProductBalancesTable } from "@/features/logistics/ui/product-balances-t
 import { ProductionOrderCatalogDialog } from "@/features/logistics/ui/production-order-catalog-dialog";
 import { translateLogisticsError } from "@/features/logistics/ui/run-action";
 import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
+import { PRODUCT_VIEW_KEYS, resolveVisibility } from "@/features/logistics/order-view-role";
+import { useViewRole } from "@/features/logistics/use-view-role";
 import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
 import { useCart } from "@/features/store/cart/cart-context";
 import { useSelectedRegion } from "@/features/store/region-context";
@@ -221,6 +223,13 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [productionOpen, setProductionOpen] = useState(false);
+  const viewRole = useViewRole("product");
+  const visibility = resolveVisibility(PRODUCT_VIEW_KEYS, viewRole.rules, viewRole.role);
+  const archivedListed = showArchived && visibility["variants.archived"];
+  const activeVariantTab =
+    variantTab === "logistics" && !visibility["tab.logistics"] ? "attributes" : variantTab;
+  const [logisticsOpened, setLogisticsOpened] = useState(false);
+  if (activeVariantTab === "logistics" && !logisticsOpened) setLogisticsOpened(true);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -257,11 +266,11 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   const listedVariants = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (data?.variants ?? []).filter((variant) => {
-      if (variant.deletedAt && !showArchived && variant.id !== selectedVariant?.id) return false;
+      if (variant.deletedAt && !archivedListed && variant.id !== selectedVariant?.id) return false;
       if (!q) return true;
       return `${variant.name} ${formatEntityCode("product", variant.id)}`.toLowerCase().includes(q);
     });
-  }, [data, query, selectedVariant?.id, showArchived]);
+  }, [data, query, selectedVariant?.id, archivedListed]);
 
   const selectVariant = useCallback(
     (variantId: string) => {
@@ -281,6 +290,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   const logistics = useLogisticsStore({
     kind: "product",
     variantId: selectedVariant?.id ?? "",
+    enabled: Boolean(selectedVariant) && visibility["tab.logistics"] && logisticsOpened,
   });
 
   const needsRegion = !selectedRegionCode;
@@ -394,22 +404,24 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold">Варианты {activeVariantCount}</h2>
                 <div className="flex items-center gap-1">
-                  {archivedVariantCount > 0 ? (
+                  {archivedVariantCount > 0 && visibility["variants.archived"] ? (
                     <Button
                       type="button"
                       size="sm"
-                      variant={showArchived ? "default" : "outline"}
-                      aria-pressed={showArchived}
+                      variant={archivedListed ? "default" : "outline"}
+                      aria-pressed={archivedListed}
                       onClick={() => setShowArchived((value) => !value)}
                     >
                       <Archive aria-hidden className="size-3.5" />
                       Показать архивные {archivedVariantCount}
                     </Button>
                   ) : null}
-                  <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
-                    <Plus aria-hidden className="size-3.5" />
-                    Добавить
-                  </Button>
+                  {visibility["variants.add"] ? (
+                    <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
+                      <Plus aria-hidden className="size-3.5" />
+                      Добавить
+                    </Button>
+                  ) : null}
                 </div>
               </div>
               <div className="relative">
@@ -611,14 +623,16 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                       ["competitors", "Конкуренты"],
                       ["docs", "Документы"],
                     ] as const
-                  ).map(([id, label]) => (
-                    <TabButton key={id} active={variantTab === id} onClick={() => setVariantTab(id)}>
-                      {label}
-                    </TabButton>
-                  ))}
+                  )
+                    .filter(([id]) => id !== "logistics" || visibility["tab.logistics"])
+                    .map(([id, label]) => (
+                      <TabButton key={id} active={activeVariantTab === id} onClick={() => setVariantTab(id)}>
+                        {label}
+                      </TabButton>
+                    ))}
                 </div>
 
-                {variantTab === "logistics" ? (
+                {activeVariantTab === "logistics" ? (
                   <div className="space-y-4">
                     {logistics.isLoading ? <LogisticsLoading /> : null}
                     {logistics.error ? <LogisticsError message={logistics.error} /> : null}
@@ -634,20 +648,24 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                           snapshot={logistics.snapshot}
                           productId={selectedVariant.id}
                           unit={selectedVariant.unit}
-                          onCreateProduction={() => setProductionOpen(true)}
+                          onCreateProduction={
+                            visibility["logistics.production"] ? () => setProductionOpen(true) : undefined
+                          }
                         />
                         <DocumentLedger
                           snapshot={logistics.snapshot}
                           hide="product"
                           filter={(entry) => entry.productId === selectedVariant.id}
                         />
-                        <ProductionOrderCatalogDialog
-                          open={productionOpen}
-                          onOpenChange={setProductionOpen}
-                          snapshot={logistics.snapshot}
-                          balances={logistics.balances}
-                          presetProductId={selectedVariant.id}
-                        />
+                        {visibility["logistics.production"] ? (
+                          <ProductionOrderCatalogDialog
+                            open={productionOpen}
+                            onOpenChange={setProductionOpen}
+                            snapshot={logistics.snapshot}
+                            balances={logistics.balances}
+                            presetProductId={selectedVariant.id}
+                          />
+                        ) : null}
                       </>
                     ) : null}
                   </div>
@@ -661,7 +679,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
       </section>
 
       <DialogShell
-        open={addOpen}
+        open={addOpen && visibility["variants.add"]}
         onOpenChange={setAddOpen}
         size="sm"
         kicker="Варианты"

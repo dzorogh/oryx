@@ -56,7 +56,7 @@ export const EMPTY_SNAPSHOT: LogisticsSnapshot = {
 export type LogisticsStoreSource =
   | { kind: "document"; documentKind: string; ref: string }
   | { kind: "place"; placeKind: "warehouse" | "plant" | "region"; id: string }
-  | { kind: "product"; variantId: string }
+  | { kind: "product"; variantId: string; enabled?: boolean }
   | { kind: "form"; form: string; enabled?: boolean }
   | { kind: "stock" }
   | { kind: "ledger" }
@@ -132,7 +132,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
   const requestedKeyRef = useRef<string | null>(null);
-  const enabled = source.kind !== "form" || source.enabled !== false;
+  const enabled = (source.kind !== "form" && source.kind !== "product") || source.enabled !== false;
   const key = sourceKey(source);
 
   if (!enabled && loadedKey !== null) {

@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { isStorePathAllowedForRole, viewRolePageForPath } from "@/features/logistics/order-view-role";
 import { LOGISTICS_PATHS, STORE_PRODUCTS_PATH } from "@/features/logistics/logistics-paths";
 import { ViewRoleSwitcher } from "@/features/logistics/ui/view-role-switcher";
-import { useViewRole } from "@/features/logistics/use-view-role";
+import { useHydratedViewRole, useViewRole } from "@/features/logistics/use-view-role";
 
 const CustomerAccessDenied = () => (
   <main className="min-h-screen bg-muted/30">
@@ -44,10 +44,13 @@ const CustomerAccessDenied = () => (
 export const StoreViewRoleShell = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname() ?? "";
   const viewRole = useViewRole(viewRolePageForPath(pathname));
+  const hydratedRole = useHydratedViewRole();
+
+  if (hydratedRole == null) return <main className="min-h-screen bg-muted/30" aria-busy="true" />;
 
   return (
     <>
-      {isStorePathAllowedForRole(viewRole.role, pathname) ? children : <CustomerAccessDenied />}
+      {isStorePathAllowedForRole(hydratedRole, pathname) ? children : <CustomerAccessDenied />}
       <ViewRoleSwitcher state={viewRole} />
     </>
   );

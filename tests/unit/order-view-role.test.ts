@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  CATALOG_VIEW_KEYS,
+  PRODUCT_VIEW_KEYS,
+  resolveVisibility,
   isOrderRegionVisibleForRole,
   isStorePathAllowedForRole,
   isVisibleForRole,
@@ -64,10 +67,30 @@ describe("order view role", () => {
     assert.equal(isStorePathAllowedForRole("customer", "/store/settings"), false);
   });
 
-  it("maps the customer order card to its visibility page", () => {
+  it("maps store pages to their visibility page", () => {
     assert.equal(viewRolePageForPath("/store/logistics/customer-orders/12"), "customer_order");
     assert.equal(viewRolePageForPath("/store/logistics/customer-orders"), null);
-    assert.equal(viewRolePageForPath("/store/pim/products"), null);
+    assert.equal(viewRolePageForPath("/store/pim/products"), "catalog");
+    assert.equal(viewRolePageForPath("/store/catalog/"), "catalog");
+    assert.equal(viewRolePageForPath("/store/pim/products/42?variant=7"), "product");
+    assert.equal(viewRolePageForPath("/store/pim/pricelists"), null);
+  });
+
+  it("hides product-card management from the customer until a rule opens it", () => {
+    assert.deepEqual(resolveVisibility(PRODUCT_VIEW_KEYS, [], "customer"), {
+      "variants.add": false,
+      "variants.archived": false,
+      "tab.logistics": false,
+      "logistics.production": false,
+    });
+    assert.equal(resolveVisibility(PRODUCT_VIEW_KEYS, [], "manager")["logistics.production"], true);
+    const opened: RoleVisibilityRule[] = [
+      { elementKey: "tab.logistics", label: "Логистика", managerVisible: true, customerVisible: true },
+    ];
+    const customer = resolveVisibility(PRODUCT_VIEW_KEYS, opened, "customer");
+    assert.equal(customer["tab.logistics"], true);
+    assert.equal(customer["logistics.production"], false);
+    assert.equal(resolveVisibility(CATALOG_VIEW_KEYS, [], "customer")["catalog.add"], false);
   });
 
   it("shows the customer only orders of the selected region", () => {
