@@ -16,7 +16,7 @@ features/logistics/** ────────────┘
 |---|---|---|
 | `src/components/store/**` | `features/store/**`, `features/logistics/**` | — |
 | `src/features/store/**` | `features/store/**`, `features/logistics/**` | `@/components/store/*` |
-| Базовый слой store (ниже) | `features/store/domain/*`, общие `@/lib`, `@/components/ui` | `@/components/store/*`, `@/features/logistics/*` |
+| Базовый слой store (ниже) | базовый слой store, общие `@/lib`, `@/components/ui`, `@/domain` | остальной `features/store/*`, `@/components/store/*`, `@/features/logistics/*` |
 | `src/features/logistics/**`, `app/store/logistics/**` | только базовый слой store | остальной `features/store/*`, `@/components/store/*` |
 | `src/features/store/domain/**` | только `features/store/domain/*` | всё остальное из `features/*` и `components/store/*` |
 
@@ -24,7 +24,9 @@ features/logistics/** ────────────┘
 
 - `features/store/domain/` — чистые типы и проверки: `currency.ts` (`CurrencyCode`, `isCurrencyCode`), `statuses.ts` (дилерский и розничный статусы, подписи), `catalog-item.ts` (`StoreCatalogItem`, цены и статусы по регионам, `CATALOG_PAGE_SIZE`, `CATALOG_NO_SITE_KEY`).
 - `features/store/region-context.tsx`, `region-selection.ts`, `region-switcher.tsx` — выбранный регион.
-- `features/store/product-photo.tsx`, `features/store/packing/**`.
+- `features/store/product-photo.tsx`, `features/store/store-load-notice.tsx` (ошибка загрузки и «Повторить»), `features/store/packing/**`.
+
+Базовый слой импортирует только базовый слой: иначе логистика транзитивно дотянется до остального магазина и цикл вернётся.
 
 ## Правила
 

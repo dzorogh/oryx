@@ -360,6 +360,3 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-structure-routes-migrations.md`
   summary: Демо-строки прайс-листа без бэкенда (`bike-*`) ссылаются на удалённую демо-карточку и открывают «Товар не найден».
   evidence: `pricelists-demo-data.ts` → `getVariantCatalogItems`, `catalog-helpers.ts` `getCatalogItemDetailHref`; убрать вместе с офлайн-режимом прайс-листов.
-- source_spec: `_bmad-output/implementation-artifacts/spec-store-structure-routes-migrations.md`
-  summary: Циклическая зависимость `src/features/logistics` ↔ `src/features/store` (регион, калькулятор контейнеров, роли, деньги заказа).
-  evidence: Находка ревью магазина 2026-10-08; нужен общий модуль, отдельная работа.

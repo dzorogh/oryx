@@ -7,8 +7,12 @@ const STORE_BASE_FILES = [
   "src/features/store/region-selection.ts",
   "src/features/store/region-switcher.tsx",
   "src/features/store/product-photo.tsx",
+  "src/features/store/store-load-notice.tsx",
   "src/features/store/packing/**",
 ];
+
+const STORE_BASE_IMPORT =
+  "^@/features/store/(?!(domain|packing)/|(region-context|region-selection|region-switcher|product-photo|store-load-notice)$)";
 
 const NO_PIM_UI = {
   group: ["@/components/store/*"],
@@ -35,6 +39,10 @@ const config = [
             {
               group: ["@/features/logistics/*"],
               message: "Store base modules are shared with logistics and must not import it back.",
+            },
+            {
+              regex: STORE_BASE_IMPORT,
+              message: "Store base modules import only the base layer, so logistics cannot reach the rest of store through them.",
             },
           ],
         },
@@ -70,7 +78,7 @@ const config = [
               message: "Logistics must not depend on PIM UI in components/store.",
             },
             {
-              regex: "^@/features/store/(?!(domain|packing)/|(region-context|region-switcher|product-photo)$)",
+              regex: STORE_BASE_IMPORT,
               message: "Logistics may import only the store base layer (domain, region, product photo, packing).",
             },
           ],
