@@ -481,6 +481,14 @@ for (const line of snapshot.customer_order_lines ?? []) {
   linesByOrderId.set(key, bucket);
 }
 
+const applySeedFile = (file) => {
+  runSql(`seed ${file}`, readFileSync(resolve(root, "supabase/seed", file), "utf8"));
+  console.log(`seed_ok ${file}`);
+};
+
+/** Hubs, region hubs and order currencies go first: orders take their currency from the region. */
+applySeedFile("00_store_demo_hubs_regions.sql");
+
 let seededOrders = 0;
 for (const order of snapshot.customer_orders ?? []) {
   const lines = linesByOrderId.get(String(order.id)) ?? [];
@@ -540,11 +548,9 @@ alter table public.store_document_history enable trigger store_document_history_
 commit;
 `;
 
-/** Hubs, extra variants and their stock, then logistics, supply costs and order currencies; after the stories so story document numbers stay put. */
-for (const file of ["01_store_demo_hubs_variants_stock.sql", "02_store_demo_cart_checkout.sql"]) {
-  runSql(`seed ${file}`, readFileSync(resolve(root, "supabase/seed", file), "utf8"));
-  console.log(`seed_ok ${file}`);
-}
+/** Extra variants and their stock, then logistics and supply costs; after the stories so story document numbers stay put. */
+applySeedFile("01_store_demo_hubs_variants_stock.sql");
+applySeedFile("02_store_demo_cart_checkout.sql");
 
 runSql("history backfill", historyBackfillSql);
 console.log("seed_ok history_timestamps_backfilled");

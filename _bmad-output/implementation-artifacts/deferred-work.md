@@ -358,14 +358,8 @@
   summary: Нет тестов React-состояний ошибок и «Повторить»; проверено в браузере 2026-10-09.
   evidence: Тестов компонентов в репозитории нет.
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-structure-routes-migrations.md`
-  summary: Сид ставит хабы регионов и валюты заказов после историй, поэтому заказы историй созданы в CNY и с Dubai Hub, а новые оформления — в валюте и с хабом региона.
-  evidence: `scripts/seed-logistics.mjs` применяет `supabase/seed/*.sql` после `seedOrderMoney`; привязку хабов и валют можно вынести до историй, варианты и остатки оставить после.
-- source_spec: `_bmad-output/implementation-artifacts/spec-store-structure-routes-migrations.md`
   summary: Демо-строки прайс-листа без бэкенда (`bike-*`) ссылаются на удалённую демо-карточку и открывают «Товар не найден».
   evidence: `pricelists-demo-data.ts` → `getVariantCatalogItems`, `catalog-helpers.ts` `getCatalogItemDetailHref`; убрать вместе с офлайн-режимом прайс-листов.
-- source_spec: `_bmad-output/implementation-artifacts/spec-store-structure-routes-migrations.md`
-  summary: Полный `npm run seed:logistics` с новыми SQL-сидами не запускался — он стирает живую демо-БД.
-  evidence: Обе части проверены в транзакции с откатом на текущих данных; прогон с нуля — при следующем пересеве.
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-structure-routes-migrations.md`
   summary: Циклическая зависимость `src/features/logistics` ↔ `src/features/store` (регион, калькулятор контейнеров, роли, деньги заказа).
   evidence: Находка ревью магазина 2026-10-08; нужен общий модуль, отдельная работа.

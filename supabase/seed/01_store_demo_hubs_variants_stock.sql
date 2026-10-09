@@ -1,5 +1,6 @@
--- Demo: hubs, multi-variant products, stock for Ready/Total.
--- Applied by `npm run seed:logistics` after the stories, on ids from a fresh seed (restart identity).
+-- Demo: multi-variant products, stock on hubs and plants, reserves, transfers, planned outputs.
+-- Applied by `npm run seed:logistics` after the stories, on ids from a fresh seed (restart identity);
+-- hubs come from 00_store_demo_hubs_regions.sql.
 
 do $seed$
 declare
@@ -29,39 +30,14 @@ declare
   v_archive_count int := 0;
 begin
   select id into strict v_dubai from store_warehouse where name = 'Dubai Hub' and deleted_at is null;
-
-  -- Hubs (skip if already seeded by name).
-  if not exists (select 1 from store_warehouse where name = 'CIS Hub' and deleted_at is null) then
-    v_cis := public.store_create_warehouse('CIS Hub', 'hub');
-  else
-    select id into v_cis from store_warehouse where name = 'CIS Hub' and deleted_at is null;
-  end if;
-  if not exists (select 1 from store_warehouse where name = 'Americas Hub' and deleted_at is null) then
-    v_americas := public.store_create_warehouse('Americas Hub', 'hub');
-  else
-    select id into v_americas from store_warehouse where name = 'Americas Hub' and deleted_at is null;
-  end if;
-  if not exists (select 1 from store_warehouse where name = 'Europe Hub' and deleted_at is null) then
-    v_europe := public.store_create_warehouse('Europe Hub', 'hub');
-  else
-    select id into v_europe from store_warehouse where name = 'Europe Hub' and deleted_at is null;
-  end if;
+  select id into strict v_cis from store_warehouse where name = 'CIS Hub' and deleted_at is null;
+  select id into strict v_americas from store_warehouse where name = 'Americas Hub' and deleted_at is null;
+  select id into strict v_europe from store_warehouse where name = 'Europe Hub' and deleted_at is null;
 
   select stock_location_id into v_loc_dubai from store_warehouse where id = v_dubai;
   select stock_location_id into v_loc_cis from store_warehouse where id = v_cis;
   select stock_location_id into v_loc_americas from store_warehouse where id = v_americas;
   select stock_location_id into v_loc_europe from store_warehouse where id = v_europe;
-
-  -- Bind hubs to regions; keep each region's order currency (the RPC overwrites it).
-  perform public.store_update_region(g.id, g.name, h.hub_id, g.order_currency_id)
-  from store_region g
-  join (values
-    ('AE', v_dubai), ('OM', v_dubai), ('IN', v_dubai),
-    ('RU', v_cis), ('KZ', v_cis), ('BY', v_cis), ('UZ', v_cis),
-    ('MX', v_americas), ('US', v_americas),
-    ('DE', v_europe)
-  ) as h(code, hub_id) on h.code = g.code
-  where g.deleted_at is null;
 
   -- Extra variants for first 12 products (skip if product already has >1 active variant).
   for v_i in 1..array_length(v_products, 1) loop

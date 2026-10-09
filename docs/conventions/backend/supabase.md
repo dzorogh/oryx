@@ -40,7 +40,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon JWT from Dokploy supabase Environment>
 | `src/lib/supabase/client.ts` | Browser client; `null` if env is missing |
 | Feature `*-api.ts` (e.g. `src/features/pulse/thanks/thanks-api.ts`) | Table mapping + queries |
 | `supabase/migrations/*.sql` | Schema + open RLS for this repo; no demo rows (a one-off backfill of existing rows is fine) |
-| `supabase/seed/*.sql` | Store demo data that `npm run seed:logistics` applies after its stories, in file-name order |
+| `supabase/seed/*.sql` | Store demo data applied by `npm run seed:logistics`: `00_*` before the orders, `01_*` and `02_*` after the stories |
 
 If env is unset, UI may keep local demo data. If env is set, talk to this Kong URL only.
 
