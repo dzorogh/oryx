@@ -439,7 +439,14 @@ for (const row of snapshot.products) {
 
 await postBatch("store_product_category", productCategoryRows);
 await postBatch("store_product_price", priceRows);
-await postBatch("store_product_region_status", statusRows);
+for (let i = 0; i < statusRows.length; i += 200) {
+  await rest(
+    "POST",
+    "store_product_region_status?on_conflict=product_variant_id,region_id",
+    statusRows.slice(i, i + 200),
+    "return=minimal,resolution=merge-duplicates",
+  );
+}
 
 const mapOrderStatus = (status) => {
   if (status === "closed" || status === "done") return "done";

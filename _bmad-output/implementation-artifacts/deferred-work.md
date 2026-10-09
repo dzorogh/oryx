@@ -348,3 +348,12 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-view-roles.md`
   summary: Нет автоматических тестов применения ролей в React: флаги карточки товара, `enabled` источника `product`, гейт гидрации оболочки.
   evidence: Тестов компонентов и хуков в репозитории нет; 2026-10-09 проверено в браузере под менеджером и заказчиком.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-load-errors-and-catalog-data.md`
+  summary: Ошибка загрузки опций фильтров каталога (сайты, семейства) не показывается — списки просто пустые.
+  evidence: `store-catalog-page.tsx`, загрузка `siteOptions` / `familyOptions`.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-load-errors-and-catalog-data.md`
+  summary: Загрузка фактов остатков с повтором продублирована в карточке товара, оформлении и калькуляторе — вынести в общий хук.
+  evidence: `store-product-card-page.tsx`, `store-checkout-page.tsx`, `container-load-calculator.tsx`.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-load-errors-and-catalog-data.md`
+  summary: Нет тестов React-состояний ошибок и «Повторить»; проверено в браузере 2026-10-09.
+  evidence: Тестов компонентов в репозитории нет.

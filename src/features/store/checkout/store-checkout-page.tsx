@@ -17,6 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { VariantStockSummary } from "@/features/store/variant-stock-summary";
 import { RegionSwitcher } from "@/features/store/region-switcher";
+import { StoreInlineRetry } from "@/features/store/store-load-notice";
+import type { StoreLoadStatus } from "@/features/store/load-state";
 import type { MixedPackItem } from "@/domain/packing/mixed-containers";
 import type { OrderRates } from "@/features/logistics/order-money";
 import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
@@ -97,14 +99,38 @@ export const StoreCheckoutPage = () => {
     retryCatalog,
     setQuantity,
   } = useCart();
-  const { selectedRegion, regionsLoading, setSwitcherOpen } = useSelectedRegion();
+  const {
+    selectedRegion,
+    regionsLoading,
+    regionsError,
+    regionsUnconfigured,
+    retryRegions,
+    setSwitcherOpen,
+  } = useSelectedRegion();
   const [mode, setMode] = useState<CheckoutFulfillmentMode>("hub");
   const hubMissing = Boolean(selectedRegion && !selectedRegion.hubWarehouseId);
   const effectiveMode: CheckoutFulfillmentMode = hubMissing ? "plant" : mode;
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
-  const [containerTypes, setContainerTypes] = useState<StoreContainerTypeRow[]>([]);
+  const [containerState, setContainerState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; rows: StoreContainerTypeRow[] }
+    | { status: "error" }
+    | { status: "unconfigured" }
+  >({ status: "loading" });
+  const [containerAttempt, setContainerAttempt] = useState(0);
   const [submittingBlockId, setSubmittingBlockId] = useState<string | null>(null);
-  const [stockFacts, setStockFacts] = useState<VariantStockFact[] | null>(null);
+  const [stockState, setStockState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; facts: VariantStockFact[] }
+    | { status: "error" }
+    | { status: "unconfigured" }
+  >({ status: "loading" });
+  const [stockAttempt, setStockAttempt] = useState(0);
+  const backendConfigured = isSupabaseConfigured();
+  const containerStatus: StoreLoadStatus = backendConfigured ? containerState.status : "unconfigured";
+  const containerTypes = containerState.status === "ready" ? containerState.rows : [];
+  const stockStatus: StoreLoadStatus = backendConfigured ? stockState.status : "unconfigured";
+  const stockFacts = stockState.status === "ready" ? stockState.facts : null;
   const [resultsOpen, setResultsOpen] = useState(false);
   const [results, setResults] = useState<BlockResult[]>([]);
   const attemptKeysRef = useRef(new Map<string, string>());
@@ -112,25 +138,56 @@ export const StoreCheckoutPage = () => {
   const [fallbackRates, setFallbackRates] = useState<OrderRates | null>(null);
 
   useEffect(() => {
+    if (!backendConfigured) {
+      return;
+    }
     let cancelled = false;
     void loadVariantStockFacts()
       .then((facts) => {
-        if (!cancelled) setStockFacts(facts);
+        if (cancelled) return;
+        if (!facts) {
+          setStockState({ status: "unconfigured" });
+          return;
+        }
+        setStockState({ status: "ready", facts });
       })
       .catch(() => {
-        if (!cancelled) setStockFacts(null);
-      });
-    void loadContainerTypes()
-      .then((rows) => {
-        if (!cancelled) setContainerTypes(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setContainerTypes([]);
+        if (cancelled) return;
+        setStockState({ status: "error" });
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [backendConfigured, stockAttempt]);
+
+  useEffect(() => {
+    if (!backendConfigured) {
+      return;
+    }
+    let cancelled = false;
+    void loadContainerTypes()
+      .then((rows) => {
+        if (cancelled) return;
+        setContainerState({ status: "ready", rows });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setContainerState({ status: "error" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backendConfigured, containerAttempt]);
+
+  const retryStock = () => {
+    setStockState({ status: "loading" });
+    setStockAttempt((attempt) => attempt + 1);
+  };
+
+  const retryContainers = () => {
+    setContainerState({ status: "loading" });
+    setContainerAttempt((attempt) => attempt + 1);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -168,8 +225,10 @@ export const StoreCheckoutPage = () => {
       const item = catalogById.get(line.variantId);
       const removed = missingIds.has(line.variantId);
       const region = regionCode && item ? item.byRegion.get(regionCode) : null;
-      const stock =
-        stockFacts != null ? computeVariantRegionStock(stockFacts, line.variantId, regionForStock) : null;
+      const stockKnown = stockStatus === "ready" && stockFacts != null;
+      const stock = stockKnown
+        ? computeVariantRegionStock(stockFacts, line.variantId, regionForStock)
+        : null;
       return {
         variantId: line.variantId,
         name: removed ? REMOVED_VARIANT_REASON : (item?.name ?? formatEntityCode("product", line.variantId)),
@@ -182,12 +241,12 @@ export const StoreCheckoutPage = () => {
         dealerCurrency: region?.dealerCurrency ?? null,
         dealerStatus: region?.dealerStatus ?? "unavailable",
         supplyCostPercent: region?.supplyCostPercent ?? null,
-        hubReady: stockFacts != null && regionForStock ? stock?.ready ?? null : null,
+        hubReady: stockKnown && regionForStock ? (stock?.ready ?? null) : null,
         removed,
         unloaded: failedIds.has(line.variantId),
       };
     });
-  }, [lines, catalogById, selectedRegion, stockFacts, regionForStock, missingIds, failedIds]);
+  }, [lines, catalogById, selectedRegion, stockFacts, stockStatus, regionForStock, missingIds, failedIds]);
 
   const includedVariantIds = useMemo(() => {
     const set = new Set(checkoutItems.map((item) => item.variantId));
@@ -208,9 +267,10 @@ export const StoreCheckoutPage = () => {
     [effectiveMode, checkoutItems, includedVariantIds, selectedRegion],
   );
 
-  const needsRegion = lines.length > 0 && !regionsLoading && !selectedRegion;
+  const regionsFailed = Boolean(regionsError) || regionsUnconfigured;
+  const needsRegion = lines.length > 0 && !regionsLoading && !selectedRegion && !regionsFailed;
   const loading = lines.length > 0 && (regionsLoading || catalogLoading);
-  const blocked = loading || needsRegion;
+  const blocked = loading || needsRegion || (lines.length > 0 && regionsFailed);
   const visibleBlocks = blocked ? [] : layout.blocks.filter((block) => block.lines.length > 0);
   const singlePlantBlock = visibleBlocks.length === 1 && visibleBlocks[0]?.mode === "plant";
   const deletedRemainder = layout.remainder.filter((row) => row.reason === REMOVED_VARIANT_REASON);
@@ -349,6 +409,10 @@ export const StoreCheckoutPage = () => {
         </div>
       ) : null}
 
+      {stockStatus === "error" ? (
+        <StoreInlineRetry message="Не удалось загрузить остатки." onRetry={retryStock} />
+      ) : null}
+
       <div className="grid gap-3 md:grid-cols-2">
         <button
           type="button"
@@ -406,7 +470,22 @@ export const StoreCheckoutPage = () => {
         </Card>
       ) : null}
 
-      {loading ? (
+      {lines.length > 0 && !regionsLoading && regionsFailed ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
+            {regionsUnconfigured ? (
+              <p>Бэкенд демо не настроен</p>
+            ) : (
+              <>
+                <p>{regionsError}</p>
+                <Button type="button" size="sm" variant="outline" onClick={retryRegions}>
+                  Повторить
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ) : loading ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Загружаем корзину…
@@ -463,10 +542,10 @@ export const StoreCheckoutPage = () => {
           <CardContent className="space-y-3">
             {block.lines.map((line) => {
               const lineLocked = isCheckoutBlockBusy(submittingBlockId, block.id);
-              const stock =
-                stockFacts != null
-                  ? computeVariantRegionStock(stockFacts, line.variantId, regionForStock)
-                  : { ready: null, total: 0, rows: [], missingHub: !regionForStock?.hubWarehouseId };
+              const stockKnown = stockStatus === "ready" && stockFacts != null;
+              const stock = stockKnown
+                ? computeVariantRegionStock(stockFacts, line.variantId, regionForStock)
+                : null;
               return (
                 <div
                   key={line.variantId}
@@ -502,6 +581,7 @@ export const StoreCheckoutPage = () => {
                       />
                       <VariantStockSummary
                         stock={stock}
+                        unknown={Boolean(selectedRegion) && !stockKnown}
                         needsRegion={!selectedRegion}
                         onRequestRegion={() => setSwitcherOpen(true)}
                         compact
@@ -563,6 +643,8 @@ export const StoreCheckoutPage = () => {
             {block.mode === "plant" ? (
               <ContainerLoadCalculator
                 containerTypes={containerTypes}
+                loadStatus={containerStatus}
+                onRetry={retryContainers}
                 items={packingItemsByBlock.get(block.id) ?? []}
                 missingNames={block.lines
                   .filter(

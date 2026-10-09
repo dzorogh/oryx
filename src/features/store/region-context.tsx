@@ -12,6 +12,7 @@ import {
 } from "react";
 import { isCurrencyCode, type CurrencyCode } from "@/features/store/domain/currency";
 import { formatEntityCode } from "@/lib/entity-codes";
+import { ensureEntityCodePrefixes } from "@/lib/entity-codes-api";
 import { resolveSelectedRegionCode } from "@/features/store/region-selection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -32,6 +33,11 @@ export type StoreRegionOption = {
 type RegionContextValue = {
   regions: StoreRegionOption[];
   regionsLoading: boolean;
+  /** Set when the region query failed. Null while loading, unset, or after success. */
+  regionsError: string | null;
+  /** Supabase env is missing. No retry. */
+  regionsUnconfigured: boolean;
+  retryRegions: () => void;
   /** Validated selected region code, or null when unset / invalid. */
   selectedRegionCode: string | null;
   selectedRegion: StoreRegionOption | null;
@@ -100,6 +106,7 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
     return null;
   }
 
+  // formatEntityCode reads module-global prefixes; load them before hubCode is computed.
   const [currenciesResult, regionsResult] = await Promise.all([
     client.from("store_currency").select("id,code").is("deleted_at", null),
     client
@@ -110,6 +117,7 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
       .is("deleted_at", null)
       .eq("active", true)
       .order("sort_order", { ascending: true }),
+    ensureEntityCodePrefixes(),
   ]);
 
   if (currenciesResult.error) throw new Error(currenciesResult.error.message);
@@ -147,9 +155,14 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
   return regions;
 };
 
+const REGIONS_LOAD_ERROR = "Не удалось загрузить регионы";
+
 export const RegionProvider = ({ children }: { children: ReactNode }) => {
   const [regions, setRegions] = useState<StoreRegionOption[]>([]);
   const [regionsLoading, setRegionsLoading] = useState(true);
+  const [regionsError, setRegionsError] = useState<string | null>(null);
+  const [regionsUnconfigured, setRegionsUnconfigured] = useState(false);
+  const [regionsAttempt, setRegionsAttempt] = useState(0);
   const selectedRegionCode = useSyncExternalStore(
     subscribeStoredRegionCode,
     readStoredRegionCode,
@@ -157,23 +170,40 @@ export const RegionProvider = ({ children }: { children: ReactNode }) => {
   );
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
+  const retryRegions = useCallback(() => {
+    setRegionsLoading(true);
+    setRegionsError(null);
+    setRegionsUnconfigured(false);
+    setRegionsAttempt((attempt) => attempt + 1);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     void loadStoreRegions()
       .then((loaded) => {
         if (cancelled) return;
-        setRegions(loaded ?? []);
+        if (!loaded) {
+          setRegions([]);
+          setRegionsError(null);
+          setRegionsUnconfigured(true);
+        } else {
+          setRegions(loaded);
+          setRegionsError(null);
+          setRegionsUnconfigured(false);
+        }
         setRegionsLoading(false);
       })
       .catch(() => {
         if (cancelled) return;
         setRegions([]);
+        setRegionsError(REGIONS_LOAD_ERROR);
+        setRegionsUnconfigured(false);
         setRegionsLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [regionsAttempt]);
 
   const validCodes = useMemo(() => new Set(regions.map((region) => region.code)), [regions]);
 
@@ -192,13 +222,26 @@ export const RegionProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       regions,
       regionsLoading,
+      regionsError,
+      regionsUnconfigured,
+      retryRegions,
       selectedRegionCode: validatedCode,
       selectedRegion,
       setSelectedRegionCode,
       switcherOpen,
       setSwitcherOpen,
     }),
-    [regions, regionsLoading, validatedCode, selectedRegion, setSelectedRegionCode, switcherOpen],
+    [
+      regions,
+      regionsLoading,
+      regionsError,
+      regionsUnconfigured,
+      retryRegions,
+      validatedCode,
+      selectedRegion,
+      setSelectedRegionCode,
+      switcherOpen,
+    ],
   );
 
   return <RegionContext.Provider value={value}>{children}</RegionContext.Provider>;

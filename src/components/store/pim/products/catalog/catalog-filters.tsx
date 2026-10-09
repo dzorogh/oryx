@@ -1,4 +1,5 @@
 // english-ui:ignore-file
+import { useId } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,8 @@ type CatalogQuickSelectControlProps = {
   allLabel: string;
   options: QuickFilterOption[];
   widthClassName: string;
+  disabled?: boolean;
+  hint?: string;
 };
 
 export const CatalogQuickSelectControl = ({
@@ -56,28 +59,45 @@ export const CatalogQuickSelectControl = ({
   allLabel,
   options,
   widthClassName,
+  disabled = false,
+  hint,
 }: CatalogQuickSelectControlProps) => {
   const selectItems = [
     { value: ALL_VALUE, label: allLabel },
     ...options.map((option) => ({ value: option.value, label: option.label })),
   ];
+  const generatedHintId = useId();
+  const hintId = hint ? generatedHintId : undefined;
 
   return (
-    <Select items={selectItems} value={value} onValueChange={onValueChange}>
-      <SelectTrigger size="default" className={cn("bg-background", widthClassName)} aria-label={ariaLabel}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectItem value={ALL_VALUE}>{allLabel}</SelectItem>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+    <div className="flex min-w-0 flex-col gap-1">
+      <Select items={selectItems} value={value} onValueChange={onValueChange} disabled={disabled}>
+        <SelectTrigger
+          size="default"
+          className={cn("bg-background", widthClassName)}
+          aria-label={ariaLabel}
+          disabled={disabled}
+          aria-describedby={hintId}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value={ALL_VALUE}>{allLabel}</SelectItem>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      {hint ? (
+        <span id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </span>
+      ) : null}
+    </div>
   );
 };
 

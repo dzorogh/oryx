@@ -1,25 +1,18 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  CATALOG_SCOPE_OPTIONS,
+  readStoredCatalogScope,
+  writeStoredCatalogScope,
+  type CatalogScope,
+  type CatalogScopeOption,
+} from "@/features/store/catalog-scope-storage";
 
-export type CatalogScope = "equipment" | "parts" | "accessories";
-
-export type CatalogScopeOption = {
-  value: CatalogScope;
-  label: string;
-};
-
-export const CATALOG_SCOPE_OPTIONS: CatalogScopeOption[] = [
-  { value: "equipment", label: "Техника" },
-  { value: "parts", label: "Запчасти" },
-  { value: "accessories", label: "Аксессуары" },
-];
+export type { CatalogScope, CatalogScopeOption };
+export { CATALOG_SCOPE_OPTIONS };
 
 const DEFAULT_SCOPE: CatalogScope = "equipment";
-const STORAGE_KEY = "store-catalog-scope";
-
-const isCatalogScope = (value: unknown): value is CatalogScope =>
-  CATALOG_SCOPE_OPTIONS.some((option) => option.value === value);
 
 type CatalogScopeContextValue = {
   scope: CatalogScope;
@@ -32,13 +25,8 @@ export const CatalogScopeProvider = ({ children }: { children: ReactNode }) => {
   const [scope, setScopeState] = useState<CatalogScope>(DEFAULT_SCOPE);
 
   useEffect(() => {
-    const storage = window.localStorage;
-    if (!storage || typeof storage.getItem !== "function") {
-      return;
-    }
-
-    const storedScope = storage.getItem(STORAGE_KEY);
-    if (!isCatalogScope(storedScope)) {
+    const storedScope = readStoredCatalogScope(() => window.localStorage);
+    if (!storedScope) {
       return;
     }
 
@@ -48,12 +36,7 @@ export const CatalogScopeProvider = ({ children }: { children: ReactNode }) => {
 
   const setScope = (nextScope: CatalogScope) => {
     setScopeState(nextScope);
-
-    const storage = window.localStorage;
-    if (!storage || typeof storage.setItem !== "function") {
-      return;
-    }
-    storage.setItem(STORAGE_KEY, nextScope);
+    writeStoredCatalogScope(() => window.localStorage, nextScope);
   };
 
   const value = useMemo<CatalogScopeContextValue>(() => ({ scope, setScope }), [scope]);

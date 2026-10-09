@@ -9,6 +9,7 @@ import {
   useSelectedRegion,
   type StoreRegionOption,
 } from "@/features/store/region-context";
+import { StoreInlineRetry } from "@/features/store/store-load-notice";
 import { cn } from "@/lib/utils";
 
 export const formatRegionSwitcherLabel = (region: StoreRegionOption): string => {
@@ -40,6 +41,10 @@ export const RegionSwitcher = ({
 }: RegionSwitcherProps) => {
   const {
     regions,
+    regionsLoading,
+    regionsError,
+    regionsUnconfigured,
+    retryRegions,
     selectedRegionCode: sharedRegionCode,
     setSelectedRegionCode,
     switcherOpen,
@@ -107,12 +112,19 @@ export const RegionSwitcher = ({
             aria-label="Поиск региона"
           />
         </div>
+        {regionsUnconfigured ? (
+          <p className="px-2 py-3 text-xs text-muted-foreground">Бэкенд демо не настроен</p>
+        ) : regionsError ? (
+          <StoreInlineRetry message={regionsError} onRetry={retryRegions} />
+        ) : (
         <div
           role="listbox"
           aria-label="Регионы"
           className="max-h-64 overflow-y-auto rounded-md border border-[var(--corportal-border-grey)]"
         >
-          {filtered.length === 0 ? (
+          {regionsLoading && filtered.length === 0 ? (
+            <p className="px-2 py-3 text-xs text-muted-foreground">Загрузка…</p>
+          ) : filtered.length === 0 ? (
             <p className="px-2 py-3 text-xs text-muted-foreground">Ничего не найдено</p>
           ) : (
             filtered.map((region) => {
@@ -151,6 +163,7 @@ export const RegionSwitcher = ({
             })
           )}
         </div>
+        )}
       </PopoverContent>
     </Popover>
   );

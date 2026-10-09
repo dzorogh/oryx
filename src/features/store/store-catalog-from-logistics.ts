@@ -73,6 +73,7 @@ type VariantRow = {
     id?: string | number;
     name?: string;
     family_id?: string | number | null;
+    brand?: { name: string } | null;
     family?: { id: string | number; name: string } | null;
     categories?: Array<{
       category_id: string | number;
@@ -186,9 +187,9 @@ export const mapLogisticsProductToCatalogItem = (
     categoryId: extras?.categoryId ?? fromProduct.categoryId,
     category: extras?.category ?? fromProduct.category,
     family: extras?.family ?? fromProduct.family,
-    brand: "Oryx",
+    brand: row.product?.brand?.name ?? null,
     stock: 0,
-    updatedAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: null,
     dealerPrice,
     retailPrice,
     dealerCurrency: extras?.dealerCurrency ?? null,
@@ -284,6 +285,9 @@ export const loadRegionPricing = async (variantIds?: readonly string[]): Promise
 
 const ALL_FILTER = "all";
 
+/** Drops PostgREST `or()` delimiters and LIKE wildcards (`*` is a wildcard in PostgREST `ilike`). */
+export const sanitizeCatalogSearch = (search: string): string => search.replace(/[%_,.()*"\\:]/g, "");
+
 type VariantQueryMode = "page" | "plant_ids";
 
 const resolveRegionId = async (
@@ -332,16 +336,18 @@ const resolveProductIdsForCategories = async (
   client: SupabaseClient,
   categoryIds: number[],
 ): Promise<number[]> => {
-  const { data, error } = await client
-    .from("store_product_category")
-    .select("product_id")
-    .in("category_id", categoryIds);
-  if (error) {
-    throw new Error(error.message);
-  }
+  const rows = await fetchAllRows<{ product_id: number | string }>((from, to) =>
+    client
+      .from("store_product_category")
+      .select("product_id")
+      .in("category_id", categoryIds)
+      .order("product_id", { ascending: true })
+      .order("category_id", { ascending: true })
+      .range(from, to),
+  );
   return [
     ...new Set(
-      ((data ?? []) as Array<{ product_id: number | string }>)
+      rows
         .map((row) => Number(row.product_id))
         .filter((id) => Number.isFinite(id)),
     ),
@@ -363,7 +369,7 @@ const buildVariantQuery = (
 
   const categorySelect =
     "categories:store_product_category(category_id,category:store_category(id,code,name))";
-  const productSelect = `product:store_product${needsFamilyJoin ? "!inner" : ""}(id,name,family_id,family:store_product_family(id,name),${categorySelect})`;
+  const productSelect = `product:store_product${needsFamilyJoin ? "!inner" : ""}(id,name,family_id,family:store_product_family(id,name),brand:store_brand(name),${categorySelect})`;
   const statusSelect = needsStatusJoin
     ? ",region_status:store_product_region_status!inner(region_id,dealer_status,retail_status)"
     : "";
@@ -400,7 +406,7 @@ const buildVariantQuery = (
 
   const search = filters.search?.trim() ?? "";
   if (search) {
-    const escaped = search.replace(/[%_,.()]/g, "");
+    const escaped = sanitizeCatalogSearch(search);
     const codeId = parseEntityCodeId("product", search);
     if (codeId != null) {
       query = query.or(`name.ilike.%${escaped}%,id.eq.${codeId}`);
@@ -508,6 +514,14 @@ export const loadDbCatalogItems = async (options?: {
     resolveRegionId(client, filters.regionCode),
     loadLogisticsSettings(),
   ]);
+
+  const statusFilterActive =
+    (filters.dealerStatus != null && filters.dealerStatus !== ALL_FILTER) ||
+    (filters.retailStatus != null && filters.retailStatus !== ALL_FILTER);
+  // A status belongs to a region: an unknown or inactive region matches nothing instead of ignoring the filter.
+  if (statusFilterActive && filters.regionCode && regionId == null) {
+    return { items: [], groupTotals: {}, hasMore: false };
+  }
 
   // Empty category resolution means the tree node has no DB codes — no rows match.
   if (categoryIds && categoryIds.length === 0) {

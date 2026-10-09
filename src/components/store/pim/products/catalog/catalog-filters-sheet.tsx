@@ -54,6 +54,8 @@ export const CatalogFiltersSheet = ({ open, onOpenChange, filters }: CatalogFilt
             allLabel="Любой статус"
             options={filters.dealerStatus.options}
             widthClassName="w-full"
+            disabled={filters.dealerStatus.disabled}
+            hint={filters.dealerStatus.hint}
           />
         </label>
 
@@ -67,6 +69,8 @@ export const CatalogFiltersSheet = ({ open, onOpenChange, filters }: CatalogFilt
             allLabel="Любой статус"
             options={filters.retailStatus.options}
             widthClassName="w-full"
+            disabled={filters.retailStatus.disabled}
+            hint={filters.retailStatus.hint}
           />
         </label>
 

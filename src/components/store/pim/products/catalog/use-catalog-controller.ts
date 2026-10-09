@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSelectedRegion } from "@/features/store/region-context";
 import {
   DEALER_STATUSES,
   RETAIL_STATUSES,
@@ -23,6 +24,8 @@ type FilterControl = {
   value: string;
   onChange: (value: string | null) => void;
   options: QuickFilterOption[];
+  disabled?: boolean;
+  hint?: string;
 };
 
 type CategoryFilterControl = {
@@ -82,7 +85,9 @@ export const useCatalogController = (
   columnsStorageKey: string | undefined,
   source: CatalogControllerSource,
 ): CatalogController => {
+  const { selectedRegionCode } = useSelectedRegion();
   const { items: sourceItems, groupTotals, isInitialLoading, siteOptions, familyOptions } = source;
+  const statusFiltersDisabled = selectedRegionCode == null;
 
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isColumnSheetOpen, setColumnSheetOpen] = useState(false);
@@ -92,6 +97,10 @@ export const useCatalogController = (
   const [categoryFilter, setCategoryFilter] = useState(ALL_VALUE);
   const [dealerStatusFilter, setDealerStatusFilter] = useState(ALL_VALUE);
   const [retailStatusFilter, setRetailStatusFilter] = useState(ALL_VALUE);
+  if (statusFiltersDisabled && (dealerStatusFilter !== ALL_VALUE || retailStatusFilter !== ALL_VALUE)) {
+    setDealerStatusFilter(ALL_VALUE);
+    setRetailStatusFilter(ALL_VALUE);
+  }
   const [siteFilter, setSiteFilter] = useState(ALL_VALUE);
   const [familyFilter, setFamilyFilter] = useState(ALL_VALUE);
   const [collapsedSiteKeys, setCollapsedSiteKeys] = useState<Set<string>>(() => new Set());
@@ -230,13 +239,27 @@ export const useCatalogController = (
     category: { value: categoryFilter, onChange: makeFilterHandler(setCategoryFilter) },
     dealerStatus: {
       value: dealerStatusFilter,
-      onChange: makeFilterHandler(setDealerStatusFilter),
+      onChange: (value) => {
+        if (statusFiltersDisabled) {
+          return;
+        }
+        makeFilterHandler(setDealerStatusFilter)(value);
+      },
       options: dealerStatusOptions,
+      disabled: statusFiltersDisabled,
+      hint: statusFiltersDisabled ? "Выберите регион" : undefined,
     },
     retailStatus: {
       value: retailStatusFilter,
-      onChange: makeFilterHandler(setRetailStatusFilter),
+      onChange: (value) => {
+        if (statusFiltersDisabled) {
+          return;
+        }
+        makeFilterHandler(setRetailStatusFilter)(value);
+      },
       options: retailStatusOptions,
+      disabled: statusFiltersDisabled,
+      hint: statusFiltersDisabled ? "Выберите регион" : undefined,
     },
     site: { value: siteFilter, onChange: makeFilterHandler(setSiteFilter), options: siteFilterOptions },
     family: {

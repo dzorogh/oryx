@@ -33,7 +33,7 @@ import { createProductVariant } from "@/features/logistics/logistics-api";
 import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
 import { DialogShell } from "@/features/logistics/ui/dialog-shell";
 import type { CreateIntent } from "@/features/logistics/ui/open-created-documents";
-import { LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
+import { BackendUnsetNotice, LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
 import { ProductActivityCard } from "@/features/logistics/ui/product-activity-card";
 import { ProductBalancesTable } from "@/features/logistics/ui/product-balances-table";
 import { ProductionOrderCatalogDialog } from "@/features/logistics/ui/production-order-catalog-dialog";
@@ -44,6 +44,7 @@ import { useViewRole } from "@/features/logistics/use-view-role";
 import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
 import { useCart } from "@/features/store/cart/cart-context";
 import { useSelectedRegion } from "@/features/store/region-context";
+import { StoreInlineRetry } from "@/features/store/store-load-notice";
 import { ProductPhoto } from "@/features/store/product-photo";
 import { resolveSelectedVariant } from "@/features/store/product-card/variant-selection";
 import { loadRegionPricing } from "@/features/store/store-catalog-from-logistics";
@@ -121,6 +122,7 @@ const loadProductCard = async (productId: string): Promise<ProductCardData | nul
   if (productResult.error) throw new Error(productResult.error.message);
   if (!productResult.data) return null;
   if (variantsResult.error) throw new Error(variantsResult.error.message);
+  if (categoriesResult.error) throw new Error(categoriesResult.error.message);
 
   const variantRows = (variantsResult.data ?? []) as VariantDbRow[];
   const pricing = await loadRegionPricing(variantRows.map((row) => String(row.id)));
@@ -209,9 +211,19 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   const { selectedRegion, selectedRegionCode, setSwitcherOpen } = useSelectedRegion();
   const cart = useCart();
   const [data, setData] = useState<ProductCardData | null>(null);
-  const [stockFacts, setStockFacts] = useState<VariantStockFact[]>([]);
+  const [stockState, setStockState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; facts: VariantStockFact[] }
+    | { status: "error" }
+    | { status: "unconfigured" }
+  >({ status: "loading" });
+  const [stockAttempt, setStockAttempt] = useState(0);
+  const stockStatus = isSupabaseConfigured() ? stockState.status : "unconfigured";
+  const stockFacts = stockState.status === "ready" ? stockState.facts : [];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unconfigured, setUnconfigured] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [query, setQuery] = useState("");
   const [productTab, setProductTab] = useState<"info" | "description" | "meta" | "docs">("info");
@@ -232,19 +244,24 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   if (activeVariantTab === "logistics" && !logisticsOpened) setLogisticsOpened(true);
 
   const reload = useCallback(async () => {
+    setStockAttempt((attempt) => attempt + 1);
     setLoading(true);
     setError(null);
+    setUnconfigured(false);
+    setLoadFailed(false);
     try {
-      const [card, facts] = await Promise.all([
-        loadProductCard(productId),
-        loadVariantStockFacts().catch(() => null),
-      ]);
+      if (!isSupabaseConfigured()) {
+        setData(null);
+        setUnconfigured(true);
+        return;
+      }
+      const card = await loadProductCard(productId);
       setData(card);
-      setStockFacts(facts ?? []);
       if (!card) setError("Товар не найден.");
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : "Не удалось загрузить товар.");
       setData(null);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -253,6 +270,34 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+    let cancelled = false;
+    void loadVariantStockFacts()
+      .then((facts) => {
+        if (cancelled) return;
+        if (!facts) {
+          setStockState({ status: "unconfigured" });
+          return;
+        }
+        setStockState({ status: "ready", facts });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStockState({ status: "error" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stockAttempt]);
+
+  const retryStock = () => {
+    setStockState({ status: "loading" });
+    setStockAttempt((attempt) => attempt + 1);
+  };
 
   const selectedVariantId = searchParams.get("variant");
   const selectedVariant = useMemo(
@@ -298,8 +343,9 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
     selectedVariant && selectedRegionCode ? selectedVariant.regionPrices[selectedRegionCode] : undefined;
   const regionStatuses =
     selectedVariant && selectedRegionCode ? selectedVariant.regionStatuses[selectedRegionCode] : undefined;
+  const stockKnown = stockStatus === "ready";
   const stock =
-    selectedVariant && selectedRegion
+    stockKnown && selectedVariant && selectedRegion
       ? computeVariantRegionStock(stockFacts, selectedVariant.id, selectedRegion)
       : null;
 
@@ -335,10 +381,22 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
     );
   }
 
+  if (unconfigured) {
+    return (
+      <main className="min-h-screen bg-muted/30 p-4">
+        <BackendUnsetNotice />
+      </main>
+    );
+  }
+
   if (error || !data) {
     return (
       <main className="min-h-screen bg-muted/30 p-4">
-        <LogisticsError message={error ?? "Товар не найден."} />
+        <LogisticsError
+          title={loadFailed ? "Не удалось загрузить товар" : undefined}
+          message={error ?? "Товар не найден."}
+          onRetry={loadFailed ? () => void reload() : undefined}
+        />
       </main>
     );
   }
@@ -360,6 +418,10 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
           </Breadcrumb>
           <RegionSwitcher className="w-full sm:w-auto" />
         </div>
+
+        {stockStatus === "error" ? (
+          <StoreInlineRetry message="Не удалось загрузить остатки." onRetry={retryStock} />
+        ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
           <div className="space-y-4">
@@ -446,9 +508,10 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                   const selected = variant.id === selectedVariant?.id;
                   const prices = selectedRegionCode ? variant.regionPrices[selectedRegionCode] : undefined;
                   const status = selectedRegionCode ? variant.regionStatuses[selectedRegionCode] : undefined;
-                  const rowStock = selectedRegion
-                    ? computeVariantRegionStock(stockFacts, variant.id, selectedRegion)
-                    : null;
+                  const rowStock =
+                    stockKnown && selectedRegion
+                      ? computeVariantRegionStock(stockFacts, variant.id, selectedRegion)
+                      : null;
                   return (
                     <div
                       key={variant.id}
@@ -484,7 +547,12 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                         {needsRegion ? (
                           <span className="text-xs text-muted-foreground">—</span>
                         ) : (
-                          <VariantStockSummary stock={rowStock} compact className="-mr-1.5" />
+                          <VariantStockSummary
+                            stock={rowStock}
+                            unknown={!stockKnown}
+                            compact
+                            className="-mr-1.5"
+                          />
                         )}
                       </span>
                     </div>
@@ -561,7 +629,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center justify-end gap-2">
-                        <VariantStockSummary stock={stock} />
+                        <VariantStockSummary stock={stock} unknown={!stockKnown} />
                         {(() => {
                           const archived = Boolean(selectedVariant.deletedAt);
                           const blockReason = archived

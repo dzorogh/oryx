@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   containerTypeFromInnerMm,
@@ -24,6 +25,8 @@ export const ContainerLoadCalculator = ({
   containerTypes,
   items,
   missingNames,
+  loadStatus = "ready",
+  onRetry,
   heading = <p className="text-sm font-medium">Калькулятор контейнеров</p>,
   className = "space-y-3 border-t pt-3",
   sceneClassName = "h-[min(360px,50vh)]",
@@ -32,6 +35,8 @@ export const ContainerLoadCalculator = ({
   items: MixedPackItem[];
   /** Products without dimensions, listed apart. */
   missingNames: string[];
+  loadStatus?: "loading" | "ready" | "error" | "unconfigured";
+  onRetry?: () => void;
   heading?: ReactNode;
   className?: string;
   sceneClassName?: string;
@@ -40,20 +45,23 @@ export const ContainerLoadCalculator = ({
   const [selectedOverride, setSelectedOverride] = useState<string[] | null>(null);
   const selectedCodes = selectedOverride ?? defaultCodes;
 
+  const typesReady = loadStatus === "ready";
   const allowed = useMemo(
     () =>
-      containerTypes
-        .filter((type) => selectedCodes.includes(type.code))
-        .map((type) =>
-          containerTypeFromInnerMm({
-            code: type.code,
-            innerLengthMm: type.innerLengthMm,
-            innerWidthMm: type.innerWidthMm,
-            innerHeightMm: type.innerHeightMm,
-            maxWeightKg: type.maxWeightKg,
-          }),
-        ),
-    [containerTypes, selectedCodes],
+      typesReady
+        ? containerTypes
+            .filter((type) => selectedCodes.includes(type.code))
+            .map((type) =>
+              containerTypeFromInnerMm({
+                code: type.code,
+                innerLengthMm: type.innerLengthMm,
+                innerWidthMm: type.innerWidthMm,
+                innerHeightMm: type.innerHeightMm,
+                maxWeightKg: type.maxWeightKg,
+              }),
+            )
+        : [],
+    [containerTypes, selectedCodes, typesReady],
   );
 
   const result = useMemo(
@@ -84,24 +92,42 @@ export const ContainerLoadCalculator = ({
   return (
     <div className={cn(className)}>
       {heading}
-      <div className="flex flex-wrap gap-3">
-        {containerTypes.map((type) => {
-          const checked = selectedCodes.includes(type.code);
-          return (
-            <label key={type.code} className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={checked}
-                onCheckedChange={(value) => {
-                  if (value) setSelectedCodes([...selectedCodes, type.code]);
-                  else setSelectedCodes(selectedCodes.filter((code) => code !== type.code));
-                }}
-              />
-              <span className="tabular-nums">{type.code}</span>
-            </label>
-          );
-        })}
-      </div>
-      {!allowed.length ? (
+      {typesReady ? (
+        <div className="flex flex-wrap gap-3">
+          {containerTypes.map((type) => {
+            const checked = selectedCodes.includes(type.code);
+            return (
+              <label key={type.code} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(value) => {
+                    if (value) setSelectedCodes([...selectedCodes, type.code]);
+                    else setSelectedCodes(selectedCodes.filter((code) => code !== type.code));
+                  }}
+                />
+                <span className="tabular-nums">{type.code}</span>
+              </label>
+            );
+          })}
+        </div>
+      ) : null}
+      {loadStatus === "loading" ? (
+        <p className="text-sm text-muted-foreground">Загрузка…</p>
+      ) : null}
+      {loadStatus === "error" ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-destructive">Не удалось загрузить типы контейнеров</p>
+          {onRetry ? (
+            <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+              Повторить
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      {loadStatus === "unconfigured" ? (
+        <p className="text-sm text-muted-foreground">Бэкенд демо не настроен</p>
+      ) : null}
+      {typesReady && !allowed.length ? (
         <p className="text-sm text-muted-foreground">Выберите хотя бы один тип контейнера.</p>
       ) : null}
       {result?.oversizedItemIds.length ? (

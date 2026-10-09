@@ -26,6 +26,8 @@ type VariantStockSummaryProps = {
   stock: VariantRegionStock | null;
   /** When region is not selected. */
   needsRegion?: boolean;
+  /** Stock facts are still loading or failed. Render «—», never a zero total. */
+  unknown?: boolean;
   onRequestRegion?: () => void;
   className?: string;
   /** Compact for catalog cells / variant list. */
@@ -35,6 +37,7 @@ type VariantStockSummaryProps = {
 export const VariantStockSummary = ({
   stock,
   needsRegion = false,
+  unknown = false,
   onRequestRegion,
   className,
   compact = false,
@@ -58,7 +61,7 @@ export const VariantStockSummary = ({
     );
   }
 
-  if (!stock) {
+  if (unknown || !stock) {
     return (
       <span className={cn("text-sm text-muted-foreground", className)}>—</span>
     );

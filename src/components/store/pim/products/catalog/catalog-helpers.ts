@@ -78,8 +78,8 @@ export const matchesSearchQuery = (item: StoreCatalogItem, query: string) => {
   return `${item.name} ${getDisplayProductName(item.name)} ${item.code}`.toLowerCase().includes(query);
 };
 
-export const formatCatalogUpdatedAt = (updatedAt: string) =>
-  new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(new Date(updatedAt));
+export const formatCatalogUpdatedAt = (updatedAt: string | null) =>
+  updatedAt ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(new Date(updatedAt)) : "—";
 
 export {
   CATALOG_NO_SITE_LABEL,

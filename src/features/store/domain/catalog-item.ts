@@ -33,9 +33,9 @@ export type StoreCatalogItem = {
   categoryId: string;
   category: string;
   family: string;
-  brand: string;
+  brand: string | null;
   stock: number;
-  updatedAt: string;
+  updatedAt: string | null;
   dealerPrice: number | null;
   retailPrice: number | null;
   dealerCurrency?: CurrencyCode | null;

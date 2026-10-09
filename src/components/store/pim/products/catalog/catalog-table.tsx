@@ -274,6 +274,7 @@ type ColumnRenderContext = {
   listingMode: CatalogListingMode;
   needsRegion: boolean;
   stockFacts: VariantStockFact[];
+  stockUnknown: boolean;
   selectedRegion: StoreRegionOption | null;
   onRequestRegion: () => void;
 };
@@ -287,7 +288,7 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
         <ProductNameCell item={item} showCodeSubline={context.showCodeSubline} listingMode={listingMode} />
       );
     case "brand":
-      return <Badge variant="outline">{item.brand}</Badge>;
+      return item.brand ? <Badge variant="outline">{item.brand}</Badge> : <span className="text-sm text-muted-foreground">—</span>;
     case "category":
       return (
         <span className="block truncate text-sm" title={getCategoryNodeLabel(item.categoryId) ?? item.category}>
@@ -299,11 +300,14 @@ const renderColumnCell = (columnId: CatalogColumnId, context: ColumnRenderContex
     case "stock": {
       const region: VariantStockRegion | null = context.selectedRegion;
       const stock =
-        needsRegion || !region ? null : computeVariantRegionStock(context.stockFacts, item.id, region);
+        context.stockUnknown || needsRegion || !region
+          ? null
+          : computeVariantRegionStock(context.stockFacts, item.id, region);
       return (
         <span className="pointer-events-auto relative z-20">
           <VariantStockSummary
             stock={stock}
+            unknown={context.stockUnknown && !needsRegion}
             needsRegion={needsRegion}
             onRequestRegion={context.onRequestRegion}
             compact
@@ -394,6 +398,7 @@ type CatalogTableRowProps = {
   showCodeSubline: boolean;
   needsRegion: boolean;
   stockFacts: VariantStockFact[];
+  stockUnknown: boolean;
   selectedRegion: StoreRegionOption | null;
   onRequestRegion: () => void;
   measureRef?: (node: HTMLTableRowElement | null) => void;
@@ -409,6 +414,7 @@ const CatalogTableRow = ({
   showCodeSubline,
   needsRegion,
   stockFacts,
+  stockUnknown,
   selectedRegion,
   onRequestRegion,
   measureRef,
@@ -441,6 +447,7 @@ const CatalogTableRow = ({
               listingMode,
               needsRegion,
               stockFacts,
+              stockUnknown,
               selectedRegion,
               onRequestRegion,
             })}
@@ -498,6 +505,7 @@ export const CatalogTable = ({
   listingMode,
   visibleColumnIds,
   stockFacts,
+  stockUnknown = false,
   collapsedSiteKeys,
   onToggleSiteCollapsed,
 }: {
@@ -510,6 +518,8 @@ export const CatalogTable = ({
   listingMode: CatalogListingMode;
   visibleColumnIds: CatalogColumnId[];
   stockFacts: VariantStockFact[];
+  /** Facts are missing: show «—» instead of a zero total. */
+  stockUnknown?: boolean;
   collapsedSiteKeys: ReadonlySet<string>;
   onToggleSiteCollapsed: (siteKey: string) => void;
 }) => {
@@ -692,6 +702,7 @@ export const CatalogTable = ({
                         showCodeSubline={showCodeSubline}
                         needsRegion={needsRegion}
                         stockFacts={stockFacts}
+                        stockUnknown={stockUnknown}
                         selectedRegion={selectedRegion}
                         onRequestRegion={() => setSwitcherOpen(true)}
                         measureRef={(node) => {
@@ -724,11 +735,15 @@ export const CatalogTable = ({
                   ) : null}
                   {loadMoreError ? (
                     <TableRow className="hover:bg-transparent">
-                      <TableCell
-                        colSpan={columnCount}
-                        className="px-3 py-3 text-center text-xs text-muted-foreground"
-                      >
-                        Не удалось загрузить ещё. Прокрутите список снова.
+                      <TableCell colSpan={columnCount} className="px-3 py-3 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <p className="text-xs text-muted-foreground">Не удалось загрузить ещё.</p>
+                          {onLoadMore ? (
+                            <Button type="button" size="sm" variant="outline" onClick={onLoadMore}>
+                              Повторить
+                            </Button>
+                          ) : null}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : null}
