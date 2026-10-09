@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { mapLogisticsPayload } from "@/features/logistics/logistics-api";
-import type { CustomerOrderLine } from "@/features/logistics/logistics-types";
+import type { CustomerOrderLine, ProductionOrder } from "@/features/logistics/logistics-types";
 import {
   actionShortage,
   buildOwnerResolver,
+  buildPlaceIndex,
   buildPlanSummary,
+  buildProduceRows,
   buildProductPlans,
   defaultPlanId,
   planProblems,
@@ -205,6 +207,32 @@ describe("order plan model", () => {
       ],
     );
     assert.equal(summary.uncovered[0]?.quantity, 5);
+  });
+
+  it("«Заказать дополнительно» skips ready and cancelled POs but keeps an existing action", () => {
+    const po = (id: string, status: ProductionOrder["status"]): ProductionOrder => ({
+      id,
+      series: "PO",
+      sequenceNumber: id,
+      number: `PO-${id}`,
+      plantId: "1",
+      stockLocationId: `L${id}`,
+      status,
+      createdAt: "2026-09-24T10:00:00Z",
+      createdBy: "",
+      expectedEndOn: null,
+    });
+    const withOrders = {
+      ...snapshot,
+      productionOrders: [po("1", "draft"), po("2", "in_progress"), po("3", "done"), po("4", "cancelled")],
+    };
+    const poPlaces = buildPlaceIndex(withOrders);
+    const open = buildProduceRows({ snapshot: withOrders, variantId: "2", plantId: "1", plan: null, places: poPlaces, onlyTaken: false });
+    assert.deepEqual(open.existing.map((row) => row.place?.code), ["PO-1", "PO-2"]);
+
+    const draft = plan({ actions: [action({ kind: "produce", locationId: "L3", ownerId: null, available: null, quantity: 2 })] });
+    const kept = buildProduceRows({ snapshot: withOrders, variantId: "2", plantId: "1", plan: draft, places: poPlaces, onlyTaken: false });
+    assert.deepEqual(kept.existing.map((row) => [row.place?.code, row.take]), [["PO-1", 0], ["PO-2", 0], ["PO-3", 2]]);
   });
 
   it("defaultPlanId prefers the newest non-archived plan", () => {

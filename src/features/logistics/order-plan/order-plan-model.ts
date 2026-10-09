@@ -472,7 +472,7 @@ export const buildProduceRows = (args: {
   };
   if (!onlyTaken) {
     for (const order of snapshot.productionOrders) {
-      if (order.status === "cancelled" || !order.stockLocationId) {
+      if (order.status === "cancelled" || order.status === "done" || !order.stockLocationId) {
         continue;
       }
       const hasLine = snapshot.productionOrderLines.some(
