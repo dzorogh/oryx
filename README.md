@@ -92,6 +92,7 @@ src/
   lib/                            # Утилиты, клиент Supabase
 
 supabase/migrations/              # Схема демо-бэкенда (store_*, thank_you_entry)
+supabase/seed/                    # Демо-данные магазина, их применяет npm run seed:logistics
 
 scripts/
   check-*.mjs                     # Проверки (зависимости, ссылки, изображения)

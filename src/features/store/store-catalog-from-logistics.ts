@@ -23,43 +23,6 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const hashSeed = (seed: string): number => {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash << 5) - hash + seed.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
-
-const CATEGORY_BY_TOKEN: Array<{ tokens: string[]; categoryId: string; category: string; family: string }> = [
-  { tokens: ["XFORCE", "FORCE"], categoryId: "atv-4x4", category: "4x4", family: "Force" },
-  { tokens: ["PREDATOR", "5000"], categoryId: "atv-side-by-side", category: "Side-by-Side", family: "Utility" },
-  { tokens: ["CROSS"], categoryId: "off-road-enduro", category: "Enduro", family: "Cross" },
-  { tokens: ["ENDURO"], categoryId: "off-road-enduro", category: "Enduro", family: "Enduro" },
-  { tokens: ["VESPITO", "SCOOTER", "MOPED"], categoryId: "road-scooter", category: "Scooter", family: "Scooter" },
-  { tokens: ["CUSTOM"], categoryId: "road-custom-bike", category: "Custom Bike", family: "Custom" },
-  { tokens: ["GP", "GL", "RR", "RST", "FX", "BANDIT", "PHANTOM"], categoryId: "road-street-bike", category: "Street Bike", family: "Road" },
-  { tokens: ["JUNIOR", "SPORT", "POWER", "EXPERT", "CRUISER", "HUMMER", "ACTIVATOR", "RAIZER"], categoryId: "atv-4x2", category: "4x2", family: "ATV" },
-];
-
-/** Только для demo `bike-*` / fallback без связей в БД. Фильтр каталога этим не пользуется. */
-export const inferCatalogCategory = (
-  id: string,
-  name: string,
-): { categoryId: string; category: string; family: string } => {
-  const haystack = `${id} ${name}`.toUpperCase();
-  const match = CATEGORY_BY_TOKEN.find((entry) => entry.tokens.some((token) => haystack.includes(token)));
-  if (match) {
-    const family = name.split(/\s+/)[0] || match.family;
-    return { categoryId: match.categoryId, category: match.category, family };
-  }
-  const family = name.split(/\s+/)[0] || "Equipment";
-  return { categoryId: "atv-4x4", category: "4x4", family };
-};
-
-export const inferDemoDealerPrice = (seed: string): number => 2490 + (hashSeed(seed) % 90) * 100;
-
 export const productImageUrl = (_seed: string, imageUrl?: string | null): string | null =>
   preferKorportalMediaConversion(imageUrl);
 

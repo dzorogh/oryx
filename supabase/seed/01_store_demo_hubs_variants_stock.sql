@@ -1,8 +1,9 @@
 -- Demo: hubs, multi-variant products, stock for Ready/Total.
+-- Applied by `npm run seed:logistics` after the stories, on ids from a fresh seed (restart identity).
 
 do $seed$
 declare
-  v_dubai bigint := 1;
+  v_dubai bigint;
   v_cis bigint;
   v_americas bigint;
   v_europe bigint;
@@ -27,6 +28,8 @@ declare
   v_counts int[] := array[3,4,2,5,3,2,4,3,6,2,3,4];
   v_archive_count int := 0;
 begin
+  select id into strict v_dubai from store_warehouse where name = 'Dubai Hub' and deleted_at is null;
+
   -- Hubs (skip if already seeded by name).
   if not exists (select 1 from store_warehouse where name = 'CIS Hub' and deleted_at is null) then
     v_cis := public.store_create_warehouse('CIS Hub', 'hub');
@@ -49,17 +52,16 @@ begin
   select stock_location_id into v_loc_americas from store_warehouse where id = v_americas;
   select stock_location_id into v_loc_europe from store_warehouse where id = v_europe;
 
-  -- Bind hubs to regions.
-  perform public.store_update_region(1, (select name from store_region where id = 1), v_dubai);   -- ae
-  perform public.store_update_region(10, (select name from store_region where id = 10), v_dubai); -- om
-  perform public.store_update_region(9, (select name from store_region where id = 9), v_dubai);   -- in
-  perform public.store_update_region(2, (select name from store_region where id = 2), v_cis);     -- ru
-  perform public.store_update_region(3, (select name from store_region where id = 3), v_cis);     -- kz
-  perform public.store_update_region(4, (select name from store_region where id = 4), v_cis);     -- by
-  perform public.store_update_region(5, (select name from store_region where id = 5), v_cis);     -- uz
-  perform public.store_update_region(6, (select name from store_region where id = 6), v_americas); -- mx
-  perform public.store_update_region(8, (select name from store_region where id = 8), v_americas); -- us
-  perform public.store_update_region(7, (select name from store_region where id = 7), v_europe);  -- de
+  -- Bind hubs to regions; keep each region's order currency (the RPC overwrites it).
+  perform public.store_update_region(g.id, g.name, h.hub_id, g.order_currency_id)
+  from store_region g
+  join (values
+    ('AE', v_dubai), ('OM', v_dubai), ('IN', v_dubai),
+    ('RU', v_cis), ('KZ', v_cis), ('BY', v_cis), ('UZ', v_cis),
+    ('MX', v_americas), ('US', v_americas),
+    ('DE', v_europe)
+  ) as h(code, hub_id) on h.code = g.code
+  where g.deleted_at is null;
 
   -- Extra variants for first 12 products (skip if product already has >1 active variant).
   for v_i in 1..array_length(v_products, 1) loop
@@ -103,7 +105,9 @@ begin
       insert into store_product_region_status (product_variant_id, region_id, dealer_status, retail_status)
       select v_new_id, region_id, dealer_status, retail_status
       from store_product_region_status
-      where product_variant_id = v_base_variant;
+      where product_variant_id = v_base_variant
+      on conflict (product_variant_id, region_id) do update
+        set dealer_status = excluded.dealer_status, retail_status = excluded.retail_status;
 
       -- Archive 1–2 variants across the seed.
       if v_archive_count < 2 and v_i = v_counts[(select array_position(v_products, v_product_id))] then
@@ -180,7 +184,7 @@ begin
   -- Region reserves on hubs (kz on CIS, ae on Dubai, de on Europe).
   perform public.store_create_and_post_reservation(
     v_loc_cis,
-    (select stock_owner_id from store_region where id = 3), -- kz
+    (select stock_owner_id from store_region where code = 'KZ' and deleted_at is null),
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 2)), '[]'::jsonb)
       from store_product_variant v
@@ -192,7 +196,7 @@ begin
 
   perform public.store_create_and_post_reservation(
     v_loc_dubai,
-    (select stock_owner_id from store_region where id = 1), -- ae
+    (select stock_owner_id from store_region where code = 'AE' and deleted_at is null),
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 1)), '[]'::jsonb)
       from store_product_variant v
@@ -204,7 +208,7 @@ begin
 
   perform public.store_create_and_post_reservation(
     v_loc_europe,
-    (select stock_owner_id from store_region where id = 7), -- de
+    (select stock_owner_id from store_region where code = 'DE' and deleted_at is null),
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 1)), '[]'::jsonb)
       from store_product_variant v

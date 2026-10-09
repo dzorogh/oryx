@@ -47,6 +47,7 @@
 - `store_product_variant_logistics`, `store_container_type`, `store_product_supply_cost`
 - `store_product_variant.quantity_per_unit`, `store_region.order_currency_id`
 - `store_customer_order.checkout_key` — идемпотентность оформления; курсы заказа в `store_order_money.rates`
-- сид из `scripts/data/logistics-demo.json` через `scripts/generate-cart-checkout-seed.mjs`
+
+Сид: `supabase/seed/02_store_demo_cart_checkout.sql` (габариты, типы контейнеров, стоимость поставки, валюты заказов регионов) генерирует `scripts/generate-cart-checkout-seed.mjs` из `scripts/data/logistics-demo.json`; применяет `npm run seed:logistics`.
 
 Диалог региона (логистика): поле **Валюта заказов**.

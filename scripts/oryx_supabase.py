@@ -14,6 +14,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from datetime import datetime, timezone
 from io import StringIO
 from pathlib import Path
@@ -321,25 +322,31 @@ def db_container_id() -> tuple[str, str]:
     return str(compose_id), str(container_id)
 
 
+SQL_POLL_ATTEMPTS = 80  # 1.5 s apart: seed files with many RPCs run well past 24 s
+
+
 def execute_sql(sql: str) -> dict[str, Any]:
     query = sql.strip().rstrip(";")
     if not query:
         raise OryxSupabaseError("empty SQL")
     compose_id, container_id = db_container_id()
+    # Per-run files: a status left by an earlier run must not read as this run's result.
+    base = f"/tmp/oryx_agent_{uuid.uuid4().hex[:12]}"
     dokploy(
         "POST",
         "docker.writeContainerFile",
         {
             "containerId": container_id,
-            "path": "/tmp/oryx_agent.sql",
+            "path": f"{base}.sql",
             "content": query + "\n",
         },
     )
     command = (
+        "find /tmp -maxdepth 1 -name 'oryx_agent_*' -mmin +60 -delete 2>/dev/null; "
         'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --csv '
-        "-f /tmp/oryx_agent.sql "
-        "> /tmp/oryx_agent.out 2> /tmp/oryx_agent.err "
-        "; echo $? > /tmp/oryx_agent.status"
+        f"-f {base}.sql "
+        f"> {base}.out 2> {base}.err "
+        f"; echo $? > {base}.status"
     )
     created = dokploy(
         "POST",
@@ -361,13 +368,13 @@ def execute_sql(sql: str) -> dict[str, Any]:
     try:
         dokploy("POST", "schedule.runManually", {"scheduleId": schedule_id})
         status_text = ""
-        for _attempt in range(16):
+        for _attempt in range(SQL_POLL_ATTEMPTS):
             time.sleep(1.5)
             try:
                 body = dokploy(
                     "GET",
                     "docker.readContainerFile",
-                    params={"containerId": container_id, "path": "/tmp/oryx_agent.status"},
+                    params={"containerId": container_id, "path": f"{base}.status"},
                 )
             except OryxSupabaseError:
                 continue
@@ -381,7 +388,7 @@ def execute_sql(sql: str) -> dict[str, Any]:
                 dokploy(
                     "GET",
                     "docker.readContainerFile",
-                    params={"containerId": container_id, "path": "/tmp/oryx_agent.out"},
+                    params={"containerId": container_id, "path": f"{base}.out"},
                 )
             )
         except OryxSupabaseError:
@@ -391,7 +398,7 @@ def execute_sql(sql: str) -> dict[str, Any]:
                 dokploy(
                     "GET",
                     "docker.readContainerFile",
-                    params={"containerId": container_id, "path": "/tmp/oryx_agent.err"},
+                    params={"containerId": container_id, "path": f"{base}.err"},
                 )
             )
         except OryxSupabaseError:

@@ -103,6 +103,7 @@ const loadProductCard = async (productId: string): Promise<ProductCardData | nul
   if (!isSupabaseConfigured()) return null;
   const client = getSupabaseBrowserClient();
   if (!client) return null;
+  if (!/^\d{1,18}$/.test(productId)) return null;
 
   const [productResult, variantsResult, categoriesResult] = await Promise.all([
     client
@@ -393,8 +394,8 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
     return (
       <main className="min-h-screen bg-muted/30 p-4">
         <LogisticsError
-          title={loadFailed ? "Не удалось загрузить товар" : undefined}
-          message={error ?? "Товар не найден."}
+          title={loadFailed ? "Не удалось загрузить товар" : "Товар не найден"}
+          message={loadFailed ? (error ?? "Не удалось загрузить товар.") : "Проверьте ссылку или откройте товар из каталога."}
           onRetry={loadFailed ? () => void reload() : undefined}
         />
       </main>

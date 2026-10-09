@@ -24,7 +24,7 @@ export type CatalogRegionStatuses = {
 
 export type StoreCatalogItem = {
   id: string;
-  /** Parent store_product.id; equals id for demo bike-* rows. */
+  /** Parent store_product.id. */
   productId: string;
   name: string;
   code: string;

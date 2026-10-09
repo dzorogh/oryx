@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates supabase/migrations/<ts>_store_demo_cart_checkout_seed.sql
+ * Generates supabase/seed/02_store_demo_cart_checkout.sql (applied by `npm run seed:logistics`)
  * from scripts/data/logistics-demo.json.
  *
  * Usage:
@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const snapshotPath = join(root, "scripts/data/logistics-demo.json");
-const defaultOut = join(root, "supabase/migrations/20260928144930_store_demo_cart_checkout_seed.sql");
+const defaultOut = join(root, "supabase/seed/02_store_demo_cart_checkout.sql");
 const outPath = resolve(process.argv[2] ?? defaultOut);
 
 const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8"));
@@ -161,10 +161,12 @@ const sanitizeLogistics = (raw) => {
   };
 };
 
+// seed:logistics creates store_product rows in snapshot order after `restart identity`, so the
+// database id is the snapshot position, not the snapshot `id`.
 const valueRows = [];
-for (const product of snapshot.products) {
+for (const [index, product] of snapshot.products.entries()) {
   const L = sanitizeLogistics(product.logistics);
-  valueRows.push(`      (${Number(product.id)}, ${sqlNum(L.quantity_per_unit)}, ${sqlNum(L.length)}, ${sqlNum(L.width)}, ${sqlNum(L.height)}, ${sqlNum(L.weight)}, ${sqlBool(Boolean(L.stacking))}, ${sqlNum(L.stacking_limit)}, ${sqlBool(Boolean(L.rotate_length))}, ${sqlBool(Boolean(L.rotate_width))}, ${sqlNum(L.max_per_container)}, ${sqlText(L.source)})`);
+  valueRows.push(`      (${index + 1}, ${sqlNum(L.quantity_per_unit)}, ${sqlNum(L.length)}, ${sqlNum(L.width)}, ${sqlNum(L.height)}, ${sqlNum(L.weight)}, ${sqlBool(Boolean(L.stacking))}, ${sqlNum(L.stacking_limit)}, ${sqlBool(Boolean(L.rotate_length))}, ${sqlBool(Boolean(L.rotate_width))}, ${sqlNum(L.max_per_container)}, ${sqlText(L.source)})`);
 }
 lines.push(valueRows.join(",\n"));
 lines.push(`    ) as l(
@@ -274,7 +276,7 @@ begin
     for r in
       select id, code from public.store_region where deleted_at is null and active
     loop
-      v_seed := v.id::text || ':' || r.code;
+      v_seed := v.id::text || ':' || lower(r.code);
       -- FNV-ish hash in SQL via hashtext
       v_hash := abs(hashtext(v_seed)::bigint);
       v_skip := (v_hash % 100) < 20;
@@ -295,16 +297,16 @@ lines.push("");
 // Order currencies per region (diverse demo defaults)
 // ---------------------------------------------------------------------------
 const orderCurrencyByRegion = {
-  ae: "AED",
-  ru: "RUB",
-  kz: "KZT",
-  by: "BYN",
-  uz: "USD",
-  mx: "MXN",
-  de: "EUR",
-  us: "USD",
-  in: "INR",
-  om: "OMR",
+  AE: "AED",
+  RU: "RUB",
+  KZ: "KZT",
+  BY: "BYN",
+  UZ: "USD",
+  MX: "MXN",
+  DE: "EUR",
+  US: "USD",
+  IN: "INR",
+  OM: "OMR",
 };
 
 lines.push("-- Default order currency per region");

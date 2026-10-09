@@ -258,7 +258,6 @@ flowchart TD
 
 ```text
 app/store/pim/pricelists/page.tsx           # маршрут → PricelistsPage
-app/store/pricelists/page.tsx               # заглушка (placeholder)
 
 src/components/store/pim/pricelists/
   pricelists-page.tsx                        # scope/region state, URL sync, сборка

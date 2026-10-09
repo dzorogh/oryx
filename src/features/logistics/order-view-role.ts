@@ -81,7 +81,6 @@ export const resolveCustomerOrderVisibility = (
 ): CustomerOrderVisibility => resolveVisibility(CUSTOMER_ORDER_VIEW_KEYS, rules, role);
 
 const CUSTOMER_STORE_PATHS = [
-  "/store/catalog",
   "/store/pim/products",
   "/store/pim/variants",
   "/store/checkout",
@@ -90,7 +89,7 @@ const CUSTOMER_STORE_PATHS = [
 
 const CUSTOMER_ORDER_DETAIL_PATH = /^\/store\/logistics\/customer-orders\/[^/]+$/;
 const PRODUCT_CARD_PATH = /^\/store\/pim\/products\/[^/]+$/;
-const CATALOG_PATHS = new Set(["/store/pim/products", "/store/catalog"]);
+const CATALOG_PATHS = new Set(["/store/pim/products"]);
 
 const normalizePath = (pathname: string): string => {
   const path = pathname.split(/[?#]/)[0] ?? "";

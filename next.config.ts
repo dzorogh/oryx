@@ -42,6 +42,9 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       { source: "/logistics/:path*", destination: "/store/logistics/:path*", permanent: false },
+      { source: "/store/catalog", destination: "/store/pim/products", permanent: false },
+      { source: "/store/pricelists", destination: "/store/pim/pricelists", permanent: false },
+      { source: "/store/exchange", destination: "/store/pim/import-export", permanent: false },
     ];
   },
 };

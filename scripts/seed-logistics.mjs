@@ -159,13 +159,24 @@ restart identity cascade;
 delete from public.store_stock_owner where kind <> 'free';
 select setval(pg_get_serial_sequence('public.store_stock_owner','id'), greatest((select max(id) from public.store_stock_owner), 1));`;
 
-const wipe = spawnSync("python3", [resolve(root, "scripts/oryx_supabase.py"), "sql", wipeSql], {
-  cwd: root,
-  encoding: "utf8",
-});
-if (wipe.status !== 0) {
-  throw new Error(`privileged wipe failed: ${(wipe.stderr || wipe.stdout || "").slice(0, 400)}`);
-}
+/** oryx_supabase.py exits 0 even when psql fails; the SQL result is in the JSON `ok` field. */
+const runSql = (label, sql) => {
+  const run = spawnSync("python3", [resolve(root, "scripts/oryx_supabase.py"), "sql", sql], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  let result = null;
+  try {
+    result = JSON.parse(run.stdout);
+  } catch {
+    result = null;
+  }
+  if (run.status !== 0 || !result?.ok) {
+    throw new Error(`${label} failed: ${(result?.stderr || run.stderr || run.stdout || "").slice(0, 400)}`);
+  }
+};
+
+runSql("privileged wipe", wipeSql);
 
 const snapshot = JSON.parse(readFileSync(resolve(root, "scripts/data/logistics-demo.json"), "utf8"));
 
@@ -529,15 +540,12 @@ alter table public.store_document_history enable trigger store_document_history_
 commit;
 `;
 
-const historyBackfill = spawnSync(
-  "python3",
-  [resolve(root, "scripts/oryx_supabase.py"), "sql", historyBackfillSql],
-  { cwd: root, encoding: "utf8" },
-);
-if (historyBackfill.status !== 0) {
-  throw new Error(
-    `history backfill failed: ${(historyBackfill.stderr || historyBackfill.stdout || "").slice(0, 400)}`,
-  );
+/** Hubs, extra variants and their stock, then logistics, supply costs and order currencies; after the stories so story document numbers stay put. */
+for (const file of ["01_store_demo_hubs_variants_stock.sql", "02_store_demo_cart_checkout.sql"]) {
+  runSql(`seed ${file}`, readFileSync(resolve(root, "supabase/seed", file), "utf8"));
+  console.log(`seed_ok ${file}`);
 }
+
+runSql("history backfill", historyBackfillSql);
 console.log("seed_ok history_timestamps_backfilled");
 

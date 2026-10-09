@@ -39,7 +39,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon JWT from Dokploy supabase Environment>
 |------|------|
 | `src/lib/supabase/client.ts` | Browser client; `null` if env is missing |
 | Feature `*-api.ts` (e.g. `src/features/pulse/thanks/thanks-api.ts`) | Table mapping + queries |
-| `supabase/migrations/*.sql` | Schema + open RLS for this repo |
+| `supabase/migrations/*.sql` | Schema + open RLS for this repo; no demo rows (a one-off backfill of existing rows is fine) |
+| `supabase/seed/*.sql` | Store demo data that `npm run seed:logistics` applies after its stories, in file-name order |
 
 If env is unset, UI may keep local demo data. If env is set, talk to this Kong URL only.
 
@@ -93,7 +94,7 @@ In chat report HTTP status, row counts, and table names only. After a live probe
 # headers: apikey + Authorization: Bearer <anon>
 
 npm run seed:thanks    # upserts Thanks demo rows
-npm run seed:logistics # upserts Logistics demo rows and posts the story
+npm run seed:logistics # wipes and reseeds Store demo data, posts the stories, applies supabase/seed/*.sql
 ```
 
 CORS is `*` on Kong. After a live probe (`TEST`, dummy, wiring-check), **delete that row** in the same session.

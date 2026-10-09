@@ -65,13 +65,15 @@ describe("order view role", () => {
     assert.equal(isStorePathAllowedForRole("customer", "/store/pim/pricelists"), false);
     assert.equal(isStorePathAllowedForRole("customer", "/store/logistics/customer-orders-archive"), false);
     assert.equal(isStorePathAllowedForRole("customer", "/store/settings"), false);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/catalog"), false);
   });
 
   it("maps store pages to their visibility page", () => {
     assert.equal(viewRolePageForPath("/store/logistics/customer-orders/12"), "customer_order");
     assert.equal(viewRolePageForPath("/store/logistics/customer-orders"), null);
     assert.equal(viewRolePageForPath("/store/pim/products"), "catalog");
-    assert.equal(viewRolePageForPath("/store/catalog/"), "catalog");
+    assert.equal(viewRolePageForPath("/store/pim/products/"), "catalog");
+    assert.equal(viewRolePageForPath("/store/catalog"), null);
     assert.equal(viewRolePageForPath("/store/pim/products/42?variant=7"), "product");
     assert.equal(viewRolePageForPath("/store/pim/pricelists"), null);
   });
