@@ -623,6 +623,13 @@ describe("Деньги: диапазон месяцев", () => {
     const later = computeMonthRange([], new Date(2026, 8, 25), ["2027-06-01"]);
     assert.deepEqual(later.at(-1), { year: 2027, month: 6 });
   });
+
+  it("caps the range when a date has a mistyped year", () => {
+    const months = computeMonthRange([], new Date(2026, 9, 9), ["0132-12-23", "11231-11-11"]);
+    assert.deepEqual(months[0], { year: 2024, month: 10 });
+    assert.deepEqual(months.at(-1), { year: 2029, month: 10 });
+    assert.equal(months.length, 24 + 1 + 36);
+  });
 });
 
 describe("Раскрытие месяца", () => {

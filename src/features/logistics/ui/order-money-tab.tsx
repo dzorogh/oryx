@@ -157,6 +157,9 @@ const SummaryCell = ({ label, children, hint }: { label: string; children: React
   </div>
 );
 
+const DUE_ON_MIN = "2000-01-01";
+const DUE_ON_MAX = "2099-12-31";
+
 type PaymentDraft = {
   id: string | null;
   dueOn: string;
@@ -188,7 +191,13 @@ const PaymentDialog = ({
   }
   if (!form) return null;
   const amount = parseMoneyInput(form.amount);
-  const invalidReason = !form.dueOn ? "Укажите срок оплаты" : amount == null || amount <= 0 ? "Сумма больше нуля" : null;
+  const invalidReason = !form.dueOn
+    ? "Укажите срок оплаты"
+    : form.dueOn < DUE_ON_MIN || form.dueOn > DUE_ON_MAX
+      ? "Проверьте год в сроке оплаты"
+      : amount == null || amount <= 0
+        ? "Сумма больше нуля"
+        : null;
 
   return (
     <DialogShell
@@ -222,6 +231,8 @@ const PaymentDialog = ({
           <span className="block font-medium">Срок оплаты</span>
           <Input
             type="date"
+            min={DUE_ON_MIN}
+            max={DUE_ON_MAX}
             value={form.dueOn}
             onChange={(event) => setForm({ ...form, dueOn: event.target.value })}
             className="h-8"

@@ -419,9 +419,14 @@ export const lastDayOfMonthIso = (ym: YearMonth): string => {
   return `${ym.year}-${String(ym.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 };
 
+export const MONTH_RANGE_MAX_PAST = 24;
+export const MONTH_RANGE_MAX_FUTURE = 36;
+
 /**
  * Month columns: from the earliest overdue output or unpaid payment (else the current month)
  * to the latest of both, at least current month + 5. `paymentDueDates` — unpaid payments of non-cancelled orders.
+ * The range is capped at `MONTH_RANGE_MAX_PAST` / `MONTH_RANGE_MAX_FUTURE` months around today:
+ * a mistyped year (0132, 11231) would otherwise build tens of thousands of columns.
  */
 export const computeMonthRange = (
   lines: Array<Pick<OutputCalendarOutputLine, "expectedEndOn" | "status">>,
@@ -445,9 +450,9 @@ export const computeMonthRange = (
     }
     if (key > latest) latest = key;
   }
-  const start = earliestOverdue ?? curKey;
+  const start = Math.max(earliestOverdue ?? curKey, curKey - MONTH_RANGE_MAX_PAST);
   const minEnd = curKey + 5;
-  const end = Math.max(latest, minEnd);
+  const end = Math.min(Math.max(latest, minEnd), curKey + MONTH_RANGE_MAX_FUTURE);
   const months: YearMonth[] = [];
   for (let key = start; key <= end; key += 1) {
     months.push(parseYmKey(key));
