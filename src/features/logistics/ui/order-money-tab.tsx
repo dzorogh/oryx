@@ -580,6 +580,7 @@ export const OrderMoneyTab = ({
   variant = "order",
   editable = true,
   showEstimate = true,
+  showRates = true,
   showAuthors = true,
 }: {
   snapshot: LogisticsSnapshot;
@@ -587,10 +588,12 @@ export const OrderMoneyTab = ({
   context: OrderMoneyContext;
   reload: () => Promise<void>;
   variant?: "order" | "transfer";
-  /** Currency, rates, amount and payments can be changed. */
+  /** Currency, amount and payments can be changed. The rates button also needs `showRates`. */
   editable?: boolean;
-  /** «Расчётная стоимость» cell and the rates button. */
+  /** «Расчётная стоимость» cell. */
   showEstimate?: boolean;
+  /** «Курсы» button. Shown only together with `editable` (`order.edit`). */
+  showRates?: boolean;
   /** Payment authors in «Создан» and the history window. */
   showAuthors?: boolean;
 }) => {
@@ -689,7 +692,7 @@ export const OrderMoneyTab = ({
                 {nameByCode.get(currencyCode) ? ` · ${nameByCode.get(currencyCode)}` : ""}
               </span>
             )}
-            {editable && showEstimate ? (
+            {editable && showRates ? (
               <Button type="button" size="sm" variant="outline" className="ml-2" onClick={() => setRatesOpen(true)}>
                 Курсы
               </Button>

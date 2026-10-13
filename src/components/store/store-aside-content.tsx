@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { ModuleSubnav } from "@/components/layout/module-subnav";
 import { isStorePathAllowedForRole } from "@/features/logistics/order-view-role";
-import { useCurrentViewRole } from "@/features/logistics/use-view-role";
+import { useCurrentViewRole } from "@/features/store/view-role";
 import { STORE_NAV_GROUPS } from "@/features/store/store-nav";
 
 type StoreAsideContentProps = {

@@ -1,4 +1,4 @@
-export type ViewRole = "manager" | "customer";
+import { CUSTOMER_DEMO_TENANT_IDS, type ViewRole } from "@/features/store/view-role";
 
 export const VIEW_ROLES: readonly ViewRole[] = ["manager", "customer"];
 
@@ -33,18 +33,17 @@ export const CUSTOMER_ORDER_VIEW_KEYS = [
   "products.containers",
   "tab.money",
   "money.estimate",
+  "money.rates",
   "tab.plan",
   "tab.containers",
   "tab.files",
+  "files.manage",
   "tab.comments",
   "tab.movements",
   "tab.history",
 ] as const;
 
 export type CustomerOrderViewKey = (typeof CUSTOMER_ORDER_VIEW_KEYS)[number];
-
-export const parseViewRole = (value: unknown): ViewRole =>
-  value === "customer" ? "customer" : "manager";
 
 /** A key without a rule stays visible to the manager and hidden from the customer. */
 export const isVisibleForRole = (
@@ -112,12 +111,14 @@ export const viewRolePageForPath = (pathname: string): string | null => {
   return null;
 };
 
-/** The customer sees only orders of the selected region; without a region they see none. */
-export const isOrderRegionVisibleForRole = (
-  role: ViewRole,
-  orderRegionId: string | null | undefined,
-  customerRegionId: string | null | undefined,
-): boolean => role === "manager" || (Boolean(customerRegionId) && orderRegionId === customerRegionId);
+const CUSTOMER_DEMO_TENANT_ID_SET = new Set<string>(CUSTOMER_DEMO_TENANT_IDS);
+
+/**
+ * Pass the tenants of the order's region (`row.tenants` on the list, `tenantsForRegion` on the card).
+ * A region without tenants is hidden from the customer; the manager sees every order.
+ */
+export const isOrderVisibleForRole = (role: ViewRole, orderTenantIds: readonly string[]): boolean =>
+  role === "manager" || orderTenantIds.some((id) => CUSTOMER_DEMO_TENANT_ID_SET.has(id));
 
 export const mapRoleVisibilityRow = (row: Record<string, unknown>): RoleVisibilityRule => ({
   elementKey: String(row.element_key),

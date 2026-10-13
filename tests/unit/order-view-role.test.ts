@@ -2,17 +2,18 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   CATALOG_VIEW_KEYS,
+  CUSTOMER_ORDER_VIEW_KEYS,
   PRODUCT_VIEW_KEYS,
-  resolveVisibility,
-  isOrderRegionVisibleForRole,
+  isOrderVisibleForRole,
   isStorePathAllowedForRole,
   isVisibleForRole,
+  resolveVisibility,
   viewRolePageForPath,
   mapRoleVisibilityRow,
-  parseViewRole,
   resolveCustomerOrderVisibility,
   type RoleVisibilityRule,
 } from "@/features/logistics/order-view-role";
+import { parseViewRole } from "@/features/store/view-role";
 
 const rules: RoleVisibilityRule[] = [
   { elementKey: "tab.plan", label: "Вкладка «План»", managerVisible: true, customerVisible: false },
@@ -95,10 +96,21 @@ describe("order view role", () => {
     assert.equal(resolveVisibility(CATALOG_VIEW_KEYS, [], "customer")["catalog.add"], false);
   });
 
-  it("shows the customer only orders of the selected region", () => {
-    assert.equal(isOrderRegionVisibleForRole("manager", "1", null), true);
-    assert.equal(isOrderRegionVisibleForRole("customer", "1", "1"), true);
-    assert.equal(isOrderRegionVisibleForRole("customer", "2", "1"), false);
-    assert.equal(isOrderRegionVisibleForRole("customer", "", null), false);
+  it("registers rates and file management as customer-order keys, closed until a rule opens them", () => {
+    assert.ok(CUSTOMER_ORDER_VIEW_KEYS.includes("money.rates"));
+    assert.ok(CUSTOMER_ORDER_VIEW_KEYS.includes("files.manage"));
+    assert.equal(isVisibleForRole([], "customer", "money.rates"), false);
+    assert.equal(isVisibleForRole([], "customer", "files.manage"), false);
+    assert.equal(isVisibleForRole([], "manager", "money.rates"), true);
+    assert.equal(isVisibleForRole([], "manager", "files.manage"), true);
+  });
+
+  it("shows the customer orders of their tenants' regions only", () => {
+    assert.equal(isOrderVisibleForRole("customer", ["tenant-sharmax-ae"]), true);
+    assert.equal(isOrderVisibleForRole("customer", ["tenant-globaldrive", "tenant-sharmax-om"]), true);
+    assert.equal(isOrderVisibleForRole("customer", ["tenant-sharmax-kz", "tenant-globaldrive"]), false);
+    assert.equal(isOrderVisibleForRole("customer", []), false);
+    assert.equal(isOrderVisibleForRole("manager", []), true);
+    assert.equal(isOrderVisibleForRole("manager", ["tenant-sharmax-kz"]), true);
   });
 });

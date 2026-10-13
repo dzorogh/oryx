@@ -4,14 +4,9 @@ import { Eye, EyeOff, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  VIEW_ROLE_LABELS,
-  VIEW_ROLES,
-  parseViewRole,
-  type RoleVisibilityRule,
-  type ViewRole,
-} from "@/features/logistics/order-view-role";
+import { VIEW_ROLE_LABELS, VIEW_ROLES, type RoleVisibilityRule } from "@/features/logistics/order-view-role";
 import type { RoleVisibilityState } from "@/features/logistics/use-view-role";
+import { parseViewRole, type ViewRole } from "@/features/store/view-role";
 import { cn } from "@/lib/utils";
 
 const VisibilityMark = ({ visible, active }: { visible: boolean; active: boolean }) => {
@@ -117,8 +112,8 @@ export const ViewRoleSwitcher = ({ state }: { state: RoleVisibilityState }) => {
             <p className="text-xs text-muted-foreground">Загружаем правила…</p>
           ) : rules.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              Для этой страницы правил нет. Заказчику открыты только каталог, оформление заказа и заказы своего
-              региона.
+              Для этой страницы правил нет. Заказчику открыты каталог, оформление заказа и заказы регионов его
+              тенантов.
             </p>
           ) : (
             <RulesList rules={rules} role={role} />

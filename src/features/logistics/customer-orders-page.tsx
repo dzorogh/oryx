@@ -112,20 +112,19 @@ import { CustomerOrderStatusBadge, StatusPill } from "@/features/logistics/ui/st
 import { useLogisticsList, useLogisticsStore } from "@/features/logistics/use-logistics-store";
 import { OrderMoneyTab, summarizeOrderMoney } from "@/features/logistics/ui/order-money-tab";
 import { summarizePayments } from "@/features/logistics/order-money";
-import { buildOrderSystemNotices, plannedOutputQuantities, tenantLabel } from "@/features/logistics/customer-order-oms";
+import { buildOrderSystemNotices, plannedOutputQuantities, tenantLabel, tenantsForRegion } from "@/features/logistics/customer-order-oms";
 import { hrefForRegion } from "@/features/logistics/logistics-availability";
 import { CustomerOrderHeader } from "@/features/logistics/ui/customer-order-header";
 import { CustomerOrderContainersTab } from "@/features/logistics/ui/customer-order-containers-tab";
 import { CustomerOrderFilesTab } from "@/features/logistics/ui/customer-order-files-tab";
 import { CustomerOrderCommentsTab } from "@/features/logistics/ui/customer-order-comments-tab";
 import {
-  isOrderRegionVisibleForRole,
+  isOrderVisibleForRole,
   isVisibleForRole,
   resolveCustomerOrderVisibility,
 } from "@/features/logistics/order-view-role";
-import { useCurrentViewRole, useViewRole } from "@/features/logistics/use-view-role";
-import { RegionSwitcher } from "@/features/store/region-switcher";
-import { useSelectedRegion } from "@/features/store/region-context";
+import { useViewRole } from "@/features/logistics/use-view-role";
+import { useCurrentViewRole } from "@/features/store/view-role";
 
 const STATUS_TOGGLE = [
   { value: "all", label: "Все" },
@@ -294,7 +293,6 @@ export const CustomerOrdersPage = () => {
   const { rows, isLoading, error, reload } = useLogisticsList(loadCustomerOrderList);
   const role = useCurrentViewRole();
   const isCustomer = role === "customer";
-  const { selectedRegion, regionsLoading } = useSelectedRegion();
   const [open, setOpen] = useState(false);
   const createStore = useLogisticsStore({ kind: "form", form: "customer_order", enabled: open });
   const [statusToggle, setStatusToggle] = useState<(typeof STATUS_TOGGLE)[number]["value"]>("all");
@@ -306,7 +304,7 @@ export const CustomerOrdersPage = () => {
   const filtered = useMemo(
     () =>
       rows.filter((order) => {
-        if (!isOrderRegionVisibleForRole(role, order.regionId, selectedRegion?.id)) {
+        if (!isOrderVisibleForRole(role, order.tenants.map((tenant) => tenant.id))) {
           return false;
         }
         if (statusToggle === "in_progress" && !isOpenCustomerOrderStatus(order.status)) {
@@ -317,7 +315,7 @@ export const CustomerOrdersPage = () => {
         }
         return matchesCustomerOrderText(order, text);
       }),
-    [rows, statusToggle, text, role, selectedRegion?.id],
+    [rows, statusToggle, text, role],
   );
 
   return (
@@ -325,16 +323,30 @@ export const CustomerOrdersPage = () => {
       <LogisticsListPageContent
         listId="customer-orders-v2"
         title="Заказы клиента"
-        actionLabel={isCustomer ? undefined : "Новый заказ клиента"}
-        onAction={isCustomer ? undefined : () => setOpen(true)}
-        quickControls={isCustomer ? <RegionSwitcher size="sm" /> : undefined}
-        emptyMessage={isCustomer && !selectedRegion ? "Выберите регион, чтобы увидеть его заказы." : undefined}
+        actions={
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => toast.message("Экспорт пока не реализован")}
+            >
+              Экспорт
+            </Button>
+            {isCustomer ? null : (
+              <Button type="button" size="sm" onClick={() => setOpen(true)}>
+                Новый заказ клиента
+              </Button>
+            )}
+          </div>
+        }
+        emptyMessage={isCustomer ? "У регионов Sharmax UAE и Sharmax Oman пока нет заказов. Оформите заказ в каталоге." : undefined}
         columns={customerOrderColumns}
         sortDefs={customerOrderSortDefs}
         rows={filtered}
         rowKey={(row) => row.id}
         groupQuantity={(row) => row.ordered}
-        isLoading={isLoading || (isCustomer && regionsLoading)}
+        isLoading={isLoading}
         error={error}
         toggleOptions={[...STATUS_TOGGLE]}
         toggleValue={statusToggle}
@@ -386,7 +398,6 @@ export const CustomerOrderDetailPage = () => {
     ref: String(params.orderId ?? ""),
   });
   const viewRole = useViewRole("customer_order");
-  const { selectedRegion, regionsLoading } = useSelectedRegion();
   const visibility = resolveCustomerOrderVisibility(viewRole.rules, viewRole.role);
   const order = matchDocumentParam(snapshot.customerOrders, params.orderId);
   const [reserveOpen, setReserveOpen] = useState(false);
@@ -423,7 +434,7 @@ export const CustomerOrderDetailPage = () => {
     { label: /^\d+$/.test(orderRef) ? formatEntityCode("customer_order", orderRef) : "Заказ клиента" },
   ];
 
-  if (isLoading || (viewRole.role === "customer" && regionsLoading)) {
+  if (isLoading) {
     return (
       <LogisticsPageShell crumbs={pendingCrumbs}>
         <LogisticsLoading />
@@ -447,16 +458,13 @@ export const CustomerOrderDetailPage = () => {
     );
   }
 
-  if (!isOrderRegionVisibleForRole(viewRole.role, order.regionId, selectedRegion?.id)) {
+  const orderTenantIds = tenantsForRegion(orderOms.tenants, order.regionId).map((tenant) => tenant.id);
+  if (!isOrderVisibleForRole(viewRole.role, orderTenantIds)) {
     return (
       <LogisticsPageShell crumbs={[{ label: "Заказы клиента", href: "/store/logistics/customer-orders" }, { label: order.number }]}>
         <Alert>
           <AlertTitle>Заказ другого региона</AlertTitle>
-          <AlertDescription>
-            {selectedRegion
-              ? `Заказчику региона ${selectedRegion.code.toUpperCase()} доступны только заказы этого региона.`
-              : "Выберите свой регион в каталоге, чтобы открыть его заказы."}
-          </AlertDescription>
+          <AlertDescription>Заказчику доступны только заказы регионов Sharmax UAE и Sharmax Oman.</AlertDescription>
         </Alert>
       </LogisticsPageShell>
     );
@@ -740,6 +748,7 @@ export const CustomerOrderDetailPage = () => {
                 reload={reload}
                 editable={visibility["order.edit"]}
                 showEstimate={visibility["money.estimate"]}
+                showRates={visibility["money.rates"]}
                 showAuthors={visibility["header.author"]}
               />
             ),
@@ -772,7 +781,7 @@ export const CustomerOrderDetailPage = () => {
                 orderId={order.id}
                 files={orderOms.files}
                 reload={reload}
-                editable={visibility["order.edit"]}
+                editable={visibility["files.manage"]}
               />
             ),
           },

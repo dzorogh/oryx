@@ -8,11 +8,12 @@ const STORE_BASE_FILES = [
   "src/features/store/region-switcher.tsx",
   "src/features/store/product-photo.tsx",
   "src/features/store/store-load-notice.tsx",
+  "src/features/store/view-role.ts",
   "src/features/store/packing/**",
 ];
 
 const STORE_BASE_IMPORT =
-  "^@/features/store/(?!(domain|packing)/|(region-context|region-selection|region-switcher|product-photo|store-load-notice)$)";
+  "^@/features/store/(?!(domain|packing)/|(region-context|region-selection|region-switcher|product-photo|store-load-notice|view-role)$)";
 
 const NO_PIM_UI = {
   group: ["@/components/store/*"],

@@ -15,6 +15,7 @@ import { formatEntityCode } from "@/lib/entity-codes";
 import { ensureEntityCodePrefixes } from "@/lib/entity-codes-api";
 import { resolveSelectedRegionCode } from "@/features/store/region-selection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { CUSTOMER_DEMO_TENANT_IDS, useCurrentViewRole } from "@/features/store/view-role";
 
 export const STORE_SELECTED_REGION_STORAGE_KEY = "store-selected-region";
 
@@ -97,7 +98,10 @@ const writeStoredRegionCode = (code: string | null) => {
   for (const listener of localListeners) listener();
 };
 
-export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> => {
+type LoadedRegions = { regions: StoreRegionOption[]; customerRegionIds: string[] };
+
+/** Regions plus the regions of the customer's demo tenants; the customer may pick only those. */
+export const loadStoreRegions = async (): Promise<LoadedRegions | null> => {
   if (!isSupabaseConfigured()) {
     return null;
   }
@@ -107,7 +111,7 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
   }
 
   // formatEntityCode reads module-global prefixes; load them before hubCode is computed.
-  const [currenciesResult, regionsResult] = await Promise.all([
+  const [currenciesResult, regionsResult, tenantsResult] = await Promise.all([
     client.from("store_currency").select("id,code").is("deleted_at", null),
     client
       .from("store_region")
@@ -117,11 +121,13 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
       .is("deleted_at", null)
       .eq("active", true)
       .order("sort_order", { ascending: true }),
+    client.from("store_tenant").select("region_id").in("id", [...CUSTOMER_DEMO_TENANT_IDS]),
     ensureEntityCodePrefixes(),
   ]);
 
   if (currenciesResult.error) throw new Error(currenciesResult.error.message);
   if (regionsResult.error) throw new Error(regionsResult.error.message);
+  if (tenantsResult.error) throw new Error(tenantsResult.error.message);
 
   const currencyCodeById = new Map(
     ((currenciesResult.data ?? []) as CurrencyRow[]).map((row) => [String(row.id), row.code]),
@@ -152,13 +158,17 @@ export const loadStoreRegions = async (): Promise<StoreRegionOption[] | null> =>
       orderCurrency,
     });
   }
-  return regions;
+  const customerRegionIds = ((tenantsResult.data ?? []) as { region_id: number | string | null }[])
+    .filter((row) => row.region_id != null)
+    .map((row) => String(row.region_id));
+  return { regions, customerRegionIds };
 };
 
 const REGIONS_LOAD_ERROR = "Не удалось загрузить регионы";
 
 export const RegionProvider = ({ children }: { children: ReactNode }) => {
-  const [regions, setRegions] = useState<StoreRegionOption[]>([]);
+  const role = useCurrentViewRole();
+  const [loadedRegions, setLoadedRegions] = useState<LoadedRegions>({ regions: [], customerRegionIds: [] });
   const [regionsLoading, setRegionsLoading] = useState(true);
   const [regionsError, setRegionsError] = useState<string | null>(null);
   const [regionsUnconfigured, setRegionsUnconfigured] = useState(false);
@@ -183,11 +193,11 @@ export const RegionProvider = ({ children }: { children: ReactNode }) => {
       .then((loaded) => {
         if (cancelled) return;
         if (!loaded) {
-          setRegions([]);
+          setLoadedRegions({ regions: [], customerRegionIds: [] });
           setRegionsError(null);
           setRegionsUnconfigured(true);
         } else {
-          setRegions(loaded);
+          setLoadedRegions(loaded);
           setRegionsError(null);
           setRegionsUnconfigured(false);
         }
@@ -195,7 +205,7 @@ export const RegionProvider = ({ children }: { children: ReactNode }) => {
       })
       .catch(() => {
         if (cancelled) return;
-        setRegions([]);
+        setLoadedRegions({ regions: [], customerRegionIds: [] });
         setRegionsError(REGIONS_LOAD_ERROR);
         setRegionsUnconfigured(false);
         setRegionsLoading(false);
@@ -204,6 +214,12 @@ export const RegionProvider = ({ children }: { children: ReactNode }) => {
       cancelled = true;
     };
   }, [regionsAttempt]);
+
+  const regions = useMemo(() => {
+    if (role !== "customer") return loadedRegions.regions;
+    const allowed = new Set(loadedRegions.customerRegionIds);
+    return loadedRegions.regions.filter((region) => allowed.has(region.id));
+  }, [loadedRegions, role]);
 
   const validCodes = useMemo(() => new Set(regions.map((region) => region.code)), [regions]);
 

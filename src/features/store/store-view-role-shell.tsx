@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/card";
 import { isStorePathAllowedForRole, viewRolePageForPath } from "@/features/logistics/order-view-role";
 import { LOGISTICS_PATHS, STORE_PRODUCTS_PATH } from "@/features/logistics/logistics-paths";
 import { ViewRoleSwitcher } from "@/features/logistics/ui/view-role-switcher";
-import { useHydratedViewRole, useViewRole } from "@/features/logistics/use-view-role";
+import { useViewRole } from "@/features/logistics/use-view-role";
+import { useHydratedViewRole } from "@/features/store/view-role";
 
 const CustomerAccessDenied = () => (
   <main className="min-h-screen bg-muted/30">
@@ -24,7 +25,7 @@ const CustomerAccessDenied = () => (
         <div className="flex flex-col gap-1">
           <p className="text-sm font-semibold text-foreground">Раздел недоступен заказчику</p>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Заказчику открыты только каталог и заказы своего региона.
+            Заказчику открыты каталог, оформление заказа и заказы клиента.
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-2">

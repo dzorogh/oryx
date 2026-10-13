@@ -1,24 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadRoleVisibility } from "@/features/logistics/logistics-api";
-import { parseViewRole, type RoleVisibilityRule, type ViewRole } from "@/features/logistics/order-view-role";
-
-const ROLE_STORAGE_KEY = "oryx:view-role";
-const ROLE_CHANGE_EVENT = "oryx:view-role-change";
-
-const subscribeRole = (onChange: () => void) => {
-  window.addEventListener("storage", onChange);
-  window.addEventListener(ROLE_CHANGE_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onChange);
-    window.removeEventListener(ROLE_CHANGE_EVENT, onChange);
-  };
-};
-
-const readRole = (): ViewRole => parseViewRole(window.localStorage.getItem(ROLE_STORAGE_KEY));
-
-const serverRole = (): ViewRole => "manager";
+import type { RoleVisibilityRule } from "@/features/logistics/order-view-role";
+import { useCurrentViewRole, writeViewRole, type ViewRole } from "@/features/store/view-role";
 
 const NO_RULES: RoleVisibilityRule[] = [];
 
@@ -46,15 +31,6 @@ export type RoleVisibilityState = {
 
 type LoadedRules = { page: string; rules: RoleVisibilityRule[]; error: string | null };
 
-/** Current demo role without visibility rules. */
-export const useCurrentViewRole = (): ViewRole => useSyncExternalStore(subscribeRole, readRole, serverRole);
-
-const unknownRole = (): ViewRole | null => null;
-
-/** Null on the server and during hydration, until the stored role is read. */
-export const useHydratedViewRole = (): ViewRole | null =>
-  useSyncExternalStore<ViewRole | null>(subscribeRole, readRole, unknownRole);
-
 /** `page` is `store_role_visibility.page`; null means the page has no rules. */
 export const useViewRole = (page: string | null): RoleVisibilityState => {
   const role = useCurrentViewRole();
@@ -80,10 +56,7 @@ export const useViewRole = (page: string | null): RoleVisibilityState => {
     };
   }, [page]);
 
-  const setRole = useCallback((next: ViewRole) => {
-    window.localStorage.setItem(ROLE_STORAGE_KEY, next);
-    window.dispatchEvent(new Event(ROLE_CHANGE_EVENT));
-  }, []);
+  const setRole = useCallback((next: ViewRole) => writeViewRole(next), []);
 
   if (!page) {
     return { role, setRole, rules: NO_RULES, isLoading: false, error: null };

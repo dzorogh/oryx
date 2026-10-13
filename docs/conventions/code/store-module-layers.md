@@ -25,6 +25,7 @@ features/logistics/** ────────────┘
 - `features/store/domain/` — чистые типы и проверки: `currency.ts` (`CurrencyCode`, `isCurrencyCode`), `statuses.ts` (дилерский и розничный статусы, подписи), `catalog-item.ts` (`StoreCatalogItem`, цены и статусы по регионам, `CATALOG_PAGE_SIZE`, `CATALOG_NO_SITE_KEY`).
 - `features/store/region-context.tsx`, `region-selection.ts`, `region-switcher.tsx` — выбранный регион.
 - `features/store/product-photo.tsx`, `features/store/store-load-notice.tsx` (ошибка загрузки и «Повторить»), `features/store/packing/**`.
+- `features/store/view-role.ts` — демо-роль «Менеджер / Заказчик» из `localStorage` (`useCurrentViewRole`, `useHydratedViewRole`) и тенанты заказчика `CUSTOMER_DEMO_TENANT_IDS`; правила видимости остаются в `features/logistics/order-view-role.ts`.
 
 Базовый слой импортирует только базовый слой: иначе логистика транзитивно дотянется до остального магазина и цикл вернётся.
 
