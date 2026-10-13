@@ -1348,3 +1348,47 @@ export const seedOrderMoney = async ({ url, serviceKey }) => {
 
   return { orders, payments };
 };
+
+/** Client delivery on OMS-921 (paid) and OMS-906 (awaiting payment, due in the future); metadata on OMS-921. */
+export const seedCustomerOrderExtras = async ({ url, serviceKey }) => {
+  const docs = await restGet(
+    url,
+    serviceKey,
+    "store_document?select=id,sequence_number&kind=eq.customer_order&sequence_number=in.(906,921)",
+  );
+  const idOf = (sequence) => {
+    const row = docs.find((item) => Number(item.sequence_number) === sequence);
+    if (!row) throw new Error(`client delivery seed: OMS-${sequence} missing`);
+    return Number(row.id);
+  };
+  const due = new Date();
+  due.setUTCDate(due.getUTCDate() + 21);
+  const dueOn = due.toISOString().slice(0, 10);
+
+  await rpc(url, serviceKey, "store_set_customer_order_client_delivery", {
+    p_order_id: idOf(906),
+    p_payment_status: "pending_payment",
+    p_invoice_amount: 480,
+    p_invoice_currency_code: "USD",
+    p_paid_amount: null,
+    p_paid_currency_code: null,
+    p_due_on: dueOn,
+  });
+  await rpc(url, serviceKey, "store_set_customer_order_client_delivery", {
+    p_order_id: idOf(921),
+    p_payment_status: "paid",
+    p_invoice_amount: 960,
+    p_invoice_currency_code: "AED",
+    p_paid_amount: 960,
+    p_paid_currency_code: "AED",
+    p_due_on: "2026-09-28",
+  });
+  await rpc(url, serviceKey, "store_set_customer_order_meta", {
+    p_order_id: idOf(921),
+    p_external_id: "УЧ-921",
+    p_track_number: "AE9214481900",
+    p_supplier_order_number: "SH-18440",
+    p_external_url: "https://example.com/accounting/oms-921",
+  });
+  return { orders: 2 };
+};

@@ -34,6 +34,8 @@ export const CUSTOMER_ORDER_VIEW_KEYS = [
   "tab.money",
   "money.estimate",
   "money.rates",
+  "tab.client_delivery",
+  "tab.metadata",
   "tab.plan",
   "tab.containers",
   "tab.files",

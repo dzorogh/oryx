@@ -115,8 +115,10 @@ import { summarizePayments } from "@/features/logistics/order-money";
 import { buildOrderSystemNotices, plannedOutputQuantities, tenantLabel, tenantsForRegion } from "@/features/logistics/customer-order-oms";
 import { hrefForRegion } from "@/features/logistics/logistics-availability";
 import { CustomerOrderHeader } from "@/features/logistics/ui/customer-order-header";
+import { CustomerOrderClientDeliveryTab } from "@/features/logistics/ui/customer-order-client-delivery-tab";
 import { CustomerOrderContainersTab } from "@/features/logistics/ui/customer-order-containers-tab";
 import { CustomerOrderFilesTab } from "@/features/logistics/ui/customer-order-files-tab";
+import { CustomerOrderMetaTab } from "@/features/logistics/ui/customer-order-meta-tab";
 import { CustomerOrderCommentsTab } from "@/features/logistics/ui/customer-order-comments-tab";
 import {
   isOrderVisibleForRole,
@@ -392,7 +394,7 @@ export const CustomerOrdersPage = () => {
 
 export const CustomerOrderDetailPage = () => {
   const params = useParams<{ orderId: string }>();
-  const { snapshot, balances, orderPlan, orderMoney, orderOms, isLoading, error, reload, found } = useLogisticsStore({
+  const { snapshot, balances, orderPlan, orderMoney, orderOms, orderExtras, isLoading, error, reload, found } = useLogisticsStore({
     kind: "document",
     documentKind: "customer_order",
     ref: String(params.orderId ?? ""),
@@ -588,6 +590,8 @@ export const CustomerOrderDetailPage = () => {
         description={order.description}
         canAct={canAct}
         createdAt={order.createdAt}
+        updatedAt={orderExtras.updatedAt}
+        deliveryStatus={orderExtras.clientDelivery.paymentStatus}
         completedAt={completedAt}
         expectedEndOn={order.expectedEndOn}
         lines={lines}
@@ -752,6 +756,23 @@ export const CustomerOrderDetailPage = () => {
                 showAuthors={visibility["header.author"]}
               />
             ),
+          },
+          {
+            id: "client_delivery",
+            label: "Доставка клиента",
+            panel: (
+              <CustomerOrderClientDeliveryTab
+                orderId={order.id}
+                delivery={orderExtras.clientDelivery}
+                currencies={orderMoney.currencies}
+                reload={reload}
+              />
+            ),
+          },
+          {
+            id: "metadata",
+            label: "Метаданные",
+            panel: <CustomerOrderMetaTab orderId={order.id} meta={orderExtras.meta} reload={reload} />,
           },
           {
             id: "plan",

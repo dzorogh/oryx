@@ -42,6 +42,13 @@ import {
   type CustomerOrderOmsContext,
 } from "@/features/logistics/customer-order-oms";
 import {
+  EMPTY_CUSTOMER_ORDER_EXTRAS,
+  mapCustomerOrderExtras,
+  type ClientDelivery,
+  type CustomerOrderExtras,
+  type CustomerOrderMeta,
+} from "@/features/logistics/customer-order-extras";
+import {
   mapOrderMoneyContext,
   mapOrderRates,
   type OrderCurrency,
@@ -207,6 +214,7 @@ export type LogisticsPayload = {
   order_payment_events?: unknown;
   document_files?: unknown;
   found?: boolean;
+  document_id?: number | string;
 };
 
 export type MappedLogistics = {
@@ -219,6 +227,8 @@ export type MappedLogistics = {
   orderMoney: OrderMoneyContext;
   /** Tenants, packing, delivery money, payment events and files of a customer order context. */
   orderOms: CustomerOrderOmsContext;
+  /** Client delivery, metadata and `updated_at` from `store_customer_order_extras`. Empty for other reads. */
+  orderExtras: CustomerOrderExtras;
   found: boolean;
 };
 
@@ -836,6 +846,7 @@ export const mapLogisticsPayload = (payload: LogisticsPayload): MappedLogistics 
     orderPlan: payload.order_plan ?? null,
     orderMoney: mapOrderMoneyContext(payload),
     orderOms: mapCustomerOrderOmsContext(payload),
+    orderExtras: EMPTY_CUSTOMER_ORDER_EXTRAS,
     found: payload.found !== false,
   };
 };
@@ -1051,8 +1062,41 @@ const loadMappedRpc = async (name: string, args: Record<string, unknown>): Promi
   return mapLogisticsPayload(payload);
 };
 
-export const loadDocumentContext = (kind: string, ref: string) =>
-  loadMappedRpc("store_document_context", { p_kind: kind, p_ref: ref });
+export const loadCustomerOrderExtras = async (orderId: string): Promise<CustomerOrderExtras> => {
+  const payload = await rpcJson<unknown>("store_customer_order_extras", { p_order_id: Number(orderId) });
+  return mapCustomerOrderExtras(payload);
+};
+
+export const setCustomerOrderClientDelivery = (orderId: string, delivery: ClientDelivery) =>
+  rpc("store_set_customer_order_client_delivery", {
+    p_order_id: Number(orderId),
+    p_payment_status: delivery.paymentStatus,
+    p_invoice_amount: delivery.invoice.amount,
+    p_invoice_currency_code: delivery.invoice.currencyCode,
+    p_paid_amount: delivery.paid.amount,
+    p_paid_currency_code: delivery.paid.currencyCode,
+    p_due_on: delivery.dueOn,
+  });
+
+export const setCustomerOrderMeta = (orderId: string, meta: CustomerOrderMeta) =>
+  rpc("store_set_customer_order_meta", {
+    p_order_id: Number(orderId),
+    p_external_id: meta.externalId,
+    p_track_number: meta.trackNumber,
+    p_supplier_order_number: meta.supplierOrderNumber,
+    p_external_url: meta.externalUrl,
+  });
+
+/** Document context, and for a customer order the extras RPC in the same load. */
+export const loadDocumentContext = async (kind: string, ref: string): Promise<MappedLogistics> => {
+  const [payload] = await Promise.all([
+    rpcJson<LogisticsPayload>("store_document_context", { p_kind: kind, p_ref: ref }),
+    ensureEntityCodePrefixes(),
+  ]);
+  const mapped = mapLogisticsPayload(payload);
+  if (kind !== "customer_order" || !mapped.found || payload.document_id == null) return mapped;
+  return { ...mapped, orderExtras: await loadCustomerOrderExtras(String(payload.document_id)) };
+};
 
 export const loadPlaceContext = (kind: string, id: string) =>
   loadMappedRpc("store_place_context", { p_kind: kind, p_id: id });

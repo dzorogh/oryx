@@ -360,3 +360,12 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-store-structure-routes-migrations.md`
   summary: Демо-строки прайс-листа без бэкенда (`bike-*`) ссылаются на удалённую демо-карточку и открывают «Товар не найден».
   evidence: `pricelists-demo-data.ts` → `getVariantCatalogItems`, `catalog-helpers.ts` `getCatalogItemDetailHref`; убрать вместе с офлайн-режимом прайс-листов.
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-client-delivery-metadata.md`
+  summary: Триггеры «Изменён» (`store_touch_document_updated_at`) и серверные проверки доставки клиента и метаданных не покрыты автотестами.
+  evidence: Тестов против базы в репозитории нет. Проверено вручную через MCP `oryx-supabase` 2026-10-13: правки двигают `updated_at`, неверный ввод отклоняется.
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-client-delivery-metadata.md`
+  summary: Решения «сохранять или нет» во вкладках доставки и метаданных и условие показа бейджа доставки лежат в компонентах и не покрыты тестами.
+  evidence: Тестов компонентов в репозитории нет. Если вынести эти решения в `customer-order-extras.ts`, их покроет существующий unit-тест.
+- source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-client-delivery-metadata.md`
+  summary: `DocumentMetaDateInput` сохраняет дату на каждый `onChange`, поэтому при наборе года с клавиатуры может записаться промежуточная дата (например, 0002-09-28).
+  evidence: Так было и раньше: тот же компонент используется для срока в шапке заказа, а новая вкладка просто повторяет это поведение. Unverified, оценка medium: проверить набором года с клавиатуры в Chrome.

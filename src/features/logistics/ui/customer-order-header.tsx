@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { deliveryBadgeLabel, type ClientDeliveryPaymentStatus } from "@/features/logistics/customer-order-extras";
 import {
   deadlineCountdown,
   deadlineCountdownLabel,
@@ -105,6 +106,12 @@ const PanelTitle = ({
 };
 
 const HEADER_BADGE_CLASS = "h-6 px-2.5";
+
+const DELIVERY_BADGE_CLASS: Record<ClientDeliveryPaymentStatus, string> = {
+  awaiting_invoice: "border-zinc-200 bg-zinc-100 text-zinc-700 hover:bg-zinc-200/70",
+  pending_payment: "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100",
+  paid: "border-green-200 bg-green-50 text-green-800 hover:bg-green-100",
+};
 
 const ORDER_TYPE = {
   hub: { label: "Склад региона", icon: Warehouse, className: "border-sky-200 bg-sky-50 text-sky-800" },
@@ -447,6 +454,8 @@ export const CustomerOrderHeader = ({
   description,
   canAct,
   createdAt,
+  updatedAt,
+  deliveryStatus,
   completedAt,
   expectedEndOn,
   lines,
@@ -476,6 +485,10 @@ export const CustomerOrderHeader = ({
   description: string;
   canAct: boolean;
   createdAt: string;
+  /** `store_document.updated_at`: last edit of the order, not comments. */
+  updatedAt: string | null;
+  /** Set when the client-delivery payment status is filled. The badge opens that tab. */
+  deliveryStatus: ClientDeliveryPaymentStatus | null;
   completedAt: string | null;
   expectedEndOn: string | null;
   lines: CustomerOrderLine[];
@@ -510,6 +523,7 @@ export const CustomerOrderHeader = ({
     ...(visibility["header.tenant"] ? [{ label: "Тенант", value: tenant }] : []),
     ...(visibility["header.author"] ? [{ label: "Автор", value: authorName ?? <DocumentMetaEmpty /> }] : []),
     { label: "Создан", value: <span className="tabular-nums">{formatMetaTimestamp(createdAt)}</span> },
+    { label: "Изменён", value: <span className="tabular-nums">{formatMetaTimestamp(updatedAt)}</span> },
     ...(completedAt
       ? [{ label: "Завершён", value: <span className="tabular-nums">{formatMetaTimestamp(completedAt)}</span> }]
       : []),
@@ -533,6 +547,20 @@ export const CustomerOrderHeader = ({
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-[28px] leading-none font-semibold tracking-tight">{number}</h1>
               <StatusPill status={status} label={CUSTOMER_ORDER_STATUS_LABELS[status]} className={HEADER_BADGE_CLASS} />
+              {deliveryStatus && visibility["tab.client_delivery"] ? (
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex items-center rounded-full border text-xs font-medium whitespace-nowrap",
+                    HEADER_BADGE_CLASS,
+                    DELIVERY_BADGE_CLASS[deliveryStatus],
+                  )}
+                  title="Открыть вкладку «Доставка клиента»"
+                  onClick={() => openDocumentTab("client_delivery")}
+                >
+                  {deliveryBadgeLabel(deliveryStatus)}
+                </button>
+              ) : null}
               {visibility["header.source"] ? <OrderTypeBadge kind={sourceKind} code={sourceCode} /> : null}
             </div>
           </div>

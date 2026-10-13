@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { preferKorportalMediaConversion } from "./lib/korportal-media-url.mjs";
-import { seedLogisticsStories, seedOrderMoney } from "./lib/seed-logistics-stories.mjs";
+import { seedCustomerOrderExtras, seedLogisticsStories, seedOrderMoney } from "./lib/seed-logistics-stories.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const home = process.env.HOME || process.env.USERPROFILE || "";
@@ -126,6 +126,8 @@ if (!url || !serviceKey) {
 }
 
 const wipeSql = `truncate table
+  public.store_customer_order_client_delivery,
+  public.store_customer_order_meta,
   public.store_document_file,
   public.store_order_payment_event,
   public.store_tenant,
@@ -518,12 +520,13 @@ const stories = await seedLogisticsStories({
 });
 
 const money = await seedOrderMoney({ url, serviceKey });
+const extras = await seedCustomerOrderExtras({ url, serviceKey });
 
 console.log(
-  `seed_ok products=${snapshot.products.length} categories=${categoryIdByOld.size} product_categories=${productCategoryRows.length} plants=${snapshot.plants.length} warehouses=${snapshot.warehouses.length} customer_orders=${seededOrders} regions=${regionIdByCode.size} prices=${priceRows.length} statuses=${statusRows.length} story_orders=${stories.orders} money_orders=${money.orders} payments=${money.payments} tenants=${TENANTS.length} cleared_files=${clearedFiles}`,
+  `seed_ok products=${snapshot.products.length} categories=${categoryIdByOld.size} product_categories=${productCategoryRows.length} plants=${snapshot.plants.length} warehouses=${snapshot.warehouses.length} customer_orders=${seededOrders} regions=${regionIdByCode.size} prices=${priceRows.length} statuses=${statusRows.length} story_orders=${stories.orders} money_orders=${money.orders} payments=${money.payments} client_delivery=${extras.orders} tenants=${TENANTS.length} cleared_files=${clearedFiles}`,
 );
 
-/** Spread history changed_at monotonically after each document's created_at, at most ~2 days apart, never past now (deterministic). */
+/** Spread history changed_at monotonically after each document's created_at, at most ~2 days apart, never past now (deterministic). Then set «Изменён» to that last history moment, not the reseed clock. */
 const historyBackfillSql = `
 begin;
 alter table public.store_document_history disable trigger store_document_history_no_update;
@@ -544,6 +547,14 @@ set changed_at = case
 end
 from ranked r
 where h.id = r.id;
+update public.store_document d
+set updated_at = greatest(
+  d.created_at,
+  coalesce(
+    (select max(h.changed_at) from public.store_document_history h where h.document_id = d.id),
+    d.created_at
+  )
+);
 alter table public.store_document_history enable trigger store_document_history_no_update;
 commit;
 `;

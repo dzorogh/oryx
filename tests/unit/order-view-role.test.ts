@@ -105,6 +105,36 @@ describe("order view role", () => {
     assert.equal(isVisibleForRole([], "manager", "files.manage"), true);
   });
 
+  it("shows client delivery to the customer and keeps metadata for the manager", () => {
+    assert.ok(CUSTOMER_ORDER_VIEW_KEYS.includes("tab.client_delivery"));
+    assert.ok(CUSTOMER_ORDER_VIEW_KEYS.includes("tab.metadata"));
+    const opened: RoleVisibilityRule[] = [
+      {
+        elementKey: "tab.client_delivery",
+        label: "Вкладка: доставка клиента",
+        managerVisible: true,
+        customerVisible: true,
+      },
+      {
+        elementKey: "tab.metadata",
+        label: "Вкладка: метаданные",
+        managerVisible: true,
+        customerVisible: false,
+      },
+      { elementKey: "order.edit", label: "Правка полей", managerVisible: true, customerVisible: false },
+    ];
+    const customer = resolveCustomerOrderVisibility(opened, "customer");
+    assert.equal(customer["tab.client_delivery"], true);
+    assert.equal(customer["tab.metadata"], false);
+    assert.equal(customer["order.edit"], false);
+    const manager = resolveCustomerOrderVisibility(opened, "manager");
+    assert.equal(manager["tab.client_delivery"], true);
+    assert.equal(manager["tab.metadata"], true);
+    assert.equal(isVisibleForRole([], "customer", "tab.client_delivery"), false);
+    assert.equal(isVisibleForRole([], "customer", "tab.metadata"), false);
+    assert.equal(isVisibleForRole([], "manager", "tab.metadata"), true);
+  });
+
   it("shows the customer orders of their tenants' regions only", () => {
     assert.equal(isOrderVisibleForRole("customer", ["tenant-sharmax-ae"]), true);
     assert.equal(isOrderVisibleForRole("customer", ["tenant-globaldrive", "tenant-sharmax-om"]), true);

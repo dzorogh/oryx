@@ -17,6 +17,7 @@ import {
 import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
 import type { OrderMoneyContext } from "@/features/logistics/order-money";
 import { EMPTY_CUSTOMER_ORDER_OMS, type CustomerOrderOmsContext } from "@/features/logistics/customer-order-oms";
+import { EMPTY_CUSTOMER_ORDER_EXTRAS, type CustomerOrderExtras } from "@/features/logistics/customer-order-extras";
 
 const EMPTY_ORDER_MONEY: OrderMoneyContext = { money: null, payments: [], currencies: [] };
 
@@ -126,6 +127,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
   const [orderPlan, setOrderPlan] = useState<unknown>(null);
   const [orderMoney, setOrderMoney] = useState<OrderMoneyContext>(EMPTY_ORDER_MONEY);
   const [orderOms, setOrderOms] = useState<CustomerOrderOmsContext>(EMPTY_CUSTOMER_ORDER_OMS);
+  const [orderExtras, setOrderExtras] = useState<CustomerOrderExtras>(EMPTY_CUSTOMER_ORDER_EXTRAS);
   const [found, setFound] = useState(true);
   const [pending, setPending] = useState(false);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -159,6 +161,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
       setOrderPlan(next.orderPlan);
       setOrderMoney(next.orderMoney);
       setOrderOms(next.orderOms);
+      setOrderExtras(next.orderExtras);
       setFound(next.found);
       setError(null);
     } catch (caught: unknown) {
@@ -204,6 +207,7 @@ export const useLogisticsStore = (source: LogisticsStoreSource) => {
     orderPlan,
     orderMoney,
     orderOms,
+    orderExtras,
     // An explicit `reload()` of a loaded key keeps the current data on screen.
     isLoading: enabled && loadedKey !== key,
     isRefreshing: enabled && pending,
