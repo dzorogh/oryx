@@ -13,6 +13,8 @@ export type RequestType = {
   id: string;
   name: string;
   description: string;
+  /** Created in the form builder during this session. */
+  custom?: boolean;
 };
 
 export type RequestSubsection = {
@@ -245,8 +247,34 @@ export const REQUEST_CATALOG: RequestSection[] = [
   },
 ];
 
-export const findRequestType = (typeId: string): RequestTypeLocation | null => {
-  for (const section of REQUEST_CATALOG) {
+export type CustomRequestTypePlacement = {
+  sectionId: string;
+  subsectionId: string;
+  type: RequestType;
+};
+
+/** Appends builder-made types to the end of their subsections. */
+export const withCustomTypes = (
+  catalog: RequestSection[],
+  customTypes: CustomRequestTypePlacement[],
+): RequestSection[] => {
+  if (customTypes.length === 0) return catalog;
+  return catalog.map((section) => ({
+    ...section,
+    subsections: section.subsections.map((subsection) => {
+      const added = customTypes
+        .filter((item) => item.sectionId === section.id && item.subsectionId === subsection.id)
+        .map((item) => item.type);
+      return added.length > 0 ? { ...subsection, types: [...subsection.types, ...added] } : subsection;
+    }),
+  }));
+};
+
+export const findRequestType = (
+  typeId: string,
+  catalog: RequestSection[] = REQUEST_CATALOG,
+): RequestTypeLocation | null => {
+  for (const section of catalog) {
     for (const subsection of section.subsections) {
       const type = subsection.types.find((item) => item.id === typeId);
       if (type) return { section, subsection, type };
@@ -264,8 +292,9 @@ export type CatalogSelection = {
 export const resolveCatalogSelection = (
   sectionId: string | null | undefined,
   subsectionId: string | null | undefined,
+  catalog: RequestSection[] = REQUEST_CATALOG,
 ): CatalogSelection => {
-  const section = REQUEST_CATALOG.find((item) => item.id === sectionId) ?? REQUEST_CATALOG[0];
+  const section = catalog.find((item) => item.id === sectionId) ?? catalog[0];
   const subsection =
     section.subsections.find((item) => item.id === subsectionId) ?? section.subsections[0];
   return { section, subsection };
@@ -274,12 +303,15 @@ export const resolveCatalogSelection = (
 const normalize = (value: string) => value.toLocaleLowerCase("ru").replaceAll("ё", "е").trim();
 
 /** Matches every word of the query against type name, description, subsection and section names. */
-export const searchRequestTypes = (query: string): RequestTypeLocation[] => {
+export const searchRequestTypes = (
+  query: string,
+  catalog: RequestSection[] = REQUEST_CATALOG,
+): RequestTypeLocation[] => {
   const words = normalize(query).split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
 
   const results: RequestTypeLocation[] = [];
-  for (const section of REQUEST_CATALOG) {
+  for (const section of catalog) {
     for (const subsection of section.subsections) {
       for (const type of subsection.types) {
         const haystack = normalize(

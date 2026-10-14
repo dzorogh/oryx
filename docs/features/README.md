@@ -12,6 +12,6 @@ Product and module behavior (how screens work, data flow, file map).
 | User profile | [user-profile.md](user-profile.md) |
 | Comments module (reusable) | [comments-module.md](comments-module.md) |
 | Logistics — orders, stock, ledger | [logistics.md](logistics.md) |
-| Tracker — Заявки (каталог, формы, мои заявки) | [tracker-requests.md](tracker-requests.md) |
+| Tracker — Заявки (каталог, формы, мои заявки, конструктор видов) | [tracker-requests.md](tracker-requests.md) |
 
 Demo backend (shared, not a screen): [../conventions/backend/supabase.md](../conventions/backend/supabase.md).

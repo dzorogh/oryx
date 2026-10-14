@@ -22,6 +22,78 @@ import {
   searchRequestTypes,
 } from "@/features/tracker/requests/requests-catalog";
 import { formatCount } from "@/features/tracker/requests/ui/format-count";
+import {
+  createBuilderField,
+  createStarterFields,
+  duplicateField,
+  finalizeFields,
+  hasDraftIssues,
+  insertField,
+  moveField,
+  validateDraft,
+} from "@/features/tracker/requests/request-builder";
+import { withCustomTypes } from "@/features/tracker/requests/requests-catalog";
+
+describe("request form builder", () => {
+  it("gives new fields unique ids and sensible defaults", () => {
+    const starter = createStarterFields();
+    const radio = createBuilderField("radio", starter);
+    assert.equal(radio.id, "field-4");
+    assert.ok(radio.type === "radio" && radio.options.length === 2 && radio.defaultValue === "Вариант 1");
+    const person = createBuilderField("person", [...starter, radio]);
+    assert.ok(person.type === "person" && person.defaultValue === "Я");
+    assert.equal(person.id, "field-5");
+  });
+
+  it("inserts after the selected field, moves and duplicates", () => {
+    const starter = createStarterFields();
+    const date = createBuilderField("date", starter);
+    const inserted = insertField(starter, date, "field-1");
+    assert.deepEqual(inserted.map((field) => field.id), ["field-1", date.id, "field-2", "field-3"]);
+    assert.deepEqual(insertField(starter, date, null).at(-1)?.id, date.id);
+
+    assert.deepEqual(moveField(starter, "field-3", 0).map((field) => field.id), ["field-3", "field-1", "field-2"]);
+    assert.deepEqual(moveField(starter, "field-1", 99).map((field) => field.id), ["field-2", "field-3", "field-1"]);
+
+    const { fields, copyId } = duplicateField(starter, "field-1");
+    assert.equal(fields[1].id, copyId);
+    assert.equal(fields[1].label, "Тема (копия)");
+  });
+
+  it("flags drafts an employee could not use", () => {
+    const empty = validateDraft({ name: " ", description: "", sectionId: "it", subsectionId: "portal", fields: [] });
+    assert.ok(empty.name && empty.fields && hasDraftIssues(empty));
+
+    const select = { id: "kind", type: "select" as const, label: "Тип", options: ["Один", "  "] };
+    const unnamed = { id: "blank", type: "text" as const, label: "" };
+    const issues = validateDraft({ name: "Визитки", description: "", sectionId: "it", subsectionId: "portal", fields: [select, unnamed] });
+    assert.equal(issues.name, undefined);
+    assert.deepEqual(Object.keys(issues.byField).sort(), ["blank", "kind"]);
+
+    const ok = validateDraft({ name: "Визитки", description: "", sectionId: "it", subsectionId: "portal", fields: createStarterFields() });
+    assert.equal(hasDraftIssues(ok), false);
+  });
+
+  it("cleans options and drops a default that no longer exists", () => {
+    const [radio] = finalizeFields([
+      { id: "r", type: "radio", label: " Тираж ", options: ["100", " 200 ", "", "100"], defaultValue: "500" },
+    ]);
+    assert.ok(radio.type === "radio");
+    assert.equal(radio.label, "Тираж");
+    assert.deepEqual(radio.options, ["100", "200"]);
+    assert.equal(radio.defaultValue, undefined);
+  });
+
+  it("adds published types to the end of their subsection", () => {
+    const catalog = withCustomTypes(REQUEST_CATALOG, [
+      { sectionId: "marketing", subsectionId: "merch", type: { id: "custom-1", name: "Визитки", description: "", custom: true } },
+    ]);
+    assert.equal(findRequestType("custom-1", catalog)?.subsection.id, "merch");
+    assert.equal(findRequestType("custom-1"), null);
+    assert.ok(searchRequestTypes("визитки", catalog).some((item) => item.type.id === "custom-1"));
+    assert.equal(withCustomTypes(REQUEST_CATALOG, []), REQUEST_CATALOG);
+  });
+});
 
 describe("requests catalog", () => {
   it("has unique type ids and a form schema only for known types", () => {

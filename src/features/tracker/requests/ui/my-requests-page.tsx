@@ -29,9 +29,9 @@ import { cn } from "@/lib/utils";
 const CARD_RING = "ring-1 ring-[var(--corportal-border-grey)]";
 
 const RequestDetail = ({ request }: { request: MyRequest }) => {
-  const { addComment } = useRequestsStore();
+  const { addComment, catalog } = useRequestsStore();
   const [draft, setDraft] = useState("");
-  const location = findRequestType(request.typeId);
+  const location = findRequestType(request.typeId, catalog);
   const commentsCount = request.events.filter((event) => event.kind === "comment").length;
   const canComment = request.status !== "rejected";
 
@@ -175,7 +175,7 @@ export const MyRequestsPage = () => {
   const searchParams = useSearchParams();
   const filter = parseRequestsFilter(searchParams.get("filter"));
   const selectedId = searchParams.get("id");
-  const { requests, markRead } = useRequestsStore();
+  const { requests, markRead, catalog } = useRequestsStore();
   const [query, setQuery] = useState("");
 
   const list = filterMyRequests(requests, filter, query);
@@ -218,7 +218,7 @@ export const MyRequestsPage = () => {
             <ul aria-label="Мои заявки" className="flex flex-col">
               {list.map((request) => {
                 const active = request.id === selected?.id;
-                const typeName = findRequestType(request.typeId)?.type.name;
+                const typeName = findRequestType(request.typeId, catalog)?.type.name;
                 return (
                   <li key={request.id} className="border-t border-[var(--corportal-border-grey)]/70 first:border-t-0">
                     <Link

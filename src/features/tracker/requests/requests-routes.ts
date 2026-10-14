@@ -13,6 +13,17 @@ export const catalogHref = (sectionId?: string, subsectionId?: string): string =
 
 export const requestFormHref = (typeId: string): string => `${REQUESTS_BASE_HREF}/new/${typeId}`;
 
+export const REQUEST_BUILDER_HREF = `${REQUESTS_BASE_HREF}/builder`;
+
+/** Opens the form builder with the section and subsection preselected. */
+export const requestBuilderHref = (sectionId?: string, subsectionId?: string): string => {
+  const params = new URLSearchParams();
+  if (sectionId) params.set("section", sectionId);
+  if (subsectionId) params.set("sub", subsectionId);
+  const query = params.toString();
+  return query ? `${REQUEST_BUILDER_HREF}?${query}` : REQUEST_BUILDER_HREF;
+};
+
 export const myRequestsHref = (options: { id?: string; filter?: MyRequestsFilter } = {}): string => {
   const params = new URLSearchParams();
   if (options.filter && options.filter !== "active") params.set("filter", options.filter);

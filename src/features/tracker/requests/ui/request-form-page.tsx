@@ -11,7 +11,6 @@ import {
   buildSubmittedData,
   deriveRequestTitle,
   findMissingRequiredFields,
-  getRequestForm,
   initialRequestFormValues,
   type RequestFieldValue,
   type RequestFormValues,
@@ -25,10 +24,10 @@ import { RequestsPageShell } from "@/features/tracker/requests/ui/requests-page-
 import { RequestsToolbar } from "@/features/tracker/requests/ui/requests-toolbar";
 
 export const RequestFormPage = ({ typeId }: { typeId: string }) => {
-  const location = findRequestType(typeId);
-  const fields = getRequestForm(typeId);
+  const { submitRequest, catalog, getForm } = useRequestsStore();
+  const location = findRequestType(typeId, catalog);
+  const fields = getForm(typeId);
   const router = useRouter();
-  const { submitRequest } = useRequestsStore();
   const [values, setValues] = useState<RequestFormValues>(() => initialRequestFormValues(fields));
   const [errors, setErrors] = useState<string[]>([]);
 

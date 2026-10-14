@@ -19,6 +19,8 @@ type RequestsToolbarProps = {
     onChange: (value: string) => void;
     placeholder: string;
   };
+  /** Buttons on the right, before the search. */
+  actions?: ReactNode;
   /** Second row under the divider, e.g. status filters. */
   children?: ReactNode;
 };
@@ -46,7 +48,7 @@ const ViewLink = ({
   </Link>
 );
 
-export const RequestsToolbar = ({ view, search, children }: RequestsToolbarProps) => {
+export const RequestsToolbar = ({ view, search, actions, children }: RequestsToolbarProps) => {
   const { requests } = useRequestsStore();
   const activeCount = requests.filter((request) => !isRequestClosed(request)).length;
 
@@ -67,20 +69,25 @@ export const RequestsToolbar = ({ view, search, children }: RequestsToolbarProps
             </nav>
           </div>
 
-          {search ? (
-            <div className="relative w-full sm:w-80">
-              <Search
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                type="search"
-                value={search.value}
-                onChange={(event) => search.onChange(event.target.value)}
-                placeholder={search.placeholder}
-                aria-label={search.placeholder}
-                className="pl-8"
-              />
+          {search || actions ? (
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              {actions}
+              {search ? (
+                <div className="relative w-full sm:w-80">
+                  <Search
+                    aria-hidden
+                    className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    type="search"
+                    value={search.value}
+                    onChange={(event) => search.onChange(event.target.value)}
+                    placeholder={search.placeholder}
+                    aria-label={search.placeholder}
+                    className="pl-8"
+                  />
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

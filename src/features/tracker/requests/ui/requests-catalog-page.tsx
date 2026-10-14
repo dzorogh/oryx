@@ -3,16 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpRight, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronRight, Clock, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getRequestForm } from "@/features/tracker/requests/request-forms";
 import {
-  REQUEST_CATALOG,
   resolveCatalogSelection,
   searchRequestTypes,
   type RequestTypeLocation,
 } from "@/features/tracker/requests/requests-catalog";
-import { catalogHref, requestFormHref } from "@/features/tracker/requests/requests-routes";
+import { catalogHref, requestBuilderHref, requestFormHref } from "@/features/tracker/requests/requests-routes";
+import { useRequestsStore } from "@/features/tracker/requests/requests-store";
 import { RequestSectionIcon } from "@/features/tracker/requests/ui/request-section-icon";
 import { RequestsPageShell } from "@/features/tracker/requests/ui/requests-page-shell";
 import { RequestsToolbar } from "@/features/tracker/requests/ui/requests-toolbar";
@@ -21,7 +21,8 @@ import { cn } from "@/lib/utils";
 
 const RequestTypeCard = ({ location, showPath }: { location: RequestTypeLocation; showPath?: boolean }) => {
   const { section, subsection, type } = location;
-  const fieldsCount = getRequestForm(type.id).length;
+  const { getForm } = useRequestsStore();
+  const fieldsCount = getForm(type.id).length;
 
   return (
     <Link
@@ -50,6 +51,11 @@ const RequestTypeCard = ({ location, showPath }: { location: RequestTypeLocation
         <span className="inline-flex h-6 items-center rounded-full bg-muted/60 px-2 text-xs text-muted-foreground">
           {formatCount(fieldsCount, ["поле", "поля", "полей"])}
         </span>
+        {type.custom ? (
+          <span className="inline-flex h-6 items-center rounded-full bg-emerald-50 px-2 text-xs font-medium text-emerald-700">
+            Новый
+          </span>
+        ) : null}
       </span>
     </Link>
   );
@@ -59,9 +65,10 @@ const TYPE_GRID = "grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3";
 
 export const RequestsCatalogPage = () => {
   const searchParams = useSearchParams();
-  const { section, subsection } = resolveCatalogSelection(searchParams.get("section"), searchParams.get("sub"));
+  const { catalog } = useRequestsStore();
+  const { section, subsection } = resolveCatalogSelection(searchParams.get("section"), searchParams.get("sub"), catalog);
   const [query, setQuery] = useState("");
-  const results = searchRequestTypes(query);
+  const results = searchRequestTypes(query, catalog);
   const isSearching = query.trim() !== "";
 
   return (
@@ -69,13 +76,23 @@ export const RequestsCatalogPage = () => {
       <RequestsToolbar
         view="catalog"
         search={{ value: query, onChange: setQuery, placeholder: "Найти вид заявки" }}
+        actions={
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link href={requestBuilderHref(section.id, subsection.id)} />}
+          >
+            <Plus aria-hidden />
+            Новый вид заявки
+          </Button>
+        }
       />
 
       <div className="grid items-start gap-4 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[16.5rem_minmax(0,1fr)]">
         <Card size="sm" className="gap-0 p-2 ring-1 ring-[var(--corportal-border-grey)]">
           <nav aria-label="Разделы каталога заявок">
             <ul className="flex flex-col gap-0.5">
-              {REQUEST_CATALOG.map((item) => {
+              {catalog.map((item) => {
                 const expanded = item.id === section.id;
                 const Chevron = expanded ? ChevronDown : ChevronRight;
                 return (
