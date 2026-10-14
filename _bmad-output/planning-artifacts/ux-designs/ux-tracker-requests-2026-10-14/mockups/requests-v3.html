@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oryx · Tracker · Заявки — вариант 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --bg:#f5f5f6;--fg:#18181b;--fg2:#3f3f46;--muted:#71717a;--faint:#a1a1aa;
+  --line:#e6e6e9;--line2:#f0f0f2;--soft:#f8f8f9;--primary:#18181b;--nav:#141b33;--lime:#c9f56a;
+  --blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;--violet:#7c3aed;--slate:#94a3b8;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#e9eaee;color:var(--fg);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none;cursor:pointer}
+button,input,select,textarea{font:inherit;color:inherit}
+svg.lucide{width:16px;height:16px;stroke-width:1.9;flex:none}
+
+.switcher{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:10px 20px;background:rgb(233 234 238 / .9);backdrop-filter:blur(8px);border-bottom:1px solid #dcdde2}
+.sw{display:flex;gap:4px;align-items:center}
+.sw b{font-size:12px;color:var(--muted);font-weight:600;margin-right:4px}
+.sw button{border:1px solid #d6d7dc;background:#fff;border-radius:999px;padding:4px 11px;font-size:12.5px;cursor:pointer;color:var(--fg2)}
+.sw button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.sw .w{font-size:12px;color:var(--muted)}
+
+.frame{width:min(1440px,calc(100vw - 40px));margin:14px auto 40px;border:1px solid #d7d9df;border-radius:16px;overflow:hidden;box-shadow:0 20px 50px rgb(17 24 39 / .08);background:var(--bg);transition:width .2s}
+.app{display:grid;grid-template-columns:48px 220px minmax(0,1fr);min-height:860px}
+.rail{background:var(--nav);display:flex;flex-direction:column;align-items:center;gap:18px;padding:12px 0;color:#8b93b0}
+.rail .logo{width:26px;height:26px;border-radius:7px;background:var(--lime);display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--nav)}
+.rail .on{color:#fff}
+.side{background:#fff;border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:12px}
+.side .mod{padding:0 8px;font-weight:650}
+.side .grp-t{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding:0 9px 4px}
+.side a{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;font-size:12.5px;color:#52525b}
+.side a:hover{background:var(--soft)}
+.side a.on{background:#f1f1f3;color:var(--fg);font-weight:600}
+.side a .cnt{margin-left:auto;font-size:11px;color:var(--muted);font-weight:500}
+.side a svg.lucide{width:14px;height:14px}
+.side hr{border:0;border-top:1px solid var(--line);margin:0}
+
+.main{min-width:0;padding:14px 18px 36px;display:flex;flex-direction:column;gap:14px}
+.crumbs{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.crumbs a:hover{color:var(--fg)}
+.crumbs b{color:var(--fg);font-weight:600}
+.card{background:#fff;border-radius:12px;box-shadow:0 0 0 1px var(--line);min-width:0}
+.tb{padding:12px}
+.tb-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tb h1{margin:0;font-size:18px;font-weight:600}
+.tb-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--soft)}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.pri:hover{background:#27272a}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--soft);color:var(--fg)}
+.inp,.sel,.ta{height:36px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;font-size:13.5px;width:100%}
+.ta{height:auto;min-height:96px;padding:8px 10px;resize:vertical}
+.inp:focus,.sel:focus,.ta:focus{outline:2px solid #e4e4e7;border-color:#a1a1aa}
+.search{position:relative;min-width:0}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.search .inp{padding-left:32px;height:32px;font-size:13px}
+.grow{flex:1}
+.tag{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;font-size:11.5px;font-weight:500;background:var(--soft);color:var(--fg2);border:1px solid var(--line2);white-space:nowrap}
+.tag svg.lucide{width:12px;height:12px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+.c-blue{--c:#2563eb;--cb:#eff4ff}.c-violet{--c:#7c3aed;--cb:#f5f0ff}.c-green{--c:#15803d;--cb:#effaf2}
+.c-amber{--c:#c2410c;--cb:#fff4ea}.c-slate{--c:#334155;--cb:#f1f5f9}.c-cyan{--c:#0e7490;--cb:#ecfeff}.c-pink{--c:#be185d;--cb:#fdf2f8}
+.ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--cb);color:var(--c);flex:none}
+.ico.sm{width:26px;height:26px;border-radius:7px}
+.ico.sm svg.lucide{width:14px;height:14px}
+.ico.lg{width:44px;height:44px;border-radius:12px}
+.ico.lg svg.lucide{width:22px;height:22px}
+
+/* Каталог: дерево + карточки */
+.split3{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
+.tree{padding:8px}
+.tree .sec{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.tree .sec:hover{background:var(--soft)}
+.tree .sec .chev{margin-left:auto;color:var(--faint)}
+.tree .sub{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 6px 42px;border-radius:8px;font-size:12.5px;color:var(--fg2);cursor:pointer}
+.tree .sub:hover{background:var(--soft)}
+.tree .sub.on{background:#f1f1f3;color:var(--fg);font-weight:600}
+.tree .sub span.n{font-size:11px;color:var(--faint)}
+.v3-head{padding:16px;display:flex;gap:14px;align-items:center}
+.v3-head h2{margin:0;font-size:17px}
+.v3-head p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.bigtypes{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.bigtype{padding:16px;display:flex;flex-direction:column;gap:8px;cursor:pointer;min-height:124px;transition:box-shadow .15s}
+.bigtype:hover{box-shadow:0 0 0 1px #c4c4ca,0 8px 22px rgb(0 0 0 / .06)}
+.bigtype b{font-size:14px}
+.bigtype p{margin:0;font-size:12.5px;color:var(--muted);flex:1}
+.bigtype .meta{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Форма: один столбец, поля сверху вниз */
+.form-card{padding:24px 28px 22px}
+.form-col{max-width:640px;display:flex;flex-direction:column;gap:22px}
+.form-head{display:flex;gap:14px;align-items:flex-start;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.form-head h1{margin:0;font-size:19px;font-weight:650}
+.form-head p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.f{display:flex;flex-direction:column;gap:4px}
+.f > label{font-size:13.5px;font-weight:600;color:var(--fg)}
+.f > label i{color:var(--red);font-style:normal;margin-left:3px}
+.f .desc{font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.f .opt{font-size:12px;color:var(--faint);font-weight:400;margin-left:6px}
+.range{display:flex;gap:8px;align-items:center}
+.range .inp{max-width:200px}
+.radio-list,.check-list{display:flex;flex-direction:column;gap:8px;padding-top:2px}
+.radio-list label,.check-list label,.chk{display:flex;gap:9px;align-items:center;font-size:13.5px;cursor:pointer}
+.radio-list input,.check-list input,.chk input{width:16px;height:16px;accent-color:#18181b;margin:0}
+.chk-wrap{display:flex;flex-direction:column;gap:4px}
+.chk-wrap .desc{padding-left:25px;font-size:12.5px;color:var(--muted)}
+.person{display:flex;align-items:center;gap:8px;height:36px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:13.5px;cursor:pointer}
+.person img{width:22px;height:22px;border-radius:50%}
+.person svg{color:var(--muted)}
+.drop{border:1.5px dashed #d4d4d8;border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:12.5px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--soft)}
+.form-foot{display:flex;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:18px;margin-top:4px}
+
+/* Мои заявки */
+.mine{display:grid;grid-template-columns:360px minmax(0,1fr);gap:14px;align-items:start}
+.tabs{display:flex;gap:2px;margin:10px -12px -12px;padding:0 8px;border-top:1px solid var(--line)}
+.tabs a{display:flex;align-items:center;gap:6px;padding:10px 10px 9px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent}
+.tabs a:hover{color:var(--fg)}
+.tabs a.on{color:var(--fg);font-weight:600;border-color:var(--fg)}
+.tabs a span{font-size:12px;color:var(--faint);font-weight:500}
+.list{padding:4px;display:flex;flex-direction:column;max-height:720px;overflow:auto}
+.li{display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:8px;cursor:pointer;position:relative}
+.li + .li::before{content:"";position:absolute;left:12px;right:12px;top:0;border-top:1px solid var(--line2)}
+.li:hover{background:var(--soft)}
+.li.on{background:#f3f3f5}
+.li.on::before,.li.on + .li::before{display:none}
+.li-top{display:flex;gap:10px;align-items:baseline}
+.li .ttl{font-size:13.5px;font-weight:500;line-height:1.35;flex:1;min-width:0}
+.li.unread .ttl{font-weight:650}
+.li .time{font-size:11.5px;color:var(--faint);white-space:nowrap}
+.li .sub{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;min-width:0}
+.li .sub .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--slate)}
+.dot.progress{background:var(--blue)}.dot.waiting{background:var(--amber)}.dot.approval{background:var(--violet)}
+.dot.done{background:var(--green)}.dot.rejected{background:var(--red)}.dot.new{background:var(--slate)}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg2);white-space:nowrap}
+.li .badge{margin-left:auto;font-size:11px;color:var(--fg);font-weight:600;white-space:nowrap}
+
+.detail{display:flex;flex-direction:column}
+.d-head{padding:18px 20px 0;display:flex;flex-direction:column;gap:10px}
+.d-head .top{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.d-head h2{margin:0;font-size:18px;font-weight:650;line-height:1.3}
+.d-meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted)}
+.d-meta b{color:var(--fg2);font-weight:500}
+.note{display:flex;gap:10px;padding:10px 12px;border-radius:8px;font-size:13px;background:var(--soft);border:1px solid var(--line);color:var(--fg2)}
+.note svg{color:var(--muted);margin-top:2px}
+.d-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);padding:0 12px;margin-top:6px}
+.d-tabs a{padding:10px 8px 9px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.d-tabs a.on{color:var(--fg);font-weight:600;border-color:var(--fg)}
+.d-tabs a span{color:var(--faint);font-weight:500;margin-left:4px}
+.thread{padding:16px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.msg{display:flex;gap:10px}
+.msg img{width:28px;height:28px;border-radius:50%;flex:none}
+.msg .who{font-size:12.5px;margin-bottom:2px;display:flex;gap:8px;align-items:baseline}
+.msg .who b{font-weight:600}
+.msg .who span{color:var(--faint);font-size:11.5px}
+.msg .txt{font-size:13.5px;color:var(--fg2);max-width:640px}
+.sys{font-size:12px;color:var(--faint);padding-left:38px}
+.reply{border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px}
+.reply textarea{border:0;resize:none;min-height:52px;outline:none;font-size:13.5px;padding:6px}
+.reply .bar{display:flex;gap:6px;align-items:center}
+.data{padding:16px 20px 22px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px 20px;font-size:13.5px}
+.data .k{color:var(--muted);font-size:13px}
+.data .v{white-space:pre-line;color:var(--fg)}
+.file{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:3px 8px;background:#fff;font-size:12.5px}
+.empty{padding:60px;text-align:center;color:var(--muted)}
+
+@media (max-width:1180px){
+ .split3{grid-template-columns:220px minmax(0,1fr)}
+ .mine{grid-template-columns:300px minmax(0,1fr)}
+ .data{grid-template-columns:1fr;gap:2px}
+ .data .v{margin-bottom:10px}
+}
+.frame.mid .split3{grid-template-columns:220px minmax(0,1fr)}
+.frame.mid .mine{grid-template-columns:300px minmax(0,1fr)}
+.frame.mid .data{grid-template-columns:1fr;gap:2px}
+.frame.mid .data .v{margin-bottom:10px}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;background:#18181b;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;display:flex;gap:8px;align-items:center;transition:.25s;z-index:99;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <div class="sw"><b>Экран</b>
+    <button data-s="catalog">Каталог</button>
+    <button data-s="form">Форма</button>
+    <button data-s="mine">Мои заявки</button>
+  </div>
+  <div class="sw"><b>Ширина</b>
+    <button data-w="wide">Широкий экран</button>
+    <button data-w="mid">Средний (1100 px)</button>
+  </div>
+</div>
+
+<div class="frame" id="frame">
+  <div class="app">
+    <nav class="rail">
+      <div class="logo">O</div>
+      <i data-lucide="layout-grid"></i>
+      <i data-lucide="check-square" class="on"></i>
+      <i data-lucide="package"></i>
+      <i data-lucide="truck"></i>
+      <i data-lucide="message-circle"></i>
+    </nav>
+    <aside class="side" id="side"></aside>
+    <main class="main" id="main"></main>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i data-lucide="check"></i><span></span></div>
+
+<script>
+/* ---------- Каталог ---------- */
+const S = (id,name,team,sla,types)=>({id,name,team,sla,types:types.map(([tid,tname,tdesc])=>({id:tid,name:tname,desc:tdesc}))});
+const CATALOG = [
+ {id:'it',name:'IT',icon:'monitor',color:'blue',subs:[
+  S('portal','Корпортал','Команда корпортала','3 рабочих дня',[
+   ['portal-feature','Новый функционал','Предложить доработку или новый раздел портала'],
+   ['portal-bug','Баг','Что-то работает не так, как должно'],
+   ['portal-access','Права и доступы','Роль редактора, модератора, доступ к разделу'],
+   ['portal-content','Изменение контента','Поправить текст, баннер или страницу']]),
+  S('bi','BI-аналитика','Отдел аналитики','5 рабочих дней',[
+   ['bi-report','Новый отчёт или дашборд','Собрать новый отчёт по вашим данным'],
+   ['bi-change','Доработка отчёта','Добавить метрику, фильтр или разрез'],
+   ['bi-access','Доступ к дашборду','Открыть просмотр существующего дашборда'],
+   ['bi-data','Ошибка в данных','Цифры в отчёте не сходятся']]),
+  S('support','Техподдержка','Служба поддержки','4 часа',[
+   ['sup-pc','Не работает компьютер','Не включается, тормозит, синий экран'],
+   ['sup-soft','Установка ПО','Поставить программу из каталога'],
+   ['sup-mail','Почта и календарь','Не приходят письма, проблемы с Outlook'],
+   ['sup-print','Принтер и МФУ','Не печатает, замятие, картридж']]),
+  S('hardware','Оборудование','Служба поддержки','2 рабочих дня',[
+   ['hw-laptop','Ноутбук или ПК','Выдать или заменить рабочий компьютер'],
+   ['hw-periph','Монитор и периферия','Монитор, клавиатура, гарнитура, док-станция'],
+   ['hw-phone','Мобильный телефон','Корпоративный телефон или SIM-карта'],
+   ['hw-return','Возврат оборудования','Сдать технику при увольнении или замене']]),
+  S('erp','1С и ERP','Команда 1С','3 рабочих дня',[
+   ['erp-bug','Ошибка в 1С','Не проводится документ, ошибка при открытии'],
+   ['erp-new','Новая обработка или отчёт','Автоматизировать рутинную операцию'],
+   ['erp-access','Доступ к базе','Права на базу или конкретные документы']]),
+  S('sec','Информационная безопасность','Отдел ИБ','1 рабочий день',[
+   ['sec-vpn','VPN-доступ','Удалённая работа из дома или поездки'],
+   ['sec-incident','Сообщить об инциденте','Подозрительное письмо, утечка, взлом'],
+   ['sec-usb','Доступ к USB-накопителям','Временное разрешение на флешки'],
+   ['sec-unlock','Разблокировка учётной записи','Забыли пароль или учётка заблокирована']]),
+ ]},
+ {id:'hr',name:'HR',icon:'users',color:'violet',subs:[
+  S('docs','Кадровые документы','Отдел кадров','2 рабочих дня',[
+   ['hr-cert','Справка с места работы','Для банка, визы, детского сада'],
+   ['hr-2ndfl','Справка 2-НДФЛ','Справка о доходах за период'],
+   ['hr-copy','Копия трудовой книжки','Заверенная копия или выписка СТД-Р'],
+   ['hr-pdata','Изменение персональных данных','Фамилия, паспорт, реквизиты для зарплаты']]),
+  S('leave','Отпуска и отсутствия','Отдел кадров','1 рабочий день',[
+   ['vacation','Ежегодный отпуск','Оплачиваемый отпуск по графику или вне его'],
+   ['leave-unpaid','Отпуск за свой счёт','Дни без сохранения зарплаты'],
+   ['leave-sick','Больничный','Сообщить номер электронного больничного'],
+   ['leave-move','Перенос отпуска','Сдвинуть даты из графика отпусков']]),
+  S('learning','Обучение','Команда развития','5 рабочих дней',[
+   ['learn-course','Внешний курс','Оплата курса, тренинга или сертификации'],
+   ['learn-conf','Конференция','Участие или выступление на конференции'],
+   ['learn-inner','Внутренний тренинг','Заказать тренинг для своей команды']]),
+  S('hiring','Подбор персонала','Рекрутинг','3 рабочих дня',[
+   ['hire-vacancy','Открыть вакансию','Новая позиция или замена сотрудника'],
+   ['hire-referral','Рекомендовать кандидата','Реферальная программа']]),
+  S('onboarding','Онбординг и оффбординг','HR-партнёры','5 рабочих дней',[
+   ['onb-new','Выход нового сотрудника','Рабочее место, техника, доступы — одним пакетом'],
+   ['onb-leave','Увольнение сотрудника','Обходной лист и отключение доступов'],
+   ['onb-transfer','Перевод в другой отдел','Смена должности, руководителя, доступов']]),
+ ]},
+ {id:'fin',name:'Финансы',icon:'wallet',color:'green',subs:[
+  S('treasury','Казначейство','Казначейство','2 рабочих дня',[
+   ['pay-invoice','Оплата счёта','Оплатить счёт поставщика'],
+   ['pay-urgent','Срочный платёж','Оплата сегодня, с обоснованием срочности'],
+   ['pay-refund','Возврат средств контрагенту','Вернуть переплату или аванс']]),
+  S('accounting','Бухгалтерия','Бухгалтерия','3 рабочих дня',[
+   ['acc-recon','Акт сверки','Сверка взаиморасчётов с контрагентом'],
+   ['acc-closing','Закрывающие документы','Запросить акты, УПД, счета-фактуры'],
+   ['acc-salary','Вопрос по зарплате','Расчётный лист, удержания, премия']]),
+  S('budget','Бюджетирование','Финансовый контроль','5 рабочих дней',[
+   ['bud-move','Перенос бюджета','Перераспределить между статьями или месяцами'],
+   ['bud-new','Новая статья бюджета','Внеплановый расход']]),
+  S('trips','Командировки','Travel-менеджер','2 рабочих дня',[
+   ['trip','Командировка','Билеты, гостиница и суточные'],
+   ['trip-report','Авансовый отчёт','Отчитаться о потраченных средствах'],
+   ['trip-card','Корпоративная карта','Выпуск или изменение лимита']]),
+ ]},
+ {id:'aho',name:'АХО',icon:'building-2',color:'amber',subs:[
+  S('office','Офис','Административная служба','1 рабочий день',[
+   ['off-repair','Ремонт или неисправность','Свет, кондиционер, сантехника, двери'],
+   ['off-clean','Уборка','Внеплановая уборка помещения'],
+   ['off-place','Рабочее место и мебель','Стол, кресло, переезд на другое место']]),
+  S('passes','Пропуска','Служба охраны','4 часа',[
+   ['guest-pass','Гостевой пропуск','Пропустить гостя в офис'],
+   ['car-pass','Пропуск на автомобиль','Въезд на парковку'],
+   ['pass-restore','Восстановить пропуск','Потерян или сломан']]),
+  S('rooms','Переговорные и мероприятия','Административная служба','2 рабочих дня',[
+   ['room-book','Бронь большого зала','Конференц-зал на 40+ человек'],
+   ['room-coffee','Кофе-брейк','Кофе, вода, перекус для встречи'],
+   ['room-event','Организация мероприятия','Корпоратив, тимбилдинг, день рождения']]),
+  S('courier','Канцелярия и курьер','Административная служба','1 рабочий день',[
+   ['cur-stationery','Канцелярия','Бумага, ручки, блокноты'],
+   ['cur-delivery','Курьерская доставка','Отвезти документы по городу'],
+   ['cur-cards','Визитки','Заказать визитные карточки']]),
+ ]},
+ {id:'legal',name:'Юридический отдел',icon:'scale',color:'slate',subs:[
+  S('contracts','Договоры','Юристы','3 рабочих дня',[
+   ['contract-approve','Согласовать договор','Проверка договора от контрагента'],
+   ['contract-template','Договор по шаблону','Подготовить договор по типовой форме'],
+   ['contract-addendum','Дополнительное соглашение','Изменить условия действующего договора']]),
+  S('poa','Доверенности','Юристы','2 рабочих дня',[
+   ['poa-issue','Выпуск доверенности','Представлять компанию, подписывать документы'],
+   ['poa-revoke','Отзыв доверенности','Досрочно прекратить действие']]),
+  S('consult','Консультации','Юристы','3 рабочих дня',[
+   ['legal-q','Правовая консультация','Вопрос по закону или договору'],
+   ['legal-claim','Претензия или иск','Пришла претензия или нужно её направить']]),
+ ]},
+ {id:'proc',name:'Закупки',icon:'shopping-cart',color:'cyan',subs:[
+  S('goods','Товары','Отдел закупок','5 рабочих дней',[
+   ['buy-goods','Закупка товаров','Материалы, оборудование, расходники'],
+   ['buy-repeat','Повторная закупка','Повторить одну из прошлых закупок']]),
+  S('services','Услуги и подписки','Отдел закупок','5 рабочих дней',[
+   ['buy-service','Закупка услуг','Подрядчик, консалтинг, аутсорс'],
+   ['buy-saas','Подписка на ПО или SaaS','Лицензии, облачные сервисы']]),
+  S('vendors','Поставщики','Отдел закупок','3 рабочих дня',[
+   ['vendor-new','Новый поставщик','Завести контрагента в систему'],
+   ['vendor-check','Проверка контрагента','Надёжность, суды, финансовое состояние']]),
+ ]},
+ {id:'mkt',name:'Маркетинг',icon:'megaphone',color:'pink',subs:[
+  S('design','Дизайн','Студия дизайна','5 рабочих дней',[
+   ['des-banner','Баннер или макет','Для портала, соцсетей, наружки'],
+   ['des-deck','Презентация','Оформить презентацию в фирменном стиле'],
+   ['des-video','Видео','Ролик, анимация, монтаж']]),
+  S('merch','Мерч и полиграфия','Бренд-менеджер','10 рабочих дней',[
+   ['merch','Мерч','Футболки, худи, кружки к событию'],
+   ['print','Полиграфия','Листовки, буклеты, плакаты']]),
+  S('comms','Коммуникации','Внутренние коммуникации','2 рабочих дня',[
+   ['comm-post','Публикация на портале','Новость или анонс в ленте'],
+   ['comm-mail','Рассылка','Письмо всем сотрудникам или отделу'],
+   ['comm-press','Пресс-релиз','Внешняя публикация о компании']]),
+ ]},
+];
+function findType(tid){for(const s of CATALOG)for(const sub of s.subs)for(const t of sub.types)if(t.id===tid)return{sec:s,sub,type:t};return null}
+const plural = (n,[one,few,many]) => {const m10=n%10,m100=n%100;return `${n} ${m10===1&&m100!==11?one:m10>=2&&m10<=4&&(m100<12||m100>14)?few:many}`};
+
+/*
+  Конструктор формы: список полей сверху вниз.
+  Поле = { type, label, desc?, required?, options?, placeholder?, value? }
+  Типы: text, textarea, number, money, date, period, select, radio, multi, person, checkbox, file
+*/
+const fld = (type,label,desc,o={}) => ({type,label,desc,...o});
+const FORMS = {
+ 'portal-feature':[
+  fld('text','Название доработки','Одной фразой: что должно появиться',{required:1,placeholder:'Например: фильтр по отделам в оргструктуре'}),
+  fld('select','Раздел портала','Где будет жить доработка',{required:1,options:['Новости','Оргструктура','База знаний','Заявки','Профиль сотрудника','Календарь событий']}),
+  fld('textarea','Что нужно сделать','Опишите, как это должно работать с точки зрения пользователя',{required:1}),
+  fld('textarea','Зачем это нужно','Какую проблему решает и скольких людей затрагивает — помогает приоритизировать'),
+  fld('radio','Приоритет',null,{options:['Низкий','Средний','Высокий'],value:'Средний'}),
+  fld('date','Желаемый срок','Если есть внешний дедлайн — укажите его в описании'),
+  fld('file','Макеты и примеры','Скриншоты, наброски, ссылки на похожие решения'),
+ ],
+ 'portal-bug':[
+  fld('text','Что сломалось','Коротко, как заголовок',{required:1,placeholder:'Например: не загружаются фото в новостях'}),
+  fld('text','Ссылка на страницу','Скопируйте адрес из браузера',{placeholder:'https://portal.oryx.local/…'}),
+  fld('textarea','Шаги воспроизведения','Что вы делали перед ошибкой, по шагам',{required:1,placeholder:'1. Открыть…\n2. Нажать…'}),
+  fld('textarea','Что ожидали и что произошло',null),
+  fld('select','Браузер',null,{options:['Chrome','Яндекс Браузер','Safari','Edge','Мобильное приложение']}),
+  fld('radio','Насколько мешает',null,{options:['Не могу работать','Неудобно, но есть обходной путь','Косметика'],value:'Неудобно, но есть обходной путь'}),
+  fld('file','Скриншот или видео','Очень ускоряет разбор'),
+ ],
+ 'portal-access':[
+  fld('person','Для кого',null,{required:1,value:'Я'}),
+  fld('select','Раздел',null,{options:['Новости','База знаний','Оргструктура','Заявки','Весь портал']}),
+  fld('multi','Нужные права','Можно выбрать несколько',{options:['Просмотр','Редактирование','Публикация','Модерация комментариев']}),
+  fld('date','Доступ до','Оставьте пустым, если доступ нужен бессрочно'),
+  fld('textarea','Обоснование','Для чего нужен доступ — увидит владелец раздела',{required:1}),
+ ],
+ 'bi-report':[
+  fld('text','Название отчёта',null,{required:1}),
+  fld('textarea','Какие показатели и разрезы нужны','Например: выручка по регионам и менеджерам, помесячно',{required:1}),
+  fld('select','Источник данных','Если не знаете — оставьте «Не знаю», аналитик подскажет',{options:['1С: Продажи','CRM','Склад','Финансы','Не знаю']}),
+  fld('select','Как часто обновлять',null,{options:['Раз в день','Раз в неделю','Раз в месяц','В реальном времени']}),
+  fld('date','Нужен к',null),
+  fld('file','Пример','Табличка в Excel или набросок от руки'),
+ ],
+ 'bi-access':[
+  fld('select','Дашборд',null,{required:1,options:['Продажи по регионам','Остатки на складах','Воронка CRM','P&L по направлениям']}),
+  fld('person','Для кого',null,{value:'Я'}),
+  fld('radio','Уровень доступа',null,{options:['Только просмотр','Просмотр и выгрузка в Excel'],value:'Только просмотр'}),
+  fld('textarea','Зачем нужен доступ','Владелец дашборда согласует по этому тексту'),
+ ],
+ 'sup-soft':[
+  fld('select','Программа','Только из каталога разрешённого ПО',{required:1,options:['Figma','Adobe Acrobat','Visual Studio Code','Zoom','Другая — укажу в комментарии']}),
+  fld('text','Инвентарный номер компьютера','Наклейка на корпусе, начинается с PC-',{placeholder:'PC-0412'}),
+  fld('radio','Когда удобно подключиться',null,{options:['Сейчас','После 18:00','Согласуем отдельно'],value:'Сейчас'}),
+  fld('textarea','Комментарий',null),
+ ],
+ 'hw-laptop':[
+  fld('person','Для кого',null,{required:1,value:'Я'}),
+  fld('select','Причина',null,{required:1,options:['Замена старого','Сломался','Нужна мощнее']}),
+  fld('radio','Конфигурация','Подробные характеристики — в базе знаний',{options:['Офисный — ThinkPad E14, 16 ГБ','Для разработки — MacBook Pro 14, 32 ГБ','Для дизайна — MacBook Pro 16, 36 ГБ'],value:'Офисный — ThinkPad E14, 16 ГБ'}),
+  fld('date','Нужен к',null),
+  fld('checkbox','Нужна док-станция и второй монитор',null),
+  fld('textarea','Комментарий',null),
+ ],
+ 'sec-vpn':[
+  fld('person','Для кого',null,{value:'Я'}),
+  fld('period','Период доступа','Максимум 90 дней, потом заявку можно продлить',{required:1}),
+  fld('radio','Устройство',null,{options:['Рабочий ноутбук','Личный компьютер'],value:'Рабочий ноутбук'}),
+  fld('textarea','Для каких систем нужен доступ',null,{placeholder:'1С, файловое хранилище, CRM…'}),
+  fld('checkbox','Ознакомлен с политикой удалённого доступа',null,{required:1}),
+ ],
+ 'vacation':[
+  fld('period','Период отпуска','Доступно 18 дней',{required:1}),
+  fld('person','Кто замещает','Этот человек получит уведомление',{required:1,value:'Ольга Кравец'}),
+  fld('person','Руководитель','Согласует заявку',{value:'Игорь Смирнов'}),
+  fld('checkbox','Отпуск по графику','Если даты не совпадают с графиком, приложите согласование руководителя'),
+  fld('file','Согласование руководителя',null),
+  fld('textarea','Комментарий',null),
+ ],
+ 'hr-2ndfl':[
+  fld('select','Период',null,{required:1,options:['2026 год','2025 год','2024 год','Произвольный период']}),
+  fld('number','Количество экземпляров',null,{value:'1'}),
+  fld('radio','Как получить',null,{options:['Электронно, в профиль','Бумажный экземпляр в отделе кадров'],value:'Электронно, в профиль'}),
+  fld('text','Куда предоставляется','Не обязательно, но помогает выбрать форму',{placeholder:'Например: банк для ипотеки'}),
+ ],
+ 'pay-invoice':[
+  fld('text','Контрагент',null,{required:1,placeholder:'ООО «…»'}),
+  fld('text','ИНН контрагента','10 или 12 цифр'),
+  fld('money','Сумма','С НДС',{required:1}),
+  fld('select','Статья бюджета','Если нужной нет — сначала заявка «Новая статья бюджета»',{required:1,options:['Маркетинг · Реклама','IT · Подписки','АХО · Офис','Обучение','Прочее']}),
+  fld('date','Оплатить до',null,{required:1}),
+  fld('textarea','Назначение платежа','Так, как должно быть в платёжке'),
+  fld('file','Счёт и договор',null,{required:1}),
+  fld('checkbox','Срочно — нужна оплата сегодня','Срочные платежи согласует финансовый директор'),
+ ],
+ 'trip':[
+  fld('text','Город',null,{required:1}),
+  fld('period','Даты поездки',null,{required:1}),
+  fld('textarea','Цель поездки',null,{required:1}),
+  fld('multi','Что организовать',null,{options:['Авиабилеты','Ж/д билеты','Гостиница','Трансфер']}),
+  fld('money','Аванс на суточные','Оставьте пустым, если аванс не нужен'),
+ ],
+ 'guest-pass':[
+  fld('text','ФИО гостя','Как в паспорте',{required:1}),
+  fld('text','Компания',null),
+  fld('date','Дата визита',null,{required:1}),
+  fld('text','Время',null,{placeholder:'14:00'}),
+  fld('select','Офис',null,{options:['Москва, Лесная 5','Санкт-Петербург, Невский 30']}),
+  fld('text','Госномер автомобиля','Если гость приедет на машине',{placeholder:'А123ВС 777'}),
+ ],
+ 'contract-approve':[
+  fld('text','Контрагент',null,{required:1}),
+  fld('select','Тип договора',null,{options:['Поставка','Услуги','Аренда','NDA','Лицензионный']}),
+  fld('money','Сумма договора',null),
+  fld('date','Подписать до',null),
+  fld('textarea','Что важно проверить','Особые условия, на которые стоит обратить внимание'),
+  fld('file','Проект договора','DOCX, чтобы юристы могли оставить правки',{required:1}),
+ ],
+ 'des-banner':[
+  fld('text','Что за баннер',null,{required:1}),
+  fld('multi','Форматы',null,{options:['Портал 1200×400','Соцсети 1080×1080','Stories 1080×1920','Печать A3']}),
+  fld('textarea','Тексты и смысл','Заголовок, подзаголовок, призыв'),
+  fld('date','Нужен к',null,{required:1}),
+  fld('file','Референсы',null),
+ ],
+};
+const DEFAULT_FORM = [
+ fld('text','Тема','Коротко, как заголовок',{required:1}),
+ fld('textarea','Описание','Подробно опишите, что нужно',{required:1}),
+ fld('radio','Срочность',null,{options:['Обычная','Срочно'],value:'Обычная'}),
+ fld('file','Вложения',null),
+];
+const formFor = id => FORMS[id] || DEFAULT_FORM;
+
+/* ---------- Мои заявки ---------- */
+const AV = n => `https://i.pravatar.cc/64?u=${encodeURIComponent(n)}`;
+let REQUESTS = [
+ {num:'ЗВ-2481',type:'portal-bug',title:'Не загружаются фото в новостях',status:'progress',created:'7 окт',due:'10 окт',exec:'Анна Белова',updated:'2 ч назад',unread:1,
+  data:[['Что сломалось','Не загружаются фото в новостях'],['Ссылка на страницу','portal.oryx.local/news/4821'],['Шаги воспроизведения','1. Открыть новость\n2. Нажать «Добавить фото»\n3. Выбрать JPG 4 МБ'],['Браузер','Chrome'],['Насколько мешает','Неудобно, но есть обходной путь'],['Скриншот или видео','error-upload.png']],
+  thread:[{sys:'Заявка создана · 7 окт, 10:12'},{who:'Анна Белова',t:'7 окт, 11:40',m:'Спасибо! Подскажите, файлы меньше 2 МБ загружаются?'},{me:1,t:'7 окт, 12:05',m:'Да, маленькие проходят. Ломается всё, что больше примерно 3 МБ.'},{sys:'Статус изменён на «В работе» · 8 окт'},{who:'Анна Белова',t:'Сегодня, 10:02',m:'Воспроизвели: лимит на прокси 2 МБ. Поднимем до 20 МБ в релизе в пятницу и отпишусь.'}]},
+ {num:'ЗВ-2475',type:'vacation',title:'Ежегодный отпуск 3–14 ноября',status:'waiting',created:'6 окт',due:'7 окт',exec:'Дмитрий Орлов',updated:'вчера',unread:1,
+  wait:'Исполнитель ждёт вашего ответа: нужно приложить согласование руководителя.',
+  data:[['Период отпуска','03.11.2026 — 14.11.2026'],['Кто замещает','Ольга Кравец'],['Руководитель','Игорь Смирнов'],['Отпуск по графику','Нет']],
+  thread:[{sys:'Заявка создана · 6 окт, 16:30'},{who:'Дмитрий Орлов',t:'Вчера, 09:15',m:'Добрый день! По графику у вас отпуск в декабре. Чтобы оформить перенос, приложите, пожалуйста, согласование руководителя — можно скрин письма.'}]},
+ {num:'ЗВ-2470',type:'pay-invoice',title:'Оплата счёта ООО «Лаборатория света»',status:'approval',created:'5 окт',due:'12 окт',exec:'Казначейство',updated:'вчера',
+  data:[['Контрагент','ООО «Лаборатория света»'],['ИНН контрагента','7701234567'],['Сумма','184 500 ₽'],['Статья бюджета','АХО · Офис'],['Оплатить до','12.10.2026'],['Назначение платежа','Оплата по счёту №318 за светильники для 3 этажа'],['Счёт и договор','schet-318.pdf']],
+  thread:[{sys:'Заявка создана · 5 окт, 14:02'},{sys:'Отправлена на согласование финансовому директору · 6 окт'}]},
+ {num:'ЗВ-2462',type:'bi-access',title:'Доступ к дашборду «Продажи по регионам»',status:'done',created:'2 окт',due:'9 окт',exec:'Максим Лебедев',updated:'3 окт',
+  data:[['Дашборд','Продажи по регионам'],['Для кого','Я'],['Уровень доступа','Только просмотр'],['Зачем нужен доступ','Готовлю квартальный обзор для правления']],
+  thread:[{sys:'Заявка создана · 2 окт, 11:20'},{who:'Максим Лебедев',t:'3 окт, 10:00',m:'Доступ выдан, ссылка появилась в разделе «Мои дашборды».'},{sys:'Статус изменён на «Решена» · 3 окт'}]},
+ {num:'ЗВ-2455',type:'guest-pass',title:'Гостевой пропуск: Кирилл Воронцов',status:'done',created:'30 сен',due:'1 окт',exec:'Служба охраны',updated:'1 окт',
+  data:[['ФИО гостя','Кирилл Воронцов'],['Компания','ООО «Нордвинд»'],['Дата визита','01.10.2026'],['Время','14:00'],['Офис','Москва, Лесная 5']],
+  thread:[{sys:'Заявка создана · 30 сен, 17:45'},{sys:'Пропуск выписан · 1 окт, 08:30'}]},
+ {num:'ЗВ-2440',type:'portal-feature',title:'Фильтр по отделам в оргструктуре',status:'new',created:'29 сен',due:'—',exec:'Команда корпортала',updated:'29 сен',
+  data:[['Название доработки','Фильтр по отделам в оргструктуре'],['Раздел портала','Оргструктура'],['Что нужно сделать','Выбирать отдел и видеть только его сотрудников с должностями'],['Приоритет','Средний']],
+  thread:[{sys:'Заявка создана · 29 сен, 13:10'}]},
+ {num:'ЗВ-2431',type:'hw-laptop',title:'Ноутбук для нового дизайнера',status:'rejected',created:'25 сен',due:'—',exec:'Павел Гусев',updated:'26 сен',
+  data:[['Для кого','Мария Ким'],['Причина','Замена старого'],['Конфигурация','Для дизайна — MacBook Pro 16, 36 ГБ'],['Нужен к','06.10.2026']],
+  thread:[{sys:'Заявка создана · 25 сен, 10:00'},{who:'Павел Гусев',t:'26 сен, 09:20',m:'Отклоняю, чтобы не задвоить: для новых сотрудников оформите «Выход нового сотрудника» — там техника и доступы одним пакетом.'},{sys:'Статус изменён на «Отклонена» · 26 сен'}]},
+ {num:'ЗВ-2420',type:'hr-2ndfl',title:'Справка 2-НДФЛ за 2026 год',status:'done',created:'20 сен',due:'22 сен',exec:'Отдел кадров',updated:'21 сен',
+  data:[['Период','2026 год'],['Количество экземпляров','1'],['Как получить','Электронно, в профиль'],['Куда предоставляется','Банк для ипотеки']],
+  thread:[{sys:'Заявка создана · 20 сен, 09:00'},{sys:'Справка загружена в профиль · 21 сен'}]},
+];
+const STATUS = {new:'Новая',progress:'В работе',waiting:'Ждёт вашего ответа',approval:'На согласовании',done:'Решена',rejected:'Отклонена'};
+const STATUS_SHORT = {...STATUS,waiting:'Ждёт ответа',approval:'Согласование'};
+const CLOSED = ['done','rejected'];
+
+/* ---------- State ---------- */
+const st = {screen:'catalog', sec:'it', sub:'portal', type:'portal-bug', req:'ЗВ-2481', filter:'active', tab:'thread', width:'wide'};
+
+const $ = s => document.querySelector(s);
+const icon = n => `<i data-lucide="${n}"></i>`;
+const secIco = (s,cls='') => `<span class="ico ${cls} c-${s.color}">${icon(s.icon)}</span>`;
+function go(patch){Object.assign(st,patch);render();window.scrollTo({top:0})}
+function toast(t){const el=$('#toast');el.querySelector('span').textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400)}
+const openSub = (sec,sub) => go({screen:'catalog',sec,sub});
+const openType = tid => go({screen:'form',type:tid});
+
+function renderSide(){
+ const active = REQUESTS.filter(r=>!CLOSED.includes(r.status)).length;
+ $('#side').innerHTML = `
+  <div class="mod">Tracker</div>
+  <div><div class="grp-t">Модули</div>
+   ${['Tasks','Templates','Projects','Spaces','Activity','Stats'].map(m=>`<a>${m}</a>`).join('')}
+   <a class="on" onclick="go({screen:'catalog'})">${icon('inbox')}Заявки</a>
+  </div>
+  <hr>
+  <div><div class="grp-t">Заявки</div>
+   <a class="${st.screen!=='mine'?'on':''}" onclick="go({screen:'catalog'})">${icon('layout-grid')}Каталог</a>
+   <a class="${st.screen==='mine'?'on':''}" onclick="go({screen:'mine'})">${icon('list-checks')}Мои заявки<span class="cnt">${active}</span></a>
+  </div>`;
+}
+
+/* ---------- Каталог ---------- */
+function catalogScreen(){
+ const s = CATALOG.find(x=>x.id===st.sec), sub = s.subs.find(x=>x.id===st.sub);
+ return `
+ <div class="crumbs"><span>Tracker</span>›<b>Заявки</b></div>
+ <div class="card tb"><div class="tb-top"><h1>Заявки</h1>
+  <div class="tb-row"><div class="search" style="width:min(420px,40vw)">${icon('search')}<input class="inp" placeholder="Что нужно? Например, «пропуск» или «доступ к 1С»"></div>
+  <a class="btn" onclick="go({screen:'mine'})">${icon('list-checks')}Мои заявки</a></div></div></div>
+ <div class="split3">
+  <div class="card tree">
+   ${CATALOG.map(x=>`<div class="sec" onclick="openSub('${x.id}','${x.subs[0].id}')">${secIco(x,'sm')}${x.name}<span class="chev">${icon(x.id===s.id?'chevron-down':'chevron-right')}</span></div>
+     ${x.id===s.id?x.subs.map(y=>`<div class="sub ${y.id===sub.id?'on':''}" onclick="openSub('${x.id}','${y.id}')">${y.name}<span class="n">${y.types.length}</span></div>`).join(''):''}`).join('')}
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+   <div class="card v3-head">${secIco(s,'lg')}<div><div class="muted small">${s.name}</div><h2>${sub.name}</h2><p>${sub.team} · обычно отвечают за ${sub.sla}</p></div></div>
+   <div class="bigtypes">${sub.types.map(t=>`<div class="card bigtype" onclick="openType('${t.id}')">
+     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${t.name}</b><span class="muted">${icon('arrow-up-right')}</span></div>
+     <p>${t.desc}</p>
+     <div class="meta"><span class="tag">${icon('clock')}${sub.sla}</span><span class="tag">${plural(formFor(t.id).length,['поле','поля','полей'])}</span></div>
+   </div>`).join('')}</div>
+  </div>
+ </div>`;
+}
+
+/* ---------- Форма ---------- */
+function control(f){
+ switch(f.type){
+  case 'text': return `<input class="inp" placeholder="${f.placeholder||''}">`;
+  case 'textarea': return `<textarea class="ta" placeholder="${f.placeholder||''}"></textarea>`;
+  case 'number': return `<input class="inp" type="number" value="${f.value||''}" style="max-width:160px">`;
+  case 'money': return `<div style="position:relative;max-width:240px"><input class="inp" placeholder="0" style="padding-right:28px"><span class="muted" style="position:absolute;right:10px;top:8px">₽</span></div>`;
+  case 'date': return `<input class="inp" type="date" style="max-width:200px">`;
+  case 'period': return `<div class="range"><input class="inp" type="date"><span class="muted">—</span><input class="inp" type="date"></div>`;
+  case 'select': return `<select class="sel"><option value="">Выберите…</option>${f.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
+  case 'radio': {const n='r'+Math.random().toString(36).slice(2,7);return `<div class="radio-list">${f.options.map(o=>`<label><input type="radio" name="${n}" ${o===f.value?'checked':''}>${o}</label>`).join('')}</div>`}
+  case 'multi': return `<div class="check-list">${f.options.map(o=>`<label><input type="checkbox">${o}</label>`).join('')}</div>`;
+  case 'person': return `<div class="person"><img src="${AV(f.value||'me')}" alt="">${f.value||'Выберите сотрудника'}<span class="grow"></span>${icon('chevrons-up-down')}</div>`;
+  case 'file': return `<div class="drop">${icon('upload-cloud')}<span>Перетащите файлы или <b style="color:var(--fg)">выберите</b></span><span class="small">До 20 МБ</span></div>`;
+ }
+}
+function fieldHtml(f){
+ const req = f.required?'<i>*</i>':'';
+ const desc = f.desc?`<div class="desc">${f.desc}</div>`:'';
+ if(f.type==='checkbox') return `<div class="chk-wrap"><label class="chk"><input type="checkbox"><b style="font-weight:600">${f.label}</b>${f.required?'<i style="color:var(--red);font-style:normal">*</i>':''}</label>${desc}</div>`;
+ return `<div class="f"><label>${f.label}${req}</label>${desc}${control(f)}</div>`;
+}
+function formScreen(){
+ const {sec,sub,type} = findType(st.type);
+ return `
+ <div class="crumbs"><span>Tracker</span>›<a onclick="go({screen:'catalog'})">Заявки</a>›<a onclick="openSub('${sec.id}','${sub.id}')">${sec.name}</a>›<a onclick="openSub('${sec.id}','${sub.id}')">${sub.name}</a>›<b>${type.name}</b></div>
+ <div class="card form-card">
+  <div class="form-col">
+   <div class="form-head">${secIco(sec,'lg')}<div><div class="muted small">${sec.name} · ${sub.name}</div><h1>${type.name}</h1><p>${type.desc}</p></div></div>
+   ${formFor(type.id).map(fieldHtml).join('')}
+   <div class="form-foot">
+    <button class="btn pri" onclick="submitForm()">${icon('send')}Отправить заявку</button>
+    <button class="btn" onclick="openSub('${sec.id}','${sub.id}')">Отмена</button>
+   </div>
+  </div>
+ </div>`;
+}
+function submitForm(){
+ const {type,sub} = findType(st.type);
+ const num = 'ЗВ-' + (2482 + REQUESTS.filter(r=>r.fresh).length);
+ REQUESTS.unshift({num,fresh:1,type:type.id,title:type.name,status:'new',created:'Сегодня',due:'—',exec:sub.team,updated:'только что',
+  data:formFor(type.id).map(f=>[f.label,'—']),thread:[{sys:'Заявка создана · Сегодня, 12:25'}]});
+ toast(`Заявка ${num} отправлена`);
+ go({screen:'mine',req:num,filter:'active',tab:'data'});
+}
+
+/* ---------- Мои заявки ---------- */
+function mineScreen(){
+ const match = (r,k) => k==='all' || (k==='active' ? !CLOSED.includes(r.status) : CLOSED.includes(r.status));
+ const filters=[['active','Активные'],['closed','Завершённые'],['all','Все']];
+ const list = REQUESTS.filter(r=>match(r,st.filter));
+ const r = list.find(x=>x.num===st.req) || list[0];
+ const ft = r && findType(r.type);
+ const msgs = r ? r.thread.filter(m=>m.m).length : 0;
+ return `
+ <div class="crumbs"><span>Tracker</span>›<a onclick="go({screen:'catalog'})">Заявки</a>›<b>Мои заявки</b></div>
+ <div class="card tb">
+  <div class="tb-top"><h1>Мои заявки</h1>
+   <div class="tb-row"><div class="search" style="width:min(300px,30vw)">${icon('search')}<input class="inp" placeholder="Номер или тема"></div>
+   <a class="btn pri" onclick="go({screen:'catalog'})">${icon('plus')}Новая заявка</a></div></div>
+  <div class="tabs">${filters.map(([k,l])=>`<a class="${st.filter===k?'on':''}" onclick="go({filter:'${k}'})">${l}<span>${REQUESTS.filter(x=>match(x,k)).length}</span></a>`).join('')}</div>
+ </div>
+ <div class="mine">
+  <div class="card list">
+   ${list.map(x=>{const f=findType(x.type);return `
+   <div class="li ${r&&x.num===r.num?'on':''} ${x.unread?'unread':''}" onclick="go({req:'${x.num}',tab:'thread'})">
+    <div class="li-top"><span class="ttl">${x.title}</span><span class="time">${x.updated}</span></div>
+    <div class="sub"><span class="dot ${x.status}"></span><span class="t">${STATUS_SHORT[x.status]} · ${x.num} · ${f.type.name}</span></div>
+   </div>`}).join('')||'<div class="empty">Нет заявок</div>'}
+  </div>
+  ${r?`<div class="card detail">
+   <div class="d-head">
+    <div class="top"><span class="status"><span class="dot ${r.status}"></span>${STATUS[r.status]}</span><span>·</span><span>${r.num}</span><span class="grow"></span>
+     ${!CLOSED.includes(r.status)?`<button class="btn ghost">Отозвать</button>`:`<button class="btn ghost">Повторить</button>`}</div>
+    <h2>${r.title}</h2>
+    <div class="d-meta">
+     <span>${ft.sec.name} › ${ft.sub.name} › ${ft.type.name}</span>
+     <span>Исполнитель: <b>${r.exec}</b></span>
+     <span>Создана: <b>${r.created}</b></span>
+     ${r.due!=='—'?`<span>Срок: <b>${r.due}</b></span>`:''}
+    </div>
+    ${r.wait?`<div class="note">${icon('corner-down-right')}<div>${r.wait}</div></div>`:''}
+    <div class="d-tabs" style="margin:6px -20px 0">
+     <a class="${st.tab==='thread'?'on':''}" onclick="go({tab:'thread'})">Обсуждение${msgs?`<span>${msgs}</span>`:''}</a>
+     <a class="${st.tab==='data'?'on':''}" onclick="go({tab:'data'})">Данные заявки</a>
+    </div>
+   </div>
+   ${st.tab==='thread'?`<div class="thread">
+     ${r.thread.map(m=>m.sys?`<div class="sys">${m.sys}</div>`:`
+      <div class="msg"><img src="${AV(m.me?'me':m.who)}" alt=""><div><div class="who"><b>${m.me?'Вы':m.who}</b><span>${m.t}</span></div><div class="txt">${m.m}</div></div></div>`).join('')}
+     ${!CLOSED.includes(r.status)||r.status==='done'?`<div class="reply"><textarea placeholder="Написать комментарий…"></textarea>
+      <div class="bar"><button class="btn ghost">${icon('paperclip')}Файл</button><span class="grow"></span><button class="btn pri" onclick="toast('Комментарий отправлен (демо)')">Отправить</button></div></div>`:''}
+    </div>`:`<div class="data">
+     ${r.data.map(([k,v])=>`<div class="k">${k}</div><div class="v">${/\.(png|pdf|jpg)$/.test(v)?`<span class="file">${icon('paperclip')}${v}</span>`:v}</div>`).join('')}
+    </div>`}
+  </div>`:'<div class="card empty">Выберите заявку</div>'}
+ </div>`;
+}
+
+/* ---------- Render ---------- */
+function render(){
+ document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===st.screen));
+ document.querySelectorAll('[data-w]').forEach(b=>b.classList.toggle('on',b.dataset.w===st.width));
+ const fr=$('#frame'); fr.classList.toggle('mid',st.width==='mid'); fr.style.width = st.width==='mid'?'1100px':'';
+ renderSide();
+ $('#main').innerHTML = st.screen==='form'?formScreen():st.screen==='mine'?mineScreen():catalogScreen();
+ lucide.createIcons();
+}
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>go({screen:b.dataset.s}));
+document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>go({width:b.dataset.w}));
+render();
+</script>
+</body>
+</html>

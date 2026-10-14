@@ -2,6 +2,7 @@ import type { ModuleSubnavItem } from "@/components/layout/module-subnav";
 
 export const TRACKER_SUBNAV_ITEMS: ModuleSubnavItem[] = [
   { href: "/tracker/tasks", label: "Tasks" },
+  { href: "/tracker/requests", label: "Заявки" },
   { href: "/tracker/templates", label: "Templates" },
   { href: "/tracker/projects", label: "Projects" },
   { href: "/tracker/spaces", label: "Spaces" },
