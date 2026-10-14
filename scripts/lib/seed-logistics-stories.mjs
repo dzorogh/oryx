@@ -1367,6 +1367,7 @@ export const seedCustomerOrderExtras = async ({ url, serviceKey }) => {
 
   await rpc(url, serviceKey, "store_set_customer_order_client_delivery", {
     p_order_id: idOf(906),
+    p_delivery_status: "awaiting_pickup",
     p_payment_status: "pending_payment",
     p_invoice_amount: 480,
     p_invoice_currency_code: "USD",
@@ -1376,6 +1377,7 @@ export const seedCustomerOrderExtras = async ({ url, serviceKey }) => {
   });
   await rpc(url, serviceKey, "store_set_customer_order_client_delivery", {
     p_order_id: idOf(921),
+    p_delivery_status: "delivered",
     p_payment_status: "paid",
     p_invoice_amount: 960,
     p_invoice_currency_code: "AED",

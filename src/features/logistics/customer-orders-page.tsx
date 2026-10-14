@@ -526,7 +526,7 @@ export const CustomerOrderDetailPage = () => {
     },
     {
       id: "transfer",
-      title: "Доставка",
+      title: "Перемещения",
       href: "/store/logistics/transfers",
       items: withOrderCoverage(orderTransfers, coverage.transfer),
       doneStatuses: ["done", "delivered"] as const,

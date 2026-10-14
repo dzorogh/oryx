@@ -10,6 +10,16 @@ export const CLIENT_DELIVERY_PAYMENT_STATUS_LABELS: Record<ClientDeliveryPayment
   paid: "Оплачено",
 };
 
+export const CLIENT_DELIVERY_STATUSES = ["awaiting_pickup", "in_transit", "delivered"] as const;
+
+export type ClientDeliveryStatus = (typeof CLIENT_DELIVERY_STATUSES)[number];
+
+export const CLIENT_DELIVERY_STATUS_LABELS: Record<ClientDeliveryStatus, string> = {
+  awaiting_pickup: "Ожидает забора",
+  in_transit: "В пути",
+  delivered: "Доставлено",
+};
+
 export const EXTRAS_ERRORS = {
   invoiceCurrency: "Укажите валюту инвойса",
   paidCurrency: "Укажите валюту оплаты",
@@ -29,6 +39,7 @@ export type ClientDeliveryMoney = {
 };
 
 export type ClientDelivery = {
+  deliveryStatus: ClientDeliveryStatus | null;
   paymentStatus: ClientDeliveryPaymentStatus | null;
   invoice: ClientDeliveryMoney;
   paid: ClientDeliveryMoney;
@@ -49,6 +60,7 @@ export type CustomerOrderExtras = {
 };
 
 export const EMPTY_CLIENT_DELIVERY: ClientDelivery = {
+  deliveryStatus: null,
   paymentStatus: null,
   invoice: { amount: null, currencyCode: null },
   paid: { amount: null, currencyCode: null },
@@ -72,6 +84,9 @@ export type ExtrasSave<T> = { ok: true; value: T } | { ok: false; error: string 
 
 export const isClientDeliveryPaymentStatus = (value: unknown): value is ClientDeliveryPaymentStatus =>
   value === "awaiting_invoice" || value === "pending_payment" || value === "paid";
+
+export const isClientDeliveryStatus = (value: unknown): value is ClientDeliveryStatus =>
+  value === "awaiting_pickup" || value === "in_transit" || value === "delivered";
 
 /** Header badge, or null when the delivery status is empty. */
 export const deliveryBadgeLabel = (status: ClientDeliveryPaymentStatus | null): string | null =>
@@ -105,6 +120,7 @@ export const mapCustomerOrderExtras = (payload: unknown): CustomerOrderExtras =>
     updatedAt: row.updated_at == null || row.updated_at === "" ? null : String(row.updated_at),
     clientDelivery: delivery
       ? {
+          deliveryStatus: isClientDeliveryStatus(delivery.delivery_status) ? delivery.delivery_status : null,
           paymentStatus: isClientDeliveryPaymentStatus(delivery.payment_status) ? delivery.payment_status : null,
           invoice: {
             amount: num(delivery.invoice_amount),

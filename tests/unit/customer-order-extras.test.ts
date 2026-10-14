@@ -49,6 +49,7 @@ describe("customer order extras", () => {
     const extras = mapCustomerOrderExtras({
       updated_at: "2026-10-13T15:04:00+00:00",
       client_delivery: {
+        delivery_status: "delivered",
         payment_status: "paid",
         invoice_amount: "960.0000",
         invoice_currency_code: "AED",
@@ -63,6 +64,7 @@ describe("customer order extras", () => {
         external_url: "https://example.com/accounting/oms-921",
       },
     });
+    assert.equal(extras.clientDelivery.deliveryStatus, "delivered");
     assert.equal(extras.clientDelivery.paymentStatus, "paid");
     assert.equal(extras.clientDelivery.invoice.amount, 960);
     assert.equal(extras.clientDelivery.invoice.currencyCode, "AED");
@@ -78,9 +80,16 @@ describe("customer order extras", () => {
   it("drops an unknown delivery status instead of showing it", () => {
     const extras = mapCustomerOrderExtras({
       updated_at: "2026-10-13T12:00:00Z",
-      client_delivery: { payment_status: "shipped", invoice_amount: null, paid_amount: null, due_on: null },
+      client_delivery: {
+        delivery_status: "lost",
+        payment_status: "shipped",
+        invoice_amount: null,
+        paid_amount: null,
+        due_on: null,
+      },
       meta: null,
     });
+    assert.equal(extras.clientDelivery.deliveryStatus, null);
     assert.equal(extras.clientDelivery.paymentStatus, null);
   });
 

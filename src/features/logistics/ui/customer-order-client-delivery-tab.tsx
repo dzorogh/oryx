@@ -13,12 +13,16 @@ import {
 import {
   CLIENT_DELIVERY_PAYMENT_STATUS_LABELS,
   CLIENT_DELIVERY_PAYMENT_STATUSES,
+  CLIENT_DELIVERY_STATUS_LABELS,
+  CLIENT_DELIVERY_STATUSES,
   isClientDeliveryPaymentStatus,
+  isClientDeliveryStatus,
   prepareMoneySave,
   validateExtrasAmount,
   type ClientDelivery,
   type ClientDeliveryMoney,
   type ClientDeliveryPaymentStatus,
+  type ClientDeliveryStatus,
 } from "@/features/logistics/customer-order-extras";
 import { setCustomerOrderClientDelivery } from "@/features/logistics/logistics-api";
 import { formatMoneyInput, formatOrderMoney, type OrderCurrency } from "@/features/logistics/order-money";
@@ -43,6 +47,7 @@ const moneySame = (left: ClientDeliveryMoney, right: ClientDeliveryMoney): boole
 };
 
 const deliverySame = (left: ClientDelivery, right: ClientDelivery): boolean =>
+  left.deliveryStatus === right.deliveryStatus &&
   left.paymentStatus === right.paymentStatus &&
   left.dueOn === right.dueOn &&
   moneySame(left.invoice, right.invoice) &&
@@ -53,6 +58,51 @@ const ExtrasRow = ({ label, children }: { label: string; children: ReactNode }) 
     <div className="text-xs text-muted-foreground">{label}</div>
     <div className="min-w-0">{children}</div>
   </div>
+);
+
+type StatusItem = { value: string; label: string };
+
+const statusOptions = <T extends string>(statuses: readonly T[], labels: Record<T, string>): StatusItem[] => [
+  { value: STATUS_NONE, label: "—" },
+  ...statuses.map((status) => ({ value: status, label: labels[status] })),
+];
+
+const StatusSelectRow = ({
+  label,
+  items,
+  value,
+  pending,
+  onChange,
+}: {
+  label: string;
+  items: StatusItem[];
+  value: string | null;
+  pending: boolean;
+  onChange: (value: string) => void;
+}) => (
+  <ExtrasRow label={label}>
+    <Select
+      items={items}
+      value={value ?? STATUS_NONE}
+      disabled={pending}
+      onValueChange={(next) => {
+        if (next) onChange(next);
+      }}
+    >
+      <SelectTrigger className="h-8 w-full bg-background sm:w-72" aria-label={label}>
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  </ExtrasRow>
 );
 
 const MoneyPair = ({
@@ -196,7 +246,7 @@ const MoneyPair = ({
   );
 };
 
-/** «Доставка клиента»: the customer's own delivery cost and payment status. Editable at any order status. */
+/** «Доставка клиента»: the customer's own delivery status, cost and payment status. Editable at any order status. */
 export const CustomerOrderClientDeliveryTab = ({
   orderId,
   delivery,
@@ -209,13 +259,8 @@ export const CustomerOrderClientDeliveryTab = ({
   reload: () => Promise<void>;
 }) => {
   const [pending, setPending] = useState(false);
-  const statusItems = [
-    { value: STATUS_NONE, label: "—" },
-    ...CLIENT_DELIVERY_PAYMENT_STATUSES.map((status) => ({
-      value: status,
-      label: CLIENT_DELIVERY_PAYMENT_STATUS_LABELS[status],
-    })),
-  ];
+  const deliveryStatusItems = statusOptions(CLIENT_DELIVERY_STATUSES, CLIENT_DELIVERY_STATUS_LABELS);
+  const paymentStatusItems = statusOptions(CLIENT_DELIVERY_PAYMENT_STATUSES, CLIENT_DELIVERY_PAYMENT_STATUS_LABELS);
 
   const persist = (next: ClientDelivery) => {
     if (deliverySame(next, delivery)) return;
@@ -227,7 +272,12 @@ export const CustomerOrderClientDeliveryTab = ({
     ).finally(() => setPending(false));
   };
 
-  const setStatus = (value: string) => {
+  const setDeliveryStatus = (value: string) => {
+    const deliveryStatus: ClientDeliveryStatus | null = isClientDeliveryStatus(value) ? value : null;
+    persist({ ...delivery, deliveryStatus });
+  };
+
+  const setPaymentStatus = (value: string) => {
     const paymentStatus: ClientDeliveryPaymentStatus | null = isClientDeliveryPaymentStatus(value) ? value : null;
     persist({ ...delivery, paymentStatus });
   };
@@ -235,33 +285,24 @@ export const CustomerOrderClientDeliveryTab = ({
   return (
     <DocumentSection title="Доставка клиента">
       <p className="border-b border-border/60 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-        Доставку от склада отгрузки к себе клиент организует сам. Здесь он ведёт её стоимость и статус оплаты для
-        своего учёта. Не связано с перемещениями товаров между складами.
+        Доставку от склада отгрузки к себе клиент организует сам. Здесь он ведёт её статус, стоимость и статус оплаты
+        для своего учёта. Не связано с перемещениями товаров между складами.
       </p>
       <div className="divide-y divide-border/60">
-        <ExtrasRow label="Статус оплаты доставки">
-          <Select
-            items={statusItems}
-            value={delivery.paymentStatus ?? STATUS_NONE}
-            disabled={pending}
-            onValueChange={(value) => {
-              if (value) setStatus(value);
-            }}
-          >
-            <SelectTrigger className="h-8 w-full bg-background sm:w-72" aria-label="Статус оплаты доставки">
-              <SelectValue placeholder="—" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {statusItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </ExtrasRow>
+        <StatusSelectRow
+          label="Статус доставки"
+          items={deliveryStatusItems}
+          value={delivery.deliveryStatus}
+          pending={pending}
+          onChange={setDeliveryStatus}
+        />
+        <StatusSelectRow
+          label="Статус оплаты доставки"
+          items={paymentStatusItems}
+          value={delivery.paymentStatus}
+          pending={pending}
+          onChange={setPaymentStatus}
+        />
         <MoneyPair
           label="Инвойс"
           field="invoice"

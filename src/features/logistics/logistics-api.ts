@@ -1076,6 +1076,7 @@ export const setCustomerOrderClientDelivery = (orderId: string, delivery: Client
     p_paid_amount: delivery.paid.amount,
     p_paid_currency_code: delivery.paid.currencyCode,
     p_due_on: delivery.dueOn,
+    p_delivery_status: delivery.deliveryStatus,
   });
 
 export const setCustomerOrderMeta = (orderId: string, meta: CustomerOrderMeta) =>
