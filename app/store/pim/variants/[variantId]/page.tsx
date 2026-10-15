@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { LogisticsLoading } from "@/features/logistics/ui/logistics-state";
+import { OmsLoading } from "@/features/oms/ui/oms-state";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const VariantRedirectPage = () => {
@@ -42,7 +42,7 @@ const VariantRedirectPage = () => {
 
   return (
     <main className="min-h-screen bg-muted/30 p-4">
-      <LogisticsLoading />
+      <OmsLoading />
     </main>
   );
 };

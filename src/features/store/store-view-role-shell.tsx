@@ -6,10 +6,11 @@ import type { ReactNode } from "react";
 import { ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { isStorePathAllowedForRole, viewRolePageForPath } from "@/features/logistics/order-view-role";
-import { LOGISTICS_PATHS, STORE_PRODUCTS_PATH } from "@/features/logistics/logistics-paths";
-import { ViewRoleSwitcher } from "@/features/logistics/ui/view-role-switcher";
-import { useViewRole } from "@/features/logistics/use-view-role";
+import { isStorePathAllowedForRole, viewRolePageForPath } from "@/features/oms/order-view-role";
+import { OMS_PATHS } from "@/features/oms/oms-paths";
+import { STORE_PRODUCTS_PATH } from "@/features/store/store-paths";
+import { ViewRoleSwitcher } from "@/features/oms/ui/view-role-switcher";
+import { useViewRole } from "@/features/oms/use-view-role";
 import { useHydratedViewRole } from "@/features/store/view-role";
 
 const CustomerAccessDenied = () => (
@@ -32,7 +33,7 @@ const CustomerAccessDenied = () => (
           <Button nativeButton={false} size="sm" render={<Link href={STORE_PRODUCTS_PATH} />}>
             Открыть каталог
           </Button>
-          <Button nativeButton={false} size="sm" variant="outline" render={<Link href={LOGISTICS_PATHS.customerOrders} />}>
+          <Button nativeButton={false} size="sm" variant="outline" render={<Link href={OMS_PATHS.customerOrders} />}>
             Мои заказы
           </Button>
         </div>

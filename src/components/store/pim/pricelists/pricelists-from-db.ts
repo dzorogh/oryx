@@ -7,7 +7,7 @@ import {
   type DealerStatus,
   type RetailStatus,
 } from "@/features/store/domain/statuses";
-import { loadDbCatalogItems } from "@/features/store/store-catalog-from-logistics";
+import { loadDbCatalogItems } from "@/features/store/store-catalog-from-oms";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 

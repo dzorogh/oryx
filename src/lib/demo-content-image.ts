@@ -1,4 +1,4 @@
-/** Curated Unsplash photos for corporate demo content (office, team, logistics, tech). */
+/** Curated Unsplash photos for corporate demo content (office, team, warehouse, tech). */
 const DEMO_UNSPLASH_PHOTOS = [
   "photo-1497366216548-37526070297c",
   "photo-1522071820081-009f0129c71c",

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { STORE_LEGACY_REDIRECTS } from "./src/features/store/store-legacy-redirects";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -28,20 +29,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/logistics", destination: "/store/logistics/stock", permanent: false },
-      { source: "/logistics/products", destination: "/store/pim/products", permanent: false },
-      { source: "/logistics/products/:id", destination: "/store/pim/variants/:id", permanent: false },
-      {
-        source: "/logistics/releases",
-        destination: "/store/logistics/reservations?operation=release",
-        permanent: false,
-      },
-      {
-        source: "/logistics/releases/:id",
-        destination: "/store/logistics/reservations?operation=release",
-        permanent: false,
-      },
-      { source: "/logistics/:path*", destination: "/store/logistics/:path*", permanent: false },
+      ...STORE_LEGACY_REDIRECTS,
       { source: "/store/catalog", destination: "/store/pim/products", permanent: false },
       { source: "/store/pricelists", destination: "/store/pim/pricelists", permanent: false },
       { source: "/store/exchange", destination: "/store/pim/import-export", permanent: false },

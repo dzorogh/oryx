@@ -2,7 +2,7 @@
 
 Единая страница **Products** (`/store/pim/products`): просмотр вариантов в таблице, фильтрация на стороне запроса, настройка колонок, группировка по площадке в одном виртуальном скролле. Источник — `store_product_variant` (+ `store_product` / `store_plant` / `store_product_price` / категории и семейства) в demo Supabase. Пока первая порция не пришла, таблица показывает скелетоны. Если Supabase не настроен, вместо таблицы — «Бэкенд демо не настроен»; если запрос упал — «Не удалось загрузить каталог» и «Повторить». Локальный demo-массив на этой странице не используется.
 
-Логистика живёт в том же разделе Store (`/store/logistics/...`). Отдельного каталога товаров у логистики нет.
+OMS живёт в том же разделе магазина (`/store/oms/...`). Отдельного каталога товаров у OMS нет.
 
 Переключатель **Base products** / **Product variants** в toolbar (чипы, как вкладки в Pulse Thanks). Отдельного пункта subnav и маршрута каталога вариантов больше нет.
 
@@ -13,11 +13,11 @@
 | `/store/pim/products` | Каталог; режим по умолчанию — base products |
 | `/store/pim/products?listing=variants` | Тот же каталог в режиме product variants |
 | `/store/pim/products/[productId]?variant=` | Карточка товара по `store_product.id`: demo PIM UI для старых `bike-*`, иначе новая карточка с списком вариантов и `?variant=`. |
-| `/store/pim/variants/[variantId]` | Редирект на карточку товара с `?variant=`. Ссылки из логистики (`hrefForStoreProduct`) ведут сюда. |
-| `/store/logistics/...` | Заказы клиента, остатки, заказы на производство — см. [logistics.md](logistics.md) |
+| `/store/pim/variants/[variantId]` | Редирект на карточку товара с `?variant=`. Ссылки из OMS (`hrefForStoreProduct`) ведут сюда. |
+| `/store/oms/...` | Заказы клиента, остатки, заказы на производство — см. [oms.md](oms.md) |
 
 - Страница: `app/store/pim/products/page.tsx` → `StoreCatalogPage`
-- Subnav Store: **Products** / **Pricelists** / **Orders** / **Stock**, затем движение, затем справочники, **Ledger**, импорт/экспорт и настройки (`src/features/store/store-nav.ts`)
+- Subnav Store: **Каталог** (Товары, Прайс-листы), сразу за ним **Справочники** (Склады, Регионы, Заводы), затем продажи, производство и склад, импорт/экспорт и настройки (`src/features/store/store-nav.ts`)
 - Каталог ссылается на `/store/pim/products/{productId}?variant={variantId}`
 
 ## Контекст региона
@@ -155,7 +155,7 @@ src/components/store/pim/products/
 
 ## Подключение к бэкенду
 
-Каталог читает порции `store_product_variant` (+ product / category / family + relational `store_product_price`) через anon-клиент (`src/features/store/store-catalog-from-logistics.ts`). Завод варианта — nullable `store_product_variant.plant_id` (в UI — код `PLT-n`). Карточка с id из БД — логистическая страница (`ProductDetailPage` в `catalog-pages.tsx`).
+Каталог читает порции `store_product_variant` (+ product / category / family + relational `store_product_price`) через anon-клиент (`src/features/store/store-catalog-from-oms.ts`). Завод варианта — nullable `store_product_variant.plant_id` (в UI — код `PLT-n`). Карточка с id из БД — `StoreProductCardPage` (`/store/pim/products/[productId]`).
 
 ## Локальная проверка
 
@@ -163,7 +163,7 @@ src/components/store/pim/products/
 npm run dev
 # http://localhost:3000/store/pim/products
 # http://localhost:3000/store/pim/products?listing=variants
-# http://localhost:3000/store/logistics/stock
+# http://localhost:3000/store/oms/stock
 
 npm run lint
 npm run typecheck

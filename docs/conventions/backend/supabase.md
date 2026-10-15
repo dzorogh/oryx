@@ -40,7 +40,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon JWT from Dokploy supabase Environment>
 | `src/lib/supabase/client.ts` | Browser client; `null` if env is missing |
 | Feature `*-api.ts` (e.g. `src/features/pulse/thanks/thanks-api.ts`) | Table mapping + queries |
 | `supabase/migrations/*.sql` | Schema + open RLS for this repo; no demo rows (a one-off backfill of existing rows is fine) |
-| `supabase/seed/*.sql` | Store demo data applied by `npm run seed:logistics`: `00_*` before the orders, `01_*` and `02_*` after the stories |
+| `supabase/seed/*.sql` | Store demo data applied by `npm run seed:oms`: `00_*` before the orders, `01_*` and `02_*` after the stories |
 
 If env is unset, UI may keep local demo data. If env is set, talk to this Kong URL only.
 
@@ -83,7 +83,7 @@ In chat report HTTP status, row counts, and table names only. After a live probe
    - `grant` accordingly (`service_role` keeps full access)
 2. Apply the SQL on **this** instance via MCP `apply_migration` / `execute_sql` (or Studio SQL on the Oryx Kong URL). Do not apply it on Capacity/YNAPB.
 3. Add a feature API module that uses `getSupabaseBrowserClient()`.
-4. Seed via PostgREST. Thanks may use anon; **Store logistics** uses privileged service_role (`npm run seed:logistics`, keys from `~/.config/oryx/supabase.env`). Prefer `on_conflict=id` + `Prefer: resolution=merge-duplicates` where upserts apply.
+4. Seed via PostgREST. Thanks may use anon; **Store OMS** uses privileged service_role (`npm run seed:oms`, keys from `~/.config/oryx/supabase.env`). Prefer `on_conflict=id` + `Prefer: resolution=merge-duplicates` where upserts apply.
 5. Confirm without printing keys: HTTP status and `content-range` / row count only.
 
 ## Checks (no secrets in output)
@@ -94,7 +94,7 @@ In chat report HTTP status, row counts, and table names only. After a live probe
 # headers: apikey + Authorization: Bearer <anon>
 
 npm run seed:thanks    # upserts Thanks demo rows
-npm run seed:logistics # wipes and reseeds Store demo data, posts the stories, applies supabase/seed/*.sql
+npm run seed:oms # wipes and reseeds Store demo data, posts the stories, applies supabase/seed/*.sql
 ```
 
 CORS is `*` on Kong. After a live probe (`TEST`, dummy, wiring-check), **delete that row** in the same session.
@@ -104,5 +104,5 @@ CORS is `*` on Kong. After a live probe (`TEST`, dummy, wiring-check), **delete 
 - Open Studio through the Oryx Kong URL (`https://supabase.oryx.indenbom.ru/`). Login: Dokploy → Oryx → `supabase` → Environment → `DASHBOARD_USERNAME` / `DASHBOARD_PASSWORD`.
 - Studio (+ `postgres-meta`) is a **separate** Dokploy compose named **`studio`**. Start/stop it from the Dokploy UI without taking REST down. Kong `/rest/v1` stays on the main `supabase` compose.
 - Storage runs in the main `supabase` compose (`storage` service, `supabase/storage-api`, file backend on the `../files/volumes/storage` volume, no imgproxy); Kong routes `/storage/v1/`. The demo stack does **not** run Realtime or imgproxy.
-- The only bucket is **`store-documents`** (private, 10 MB per file) — files of a customer order. The browser uploads, downloads (signed URL) and deletes objects of this bucket with the anon key; `storage.objects` policies allow anon only for `bucket_id = 'store-documents'`. File metadata lives in `store_document_file` and is written only by the `store_add_document_file` / `store_delete_document_file` RPCs. Migration: `20260929120000_store_customer_order_oms_parity.sql`.
+- The only bucket is **`store-documents`** (private, 10 MB per file) — files of a customer order. The browser uploads, downloads (signed URL) and deletes objects of this bucket with the anon key; `storage.objects` policies allow anon only for `bucket_id = 'store-documents'`. File metadata lives in `store_oms_document_file` and is written only by the `store_oms_add_document_file` / `store_oms_delete_document_file` RPCs. Migration: `20260929120000_store_customer_order_oms_parity.sql`.
 - Rotate or set secrets only in that Environment tab (or local gitignored `.env.local` for the two `NEXT_PUBLIC_*` keys). In chat say the **key name and where to open it**, never the value.

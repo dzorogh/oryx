@@ -20,10 +20,10 @@ import { RegionSwitcher } from "@/features/store/region-switcher";
 import { StoreInlineRetry } from "@/features/store/store-load-notice";
 import type { StoreLoadStatus } from "@/features/store/load-state";
 import type { MixedPackItem } from "@/domain/packing/mixed-containers";
-import type { OrderRates } from "@/features/logistics/order-money";
-import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/logistics/ui/float-rates-status";
-import { logisticsPath } from "@/features/logistics/logistics-paths";
-import { pluralRu } from "@/features/logistics/order-plan/order-plan-model";
+import type { OrderRates } from "@/features/oms/order-money";
+import { FloatRatesNote, useFloatRatesOnOpen } from "@/features/oms/ui/float-rates-status";
+import { omsPath } from "@/features/oms/oms-paths";
+import { pluralRu } from "@/features/oms/order-plan/order-plan-model";
 import { useCart } from "@/features/store/cart/cart-context";
 import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
 import { loadContainerTypes, type StoreContainerTypeRow } from "@/features/store/cart/cart-catalog";
@@ -771,7 +771,7 @@ export const StoreCheckoutPage = () => {
                   <span>
                     Создан черновик{" "}
                     <Link
-                      href={logisticsPath("customer-orders", result.orderId)}
+                      href={omsPath("customer-orders", result.orderId)}
                       className="font-medium underline"
                     >
                       {result.orderNumber}

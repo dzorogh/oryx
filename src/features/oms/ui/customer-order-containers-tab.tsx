@@ -1,0 +1,54 @@
+"use client";
+
+import { useMemo } from "react";
+import { orderPackingItems, type CustomerOrderOmsContext } from "@/features/oms/customer-order-oms";
+import type { CustomerOrderLine } from "@/features/oms/oms-types";
+import { DocumentSection } from "@/features/oms/ui/document/document-section";
+import { ContainerLoadCalculator } from "@/features/store/packing/container-load-calculator";
+
+/**
+ * Checkout calculator on the order lines; recalculates after a quantity change.
+ * `tab` — the «Контейнеры» tab; `compact` — block under the «Товары» table.
+ */
+export const CustomerOrderContainersTab = ({
+  lines,
+  oms,
+  variant = "tab",
+}: {
+  lines: CustomerOrderLine[];
+  oms: CustomerOrderOmsContext;
+  variant?: "tab" | "compact";
+}) => {
+  const { items, missing } = useMemo(
+    () =>
+      orderPackingItems(
+        lines.map((line) => ({ productId: line.productId, productName: line.productName, quantity: line.quantity })),
+        oms.variantLogistics,
+      ),
+    [lines, oms.variantLogistics],
+  );
+  const compact = variant === "compact";
+
+  return (
+    <DocumentSection title={compact ? "Контейнеры" : "Калькулятор контейнеров"}>
+      {oms.containerTypes.length === 0 ? (
+        <p className="px-4 py-6 text-sm text-muted-foreground">Типы контейнеров не заведены.</p>
+      ) : (
+        <ContainerLoadCalculator
+          containerTypes={oms.containerTypes}
+          items={items}
+          missingNames={missing.map((line) => line.productName)}
+          heading={
+            compact ? null : (
+              <p className="text-sm text-muted-foreground">
+                Строки заказа с габаритами товара. Выберите типы контейнеров — укладка пересчитается.
+              </p>
+            )
+          }
+          className="space-y-3 px-4 py-4"
+          sceneClassName={compact ? "h-[min(300px,45vh)]" : undefined}
+        />
+      )}
+    </DocumentSection>
+  );
+};

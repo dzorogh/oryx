@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { mapLogisticsPayload } from "@/features/logistics/logistics-api";
-import type { CustomerOrderLine, ProductionOrder } from "@/features/logistics/logistics-types";
+import { mapOmsPayload } from "@/features/oms/oms-api";
+import type { CustomerOrderLine, ProductionOrder } from "@/features/oms/oms-types";
 import {
   actionShortage,
   buildOwnerResolver,
@@ -12,15 +12,15 @@ import {
   defaultPlanId,
   planProblems,
   type PlaceInfo,
-} from "@/features/logistics/order-plan/order-plan-model";
+} from "@/features/oms/order-plan/order-plan-model";
 import {
   mapOrderPlanPayload,
   type OrderPlan,
   type OrderPlanAction,
   type OrderPlanPayload,
-} from "@/features/logistics/order-plan/order-plan-types";
+} from "@/features/oms/order-plan/order-plan-types";
 
-const snapshot = mapLogisticsPayload({}).snapshot;
+const snapshot = mapOmsPayload({}).snapshot;
 
 const place = (locationId: string, kind: PlaceInfo["kind"], status: string | null = null): PlaceInfo => ({
   locationId,
@@ -196,7 +196,7 @@ describe("order plan model", () => {
     assert.deepEqual(groups.map((group) => [group.kind, group.total]), [["shipped", 2], ["warehouse", 3]]);
     assert.equal(groups[0]?.rows[0]?.place, null);
     assert.equal(groups[1]?.rows[0]?.place?.code, "#5");
-    assert.equal(groups[1]?.rows[0]?.documents[0]?.href, "/store/logistics/reservations/931");
+    assert.equal(groups[1]?.rows[0]?.documents[0]?.href, "/store/oms/reservations/931");
 
     const summary = buildPlanSummary({ snapshot, plan: plan({}), products, places, ownerOf: buildOwnerResolver(snapshot) });
     assert.deepEqual(

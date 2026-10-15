@@ -4,7 +4,7 @@ import { resolveCatalogItemForRegion } from "@/components/store/pim/products/cat
 import type { StoreCatalogItem } from "@/features/store/domain/catalog-item";
 import { resolveSelectedVariant } from "@/features/store/product-card/variant-selection";
 import { resolveSelectedRegionCode } from "@/features/store/region-selection";
-import { hrefForStoreProduct, redirectLegacyLogisticsPath } from "@/features/logistics/logistics-paths";
+import { hrefForStoreProduct } from "@/features/store/store-paths";
 
 const item = (overrides: Partial<StoreCatalogItem> = {}): StoreCatalogItem => ({
   id: "4",
@@ -106,12 +106,8 @@ describe("resolveSelectedVariant", () => {
   });
 });
 
-describe("hrefForStoreProduct / redirectLegacyLogisticsPath", () => {
-  it("hrefForStoreProduct ведёт на маршрут варианта", () => {
+describe("hrefForStoreProduct", () => {
+  it("ведёт на маршрут варианта", () => {
     assert.equal(hrefForStoreProduct("213"), "/store/pim/variants/213");
-  });
-
-  it("legacy /logistics/products/:id редиректит на маршрут варианта", () => {
-    assert.equal(redirectLegacyLogisticsPath(["products", "213"]), "/store/pim/variants/213");
   });
 });

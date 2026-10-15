@@ -24,15 +24,15 @@ const SEARCH_TARGETS: SearchTarget[] = [
   { id: "tracker", title: "Tracker", description: "Tasks, projects and notes", href: "/tracker/tasks" },
   { id: "crm", title: "CRM", description: "Deals, leads and contacts", href: "/crm/deals" },
   // english-ui:ignore
-  { id: "store", title: "Магазин", description: "Каталог, логистика и заказы клиента", href: "/store/pim/products" },
+  { id: "store", title: "Магазин", description: "Каталог, OMS и справочники", href: "/store/pim/products" },
   // english-ui:ignore
-  { id: "logistics", title: "Логистика", description: "Остатки, заказы клиента, заказы на производство и перемещения", href: "/store/logistics/stock" },
+  { id: "oms", title: "OMS", description: "Остатки, заказы клиента, заказы на производство и перемещения", href: "/store/oms/stock" },
   // english-ui:ignore
-  { id: "logistics-ledger", title: "Журнал", description: "Журнал движений остатков", href: "/store/logistics/ledger" },
+  { id: "oms-ledger", title: "Журнал", description: "Журнал движений остатков", href: "/store/oms/ledger" },
   // english-ui:ignore
-  { id: "logistics-regions", title: "Регионы", description: "Регионы продаж и их резерв", href: "/store/logistics/regions" },
+  { id: "store-regions", title: "Регионы", description: "Регионы продаж и их резерв", href: "/store/regions" },
   // english-ui:ignore
-  { id: "logistics-orders", title: "Заказы клиента", description: "Спрос и исполнение", href: "/store/logistics/customer-orders" },
+  { id: "oms-orders", title: "Заказы клиента", description: "Спрос и исполнение", href: "/store/oms/customer-orders" },
   { id: "learning", title: "Learning", description: "Lessons and knowledge base", href: "/learning/lessons" },
   { id: "library", title: "Library", description: "Documents and files", href: "/library/documents" },
   { id: "approvals", title: "Approvals", description: "Invoice and payment approvals", href: "/pulse/approvals/invoices" },

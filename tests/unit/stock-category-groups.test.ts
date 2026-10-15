@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildCategoryTree, groupByBaseProduct, type CategoryProduct, type CategoryRef } from "@/features/logistics/category-tree";
-import { buildStockProductTree, type StockProductMatrixRow } from "@/features/logistics/stock-product-matrix";
+import { buildCategoryTree, groupByBaseProduct, type CategoryProduct, type CategoryRef } from "@/features/oms/category-tree";
+import { buildStockProductTree, type StockProductMatrixRow } from "@/features/oms/stock-product-matrix";
 
 const categories: CategoryRef[] = [
   { id: "2", parentId: null, name: "ATV" },

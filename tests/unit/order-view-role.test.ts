@@ -12,7 +12,7 @@ import {
   mapRoleVisibilityRow,
   resolveCustomerOrderVisibility,
   type RoleVisibilityRule,
-} from "@/features/logistics/order-view-role";
+} from "@/features/oms/order-view-role";
 import { parseViewRole } from "@/features/store/view-role";
 
 const rules: RoleVisibilityRule[] = [
@@ -55,23 +55,23 @@ describe("order view role", () => {
   });
 
   it("limits the customer to the catalog, checkout and customer orders", () => {
-    assert.equal(isStorePathAllowedForRole("manager", "/store/logistics/stock"), true);
+    assert.equal(isStorePathAllowedForRole("manager", "/store/oms/stock"), true);
     assert.equal(isStorePathAllowedForRole("customer", "/store"), true);
     assert.equal(isStorePathAllowedForRole("customer", "/store/pim/products"), true);
     assert.equal(isStorePathAllowedForRole("customer", "/store/pim/products/42/"), true);
     assert.equal(isStorePathAllowedForRole("customer", "/store/pim/variants/7"), true);
     assert.equal(isStorePathAllowedForRole("customer", "/store/checkout"), true);
-    assert.equal(isStorePathAllowedForRole("customer", "/store/logistics/customer-orders/12?tab=money"), true);
-    assert.equal(isStorePathAllowedForRole("customer", "/store/logistics/stock"), false);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/oms/customer-orders/12?tab=money"), true);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/oms/stock"), false);
     assert.equal(isStorePathAllowedForRole("customer", "/store/pim/pricelists"), false);
-    assert.equal(isStorePathAllowedForRole("customer", "/store/logistics/customer-orders-archive"), false);
+    assert.equal(isStorePathAllowedForRole("customer", "/store/oms/customer-orders-archive"), false);
     assert.equal(isStorePathAllowedForRole("customer", "/store/settings"), false);
     assert.equal(isStorePathAllowedForRole("customer", "/store/catalog"), false);
   });
 
   it("maps store pages to their visibility page", () => {
-    assert.equal(viewRolePageForPath("/store/logistics/customer-orders/12"), "customer_order");
-    assert.equal(viewRolePageForPath("/store/logistics/customer-orders"), null);
+    assert.equal(viewRolePageForPath("/store/oms/customer-orders/12"), "customer_order");
+    assert.equal(viewRolePageForPath("/store/oms/customer-orders"), null);
     assert.equal(viewRolePageForPath("/store/pim/products"), "catalog");
     assert.equal(viewRolePageForPath("/store/pim/products/"), "catalog");
     assert.equal(viewRolePageForPath("/store/catalog"), null);

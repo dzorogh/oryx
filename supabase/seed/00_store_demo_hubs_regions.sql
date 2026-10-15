@@ -1,5 +1,5 @@
 -- Demo: CIS / Americas / Europe hubs, the hub and order currency of each region.
--- Applied by `npm run seed:logistics` before the orders, so seeded orders get the region's currency like checkout does.
+-- Applied by `npm run seed:oms` before the orders, so seeded orders get the region's currency like checkout does.
 
 do $seed$
 declare

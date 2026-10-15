@@ -1,7 +1,7 @@
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import type { OrderRates } from "@/features/logistics/order-money";
+import type { OrderRates } from "@/features/oms/order-money";
 import { formatEntityCode } from "@/lib/entity-codes";
-import { documentNumber } from "@/features/logistics/logistics-types";
+import { documentNumber } from "@/features/oms/oms-types";
 
 export type CheckoutOrderLineInput = {
   productVariantId: string;
@@ -35,7 +35,7 @@ export const checkoutCustomerOrder = async (
   if (!client) {
     throw new Error("Supabase не настроен");
   }
-  const { data, error } = await client.rpc("store_checkout_customer_order", {
+  const { data, error } = await client.rpc("store_oms_checkout_customer_order", {
     p_region_id: Number(args.regionId),
     p_source_kind: args.sourceKind,
     p_source_id: Number(args.sourceId),

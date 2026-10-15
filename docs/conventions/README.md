@@ -22,7 +22,7 @@ Canonical guidelines for humans and AI agents (Cursor, Codex, Claude, CI, etc.).
 
 | Topic | Document |
 |-------|----------|
-| Слои модуля «Магазин» (`components/store` → `features/store` → `features/logistics`) | [code/store-module-layers.md](code/store-module-layers.md) |
+| Слои модуля «Магазин» (`components/store` → `features/store` → `features/oms`) | [code/store-module-layers.md](code/store-module-layers.md) |
 
 ## Backend
 

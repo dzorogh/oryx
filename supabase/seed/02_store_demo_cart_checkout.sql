@@ -3,7 +3,7 @@
 
 begin;
 
--- Container types from logistics-demo.json
+-- Container types from oms-demo.json
 insert into public.store_container_type (
   code, name, inner_length_mm, inner_width_mm, inner_height_mm, max_weight_kg, sort_order
 ) values (

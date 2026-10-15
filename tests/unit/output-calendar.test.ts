@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { allCategoryGroupIds, buildCategoryTree, descendantCategoryIds } from "@/features/logistics/category-tree";
+import { allCategoryGroupIds, buildCategoryTree, descendantCategoryIds } from "@/features/oms/category-tree";
 import {
   applyLocalOutput,
   buildOwnerSet,
@@ -36,7 +36,7 @@ import {
   type OutputCalendarMoneyOrder,
   type OutputCalendarPage,
   type OutputCalendarPayment,
-} from "@/features/logistics/output-calendar";
+} from "@/features/oms/output-calendar";
 
 const pageFixture = (): OutputCalendarPage => ({
   freeOwnerId: "1",

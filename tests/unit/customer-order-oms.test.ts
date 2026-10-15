@@ -10,13 +10,13 @@ import {
   orderPackingItems,
   tenantLabel,
   type StoreTenant,
-} from "@/features/logistics/customer-order-oms";
+} from "@/features/oms/customer-order-oms";
 import {
   convert,
   estimatedCost,
   summarizePayments,
   type OrderPayment,
-} from "@/features/logistics/order-money";
+} from "@/features/oms/order-money";
 
 const payment = (overrides: Partial<OrderPayment>): OrderPayment => ({
   id: "1",
@@ -124,7 +124,7 @@ describe("document files", () => {
 
 describe("orderPackingItems", () => {
   it("packs lines with dimensions and lists the rest", () => {
-    const logistics = mapCustomerOrderOmsContext({
+    const oms = mapCustomerOrderOmsContext({
       variant_logistics: [
         {
           product_variant_id: 1,
@@ -148,7 +148,7 @@ describe("orderPackingItems", () => {
         { productId: "2", productName: "Насос", quantity: 3 },
         { productId: "3", productName: "Фильтр", quantity: 1 },
       ],
-      logistics,
+      oms,
     );
     assert.equal(items.length, 1);
     assert.deepEqual(

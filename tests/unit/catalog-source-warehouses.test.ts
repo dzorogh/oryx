@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
-import { catalogSourceWarehouseIds } from "@/features/logistics/ui/place-catalog";
+import type { OmsSnapshot, StockBalance } from "@/features/oms/oms-types";
+import { catalogSourceWarehouseIds } from "@/features/oms/ui/place-catalog";
 
 const balance = (patch: Partial<StockBalance> & Pick<StockBalance, "productId" | "locationId" | "quantity">): StockBalance =>
   ({
@@ -28,7 +28,7 @@ const snapshot = {
     { id: "wh-empty", code: "WH-4" },
     { id: "wh-shipped", code: "WH-5" },
   ],
-} as unknown as LogisticsSnapshot;
+} as unknown as OmsSnapshot;
 
 const balances: StockBalance[] = [
   balance({ productId: "p-order", locationId: "wh-order", quantity: 2, ownerType: "order", ownerId: "co-1", stockState: "reserved" }),

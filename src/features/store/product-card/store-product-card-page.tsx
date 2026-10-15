@@ -28,26 +28,26 @@ import { CatalogBuyTooltip } from "@/features/store/catalog-buy-tooltip";
 import type { DealerStatus, RetailStatus } from "@/features/store/domain/statuses";
 import type { CurrencyCode } from "@/features/store/domain/currency";
 import { formatEntityCode } from "@/lib/entity-codes";
-import { pluralRu } from "@/features/logistics/order-plan/order-plan-model";
-import { createProductVariant } from "@/features/logistics/logistics-api";
-import { DocumentLedger } from "@/features/logistics/ui/document-ledger";
-import { DialogShell } from "@/features/logistics/ui/dialog-shell";
-import type { CreateIntent } from "@/features/logistics/ui/open-created-documents";
-import { BackendUnsetNotice, LogisticsError, LogisticsLoading } from "@/features/logistics/ui/logistics-state";
-import { ProductActivityCard } from "@/features/logistics/ui/product-activity-card";
-import { ProductBalancesTable } from "@/features/logistics/ui/product-balances-table";
-import { ProductionOrderCatalogDialog } from "@/features/logistics/ui/production-order-catalog-dialog";
-import { translateLogisticsError } from "@/features/logistics/ui/run-action";
-import { useLogisticsStore } from "@/features/logistics/use-logistics-store";
-import { PRODUCT_VIEW_KEYS, resolveVisibility } from "@/features/logistics/order-view-role";
-import { useViewRole } from "@/features/logistics/use-view-role";
+import { pluralRu } from "@/features/oms/order-plan/order-plan-model";
+import { createProductVariant } from "@/features/oms/oms-api";
+import { DocumentLedger } from "@/features/oms/ui/document-ledger";
+import { DialogShell } from "@/features/oms/ui/dialog-shell";
+import type { CreateIntent } from "@/features/oms/ui/open-created-documents";
+import { BackendUnsetNotice, OmsError, OmsLoading } from "@/features/oms/ui/oms-state";
+import { ProductActivityCard } from "@/features/oms/ui/product-activity-card";
+import { ProductBalancesTable } from "@/features/oms/ui/product-balances-table";
+import { ProductionOrderCatalogDialog } from "@/features/oms/ui/production-order-catalog-dialog";
+import { translateOmsError } from "@/features/oms/ui/run-action";
+import { useOmsStore } from "@/features/oms/use-oms-store";
+import { PRODUCT_VIEW_KEYS, resolveVisibility } from "@/features/oms/order-view-role";
+import { useViewRole } from "@/features/oms/use-view-role";
 import { CartQuantityControl } from "@/features/store/cart/cart-quantity-control";
 import { useCart } from "@/features/store/cart/cart-context";
 import { useSelectedRegion } from "@/features/store/region-context";
 import { StoreInlineRetry } from "@/features/store/store-load-notice";
 import { ProductPhoto } from "@/features/store/product-photo";
 import { resolveSelectedVariant } from "@/features/store/product-card/variant-selection";
-import { loadRegionPricing } from "@/features/store/store-catalog-from-logistics";
+import { loadRegionPricing } from "@/features/store/store-catalog-from-oms";
 import {
   computeVariantRegionStock,
   loadVariantStockFacts,
@@ -333,7 +333,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
     }
   }, [selectVariant, selectedVariant, selectedVariantId]);
 
-  const logistics = useLogisticsStore({
+  const omsStore = useOmsStore({
     kind: "product",
     variantId: selectedVariant?.id ?? "",
     enabled: Boolean(selectedVariant) && visibility["tab.logistics"] && logisticsOpened,
@@ -368,7 +368,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
       }
     } catch (caught: unknown) {
       const raw = caught instanceof Error ? caught.message : "Попробуйте ещё раз.";
-      setServerError(translateLogisticsError(raw));
+      setServerError(translateOmsError(raw));
     } finally {
       setSubmitting(false);
     }
@@ -377,7 +377,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   if (loading) {
     return (
       <main className="min-h-screen bg-muted/30 p-4">
-        <LogisticsLoading />
+        <OmsLoading />
       </main>
     );
   }
@@ -393,7 +393,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
   if (error || !data) {
     return (
       <main className="min-h-screen bg-muted/30 p-4">
-        <LogisticsError
+        <OmsError
           title={loadFailed ? "Не удалось загрузить товар" : "Товар не найден"}
           message={loadFailed ? (error ?? "Не удалось загрузить товар.") : "Проверьте ссылку или откройте товар из каталога."}
           onRetry={loadFailed ? () => void reload() : undefined}
@@ -703,18 +703,18 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
 
                 {activeVariantTab === "logistics" ? (
                   <div className="space-y-4">
-                    {logistics.isLoading ? <LogisticsLoading /> : null}
-                    {logistics.error ? <LogisticsError message={logistics.error} /> : null}
-                    {!logistics.isLoading && !logistics.error ? (
+                    {omsStore.isLoading ? <OmsLoading /> : null}
+                    {omsStore.error ? <OmsError message={omsStore.error} /> : null}
+                    {!omsStore.isLoading && !omsStore.error ? (
                       <>
                         <ProductBalancesTable
-                          snapshot={logistics.snapshot}
-                          balances={logistics.balances}
+                          snapshot={omsStore.snapshot}
+                          balances={omsStore.balances}
                           productId={selectedVariant.id}
                           unit={selectedVariant.unit}
                         />
                         <ProductActivityCard
-                          snapshot={logistics.snapshot}
+                          snapshot={omsStore.snapshot}
                           productId={selectedVariant.id}
                           unit={selectedVariant.unit}
                           onCreateProduction={
@@ -722,7 +722,7 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                           }
                         />
                         <DocumentLedger
-                          snapshot={logistics.snapshot}
+                          snapshot={omsStore.snapshot}
                           hide="product"
                           filter={(entry) => entry.productId === selectedVariant.id}
                         />
@@ -730,8 +730,8 @@ export const StoreProductCardPage = ({ productId }: { productId: string }) => {
                           <ProductionOrderCatalogDialog
                             open={productionOpen}
                             onOpenChange={setProductionOpen}
-                            snapshot={logistics.snapshot}
-                            balances={logistics.balances}
+                            snapshot={omsStore.snapshot}
+                            balances={omsStore.balances}
                             presetProductId={selectedVariant.id}
                           />
                         ) : null}

@@ -1,0 +1,628 @@
+import {
+  hrefForCustomerOrder,
+  hrefForProductionOrder,
+  hrefForTransfer,
+  productionDemandAssigned,
+} from "@/features/oms/oms-availability";
+import { plantCode, warehouseCode } from "@/features/oms/oms-lookups";
+import {
+  expectedEndMeta,
+  formatQuantity,
+  OUTPUT_STATUS_LABELS,
+  RESERVATION_DIRECTION_LABELS,
+  SHIPMENT_DIRECTION_LABELS,
+} from "@/features/oms/oms-labels";
+import {
+  isOutputDocumentKind,
+  ownersEqual,
+  reservationDirection,
+  reservationTouchesOrder,
+  shipmentDirection,
+  shipmentWarehouseId,
+  publicDocumentParam,
+  type DocumentStatus,
+  type OmsSnapshot,
+  type ReservationDirection,
+  type Shipment,
+  type StockBalance,
+  type TransferStatus,
+} from "@/features/oms/oms-types";
+
+export type RelatedDocumentItem = {
+  id: string;
+  href: string;
+  label: string;
+  meta: string;
+  statusKey?: string;
+  /** Kind-specific status caption. Overrides merged label maps. */
+  statusLabel?: string;
+  expectedEndOn?: string | null;
+  operation?: ReservationDirection;
+  coveragePercent?: number;
+  /** Nested documents shown under this one (e.g. outputs of a production order). */
+  children?: RelatedDocumentItem[];
+};
+
+const statusMeta = (status: DocumentStatus | TransferStatus | string): string => status;
+
+const uniqueRelated = (items: RelatedDocumentItem[]): RelatedDocumentItem[] => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) {
+      return false;
+    }
+    seen.add(item.id);
+    return true;
+  });
+};
+
+export const relatedReservations = (snapshot: OmsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
+  snapshot.reservations
+    .filter((item) => reservationTouchesOrder(item, snapshot.reservationLines, customerOrderId))
+    .map((item) => {
+      const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
+      const direction = reservationDirection(item, lines);
+      return {
+        id: item.id,
+        href: `/store/oms/reservations/${publicDocumentParam(item)}`,
+        label: item.number,
+        meta: RESERVATION_DIRECTION_LABELS[direction],
+        statusKey: "posted",
+        operation: direction,
+      };
+    });
+
+const shipmentItem = (item: Shipment): RelatedDocumentItem => ({
+  id: item.id,
+  href: `/store/oms/shipments/${publicDocumentParam(item)}`,
+  label: item.number,
+  meta: SHIPMENT_DIRECTION_LABELS[shipmentDirection(item.fromLocationType, item.toLocationType)],
+  statusKey: "posted",
+});
+
+export const relatedShipments = (snapshot: OmsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
+  snapshot.shipments
+    .filter(
+      (item) =>
+        item.customerOrderId === customerOrderId &&
+        shipmentDirection(item.fromLocationType, item.toLocationType) === "shipment",
+    )
+    .map(shipmentItem);
+
+export const relatedReturnsForOrder = (snapshot: OmsSnapshot, customerOrderId: string): RelatedDocumentItem[] =>
+  snapshot.shipments
+    .filter(
+      (item) =>
+        item.customerOrderId === customerOrderId &&
+        shipmentDirection(item.fromLocationType, item.toLocationType) === "return",
+    )
+    .map(shipmentItem);
+
+export const relatedTransfersForOrder = (snapshot: OmsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
+  const transferIds = new Set<string>();
+  for (const allocation of snapshot.transferAllocations) {
+    if (!ownersEqual(allocation.ownerType, allocation.ownerId, "order", customerOrderId)) {
+      continue;
+    }
+    const transferId = snapshot.transferLines.find((line) => line.id === allocation.lineId)?.transferId;
+    if (transferId) {
+      transferIds.add(transferId);
+    }
+  }
+  for (const reservation of snapshot.reservations) {
+    if (reservation.locationType !== "transfer") {
+      continue;
+    }
+    if (reservationTouchesOrder(reservation, snapshot.reservationLines, customerOrderId)) {
+      transferIds.add(reservation.locationId);
+    }
+  }
+  for (const entry of snapshot.transactions) {
+    if (
+      entry.locationType === "transfer" &&
+      ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId) &&
+      Math.abs(entry.quantity) > 1e-9
+    ) {
+      transferIds.add(entry.locationId);
+    }
+  }
+  return snapshot.transfers
+    .filter((item) => transferIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: `/store/oms/transfers/${publicDocumentParam(item)}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+      statusKey: item.status,
+      expectedEndOn: item.expectedEndOn,
+    }));
+};
+
+export const relatedOutputsForOrder = (snapshot: OmsSnapshot, customerOrderId: string): RelatedDocumentItem[] => {
+  const outputIds = new Set<string>();
+  for (const entry of snapshot.transactions) {
+    if (
+      isOutputDocumentKind(entry.documentType) &&
+      ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId)
+    ) {
+      outputIds.add(entry.documentId);
+    }
+  }
+  for (const allocation of snapshot.outputAllocations) {
+    if (!ownersEqual(allocation.ownerType, allocation.ownerId, "order", customerOrderId)) {
+      continue;
+    }
+    const outputId = snapshot.outputLines.find((line) => line.id === allocation.lineId)?.outputId;
+    if (outputId) {
+      outputIds.add(outputId);
+    }
+  }
+  for (const line of snapshot.outputLines) {
+    if (!ownersEqual(line.toOwnerType, line.toOwnerId, "order", customerOrderId)) {
+      continue;
+    }
+    const output = snapshot.outputs.find((item) => item.id === line.outputId);
+    if (!output) {
+      continue;
+    }
+    const status = output.status;
+    if (status === "draft" || status === "done") {
+      outputIds.add(output.id);
+    }
+  }
+  return snapshot.outputs
+    .filter((item) => outputIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: `/store/oms/outputs/${publicDocumentParam(item)}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+      statusKey: item.status,
+      statusLabel: OUTPUT_STATUS_LABELS[item.status],
+      expectedEndOn: item.expectedEndOn,
+    }));
+};
+
+export const relatedProductionsForOrder = (
+  snapshot: OmsSnapshot,
+  customerOrderId: string,
+  _balances?: StockBalance[],
+): RelatedDocumentItem[] => {
+  const productionIds = new Set<string>();
+  for (const line of snapshot.outputLines) {
+    if (!ownersEqual(line.toOwnerType, line.toOwnerId, "order", customerOrderId)) {
+      continue;
+    }
+    const output = snapshot.outputs.find((item) => item.id === line.outputId);
+    if (!output) {
+      continue;
+    }
+    const status = output.status;
+    if (status === "cancelled") {
+      continue;
+    }
+    productionIds.add(output.productionOrderId);
+  }
+  return snapshot.productionOrders
+    .filter((item) => productionIds.has(item.id))
+    .map((item) => {
+      const reserved = snapshot.productionOrderLines
+        .filter((line) => line.orderId === item.id)
+        .reduce((sum, line) => {
+          const assigned = productionDemandAssigned(snapshot, item.id, line.productId)
+            .filter((entry) => ownersEqual(entry.ownerType, entry.ownerId, "order", customerOrderId))
+            .reduce((inner, entry) => inner + entry.quantity, 0);
+          return sum + assigned;
+        }, 0);
+      const outputted = snapshot.outputLines
+        .filter((line) => {
+          if (!ownersEqual(line.toOwnerType, line.toOwnerId, "order", customerOrderId)) {
+            return false;
+          }
+          const output = snapshot.outputs.find((doc) => doc.id === line.outputId);
+          return output?.productionOrderId === item.id && output.status === "done";
+        })
+        .reduce((sum, line) => sum + line.quantity, 0);
+      const extras = [
+        reserved > 0 ? `занято ${formatQuantity(reserved)}` : null,
+        outputted > 0 ? `выпущено ${formatQuantity(outputted)}` : null,
+      ].filter((part): part is string => Boolean(part));
+      return {
+        id: item.id,
+        href: `/store/oms/production-orders/${publicDocumentParam(item)}`,
+        label: item.number,
+        meta: expectedEndMeta(item.status, item.expectedEndOn, extras),
+        statusKey: item.status,
+        expectedEndOn: item.expectedEndOn,
+      };
+    });
+};
+
+type CoveragePercents = ReadonlyMap<string, number>;
+
+/**
+ * Production orders that serve the customer order, each with its outputs for that order as children.
+ * Outputs whose production order is missing from the snapshot stay at the top level.
+ */
+export const relatedProductionGroupsForOrder = (
+  snapshot: OmsSnapshot,
+  customerOrderId: string,
+  coverage?: { production: CoveragePercents; output: CoveragePercents },
+): RelatedDocumentItem[] => {
+  const withPercent = (item: RelatedDocumentItem, percents?: CoveragePercents): RelatedDocumentItem =>
+    percents ? { ...item, coveragePercent: percents.get(item.id) ?? 0 } : item;
+
+  const outputs = relatedOutputsForOrder(snapshot, customerOrderId).map((item) =>
+    withPercent(item, coverage?.output),
+  );
+  const productionIdByOutput = new Map(snapshot.outputs.map((item) => [item.id, item.productionOrderId]));
+  const productions = relatedProductionsForOrder(snapshot, customerOrderId);
+  const knownIds = new Set(productions.map((item) => item.id));
+  const extraIds = new Set(
+    outputs
+      .map((item) => productionIdByOutput.get(item.id))
+      .filter((id): id is string => Boolean(id) && !knownIds.has(id as string)),
+  );
+  const extras: RelatedDocumentItem[] = snapshot.productionOrders
+    .filter((item) => extraIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: `/store/oms/production-orders/${publicDocumentParam(item)}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+      statusKey: item.status,
+      expectedEndOn: item.expectedEndOn,
+    }));
+
+  const groups = [...productions, ...extras].map((production) => ({
+    ...withPercent(production, coverage?.production),
+    children: outputs.filter((output) => productionIdByOutput.get(output.id) === production.id),
+  }));
+  const groupedIds = new Set(groups.map((item) => item.id));
+  const orphans = outputs.filter((output) => !groupedIds.has(productionIdByOutput.get(output.id) ?? ""));
+  return [...groups, ...orphans];
+};
+
+export const relatedOrdersForOutput = (
+  snapshot: OmsSnapshot,
+  outputId: string,
+): RelatedDocumentItem[] => {
+  const fromLedger = snapshot.transactions
+    .filter(
+      (entry) =>
+        isOutputDocumentKind(entry.documentType) &&
+        entry.documentId === outputId &&
+        entry.ownerType === "order" &&
+        entry.ownerId &&
+        entry.quantity > 0,
+    )
+    .map((entry) => ({
+      orderId: entry.ownerId as string,
+      quantity: entry.quantity,
+    }));
+  const fromAllocations = snapshot.outputAllocations
+    .filter(
+      (item) =>
+        item.ownerType === "order" &&
+        snapshot.outputLines.some((line) => line.id === item.lineId && line.outputId === outputId),
+    )
+    .map((item) => ({ orderId: item.ownerId, quantity: item.quantity }));
+  const totals = new Map<string, number>();
+  for (const item of [...fromLedger, ...fromAllocations]) {
+    totals.set(item.orderId, (totals.get(item.orderId) ?? 0) + item.quantity);
+  }
+  return uniqueRelated(
+    [...totals.entries()].map(([orderId, quantity]) => {
+      const order = snapshot.customerOrders.find((item) => item.id === orderId);
+      return {
+        id: orderId,
+        href: hrefForCustomerOrder(orderId),
+        label: order?.number ?? orderId,
+        meta: formatQuantity(quantity),
+      };
+    }),
+  );
+};
+
+export const relatedReservationsForRegion = (
+  snapshot: OmsSnapshot,
+  regionId: string,
+): RelatedDocumentItem[] =>
+  snapshot.reservations
+    .filter((item) => {
+      if (ownersEqual(item.toOwnerType, item.toOwnerId, "region", regionId)) {
+        return true;
+      }
+      return snapshot.reservationLines.some(
+        (line) =>
+          line.reservationId === item.id && ownersEqual(line.fromOwnerType, line.fromOwnerId, "region", regionId),
+      );
+    })
+    .map((item) => {
+      const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
+      const direction = reservationDirection(item, lines);
+      return {
+        id: item.id,
+        href: `/store/oms/reservations/${publicDocumentParam(item)}`,
+        label: item.number,
+        meta: RESERVATION_DIRECTION_LABELS[direction],
+        statusKey: "posted",
+        operation: direction,
+      };
+    });
+
+export const relatedReservationsForProduction = (
+  snapshot: OmsSnapshot,
+  productionOrderId: string,
+): RelatedDocumentItem[] => {
+  const lineIds = new Set(
+    snapshot.productionOrderLines.filter((line) => line.orderId === productionOrderId).map((line) => line.id),
+  );
+  const reservationIds = new Set(
+    snapshot.reservations
+      .filter((item) => item.locationType === "production_order" && item.locationId === productionOrderId)
+      .map((item) => item.id),
+  );
+  return snapshot.reservations
+    .filter((item) => reservationIds.has(item.id))
+    .map((item) => {
+      const lines = snapshot.reservationLines.filter((line) => line.reservationId === item.id);
+      const direction = reservationDirection(item, lines);
+      return {
+        id: item.id,
+        href: `/store/oms/reservations/${publicDocumentParam(item)}`,
+        label: item.number,
+        meta: RESERVATION_DIRECTION_LABELS[direction],
+        statusKey: "posted",
+        operation: direction,
+      };
+    });
+};
+
+export const relatedTransfersForWarehouse = (
+  snapshot: OmsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] =>
+  snapshot.transfers
+    .filter((item) => item.fromWarehouseId === warehouseId || item.toWarehouseId === warehouseId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/oms/transfers/${publicDocumentParam(item)}`,
+      label: item.number,
+      meta: expectedEndMeta(
+        item.status,
+        item.expectedEndOn,
+        [item.fromWarehouseId === warehouseId ? "исходящее" : "входящее"],
+      ),
+    }));
+
+export const relatedShipmentsForWarehouse = (
+  snapshot: OmsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] =>
+  snapshot.shipments
+    .filter((item) => shipmentWarehouseId(item) === warehouseId)
+    .map(shipmentItem);
+
+export const relatedAdjustmentsForWarehouse = (
+  snapshot: OmsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] =>
+  snapshot.adjustments
+    .filter((item) => item.warehouseId === warehouseId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/oms/adjustments/${publicDocumentParam(item)}`,
+      label: item.number,
+      meta: statusMeta(item.status),
+    }));
+
+export const relatedProductionsForPlant = (
+  snapshot: OmsSnapshot,
+  plantId: string,
+): RelatedDocumentItem[] =>
+  snapshot.productionOrders
+    .filter((item) => item.plantId === plantId)
+    .map((item) => ({
+      id: item.id,
+      href: `/store/oms/production-orders/${publicDocumentParam(item)}`,
+      label: item.number,
+      meta: expectedEndMeta(item.status, item.expectedEndOn),
+    }));
+
+export const relatedProductionsForWarehouse = (
+  snapshot: OmsSnapshot,
+  warehouseId: string,
+): RelatedDocumentItem[] => {
+  const plant = snapshot.plants.find((item) => item.warehouseId === warehouseId);
+  if (!plant) {
+    return [];
+  }
+  return relatedProductionsForPlant(snapshot, plant.id);
+};
+
+export const relatedOrderItem = (snapshot: OmsSnapshot, customerOrderId: string): RelatedDocumentItem | null => {
+  const order = snapshot.customerOrders.find((item) => item.id === customerOrderId);
+  if (!order) {
+    return null;
+  }
+  return {
+    id: order.id,
+    href: hrefForCustomerOrder(order.id),
+    label: order.number,
+    meta: order.status,
+  };
+};
+
+export const PRODUCT_ACTIVITY_KINDS = [
+  "customer_order",
+  "production_order",
+  "transfer",
+  "output",
+  "shipment",
+] as const;
+
+export type ProductActivityKind = (typeof PRODUCT_ACTIVITY_KINDS)[number];
+
+export type ProductActivityRow = {
+  id: string;
+  href: string;
+  number: string;
+  quantity: number;
+  status: string;
+  /** Kind-specific status caption. Overrides merged label maps. */
+  statusLabel?: string;
+  expectedEndOn: string | null;
+  hasExpectedEnd: boolean;
+  hint: string | null;
+  plantId: string | null;
+};
+
+export type ProductActivityGroup = {
+  kind: ProductActivityKind;
+  items: ProductActivityRow[];
+};
+
+const ACTIVE_ACTIVITY_STATUSES = new Set([
+  "draft",
+  "planned",
+  "in_progress",
+  "sent",
+  "posted",
+]);
+
+const sortActivityRows = (left: ProductActivityRow, right: ProductActivityRow): number => {
+  const leftActive = ACTIVE_ACTIVITY_STATUSES.has(left.status) ? 0 : 1;
+  const rightActive = ACTIVE_ACTIVITY_STATUSES.has(right.status) ? 0 : 1;
+  if (leftActive !== rightActive) {
+    return leftActive - rightActive;
+  }
+  return left.number.localeCompare(right.number);
+};
+
+const addQuantity = (totals: Map<string, number>, id: string, quantity: number) => {
+  totals.set(id, (totals.get(id) ?? 0) + quantity);
+};
+
+export const productActivity = (snapshot: OmsSnapshot, productId: string): ProductActivityGroup[] => {
+  const orderQty = new Map<string, number>();
+  for (const line of snapshot.customerOrderLines) {
+    if (line.productId === productId) {
+      addQuantity(orderQty, line.orderId, line.quantity);
+    }
+  }
+  const productionQty = new Map<string, number>();
+  for (const line of snapshot.productionOrderLines) {
+    if (line.productId === productId) {
+      addQuantity(productionQty, line.orderId, line.quantity);
+    }
+  }
+  const transferQty = new Map<string, number>();
+  for (const line of snapshot.transferLines) {
+    if (line.productId === productId) {
+      addQuantity(transferQty, line.transferId, line.quantity);
+    }
+  }
+  const outputQty = new Map<string, number>();
+  for (const line of snapshot.outputLines) {
+    if (line.productId === productId) {
+      addQuantity(outputQty, line.outputId, line.quantity);
+    }
+  }
+  const shipmentQty = new Map<string, number>();
+  for (const line of snapshot.shipmentLines) {
+    if (line.productId === productId) {
+      addQuantity(shipmentQty, line.shipmentId, line.quantity);
+    }
+  }
+
+  const orders: ProductActivityRow[] = snapshot.customerOrders
+    .filter((item) => orderQty.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: hrefForCustomerOrder(item.id, snapshot),
+      number: item.number,
+      quantity: orderQty.get(item.id) ?? 0,
+      status: item.status,
+      expectedEndOn: item.expectedEndOn,
+      hasExpectedEnd: true,
+      hint: null,
+      plantId: null,
+    }))
+    .sort(sortActivityRows);
+
+  const productions: ProductActivityRow[] = snapshot.productionOrders
+    .filter((item) => productionQty.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: hrefForProductionOrder(item.id, snapshot),
+      number: item.number,
+      quantity: productionQty.get(item.id) ?? 0,
+      status: item.status,
+      expectedEndOn: item.expectedEndOn,
+      hasExpectedEnd: true,
+      hint: plantCode(snapshot, item.plantId ?? ""),
+      plantId: item.plantId ?? "",
+    }))
+    .sort(sortActivityRows);
+
+  const transfers: ProductActivityRow[] = snapshot.transfers
+    .filter((item) => transferQty.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      href: hrefForTransfer(item.id, snapshot),
+      number: item.number,
+      quantity: transferQty.get(item.id) ?? 0,
+      status: item.status,
+      expectedEndOn: item.expectedEndOn,
+      hasExpectedEnd: true,
+      hint: `${warehouseCode(snapshot, item.fromWarehouseId)} → ${warehouseCode(snapshot, item.toWarehouseId)}`,
+      plantId: null,
+    }))
+    .sort(sortActivityRows);
+
+  const outputs: ProductActivityRow[] = snapshot.outputs
+    .filter((item) => outputQty.has(item.id))
+    .map((item) => {
+      const production = snapshot.productionOrders.find((order) => order.id === item.productionOrderId);
+      return {
+        id: item.id,
+        href: `/store/oms/outputs/${publicDocumentParam(item)}`,
+        number: item.number,
+        quantity: outputQty.get(item.id) ?? 0,
+        status: item.status,
+        statusLabel: OUTPUT_STATUS_LABELS[item.status],
+        expectedEndOn: item.expectedEndOn,
+        hasExpectedEnd: true,
+        hint: production ? production.number : null,
+        plantId: null,
+      };
+    })
+    .sort(sortActivityRows);
+
+  const shipments: ProductActivityRow[] = snapshot.shipments
+    .filter((item) => shipmentQty.has(item.id))
+    .map((item) => {
+      const order = snapshot.customerOrders.find((entry) => entry.id === item.customerOrderId);
+      return {
+        id: item.id,
+        href: `/store/oms/shipments/${publicDocumentParam(item)}`,
+        number: item.number,
+        quantity: shipmentQty.get(item.id) ?? 0,
+        status: "posted",
+        expectedEndOn: null,
+        hasExpectedEnd: false,
+        hint: `${SHIPMENT_DIRECTION_LABELS[shipmentDirection(item.fromLocationType, item.toLocationType)]}${order ? ` · ${order.number}` : ""}`,
+        plantId: null,
+      };
+    })
+    .sort(sortActivityRows);
+
+  return [
+    { kind: "customer_order", items: orders },
+    { kind: "production_order", items: productions },
+    { kind: "transfer", items: transfers },
+    { kind: "output", items: outputs },
+    { kind: "shipment", items: shipments },
+  ];
+};

@@ -22,13 +22,13 @@ Internal business management app. Next.js App Router, React, TypeScript, Tailwin
 - Agent workflows: BMAD skills in `.agents/skills/` only. Do not use Superpowers.
 - Feature behavior: `docs/features/README.md`.
 - List-page / toolbar reference: `src/components/store/pim/products/store-catalog-page.tsx`, `src/components/store/pim/products/catalog/catalog-toolbar.tsx`; Pulse Thanks: `src/features/pulse/thanks/thanks-page.tsx`, `src/features/pulse/thanks/thanks-toolbar.tsx`.
-- Logistics: `src/features/logistics/` — `docs/features/logistics.md`.
+- OMS: `src/features/oms/` — `docs/features/oms.md`.
 - Demo images helper: `src/lib/demo-content-image.ts` (`demoContentImageUrl`). Browser Supabase client: `src/lib/supabase/client.ts` (returns `null` if env is unset).
 - Humans: `README.md` and `docs/conventions/`.
 
 ## Running and verifying
 
-- There is no CI and no e2e suite. `npm test` runs unit tests for pure domain logic (`tests/unit/`, `node:test`, mostly Logistics). Before handing off work, run `npm run lint`, `npm run typecheck`, `npm run build`, `npm run check:deps`, `npm run check:docs`, `npm run check:static-images`, and `npm test` locally.
+- There is no CI and no e2e suite. `npm test` runs unit tests for pure domain logic (`tests/unit/`, `node:test`, mostly OMS). Before handing off work, run `npm run lint`, `npm run typecheck`, `npm run build`, `npm run check:deps`, `npm run check:docs`, `npm run check:static-images`, and `npm test` locally.
 - For UI changes, also verify the affected screens manually in a browser. The old `check:ui-english` / `lint:ui-english` scripts are retired and are not gates.
 
 ## Conventions that differ from defaults

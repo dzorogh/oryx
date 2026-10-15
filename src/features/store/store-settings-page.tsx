@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { loadStoreMoneySettings, saveProductionCurrency, type StoreMoneySettings } from "@/features/logistics/logistics-api";
+import { loadStoreMoneySettings, saveProductionCurrency, type StoreMoneySettings } from "@/features/oms/oms-api";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 const STORE_PRODUCTS_HREF = "/store/pim/products";

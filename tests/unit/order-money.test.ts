@@ -15,7 +15,7 @@ import {
   unallocated,
   type OrderMoneyContext,
   type OrderPaymentHistoryEvent,
-} from "@/features/logistics/order-money";
+} from "@/features/oms/order-money";
 
 const RATES = { USD: 1, CNY: 7.12, EUR: 0.86 };
 

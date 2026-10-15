@@ -6,8 +6,8 @@ Use this layout for module pages that show a **filterable list** (cards, table, 
 
 - Store: `src/components/store/pim/products/store-catalog-page.tsx` + `catalog/catalog-toolbar.tsx`
 - Pulse Thanks: `src/features/pulse/thanks/thanks-page.tsx` + `thanks-toolbar.tsx`
-- Logistics lists: `src/features/logistics/customer-orders-page.tsx` + `ui/list/list-toolbar.tsx` (каркас `ui/list/`)
-- Logistics detail/catalog cards: `ui/logistics-toolbar.tsx` (склады/заводы — карточки, не списки)
+- OMS lists: `src/features/oms/customer-orders-page.tsx` + `ui/list/list-toolbar.tsx` (каркас `ui/list/`)
+- OMS detail/catalog cards: `ui/oms-toolbar.tsx` (склады/заводы — карточки, не списки)
 
 Works together with [full-width-page-content.md](full-width-page-content.md) for the list body below the toolbar.
 

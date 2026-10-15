@@ -10,9 +10,9 @@ import {
   nextUnpaidDueOn,
   NO_VALUE,
   parseOrderNumbers,
-} from "@/features/logistics/customer-order-list-filters";
-import type { CustomerOrderListRow } from "@/features/logistics/logistics-list-types";
-import { applyListFilters, buildListFilterOptions, type ListFilterState } from "@/features/logistics/ui/list/list-filters";
+} from "@/features/oms/customer-order-list-filters";
+import type { CustomerOrderListRow } from "@/features/oms/oms-list-types";
+import { applyListFilters, buildListFilterOptions, type ListFilterState } from "@/features/oms/ui/list/list-filters";
 
 const row = (patch: Partial<CustomerOrderListRow> = {}): CustomerOrderListRow => ({
   id: "1",

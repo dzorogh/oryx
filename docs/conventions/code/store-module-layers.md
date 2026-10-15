@@ -9,29 +9,30 @@ components/store/**  (PIM UI: каталог, карточка demo, прайс-
 features/store/**    (страницы магазина, корзина, оформление, загрузчики из БД, общие виджеты)
         │                         ▲
         ▼                         │ только базовый слой
-features/logistics/** ────────────┘
+features/oms/** ────────────┘
 ```
 
 | Откуда | Можно импортировать | Нельзя |
 |---|---|---|
-| `src/components/store/**` | `features/store/**`, `features/logistics/**` | — |
-| `src/features/store/**` | `features/store/**`, `features/logistics/**` | `@/components/store/*` |
-| Базовый слой store (ниже) | базовый слой store, общие `@/lib`, `@/components/ui`, `@/domain` | остальной `features/store/*`, `@/components/store/*`, `@/features/logistics/*` |
-| `src/features/logistics/**`, `app/store/logistics/**` | только базовый слой store | остальной `features/store/*`, `@/components/store/*` |
+| `src/components/store/**` | `features/store/**`, `features/oms/**` | — |
+| `src/features/store/**` | `features/store/**`, `features/oms/**` | `@/components/store/*` |
+| Базовый слой store (ниже) | базовый слой store, общие `@/lib`, `@/components/ui`, `@/domain` | остальной `features/store/*`, `@/components/store/*`, `@/features/oms/*` |
+| `src/features/oms/**`, `app/store/oms/**` | только базовый слой store | остальной `features/store/*`, `@/components/store/*` |
 | `src/features/store/domain/**` | только `features/store/domain/*` | всё остальное из `features/*` и `components/store/*` |
 
-**Базовый слой store** — то, что делят магазин и логистика:
+**Базовый слой store** — то, что делят магазин и OMS:
 
 - `features/store/domain/` — чистые типы и проверки: `currency.ts` (`CurrencyCode`, `isCurrencyCode`), `statuses.ts` (дилерский и розничный статусы, подписи), `catalog-item.ts` (`StoreCatalogItem`, цены и статусы по регионам, `CATALOG_PAGE_SIZE`, `CATALOG_NO_SITE_KEY`).
+- `features/store/store-paths.ts` — пути каталога товаров и справочников (`STORE_PRODUCTS_PATH`, `hrefForStoreProduct`, `STORE_DIRECTORY_PATHS`).
 - `features/store/region-context.tsx`, `region-selection.ts`, `region-switcher.tsx` — выбранный регион.
 - `features/store/product-photo.tsx`, `features/store/store-load-notice.tsx` (ошибка загрузки и «Повторить»), `features/store/packing/**`.
-- `features/store/view-role.ts` — демо-роль «Менеджер / Заказчик» из `localStorage` (`useCurrentViewRole`, `useHydratedViewRole`) и тенанты заказчика `CUSTOMER_DEMO_TENANT_IDS`; правила видимости остаются в `features/logistics/order-view-role.ts`.
+- `features/store/view-role.ts` — демо-роль «Менеджер / Заказчик» из `localStorage` (`useCurrentViewRole`, `useHydratedViewRole`) и тенанты заказчика `CUSTOMER_DEMO_TENANT_IDS`; правила видимости остаются в `features/oms/order-view-role.ts`.
 
-Базовый слой импортирует только базовый слой: иначе логистика транзитивно дотянется до остального магазина и цикл вернётся.
+Базовый слой импортирует только базовый слой: иначе OMS транзитивно дотянется до остального магазина и цикл вернётся.
 
 ## Правила
 
 - Доменные типы не живут в `*-demo-data.ts` и в хелперах UI. Код, работающий с БД, не должен зависеть от демо-модулей.
 - Если странице из `features/store` нужен виджет из `components/store` — переносите виджет в `features/store` (так перенесены `region-switcher`, `variant-stock-summary`, `catalog-buy-tooltip`), а не импортируйте его обратно.
 - Загрузчик, который обслуживает только PIM UI, живёт рядом с этим UI (`components/store/pim/pricelists/pricelists-from-db.ts`).
-- Новый модуль, нужный логистике, сначала проверьте: не тянет ли он `features/logistics`. Если нет — добавьте его в базовый слой в `eslint.config.mjs` и в этот список.
+- Новый модуль, нужный OMS, сначала проверьте: не тянет ли он `features/oms`. Если нет — добавьте его в базовый слой в `eslint.config.mjs` и в этот список.

@@ -8,10 +8,10 @@ import {
   listFulfillment,
   listOrderMoney,
   listOrderPayment,
-} from "@/features/logistics/customer-order-list-money";
-import { formatDate } from "@/features/logistics/logistics-labels";
-import type { CustomerOrderListMoney } from "@/features/logistics/logistics-list-types";
-import { compareSortValues } from "@/features/logistics/ui/list/list-view-state";
+} from "@/features/oms/customer-order-list-money";
+import { formatDate } from "@/features/oms/oms-labels";
+import type { CustomerOrderListMoney } from "@/features/oms/oms-list-types";
+import { compareSortValues } from "@/features/oms/ui/list/list-view-state";
 
 const norm = (value: string) => value.replace(/[\u00a0\u202f]/g, " ");
 

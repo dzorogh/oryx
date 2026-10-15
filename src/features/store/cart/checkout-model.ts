@@ -1,7 +1,7 @@
 /** Pure checkout layout: hub/plant blocks, prices with Supply costs, currency totals. */
 
 import { formatEntityCode } from "@/lib/entity-codes";
-import { convert, type OrderRates } from "@/features/logistics/order-money";
+import { convert, type OrderRates } from "@/features/oms/order-money";
 import type { CurrencyCode } from "@/features/store/domain/currency";
 import type { DealerStatus } from "@/features/store/domain/statuses";
 

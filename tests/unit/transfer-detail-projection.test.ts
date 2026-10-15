@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ENTITY_CODE_DEFAULTS } from "@/lib/entity-codes";
-import { projectTransferDetail, transferHasMixedOwners } from "@/features/logistics/transfer-detail-projection";
-import type { LogisticsSnapshot, StockBalance, Transfer } from "@/features/logistics/logistics-types";
+import { projectTransferDetail, transferHasMixedOwners } from "@/features/oms/transfer-detail-projection";
+import type { OmsSnapshot, StockBalance, Transfer } from "@/features/oms/oms-types";
 
-const emptySnapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
+const emptySnapshot = (overrides: Partial<OmsSnapshot> = {}): OmsSnapshot =>
   ({
     products: [],
     dealerPrices: [],
@@ -39,7 +39,7 @@ const emptySnapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSna
     users: [],
     documentHistory: [],
     ...overrides,
-  }) as LogisticsSnapshot;
+  }) as OmsSnapshot;
 
 const transfer = (overrides: Partial<Transfer> & Pick<Transfer, "id" | "status">): Transfer => ({
   series: "TR",

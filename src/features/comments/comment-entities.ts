@@ -24,13 +24,13 @@ export const COMMENT_ENTITIES: CommentEntityRef[] = [
     id: "OMS-921",
     type: "oms",
     label: "OMS-921 · Hub order for AE",
-    href: "/store/logistics/customer-orders/921",
+    href: "/store/oms/customer-orders/921",
   },
   {
     id: "OMS-907",
     type: "oms",
     label: "OMS-907 · Large order for RU",
-    href: "/store/logistics/customer-orders/907",
+    href: "/store/oms/customer-orders/907",
   },
 ];
 

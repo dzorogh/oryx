@@ -6,7 +6,7 @@
 
 - **Главная панель (`/`)**: набор бизнес-блоков (статистика, рейтинг, новости, благодарности, дни рождения, задачи, идеи) с сохранением пользовательского layout в `localStorage`.
 - **Pulse (`/pulse/*`)**: новости, идеи, благодарности, опросы, согласования счетов и платежей, кабинет компании.
-- **Store (`/store/*`)**: каталог товаров PIM, заказы с 3D-визуализацией упаковки и модуль Logistics — заказы клиента и на производство, выпуски и календарь производства, резервы, отгрузки, перемещения, корректировки, остатки, журнал, справочники ([docs/features/logistics.md](docs/features/logistics.md)).
+- **Store (`/store/*`)**: каталог товаров PIM, заказы с 3D-визуализацией упаковки и модуль OMS — заказы клиента и на производство, выпуски и календарь производства, резервы, отгрузки, перемещения, корректировки, остатки, журнал, справочники ([docs/features/oms.md](docs/features/oms.md)).
 - **Team, Tracker, профиль пользователя**: `/team/*`, `/tracker/*`, `/users/[userId]`.
 - **Разделы-заготовки**: CRM, Analytics, Learning, Library, Settings — страницы-заглушки; `/[section]` — заглушки `activity`, `catalog`, `help`, `search`, `services`.
 
@@ -40,7 +40,7 @@ npm run dev
 - `/` — главная панель Oryx BMS
 - `/pulse/news`, `/pulse/ideas`, `/pulse/thanks`, `/pulse/polls`, `/pulse/company`, `/pulse/approvals/*` — Pulse
 - `/store` — редирект на `/store/pim/products` (каталог товаров)
-- `/store/logistics/*` — Logistics (корень ведёт на `/store/logistics/stock`); `/store/settings` — префиксы кодов
+- `/store/oms/*` — OMS (корень ведёт на `/store/oms/stock`); `/store/settings` — префиксы кодов
 - `/team/*`, `/tracker/*`, `/users/[userId]` — сотрудники, задачи и проекты, профиль
 - `/crm/*`, `/analytics/*`, `/learning/*`, `/library/*`, `/settings/*` — заглушки будущих разделов
 - `/pim`, `/logistics/*` — старые адреса, редиректят в `/store`; `/pim/orders/[orderId]` ведёт на карточку заказа клиента
@@ -57,7 +57,7 @@ Tool-neutral guidelines for UI and layout live in **[docs/conventions/](docs/con
 Проект разделен на UI-слой и доменный слой.
 
 1. **UI (App + components + features)**  
-   Роутинг, layout, навигационный рейл, контентные страницы, Store/Logistics-экраны и 3D-визуализация.
+   Роутинг, layout, навигационный рейл, контентные страницы, Store/OMS-экраны и 3D-визуализация.
 2. **Domain (packing)**  
    Смешанная укладка товаров по контейнерам (`mixed-containers.ts`) для калькулятора в оформлении заказа и в карточке заказа клиента.
 
@@ -68,11 +68,11 @@ app/
   layout.tsx                      # Корневой layout и NavRail
   page.tsx                        # Главная панель BMS
   pulse/                          # Новости, идеи, благодарности, опросы, согласования
-  store/                          # Каталог PIM, корзина и оформление, logistics/, settings
+  store/                          # Каталог PIM, корзина и оформление, oms/, справочники, settings
   team/, tracker/, users/         # Сотрудники, трекер задач, профиль
   crm/, analytics/, learning/,
   library/, settings/             # Заглушки будущих разделов
-  pim/, logistics/                # Редиректы со старых адресов в /store
+  pim/                            # Редиректы со старых адресов в /store (старый /logistics — в next.config)
   api/comments/                   # API модуля комментариев (AI, unfurl)
   [section]/page.tsx              # Placeholder-страницы
 
@@ -83,7 +83,7 @@ src/
     store/                        # Каталог PIM, прайс-листы, остатки
     ui/                           # Базовые UI-компоненты
   features/
-    logistics/                    # Logistics: страницы, диалоги, API, правила
+    oms/                          # OMS: страницы, диалоги, API, правила
     comments/                     # Переиспользуемый модуль комментариев
     pulse/, users/, store/, ...   # Остальные модули
     packing-visualization/        # 3D-сцена укладки контейнеров
@@ -92,7 +92,7 @@ src/
   lib/                            # Утилиты, клиент Supabase
 
 supabase/migrations/              # Схема демо-бэкенда (store_*, thank_you_entry)
-supabase/seed/                    # Демо-данные магазина, их применяет npm run seed:logistics
+supabase/seed/                    # Демо-данные магазина, их применяет npm run seed:oms
 
 scripts/
   check-*.mjs                     # Проверки (зависимости, ссылки, изображения)
@@ -124,7 +124,7 @@ tests/unit/                       # Unit-тесты доменной логик�
 - `npm test` — unit-тесты доменной логики (`tests/unit/`, `node:test`)
 - Пользовательский текст на страницах — на русском ([russian-labels.md](docs/conventions/ui/russian-labels.md)). Старые `check:ui-english` / `lint:ui-english` не являются обязательной проверкой.
 
-Приложение — быстро меняющийся исследовательский прототип: CI и e2e-тестов нет. Есть unit-тесты чистой доменной логики (в основном Logistics) — `npm test`. Изменения интерфейса дополнительно проверяются вручную в браузере на затронутых экранах.
+Приложение — быстро меняющийся исследовательский прототип: CI и e2e-тестов нет. Есть unit-тесты чистой доменной логики (в основном OMS) — `npm test`. Изменения интерфейса дополнительно проверяются вручную в браузере на затронутых экранах.
 
 ## Рекомендуемый baseline-check перед PR
 
@@ -143,7 +143,7 @@ npm test
 ## Текущий статус и ограничения
 
 - Часть разделов пока реализована как placeholder-страницы (CRM, Analytics, Learning, Library, Settings и `app/[section]/page.tsx`).
-- Контент на главной странице и на отдельных экранах в основном demo-данные. Pulse Thanks и Store/Logistics при заданных `NEXT_PUBLIC_SUPABASE_*` ходят в **свой** self-hosted Supabase (Dokploy compose `supabase`). Как работать: [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md).
+- Контент на главной странице и на отдельных экранах в основном demo-данные. Pulse Thanks и Store/OMS при заданных `NEXT_PUBLIC_SUPABASE_*` ходят в **свой** self-hosted Supabase (Dokploy compose `supabase`). Как работать: [docs/conventions/backend/supabase.md](docs/conventions/backend/supabase.md).
 
 ## Документация по спецификации упаковки
 

@@ -17,7 +17,7 @@ import { CatalogFiltersSheet } from "./catalog/catalog-filters-sheet";
 import { CatalogTable } from "./catalog/catalog-table";
 import { CatalogToolbar } from "./catalog/catalog-toolbar";
 import { ALL_VALUE, CATALOG_LISTING_MODE_STORAGE_KEY, CATALOG_LISTING_QUERY_PARAM, STORE_CATALOG_PAGE, getCatalogAddButtonAriaLabel, getCatalogColumnsStorageKey, parseCatalogListingMode, type CatalogListingMode } from "./catalog/catalog-helpers";
-import { BackendUnsetNotice, LogisticsError } from "@/features/logistics/ui/logistics-state";
+import { BackendUnsetNotice, OmsError } from "@/features/oms/ui/oms-state";
 import { CATALOG_PAGE_SIZE, type StoreCatalogItem } from "@/features/store/domain/catalog-item";
 import { buildCatalogQueryFilters, resolveCatalogFirstPage, resolveCatalogLoadMore } from "@/features/store/load-state";
 import { StoreInlineRetry } from "@/features/store/store-load-notice";
@@ -29,10 +29,10 @@ import {
   loadCatalogFilterOptions,
   loadDbCatalogItems,
   type CatalogQueryFilters,
-} from "@/features/store/store-catalog-from-logistics";
+} from "@/features/store/store-catalog-from-oms";
 import { loadVariantStockFacts, type VariantStockFact } from "@/features/store/variant-stock";
-import { CATALOG_VIEW_KEYS, resolveVisibility } from "@/features/logistics/order-view-role";
-import { useViewRole } from "@/features/logistics/use-view-role";
+import { CATALOG_VIEW_KEYS, resolveVisibility } from "@/features/oms/order-view-role";
+import { useViewRole } from "@/features/oms/use-view-role";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -368,7 +368,7 @@ const StoreCatalogPageContent = () => {
           ) : null}
 
           {catalogStatus === "error" ? (
-            <LogisticsError
+            <OmsError
               title="Не удалось загрузить каталог"
               message="Попробуйте ещё раз."
               onRetry={() => setCatalogAttempt((attempt) => attempt + 1)}

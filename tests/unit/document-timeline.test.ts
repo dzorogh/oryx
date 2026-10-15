@@ -4,14 +4,14 @@ import { describe, it } from "node:test";
 import {
   buildDocumentTimeline,
   documentCompletedAt,
-} from "@/features/logistics/document-timeline";
-import { CUSTOMER_ORDER_STATUS_LABELS } from "@/features/logistics/logistics-labels";
-import type { LogisticsSnapshot } from "@/features/logistics/logistics-types";
-import { tabIdFromHash } from "@/features/logistics/ui/document/document-tab-hash";
+} from "@/features/oms/document-timeline";
+import { CUSTOMER_ORDER_STATUS_LABELS } from "@/features/oms/oms-labels";
+import type { OmsSnapshot } from "@/features/oms/oms-types";
+import { tabIdFromHash } from "@/features/oms/ui/document/document-tab-hash";
 
-const asSnap = (value: object): LogisticsSnapshot => value as LogisticsSnapshot;
+const asSnap = (value: object): OmsSnapshot => value as OmsSnapshot;
 
-const baseSnap = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
+const baseSnap = (overrides: Partial<OmsSnapshot> = {}): OmsSnapshot =>
   asSnap({
     users: [{ id: "1", name: "Демо-пользователь" }, { id: "2", name: "Анна" }],
     documentHistory: [],

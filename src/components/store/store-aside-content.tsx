@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import { ModuleSubnav } from "@/components/layout/module-subnav";
-import { isStorePathAllowedForRole } from "@/features/logistics/order-view-role";
+import { isStorePathAllowedForRole } from "@/features/oms/order-view-role";
 import { useCurrentViewRole } from "@/features/store/view-role";
 import { STORE_NAV_GROUPS } from "@/features/store/store-nav";
 

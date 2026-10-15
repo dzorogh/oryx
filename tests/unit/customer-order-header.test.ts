@@ -9,8 +9,8 @@ import {
   paymentProgress,
   plannedOutputQuantities,
   summarizeOrderFulfillment,
-} from "@/features/logistics/customer-order-oms";
-import type { CustomerOrderLine, LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
+} from "@/features/oms/customer-order-oms";
+import type { CustomerOrderLine, OmsSnapshot, StockBalance } from "@/features/oms/oms-types";
 
 const line = (patch: Partial<CustomerOrderLine> & Pick<CustomerOrderLine, "productId" | "quantity">): CustomerOrderLine => ({
   id: patch.id ?? `line-${patch.productId}`,
@@ -141,9 +141,9 @@ describe("summarizeOrderFulfillment", () => {
 
 describe("plannedOutputQuantities", () => {
   const output = (id: string, status: "draft" | "done" | "cancelled") =>
-    ({ id, status }) as LogisticsSnapshot["outputs"][number];
+    ({ id, status }) as OmsSnapshot["outputs"][number];
   const outputLine = (outputId: string, productId: string, quantity: number, toOwnerId: string | null) =>
-    ({ outputId, productId, quantity, toOwnerType: toOwnerId ? "order" : null, toOwnerId }) as LogisticsSnapshot["outputLines"][number];
+    ({ outputId, productId, quantity, toOwnerType: toOwnerId ? "order" : null, toOwnerId }) as OmsSnapshot["outputLines"][number];
 
   it("sums draft output lines assigned to the order by product", () => {
     const snapshot = {

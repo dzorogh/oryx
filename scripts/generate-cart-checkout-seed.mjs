@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Generates supabase/seed/02_store_demo_cart_checkout.sql (applied by `npm run seed:logistics`)
- * from scripts/data/logistics-demo.json.
+ * Generates supabase/seed/02_store_demo_cart_checkout.sql (applied by `npm run seed:oms`)
+ * from scripts/data/oms-demo.json.
  *
  * Usage:
  *   node scripts/generate-cart-checkout-seed.mjs [output-path]
@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
-const snapshotPath = join(root, "scripts/data/logistics-demo.json");
+const snapshotPath = join(root, "scripts/data/oms-demo.json");
 const defaultOut = join(root, "supabase/seed/02_store_demo_cart_checkout.sql");
 const outPath = resolve(process.argv[2] ?? defaultOut);
 
@@ -48,7 +48,7 @@ lines.push("");
 // ---------------------------------------------------------------------------
 // Containers
 // ---------------------------------------------------------------------------
-lines.push("-- Container types from logistics-demo.json");
+lines.push("-- Container types from oms-demo.json");
 for (const [index, container] of snapshot.containers.entries()) {
   lines.push(`insert into public.store_container_type (
   code, name, inner_length_mm, inner_width_mm, inner_height_mm, max_weight_kg, sort_order
@@ -161,7 +161,7 @@ const sanitizeLogistics = (raw) => {
   };
 };
 
-// seed:logistics creates store_product rows in snapshot order after `restart identity`, so the
+// seed:oms creates store_product rows in snapshot order after `restart identity`, so the
 // database id is the snapshot position, not the snapshot `id`.
 const valueRows = [];
 for (const [index, product] of snapshot.products.entries()) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { nextOrderLineQuantity } from "@/features/logistics/logistics-rules";
+import { nextOrderLineQuantity } from "@/features/oms/oms-rules";
 
 describe("nextOrderLineQuantity", () => {
   it("add-new записывает введённое количество", () => {

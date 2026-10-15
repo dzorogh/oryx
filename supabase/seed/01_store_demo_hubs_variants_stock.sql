@@ -1,5 +1,5 @@
 -- Demo: multi-variant products, stock on hubs and plants, reserves, transfers, planned outputs.
--- Applied by `npm run seed:logistics` after the stories, on ids from a fresh seed (restart identity);
+-- Applied by `npm run seed:oms` after the stories, on ids from a fresh seed (restart identity);
 -- hubs come from 00_store_demo_hubs_regions.sql.
 
 do $seed$
@@ -94,7 +94,7 @@ begin
   end loop;
 
   -- Stock: free on hubs + plants for many variants of products 1–12.
-  perform public.store_create_and_post_adjustment(
+  perform public.store_oms_create_and_post_adjustment(
     v_loc_dubai,
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 8 + (v.id % 7))), '[]'::jsonb)
@@ -104,7 +104,7 @@ begin
     'Демо: приход на Dubai Hub'
   );
 
-  perform public.store_create_and_post_adjustment(
+  perform public.store_oms_create_and_post_adjustment(
     v_loc_cis,
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 12 + (v.id % 5))), '[]'::jsonb)
@@ -114,7 +114,7 @@ begin
     'Демо: приход на CIS Hub'
   );
 
-  perform public.store_create_and_post_adjustment(
+  perform public.store_oms_create_and_post_adjustment(
     v_loc_americas,
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 6 + (v.id % 4))), '[]'::jsonb)
@@ -124,7 +124,7 @@ begin
     'Демо: приход на Americas Hub'
   );
 
-  perform public.store_create_and_post_adjustment(
+  perform public.store_oms_create_and_post_adjustment(
     v_loc_europe,
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 5 + (v.id % 3))), '[]'::jsonb)
@@ -136,7 +136,7 @@ begin
 
   -- Free stock on a couple of plant warehouses.
   select stock_location_id into v_loc_plant from store_warehouse where id = 2; -- plant wh for plant 1
-  perform public.store_create_and_post_adjustment(
+  perform public.store_oms_create_and_post_adjustment(
     v_loc_plant,
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 3 + (v.id % 3))), '[]'::jsonb)
@@ -147,7 +147,7 @@ begin
   );
 
   select stock_location_id into v_loc_plant from store_warehouse where id = 5;
-  perform public.store_create_and_post_adjustment(
+  perform public.store_oms_create_and_post_adjustment(
     v_loc_plant,
     (
       select coalesce(jsonb_agg(jsonb_build_object('product_variant_id', v.id, 'quantity', 4)), '[]'::jsonb)
@@ -158,7 +158,7 @@ begin
   );
 
   -- Region reserves on hubs (kz on CIS, ae on Dubai, de on Europe).
-  perform public.store_create_and_post_reservation(
+  perform public.store_oms_create_and_post_reservation(
     v_loc_cis,
     (select stock_owner_id from store_region where code = 'KZ' and deleted_at is null),
     (
@@ -170,7 +170,7 @@ begin
     'Демо: резерв под KZ'
   );
 
-  perform public.store_create_and_post_reservation(
+  perform public.store_oms_create_and_post_reservation(
     v_loc_dubai,
     (select stock_owner_id from store_region where code = 'AE' and deleted_at is null),
     (
@@ -182,7 +182,7 @@ begin
     'Демо: резерв под AE'
   );
 
-  perform public.store_create_and_post_reservation(
+  perform public.store_oms_create_and_post_reservation(
     v_loc_europe,
     (select stock_owner_id from store_region where code = 'DE' and deleted_at is null),
     (
@@ -194,7 +194,7 @@ begin
   );
 
   -- Transfers in transit (plant → hub).
-  perform public.store_create_and_send_transfer(
+  perform public.store_oms_create_and_send_transfer(
     5, -- plant warehouse
     v_cis,
     (
@@ -207,7 +207,7 @@ begin
     'Демо: в пути на CIS Hub'
   );
 
-  perform public.store_create_and_send_transfer(
+  perform public.store_oms_create_and_send_transfer(
     2,
     v_dubai,
     (
@@ -227,7 +227,7 @@ begin
     where v.product_id = any(array[1,2,4,8]) and v.deleted_at is null and v.plant_id is not null
     limit 8
   loop
-    v_po := public.store_create_production_order(
+    v_po := public.store_oms_create_production_order(
       r.plant_id,
       jsonb_build_array(jsonb_build_object('product_variant_id', r.variant_id, 'quantity', 10)),
       'Демо: план выпуска ' || r.name,
@@ -235,7 +235,7 @@ begin
       'in_progress'
     );
     v_po_id := (v_po->>'id')::bigint;
-    perform public.store_create_production_output(
+    perform public.store_oms_create_production_output(
       v_po_id,
       jsonb_build_array(jsonb_build_object('product_variant_id', r.variant_id, 'quantity', 3 + (r.variant_id % 3))),
       current_date + 7,

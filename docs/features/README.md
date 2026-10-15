@@ -11,7 +11,8 @@ Product and module behavior (how screens work, data flow, file map).
 | Pulse — Company workspace | [pulse-company-cabinet.md](pulse-company-cabinet.md) |
 | User profile | [user-profile.md](user-profile.md) |
 | Comments module (reusable) | [comments-module.md](comments-module.md) |
-| Logistics — orders, stock, ledger | [logistics.md](logistics.md) |
+| OMS — orders, stock, ledger | [oms.md](oms.md) |
+| Store — справочники складов, регионов и заводов | [store-directories.md](store-directories.md) |
 | Tracker — Заявки (каталог, формы, мои заявки, конструктор видов) | [tracker-requests.md](tracker-requests.md) |
 
 Demo backend (shared, not a screen): [../conventions/backend/supabase.md](../conventions/backend/supabase.md).

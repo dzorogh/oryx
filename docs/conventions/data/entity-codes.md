@@ -5,10 +5,10 @@
 ## Как добавить сущность
 
 1. Добавьте одну запись в `ENTITY_CODES` в `src/lib/entity-codes.ts` (`defaultPrefix`, `label`, `exampleId`; для нередактируемых — `fixed: true`).
-2. Для нового вида документа в той же миграции, что и `store_document_kind`, вставьте строку в `store_code_prefix` — иначе `store_doc_number` упадёт на `upper(p_kind)`, а не на дефолт реестра. Для каталожных сущностей строка в БД не обязательна: клиент берёт дефолт из реестра; сохранение на `/settings/entity-codes` создаёт её через `store_set_code_prefix`.
+2. Для нового вида документа в той же миграции, что и `store_oms_document_kind`, вставьте строку в `store_code_prefix` — иначе `store_oms_doc_number` упадёт на `upper(p_kind)`, а не на дефолт реестра. Для каталожных сущностей строка в БД не обязательна: клиент берёт дефолт из реестра; сохранение на `/settings/entity-codes` создаёт её через `store_set_code_prefix`.
 3. В UI вызывайте `formatEntityCode("snake_case_key", id)`. Для регионов с сохранённым кодом — `storedEntityCode("region", stored, id)`.
 
-SQL-фолбэки `'WH'` / `'OMS'` в `store_location_code` и `store_checkout_customer_order` зеркалят дефолты реестра — меняйте их вместе с `ENTITY_CODES`.
+SQL-фолбэки `'WH'` / `'OMS'` в `store_oms_location_code` и `store_oms_checkout_customer_order` зеркалят дефолты реестра — меняйте их вместе с `ENTITY_CODES`.
 
 ## Контракт
 

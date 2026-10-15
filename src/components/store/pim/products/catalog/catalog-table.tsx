@@ -17,7 +17,7 @@ import { VariantStockSummary } from "@/features/store/variant-stock-summary";
 import { cn } from "@/lib/utils";
 import { ProductPhoto } from "@/features/store/product-photo";
 import { getCategoryNodeLabel } from "@/features/store/category-tree";
-import { pluralTovar } from "@/features/logistics/category-tree";
+import { pluralTovar } from "@/features/oms/category-tree";
 import { useSelectedRegion } from "@/features/store/region-context";
 import {
   computeVariantRegionStock,

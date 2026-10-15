@@ -10,8 +10,8 @@ import {
   documentNumber,
   ownerKindToType,
   shipmentDirection,
-} from "@/features/logistics/logistics-types";
-import { adjustmentSignedQuantity } from "@/features/logistics/logistics-adjustments";
+} from "@/features/oms/oms-types";
+import { adjustmentSignedQuantity } from "@/features/oms/oms-adjustments";
 import {
   ENTITY_CODES,
   formatEntityCode,

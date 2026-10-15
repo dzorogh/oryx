@@ -8,12 +8,13 @@ const STORE_BASE_FILES = [
   "src/features/store/region-switcher.tsx",
   "src/features/store/product-photo.tsx",
   "src/features/store/store-load-notice.tsx",
+  "src/features/store/store-paths.ts",
   "src/features/store/view-role.ts",
   "src/features/store/packing/**",
 ];
 
 const STORE_BASE_IMPORT =
-  "^@/features/store/(?!(domain|packing)/|(region-context|region-selection|region-switcher|product-photo|store-load-notice|view-role)$)";
+  "^@/features/store/(?!(domain|packing)/|(region-context|region-selection|region-switcher|product-photo|store-load-notice|store-paths|view-role)$)";
 
 const NO_PIM_UI = {
   group: ["@/components/store/*"],
@@ -38,12 +39,12 @@ const config = [
           patterns: [
             NO_PIM_UI,
             {
-              group: ["@/features/logistics/*"],
-              message: "Store base modules are shared with logistics and must not import it back.",
+              group: ["@/features/oms/*"],
+              message: "Store base modules are shared with OMS and must not import it back.",
             },
             {
               regex: STORE_BASE_IMPORT,
-              message: "Store base modules import only the base layer, so logistics cannot reach the rest of store through them.",
+              message: "Store base modules import only the base layer, so OMS cannot reach the rest of store through them.",
             },
           ],
         },
@@ -59,7 +60,7 @@ const config = [
           patterns: [
             NO_PIM_UI,
             {
-              regex: "^@/features/(logistics/|store/(?!domain/))",
+              regex: "^@/features/(oms/|store/(?!domain/))",
               message: "store/domain holds pure types and guards; it imports only other domain modules.",
             },
           ],
@@ -68,7 +69,7 @@ const config = [
     },
   },
   {
-    files: ["src/features/logistics/**/*.{ts,tsx}", "app/store/logistics/**/*.{ts,tsx}"],
+    files: ["src/features/oms/**/*.{ts,tsx}", "app/store/oms/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -76,11 +77,11 @@ const config = [
           patterns: [
             {
               group: ["@/components/store/*"],
-              message: "Logistics must not depend on PIM UI in components/store.",
+              message: "OMS must not depend on PIM UI in components/store.",
             },
             {
               regex: STORE_BASE_IMPORT,
-              message: "Logistics may import only the store base layer (domain, region, product photo, packing).",
+              message: "OMS may import only the store base layer (domain, region, product photo, packing).",
             },
           ],
         },

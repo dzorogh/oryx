@@ -9,7 +9,7 @@ import {
   prepareExternalUrl,
   prepareMetaText,
   prepareMoneySave,
-} from "@/features/logistics/customer-order-extras";
+} from "@/features/oms/customer-order-extras";
 
 describe("customer order extras", () => {
   it("maps an untouched order to empty fields", () => {

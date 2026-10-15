@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { logisticsPath } from "@/features/logistics/logistics-paths";
+import { omsPath } from "@/features/oms/oms-paths";
 
 type OrderPageProps = {
   params: Promise<{ orderId: string }>;
@@ -7,7 +7,7 @@ type OrderPageProps = {
 
 const OrderPage = async ({ params }: OrderPageProps) => {
   const { orderId } = await params;
-  redirect(logisticsPath("customer-orders", encodeURIComponent(orderId)));
+  redirect(omsPath("customer-orders", encodeURIComponent(orderId)));
 };
 
 export default OrderPage;

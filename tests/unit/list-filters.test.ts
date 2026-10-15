@@ -9,8 +9,8 @@ import {
   rowDateKey,
   type ListFilterDef,
   type ListMultiFilterDef,
-} from "@/features/logistics/ui/list/list-filters";
-import { deadlineBucketFilter, lineCountFilter, placeCodeFilter, productFilter } from "@/features/logistics/ui/list/list-filter-defs";
+} from "@/features/oms/ui/list/list-filters";
+import { deadlineBucketFilter, lineCountFilter, placeCodeFilter, productFilter } from "@/features/oms/ui/list/list-filter-defs";
 
 type Row = {
   id: string;

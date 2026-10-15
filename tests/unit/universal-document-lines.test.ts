@@ -5,24 +5,24 @@ import {
   outputtedForProductionLine,
   productionLineReservationBreakdown,
   remainingToOutputForLine,
-} from "@/features/logistics/logistics-availability";
-import { lineLocationAllocations } from "@/features/logistics/allocation-atlas";
-import { calculateOrderDocumentCoverage } from "@/features/logistics/order-document-coverage";
+} from "@/features/oms/oms-availability";
+import { lineLocationAllocations } from "@/features/oms/allocation-atlas";
+import { calculateOrderDocumentCoverage } from "@/features/oms/order-document-coverage";
 import {
   productActivity,
   relatedOutputsForOrder,
   relatedProductionGroupsForOrder,
   relatedProductionsForOrder,
-} from "@/features/logistics/logistics-related";
+} from "@/features/oms/oms-related";
 import {
   documentNumber,
   matchDocumentParam,
   publicDocumentParam,
-  type LogisticsSnapshot,
+  type OmsSnapshot,
   type StockBalance,
-} from "@/features/logistics/logistics-types";
+} from "@/features/oms/oms-types";
 
-const snapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot =>
+const snapshot = (overrides: Partial<OmsSnapshot> = {}): OmsSnapshot =>
   ({
     reservations: [],
     reservationLines: [],
@@ -42,7 +42,7 @@ const snapshot = (overrides: Partial<LogisticsSnapshot> = {}): LogisticsSnapshot
     adjustmentLines: [],
     transactions: [],
     ...overrides,
-  }) as LogisticsSnapshot;
+  }) as OmsSnapshot;
 
 const poStock = (quantity: number): StockBalance => ({
   productId: "7",
@@ -81,7 +81,7 @@ describe("универсальные товарные строки", () => {
           },
         ],
       })),
-      "/store/logistics/production-orders/12",
+      "/store/oms/production-orders/12",
     );
   });
 
@@ -451,7 +451,7 @@ describe("связанные документы и покрытие этапов
 
   it("проводка с типом production_output даёт процент готовому выпуску", () => {
     const view = base();
-    const backendView: LogisticsSnapshot = {
+    const backendView: OmsSnapshot = {
       ...view,
       transactions: view.transactions.map((entry) => ({
         ...entry,
@@ -465,13 +465,13 @@ describe("связанные документы и покрытие этапов
 
   it("резерв в свободном выпуске даёт заказ на производство с процентом", () => {
     const view = base();
-    const freeView: LogisticsSnapshot = {
+    const freeView: OmsSnapshot = {
       ...view,
       outputLines: view.outputLines.map((line) =>
         line.id === "ol-draft" ? { ...line, toOwnerType: null, toOwnerId: null } : line,
       ),
       outputAllocations: [{ id: "oa-1", lineId: "ol-draft", ownerType: "order", ownerId: "12", quantity: 2 }],
-    } as LogisticsSnapshot;
+    } as OmsSnapshot;
     const coverage = calculateOrderDocumentCoverage(freeView, "12");
     assert.equal(coverage.production.get("po-1"), 50);
     const [production] = relatedProductionGroupsForOrder(freeView, "12", coverage);

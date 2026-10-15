@@ -27,8 +27,8 @@ import {
   setTenantRegion,
   type StoreRegionOption,
   type StoreTenantRow,
-} from "@/features/logistics/logistics-api";
-import { translateLogisticsError } from "@/features/logistics/ui/run-action";
+} from "@/features/oms/oms-api";
+import { translateOmsError } from "@/features/oms/ui/run-action";
 import { getDemoTenantById } from "@/lib/demo-tenants";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -84,7 +84,7 @@ export const TenantsSettingsPage = () => {
       toast.success(code ? `${tenant.name} — регион ${code}` : `${tenant.name} — без региона`);
     } catch (caught: unknown) {
       toast.error("Не удалось сохранить регион", {
-        description: translateLogisticsError(caught instanceof Error ? caught.message : "Попробуйте ещё раз."),
+        description: translateOmsError(caught instanceof Error ? caught.message : "Попробуйте ещё раз."),
       });
     } finally {
       setSavingId(null);

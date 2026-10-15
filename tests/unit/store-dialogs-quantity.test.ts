@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { leafCategoryIds, pluralPozicii, pluralTovar, type CategoryRef } from "@/features/logistics/category-tree";
-import { quantityUnitLabel } from "@/features/logistics/logistics-labels";
-import { freeTransferPayload } from "@/features/logistics/transfer-direct-send";
-import type { LogisticsSnapshot, StockBalance } from "@/features/logistics/logistics-types";
-import { parseDecimalQuantity, priceIssue, quantityIssue, firstErrorKey, productsNotMadeByPlant, sourceDropBanner, categoryStartsOpen } from "@/features/logistics/ui/catalog-quantity-model";
-import { catalogProductsFromPlace, parseOwnerQuantityKey, placeOwnersByProduct } from "@/features/logistics/ui/place-catalog";
+import { leafCategoryIds, pluralPozicii, pluralTovar, type CategoryRef } from "@/features/oms/category-tree";
+import { quantityUnitLabel } from "@/features/oms/oms-labels";
+import { freeTransferPayload } from "@/features/oms/transfer-direct-send";
+import type { OmsSnapshot, StockBalance } from "@/features/oms/oms-types";
+import { parseDecimalQuantity, priceIssue, quantityIssue, firstErrorKey, productsNotMadeByPlant, sourceDropBanner, categoryStartsOpen } from "@/features/oms/ui/catalog-quantity-model";
+import { catalogProductsFromPlace, parseOwnerQuantityKey, placeOwnersByProduct } from "@/features/oms/ui/place-catalog";
 
 const balance = (patch: Partial<StockBalance> & Pick<StockBalance, "productId" | "quantity">): StockBalance =>
   ({
@@ -25,7 +25,7 @@ const snapshot = {
   categories: [],
   customerOrders: [{ id: "1042", number: "CO-1042" }],
   regions: [{ id: "3", code: "R3" }],
-} as unknown as LogisticsSnapshot;
+} as unknown as OmsSnapshot;
 
 describe("диалоги store: ограничения ввода", () => {
   it("каталог места оставляет владельца заказа и показывает всех при showAll", () => {

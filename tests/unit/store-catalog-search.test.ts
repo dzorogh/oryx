@@ -1,17 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  mapLogisticsProductToCatalogItem,
+  mapOmsProductToCatalogItem,
   sanitizeCatalogSearch,
-} from "@/features/store/store-catalog-from-logistics";
+} from "@/features/store/store-catalog-from-oms";
 
 describe("catalog item mapping", () => {
   it("takes the brand from store_brand and has no invented update date", () => {
     const row = { id: 7, product_id: 2, name: "Cross 180 RX", product: { brand: { name: "Sharmax" } } };
-    const item = mapLogisticsProductToCatalogItem(row, "PLT-1", null, null);
+    const item = mapOmsProductToCatalogItem(row, "PLT-1", null, null);
     assert.equal(item.brand, "Sharmax");
     assert.equal(item.updatedAt, null);
-    const noBrand = mapLogisticsProductToCatalogItem({ ...row, product: { brand: null } }, "PLT-1", null, null);
+    const noBrand = mapOmsProductToCatalogItem({ ...row, product: { brand: null } }, "PLT-1", null, null);
     assert.equal(noBrand.brand, null);
   });
 });

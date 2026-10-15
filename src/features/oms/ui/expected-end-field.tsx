@@ -1,0 +1,99 @@
+// english-ui:ignore-file
+"use client";
+
+import { Input } from "@/components/ui/input";
+import { OmsMetaField } from "@/features/oms/ui/oms-toolbar";
+
+type ExpectedEndFieldProps = {
+  value: string;
+  onChange: (value: string) => void;
+  id?: string;
+  label?: string;
+  optional?: boolean;
+  hint?: string;
+  layout?: "stack" | "inline";
+  appearance?: "default" | "meta";
+  disabled?: boolean;
+  invalid?: boolean;
+  errorId?: string;
+};
+
+export const ExpectedEndField = ({
+  value,
+  onChange,
+  id = "expected-end",
+  label = "Ожидаемое окончание",
+  optional = false,
+  hint,
+  layout = "stack",
+  appearance = "default",
+  disabled = false,
+  invalid = false,
+  errorId,
+}: ExpectedEndFieldProps) => {
+  const caption = optional ? (
+    <span className="block font-medium">
+      {label}
+      <span className="ml-1 font-normal text-muted-foreground">необязательно</span>
+    </span>
+  ) : (
+    <span className="block font-medium">{label}</span>
+  );
+  const hintId = hint ? `${id}-hint` : undefined;
+  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
+  const input = (
+    <Input
+      id={id}
+      type="date"
+      value={value}
+      disabled={disabled}
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
+      onChange={(event) => onChange(event.target.value)}
+      className={layout === "inline" ? "w-[11.5rem] max-w-full" : "w-full min-w-0 max-w-full"}
+    />
+  );
+  const hintLine = hint ? (
+    <p id={hintId} className="text-xs text-muted-foreground">
+      {hint}
+    </p>
+  ) : null;
+
+  if (appearance === "meta" && layout === "stack") {
+    return (
+      <div className="min-w-0">
+        <label htmlFor={id} className="mb-1 block text-xs leading-4 text-muted-foreground">
+          {label}
+        </label>
+        <Input
+          id={id}
+          type="date"
+          value={value}
+          disabled={disabled}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-full min-w-0 bg-background text-sm font-medium"
+        />
+        {hintLine}
+      </div>
+    );
+  }
+
+  if (layout === "inline") {
+    return (
+      <OmsMetaField label={label} htmlFor={id}>
+        {input}
+        {hintLine}
+      </OmsMetaField>
+    );
+  }
+
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      {caption}
+      {input}
+      {hintLine}
+    </label>
+  );
+};

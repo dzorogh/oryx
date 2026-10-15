@@ -2,10 +2,10 @@
 
 import { isCurrencyCode, type CurrencyCode } from "@/features/store/domain/currency";
 import { isDealerStatus, type DealerStatus } from "@/features/store/domain/statuses";
-import { loadLogisticsSettings } from "@/features/logistics/logistics-api";
+import { loadOmsSettings } from "@/features/oms/oms-api";
 import { formatEntityCode } from "@/lib/entity-codes";
-import { loadRegionPricing } from "@/features/store/store-catalog-from-logistics";
-import { productImageUrl } from "@/features/store/store-catalog-from-logistics";
+import { loadRegionPricing } from "@/features/store/store-catalog-from-oms";
+import { productImageUrl } from "@/features/store/store-catalog-from-oms";
 import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -51,7 +51,7 @@ type VariantRow = {
   quantity_per_unit: number | string | null;
 };
 
-type LogisticsRow = {
+type OmsRow = {
   product_variant_id: number | string;
   length_cm: number | string;
   width_cm: number | string;
@@ -88,13 +88,13 @@ export const loadCartVariantCatalog = async (
   if (!client) throw new Error("Supabase не настроен");
 
   const [, variantsResult, logisticsRows, supplyRows, regionsResult, pricing] = await Promise.all([
-    loadLogisticsSettings(),
+    loadOmsSettings(),
     client
       .from("store_product_variant")
       .select("id,product_id,name,image_url,plant_id,quantity_per_unit")
       .in("id", ids)
       .is("deleted_at", null),
-    fetchAllRows<LogisticsRow>((from, to) =>
+    fetchAllRows<OmsRow>((from, to) =>
       client
         .from("store_product_variant_logistics")
         .select(

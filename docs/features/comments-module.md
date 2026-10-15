@@ -75,9 +75,9 @@ Two optional props for business sections (the news page passes neither and behav
   attachments are dropped on save (they die with the tab).
 
 First business integration: the customer order card (`scope={{ type: "customer_order", id }}`,
-`persist`, notices «Заказ создан», status and planned date changes from `store_document_history`,
-payment status changes from `store_order_payment_event`) — see
-[logistics.md](logistics.md#карточка-заказа-клиента).
+`persist`, notices «Заказ создан», status and planned date changes from `store_oms_document_history`,
+payment status changes from `store_oms_order_payment_event`) — see
+[oms.md](oms.md#карточка-заказа-клиента).
 
 **Interface language.** Every piece of UI chrome of the module — header («Комментарии»), search,
 filters («Мои», «С вложениями»), sort («Сначала старые» / «Сначала новые» / «Популярные»), «Кратко»
@@ -293,7 +293,7 @@ seeds from `contentJson` and runs its own Tiptap node view.
   "Pinned by editorial team").
 - `currentUser` = demo "Alexey Nazarov"; `mentionableUsers` from `EMPLOYEE_OPTIONS`.
 - Remove the now-unused `news-article-comments.tsx`.
-- Customer order card (`/store/logistics/customer-orders/[id]`, tab «Комментарии») — `persist` +
+- Customer order card (`/store/oms/customer-orders/[id]`, tab «Комментарии») — `persist` +
   `systemNotices`, no seed.
 
 ## Advanced features (Phases 0–8)

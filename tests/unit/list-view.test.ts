@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { deadlineFilterMatch, deadlineGroupKey } from "@/features/logistics/ui/list/list-deadline";
-import type { ListColumnDef, ListSortDef } from "@/features/logistics/ui/list/list-types";
+import { deadlineFilterMatch, deadlineGroupKey } from "@/features/oms/ui/list/list-deadline";
+import type { ListColumnDef, ListSortDef } from "@/features/oms/ui/list/list-types";
 import {
   buildListViewPersisted,
   buildSortDefs,
@@ -12,7 +12,7 @@ import {
   parseListViewPersisted,
   serializeListViewPersisted,
   sortRows,
-} from "@/features/logistics/ui/list/list-view-state";
+} from "@/features/oms/ui/list/list-view-state";
 
 type Row = { id: string; name: string; qty: number | null; createdAt: string; number?: string };
 

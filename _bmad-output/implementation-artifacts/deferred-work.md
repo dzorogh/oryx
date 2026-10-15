@@ -369,3 +369,10 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-customer-order-client-delivery-metadata.md`
   summary: `DocumentMetaDateInput` сохраняет дату на каждый `onChange`, поэтому при наборе года с клавиатуры может записаться промежуточная дата (например, 0002-09-28).
   evidence: Так было и раньше: тот же компонент используется для срока в шапке заказа, а новая вкладка просто повторяет это поведение. Unverified, оценка medium: проверить набором года с клавиатуры в Chrome.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-oms-and-directories.md`
+  summary: Автоматическая проверка, что все имена `store_oms_*` из клиента существуют в БД после миграции.
+  evidence: `npm test` проверяет имена только по тексту исходников; опечатка в RPC всплывёт лишь как 404 PostgREST. В репозитории нет DB-харнесса.
+- source_spec: `_bmad-output/implementation-artifacts/spec-store-oms-and-directories.md`
+  summary: Решить, переименовывать ли вкладку «Логистика» карточки товара и ключи видимости `tab.logistics` / `logistics.production` в OMS.
+  evidence: Вкладка показывает остатки складов, движения и документы (данные OMS), но лежит вне `/store/logistics/*`; в спеке оставлена как есть.
+
